@@ -88,7 +88,7 @@ public:
     typedef bases<Lagrange<Order+1, Vectorial>, Lagrange<Order, Scalar> > basis_composite_type;
 
     /*space*/
-    typedef FunctionSpace<mesh_type, basis_composite_type, Periodicity<Periodic<>, NoPeriodicity > > functionspace_composite_type;
+    typedef FunctionSpace<mesh_type, basis_composite_type> functionspace_composite_type;
     typedef std::shared_ptr<functionspace_composite_type> functionspace_composite_ptrtype;
     //BOOST_MPL_ASSERT( ( boost::is_same<mpl::bool_<functionspace_composite_type::template sub_functionspace<0>::type::element_type::is_periodic>,mpl::bool_<true> > ) );
     //BOOST_MPL_ASSERT( ( boost::is_same<mpl::bool_<functionspace_composite_type::template sub_functionspace<1>::type::element_type::is_periodic>,mpl::bool_<false> > ) );
@@ -163,20 +163,23 @@ PeriodicStokes<Dim,Order>::PeriodicStokes()
 
     LOG(INFO) << "create mesh\n";
     const std::string shape = "hypercube";
+    PeriodicEntities periodicEntities;
+    periodicEntities[1] = std::make_pair( 2, 4 );
     mesh = createGMSHMesh( _mesh=new mesh_type,
                            _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
                                          _usenames=false,
                                          _shape=shape,
                                          _dim=Dim,
                                          _h=h,
-                                         _xmin=-1, _ymin=-1, _xmax=1, _ymax=1 ) );
+                                         _xmin=-1, _ymin=-1, _xmax=1, _ymax=1 ),
+                           _periodic=periodicEntities );
 
 
     LOG(INFO) << "create space\n";
     // node_type trans(2);
     translat[0]=0;
     translat[1]=2;
-    Xh = functionspace_composite_type::New( _mesh=mesh, _periodicity=periodicity( Periodic<>(2, 4, translat), NoPeriodicity() ) );
+    Xh = functionspace_composite_type::New( _mesh=mesh );
 
     LOG(INFO) << "Xh print space info\n";
     Xh->printInfo();
@@ -282,9 +285,6 @@ main( int argc, char** argv )
     app.add( new PeriodicStokes<2,1>() );
     app.run();
 }
-
-
-
 
 
 

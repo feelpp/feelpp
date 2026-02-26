@@ -59,16 +59,13 @@ LevelSetRedistanciationFM<FunctionSpaceType>::LevelSetRedistanciationFM(
                 _update=MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES 
                 );
         M_spaceFM = functionspace_P1_type::New(
-                _mesh=M_opLagrangeP1->mesh(),
-                _periodicity=periodicity( NoPeriodicity() )
+                _mesh=M_opLagrangeP1->mesh()
                 );
         M_spaceP0d = functionspace_P0d_type::New(
-                _mesh=this->functionSpace()->mesh(),
-                _periodicity=periodicity( NoPeriodicity() )
+                _mesh=this->functionSpace()->mesh()
                 );
         M_spaceP0dIsoPN = functionspace_P0d_type::New(
-                _mesh=M_opLagrangeP1->mesh(),
-                _periodicity=periodicity( NoPeriodicity() )
+                _mesh=M_opLagrangeP1->mesh()
                 );
 
         if( functionSpaceOrder > 1 )

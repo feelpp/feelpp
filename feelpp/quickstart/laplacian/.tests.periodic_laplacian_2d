@@ -1,0 +1,2 @@
+periodic-square --qs.dim=2 --qs.hsize=0.15 --qs.export=false --qs.assert-l2=5e-2 --directory=qs_periodic_laplacian/periodic-square
+periodic-cube --qs.dim=3 --qs.hsize=0.20 --qs.export=false --qs.assert-l2=8e-2 --directory=qs_periodic_laplacian/periodic-cube

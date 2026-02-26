@@ -24,9 +24,14 @@
 #ifndef FEELPP_MESH_HPP
 #define FEELPP_MESH_HPP 1
 
+#include <algorithm>
+#include <array>
 #include <bitset>
 #include <concepts>
+#include <numeric>
 #include <type_traits>
+#include <unordered_map>
+#include <unordered_set>
 #include <variant>
 
 #include <boost/unordered_map.hpp>
@@ -136,6 +141,10 @@ struct PeriodicEntity
     int slave;
     int master;
     std::map<int, int> correspondingVertices;
+    // MSH4.1 optional affine transform coefficients as stored in $Periodic.
+    std::vector<double> affineTransform;
+
+    bool hasAffineTransform() const { return !affineTransform.empty(); }
 };
 struct MeshMarkerName
 {
@@ -323,6 +332,8 @@ class Mesh
         M_gm.reset();
         M_gm1.reset();
         M_tool_localization.reset();
+        M_periodic_entities.clear();
+        this->invalidatePeriodicCanonicalMaps();
         super::clear();
     }
 
@@ -1104,12 +1115,170 @@ public:
     //!
     //!  set the periodic entities
     //!
-    void setPeriodicEntities( std::vector<PeriodicEntity> const& e ) { M_periodic_entities = e; }
+    void setPeriodicEntities( std::vector<PeriodicEntity> const& e )
+    {
+        M_periodic_entities = e;
+        this->buildPeriodicCanonicalMaps();
+    }
+
+    //!
+    //! @return periodic entities metadata
+    //!
+    std::vector<PeriodicEntity> const& periodicEntities() const { return M_periodic_entities; }
 
     //!
     //!  @return true if the mesh has periodic entities
     //!
     bool isPeriodic() const { return M_periodic_entities.empty() == false; }
+
+    //!
+    //! @return canonical point id driven by mesh periodic correspondences
+    //!
+    size_type canonicalPointId( size_type pointId ) const
+    {
+        if ( !this->isPeriodic() )
+            return pointId;
+        CHECK( M_hasPeriodicCanonicalMaps )
+            << "Periodic canonical point map is not initialized";
+        auto it = M_periodicCanonicalPointId.find( pointId );
+        return ( it != M_periodicCanonicalPointId.end() ) ? it->second : pointId;
+    }
+
+    //!
+    //! @return canonical edge id driven by periodic point canonicalization
+    //!
+    size_type canonicalEdgeId( size_type edgeId ) const
+    {
+        if ( !this->isPeriodic() )
+            return edgeId;
+        CHECK( M_hasPeriodicCanonicalMaps )
+            << "Periodic canonical edge map is not initialized";
+        auto it = M_periodicCanonicalEdgeId.find( edgeId );
+        return ( it != M_periodicCanonicalEdgeId.end() ) ? it->second : edgeId;
+    }
+
+    //!
+    //! @return canonical face id driven by periodic point canonicalization
+    //!
+    size_type canonicalFaceId( size_type faceId ) const
+    {
+        if ( !this->isPeriodic() )
+            return faceId;
+        CHECK( M_hasPeriodicCanonicalMaps )
+            << "Periodic canonical face map is not initialized";
+        auto it = M_periodicCanonicalFaceId.find( faceId );
+        return ( it != M_periodicCanonicalFaceId.end() ) ? it->second : faceId;
+    }
+
+    //!
+    //! @return true if the point has an explicit periodic master relation
+    //!
+    bool hasPeriodicPointMaster( size_type pointId ) const
+    {
+        if ( !this->isPeriodic() )
+            return false;
+        CHECK( M_hasPeriodicCanonicalMaps )
+            << "Periodic canonical point map is not initialized";
+        return M_periodicPointMasterId.find( pointId ) != M_periodicPointMasterId.end();
+    }
+
+    //!
+    //! @return periodic master point id when available, otherwise pointId
+    //!
+    size_type periodicPointMasterId( size_type pointId ) const
+    {
+        if ( !this->isPeriodic() )
+            return pointId;
+        CHECK( M_hasPeriodicCanonicalMaps )
+            << "Periodic canonical point map is not initialized";
+        auto it = M_periodicPointMasterId.find( pointId );
+        return ( it != M_periodicPointMasterId.end() ) ? it->second : pointId;
+    }
+
+    //!
+    //! @return true if the edge has an explicit periodic master relation
+    //!
+    bool hasPeriodicEdgeMaster( size_type edgeId ) const
+    {
+        if ( !this->isPeriodic() )
+            return false;
+        CHECK( M_hasPeriodicCanonicalMaps )
+            << "Periodic canonical edge map is not initialized";
+        return M_periodicEdgeMasterId.find( edgeId ) != M_periodicEdgeMasterId.end();
+    }
+
+    //!
+    //! @return periodic master edge id when available, otherwise edgeId
+    //!
+    size_type periodicEdgeMasterId( size_type edgeId ) const
+    {
+        if ( !this->isPeriodic() )
+            return edgeId;
+        CHECK( M_hasPeriodicCanonicalMaps )
+            << "Periodic canonical edge map is not initialized";
+        auto it = M_periodicEdgeMasterId.find( edgeId );
+        return ( it != M_periodicEdgeMasterId.end() ) ? it->second : edgeId;
+    }
+
+    //!
+    //! @return edge orientation (+1/-1) from slave edge to periodic master edge
+    //!
+    int periodicEdgeMasterOrientation( size_type edgeId ) const
+    {
+        if ( !this->isPeriodic() )
+            return 1;
+        CHECK( M_hasPeriodicCanonicalMaps )
+            << "Periodic canonical edge map is not initialized";
+        auto it = M_periodicEdgeMasterOrientation.find( edgeId );
+        return ( it != M_periodicEdgeMasterOrientation.end() ) ? it->second : 1;
+    }
+
+    //!
+    //! @return true if the face has an explicit periodic master relation
+    //!
+    bool hasPeriodicFaceMaster( size_type faceId ) const
+    {
+        if ( !this->isPeriodic() )
+            return false;
+        CHECK( M_hasPeriodicCanonicalMaps )
+            << "Periodic canonical face map is not initialized";
+        return M_periodicFaceMasterId.find( faceId ) != M_periodicFaceMasterId.end();
+    }
+
+    //!
+    //! @return periodic master face id when available, otherwise faceId
+    //!
+    size_type periodicFaceMasterId( size_type faceId ) const
+    {
+        if ( !this->isPeriodic() )
+            return faceId;
+        CHECK( M_hasPeriodicCanonicalMaps )
+            << "Periodic canonical face map is not initialized";
+        auto it = M_periodicFaceMasterId.find( faceId );
+        return ( it != M_periodicFaceMasterId.end() ) ? it->second : faceId;
+    }
+
+    //!
+    //! @return periodic slave-to-master face vertex permutation (identity when not periodic)
+    //!
+    std::vector<uint16_type> periodicFaceMasterPermutation( size_type faceId ) const
+    {
+        std::vector<uint16_type> identity;
+        if constexpr ( nDim == 3 )
+        {
+            identity.resize( face_type::numVertices );
+            std::iota( identity.begin(), identity.end(), uint16_type( 0 ) );
+        }
+
+        if ( !this->isPeriodic() )
+            return identity;
+
+        CHECK( M_hasPeriodicCanonicalMaps )
+            << "Periodic canonical face map is not initialized";
+
+        auto it = M_periodicFaceMasterPermutation.find( faceId );
+        return ( it != M_periodicFaceMasterPermutation.end() ) ? it->second : identity;
+    }
 
     //!  @name  Methods
     //!
@@ -1770,6 +1939,9 @@ public:
     FEELPP_NO_EXPORT void fixPointDuplicationInHOMesh( element_type& elt, face_type const& face, mpl::true_ );
     FEELPP_NO_EXPORT void fixPointDuplicationInHOMesh( element_type& elt, face_type const& face, mpl::false_ );
 
+    void invalidatePeriodicCanonicalMaps();
+    void buildPeriodicCanonicalMaps();
+
   private:
 
     // entity type -> ( fragment id to elements marker ids )
@@ -1830,6 +2002,19 @@ public:
     //!  periodic entities
     //!
     std::vector<PeriodicEntity> M_periodic_entities;
+
+    //!
+    //! canonical periodic ids for mesh-driven dof numbering
+    //!
+    bool M_hasPeriodicCanonicalMaps = false;
+    std::unordered_map<size_type, size_type> M_periodicCanonicalPointId;
+    std::unordered_map<size_type, size_type> M_periodicCanonicalEdgeId;
+    std::unordered_map<size_type, size_type> M_periodicCanonicalFaceId;
+    std::unordered_map<size_type, size_type> M_periodicPointMasterId;
+    std::unordered_map<size_type, size_type> M_periodicEdgeMasterId;
+    std::unordered_map<size_type, int> M_periodicEdgeMasterOrientation;
+    std::unordered_map<size_type, size_type> M_periodicFaceMasterId;
+    std::unordered_map<size_type, std::vector<uint16_type>> M_periodicFaceMasterPermutation;
 
     //!
     //!  to encode points coordinates
@@ -2369,6 +2554,7 @@ MeshInverse<MeshType>::distribute( bool extrapolation )
 } // namespace Feel
 
 //#if !defined(FEELPP_INSTANTIATION_MODE)
+#include <feel/feeldiscr/meshperiodicimpl.hpp>
 #include <feel/feeldiscr/meshimpl.hpp>
 //#endif
 

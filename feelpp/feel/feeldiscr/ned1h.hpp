@@ -42,7 +42,6 @@ struct Ned1h
     typedef FunctionSpace<MeshType,
                           bases<Nedelec<Order,NedelecKind::NED1>>,
                           T,
-                          Periodicity <NoPeriodicity>,
                           mortars<NoMortar>> type;
     typedef std::shared_ptr<type> ptrtype;
 };

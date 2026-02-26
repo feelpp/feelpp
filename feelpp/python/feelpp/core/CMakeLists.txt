@@ -1,5 +1,6 @@
 add_custom_target(pyfeelpp)
-configure_file(__init__.py.in ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py @ONLY)
+set(FEELPP_CORE_INIT_PY ${CMAKE_CURRENT_BINARY_DIR}/__init__.py)
+configure_file(__init__.py.in ${FEELPP_CORE_INIT_PY} @ONLY)
 feelpp_add_pymodule(feelpp SRCS feelpp.cpp DESTINATION feelpp/core )
 feelpp_add_pymodule(core SRCS core.cpp remotedata.cpp  DESTINATION feelpp/core )
 feelpp_add_pymodule(alg SRCS alg.cpp DESTINATION feelpp/core )
@@ -7,7 +8,7 @@ if ( PETSC4PY_FOUND )
   target_compile_definitions(_alg PRIVATE -DFEELPP_HAS_PETSC4PY=1)
 endif()
 feelpp_add_pymodule(mesh SRCS mesh.cpp mesh1.cpp mesh2.cpp mesh3.cpp DESTINATION feelpp/core )
-feelpp_add_pymodule(discr SRCS discr.cpp DESTINATION feelpp/core )
+feelpp_add_pymodule(discr SRCS discr.cpp discr_common.cpp discr_space_pch.cpp discr_space_pchv.cpp discr_space_pdh.cpp discr_space_pdhv.cpp discr_space_dh.cpp DESTINATION feelpp/core )
 feelpp_add_pymodule(exporter SRCS exporter.cpp hbf.cpp  DESTINATION feelpp/core )
 feelpp_add_pymodule(ls SRCS ls.cpp DESTINATION feelpp/core )
 feelpp_add_pymodule(ts SRCS ts.cpp DESTINATION feelpp/core )
@@ -26,17 +27,17 @@ foreach(MODULE IN ITEMS core feelpp alg mesh discr exporter ls ts vf forms measu
   add_dependencies(pyfeelpp _${MODULE})
 endforeach()
 
-set(PYFILES __init__.py integrate.py measure.py quality.py interpolation.py operators.py timing.py meshmover.py plotly.py forms.py )
+set(PYFILES discr.py integrate.py measure.py quality.py interpolation.py operators.py timing.py meshmover.py plotly.py forms.py )
 
 # Copy all .py files to build directory for testing without install
 add_custom_target(copy_pyfiles_to_build ALL)
 
-# Copy the configured __init__.py file
+# Copy the configured __init__.py file from binary dir
 add_custom_command(
   TARGET copy_pyfiles_to_build POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E make_directory ${FEELPP_PYTHON_BUILD_DIR}/feelpp/core
   COMMAND ${CMAKE_COMMAND} -E copy
-          ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
+          ${FEELPP_CORE_INIT_PY}
           ${FEELPP_PYTHON_BUILD_DIR}/feelpp/core/__init__.py
 )
 
@@ -57,4 +58,5 @@ foreach(MODULE IN ITEMS core feelpp alg mesh discr exporter ls ts vf forms measu
   add_dependencies(copy_pyfiles_to_build _${MODULE})
 endforeach()
 
+install(FILES ${FEELPP_CORE_INIT_PY} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/core RENAME __init__.py)
 install(FILES ${PYFILES} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/core)

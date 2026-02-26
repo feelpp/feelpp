@@ -260,18 +260,8 @@ template <typename FMtype>
 typename FMtype::space_fluid_ptrtype
 createFluidFunctionSpaces( FMtype const& FM, std::vector<bool> const& extendedDT, mpl::true_)
 {
-    node_type translat( FMtype::nDim );
-    translat[0] = doption(_name="periodicity.translate-x",_prefix=FM.prefix());
-    if ( FMtype::nDim >=2 )
-        translat[1] = doption(_name="periodicity.translate-y",_prefix=FM.prefix());
-    if ( FMtype::nDim == 3 )
-        translat[2]= doption(_name="periodicity.translate-z",_prefix=FM.prefix());
-    std::string marker1 = soption(_name="periodicity.marker1",_prefix=FM.prefix());
-    std::string marker2 = soption(_name="periodicity.marker2",_prefix=FM.prefix());
-    auto theperiodicity = periodicity( Periodic<>( FM.mesh()->markerName(marker1),FM.mesh()->markerName(marker2), translat), NoPeriodicity() );
     return FMtype::space_fluid_type::New( _mesh=FM.mesh(), _worldscomm=FM.worldsComm(),
-                                          _extended_doftable=extendedDT,
-                                          _periodicity=theperiodicity );
+                                          _extended_doftable=extendedDT );
 }
 
 } // namespace detail

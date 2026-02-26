@@ -196,3 +196,5 @@ install/
 .venv*/
 # CMake Preset backup files
 CMakePresets.json.backup
+feelpp/python/feelpp/core/__init__.py
+eztrace*/

@@ -46,7 +46,6 @@ struct Pdhmg
     typedef FunctionSpace<MeshType,
                           bases<Lagrange<Order,Pset,Discontinuous,Pts,Tag>>,
                           T,
-                          Periodicity <NoPeriodicity>,
                           mortars<NoMortar>> type;
     typedef std::shared_ptr<type> ptrtype;
 };

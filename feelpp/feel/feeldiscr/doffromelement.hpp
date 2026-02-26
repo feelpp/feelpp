@@ -236,6 +236,22 @@ class DofFromElement
     }
     //! @}
 
+    [[nodiscard]] size_type canonicalPointId( size_type id ) const
+    {
+        auto* mesh = M_doftable->mesh();
+        return mesh ? mesh->canonicalPointId( id ) : id;
+    }
+    [[nodiscard]] size_type canonicalEdgeId( size_type id ) const
+    {
+        auto* mesh = M_doftable->mesh();
+        return mesh ? mesh->canonicalEdgeId( id ) : id;
+    }
+    [[nodiscard]] size_type canonicalFaceId( size_type id ) const
+    {
+        auto* mesh = M_doftable->mesh();
+        return mesh ? mesh->canonicalFaceId( id ) : id;
+    }
+
     bool addDofUsingFiniteElementLayout( element_type const& __elt,
                                          rank_type processor,
                                          size_type& next_free_dof,
@@ -281,7 +297,7 @@ class DofFromElement
 
                 auto const& point = __elt.point( attachment.entityId );
                 entry.localEntity = attachment.entityId;
-                entry.globalDof = point.id() * nDofPerVertex + attachment.ordinal;
+                entry.globalDof = this->canonicalPointId( point.id() ) * nDofPerVertex + attachment.ordinal;
                 entry.marker = point.hasMarker() ? point.marker() : M_emptyMarker;
                 break;
             }
@@ -302,7 +318,7 @@ class DofFromElement
                         return false;
 
                     entry.localEntity = attachment.entityId;
-                    entry.globalDof = __elt.edge( attachment.entityId ).id() * nDofPerEdge;
+                    entry.globalDof = this->canonicalEdgeId( __elt.edge( attachment.entityId ).id() ) * nDofPerEdge;
                     entry.marker = __elt.edge( attachment.entityId ).hasMarker() ? __elt.edge( attachment.entityId ).marker() : M_emptyMarker;
 
                     if ( __elt.edgePermutation( attachment.entityId ).value() == edge_permutation_type::IDENTITY )
@@ -350,7 +366,7 @@ class DofFromElement
                         return false;
 
                     entry.localEntity = attachment.entityId;
-                    entry.globalDof = __elt.face( attachment.entityId ).id() * nDofPerFace;
+                    entry.globalDof = this->canonicalFaceId( __elt.face( attachment.entityId ).id() ) * nDofPerFace;
                     entry.marker = __elt.face( attachment.entityId ).hasMarker() ? __elt.face( attachment.entityId ).marker() : M_emptyMarker;
 
                     if ( nDofPerFace == 1 || permutation == face_permutation_type( face_permutation_type::IDENTITY ) )
@@ -441,7 +457,7 @@ class DofFromElement
             mesh_marker_type const& pointMarker = thepoint.hasMarker() ? thepoint.marker() : M_emptyMarker;
             for ( uint16_type l = 0; l < nDofPerVertex; ++l, ++lc )
             {
-                const size_type gDof = ( thepoint.id() ) * nDofPerVertex + l;
+                const size_type gDof = this->canonicalPointId( thepoint.id() ) * nDofPerVertex + l;
                 M_doftable->insertDof( ie, lc, i, std::make_tuple( 0, gDof ),
                                        processor, next_free_dof, 1, false, global_shift, pointMarker );
             }
@@ -501,7 +517,7 @@ class DofFromElement
 
                 for ( uint16_type l = 0; l < nDofPerEdge; ++l, ++lc )
                 {
-                    size_type gDof = __elt.edge( i ).id() * nDofPerEdge;
+                    size_type gDof = this->canonicalEdgeId( __elt.edge( i ).id() ) * nDofPerEdge;
                     int32_type sign = 1;
 
                     if ( __elt.edgePermutation( i ).value() == edge_permutation_type::IDENTITY )
@@ -557,7 +573,7 @@ class DofFromElement
                 mesh_marker_type const& edgeMarker = __elt.edge( i ).hasMarker() ? __elt.edge( i ).marker() : M_emptyMarker;
                 for ( uint16_type l = 0; l < nDofPerEdge; ++l, ++lc )
                 {
-                    size_type gDof = __elt.edge( i ).id() * nDofPerEdge;
+                    size_type gDof = this->canonicalEdgeId( __elt.edge( i ).id() ) * nDofPerEdge;
 
                     int32_type sign = 1;
 
@@ -664,7 +680,7 @@ class DofFromElement
                     // dof of the connected faces. There
                     // are a priori many permutations of
                     // the dof face indices
-                    size_type gDof = __elt.face( i ).id() * nDofPerFace;
+                    size_type gDof = this->canonicalFaceId( __elt.face( i ).id() ) * nDofPerFace;
                     int32_type sign = 1;
 
                     q = q + 1;

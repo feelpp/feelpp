@@ -537,6 +537,8 @@ private:
     FEELPP_NO_EXPORT void readFromFileVersion4( mesh_type* mesh, std::ifstream & __is, std::string __buf,
                                                 double version, bool binary, bool swap );
 
+    FEELPP_NO_EXPORT void applyPeriodicEntities( mesh_type* mesh, std::vector<PeriodicEntity> const& periodic_entities );
+
 
     FEELPP_NO_EXPORT void addVertices( mesh_type* mesh, Feel::detail::GMSHElement const& elt,
                                        std::map<int, Feel::detail::GMSHPoint > const& gmshpts );
@@ -590,6 +592,189 @@ ImporterGmsh<MeshType>::showMe() const
     DVLOG(2) << "[ImporterGmsh::showMe]    npoints_per_face = " << npoints_per_face << "\n";
     DVLOG(2) << "[ImporterGmsh::showMe]    npoints_per_edge = " << npoints_per_edge << "\n";
 }
+
+template<typename MeshType>
+void
+ImporterGmsh<MeshType>::applyPeriodicEntities( mesh_type* mesh, std::vector<PeriodicEntity> const& periodic_entities )
+{
+    std::set<int> periodicDims;
+    size_type mappedNodeCount = 0;
+    size_type appliedNodeCount = 0;
+    size_type skippedLocalNodeCount = 0;
+
+    for ( auto const& eit : periodic_entities )
+    {
+        periodicDims.insert( eit.dim );
+        mappedNodeCount += eit.correspondingVertices.size();
+    }
+
+    if ( !periodic_entities.empty() )
+    {
+        std::ostringstream dims;
+        bool first = true;
+        for ( int d : periodicDims )
+        {
+            if ( !first )
+                dims << ",";
+            dims << d;
+            first = false;
+        }
+        LOG(INFO) << "[ImporterGmsh] periodic links summary: links=" << periodic_entities.size()
+                  << " dims=[" << dims.str() << "]"
+                  << " mapped_nodes=" << mappedNodeCount;
+    }
+
+#if defined( FEELPP_HAS_GMSH_API )
+    if ( !periodic_entities.empty() )
+    {
+        // Build a catalog of entities present in the current Gmsh model.
+        // This avoids noisy Gmsh errors when periodic links refer to entities
+        // that are not instantiated in the current loaded view/partition.
+        std::set<std::pair<int,int>> availableEntities;
+        bool hasEntityCatalog = false;
+        try
+        {
+            std::vector<std::pair<int,int>> dimTags;
+            gmsh::model::getEntities( dimTags );
+            availableEntities.insert( dimTags.begin(), dimTags.end() );
+            hasEntityCatalog = true;
+        }
+        catch ( std::exception const& ex )
+        {
+            VLOG(2) << "[ImporterGmsh] periodic API entity catalog unavailable: " << ex.what();
+        }
+        catch ( ... )
+        {
+            VLOG(2) << "[ImporterGmsh] periodic API entity catalog unavailable: unknown exception";
+        }
+
+        size_type checkedLinks = 0;
+        size_type checkedNodes = 0;
+        for ( auto const& eit : periodic_entities )
+        {
+            if ( hasEntityCatalog &&
+                 availableEntities.find( std::make_pair( eit.dim, eit.slave ) ) == availableEntities.end() )
+            {
+                VLOG(2) << "[ImporterGmsh] periodic API cross-check skipped for missing entity"
+                        << " dim=" << eit.dim << " slave=" << eit.slave
+                        << " master=" << eit.master;
+                continue;
+            }
+
+            try
+            {
+                int apiMasterTag = -1;
+                std::vector<std::size_t> apiNodeTags;
+                std::vector<std::size_t> apiNodeTagsMaster;
+                std::vector<double> apiAffineTransform;
+                gmsh::model::mesh::getPeriodicNodes( eit.dim, eit.slave,
+                                                     apiMasterTag,
+                                                     apiNodeTags,
+                                                     apiNodeTagsMaster,
+                                                     apiAffineTransform,
+                                                     true );
+                if ( apiMasterTag < 0 || apiNodeTags.empty() )
+                    continue;
+
+                if ( apiMasterTag != eit.master )
+                {
+                    VLOG(1) << "[ImporterGmsh] periodic API cross-check mismatch: dim=" << eit.dim
+                            << " slave=" << eit.slave << " imported_master=" << eit.master
+                            << " api_master=" << apiMasterTag;
+                    continue;
+                }
+                if ( apiNodeTags.size() != apiNodeTagsMaster.size() )
+                {
+                    VLOG(1) << "[ImporterGmsh] periodic API cross-check skipped (invalid API node vectors)"
+                            << " dim=" << eit.dim << " slave=" << eit.slave
+                            << " node_count=" << apiNodeTags.size()
+                            << " node_master_count=" << apiNodeTagsMaster.size();
+                    continue;
+                }
+
+                size_type matchedPairs = 0;
+                size_type mismatchedPairs = 0;
+                for ( size_type k = 0; k < apiNodeTags.size(); ++k )
+                {
+                    auto const slaveNode = static_cast<int>( apiNodeTags[k] );
+                    auto const masterNode = static_cast<int>( apiNodeTagsMaster[k] );
+                    auto itImported = eit.correspondingVertices.find( slaveNode );
+                    if ( itImported != eit.correspondingVertices.end() &&
+                         itImported->second == masterNode )
+                    {
+                        ++matchedPairs;
+                    }
+                    else
+                    {
+                        ++mismatchedPairs;
+                    }
+                }
+                if ( mismatchedPairs > 0 || matchedPairs != eit.correspondingVertices.size() )
+                {
+                    VLOG(1) << "[ImporterGmsh] periodic API cross-check mismatch summary: dim="
+                            << eit.dim << " slave=" << eit.slave << " master=" << eit.master
+                            << " imported_pairs=" << eit.correspondingVertices.size()
+                            << " api_pairs=" << apiNodeTags.size()
+                            << " matched_pairs=" << matchedPairs
+                            << " mismatched_pairs=" << mismatchedPairs;
+                }
+
+                ++checkedLinks;
+                checkedNodes += matchedPairs;
+            }
+            catch ( std::exception const& ex )
+            {
+                VLOG(2) << "[ImporterGmsh] periodic API cross-check skipped for dim="
+                        << eit.dim << " slave=" << eit.slave << " master=" << eit.master
+                        << " reason: " << ex.what();
+            }
+            catch ( ... )
+            {
+                VLOG(2) << "[ImporterGmsh] periodic API cross-check skipped for dim="
+                        << eit.dim << " slave=" << eit.slave << " master=" << eit.master
+                        << " reason: unknown exception";
+            }
+        }
+        VLOG(1) << "[ImporterGmsh] periodic API cross-check: checked_links=" << checkedLinks
+                << " checked_nodes=" << checkedNodes;
+    }
+#endif
+
+    bool const isParallelImport = mesh->worldComm().localSize() > 1;
+    for ( auto const& eit : periodic_entities )
+    {
+        for ( auto const& vit : eit.correspondingVertices )
+        {
+            auto pit1 = mesh->pointIterator( vit.first );
+            auto pit2 = mesh->pointIterator( vit.second );
+            if ( pit1 == mesh->endPoint() || pit2 == mesh->endPoint() )
+            {
+                if ( !isParallelImport )
+                {
+                    CHECK( pit1 != mesh->endPoint() &&
+                           pit2 != mesh->endPoint() )
+                        << "Periodic points data is malformed in periodic entity slave " << eit.slave
+                        << " master : " << eit.master << " dimension: " << eit.dim
+                        << " slave_point=" << vit.first << " master_point=" << vit.second;
+                }
+                ++skippedLocalNodeCount;
+                continue;
+            }
+            auto& p1 = pit1->second;
+            auto& p2 = pit2->second;
+            p1.setMasterId( p2.id() );
+            p1.setMasterVertex( boost::addressof( p2 ) );
+            ++appliedNodeCount;
+        }
+    }
+    if ( !periodic_entities.empty() )
+    {
+        VLOG(1) << "[ImporterGmsh] periodic node mapping applied locally: applied_nodes="
+                << appliedNodeCount << " skipped_missing_local_nodes=" << skippedLocalNodeCount;
+    }
+    mesh->setPeriodicEntities( periodic_entities );
+}
+
 template<typename MeshType>
 boost::tuple<bool,boost::tuple<bool,int> >
 ImporterGmsh<MeshType>::isElementOnProcessor( std::vector<int> const& tag ) const
@@ -687,6 +872,7 @@ ImporterGmsh<MeshType>::readFromMemory( mesh_type* mesh )
     rank_type worldSize = this->worldComm().localSize();
 
     std::map<int,int> __idGmshToFeel; // id Gmsh to id Feel
+    std::vector<PeriodicEntity> periodic_entities;
 
     gmsh::vectorpair dimTagsEntities;
     gmsh::model::getEntities( dimTagsEntities );
@@ -846,11 +1032,52 @@ ImporterGmsh<MeshType>::readFromMemory( mesh_type* mesh )
             }
         }
     }
-    if ( M_deleteGModelAfterUse )
-        gmsh::model::remove();
+    for ( auto const& [ entityDim, entityTag ] : dimTagsEntities )
+    {
+        try
+        {
+            int entityTagMaster = -1;
+            std::vector<std::size_t> nodeTags;
+            std::vector<std::size_t> nodeTagsMaster;
+            std::vector<double> affineTransform;
+            gmsh::model::mesh::getPeriodicNodes( entityDim, entityTag,
+                                                 entityTagMaster,
+                                                 nodeTags,
+                                                 nodeTagsMaster,
+                                                 affineTransform,
+                                                 true );
+
+            if ( entityTagMaster == entityTag || nodeTags.empty() )
+                continue;
+
+            CHECK( nodeTags.size() == nodeTagsMaster.size() )
+                << "Inconsistent gmsh periodic node vectors in readFromMemory for dim="
+                << entityDim << " tag=" << entityTag << " master=" << entityTagMaster;
+
+            PeriodicEntity e( entityDim, entityTag, entityTagMaster );
+            e.affineTransform = std::move( affineTransform );
+            for ( size_type k = 0; k < nodeTags.size(); ++k )
+                e.correspondingVertices[static_cast<int>( nodeTags[k] )] =
+                    static_cast<int>( nodeTagsMaster[k] );
+            periodic_entities.push_back( std::move( e ) );
+        }
+        catch ( std::exception const& ex )
+        {
+            VLOG(2) << "[ImporterGmsh] readFromMemory periodic extraction skipped for dim="
+                    << entityDim << " tag=" << entityTag << " reason: " << ex.what();
+        }
+        catch ( ... )
+        {
+            VLOG(2) << "[ImporterGmsh] readFromMemory periodic extraction skipped for dim="
+                    << entityDim << " tag=" << entityTag << " reason: unknown exception";
+        }
+    }
 
     // update ordered points in mesh data structure
     mesh->updateOrderedPoints();
+    this->applyPeriodicEntities( mesh, periodic_entities );
+    if ( M_deleteGModelAfterUse )
+        gmsh::model::remove();
 #else
 
     GModel* gmodel = GModel::findByName( M_gmodelName );
@@ -1401,11 +1628,16 @@ ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & _
         LOG(INFO) << "Read " << it.second << " " << name << " elements\n";
     }
 #endif
-    if ( binary )
-        __is >> __buf;
-
     // make sure that we have read everything
-    __is >> __buf;
+    if ( binary )
+    {
+        __is >> __buf;
+        if ( std::string( __buf ) != "$ENDELM" &&
+             std::string( __buf ) != "$EndElements" )
+            __is >> __buf;
+    }
+    else
+        __is >> __buf;
     CHECK( std::string( __buf ) == "$ENDELM" ||
            std::string( __buf ) == "$EndElements" )
         << "invalid end elements string " << __buf
@@ -1424,8 +1656,16 @@ ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & _
             int dim,slave,master;
             __is >> dim >> slave >> master;
             PeriodicEntity e( dim, slave, master );
-            int numv;
-            __is >> numv;
+            std::string token;
+            __is >> token;
+            if ( token == "Affine" )
+            {
+                e.affineTransform.resize( 16 );
+                for ( int k = 0; k < 16; ++k )
+                    __is >> e.affineTransform[k];
+                __is >> token;
+            }
+            int numv = std::stoi( token );
             for(int j = 0; j < numv; j++)
             {
                 int v1,v2;
@@ -1553,25 +1793,7 @@ ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & _
     } // loop over geometric entities in gmsh file (can be elements or faces)
     mesh->updateOrderedPoints();
     toc( "ImporterGmsh::readFromFile store elements in Mesh", Environment::logVerbosityLevel() > 0 );
-    // treat periodic entities if any
-    for ( auto const& eit : periodic_entities )
-    {
-        for ( auto const& vit : eit.correspondingVertices )
-        {
-            auto pit1 = mesh->pointIterator( vit.first );
-            auto pit2 = mesh->pointIterator( vit.second );
-            CHECK( pit1 != mesh->endPoint() &&
-                   pit2 != mesh->endPoint() )
-                << "Periodic points data is screwd in periodic entity slave " << eit.slave
-                << " master : " << eit.master << " dimension: " << eit.dim;
-            auto & p1 = pit1->second;
-            auto & p2 = pit2->second;
-            p1.setMasterId( p2.id() );
-            p1.setMasterVertex( boost::addressof( p2 ) );
-
-        }
-    }
-    mesh->setPeriodicEntities( periodic_entities );
+    this->applyPeriodicEntities( mesh, periodic_entities );
 
     if (VLOG_IS_ON(4))
     {
@@ -2392,6 +2614,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                     if ( numAffine > 0 )
                         __is.read( (char*)&valuesAffineTransfo[0], numAffine*sizeof(double) );
                 }
+                e.affineTransform = std::move( valuesAffineTransfo );
             }
             gmsh_size_type numCorrespondingNodes;
             if ( !binary )
@@ -2411,8 +2634,8 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
             {
                 _vectmpelttag.resize( 2*numCorrespondingNodes );
                 __is.read( (char*)&_vectmpelttag[0], 2*numCorrespondingNodes*sizeof(gmsh_elttag_type) );
-                for (int k=0;k<numCorrespondingNodes;++k)
-                    e.correspondingVertices[_vectmpelttag[k]] = _vectmpelttag[k+1];
+                for ( gmsh_size_type k = 0; k < numCorrespondingNodes; ++k )
+                    e.correspondingVertices[_vectmpelttag[2*k]] = _vectmpelttag[2*k+1];
             }
             CHECK( e.correspondingVertices.size() == numCorrespondingNodes ) << "Invalid number of vertices in periodic entity"
                                                                              << " dim: " << e.dim
@@ -2599,6 +2822,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
 
     // update ordered points in mesh data structure
     mesh->updateOrderedPoints();
+    this->applyPeriodicEntities( mesh, periodic_entities );
 }
 
 template<typename MeshType>

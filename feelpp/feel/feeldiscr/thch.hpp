@@ -40,7 +40,6 @@ struct THch
     typedef FunctionSpace<MeshType,
                           bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>,
                           double,
-                          Periodicity <NoPeriodicity,NoPeriodicity>,
                           mortars<NoMortar,NoMortar> > type;
     typedef std::shared_ptr<type> ptrtype;
 };
@@ -57,7 +56,6 @@ template<int Order,typename MeshType>
 using THch_type = FunctionSpace<MeshType,
                                 bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>,
                                 double,
-                                Periodicity <NoPeriodicity,NoPeriodicity>,
                                 mortars<NoMortar,NoMortar> >;
 /**
  * Define the shared_ptr type for Taylor-Hood space
@@ -69,7 +67,6 @@ template<int Order,typename MeshType>
 using THch_ptrtype = std::shared_ptr<FunctionSpace<MeshType,
                                                      bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>,
                                                      double,
-                                                     Periodicity <NoPeriodicity,NoPeriodicity>,
                                                      mortars<NoMortar,NoMortar> >>;
 template<int Order,typename MeshType>
 using THch_velocity_space_t = typename THch_type<Order,MeshType>::template sub_functionspace_type<0>;

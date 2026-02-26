@@ -196,13 +196,11 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
     period[1]=0;
     LOG(INFO) << "   - period built\n";
 
-    M_Th = temp_functionspace_type::New( _mesh=M_mesh,
-                                         _periodicity=periodicity(Periodic<>( 1, 2 , period ) ) );
+    M_Th = temp_functionspace_type::New( _mesh=M_mesh );
     this->setFunctionSpaces( M_Th );
 
     // M_RbTh = temp_rbfunctionspace_type::New(_model=this->shared_from_this(),
-    //                                         _mesh=M_mesh,
-    //                                         _periodicity=periodicity(Periodic<>( 1, 2 , period ) ) );
+    //                                         _mesh=M_mesh );
 
 
     LOG(INFO) << "   - Th built\n";
@@ -1390,4 +1388,3 @@ OpusModelRB<OrderU,OrderP,OrderT>::exportResults( double time, temp_element_type
 } // Feel
 
 #endif
-

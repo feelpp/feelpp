@@ -13,6 +13,7 @@ def run(m, geo):
     tic()
     Xh = fppc.functionSpace(mesh=m2d)
     toc("functionSpace")
+    assert Xh.order() == 1
 
     if fppc.Environment.isMasterRank():
         print("[test_forms] Xh basisname: ", Xh.basisName())
@@ -62,5 +63,4 @@ def test_form(dim,geo,init_feelpp):
     tic()
     run( fppc.mesh(dim=dim,realdim=dim), geo() )
     toc(f"run {dim}D")
-
 

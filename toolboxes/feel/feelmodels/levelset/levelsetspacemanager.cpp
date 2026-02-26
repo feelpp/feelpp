@@ -73,8 +73,7 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceDefault()
     {
         M_spaceVectorial = space_vectorial_type::New( 
                 _mesh=this->mesh(), 
-                _worldscomm=this->worldsComm(),
-                _periodicity=this->periodicity()
+                _worldscomm=this->worldsComm()
                 );
     }
     if( !M_spaceScalar )
@@ -85,8 +84,7 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceDefault()
             M_spaceScalar = space_scalar_type::New( 
                     _mesh=this->mesh(), 
                     _worldscomm=this->worldsComm(),
-                    _extended_doftable=extendedDT,
-                    _periodicity=this->periodicity()
+                    _extended_doftable=extendedDT
                     );
         }
         else
@@ -99,7 +97,6 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceDefault()
         M_spaceMarkers = space_markers_type::New( 
                 _mesh=this->mesh(), 
                 _worldscomm=this->worldsComm(),
-                _periodicity=this->periodicity(),
                 _extended_doftable=std::vector<bool>(1, true)
                 );
     }
@@ -115,16 +112,14 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceIsoPN()
     {
         M_spaceScalarPN = space_scalar_PN_type::New( 
                 _mesh=this->mesh(),
-                _worldscomm=this->worldsComm(),
-                _periodicity=this->periodicity()
+                _worldscomm=this->worldsComm()
                 );
     }
     if( !M_spaceVectorialPN )
     {
         M_spaceVectorialPN = space_vectorial_PN_type::New( 
                 _mesh=this->mesh(),
-                _worldscomm=this->worldsComm(),
-                _periodicity=this->periodicity()
+                _worldscomm=this->worldsComm()
                 );
     }
     if( !M_meshIsoPN )
@@ -139,8 +134,7 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceIsoPN()
     {
         M_spaceVectorialIsoPN = space_vectorial_type::New( 
                 _mesh=this->meshIsoPN(),
-                _worldscomm=this->worldsComm(),
-                _periodicity=this->periodicity()
+                _worldscomm=this->worldsComm()
                 );
     }
     if( !M_spaceScalarIsoPN )
@@ -151,8 +145,7 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceIsoPN()
             M_spaceScalarIsoPN = space_scalar_type::New(
                     _mesh=this->meshIsoPN(),
                     _worldscomm=this->worldsComm(),
-                    _extended_doftable=extendedDT,
-                    _periodicity=this->periodicity()
+                    _extended_doftable=extendedDT
                     );
         }
         else
@@ -165,7 +158,6 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceIsoPN()
         M_spaceMarkersIsoPN = space_markers_type::New( 
                 _mesh=this->meshIsoPN(),
                 _worldscomm=this->worldsComm(),
-                _periodicity=this->periodicity(),
                 _extended_doftable=std::vector<bool>(1, true)
                 );
     }
@@ -266,8 +258,7 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceTensor2Symm()
     {
         M_spaceTensor2Symm = space_tensor2symm_type::New( 
                 _mesh=this->mesh(), 
-                _worldscomm=this->worldsComm(),
-                _periodicity=this->periodicity()
+                _worldscomm=this->worldsComm()
                 );
     }
 
@@ -279,4 +270,3 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceTensor2Symm()
 
 } // namespace FeelModels
 } // namespace Feel
-

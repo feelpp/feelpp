@@ -30,6 +30,7 @@
 #define FEELPP_MOCH_HPP 1
 
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelpoly/order.hpp>
 
 namespace Feel {
 
@@ -40,7 +41,6 @@ template<typename MeshType,
 using Moch_type = FunctionSpace<MeshType,
                                 bases<Lagrange<Order,Scalar,Continuous,Pts>>,
                                 T,
-                                Periodicity <NoPeriodicity>,
                                 mortars<Mortar>>;
 
 template<typename MeshType,
@@ -62,10 +62,10 @@ Moch( std::shared_ptr<MeshType> const& mesh,
       RuntimeOrder order,
       DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
 {
-    return Moch_type<MeshType,Order,Pts,T>::New( _mesh=mesh,
-                                                 _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
-                                                 _runtime_order=order,
-                                                 _extended_doftable=dte );
+    return Moch_type<MeshType,Order,Pts,T>::New( _mesh = mesh,
+                                                  _worldscomm = makeWorldsComm( 1,mesh->worldCommPtr() ),
+                                                  _runtime_order = order,
+                                                  _extended_doftable = dte );
 }
 
 template<int Order,
@@ -76,10 +76,9 @@ inline
 Moch_ptrtype<MeshType,Order,Pts,T>
 Moch( std::shared_ptr<MeshType> const& mesh, DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
 {
-    return Moch_type<MeshType,Order,Pts,T>::New( _mesh=mesh,
-                                                 _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
-                                                 _runtime_order=RuntimeOrder{ static_cast<uint16_type>( Order ) },
-                                                 _extended_doftable=dte );
+    return Moch<Order,Pts,MeshType,T>( mesh,
+                                       RuntimeOrder{ static_cast<uint16_type>( Order ) },
+                                       dte );
 }
 
 }
