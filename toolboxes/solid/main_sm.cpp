@@ -6,11 +6,11 @@
 namespace Feel
 {
 
-template <int nDim,uint16_type OrderDisp>
+template <typename ConvexType, uint16_type OrderDisp>
 int
 runApplicationSolid()
 {
-    typedef FeelModels::SolidMechanics< Simplex<nDim,1>,
+    typedef FeelModels::SolidMechanics< ConvexType,
                                         Lagrange<OrderDisp, Vectorial,Continuous,PointSetFekete> > model_type;
     auto SM = model_type::New("solid");
 
@@ -142,6 +142,7 @@ main( int argc, char** argv )
     solidmecoptions.add_options()
         ("case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension")
         ("case.discretization", Feel::po::value<std::string>()->default_value( "P1" ), "discretization : P1,P2")
+        ("case.convex", Feel::po::value<std::string>()->default_value( "Simplex" ), "convex : Simplex, Hypercube")
         ("save-solution", Feel::po::value<bool>()->default_value(true), "save-solution")
 #ifdef FEELPP_HAS_HDF5
         ("save-solution.file-format", Feel::po::value<std::string>()->default_value("hdf5"), "save-solution.file-format")
@@ -167,6 +168,7 @@ main( int argc, char** argv )
 
     int dimension = ioption(_name="case.dimension");
     std::string discretization = soption(_name="case.discretization");
+    std::string convex = soption(_name="case.convex");
 
     auto dimt = hana::make_tuple(hana::int_c<2>,hana::int_c<3>);
 #if FEELPP_INSTANTIATION_ORDER_MAX >= 2
@@ -176,13 +178,18 @@ main( int argc, char** argv )
     auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ) );
 #endif
     int status = 0;
-    hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)), [&discretization,&dimension,&status]( auto const& d )
+    hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)), [&discretization,&dimension,&convex,&status]( auto const& d )
                     {
                         constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
                         std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
                         constexpr int _dorder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ))>::value;
                         if ( dimension == _dim && discretization == _discretization )
-                            status = runApplicationSolid<_dim,_dorder>();
+                        {
+                          if ( convex == "Simplex" )
+                            status = runApplicationSolid<Simplex<_dim,1>,_dorder>();
+                          else if ( convex == "Hypercube" )
+                            status = runApplicationSolid<Hypercube<_dim,1>,_dorder>();
+                        }
                     } );
 
     return status;
