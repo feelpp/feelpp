@@ -283,7 +283,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createExporters()
                                    _path=this->exporterPath() );
         }
     }
-    else
+    else if constexpr ( is_simplex_v<convex_type> )
     {
 #if 1 //defined(FEELPP_HAS_VTK)
         std::shared_ptr<mesh_visu_ho_type> meshVisuHO;
