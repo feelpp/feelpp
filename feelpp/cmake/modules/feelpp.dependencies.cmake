@@ -633,18 +633,25 @@ try:
 except Exception:
     pass
 cands.append(sysconfig.get_path('platlib', vars={'base': base, 'platbase': base}))
-# Prefer Debian-style lib/python3/dist-packages under current base
-preferred = [base + '/lib/python3/dist-packages']
+# Prefer Debian-style paths under current base, then generic ABI paths.
+pyver = str(sys.version_info.major) + '.' + str(sys.version_info.minor)
+preferred = [
+    base + '/lib/python3/dist-packages',
+    base + '/lib/python' + pyver + '/dist-packages',
+    base + '/lib/python' + pyver + '/site-packages',
+    base + '/local/lib/python3/dist-packages',
+    base + '/local/lib/python' + pyver + '/dist-packages',
+    base + '/local/lib/python' + pyver + '/site-packages',
+]
 choice = None
 for p in cands:
     if not p: continue
     if any(p.startswith(pr) for pr in preferred):
         choice = p; break
-# Next, prefer any path under the current base but not under base+'/local/'
-# (avoids Debian posix_local scheme doubling /usr/local/local/...)
+# Next, prefer any path rooted in the current install prefix.
 if choice is None:
     for p in cands:
-        if p and p.startswith(base + os.sep) and not p.startswith(base + os.sep + 'local' + os.sep):
+        if p and p.startswith(base + os.sep):
             choice = p; break
 # Fallback to first candidate
 if choice is None and cands:

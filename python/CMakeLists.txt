@@ -128,7 +128,7 @@ if (DEFINED PYTHON_SITE_PACKAGES)
   else()
     # Recompute from sysconfig for the current prefix
     execute_process(
-      COMMAND ${Python3_EXECUTABLE} -c "\nimport sys, sysconfig, site, os\nbase='${CMAKE_INSTALL_PREFIX}'\ncands=[]\ntry:\n    cands+=site.getsitepackages()\nexcept Exception:\n    pass\ncands.append(sysconfig.get_path('platlib', vars={'base': base, 'platbase': base}))\n# Prefer Debian-style '/usr/lib/python3/dist-packages' under current base\npreferred=[base + '/lib/python3/dist-packages'] \nchoice=None\nfor p in cands:\n    if not p: continue\n    if any(p.startswith(pr) for pr in preferred):\n        choice=p; break\n# Next, prefer any path under the current base and not under base+'/local'\nif choice is None:\n    for p in cands:\n        if p.startswith(base+os.sep) and not p.startswith(base+os.sep+'local'+os.sep):\n            choice=p; break\n# Fallback to first candidate\nif choice is None:\n    choice=cands[0]\nprint(choice)\n"
+      COMMAND ${Python3_EXECUTABLE} -c "\nimport sys, sysconfig, site, os\nbase='${CMAKE_INSTALL_PREFIX}'\ncands=[]\ntry:\n    cands+=site.getsitepackages()\nexcept Exception:\n    pass\ncands.append(sysconfig.get_path('platlib', vars={'base': base, 'platbase': base}))\n# Prefer Debian-style '/usr/lib/python3/dist-packages' under current base\npreferred=[base + '/lib/python3/dist-packages'] \nchoice=None\nfor p in cands:\n    if not p: continue\n    if any(p.startswith(pr) for pr in preferred):\n        choice=p; break\n# Next, prefer any path under the current base\nif choice is None:\n    for p in cands:\n        if p.startswith(base+os.sep):\n            choice=p; break\n# Fallback to first candidate\nif choice is None:\n    choice=cands[0]\nprint(choice)\n"
       OUTPUT_VARIABLE _ABS_PYTHON_MODULE_PATH
       OUTPUT_STRIP_TRAILING_WHITESPACE)
     if (NOT "${_ABS_PYTHON_MODULE_PATH}" STREQUAL "")
@@ -141,6 +141,10 @@ elseif (DEFINED FEELPP_PYTHON_MODULE_PATH)
   set(_RECOMPUTE_PATH OFF)
   # Case 1: relative path starting with "local/"
   if (FEELPP_PYTHON_MODULE_PATH MATCHES "^local/")
+    set(_RECOMPUTE_PATH ON)
+  endif()
+  # Case 1b: relative path escaping the current prefix (e.g. ../../..../usr/local/...)
+  if (FEELPP_PYTHON_MODULE_PATH MATCHES "^\\.\\./")
     set(_RECOMPUTE_PATH ON)
   endif()
   # Case 2: absolute path under a different prefix than CMAKE_INSTALL_PREFIX
@@ -161,7 +165,7 @@ elseif (DEFINED FEELPP_PYTHON_MODULE_PATH)
   endif()
   if (_RECOMPUTE_PATH)
     execute_process(
-      COMMAND ${Python3_EXECUTABLE} -c "\nimport sys, sysconfig, site, os\nbase='${CMAKE_INSTALL_PREFIX}'\ncands=[]\ntry:\n    cands+=site.getsitepackages()\nexcept Exception:\n    pass\ncands.append(sysconfig.get_path('platlib', vars={'base': base, 'platbase': base}))\npreferred=[base + '/lib/python3/dist-packages'] \nchoice=None\nfor p in cands:\n    if not p: continue\n    if any(p.startswith(pr) for pr in preferred):\n        choice=p; break\nif choice is None:\n    for p in cands:\n        if p.startswith(base+os.sep) and not p.startswith(base+os.sep+'local'+os.sep):\n            choice=p; break\nif choice is None:\n    choice=cands[0]\nprint(choice)\n"
+      COMMAND ${Python3_EXECUTABLE} -c "\nimport sys, sysconfig, site, os\nbase='${CMAKE_INSTALL_PREFIX}'\ncands=[]\ntry:\n    cands+=site.getsitepackages()\nexcept Exception:\n    pass\ncands.append(sysconfig.get_path('platlib', vars={'base': base, 'platbase': base}))\npreferred=[base + '/lib/python3/dist-packages'] \nchoice=None\nfor p in cands:\n    if not p: continue\n    if any(p.startswith(pr) for pr in preferred):\n        choice=p; break\nif choice is None:\n    for p in cands:\n        if p.startswith(base+os.sep):\n            choice=p; break\nif choice is None:\n    choice=cands[0]\nprint(choice)\n"
       OUTPUT_VARIABLE _ABS_PYTHON_MODULE_PATH
       OUTPUT_STRIP_TRAILING_WHITESPACE)
     if (NOT "${_ABS_PYTHON_MODULE_PATH}" STREQUAL "")
@@ -173,7 +177,7 @@ elseif (DEFINED FEELPP_PYTHON_MODULE_PATH)
 else()
   # Neither override nor pre-baked value given: compute from sysconfig for current prefix
   execute_process(
-    COMMAND ${Python3_EXECUTABLE} -c "\nimport sys, sysconfig, site, os\nbase='${CMAKE_INSTALL_PREFIX}'\ncands=[]\ntry:\n    cands+=site.getsitepackages()\nexcept Exception:\n    pass\ncands.append(sysconfig.get_path('platlib', vars={'base': base, 'platbase': base}))\npreferred=[base + '/lib/python3/dist-packages'] \nchoice=None\nfor p in cands:\n    if not p: continue\n    if any(p.startswith(pr) for pr in preferred):\n        choice=p; break\nif choice is None:\n    for p in cands:\n        if p.startswith(base+os.sep) and not p.startswith(base+os.sep+'local'+os.sep):\n            choice=p; break\nif choice is None:\n    choice=cands[0]\nprint(choice)\n"
+    COMMAND ${Python3_EXECUTABLE} -c "\nimport sys, sysconfig, site, os\nbase='${CMAKE_INSTALL_PREFIX}'\ncands=[]\ntry:\n    cands+=site.getsitepackages()\nexcept Exception:\n    pass\ncands.append(sysconfig.get_path('platlib', vars={'base': base, 'platbase': base}))\npreferred=[base + '/lib/python3/dist-packages'] \nchoice=None\nfor p in cands:\n    if not p: continue\n    if any(p.startswith(pr) for pr in preferred):\n        choice=p; break\nif choice is None:\n    for p in cands:\n        if p.startswith(base+os.sep):\n            choice=p; break\nif choice is None:\n    choice=cands[0]\nprint(choice)\n"
     OUTPUT_VARIABLE _ABS_PYTHON_MODULE_PATH
     OUTPUT_STRIP_TRAILING_WHITESPACE)
   if (NOT "${_ABS_PYTHON_MODULE_PATH}" STREQUAL "")

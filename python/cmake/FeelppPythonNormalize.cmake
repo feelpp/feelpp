@@ -28,6 +28,8 @@ function(feelpp_python_normalize_module_path)
   if (DEFINED FEELPP_PYTHON_MODULE_PATH)
     if (FEELPP_PYTHON_MODULE_PATH MATCHES "^local/")
       set(_RECOMPUTE ON)
+    elseif (FEELPP_PYTHON_MODULE_PATH MATCHES "^\\.\\./")
+      set(_RECOMPUTE ON)
     elseif (IS_ABSOLUTE "${FEELPP_PYTHON_MODULE_PATH}")
       string(FIND "${FEELPP_PYTHON_MODULE_PATH}" "${CMAKE_INSTALL_PREFIX}/" _prefix_pos)
       if (_prefix_pos EQUAL -1)
@@ -51,7 +53,7 @@ function(feelpp_python_normalize_module_path)
     endif()
     if (Python3_EXECUTABLE)
       execute_process(
-        COMMAND ${Python3_EXECUTABLE} -c "\nimport sys, sysconfig, site, os\nbase='${CMAKE_INSTALL_PREFIX}'\ncands=[]\ntry:\n    cands+=site.getsitepackages()\nexcept Exception:\n    pass\ncands.append(sysconfig.get_path('platlib', vars={'base': base, 'platbase': base}))\npreferred=[base + '/lib/python3/dist-packages']\nchoice=None\nfor p in cands:\n    if not p: continue\n    if any(p.startswith(pr) for pr in preferred):\n        choice=p; break\nif choice is None:\n    for p in cands:\n        if p.startswith(base+os.sep) and not p.startswith(base+os.sep+'local'+os.sep):\n            choice=p; break\nif choice is None:\n    choice=cands[0]\nprint(choice)\n"
+        COMMAND ${Python3_EXECUTABLE} -c "\nimport sys, sysconfig, site, os\nbase='${CMAKE_INSTALL_PREFIX}'\ncands=[]\ntry:\n    cands+=site.getsitepackages()\nexcept Exception:\n    pass\ncands.append(sysconfig.get_path('platlib', vars={'base': base, 'platbase': base}))\npreferred=[base + '/lib/python3/dist-packages']\nchoice=None\nfor p in cands:\n    if not p: continue\n    if any(p.startswith(pr) for pr in preferred):\n        choice=p; break\nif choice is None:\n    for p in cands:\n        if p.startswith(base+os.sep):\n            choice=p; break\nif choice is None:\n    choice=cands[0]\nprint(choice)\n"
         OUTPUT_VARIABLE _ABS_PYTHON_MODULE_PATH
         OUTPUT_STRIP_TRAILING_WHITESPACE)
       if (NOT "${_ABS_PYTHON_MODULE_PATH}" STREQUAL "")
