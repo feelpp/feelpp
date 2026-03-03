@@ -624,19 +624,43 @@ if(FEELPP_ENABLE_PYTHON)
     set (FEELPP_PYTHON_MODULE_PATH ${PYTHON_SITE_PACKAGES})
   else ()
     execute_process(
-      COMMAND ${Python3_EXECUTABLE} -c
-        "
-import sys, sysconfig
+      COMMAND ${Python3_EXECUTABLE} -c "
+import sys, sysconfig, site, os
 base = '${CMAKE_INSTALL_PREFIX}'
+cands = []
 try:
-    # Python ≥3.12 (preferred)
-    print(sysconfig.get_path('platlib', vars={'base': base, 'platbase': base}))
+    cands += site.getsitepackages()
 except Exception:
-  try:
-    from distutils import sysconfig as dsys
-    print(dsys.get_python_lib(plat_specific=True, prefix=base))
-  except Exception as e:
-    sys.exit('Could not compute platlib path: %s' % e)"
+    pass
+cands.append(sysconfig.get_path('platlib', vars={'base': base, 'platbase': base}))
+# Prefer Debian-style paths under current base, then generic ABI paths.
+pyver = str(sys.version_info.major) + '.' + str(sys.version_info.minor)
+preferred = [
+    base + '/lib/python3/dist-packages',
+    base + '/lib/python' + pyver + '/dist-packages',
+    base + '/lib/python' + pyver + '/site-packages',
+    base + '/local/lib/python3/dist-packages',
+    base + '/local/lib/python' + pyver + '/dist-packages',
+    base + '/local/lib/python' + pyver + '/site-packages',
+]
+choice = None
+for p in cands:
+    if not p: continue
+    if any(p.startswith(pr) for pr in preferred):
+        choice = p; break
+# Next, prefer any path rooted in the current install prefix.
+if choice is None:
+    for p in cands:
+        if p and p.startswith(base + os.sep):
+            choice = p; break
+# Fallback to first candidate
+if choice is None and cands:
+    choice = cands[0]
+if choice:
+    print(choice)
+else:
+    sys.exit('Could not compute Python module path')
+"
       OUTPUT_VARIABLE _ABS_PYTHON_MODULE_PATH
       RESULT_VARIABLE _PYTHON_pythonlib_result
       OUTPUT_STRIP_TRAILING_WHITESPACE

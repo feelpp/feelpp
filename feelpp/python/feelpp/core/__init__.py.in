@@ -1,10 +1,12 @@
 import sys
 import os
 import json, re
-petsc_dir = '@FEELPP_PETSC_DIR@' or '/usr/lib/petsc'
-petsc_dir = os.path.join(os.getenv('PETSC_DIR')
-                         or petsc_dir, 'lib/python3/dist-packages')
-petsc_dir in sys.path or sys.path.append(petsc_dir)
+
+# Locate PETSc Python bindings (works for both system and wheel installs)
+_petsc_dir = os.getenv('PETSC_DIR', '@FEELPP_PETSC_DIR@' or '/usr/lib/petsc')
+_petsc_pydir = os.path.join(_petsc_dir, 'lib/python3/dist-packages')
+if os.path.isdir(_petsc_pydir) and _petsc_pydir not in sys.path:
+    sys.path.append(_petsc_pydir)
 
 import time
 from ._feelpp import  *
