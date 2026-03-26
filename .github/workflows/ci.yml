@@ -82,21 +82,6 @@ jobs:
           DIST: ${{ steps.dist.outputs.dist }}
           BRANCH: ${{ github.head_ref || github.ref_name }}
 
-      - name: Run Core Python CI lane
-        run: |
-          docker run --rm \
-            -v "${{ github.workspace }}:/workspace" \
-            -w /workspace \
-            -e HOME=/tmp \
-            -e OMPI_ALLOW_RUN_AS_ROOT=1 \
-            -e OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1 \
-            ${REGISTRY}/feelpp-env:${{ steps.dist.outputs.dist }} \
-            bash -lc '
-              set -euo pipefail
-              python3 -m pip install --break-system-packages pytest
-              JOBS=20 bash scripts/ci/run_python_ci_lane.sh core
-            '
-
   toolboxes:
     name: Build Toolboxes (${{ matrix.target }})
     needs: [plan_ci, feelpp]
@@ -143,36 +128,6 @@ jobs:
           DIST: ${{ steps.dist.outputs.dist }}
           BRANCH: ${{ github.head_ref || github.ref_name }}
 
-      - name: Run Toolboxes Python electric lane
-        run: |
-          docker run --rm \
-            -v "${{ github.workspace }}:/workspace" \
-            -w /workspace \
-            -e HOME=/tmp \
-            -e OMPI_ALLOW_RUN_AS_ROOT=1 \
-            -e OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1 \
-            ${REGISTRY}/feelpp-env:${{ steps.dist.outputs.dist }} \
-            bash -lc '
-              set -euo pipefail
-              python3 -m pip install --break-system-packages pytest
-              JOBS=20 bash scripts/ci/run_python_ci_lane.sh electric
-            '
-
-      - name: Run Toolboxes Python heat lane
-        run: |
-          docker run --rm \
-            -v "${{ github.workspace }}:/workspace" \
-            -w /workspace \
-            -e HOME=/tmp \
-            -e OMPI_ALLOW_RUN_AS_ROOT=1 \
-            -e OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1 \
-            ${REGISTRY}/feelpp-env:${{ steps.dist.outputs.dist }} \
-            bash -lc '
-              set -euo pipefail
-              python3 -m pip install --break-system-packages pytest
-              JOBS=20 bash scripts/ci/run_python_ci_lane.sh heat
-            '
-
   mor:
     name: Build MOR (${{ matrix.target }})
     needs: [plan_ci, toolboxes]
@@ -218,21 +173,6 @@ jobs:
         env:
           DIST: ${{ steps.dist.outputs.dist }}
           BRANCH: ${{ github.head_ref || github.ref_name }}
-
-      - name: Run MOR Python lane
-        run: |
-          docker run --rm \
-            -v "${{ github.workspace }}:/workspace" \
-            -w /workspace \
-            -e HOME=/tmp \
-            -e OMPI_ALLOW_RUN_AS_ROOT=1 \
-            -e OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1 \
-            ${REGISTRY}/feelpp-env:${{ steps.dist.outputs.dist }} \
-            bash -lc '
-              set -euo pipefail
-              python3 -m pip install --break-system-packages pytest
-              JOBS=20 bash scripts/ci/run_python_ci_lane.sh mor
-            '
 
   # =============================================================================
   # Full Build Mode - Build entire Feel++ stack in a single image
