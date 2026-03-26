@@ -159,6 +159,26 @@
          "configurePreset": "mor_python",
          "jobs": 25,
          "name": "mor_python"
+      },
+      {
+         "configurePreset": "python-core-ci",
+         "jobs": 20,
+         "name": "python-core-ci"
+      },
+      {
+         "configurePreset": "python-electric-ci",
+         "jobs": 20,
+         "name": "python-electric-ci"
+      },
+      {
+         "configurePreset": "python-mor-ci",
+         "jobs": 20,
+         "name": "python-mor-ci"
+      },
+      {
+         "configurePreset": "python-heat-ci",
+         "jobs": 20,
+         "name": "python-heat-ci"
       }
    ],
    "cmakeMinimumRequired": {
@@ -185,7 +205,7 @@
             "FEELPP_TOOLBOXES_ENABLE_ELECTRIC": "ON",
             "FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS": "OFF",
             "FEELPP_TOOLBOXES_ENABLE_FSI": "OFF",
-            "FEELPP_TOOLBOXES_ENABLE_HDG": "ON",
+            "FEELPP_TOOLBOXES_ENABLE_HDG": "OFF",
             "FEELPP_TOOLBOXES_ENABLE_HEAT": "OFF",
             "FEELPP_TOOLBOXES_ENABLE_LEVELSET": "OFF",
             "FEELPP_TOOLBOXES_ENABLE_MAXWELL": "OFF",
@@ -193,7 +213,9 @@
             "FEELPP_TOOLBOXES_ENABLE_SOLIDMECHANICS": "OFF",
             "FEELPP_TOOLBOXES_ENABLE_THERMOELECTRIC": "OFF",
             "FEELPP_USE_EXTERNAL_EIGEN3": "OFF",
-            "FEELPP_USE_EXTERNAL_PYBIND11": "ON"
+            "FEELPP_USE_EXTERNAL_PYBIND11": "ON",
+            "Python3_EXECUTABLE": "/usr/bin/python3",
+            "Python3_FIND_VIRTUALENV": "STANDARD"
          },
          "description": "Default build using Ninja generator",
          "displayName": "Default Config",
@@ -561,18 +583,18 @@
             "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
             "FEELPP_ENABLE_PYTHON": "ON",
             "FEELPP_TOOLBOXES_ENABLE_ADVECTION": "OFF",
-            "FEELPP_TOOLBOXES_ENABLE_CFPDE": "ON",
+            "FEELPP_TOOLBOXES_ENABLE_CFPDE": "OFF",
             "FEELPP_TOOLBOXES_ENABLE_ELECTRIC": "ON",
-            "FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS": "ON",
-            "FEELPP_TOOLBOXES_ENABLE_FSI": "ON",
-            "FEELPP_TOOLBOXES_ENABLE_HDG": "ON",
-            "FEELPP_TOOLBOXES_ENABLE_HEAT": "ON",
+            "FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS": "OFF",
+            "FEELPP_TOOLBOXES_ENABLE_FSI": "OFF",
+            "FEELPP_TOOLBOXES_ENABLE_HDG": "OFF",
+            "FEELPP_TOOLBOXES_ENABLE_HEAT": "OFF",
             "FEELPP_TOOLBOXES_ENABLE_LEVELSET": "OFF",
             "FEELPP_TOOLBOXES_ENABLE_MAXWELL": "OFF",
             "FEELPP_TOOLBOXES_ENABLE_MULTIFLUID": "OFF",
             "FEELPP_TOOLBOXES_ENABLE_PYTHON": "ON",
-            "FEELPP_TOOLBOXES_ENABLE_SOLIDMECHANICS": "ON",
-            "FEELPP_TOOLBOXES_ENABLE_THERMOELECTRIC": "ON"
+            "FEELPP_TOOLBOXES_ENABLE_SOLIDMECHANICS": "OFF",
+            "FEELPP_TOOLBOXES_ENABLE_THERMOELECTRIC": "OFF"
          },
          "description": "Build only the Toolboxes component",
          "displayName": "toolboxes | clang | release | cmake package manager",
@@ -721,6 +743,76 @@
          "displayName": "mor_python",
          "inherits": "default",
          "name": "mor_python"
+      },
+      {
+         "binaryDir": "${sourceDir}/build/python-core-ci",
+         "cacheVariables": {
+            "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/python-core-ci",
+            "FEELPP_ENABLE_BENCHMARKS": "OFF",
+            "FEELPP_ENABLE_ASCIIDOCTOR": "OFF",
+            "FEELPP_ENABLE_DOCUMENTATION": "OFF",
+            "FEELPP_ENABLE_MOR": "OFF",
+            "FEELPP_ENABLE_QUICKSTART": "OFF",
+            "FEELPP_ENABLE_RESEARCH": "OFF",
+            "FEELPP_ENABLE_TESTS": "OFF",
+            "FEELPP_ENABLE_TOOLBOXES": "OFF"
+         },
+         "description": "Fresh build directory for core Python CI validation",
+         "displayName": "python core ci",
+         "inherits": "default",
+         "name": "python-core-ci"
+      },
+      {
+         "binaryDir": "${sourceDir}/build/python-electric-ci",
+         "cacheVariables": {
+            "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/python-electric-ci",
+            "FEELPP_ENABLE_BENCHMARKS": "OFF",
+            "FEELPP_ENABLE_ASCIIDOCTOR": "OFF",
+            "FEELPP_ENABLE_DOCUMENTATION": "OFF",
+            "FEELPP_ENABLE_MOR": "OFF",
+            "FEELPP_ENABLE_QUICKSTART": "OFF",
+            "FEELPP_ENABLE_RESEARCH": "OFF",
+            "FEELPP_ENABLE_TESTS": "OFF"
+         },
+         "description": "Fresh build directory for electric toolbox Python CI validation",
+         "displayName": "python electric ci",
+         "inherits": "default",
+         "name": "python-electric-ci"
+      },
+      {
+         "binaryDir": "${sourceDir}/build/python-mor-ci",
+         "cacheVariables": {
+            "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/python-mor-ci",
+            "FEELPP_ENABLE_BENCHMARKS": "OFF",
+            "FEELPP_ENABLE_ASCIIDOCTOR": "OFF",
+            "FEELPP_ENABLE_DOCUMENTATION": "OFF",
+            "FEELPP_ENABLE_QUICKSTART": "OFF",
+            "FEELPP_ENABLE_RESEARCH": "OFF",
+            "FEELPP_ENABLE_TESTS": "OFF"
+         },
+         "description": "Fresh build directory for MOR Python CI validation",
+         "displayName": "python mor ci",
+         "inherits": "default",
+         "name": "python-mor-ci"
+      },
+      {
+         "binaryDir": "${sourceDir}/build/python-heat-ci",
+         "cacheVariables": {
+            "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/python-heat-ci",
+            "FEELPP_ENABLE_BENCHMARKS": "OFF",
+            "FEELPP_ENABLE_ASCIIDOCTOR": "OFF",
+            "FEELPP_ENABLE_DOCUMENTATION": "OFF",
+            "FEELPP_ENABLE_MOR": "OFF",
+            "FEELPP_ENABLE_QUICKSTART": "OFF",
+            "FEELPP_ENABLE_RESEARCH": "OFF",
+            "FEELPP_ENABLE_TESTS": "OFF",
+            "FEELPP_TOOLBOXES_ENABLE_ELECTRIC": "OFF",
+            "FEELPP_TOOLBOXES_ENABLE_HEAT": "ON"
+         },
+         "description": "Fresh build directory for heat toolbox Python CI validation",
+         "displayName": "python heat ci",
+         "inherits": "default",
+         "name": "python-heat-ci"
       },
       {
          "binaryDir": "${sourceDir}/build/doxygen",
@@ -1021,6 +1113,66 @@
       {
          "configurePreset": "mor_python",
          "name": "mor_python",
+         "output": {
+            "outputOnFailure": true
+         }
+      },
+      {
+         "configurePreset": "python-core-ci",
+         "execution": {
+            "jobs": 4
+         },
+         "filter": {
+            "include": {
+               "name": "^feelpp_qs_python-(mpi-)?core$"
+            }
+         },
+         "name": "python-core-ci",
+         "output": {
+            "outputOnFailure": true
+         }
+      },
+      {
+         "configurePreset": "python-electric-ci",
+         "execution": {
+            "jobs": 4
+         },
+         "filter": {
+            "include": {
+               "name": "^(feelpp_qs_python-(mpi-)?core|feelpp_toolbox_python-tests-(mpi-)?electric)$"
+            }
+         },
+         "name": "python-electric-ci",
+         "output": {
+            "outputOnFailure": true
+         }
+      },
+      {
+         "configurePreset": "python-mor-ci",
+         "execution": {
+            "jobs": 4
+         },
+         "filter": {
+            "include": {
+               "name": "^(feelpp_qs_python-(mpi-)?core|feelpp_mor_python-tests-(mpi-)?mor)$"
+            }
+         },
+         "name": "python-mor-ci",
+         "output": {
+            "outputOnFailure": true
+         }
+      },
+      {
+         "configurePreset": "python-heat-ci",
+         "execution": {
+            "jobs": 4
+         },
+         "filter": {
+            "include": {
+               "name": "^(feelpp_qs_python-(mpi-)?core|feelpp_toolbox_python-tests-(mpi-)?heat(-thermo2d|-time-stepping)?|feelpp_toolbox_python-tests-(mpi-)?interpolation)$"
+            }
+         },
+         "name": "python-heat-ci",
          "output": {
             "outputOnFailure": true
          }

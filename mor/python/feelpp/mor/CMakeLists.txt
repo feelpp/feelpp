@@ -45,12 +45,19 @@ if ( TARGET Feelpp::feelpp_mor  )
     feelpp_add_pymodule(pbdw SRCS pbdw.cpp DESTINATION feelpp/mor LINK_LIBRARIES Feelpp::feelpp_mor )
     add_dependencies(pyfeelppmor _pbdw)
 endif() 
-if (TARGET pyfeelppoolboxes)
+if (TARGET pyfeelpptoolboxes)
     add_dependencies(pyfeelppmor pyfeelpptoolboxes)
 endif()
 
 set(PYFILES __init__.py online.py test_heat3d.py test_parameterspace.py pbdw.py )
-install(FILES ${PYFILES} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/mor)
+feelpp_stage_python_files(
+  TARGET pyfeelppmor_package_pyfiles
+  DESTINATION feelpp/mor
+  FILES ${PYFILES}
+)
+add_dependencies(pyfeelppmor pyfeelppmor_package_pyfiles)
+install(FILES ${PYFILES} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/mor
+        COMPONENT ${FEELPP_PYTHON_INSTALL_COMPONENT})
 
 add_subdirectory(nirb)
 add_subdirectory(reducedbasis)

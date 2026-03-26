@@ -5,6 +5,7 @@ import feelpp.core.quality as fppcq
 from feelpp.toolboxes.core import *
 from feelpp.toolboxes.cfpdes import *
 import pandas as pd
+from _case_paths import toolbox_case
 
 cfpde_cases = [ ('fluid','TurekHron','cfd2.cfg', 2),
                 ('.', 'p-laplacian', 'regularized.cfg', 2 ),
@@ -16,13 +17,13 @@ cfpde_cases = [ ('fluid','TurekHron','cfd2.cfg', 2),
 
 @pytest.mark.parametrize("prefix,case,casefile,dim", cfpde_cases)
 def test_cfpdes(prefix,case,casefile,dim):
-    fppc.Environment.setConfigFile('cfpdes/{}/{}/{}'.format(prefix,case,casefile))
+    fppc.Environment.setConfigFile(toolbox_case('cfpdes/{}/{}/{}'.format(prefix,case,casefile)))
     f = cfpdes(dim=dim)
     if not f.isStationary():
         # the code below is not working yet see #1763
         f.setTimeFinal( f.timeStep()*10)
     simulate(f)
-    return not f.checkResults()
+    assert f.checkResults()
     
 
 # def test_cfpde_nlthermoelectric():
@@ -43,7 +44,7 @@ def test_cfpdes(prefix,case,casefile,dim):
 def test_cfpdes_remesh():
     fppc.Environment.changeRepository(
         directory="pyfeelpptoolboxes-tests/cfpdes/laplace/l-shape")
-    fppc.Environment.setConfigFile('cfpdes/laplace/l-shape/l-shape.cfg')
+    fppc.Environment.setConfigFile(toolbox_case('cfpdes/laplace/l-shape/l-shape.cfg'))
     f=cfpdes(dim=2)
     simulate(f, export=False)
 
@@ -75,4 +76,4 @@ def test_cfpdes_remesh():
     e.step(1.).add("metric",metric)
     e.step(1.).add("quality",quality)
     e.save()
-    return not fnew.checkResults()
+    assert fnew.checkResults()

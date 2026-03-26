@@ -24,6 +24,8 @@
 cmake_minimum_required(VERSION 3.13)
 project(pyfeelpp-toolboxes)
 set(FEELPP_PYTHON_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+include("${CMAKE_CURRENT_LIST_DIR}/../../feelpp/cmake/modules/FeelppPythonSupport.cmake")
+set(FEELPP_PYTHON_INSTALL_COMPONENT Python)
 if ( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR OR FEELPP_COMPONENT STREQUAL "toolboxes/pyfeelpp-toolboxes" )
   find_package(Feel++ COMPONENTS Toolboxes PATHS $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
   if(NOT FEELPP_FOUND)
@@ -53,13 +55,16 @@ endif()
 #
 OPTION(FEELPP_ENABLE_PYFEELPP_TOOLBOXES "Enable PyFeel++ for toolboxes" ON  )
 if (FEELPP_ENABLE_PYFEELPP_TOOLBOXES)
+  enable_testing()
   message(STATUS "Enabling PyFeel++ Toolboxes" )
   add_subdirectory(feelpp)
   add_subdirectory(tests)
   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pyfeelpp_toolboxes/__init__.py
-          DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/pyfeelpp_toolboxes)
+          DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/pyfeelpp_toolboxes
+          COMPONENT ${FEELPP_PYTHON_INSTALL_COMPONENT})
   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pyfeelpptoolboxes/__init__.py
-          DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/pyfeelpptoolboxes)
+          DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/pyfeelpptoolboxes
+          COMPONENT ${FEELPP_PYTHON_INSTALL_COMPONENT})
   # additional cmake args can be necessary for paraview
   # set(PYFEELPP_SETUP_HAS_PARAVIEW_CMAKE_ARGS 0)
   # set(PYFEELPP_SETUP_PARAVIEW_CMAKE_ARGS "[]")

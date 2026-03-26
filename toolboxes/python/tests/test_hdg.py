@@ -4,9 +4,10 @@ import pytest
 from pathlib import Path
 from feelpp.toolboxes.core import *
 from feelpp.toolboxes.hdg import *
+from _case_paths import toolbox_case
 
 heat_cases = [
-    ('hdg/poisson/convection-diffusion/convection-diffusion-2d-square.cfg', 2, 1)]
+    (toolbox_case('hdg/poisson/convection-diffusion/convection-diffusion-2d-square.cfg'), 2, 1)]
 
 
 @pytest.mark.parametrize("casefile,dim,order", heat_cases)
@@ -24,5 +25,4 @@ def test_heat(casefile,dim,order):
         df=pd.DataFrame([meas])
     except ImportError:
         print("cannot import pandas, no problem it was just a test")
-
-    return not f.checkResults()
+    assert f.checkResults()

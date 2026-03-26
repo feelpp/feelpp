@@ -30,8 +30,8 @@ else()
   feelpp_add_pymodule(modelmesh SRCS modelmesh.cpp DESTINATION feelpp/toolboxes/core LINK_LIBRARIES Feelpp::feelpp_modelmesh )
 endif()
 
-install(FILES  __init__.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/core)
+install(FILES  __init__.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/core
+        COMPONENT ${FEELPP_PYTHON_INSTALL_COMPONENT})
 
 add_dependencies(pyfeelpptoolboxes _modelcore _modelmesh) 
-
 

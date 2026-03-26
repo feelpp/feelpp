@@ -25,4 +25,5 @@ feelpp_add_pymodule(_fsi  SRCS fsi.cpp LINK_LIBRARIES Feelpp::feelpp_toolbox_fsi
 #target_include_directories(_fsi PRIVATE ${PYTHON_INCLUDE_DIRS} ${MPI4PY_INCLUDE_DIR} ${FEELPP_DIR}/include/feelpp/toolboxes)
 #find_library( FEELPP_FSI feelpp_toolbox_fsi_lib HINTS ${FEELPP_DIR}/lib)
 #target_link_libraries( _fsi PRIVATE ${FEELPP_FSI}  ${FEELPP_LIBRARIES} )
-install(FILES  __init__.py fluid.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/fsi)
+install(FILES  __init__.py fluid.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/fsi
+        COMPONENT ${FEELPP_PYTHON_INSTALL_COMPONENT})

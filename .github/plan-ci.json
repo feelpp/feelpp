@@ -1,9 +1,9 @@
 {
-  "jobs": ["feelpp", "testsuite", "toolboxes", "mor", "python"],
+  "jobs": ["feelpp", "testsuite", "toolboxes", "mor"],
   "targets": ["ubuntu:24.04", "debian:13", "fedora:42"],
   "defaults": {
     "mode": "components",
-    "jobs": ["feelpp", "testsuite", "toolboxes", "mor", "python"],
+    "jobs": ["feelpp", "testsuite", "toolboxes", "mor"],
     "targets": ["ubuntu:24.04"]
   },
   "fullBuild": {

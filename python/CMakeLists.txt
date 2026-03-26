@@ -28,6 +28,7 @@ if(DEFINED PROJECT_NAME)
 endif()
 
 project(feelpp-python)
+message(WARNING "[python] legacy monolithic Python entry point kept for compatibility; prefer feelpp/python, toolboxes/python, and mor/python")
   
 set(FEELPP_PYTHON_SOURCE_DIR ${PROJECT_SOURCE_DIR})
 set(FEELPP_PYTHON_BINARY_DIR ${PROJECT_BINARY_DIR})
@@ -204,30 +205,7 @@ if ( FEELPP_HAS_PYTHON )
   endif()
 endif()
 
-#
-# add a pybind11 feelpp module
-# FEELPP_PYTHON_MODULE_PATH must be defined !
-#
-macro(feelpp_add_pymodule)
- PARSE_ARGUMENTS(FEELPP_PYMODULE
-    "NAME;SRCS;DESTINATION;LINK_LIBRARIES;INCLUDES"
-    ""
-    ${ARGN}
-    )
-  CAR(FEELPP_PYMODULE_NAME ${FEELPP_PYMODULE_DEFAULT_ARGS})
-  message(STATUS "[pyfeelpp] add pymodule ${FEELPP_PYMODULE_NAME}")
-  pybind11_add_module(_${FEELPP_PYMODULE_NAME}  ${FEELPP_PYMODULE_SRCS}  )
-  target_include_directories(_${FEELPP_PYMODULE_NAME} PRIVATE ${PYTHON_INCLUDE_DIRS} ${MPI4PY_INCLUDE_DIR} ${PETSC4PY_INCLUDE_DIR} ${SLEPC4PY_INCLUDE_DIR})
-  target_link_libraries( _${FEELPP_PYMODULE_NAME} PUBLIC Feelpp::feelpp ${FEELPP_PYMODULE_LINK_LIBRARIES} )
-  install(TARGETS _${FEELPP_PYMODULE_NAME} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/${FEELPP_PYMODULE_DESTINATION})
-  if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py )
-    add_custom_command(
-           TARGET _${FEELPP_PYMODULE_NAME} POST_BUILD
-           COMMAND ${CMAKE_COMMAND} -E copy
-                   ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
-                   ${CMAKE_CURRENT_BINARY_DIR}/__init__.py)
-  endif()
-endmacro(feelpp_add_pymodule)
+include("${FEELPP_ROOT_SOURCE_DIR}/feelpp/cmake/modules/FeelppPythonSupport.cmake")
 
 option(FEELPP_ENABLE_PYTHON3_VENV ON)
 if (FEELPP_ENABLE_PYTHON3_VENV)

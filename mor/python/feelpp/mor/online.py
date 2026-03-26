@@ -1,6 +1,6 @@
 import feelpp
 import feelpp.mor as mor
-from feelpp.timing import *
+from feelpp.core.timing import *
 import sys, os, time
 import pandas as pd
 

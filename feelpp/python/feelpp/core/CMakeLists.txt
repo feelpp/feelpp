@@ -1,5 +1,5 @@
 add_custom_target(pyfeelpp)
-configure_file(__init__.py.in ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py @ONLY)
+configure_file(__init__.py.in ${CMAKE_CURRENT_BINARY_DIR}/__init__.py @ONLY)
 feelpp_add_pymodule(feelpp SRCS feelpp.cpp DESTINATION feelpp/core )
 feelpp_add_pymodule(core SRCS core.cpp remotedata.cpp  DESTINATION feelpp/core )
 feelpp_add_pymodule(alg SRCS alg.cpp DESTINATION feelpp/core )
@@ -26,35 +26,26 @@ foreach(MODULE IN ITEMS core feelpp alg mesh discr exporter ls ts vf forms measu
   add_dependencies(pyfeelpp _${MODULE})
 endforeach()
 
-set(PYFILES __init__.py integrate.py measure.py quality.py interpolation.py operators.py timing.py meshmover.py plotly.py forms.py )
-
-# Copy all .py files to build directory for testing without install
-add_custom_target(copy_pyfiles_to_build ALL)
-
-# Copy the configured __init__.py file
-add_custom_command(
-  TARGET copy_pyfiles_to_build POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E make_directory ${FEELPP_PYTHON_BUILD_DIR}/feelpp/core
-  COMMAND ${CMAKE_COMMAND} -E copy
-          ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
-          ${FEELPP_PYTHON_BUILD_DIR}/feelpp/core/__init__.py
+set(PYFILES
+  ${CMAKE_CURRENT_BINARY_DIR}/__init__.py
+  integrate.py
+  measure.py
+  quality.py
+  interpolation.py
+  operators.py
+  timing.py
+  meshmover.py
+  plotly.py
+  forms.py
 )
 
-foreach(PYFILE ${PYFILES})
-  if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${PYFILE})
-    add_custom_command(
-      TARGET copy_pyfiles_to_build POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E make_directory ${FEELPP_PYTHON_BUILD_DIR}/feelpp/core
-      COMMAND ${CMAKE_COMMAND} -E copy
-              ${CMAKE_CURRENT_SOURCE_DIR}/${PYFILE}
-              ${FEELPP_PYTHON_BUILD_DIR}/feelpp/core/${PYFILE}
-    )
-  endif()
-endforeach()
+feelpp_stage_python_files(
+  TARGET pyfeelpp_core_pyfiles
+  DESTINATION feelpp/core
+  FILES ${PYFILES}
+)
+add_dependencies(pyfeelpp pyfeelpp_core_pyfiles)
 
-# Ensure .py files are copied after modules are built
-foreach(MODULE IN ITEMS core feelpp alg mesh discr exporter ls ts vf forms measure models integrate interpolation operators quality timing meshmover plot)
-  add_dependencies(copy_pyfiles_to_build _${MODULE})
-endforeach()
-
-install(FILES ${PYFILES} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/core)
+install(FILES ${PYFILES}
+        DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/core
+        COMPONENT ${FEELPP_PYTHON_INSTALL_COMPONENT})
