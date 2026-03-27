@@ -208,4 +208,74 @@ BOOST_AUTO_TEST_CASE( test4 )
 
 }
 
+BOOST_AUTO_TEST_CASE( test_row_dirichlet_static_condensation )
+{
+    using namespace Feel;
+    using namespace vf;
+
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<2>> );
+    auto Uh = Pch<1>( mesh );
+    auto Ah = Pdh<0>( mesh );
+    auto ps = product( Uh, Ah );
+
+    auto W = ps.element();
+    auto T = ps.element();
+    auto u = W( 0_c );
+    auto alpha = W( 1_c );
+    auto v = T( 0_c );
+    auto beta = T( 1_c );
+
+    auto assembleMixedSystem = [&]( auto& a, auto& l )
+    {
+        a( 0_c, 0_c ) += integrate( _range=elements( mesh ),
+                                    _expr=inner( gradt( u ), grad( v ) ) + idt( u ) * id( v ) );
+        a( 0_c, 1_c ) += integrate( _range=elements( mesh ),
+                                    _expr=idt( alpha ) * id( v ) );
+        a( 1_c, 0_c ) += integrate( _range=elements( mesh ),
+                                    _expr=idt( u ) * id( beta ) );
+        a( 1_c, 1_c ) += integrate( _range=elements( mesh ),
+                                    _expr=cst( 2.0 ) * idt( alpha ) * id( beta ) );
+
+        l( 0_c ) += integrate( _range=elements( mesh ),
+                               _expr=cst( 1.0 ) * id( v ) );
+
+        l.close();
+        a.close();
+
+        a.row( 0_c ) += on( _range=boundaryfaces( mesh ),
+                            _rhs=l( 0_c ),
+                            _element=u,
+                            _expr=cst( 0.0 ),
+                            _type="elimination" );
+    };
+
+    backend( _rebuild=true );
+
+    auto aMonolithic = blockform2( ps, solve::strategy::monolithic, backend() );
+    auto lMonolithic = blockform1( ps, solve::strategy::monolithic, backend() );
+    assembleMixedSystem( aMonolithic, lMonolithic );
+
+    auto aCondensed = blockform2( ps, solve::strategy::static_condensation, backend() );
+    auto lCondensed = blockform1( ps, solve::strategy::static_condensation, backend() );
+    assembleMixedSystem( aCondensed, lCondensed );
+
+    auto UMonolithic = ps.element();
+    auto UCondensed = ps.element();
+
+    aMonolithic.solve( _solution=UMonolithic, _rhs=lMonolithic );
+    aCondensed.solve( _solution=UCondensed, _rhs=lCondensed,
+                      _condense=true, _condenser=condenser_sb9() );
+
+    double const uError = normL2( _range=elements( mesh ),
+                                  _expr=idv( UMonolithic( 0_c ) ) - idv( UCondensed( 0_c ) ) );
+    double const alphaError = normL2( _range=elements( mesh ),
+                                      _expr=idv( UMonolithic( 1_c ) ) - idv( UCondensed( 1_c ) ) );
+    double const boundaryError = normL2( _range=boundaryfaces( mesh ),
+                                         _expr=idv( UCondensed( 0_c ) ) );
+
+    BOOST_CHECK_SMALL( uError, 1e-10 );
+    BOOST_CHECK_SMALL( alphaError, 1e-10 );
+    BOOST_CHECK_SMALL( boundaryError, 1e-12 );
+}
+
 BOOST_AUTO_TEST_SUITE_END()

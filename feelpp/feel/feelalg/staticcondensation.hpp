@@ -31,11 +31,13 @@
 
 #include <unordered_map>
 #include <Eigen/Core>
+#include <Eigen/LU>
 #include <boost/hana/equal.hpp>
 #include <boost/hana/integral_constant.hpp>
 #include <boost/hana/length.hpp>
 
 #include <feel/feelalg/condenser.hpp>
+#include <feel/feelalg/productspaceconcepts.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/feelio.hpp>
 #include <feel/feeldiscr/traits.hpp>
@@ -142,36 +144,44 @@ public:
 
     StaticCondensation();
     template<typename E, typename M_ptrtype, typename V_ptrtype>
-    void condense( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, M_ptrtype& S, V_ptrtype& V,
-                   std::enable_if_t<std::decay_t<E>::nspaces == 3>* = nullptr );
+        requires Sb9CondensableProductElement<E>
+    void condense( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, M_ptrtype& S, V_ptrtype& V );
+
+    template<typename E, typename M_ptrtype, typename V_ptrtype>
+        requires ProductElementNSpaces<E,3>
+    void condense( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, M_ptrtype& S, V_ptrtype& V );
     
     template<typename E, typename M_ptrtype, typename V_ptrtype>
-    void condense( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, M_ptrtype& S, V_ptrtype& V,
-                   std::enable_if_t<std::decay_t<E>::nspaces >= 4>* = nullptr );
+        requires ProductElementAtLeastNSpaces<E,4>
+    void condense( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, M_ptrtype& S, V_ptrtype& V );
 
     template<typename DK, typename E, typename M_ptrtype, typename V_ptrtype>
-    void condense2( DK const& dK, std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, M_ptrtype& S, V_ptrtype& V,
-                    std::enable_if_t<std::decay_t<E>::nspaces == 4>* = nullptr );
+        requires ProductElementNSpaces<E,4>
+    void condense2( DK const& dK, std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, M_ptrtype& S, V_ptrtype& V );
 
     template<typename DK, typename E, typename M_ptrtype, typename V_ptrtype>
-    void condense2( DK const& dK, std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, M_ptrtype& S, V_ptrtype& V,
-                    std::enable_if_t<std::decay_t<E>::nspaces == 5>* = nullptr );
+        requires ProductElementNSpaces<E,5>
+    void condense2( DK const& dK, std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, M_ptrtype& S, V_ptrtype& V );
 
     template<typename E>
-    void localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e,
-                     std::enable_if_t<std::decay_t<E>::nspaces == 1>* = nullptr );
+        requires ProductElementNSpaces<E,1>
+    void localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e );
     
     template<typename E>
-    void localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e,
-                     std::enable_if_t<std::decay_t<E>::nspaces == 2>* = nullptr );
+        requires Sb9CondensableProductElement<E>
+    void localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e );
 
     template<typename E>
-    void localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e,
-                     std::enable_if_t<std::decay_t<E>::nspaces == 3>* = nullptr );
+        requires ProductElementNSpaces<E,2> && ( !Sb9CondensableProductElement<E> )
+    void localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e );
 
     template<typename E>
-    void localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e,
-                     std::enable_if_t<std::decay_t<E>::nspaces >= 4>* = nullptr );
+        requires ProductElementNSpaces<E,3>
+    void localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e );
+
+    template<typename E>
+        requires ProductElementAtLeastNSpaces<E,4>
+    void localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e );
 
     void addLocalMatrix( int* rows, int nrows,
                          int* cols, int ncols,
@@ -671,13 +681,13 @@ extractBlock( A00_t const& a00, A01_t const& a01, A10_t const& a10,
 }
 
 template<typename A02_t, typename A20_t, typename Key1_t, typename Key2_t, typename BK_t, typename CK_t, typename E1, typename E3>
+    requires Tensor2SymmFieldType<E1>
 void
 extractBlock( A02_t const& A02K, Key1_t const& key2,
               A20_t const& A20K, Key2_t const& key3,
               BK_t& BK, CK_t& CK,
               int n,
-              E1 const& e1, E3 const& e3, int start = 0,
-              std::enable_if_t<is_tensor2symm_field_v<E1>>* = nullptr )
+              E1 const& e1, E3 const& e3, int start = 0 )
 {
     uint16_type N0 = e1.dof()->nRealLocalDof( false );
     uint16_type N0c = e1.dof()->nLocalDof( true );
@@ -718,12 +728,12 @@ extractBlock( A02_t const& A02K, Key1_t const& key2,
 
 
 template<typename A02_t, typename A20_t, typename Key1_t, typename Key2_t, typename BK_t, typename CK_t, typename E1, typename E3>
+    requires ( !Tensor2SymmFieldType<E1> )
 void
 extractBlock( A02_t const& A02K, Key1_t const& key2,
               A20_t const& A20K, Key2_t const& key3,
               BK_t& BK, CK_t& CK, int n,
-              E1 const& e1, E3 const& e3, int start = 0,
-              std::enable_if_t<!is_tensor2symm_field_v<E1>>* = nullptr )
+              E1 const& e1, E3 const& e3, int start = 0 )
 {
     int N0 = e1.dof()->nLocalDof();
     int N2 = e3.dof()->nLocalDof();
@@ -736,10 +746,10 @@ extractBlock( A02_t const& A02K, Key1_t const& key2,
 }
 
 template<typename F0K_t, typename FK_t, typename E1>
+    requires Tensor2SymmFieldType<E1>
 void
 extractBlock( F0K_t const& F0K, size_type K,
-              FK_t& FK, E1 const& e1,
-              std::enable_if_t<is_tensor2symm_field_v<E1>>* = nullptr )
+              FK_t& FK, E1 const& e1 )
 {
     int N0 = e1.dof()->nRealLocalDof();
     int N0c = e1.dof()->nRealLocalDof(true);
@@ -759,10 +769,10 @@ extractBlock( F0K_t const& F0K, size_type K,
     }
 }
 template<typename F0K_t, typename FK_t, typename E1>
+    requires ( !Tensor2SymmFieldType<E1> )
 void
 extractBlock( F0K_t const& F0K, size_type K,
-              FK_t& FK, E1 const& e1,
-              std::enable_if_t<!is_tensor2symm_field_v<E1>>* = nullptr )
+              FK_t& FK, E1 const& e1 )
 {
     int N0 = e1.dof()->nLocalDof();
     if ( F0K.count(K) )
@@ -960,9 +970,75 @@ private:
 };
 template<typename T, typename IndexT>
 template<typename E, typename M_ptrtype, typename V_ptrtype>
+    requires Sb9CondensableProductElement<E>
 void
-StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, M_ptrtype& S, V_ptrtype& V,
-                                 std::enable_if_t<std::decay_t<E>::nspaces == 3>* )
+StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, M_ptrtype& S, V_ptrtype& V )
+{
+    auto& eu = e( 0_c );
+    auto const& A00K = M_local_matrices[std::make_pair( 0, 0 )];
+    auto const& A01K = M_local_matrices[std::make_pair( 0, 1 )];
+    auto const& A10K = M_local_matrices[std::make_pair( 1, 0 )];
+    auto const& A11K = M_local_matrices[std::make_pair( 1, 1 )];
+    auto const& F0K = rhs->M_local_vectors[0];
+    auto const& F1K = rhs->M_local_vectors[1];
+
+    tic();
+    for ( auto const& [key, Kuu] : A00K )
+    {
+        auto const K = key.first;
+        auto itKuAlpha = A01K.find( key );
+        auto itKAlphaU = A10K.find( key );
+        auto itKAlphaAlpha = A11K.find( key );
+
+        CHECK( itKuAlpha != A01K.end() ) << "missing SB9 local block (0,1) for cell " << K;
+        CHECK( itKAlphaU != A10K.end() ) << "missing SB9 local block (1,0) for cell " << K;
+        CHECK( itKAlphaAlpha != A11K.end() ) << "missing SB9 local block (1,1) for cell " << K;
+
+        auto const& KuAlpha = itKuAlpha->second;
+        auto const& KAlphaU = itKAlphaU->second;
+        auto const& KAlphaAlpha = itKAlphaAlpha->second;
+
+        auto const F0 = [&]() -> local_vector_t
+        {
+            if ( auto it = F0K.find( K ); it != F0K.end() )
+                return it->second;
+            return local_vector_t::Zero( Kuu.rows() );
+        }();
+
+        auto const F1 = [&]() -> local_vector_t
+        {
+            if ( auto it = F1K.find( K ); it != F1K.end() )
+                return it->second;
+            return local_vector_t::Zero( KAlphaAlpha.rows() );
+        }();
+
+        auto lu = KAlphaAlpha.fullPivLu();
+        CHECK( lu.isInvertible() ) << "SB9 local alpha block is singular on cell " << K;
+
+        local_matrix_t AinvB = lu.solve( KAlphaU );
+        local_vector_t AinvF = lu.solve( F1 );
+        local_matrix_t DK = Kuu - KuAlpha * AinvB;
+        local_vector_t DKF = F0 - KuAlpha * AinvF;
+
+        M_AinvB[K] = std::move( AinvB );
+        M_AinvF[K] = std::move( AinvF );
+
+        auto dofsSizeType = eu.functionSpace()->dof()->getIndicesOnGlobalCluster( K );
+        std::vector<int> dofs( dofsSizeType.begin(), dofsSizeType.end() );
+
+        S( 0_c, 0_c ).addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(),
+                                 DK.data(), invalid_v<size_type>, invalid_v<size_type> );
+        V( 0_c ).addVector( dofs.data(), dofs.size(), DKF.data(), invalid_v<size_type>, invalid_v<size_type> );
+    }
+    toc( "sc.condense.sequential", Environment::logVerbosityLevel() > 0 );
+    M_nnz = S.nnz();
+}
+
+template<typename T, typename IndexT>
+template<typename E, typename M_ptrtype, typename V_ptrtype>
+    requires ProductElementNSpaces<E,3>
+void
+StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, M_ptrtype& S, V_ptrtype& V )
 {
     using Feel::cout;
 
@@ -1124,9 +1200,9 @@ StaticCondensation<T,IndexT>::StaticCondensation()
 {}
 template<typename T, typename IndexT>
 template<typename E, typename M_ptrtype, typename V_ptrtype>
+    requires ProductElementAtLeastNSpaces<E,4>
 void
-StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> const& rhs, E &e, M_ptrtype& S, V_ptrtype& V,
-                                 std::enable_if_t<std::decay_t<E>::nspaces >= 4>* ) 
+StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> const& rhs, E &e, M_ptrtype& S, V_ptrtype& V ) 
 {
     using Feel::cout;
     auto& e1 = e(0_c);
@@ -1550,18 +1626,18 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
 }
 template<typename T, typename IndexT>
 template<typename DK, typename E, typename M_ptrtype, typename V_ptrtype>
+    requires ProductElementNSpaces<E,4>
 void
-StaticCondensation<T,IndexT>::condense2( DK const& dK, std::shared_ptr<StaticCondensation<T>> const& rhs, E &e, M_ptrtype& S, V_ptrtype& V,
-                                  std::enable_if_t<std::decay_t<E>::nspaces == 4>* ) 
+StaticCondensation<T,IndexT>::condense2( DK const& dK, std::shared_ptr<StaticCondensation<T>> const& rhs, E &e, M_ptrtype& S, V_ptrtype& V ) 
 {
 	//Feel::cout << __LINE__ << std::endl;
 }
 
 template<typename T, typename IndexT>
 template<typename DK, typename E, typename M_ptrtype, typename V_ptrtype>
+    requires ProductElementNSpaces<E,5>
 void
-StaticCondensation<T,IndexT>::condense2( DK const& dK, std::shared_ptr<StaticCondensation<T>> const& rhs, E &e, M_ptrtype& S, V_ptrtype& V,
-                                  std::enable_if_t<std::decay_t<E>::nspaces == 5>* ) 
+StaticCondensation<T,IndexT>::condense2( DK const& dK, std::shared_ptr<StaticCondensation<T>> const& rhs, E &e, M_ptrtype& S, V_ptrtype& V ) 
 {
     auto const& A34K = M_local_matrices[std::make_pair(3,4)];
     auto const& A43K = M_local_matrices[std::make_pair(4,3)];
@@ -1703,8 +1779,9 @@ private:
 
 template<typename T, typename IndexT>
 template<typename E>
+    requires ProductElementNSpaces<E,1>
 void
-StaticCondensation<T,IndexT>::localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, std::enable_if_t<std::decay_t<E>::nspaces == 1>* )
+StaticCondensation<T,IndexT>::localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e )
 {
     using Feel::cout;
     auto& e1 = e(0_c);
@@ -1749,18 +1826,51 @@ StaticCondensation<T,IndexT>::localSolve( std::shared_ptr<StaticCondensation<T>>
 
 template<typename T, typename IndexT>
 template<typename E>
+    requires Sb9CondensableProductElement<E>
 void
-StaticCondensation<T,IndexT>::localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, std::enable_if_t<std::decay_t<E>::nspaces == 2>* )
+StaticCondensation<T,IndexT>::localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e )
 {
-    using Feel::cout;
-    cout << tc::red << "WARNING!! localSolve with function space of size 2 is not implemented yet!"
-         << tc::reset << std::endl;
+    auto& eu = e( 0_c );
+    auto& ealpha = e( 1_c );
+    int const N0 = eu.dof()->nLocalDof();
+    using alpha_interpolant_type = typename std::decay_t<decltype( ealpha )>::local_interpolant_type;
+    using displacement_interpolant_type = typename std::decay_t<decltype( eu )>::local_interpolant_type;
+
+    tic();
+    for ( auto const& [K, AinvB] : M_AinvB )
+    {
+        displacement_interpolant_type uK( N0 );
+        uK.setZero();
+        eu.element( std::vector<size_type>{ static_cast<size_type>( K ) }, uK );
+
+        auto const alphaValue = [&]() -> local_vector_t
+        {
+            auto it = M_AinvF.find( K );
+            CHECK( it != M_AinvF.end() ) << "missing SB9 local alpha rhs recovery on cell " << K;
+            return -AinvB * uK + it->second;
+        }();
+
+        alpha_interpolant_type alphaK( alphaValue.size() );
+        alphaK = alphaValue;
+        ealpha.assignE( K, alphaK );
+    }
+    toc( "sc.localsolve.sequential", Environment::logVerbosityLevel() > 0 );
 }
 
 template<typename T, typename IndexT>
 template<typename E>
+    requires ProductElementNSpaces<E,2> && ( !Sb9CondensableProductElement<E> )
 void
-StaticCondensation<T,IndexT>::localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, std::enable_if_t<std::decay_t<E>::nspaces == 3>* )
+StaticCondensation<T,IndexT>::localSolve( std::shared_ptr<StaticCondensation<T>> const&, E& )
+{
+    CHECK( false ) << "2-field local static condensation is only implemented for plain SB9-style field blocks";
+}
+
+template<typename T, typename IndexT>
+template<typename E>
+    requires ProductElementNSpaces<E,3>
+void
+StaticCondensation<T,IndexT>::localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e )
 {
     using Feel::cout;
     auto& e1 = e(0_c);
@@ -1810,8 +1920,9 @@ StaticCondensation<T,IndexT>::localSolve( std::shared_ptr<StaticCondensation<T>>
 
 template<typename T, typename IndexT>
 template<typename E>
+    requires ProductElementAtLeastNSpaces<E,4>
 void
-StaticCondensation<T,IndexT>::localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, std::enable_if_t<std::decay_t<E>::nspaces >= 4>*  )
+StaticCondensation<T,IndexT>::localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e )
 {
     using Feel::cout;
     auto& e1 = e(0_c);
@@ -1887,6 +1998,3 @@ StaticCondensation<T,IndexT>::localSolve( std::shared_ptr<StaticCondensation<T>>
 
 }
 #endif
-
-
-
