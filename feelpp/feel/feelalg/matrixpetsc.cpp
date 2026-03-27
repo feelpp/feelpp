@@ -1767,9 +1767,21 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows,
                           Context const& on_context,
                           value_type value_on_diagonal )
 {
-    // the matrix needs to be closed for this to work
-    if ( !this->closed() )
+    PetscBool assembled = PETSC_FALSE;
+    int ierr = MatAssembled( M_mat, &assembled );
+    CHKERRABORT( this->comm(), ierr );
+
+    // zeroRows() requires a fully assembled matrix. Do not rely only on the
+    // wrapper closed() flag here because block/product assembly may leave the
+    // PETSc Mat in a not-yet-assembled state even when the wrapper believes it
+    // is closed.
+    if ( !this->closed() || assembled == PETSC_FALSE )
+    {
         this->close();
+        ierr = MatAssembled( M_mat, &assembled );
+        CHKERRABORT( this->comm(), ierr );
+        CHECK( assembled == PETSC_TRUE ) << "PETSc matrix must be assembled before zeroRows()";
+    }
     if ( !rhs.closed() )
         rhs.close();
 
@@ -1786,6 +1798,19 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows,
         LOG(INFO) << "MatrixPETSc:: zeroRows seq elimination";
         rhs.setIsClosed( false );
 
+        auto checkPetscCall = []( int ierr, char const* call )
+        {
+            if ( ierr == 0 )
+                return;
+
+            char const* text = nullptr;
+            char* specific = nullptr;
+            PetscErrorMessage( ierr, &text, &specific );
+            CHECK( ierr == 0 ) << call << " failed with ierr=" << ierr
+                               << " text=" << ( text ? text : "<null>" )
+                               << " specific=" << ( specific ? specific : "<null>" );
+        };
+
         const VectorPetsc<T>* pvalues = dynamic_cast<const VectorPetsc<T>*> ( &values );
         CHECK( pvalues ) << "values must be a VectorPetsc";
 
@@ -1796,7 +1821,7 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows,
 
 
         int start, stop;
-        int ierr = MatGetOwnershipRange( M_mat, &start, &stop );
+        ierr = MatGetOwnershipRange( M_mat, &start, &stop );
         CHKERRABORT( this->comm(),ierr );
 
         VectorPetsc<value_type> diag( this->mapColPtr() );
@@ -1810,9 +1835,11 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows,
         {
             LOG(INFO) << "MatrixPETSc:: zeroRows seq symmetric";
 #if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
-            MatZeroRowsColumns(M_mat, rows.size(), rows.data(), value_on_diagonal, pvalues->vec(), prhs->vec() );
+            ierr = MatZeroRowsColumns(M_mat, rows.size(), rows.data(), value_on_diagonal, pvalues->vec(), prhs->vec() );
+            checkPetscCall( ierr, "MatZeroRowsColumns" );
 #else
-            MatZeroRows( M_mat, rows.size(), rows.data(), value_on_diagonal );
+            ierr = MatZeroRows( M_mat, rows.size(), rows.data(), value_on_diagonal );
+            checkPetscCall( ierr, "MatZeroRows" );
 #endif
             if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
             {
@@ -1835,9 +1862,11 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows,
 
 #if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
             //MatZeroRows( M_mat, rows.size(), rows.data(), value_on_diagonal,PETSC_IGNORE,PETSC_IGNORE );
-            MatZeroRows( M_mat, rows.size(), rows.data(), value_on_diagonal, pvalues->vec(), prhs->vec() );
+            ierr = MatZeroRows( M_mat, rows.size(), rows.data(), value_on_diagonal, pvalues->vec(), prhs->vec() );
+            checkPetscCall( ierr, "MatZeroRows" );
 #else
-            MatZeroRows( M_mat, rows.size(), rows.data(), value_on_diagonal );
+            ierr = MatZeroRows( M_mat, rows.size(), rows.data(), value_on_diagonal );
+            checkPetscCall( ierr, "MatZeroRows" );
 #endif
             if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
             {
@@ -3223,8 +3252,17 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
     bool hasAllProcess = true;
     if ( hasAllProcess )
     {
-        if ( !this->closed() )
+        PetscBool assembled = PETSC_FALSE;
+        int ierr = MatAssembled( this->M_mat, &assembled );
+        CHKERRABORT( this->comm(), ierr );
+
+        if ( !this->closed() || assembled == PETSC_FALSE )
+        {
             this->close();
+            ierr = MatAssembled( this->M_mat, &assembled );
+            CHKERRABORT( this->comm(), ierr );
+            CHECK( assembled == PETSC_TRUE ) << "PETSc matrix must be assembled before zeroRows()";
+        }
         if ( !rhs.closed() )
             rhs.close();
     }
