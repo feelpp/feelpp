@@ -206,7 +206,7 @@
             "FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS": "OFF",
             "FEELPP_TOOLBOXES_ENABLE_FSI": "OFF",
             "FEELPP_TOOLBOXES_ENABLE_HDG": "OFF",
-            "FEELPP_TOOLBOXES_ENABLE_HEAT": "OFF",
+            "FEELPP_TOOLBOXES_ENABLE_HEAT": "ON",
             "FEELPP_TOOLBOXES_ENABLE_LEVELSET": "OFF",
             "FEELPP_TOOLBOXES_ENABLE_MAXWELL": "OFF",
             "FEELPP_TOOLBOXES_ENABLE_MULTIFLUID": "OFF",
@@ -588,7 +588,7 @@
             "FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS": "OFF",
             "FEELPP_TOOLBOXES_ENABLE_FSI": "OFF",
             "FEELPP_TOOLBOXES_ENABLE_HDG": "OFF",
-            "FEELPP_TOOLBOXES_ENABLE_HEAT": "OFF",
+            "FEELPP_TOOLBOXES_ENABLE_HEAT": "ON",
             "FEELPP_TOOLBOXES_ENABLE_LEVELSET": "OFF",
             "FEELPP_TOOLBOXES_ENABLE_MAXWELL": "OFF",
             "FEELPP_TOOLBOXES_ENABLE_MULTIFLUID": "OFF",
@@ -772,7 +772,8 @@
             "FEELPP_ENABLE_MOR": "OFF",
             "FEELPP_ENABLE_QUICKSTART": "OFF",
             "FEELPP_ENABLE_RESEARCH": "OFF",
-            "FEELPP_ENABLE_TESTS": "OFF"
+            "FEELPP_ENABLE_TESTS": "OFF",
+            "FEELPP_TOOLBOXES_ENABLE_HEAT": "OFF"
          },
          "description": "Fresh build directory for electric toolbox Python CI validation",
          "displayName": "python electric ci",
@@ -788,7 +789,8 @@
             "FEELPP_ENABLE_DOCUMENTATION": "OFF",
             "FEELPP_ENABLE_QUICKSTART": "OFF",
             "FEELPP_ENABLE_RESEARCH": "OFF",
-            "FEELPP_ENABLE_TESTS": "OFF"
+            "FEELPP_ENABLE_TESTS": "OFF",
+            "FEELPP_TOOLBOXES_ENABLE_HEAT": "OFF"
          },
          "description": "Fresh build directory for MOR Python CI validation",
          "displayName": "python mor ci",
