@@ -43,4 +43,4 @@ def mixedpoisson(dim=2, order=1, prefix="", prefix_toolbox="hdg.poisson", physic
         modelRep = ModelBaseRepository()
     if physic is None:
         physic = MixedPoissonPhysics.none
-    return _hdgs[key](prefix=_prefix, physic=physic, worldComm=worldComm, subprefix="", modelRep=modelRep)
+    return _hdgs[key](prefix=_prefix, physic=physic, worldComm=worldComm, subprefix=subprefix, modelRep=modelRep)

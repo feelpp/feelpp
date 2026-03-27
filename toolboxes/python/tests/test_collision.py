@@ -1,6 +1,7 @@
 import feelpp.core as fppc
 import pytest
 from feelpp.toolboxes.fluid import *
+from _case_paths import toolbox_case
 
 
 collision_cases = [
@@ -20,7 +21,7 @@ def remesh(f,required_facets,required_elts):
 def test_collision(case,casefile,required_facets,required_elts):
     if fppc.Environment.isMasterRank():
         print(f"[test_collision] Testing collision {case} with casefile {casefile}\n",flush=True)
-    fppc.Environment.setConfigFile(casefile)
+    fppc.Environment.setConfigFile(toolbox_case(casefile))
     f = fluid(dim=2, orderVelocity=2, orderPressure=1)
     f.init()
     
@@ -60,5 +61,4 @@ def test_collision(case,casefile,required_facets,required_elts):
 
 #test_collision("circle",'fluid/moving_body/gravity/collisions/circle.cfg',["Circle"],["Cir"])
 #test_collision("ellipse",'fluid/moving_body/gravity/collisions/ellipse.cfg',["Ellipse"],["Ell"])
-
 

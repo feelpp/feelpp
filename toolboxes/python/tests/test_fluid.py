@@ -6,12 +6,13 @@ import feelpp.core.interpolation as I
 import feelpp.core.quality as q
 import feelpp.toolboxes.core as tb
 from feelpp.toolboxes.fluid import *
+from _case_paths import toolbox_case
 
 
 #@pytest.mark.order("first")
 
 def test_fluid1():
-    fppc.Environment.setConfigFile('fluid/TurekHron/cfd1.cfg')
+    fppc.Environment.setConfigFile(toolbox_case('fluid/TurekHron/cfd1.cfg'))
     # 2D fluid solver using P2P1G1 approximation
     f = fluid(dim=2, orderVelocity=2, orderPressure=1,worldComm=fppc.Environment.worldCommPtr())
     simulate(f)

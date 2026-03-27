@@ -21,16 +21,6 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required(VERSION 3.3)
-project(toolboxes-maxwell)
-
-if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
-  find_package(Feel++ COMPONENTS Toolboxes PATHS ${FEELPP_DIR}/share/feelpp/feel/cmake/modules $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
-  if(NOT FEELPP_FOUND)
-      message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
-  endif()
-endif()
-
-
-pybind11_add_module(_maxwell  maxwell.cpp)
-target_link_libraries( _maxwell PRIVATE Feelpp::feelpp_toolbox_maxwell_lib )
+feelpp_add_pymodule(maxwell SRCS maxwell.cpp LINK_LIBRARIES Feelpp::feelpp_toolbox_maxwell_lib DESTINATION feelpp/toolboxes/maxwell)
+install(FILES __init__.py maxwell.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/maxwell
+        COMPONENT ${FEELPP_PYTHON_INSTALL_COMPONENT})

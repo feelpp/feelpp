@@ -720,6 +720,74 @@ private :
     std::vector<BodyForces> M_bodyForces;
 };
 
+
+/**
+ * @brief Multibody Physic Model
+ * @ingroup ModelCore
+ * 
+ * @tparam Dim real dimension of the model
+ */
+template <uint16_type Dim>
+class ModelPhysicMultibody : public ModelPhysic<Dim>
+{
+    using super_type = ModelPhysic<Dim>;
+    using self_type = ModelPhysicMultibody<Dim>;
+public :
+
+    struct Body
+    {
+        Body( self_type * mparent, std::string const& name = "" ) : M_parent( mparent ), M_name( name ) {}
+        Body( Body const& ) = default;
+        Body( Body && ) = default;
+
+        void setup( nl::json const& jarg );
+
+        std::string const& name() const noexcept { return M_name; }
+        std::set<std::string> const& materialNames() const noexcept { return M_materialNames; }
+
+        bool hasMassCenterImposed() const { return M_parent->template hasParameterExpr<Dim,1>( this->massCenterImposedExprName() ); }
+
+        template <typename SymbolsExprType = symbols_expression_empty_t>
+        auto massCenterImposedExpr( SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+            {
+                return M_parent->template parameterExpr<Dim,1>( this->massCenterImposedExprName(), se );
+            }
+
+        bool useMaterialWithMassCenterEvaluation( std::string const& matName ) const {
+            if ( M_materialNames.find( matName ) == M_materialNames.end() )
+                return false;
+            if ( M_massCenterEvaluateOnMaterials.empty() )
+                return true;
+            return M_massCenterEvaluateOnMaterials.find( matName ) != M_massCenterEvaluateOnMaterials.end();
+        }
+
+        void updateInformationObject( nl::json & p ) const;
+        static tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
+    private:
+        std::string massCenterImposedExprName() const { return fmt::format("{}_massCenterImposed", this->name()); }
+    private:
+        self_type * M_parent;
+        std::string M_name;
+        std::set<std::string> M_materialNames;
+        std::set<std::string> M_massCenterEvaluateOnMaterials;
+    };
+
+
+    ModelPhysicMultibody( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
+    ModelPhysicMultibody( ModelPhysicMultibody const& ) = default;
+    ModelPhysicMultibody( ModelPhysicMultibody && ) = default;
+
+    std::map<std::string,self_type::Body> const& bodies() const { return M_bodies; }
+    bool hasBody( std::string const& name ) const { return M_bodies.find( name ) != M_bodies.end(); }
+    self_type::Body const& body( std::string const& name ) const { return M_bodies.at( name ); }
+
+    void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+
+private :
+    std::map<std::string,self_type::Body> M_bodies;
+};
+
 /**
  * @brief Fluid Structure Interaction Physic Model
  * @ingroup ModelCore
@@ -737,13 +805,13 @@ public :
     ModelPhysicFSI( ModelPhysicFSI const& ) = default;
     ModelPhysicFSI( ModelPhysicFSI && ) = default;
 
-    std::set<std::string> const& interfaceFluid() const { return M_interfaceFluid; }
-    std::set<std::string> const& interfaceSolid() const { return M_interfaceSolid; }
+    bool hasInterface( std::string const& type ) const { return M_interfaceMarkers.find( type ) != M_interfaceMarkers.end(); }
+    std::set<std::string> const& interfaceMarkers( std::string const& type ) const { return M_interfaceMarkers.at( type ); }
 
     void updateInformationObject( nl::json & p ) const override;
     tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 private :
-    std::set<std::string> M_interfaceFluid, M_interfaceSolid;
+    std::map<std::string,std::set<std::string>> M_interfaceMarkers;
 };
 
 /**

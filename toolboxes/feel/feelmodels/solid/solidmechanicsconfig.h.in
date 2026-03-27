@@ -8,6 +8,8 @@
 
 #define SOLIDMECHANICS_DISPLACEMENT_INTERPOLATIONPOINTS PointSetFekete
 
+#define SOLIDMECHANICS_CONVEX_TYPE @SOLIDMECHANICS_CONVEX_TYPE@
+
 #define SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS \
     template< typename ConvexType, typename BasisDisplacementType> \
         /**/
@@ -15,7 +17,7 @@
     SolidMechanics<ConvexType,BasisDisplacementType> \
         /**/
 #define SOLIDMECHANICS_CLASS_TYPE \
-    SolidMechanics< Simplex<SOLIDMECHANICS_DIM,SOLIDMECHANICS_ORDERGEO,SOLIDMECHANICS_DIM>, \
+    SolidMechanics< SOLIDMECHANICS_CONVEX_TYPE<SOLIDMECHANICS_DIM,SOLIDMECHANICS_ORDERGEO,SOLIDMECHANICS_DIM>, \
         Lagrange<SOLIDMECHANICS_ORDER_DISPLACEMENT, Vectorial,Continuous,SOLIDMECHANICS_DISPLACEMENT_INTERPOLATIONPOINTS > \
         >                                                              \
     /**/

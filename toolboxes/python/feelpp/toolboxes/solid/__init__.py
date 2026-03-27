@@ -39,4 +39,4 @@ def solid(dim=2, orderDisp=1, worldComm=None, keyword="solid", prefix="solid", s
         raise RuntimeError('Solid solver '+key+' not existing')
     if modelRep is None:
         modelRep = ModelBaseRepository()
-    return _csms[key](prefix=prefix, keyword=keyword, worldComm=worldComm, subprefix="", modelRep=modelRep)
+    return _csms[key](prefix=prefix, keyword=keyword, worldComm=worldComm, subprefix=subprefix, modelRep=modelRep)

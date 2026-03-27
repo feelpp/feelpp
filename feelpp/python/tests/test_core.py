@@ -24,6 +24,7 @@ def test_repository_custom(init_feelpp):
     config = fppc.customRepository("fallback-dir", compute_custom_path)
     repo = fppc.Repository(config)
     repo.configure()
+    e.worldComm().globalComm().Barrier()
     
     assert repo.isCustom()
     assert not repo.isGlobal()
@@ -36,10 +37,12 @@ def test_repository_custom(init_feelpp):
     assert "computed-subdir" in str(root)
     
     # Clean up
+    e.worldComm().globalComm().Barrier()
     if e.isMasterRank():
         base_cleanup = Path("/tmp/feelpp-custom-py-test")
         if base_cleanup.exists():
             shutil.rmtree(base_cleanup)
+    e.worldComm().globalComm().Barrier()
     
     print(f"Custom repository test passed, root: {root}")
 

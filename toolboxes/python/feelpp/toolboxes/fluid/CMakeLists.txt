@@ -24,4 +24,5 @@
 
 feelpp_add_pymodule(fluid SRCS fluid.cpp DESTINATION feelpp/toolboxes/fluid LINK_LIBRARIES Feelpp::feelpp_toolbox_fluid_lib )
 target_include_directories(_fluid PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-install(FILES  __init__.py fluid.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/fluid)
+install(FILES  __init__.py fluid.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/fluid
+        COMPONENT ${FEELPP_PYTHON_INSTALL_COMPONENT})

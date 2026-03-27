@@ -25,5 +25,5 @@ cmake_minimum_required(VERSION 3.3)
 project(toolboxes-cfpdes)
 
 feelpp_add_pymodule(cfpdes SRCS cfpdes.cpp DESTINATION feelpp/toolboxes/cfpdes LINK_LIBRARIES Feelpp::feelpp_toolbox_coefficientformpdes_lib)
-install(FILES  __init__.py cfpdes.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/cfpdes)
-
+install(FILES  __init__.py cfpdes.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/cfpdes
+        COMPONENT ${FEELPP_PYTHON_INSTALL_COMPONENT})

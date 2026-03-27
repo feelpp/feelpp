@@ -218,6 +218,119 @@ public :
     typedef FixPointConvergenceFSI<solid_type> fixpointconvergenceFSI_type;
     typedef std::shared_ptr<fixpointconvergenceFSI_type> fixpointconvergenceFSI_ptrtype;
 
+
+    //---------------------------------------------------------------------------------------------------------//
+
+    struct ElasticBodyBehavior
+    {
+
+        typedef Range<mesh_fluid_type,MESH_ELEMENTS> range_fluid_element_type;
+        typedef Range<mesh_solid_type,MESH_ELEMENTS> range_solid_element_type;
+        using op_s2f_disp_ebb_type = OperatorInterpolation<space_struct_disp_type, typename fluid_type::multibody_type::body_type::space_displacement_type,
+                                                           range_fluid_element_type,InterpolationConforme>;
+
+        using op_s2f_velocity_ebb_type = OperatorInterpolation<space_struct_disp_type, typename fluid_type::space_velocity_type,
+                                                               range_fluid_element_type,InterpolationConforme>;
+
+        using op_f2s_disp_type = OperatorInterpolation<typename fluid_type::multibody_type::body_type::space_displacement_type, space_struct_disp_type,
+                                                       range_solid_element_type,InterpolationConforme>;
+
+        ElasticBodyBehavior( typename fluid_type::BodyBoundaryCondition * bbc, self_type * fsiToolbox )
+            :
+            M_bodyBoundaryCondition( bbc ),
+            M_fsiToolbox( fsiToolbox )
+            {
+                auto & body = M_bodyBoundaryCondition->body();
+                body.initElasticVelocity();
+                auto spaceDisp = body.fieldDisplacement().functionSpace();
+                auto range = elements(support(spaceDisp));
+                M_opI_disp = opInterpolation(_domainSpace=M_fsiToolbox->solidModel()->fieldDisplacement().functionSpace(),
+                                             _imageSpace=spaceDisp,
+                                             _range=range,
+                                             //_type=InterpolationNonConforme(),
+                                             _type=InterpolationConforme(),
+                                             _backend=M_fsiToolbox->fluidModel()->backend() );
+
+
+                if ( false ) // semi-implicit
+                {
+#if 0
+                    auto spaceElastVel = body.fieldElasticVelocity().functionSpace();
+                    M_opI_vel = opInterpolation(_domainSpace=M_fsiToolbox->solidModel()->fieldVelocity().functionSpace(),
+                                                _imageSpace=spaceElastVel,
+                                                _range=range,
+                                                //_type=InterpolationNonConforme(),
+                                                _type=InterpolationConforme(),
+                                                _backend=M_fsiToolbox->fluidModel()->backend() );
+#endif
+                }
+
+                M_opI_f2s_disp = opInterpolation(_domainSpace=spaceDisp,
+                                                 _imageSpace=M_fsiToolbox->solidModel()->fieldVelocity().functionSpace(),
+                                                 _range=elements(support(M_fsiToolbox->solidModel()->fieldVelocity().functionSpace() )),
+                                                 //_type=InterpolationNonConforme(),
+                                                 _type=InterpolationConforme(),
+                                                 _backend=M_fsiToolbox->fluidModel()->backend() );
+
+            }
+        ElasticBodyBehavior( ElasticBodyBehavior const&) = default;
+        ElasticBodyBehavior( ElasticBodyBehavior &&) = default;
+
+        void updateFluidAleMeshForUse() const
+            {
+                auto & bbc = *M_bodyBoundaryCondition;
+                auto & body = bbc.body();
+
+                auto spaceDisp = body.fieldDisplacement().functionSpace();
+                auto uInterp = spaceDisp->element();
+                M_opI_disp->apply( M_fsiToolbox->solidModel()->fieldDisplacement(), uInterp );
+
+                // remove rigid disp from previous time
+                auto translateExpr = Feel::vf::toExpr( body.rigidTranslationDisplacementAtPreviousTime() ) - body.rigidTranslationExpr();
+                auto R2 = Feel::vf::toExpr( fluid_type::multibody_type::body_type::rigidRotationMatrix( body.rigidRotationAnglesAtPreviousTime()-body.rigidRotationAngles() ) );
+#if 0
+                auto [newMass,newMassCenter] = body.computeMassAndMassCenterFromDisplacementField( uInterp );
+                auto mcExpr2 = Feel::vf::toExpr( newMassCenter );
+#else
+                auto mcExpr2 = body.massCenterExpr();
+#endif
+                auto elasticDispExpr = R2*(P()+idv(uInterp)-mcExpr2) + mcExpr2 + translateExpr - P();
+
+                bbc.initElasticBehavior();
+                body.fieldElasticDisplacement().on(_expr=elasticDispExpr -idv(body.fieldDisplacementAtPreviousTime()),_close=true );
+                body.updateDisplacementFromElasticBehavior();
+            }
+
+        void updateBodyElasticVelocity()
+            {
+                auto & bbc = *M_bodyBoundaryCondition;
+                auto & body = bbc.body();
+                auto mmt = M_fsiToolbox->fluidModel()->meshMotionTool();
+                body.fieldElasticVelocity().on(_expr=idv(mmt->velocity()),_close=true);
+#if 0
+                // semi-implicit case
+                auto spaceElastVel = body.fieldElasticVelocity().functionSpace();
+                auto vInterp = spaceElastVel->element();
+                M_opI_vel->apply( M_fsiToolbox->solidModel()->fieldVelocity(), vInterp );
+#endif
+            }
+
+        void updateBodyDisplacementOnSolid()
+            {
+                auto const& bbc = *M_bodyBoundaryCondition;
+                auto const& body = bbc.body();
+                M_opI_f2s_disp->apply( body.fieldDisplacement(), *M_fsiToolbox->M_fieldTmpOnSolid );
+                *M_fsiToolbox->M_fieldBodyDisplacementOnSolid = *M_fsiToolbox->M_fieldTmpOnSolid;
+            }
+
+    private:
+        self_type * M_fsiToolbox = nullptr;
+        typename fluid_type::BodyBoundaryCondition * M_bodyBoundaryCondition = nullptr;
+        std::shared_ptr<op_s2f_disp_ebb_type> M_opI_disp;
+        std::shared_ptr<op_s2f_velocity_ebb_type> M_opI_vel;
+        std::shared_ptr<op_f2s_disp_type> M_opI_f2s_disp;
+    };
+
     //---------------------------------------------------------------------------------------------------------//
 
     FSI( std::string const& prefix,
@@ -259,9 +372,13 @@ public :
 
     //---------------------------------------------------------------------------------------------------------//
 
-    void createMesh();
+    void initMesh();
+    //void createMesh();
     void init();
     void solve();
+
+    void applyRemeshFluid( std::shared_ptr<mesh_fluid_type> oldMesh, std::shared_ptr<mesh_fluid_type> newMesh, std::shared_ptr<RemeshInterpolation> remeshInterp = std::make_shared<RemeshInterpolation>() );
+
 private :
     void updatePhysics( typename super_physics_type::PhysicsTreeNode & physicsTree, ModelModels const& models ) override;
 
@@ -307,7 +424,9 @@ private :
                             cst(0.),idv(M_coulingRNG_operatorDiagonalOnFluid)(1),cst(0.),
                             cst(0.),cst(0.),idv(M_coulingRNG_operatorDiagonalOnFluid)(2) );
         }
+
 public :
+
     //---------------------------------------------------------------------------------------------------------//
 
     void updateTime(double time);
@@ -345,8 +464,17 @@ public :
     void updateNewtonInitialGuess_Fluid( DataNewtonInitialGuess & data ) const;
     void updateJacobianDofElimination_Fluid( DataUpdateJacobian & data ) const;
     void updateResidualDofElimination_Fluid( DataUpdateResidual & data ) const;
+    void updateLinearPDEDofElimination_Magneto( DataUpdateLinear & data ) const;
+    void updateNewtonInitialGuess_Magneto( DataNewtonInitialGuess & data ) const;
+    void updateJacobianDofElimination_Magneto( DataUpdateJacobian & data ) const;
+    void updateResidualDofElimination_Magneto( DataUpdateResidual & data ) const;
+
 
     void updateLinearPDE_Solid1dReduced( DataUpdateLinear & data ) const;
+
+
+    typename fluid_type::element_normalstress_ptrtype fieldNormalStressRefMeshPtr_fluid() const { return M_fieldNormalStressRefMesh_fluid; }
+    element_solid_normalstressfromfluid_ptrtype fieldNormalStressFromFluidPtr_solid() const { return M_fieldNormalStressFromFluid_solid; }
 
 private :
     void updateBackendOptimisation( int iterationFSI, double lastErrorRelative );
@@ -376,12 +504,17 @@ private :
     std::string M_tagFileNameMeshGenerated;
 
     range_fluid_face_type M_rangeFSI_fluid;
+    range_fluid_face_type M_rangeFsiWall_fluid;
     range_solid_face_type M_rangeFSI_solid;
-    std::map<std::string,range_fluid_face_type> M_rangeMeshFacesByMaterial_fluid;
+    //std::map<std::string,range_fluid_face_type> M_rangeMeshFacesByMaterial_fluid;
+
+
 
     std::string M_fsiCouplingType; // implicit,semi-implicit
     std::string M_fsiCouplingBoundaryCondition; // dirichlet-neumann, robin-robin, ...
     bool M_interfaceFSIisConforme;
+    bool M_evaluateFluidNormalStressOnReferenceMesh = true;
+
     double M_fixPointTolerance, M_fixPointInitialTheta, M_fixPointMinTheta;
     int M_fixPointMaxIt, M_fixPointMinItConvergence;
 
@@ -439,7 +572,7 @@ private :
     space_solid_normalstressfromfluid_ptrtype M_spaceNormalStressFromFluid_solid;
     element_solid_normalstressfromfluid_ptrtype M_fieldNormalStressFromFluid_solid;
     typename solid_type::element_vectorial_ptrtype M_fieldVelocityInterfaceFromFluid_solid;
-    element_solid_normalstressfromfluid_ptrtype fieldNormalStressFromFluidPtr_solid() const { return M_fieldNormalStressFromFluid_solid; }
+    //element_solid_normalstressfromfluid_ptrtype fieldNormalStressFromFluidPtr_solid() const { return M_fieldNormalStressFromFluid_solid; }
     typename solid_type::element_vectorial_ptrtype fieldVelocityInterfaceFromFluidPtr_solid() const { return M_fieldVelocityInterfaceFromFluid_solid; }
     element_solid_normalstressfromfluid_type const& fieldNormalStressFromFluid_solid() const { return *M_fieldNormalStressFromFluid_solid; }
     typename solid_type::element_vectorial_type const& fieldVelocityInterfaceFromFluid_solid() const { return *M_fieldVelocityInterfaceFromFluid_solid; }
@@ -480,6 +613,13 @@ private :
     std::set<size_type> M_dofsMultiProcessVelocitySpaceOnFSI_fluid;
 
     element_fluid_disp_ptrtype M_meshDisplacementOnInterface_fluid;
+
+
+    std::map<std::string,std::unique_ptr<ElasticBodyBehavior>> M_elasticBodies;
+    typename solid_type::element_displacement_type const& fieldBodyDisplacementOnSolid() const { return *M_fieldBodyDisplacementOnSolid; }
+    typename solid_type::element_displacement_ptrtype M_fieldTmpOnSolid;
+    typename solid_type::element_displacement_ptrtype M_fieldBodyDisplacementOnSolid;
+
 };
 
 } // namespace FeelModels

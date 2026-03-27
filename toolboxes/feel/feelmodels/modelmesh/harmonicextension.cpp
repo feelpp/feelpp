@@ -285,6 +285,8 @@ HarmonicExtension<MeshType,Order>::solve()
 
 template class HarmonicExtension< Mesh<Simplex<2,1> >, 1 >;
 template class HarmonicExtension< Mesh<Simplex<3,1> >, 1 >;
+template class HarmonicExtension< Mesh<Hypercube<2,1> >, 1 >;
+template class HarmonicExtension< Mesh<Hypercube<3,1> >, 1 >;
 
 } // namespace FeelModels
 } // namespace Feel

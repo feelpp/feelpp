@@ -183,6 +183,8 @@ public:
     //! Coefficients \f$ \gamma \f$ and \f$ \beta \f$  of the time newmark discretization
     double gamma() const { return M_gamma; }
     double beta() const { return M_beta; }
+    void setGamma( double gamma ) { M_gamma = gamma; }
+    void setBeta( double beta ) { M_beta = beta; }
 
 
     double polyDerivCoefficient() const { return this->polySecondDerivCoefficient(); }
@@ -636,17 +638,17 @@ Newmark<SpaceType>::shiftRight(typename space_type::template Element<value_type,
 
     // Shift all previously stored BDF data for displacements
     auto itDisp = std::next(M_previousUnknown.rbegin());
-    std::for_each(M_previousUnknown.rbegin(), std::prev(M_previousUnknown.rend()), 
+    std::for_each(M_previousUnknown.rbegin(), std::prev(M_previousUnknown.rend()),
                   [&itDisp](auto& element) { *element = *(*itDisp); ++itDisp; });
 
     // Shift all previously stored BDF data for velocities
     auto itVel = std::next(M_previousVel.rbegin());
-    std::for_each(M_previousVel.rbegin(), std::prev(M_previousVel.rend()), 
+    std::for_each(M_previousVel.rbegin(), std::prev(M_previousVel.rend()),
                   [&itVel](auto& element) { *element = *(*itVel);++itVel; });
 
     // Shift all previously stored BDF data for accelerations
     auto itAcc = std::next(M_previousAcc.rbegin());
-    std::for_each(M_previousAcc.rbegin(), std::prev(M_previousAcc.rend()), 
+    std::for_each(M_previousAcc.rbegin(), std::prev(M_previousAcc.rend()),
                   [&itAcc](auto& element) { *element = *(*itAcc); ++itAcc; });
 
     // Shift all previously stored data
@@ -783,6 +785,9 @@ auto newmark( Ts && ... v )
     std::string const& format = args.get_else_invocable( _format, [&prefix,&vm](){ return soption(_prefix=prefix,_name="ts.file-format",_vm=vm); } );
     bool rank_proc_in_files_name = args.get_else_invocable( _rank_proc_in_files_name, [&prefix,&vm](){ return boption(_prefix=prefix,_name="ts.rank-proc-in-files-name",_vm=vm); } );
 
+    double gamma = args.get_else_invocable( _gamma, [&prefix,&vm](){ return doption(_prefix=prefix,_name="ts.newmark.gamma",_vm=vm); } );
+    double beta = args.get_else_invocable( _beta, [&prefix,&vm](){ return doption(_prefix=prefix,_name="ts.newmark.beta",_vm=vm); } );
+
     using _space_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(space)>>>;
     auto thenewmark = std::make_shared<Newmark<_space_type>>( space,name,prefix );
     thenewmark->setTimeInitial( initial_time );
@@ -796,6 +801,8 @@ auto newmark( Ts && ... v )
     thenewmark->setSaveFreq( freq );
     thenewmark->setfileFormat( format );
     thenewmark->setRankProcInNameOfFiles( rank_proc_in_files_name );
+    thenewmark->setGamma( gamma );
+    thenewmark->setBeta( beta );
     return thenewmark;
 }
 

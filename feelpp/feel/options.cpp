@@ -62,8 +62,8 @@ file_options( std::string const& appname )
         ;
     return file;
 }
- 
-  
+
+
 
 po::options_description
 generic_options()
@@ -426,7 +426,7 @@ po::options_description ts_options( std::string const& prefix )
         ( prefixvm( prefix, "ts.time-initial" ).c_str(), Feel::po::value<double>()->default_value( 0.0 ), "initial time" )
         ( prefixvm( prefix, "ts.time-final" ).c_str(), Feel::po::value<double>()->default_value( 1.0 ), "final time" )
         ( prefixvm( prefix, "ts.time-step" ).c_str(), Feel::po::value<double>()->default_value( 1.0 ), "time step" )
-        ( prefixvm( prefix, "ts.adaptive" ).c_str(), Feel::po::value<bool>()->default_value( false ), "enable/disable adaptive time step if available" ) 
+        ( prefixvm( prefix, "ts.adaptive" ).c_str(), Feel::po::value<bool>()->default_value( false ), "enable/disable adaptive time step if available" )
         ( prefixvm( prefix, "ts.tol" ).c_str(), Feel::po::value<double>()->default_value( 1e-3 ), "time step tolerance" )
         //( prefixvm( prefix, "ts.strategy" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "strategy, 0=constant time steps, 1=adaptive time steps" )
         ( prefixvm( prefix, "ts.steady" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "false: unsteady, true:steady" )
@@ -444,6 +444,9 @@ po::options_description ts_options( std::string const& prefix )
         ( prefixvm( prefix, "ts.file-format" ).c_str(), Feel::po::value<std::string>()->default_value( "binary" ), "save elements in file " )
 #endif
         ( prefixvm( prefix, "ts.display-stats").c_str(), po::value<bool>()->default_value(false), "display statistics (timers, iterations counts...) at each ts iteration" )
+
+        ( prefixvm( prefix, "ts.newmark.gamma" ).c_str(), Feel::po::value<double>()->default_value( 0.5 ), "newmark gamma parameter" )
+        ( prefixvm( prefix, "ts.newmark.beta" ).c_str(), Feel::po::value<double>()->default_value( 0.25 ), "newmark gamma parameter" )
         ;
     return _options;
 }
@@ -973,7 +976,7 @@ exporter_options( std::string const& prefix )
 
 
         //  geometry
-        ( prefixvm( prefix,"exporter.geometry" ).c_str(), Feel::po::value<std::string>()->default_value( "change_coords_only" ), "Mesh change type, this option tells the exporter whether the mesh does not change(static), changes only the coordinates of the vertices (change_coords_only) or changes entirely (change). Choices: change_coords_only, change, static" )
+        ( prefixvm( prefix,"exporter.geometry" ).c_str(), Feel::po::value<std::string>()->default_value( "static" ), "Mesh change type, this option tells the exporter whether the mesh does not change(static), changes only the coordinates of the vertices (change_coords_only) or changes entirely (change). Choices: change_coords_only, change, static" )
 
         // prefix options
         ( prefixvm( prefix,"exporter.prefix" ).c_str(), Feel::po::value<std::string>()->default_value( prefix ), "prefix for exported files" )

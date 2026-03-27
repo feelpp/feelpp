@@ -38,6 +38,16 @@ public:
     using index_type = IndexType;
     using mesh_base_type = MeshBase<index_type>;
     using mesh_base_ptrtype = std::shared_ptr<mesh_base_type>;
+private:
+    template <typename MeshType, typename InputMeshType>
+    static auto toMesh( InputMeshType const& m )
+        {
+            if constexpr( std::is_same_v<MeshType,mesh_base_type> )
+                return m;
+            else
+                return std::dynamic_pointer_cast<MeshType>( m );
+        }
+public:
 
     class ImportConfig
     {
@@ -64,6 +74,13 @@ public:
         size_type meshComponents() const { return M_meshComponents; }
         bool loadByMasterRankOnly() const { return M_loadByMasterRankOnly; }
 
+        bool importFromSubmesh() const { return M_importFromSubmeshData.has_value(); }
+        template <typename MeshType = mesh_base_type>
+        auto submeshInputMesh() const { return ModelMeshCommon::template toMesh<MeshType>( std::get<0>( M_importFromSubmeshData.value() ) ); }
+        int submeshCoDim() const { return std::get<1>( M_importFromSubmeshData.value() ); }
+        std::set<std::string> const& submeshMarkers() const { return std::get<2>( M_importFromSubmeshData.value() ); }
+
+
         void setStraightenMesh( bool b ) { M_straightenMesh = b; }
         void setMeshComponents( size_type c ) { M_meshComponents = c; }
 
@@ -75,12 +92,14 @@ public:
 
         void setupInputMeshFilenameWithoutApplyPartitioning( std::string const& filename );
         void setupSequentialAndLoadByMasterRankOnly();
+        void setupFromSubmesh( mesh_base_ptrtype m, std::set<std::string> const& markers );
 
         void updateInformationObject( nl::json & p ) const;
         static tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
 
     private :
         std::string M_inputFilename, M_meshFilename, M_geoFilename;
+        std::optional<std::tuple<mesh_base_ptrtype,int,std::set<std::string>>> M_importFromSubmeshData;
         bool M_generatePartitioning;
         int M_numberOfPartition;
         double M_meshSize;
@@ -89,6 +108,17 @@ public:
         bool M_loadByMasterRankOnly;
     };
 
+    class PartitioningSetup
+    {
+    public:
+        PartitioningSetup() = default;
+        PartitioningSetup( PartitioningSetup const& ) = default;
+        PartitioningSetup( PartitioningSetup && ) = default;
+        nl::json const& json() const { return M_json; }
+        void updateForUse( nl::json const& j ) { M_json = j; }
+    private:
+        nl::json M_json;
+    };
 
     ModelMeshCommon() = default;
     ModelMeshCommon( ModelMeshes<IndexType> const& mMeshes ) : M_importConfig( mMeshes ) {}
@@ -98,15 +128,20 @@ public:
     ImportConfig & importConfig() { return M_importConfig; }
     ImportConfig const& importConfig() const { return M_importConfig; }
 
+    PartitioningSetup & partitioningSetup() noexcept { return M_partitioningSetup; }
+    PartitioningSetup const& partitioningSetup() const noexcept { return M_partitioningSetup; }
+
     bool hasMesh() const { return M_mesh? true : false; }
 
     template <typename MeshType = mesh_base_type>
     auto mesh() const
         {
-            if constexpr( std::is_same_v<MeshType,mesh_base_type> )
-                return M_mesh;
-            else
-                return std::dynamic_pointer_cast<MeshType>( M_mesh );
+
+            return ModelMeshCommon::template toMesh<MeshType>( M_mesh );
+            // if constexpr( std::is_same_v<MeshType,mesh_base_type> )
+            //     return M_mesh;
+            // else
+            //     return std::dynamic_pointer_cast<MeshType>( M_mesh );
         }
 
     std::string const& meshFilename() const { return M_meshFilename; }
@@ -169,6 +204,7 @@ public:
 
 private:
     ImportConfig M_importConfig;
+    PartitioningSetup M_partitioningSetup;
     mesh_base_ptrtype M_mesh;
     std::string M_meshFilename;
     std::map<std::string, std::shared_ptr<FunctionSpaceBase> > M_functionSpaces;
@@ -192,6 +228,7 @@ public :
     using mesh_base_ptrtype = std::shared_ptr<mesh_base_type>;
     using collection_data_by_mesh_entity_type = CollectionOfDataByMeshEntity<index_type>;
     using import_config_type = typename ModelMeshCommon<IndexType>::ImportConfig;
+    using partitioning_setup_type = typename ModelMeshCommon<IndexType>::PartitioningSetup;
 private :
     /**
      * @brief A struct that represents the setup of fields.
@@ -211,35 +248,42 @@ private :
                * @brief Default constructor.
                */
               PartSetup() = default;
-  
+
               /**
                * @brief Returns the filename of the part.
                *
                * @return A reference to the filename string.
                */
               std::string const& filename() const { return M_filename; }
-  
+
+              /**
+               * @brief Returns the filename of function space mapping linked to the file stored as filename attribute.
+               *
+               * @return A reference to the space filename string.
+               */
+              std::string const& spaceFilename() const noexcept { return M_spaceFilename; }
+
               /**
                * @brief Returns whether the part has a model expression.
                *
                * @return True if the part has a model expression, false otherwise.
                */
               bool hasExpr() const { return M_mexpr ? true : false; }
-  
+
               /**
                * @brief Returns the model expression of the part.
                *
                * @return A reference to the model expression object.
                */
               ModelExpression const& mExpr() const { return *M_mexpr; }
-  
+
               /**
                * @brief Returns the markers of the part.
                *
                * @return A reference to the model markers object.
                */
               ModelMarkers const& markers() const { return M_markers; }
-  
+
               /**
                * @brief Creates a new PartSetup object from the given model meshes and JSON data.
                *
@@ -248,13 +292,14 @@ private :
                * @return An optional PartSetup object if successful, std::nullopt otherwise.
                */
               static std::optional<PartSetup> create( ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg );
-  
+
               private:
               std::string M_filename;                 ///< The filename of the part.
+              std::string M_spaceFilename;
               std::optional<ModelExpression> M_mexpr; ///< The model expression of the part.
               ModelMarkers M_markers;                 ///< The markers of the part.
           };
-  
+
           /**
            * @brief Constructs a new FieldsSetup object from the given name, model meshes, and JSON data.
            *
@@ -263,28 +308,28 @@ private :
            * @param jarg The JSON data.
            */
           FieldsSetup( std::string const& name, ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg );
-  
+
           /**
            * @brief Returns the name of the fields.
            *
            * @return A reference to the name string.
            */
           std::string const& name() const { return M_name; }
-  
+
           /**
            * @brief Returns the basis of the fields.
            *
            * @return A reference to the basis string.
            */
           std::string const& basis() const { return M_basis; }
-  
+
           /**
            * @brief Returns the parts of the fields.
            *
            * @return A reference to the vector of part setup objects.
            */
           std::vector<PartSetup> const& parts() const { return M_parts; }
-  
+
           private:
           std::string M_name;             ///< The name of the fields.
           std::string M_basis;            ///< The basis of the fields.
@@ -388,7 +433,7 @@ public :
 
         struct Setup
         {
-            Setup( ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg );
+            Setup( ModelMesh const* parentModelMesh, ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg );
 
             ModelExpression const& metricExpr() const { return M_metric; }
 
@@ -435,7 +480,7 @@ public :
 
             friend struct Execute;
         private:
-
+            ModelMesh const* M_parentModelMesh = nullptr;
             nl::json M_remesherSetup;
             std::set<std::string> M_requiredMarkers;
             std::set<typename Event::Type> M_executionEvents;
@@ -514,6 +559,7 @@ public :
 
     import_config_type & importConfig() { return M_mmeshCommon->importConfig(); }
     import_config_type const& importConfig() const { return M_mmeshCommon->importConfig(); }
+    partitioning_setup_type const& partitioningSetup() const { return M_mmeshCommon->partitioningSetup(); }
 
     template <typename MeshType>
     void updateForUse( ModelMeshes<IndexType> const& mMeshes );

@@ -21,8 +21,9 @@ namespace FeelModels
 {
 
 template <typename IndexType>
-ModelMesh<IndexType>::MeshAdaptation::Setup::Setup( ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg )
+ModelMesh<IndexType>::MeshAdaptation::Setup::Setup( ModelMesh const* parentModelMesh, ModelMeshes<IndexType> const& mMeshes, nl::json const& jarg )
     :
+    M_parentModelMesh( parentModelMesh ),
     M_eventEachTimeStep_frequency( 1 ),
     M_eventEachTimeStep_lastExecutionIndex( invalid_v<size_type> )
 {
@@ -230,7 +231,10 @@ ModelMesh<IndexType>::MeshAdaptation::Execute::executeImpl( std::shared_ptr<Mesh
             auto outputMeshSeq = r.execute();
             using io_t = PartitionIO<MeshType>;
             io_t io( omeshParaPath );
-            io.write( partitionMesh( outputMeshSeq, nPartition/*, partitionByRange, partconfig*/ ) );
+            nl::json partConfig = {
+                { "partitioner", M_mas.M_parentModelMesh->partitioningSetup().json() }
+            };
+            io.write( partitionMesh( outputMeshSeq, nPartition, {}, partConfig ) );
 #else
             CHECK( false ) << "no mmg/parmmg support";
 #endif
@@ -253,6 +257,8 @@ template class ModelMesh<uint32_type>;
 
 template std::shared_ptr<Mesh<Simplex<2,1>>> ModelMesh<uint32_type>::MeshAdaptation::Execute::executeImpl<Mesh<Simplex<2,1>>>( std::shared_ptr<Mesh<Simplex<2,1>>> );
 template std::shared_ptr<Mesh<Simplex<3,1>>> ModelMesh<uint32_type>::MeshAdaptation::Execute::executeImpl<Mesh<Simplex<3,1>>>( std::shared_ptr<Mesh<Simplex<3,1>>> );
+template std::shared_ptr<Mesh<Hypercube<2,1>>> ModelMesh<uint32_type>::MeshAdaptation::Execute::executeImpl<Mesh<Hypercube<2,1>>>( std::shared_ptr<Mesh<Hypercube<2,1>>> );
+template std::shared_ptr<Mesh<Hypercube<3,1>>> ModelMesh<uint32_type>::MeshAdaptation::Execute::executeImpl<Mesh<Hypercube<3,1>>>( std::shared_ptr<Mesh<Hypercube<3,1>>> );
 
 } // namespace FeelModel
 } // namespace Feel

@@ -22,5 +22,5 @@
 #
 #
 feelpp_add_pymodule(electric SRCS electric.cpp DESTINATION feelpp/toolboxes/electric LINK_LIBRARIES Feelpp::feelpp_toolbox_electric_lib)
-install(FILES  __init__.py electric.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/electric)
-
+install(FILES  __init__.py electric.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/electric
+        COMPONENT ${FEELPP_PYTHON_INSTALL_COMPONENT})

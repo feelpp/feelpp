@@ -52,7 +52,7 @@ public :
     typedef typename functionspace2_type::mesh_type mesh2_type;
 
     static inline const uint16_type nDim = mesh1_type::nDim;
-    static const bool is_simplex = mesh1_type::shape_type::is_simplex;
+    static inline const bool is_simplex = mesh1_type::shape_type::is_simplex;
 
     static inline const uint16_type nDofPerVertex = functionspace1_type::fe_type::nDofPerVertex;
     static inline const uint16_type numVertices = mesh1_type::element_type::numVertices;
@@ -359,16 +359,17 @@ std::vector<boost::tuple<uint16_type,uint16_type> >
 DofRelationshipMap<SpaceType1,SpaceType2>::buildElementaryMapEdges(std::vector<uint16_type> const & mapPoint)
 {
 
-    if (nDim==2)
+    if constexpr (nDim==2)
     {
-        if (is_simplex) { return mapTrianglePoints2Edge(mapPoint); }
+        if constexpr (is_simplex) { return mapTrianglePoints2Edge(mapPoint); }
         else { return mapQuadranglePoints2Edge(mapPoint); }
     }
-    else if (nDim==3)
+    else if constexpr (nDim==3)
     {
-        if (is_simplex) { return mapTetraPoints2Edge(mapPoint); }
+        if constexpr (is_simplex) { return mapTetraPoints2Edge(mapPoint); }
     }
-
+    CHECK( false ) << "should not go here";
+    return {};
 }
 
 //---------------------------------------------------------------------------------//
@@ -377,15 +378,17 @@ template< class SpaceType1,class SpaceType2 >
 std::vector<uint16_type>
 DofRelationshipMap<SpaceType1,SpaceType2>::buildElementaryMapFaces(std::vector<uint16_type> const & mapPoint)
 {
-    if (nDim==2)
+    if constexpr (nDim==2)
     {
-        if (is_simplex) { return mapTrianglePoints2Face(mapPoint); }
+      if constexpr (is_simplex) { return mapTrianglePoints2Face(mapPoint); }
         else { return mapQuadranglePoints2Face(mapPoint); }
     }
-    else if (nDim==3)
+    else if constexpr (nDim==3)
     {
-        if (is_simplex) { return mapTetraPoints2Face(mapPoint); }
+      if constexpr (is_simplex) { return mapTetraPoints2Face(mapPoint); }
     }
+    CHECK( false ) << "should not go here";
+    return {};
 }
 
 //---------------------------------------------------------------------------------//
@@ -398,17 +401,25 @@ DofRelationshipMap<SpaceType1,SpaceType2>::convertInternalDofInFace(typename mes
                                                                     std::vector<boost::tuple<uint16_type,uint16_type> > const & mapEdge,
                                                                     std::vector<uint16_type> const & mapFace)
 {
-    auto traitLocal = /*template*/ tableInternalDofFace2Edge<nDofPerFace>(ilocModif);
+    if constexpr (is_simplex)
+    {
+        auto traitLocal = /*template*/ tableInternalDofFace2Edge<nDofPerFace>(ilocModif);
 
-    auto traitGlobal = boost::make_tuple( elem.f2e(nface, boost::get<0>(traitLocal)),elem.f2e(nface,boost::get<1>(traitLocal)) );
+        auto traitGlobal = boost::make_tuple( elem.f2e(nface, boost::get<0>(traitLocal)),elem.f2e(nface,boost::get<1>(traitLocal)) );
 
-    auto traitGlobal2 = boost::make_tuple( boost::get<0>(mapEdge[boost::get<0>(traitGlobal)]),
-                                           boost::get<0>(mapEdge[boost::get<1>(traitGlobal)]) );
+        auto traitGlobal2 = boost::make_tuple( boost::get<0>(mapEdge[boost::get<0>(traitGlobal)]),
+                                               boost::get<0>(mapEdge[boost::get<1>(traitGlobal)]) );
 
-    auto traitLocal2 = boost::make_tuple( elem.f2eLoc( mapFace[nface], boost::get<0>(traitGlobal2)),
-                                          elem.f2eLoc( mapFace[nface], boost::get<1>(traitGlobal2)) );
+        auto traitLocal2 = boost::make_tuple( elem.f2eLoc( mapFace[nface], boost::get<0>(traitGlobal2)),
+                                              elem.f2eLoc( mapFace[nface], boost::get<1>(traitGlobal2)) );
 
-    return tableInternalDofEdge2Face<nDofPerFace>(traitLocal2);
+        return tableInternalDofEdge2Face<nDofPerFace>(traitLocal2);
+    }
+    else
+    {
+        CHECK( false ) << "TODO: implement others convex than Simplex";
+        return invalid_v<uint16_type>;
+    }
 }
 
 

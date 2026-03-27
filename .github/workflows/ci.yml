@@ -56,6 +56,10 @@ jobs:
           username: ${{ secrets.CR_LOGIN }}
           password: ${{ secrets.CR_PAT }}
 
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
       - name: Clone or update docker repo
         run: |
           if [ -d docker ]; then
@@ -99,6 +103,10 @@ jobs:
           username: ${{ secrets.CR_LOGIN }}
           password: ${{ secrets.CR_PAT }}
 
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
       - name: Clone or update docker repo
         run: |
           if [ -d docker ]; then
@@ -140,6 +148,10 @@ jobs:
           registry: ghcr.io
           username: ${{ secrets.CR_LOGIN }}
           password: ${{ secrets.CR_PAT }}
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Clone or update docker repo
         run: |

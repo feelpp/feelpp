@@ -27,4 +27,5 @@ message(STATUS "[pyfeelpp-mor] add pymodule pbdw")
 feelpp_add_pymodule(pbdw SRCS pbdw.cpp DESTINATION feelpp/mor/pbdw LINK_LIBRARIES Feelpp::feelpp_mor )
 add_dependencies(pyfeelppmor _pbdw)
 
-install(FILES  __init__.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/mor/pbdw)
+install(FILES  __init__.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/mor/pbdw
+        COMPONENT ${FEELPP_PYTHON_INSTALL_COMPONENT})

@@ -29,12 +29,12 @@
 namespace py = pybind11;
 using namespace Feel;
 
-template<typename ConvexT, int Order=1>
+template<int nDim, int OrderPotential=1>
 void defToolbox(py::module &m)
 {
     using namespace Feel;
     using namespace Feel::FeelModels;
-    using convex_t = ConvexT;
+    using convex_t = Simplex<nDim,1>;
     using toolbox_t = Maxwell<convex_t>;
     using space_magneticpotential_t = typename toolbox_t::space_magneticpotential_type;
     using space_magneticpotential_ptr_t = typename toolbox_t::space_magneticpotential_ptrtype;
@@ -86,4 +86,3 @@ PYBIND11_MODULE(_maxwell, m )
     defToolbox<2,1>(m);
     defToolbox<3,1>(m);
 }
-

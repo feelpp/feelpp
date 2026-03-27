@@ -26,6 +26,8 @@
 cmake_minimum_required(VERSION 3.13)
 project(pyfeelpp-mor)
 set(FEELPP_PYTHON_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+include("${CMAKE_CURRENT_LIST_DIR}/../../feelpp/cmake/modules/FeelppPythonSupport.cmake")
+set(FEELPP_PYTHON_INSTALL_COMPONENT Python)
 
 if ( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR OR FEELPP_COMPONENT STREQUAL "mor/pyfeelpp-mor" )
   find_package(Feel++ COMPONENTS Toolboxes MOR PATHS $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
@@ -60,14 +62,26 @@ endif()
 
 OPTION(FEELPP_ENABLE_PYFEELPP_MOR "Enable PyFeel++ MOR" ON  )
 if (FEELPP_ENABLE_PYFEELPP_MOR)
+  enable_testing()
   set(PYFILES generate_basis.py )
-  install(FILES ${PYFILES} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/mor)
+  install(FILES ${PYFILES} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/mor
+          COMPONENT ${FEELPP_PYTHON_INSTALL_COMPONENT})
 
   message(STATUS "Enabling pyfeelpp mor")
   add_subdirectory( feelpp )
+  feelpp_stage_python_files(
+    TARGET pyfeelppmor_generate_basis_pyfiles
+    DESTINATION feelpp/mor
+    FILES ${PYFILES}
+  )
+  if (TARGET pyfeelppmor)
+    add_dependencies(pyfeelppmor pyfeelppmor_generate_basis_pyfiles)
+  endif()
   add_subdirectory( tests )
   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pyfeelpp_mor/__init__.py
-          DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/pyfeelpp_mor)
+          DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/pyfeelpp_mor
+          COMPONENT ${FEELPP_PYTHON_INSTALL_COMPONENT})
   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pyfeelppmor/__init__.py
-          DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/pyfeelppmor)
+          DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/pyfeelppmor
+          COMPONENT ${FEELPP_PYTHON_INSTALL_COMPONENT})
 endif()
