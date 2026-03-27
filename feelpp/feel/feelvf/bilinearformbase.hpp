@@ -247,6 +247,16 @@ public:
         return M_matrix;
     }
 
+    auto l1Norm() const
+    {
+        return M_matrix->l1Norm();
+    }
+
+    auto linftyNorm() const
+    {
+        return M_matrix->linftyNorm();
+    }
+
     list_block_type const& blockList() const
     {
         return M_lb;

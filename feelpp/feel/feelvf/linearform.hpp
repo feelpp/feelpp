@@ -833,6 +833,36 @@ public:
         return *M_F;
     }
 
+    auto sum() const
+    {
+        return M_F->sum();
+    }
+
+    auto min() const
+    {
+        return M_F->min();
+    }
+
+    auto max() const
+    {
+        return M_F->max();
+    }
+
+    auto l1Norm() const
+    {
+        return M_F->l1Norm();
+    }
+
+    auto l2Norm() const
+    {
+        return M_F->l2Norm();
+    }
+
+    auto linftyNorm() const
+    {
+        return M_F->linftyNorm();
+    }
+
     list_block_type const& blockList() const
     {
         return M_lb;
