@@ -10,12 +10,15 @@ foreach( _DIM 2 3)
   feelpp_max( MAX_ORDER 1 ${_D_ORDER})
   message(STATUS "[feelpp] SOLID ${_DIM}D PNG1 N=1..${MAX_ORDER}")
   foreach( _DISP_ORDER RANGE 1 ${MAX_ORDER} )
-    genLibSolidMechanics(
-      DIM ${_DIM}
-      DISP_ORDER ${_DISP_ORDER}
-      GEO_ORDER 1
+    foreach( _CONVEX_TYPE Simplex Hypercube )
+      genLibSolidMechanics(
+        DIM ${_DIM}
+        DISP_ORDER ${_DISP_ORDER}
+        GEO_ORDER 1
+        CONVEX ${_CONVEX_TYPE}
       )
-    set(FEELPP_MODELS_LIBRARIES_SOLIDMECHANICS  ${FEELPP_MODELS_LIBRARIES_SOLIDMECHANICS} ${SOLIDMECHANICS_LIB_NAME}  )
+      set(FEELPP_MODELS_LIBRARIES_SOLIDMECHANICS  ${FEELPP_MODELS_LIBRARIES_SOLIDMECHANICS} ${SOLIDMECHANICS_LIB_NAME}  )
+    endforeach()
   endforeach()
 endforeach()
 

@@ -220,7 +220,7 @@ endmacro(genLibElectric)
 
 macro( genLibSolidMechanics )
   PARSE_ARGUMENTS(FEELMODELS_APP
-    "DIM;DISP_ORDER;GEO_ORDER"
+    "DIM;DISP_ORDER;GEO_ORDER;CONVEX"
     ""
     ${ARGN}
     )
@@ -232,8 +232,12 @@ macro( genLibSolidMechanics )
   set(SOLIDMECHANICS_DIM ${FEELMODELS_APP_DIM})
   set(SOLIDMECHANICS_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
   set(SOLIDMECHANICS_ORDER_DISPLACEMENT ${FEELMODELS_APP_DISP_ORDER})
-
-  set(SOLIDMECHANICS_LIB_VARIANTS ${SOLIDMECHANICS_DIM}dP${SOLIDMECHANICS_ORDER_DISPLACEMENT}G${SOLIDMECHANICS_ORDERGEO})
+  if ( FEELMODELS_APP_CONVEX )
+    set(SOLIDMECHANICS_CONVEX_TYPE ${FEELMODELS_APP_CONVEX})
+  else()
+    set(SOLIDMECHANICS_CONVEX_TYPE Simplex)
+  endif()
+  set(SOLIDMECHANICS_LIB_VARIANTS ${SOLIDMECHANICS_DIM}dP${SOLIDMECHANICS_ORDER_DISPLACEMENT}_${SOLIDMECHANICS_CONVEX_TYPE}G${SOLIDMECHANICS_ORDERGEO})
   set(SOLIDMECHANICS_LIB_NAME feelpp_toolbox_solid_lib_${SOLIDMECHANICS_LIB_VARIANTS})
 
   if ( NOT TARGET ${SOLIDMECHANICS_LIB_NAME} )
@@ -335,7 +339,7 @@ macro(genLibFluidMechanics)
       ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdatestabilisation_inst.cpp
       ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsassemblyturbulence_inst.cpp
       )
-    set(FLUIDMECHANICS_LIB_DEPENDS feelpp_toolbox_fluidbase feelpp_modelmesh feelpp_modelcore feelpp_toolbox_coefficientformpdes_${FLUIDMECHANICS_DIM}dG${FLUIDMECHANICS_ORDERGEO} )
+      set(FLUIDMECHANICS_LIB_DEPENDS feelpp_toolbox_fluidbase feelpp_modelmesh feelpp_modelcore feelpp_toolbox_multibody feelpp_toolbox_coefficientformpdes_${FLUIDMECHANICS_DIM}dG${FLUIDMECHANICS_ORDERGEO} )
     # if ( FEELPP_TOOLBOXES_ENABLE_MESHALE )
     #   set(FLUIDMECHANICS_LIB_DEPENDS feelpp_modelmeshale ${FLUIDMECHANICS_LIB_DEPENDS})
     # endif()

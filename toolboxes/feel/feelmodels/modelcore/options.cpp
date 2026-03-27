@@ -287,7 +287,7 @@ fluidMechanics_options(std::string const& prefix)
         .add( pcd_options( prefix ) )
         .add( coefficientformpdes_options( prefixvm(prefix,"turbulence") ) )
 
-        .add( modelnumerical_options( prefixvm(prefix,"body") ) )
+        .add( modelnumerical_options( prefixvm(prefix,"multibody") ) )
         ;
 
     return fluidOptions;
@@ -343,9 +343,16 @@ fluidStructInteraction_options( std::string const& prefix )
         (prefixvm(prefix,"mesh-save.directory").c_str(),Feel::po::value< std::string >(), "mesh-directory")
         (prefixvm(prefix,"mesh-save.force-rebuild").c_str(), Feel::po::value<bool>()->default_value( false ), "mesh-save.force-rebuild")
 
+        // Magneto-swimmer options 
+        // (prefixvm(prefix,"solve-rigid").c_str(), Feel::po::value<bool>()->default_value( false ), " magneto swimmer solve only rigid part")
+        // (prefixvm(prefix,"solve-elastic").c_str(), Feel::po::value<bool>()->default_value( false ), " magneto swimmer solve only elastic part")
+        (prefixvm(prefix,"solve-dirichlet").c_str(), Feel::po::value<bool>()->default_value( true ), " magneto swimmer solve all")
+
+
         (prefixvm(prefix,"conforming-interface").c_str(), Feel::po::value<bool>()->default_value( false ), " fsi interface is conforme?")
         (prefixvm(prefix,"coupling-type").c_str(),Feel::po::value< std::string >()->default_value("Implicit"), " Implicit or Semi-Implicit")
         (prefixvm(prefix,"coupling-bc").c_str(),Feel::po::value< std::string >()->default_value("dirichlet-neumann"), " dirichlet-neumann, robin-robin,robin-neumann")
+        (prefixvm(prefix,"evaluate-fluid-normal-stress-on-reference-mesh").c_str(), Feel::po::value<bool>()->default_value( true ), "evaluate-fluid-normal-stress-on-reference-mesh")
 
         (prefixvm(prefix,"fixpoint.tol").c_str(), Feel::po::value<double>()->default_value( 1.e-6 ), "tolerance pt fixe")
         (prefixvm(prefix,"fixpoint.initialtheta").c_str(), Feel::po::value<double>()->default_value( 1. ), "relax aitken parameter")

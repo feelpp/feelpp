@@ -181,6 +181,10 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUse()
             //VLOG( 2 ) << "[Mesh::updateForUse] renumber : " << ti.elapsed() << "\n";
         }
 
+        //! set the number of partition.
+        //! NOTE: currently, we use same concept for process id and partition id. Maybe, it will be usefull to define that process id can contains one or several partitions.
+        this->setNumberOfPartitions( this->worldComm().localSize( ) );
+
         element_iterator iv, en;
 
         if ( this->components().test( MESH_UPDATE_FACES ) || this->components().test( MESH_UPDATE_FACES_MINIMAL ) )
