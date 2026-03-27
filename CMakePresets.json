@@ -1039,6 +1039,11 @@
                "mode": "until-pass"
             }
          },
+         "filter": {
+            "include": {
+               "name": "^(feelpp_test_.*|feelpp_mor_python-tests-(mpi-)?mor)$"
+            }
+         },
          "inherits": "default",
          "name": "mor",
          "output": {
