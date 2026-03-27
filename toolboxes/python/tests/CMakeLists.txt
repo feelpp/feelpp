@@ -1,6 +1,67 @@
 include(GNUInstallDirs)
 include("${CMAKE_CURRENT_LIST_DIR}/../../../feelpp/cmake/modules/FeelppPythonSupport.cmake")
 
+function(feelpp_add_python_script_test)
+  cmake_parse_arguments(FEELPP_PYSCRIPT
+    ""
+    "NAME;WORKING_DIRECTORY;MPI_NP;SCRIPT"
+    "TEST_ARGS;PYTHONPATH_ENTRIES;LD_LIBRARY_PATH_ENTRIES"
+    ${ARGN}
+  )
+  if(NOT FEELPP_PYSCRIPT_NAME)
+    message(FATAL_ERROR "[pyfeelpp] feelpp_add_python_script_test requires NAME")
+  endif()
+  if(NOT FEELPP_PYSCRIPT_SCRIPT)
+    message(FATAL_ERROR "[pyfeelpp] feelpp_add_python_script_test requires SCRIPT")
+  endif()
+
+  feelpp_python_make_test_home(_feelpp_python_test_home NAME "${FEELPP_PYSCRIPT_NAME}")
+  feelpp_python_join_paths(_feelpp_pythonpath ${FEELPP_PYSCRIPT_PYTHONPATH_ENTRIES})
+  feelpp_python_join_paths(_feelpp_python_ld_library_path ${FEELPP_PYSCRIPT_LD_LIBRARY_PATH_ENTRIES})
+
+  set(_feelpp_pyscript_command
+    ${CMAKE_COMMAND} -E env
+    HOME=${_feelpp_python_test_home}
+    PYTHONNOUSERSITE=1
+  )
+
+  if(_feelpp_python_ld_library_path)
+    list(APPEND _feelpp_pyscript_command
+      LD_LIBRARY_PATH=${_feelpp_python_ld_library_path}
+    )
+  endif()
+
+  if(_feelpp_pythonpath)
+    list(APPEND _feelpp_pyscript_command
+      PYTHONPATH=${_feelpp_pythonpath}
+    )
+  endif()
+
+  if(FEELPP_PYSCRIPT_MPI_NP)
+    list(APPEND _feelpp_pyscript_command mpirun -np ${FEELPP_PYSCRIPT_MPI_NP})
+  endif()
+
+  list(APPEND _feelpp_pyscript_command
+    ${Python3_EXECUTABLE}
+    ${FEELPP_PYSCRIPT_SCRIPT}
+    ${FEELPP_PYSCRIPT_TEST_ARGS}
+  )
+
+  if(FEELPP_PYSCRIPT_WORKING_DIRECTORY)
+    add_test(
+      NAME ${FEELPP_PYSCRIPT_NAME}
+      COMMAND ${_feelpp_pyscript_command}
+      WORKING_DIRECTORY ${FEELPP_PYSCRIPT_WORKING_DIRECTORY}
+    )
+  else()
+    add_test(NAME ${FEELPP_PYSCRIPT_NAME} COMMAND ${_feelpp_pyscript_command})
+  endif()
+
+  if(FEELPP_PYSCRIPT_MPI_NP)
+    set_property(TEST ${FEELPP_PYSCRIPT_NAME} PROPERTY PROCESSORS ${FEELPP_PYSCRIPT_MPI_NP})
+  endif()
+endfunction()
+
 set(_feelpp_pythonpath_entries "${FEELPP_PYTHON_BUILD_DIR}")
 list(APPEND _feelpp_pythonpath_entries
   "${CMAKE_BINARY_DIR}/feelpp/python"
@@ -45,6 +106,7 @@ list(REMOVE_DUPLICATES _feelpp_ld_library_path_entries)
 
 set(PYFILES
   _cfpdes_test_utils.py
+  _cfpdes_case_runner.py
   _case_paths.py
   _heat_test_utils.py
   _solid_test_utils.py
@@ -112,14 +174,8 @@ endif()
 message(STATUS "[pyfeelpptoolboxes] enabled toolboxes for testing: ${_enabled_toolboxes}")
 
 foreach(toolbox IN LISTS _enabled_toolboxes)
-  if(toolbox STREQUAL "heat")
-    set(_toolbox_test_specs
-      "heat|test_heat.py"
-      "heat-thermo2d|test_heat_thermo2d.py"
-      "heat-time-stepping|test_heat_time_stepping.py"
-    )
-  elseif(toolbox STREQUAL "cfpdes")
-    set(_toolbox_test_specs
+  if(toolbox STREQUAL "cfpdes")
+    set(_cfpdes_test_specs
       "cfpdes|test_cfpdes.py"
       "cfpdes-p-laplacian|test_cfpdes_p_laplacian.py"
       "cfpdes-square|test_cfpdes_square.py"
@@ -127,6 +183,40 @@ foreach(toolbox IN LISTS _enabled_toolboxes)
       "cfpdes-heat-thermal-bridges|test_cfpdes_heat_thermal_bridges.py"
       "cfpdes-heat-thermo2d|test_cfpdes_heat_thermo2d.py"
       "cfpdes-remesh|test_cfpdes_remesh.py"
+    )
+
+    foreach(_cfpdes_test_spec IN LISTS _cfpdes_test_specs)
+      string(REPLACE "|" ";" _cfpdes_test_spec_parts "${_cfpdes_test_spec}")
+      list(GET _cfpdes_test_spec_parts 0 _cfpdes_test_name_suffix)
+      list(GET _cfpdes_test_spec_parts 1 _cfpdes_test_file)
+      set(_cfpdes_test_args --pytest-file ${CMAKE_CURRENT_SOURCE_DIR}/${_cfpdes_test_file})
+
+      feelpp_add_python_script_test(
+        NAME feelpp_toolbox_python-tests-${_cfpdes_test_name_suffix}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/_cfpdes_case_runner.py
+        PYTHONPATH_ENTRIES ${_feelpp_pythonpath_entries}
+        LD_LIBRARY_PATH_ENTRIES ${_feelpp_ld_library_path_entries}
+        TEST_ARGS ${_cfpdes_test_args}
+      )
+      feelpp_add_python_script_test(
+        NAME feelpp_toolbox_python-tests-mpi-${_cfpdes_test_name_suffix}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/_cfpdes_case_runner.py
+        MPI_NP 2
+        PYTHONPATH_ENTRIES ${_feelpp_pythonpath_entries}
+        LD_LIBRARY_PATH_ENTRIES ${_feelpp_ld_library_path_entries}
+        TEST_ARGS ${_cfpdes_test_args}
+      )
+    endforeach()
+    continue()
+  endif()
+
+  if(toolbox STREQUAL "heat")
+    set(_toolbox_test_specs
+      "heat|test_heat.py"
+      "heat-thermo2d|test_heat_thermo2d.py"
+      "heat-time-stepping|test_heat_time_stepping.py"
     )
   elseif(toolbox STREQUAL "solid")
     set(_toolbox_test_specs
