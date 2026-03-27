@@ -26,8 +26,14 @@ endif()
 if(FEELPP_TOOLBOXES_ENABLE_HEAT AND EXISTS "${CMAKE_BINARY_DIR}/toolboxes/feel/feelmodels/heat")
   list(APPEND _feelpp_ld_library_path_entries "${CMAKE_BINARY_DIR}/toolboxes/feel/feelmodels/heat")
 endif()
+if(FEELPP_TOOLBOXES_ENABLE_SOLIDMECHANICS AND EXISTS "${CMAKE_BINARY_DIR}/toolboxes/feel/feelmodels/solid")
+  list(APPEND _feelpp_ld_library_path_entries "${CMAKE_BINARY_DIR}/toolboxes/feel/feelmodels/solid")
+endif()
 if(FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS AND EXISTS "${CMAKE_BINARY_DIR}/toolboxes/feel/feelmodels/fluid")
   list(APPEND _feelpp_ld_library_path_entries "${CMAKE_BINARY_DIR}/toolboxes/feel/feelmodels/fluid")
+endif()
+if(FEELPP_TOOLBOXES_ENABLE_HDG AND EXISTS "${CMAKE_BINARY_DIR}/toolboxes/feel/feelmodels/hdg")
+  list(APPEND _feelpp_ld_library_path_entries "${CMAKE_BINARY_DIR}/toolboxes/feel/feelmodels/hdg")
 endif()
 if(FEELPP_TOOLBOXES_ENABLE_THERMOELECTRIC AND EXISTS "${CMAKE_BINARY_DIR}/toolboxes/feel/feelmodels/thermoelectric")
   list(APPEND _feelpp_ld_library_path_entries "${CMAKE_BINARY_DIR}/toolboxes/feel/feelmodels/thermoelectric")
@@ -52,6 +58,7 @@ set(PYFILES
   test_heatfluid.py
   test_interpolation.py
   test_multitoolboxes.py
+  test_solid.py
   test_thermoelectric.py
   test_toolboxes.py
 )
@@ -76,6 +83,12 @@ if(FEELPP_TOOLBOXES_ENABLE_HEAT)
 endif()
 if(FEELPP_TOOLBOXES_ENABLE_ELECTRIC)
   list(APPEND _enabled_toolboxes electric)
+endif()
+if(FEELPP_TOOLBOXES_ENABLE_SOLIDMECHANICS)
+  list(APPEND _enabled_toolboxes solid)
+endif()
+if(FEELPP_TOOLBOXES_ENABLE_HDG)
+  list(APPEND _enabled_toolboxes hdg)
 endif()
 if(FEELPP_TOOLBOXES_ENABLE_THERMOELECTRIC)
   list(APPEND _enabled_toolboxes thermoelectric)

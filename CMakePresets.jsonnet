@@ -1,5 +1,6 @@
 // CMakePresets.jsonnet - Template for generating CMakePresets.json
-// Generate with: jsonnet --indent 4 CMakePresets.jsonnet > CMakePresets.json
+// Generate with: ./scripts/generate-presets.sh
+// Or manually: jsonnet CMakePresets.jsonnet | python3 -m json.tool --indent 4 > CMakePresets.json
 
 local compilers = ['gcc', 'clang'];
 local cppStds = ['20', '23'];
@@ -49,13 +50,13 @@ local defaultPreset = {
     FEELPP_USE_EXTERNAL_EIGEN3: 'OFF',
     FEELPP_USE_EXTERNAL_PYBIND11: 'ON',
     CMAKE_EXPORT_COMPILE_COMMANDS: 'TRUE',
-    // Disable all toolboxes for faster CI builds (keep only core)
-    FEELPP_TOOLBOXES_ENABLE_HEAT: 'OFF',
-    FEELPP_TOOLBOXES_ENABLE_CFPDE: 'OFF',
+    // Enable the maintained toolbox set in the main build.
+    FEELPP_TOOLBOXES_ENABLE_HEAT: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_CFPDE: 'ON',
     FEELPP_TOOLBOXES_ENABLE_ELECTRIC: 'ON',
-    FEELPP_TOOLBOXES_ENABLE_THERMOELECTRIC: 'OFF',
-    FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS: 'OFF',
-    FEELPP_TOOLBOXES_ENABLE_SOLIDMECHANICS: 'OFF',
+    FEELPP_TOOLBOXES_ENABLE_THERMOELECTRIC: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_SOLIDMECHANICS: 'ON',
     FEELPP_TOOLBOXES_ENABLE_FSI: 'OFF',
     FEELPP_TOOLBOXES_ENABLE_ADVECTION: 'OFF',
     FEELPP_TOOLBOXES_ENABLE_LEVELSET: 'OFF',
@@ -325,14 +326,14 @@ local componentCacheVars = {
     FEELPP_ENABLE_FEELPP_PYTHON: 'OFF',
     FEELPP_ENABLE_PYTHON: 'ON',
     FEELPP_TOOLBOXES_ENABLE_PYTHON: 'ON',
-    // Disable all toolboxes for faster CI builds (keep only core)
+    // Enable the maintained toolbox set for the toolbox component build.
     FEELPP_TOOLBOXES_ENABLE_HEAT: 'ON',
     FEELPP_TOOLBOXES_ENABLE_CFPDE: 'ON',
     FEELPP_TOOLBOXES_ENABLE_ELECTRIC: 'ON',
     FEELPP_TOOLBOXES_ENABLE_THERMOELECTRIC: 'ON',
     FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS: 'ON',
     FEELPP_TOOLBOXES_ENABLE_SOLIDMECHANICS: 'ON',
-    FEELPP_TOOLBOXES_ENABLE_FSI: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_FSI: 'OFF',
     FEELPP_TOOLBOXES_ENABLE_ADVECTION: 'OFF',
     FEELPP_TOOLBOXES_ENABLE_LEVELSET: 'OFF',
     FEELPP_TOOLBOXES_ENABLE_MULTIFLUID: 'OFF',
@@ -481,6 +482,110 @@ local doxPreset = {
   },
 };
 
+local focusedToolboxCacheVars = {
+  FEELPP_TOOLBOXES_ENABLE_ADVECTION: 'OFF',
+  FEELPP_TOOLBOXES_ENABLE_CFPDE: 'OFF',
+  FEELPP_TOOLBOXES_ENABLE_ELECTRIC: 'OFF',
+  FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS: 'OFF',
+  FEELPP_TOOLBOXES_ENABLE_FSI: 'OFF',
+  FEELPP_TOOLBOXES_ENABLE_HDG: 'OFF',
+  FEELPP_TOOLBOXES_ENABLE_HEAT: 'OFF',
+  FEELPP_TOOLBOXES_ENABLE_LEVELSET: 'OFF',
+  FEELPP_TOOLBOXES_ENABLE_MAXWELL: 'OFF',
+  FEELPP_TOOLBOXES_ENABLE_MULTIFLUID: 'OFF',
+  FEELPP_TOOLBOXES_ENABLE_SOLIDMECHANICS: 'OFF',
+  FEELPP_TOOLBOXES_ENABLE_THERMOELECTRIC: 'OFF',
+};
+
+local pythonCiBaseCacheVars = {
+  FEELPP_ENABLE_ASCIIDOCTOR: 'OFF',
+  FEELPP_ENABLE_BENCHMARKS: 'OFF',
+  FEELPP_ENABLE_DOCUMENTATION: 'OFF',
+  FEELPP_ENABLE_QUICKSTART: 'OFF',
+  FEELPP_ENABLE_RESEARCH: 'OFF',
+  FEELPP_ENABLE_TESTS: 'OFF',
+};
+
+local pythonCiPreset(name, description, displayName, extraCacheVariables={}) = {
+  name: name,
+  inherits: 'default',
+  description: description,
+  displayName: displayName,
+  binaryDir: '${sourceDir}/build/' + name,
+  cacheVariables: pythonCiBaseCacheVars + {
+    CMAKE_INSTALL_PREFIX: '${sourceDir}/install/' + name,
+  } + extraCacheVariables,
+};
+
+local pythonCiConfigurePresets = [
+  pythonCiPreset(
+    'python-core-ci',
+    'Fresh build directory for core Python CI validation',
+    'python core ci',
+    {
+      FEELPP_ENABLE_MOR: 'OFF',
+      FEELPP_ENABLE_TOOLBOXES: 'OFF',
+    }
+  ),
+  pythonCiPreset(
+    'python-electric-ci',
+    'Fresh build directory for electric toolbox Python CI validation',
+    'python electric ci',
+    {
+      FEELPP_ENABLE_MOR: 'OFF',
+    } + focusedToolboxCacheVars + {
+      FEELPP_TOOLBOXES_ENABLE_ELECTRIC: 'ON',
+    }
+  ),
+  pythonCiPreset(
+    'python-mor-ci',
+    'Fresh build directory for MOR Python CI validation',
+    'python mor ci',
+    focusedToolboxCacheVars + {
+      FEELPP_TOOLBOXES_ENABLE_ELECTRIC: 'ON',
+    }
+  ),
+  pythonCiPreset(
+    'python-heat-ci',
+    'Fresh build directory for heat toolbox Python CI validation',
+    'python heat ci',
+    {
+      FEELPP_ENABLE_MOR: 'OFF',
+    } + focusedToolboxCacheVars + {
+      FEELPP_TOOLBOXES_ENABLE_HEAT: 'ON',
+    }
+  ),
+  pythonCiPreset(
+    'python-solid-ci',
+    'Fresh build directory for solid toolbox Python CI validation',
+    'python solid ci',
+    {
+      FEELPP_ENABLE_MOR: 'OFF',
+    } + focusedToolboxCacheVars + {
+      FEELPP_TOOLBOXES_ENABLE_SOLIDMECHANICS: 'ON',
+    }
+  ),
+  pythonCiPreset(
+    'python-hdg-ci',
+    'Fresh build directory for HDG toolbox Python CI validation',
+    'python hdg ci',
+    {
+      FEELPP_ENABLE_MOR: 'OFF',
+    } + focusedToolboxCacheVars + {
+      FEELPP_TOOLBOXES_ENABLE_HDG: 'ON',
+    }
+  ),
+];
+
+local pythonCiBuildPresetNames = [
+  'python-core-ci',
+  'python-electric-ci',
+  'python-mor-ci',
+  'python-heat-ci',
+  'python-solid-ci',
+  'python-hdg-ci',
+];
+
 // ============================================================================
 // Aggregate All Configure Presets
 // ============================================================================
@@ -537,7 +642,8 @@ local configurePresets =
     feelppPythonDbgPreset,
     morPythonPreset,
     doxPreset,
-  ];
+  ] +
+  pythonCiConfigurePresets;
 
 // ============================================================================
 // Build Presets
@@ -583,7 +689,8 @@ std.flattenArrays([
   buildPreset('feelpp-python'),
   buildPreset('feelpp-python-dbg'),
   buildPreset('mor_python'),
-];
+] +
+[buildPreset(name, 20) for name in pythonCiBuildPresetNames];
 
 // ============================================================================
 // Test Presets
@@ -607,6 +714,52 @@ local testPresetWithRetry(configName, extraConfig={}) = {
     },
   },
 } + extraConfig;
+
+local pythonCiTestPresets = [
+  testPreset('python-core-ci', {
+    execution: { jobs: 4 },
+  }),
+  testPreset('python-electric-ci', {
+    execution: { jobs: 4 },
+    filter: {
+      include: {
+        name: '^(feelpp_qs_python-(mpi-)?core|feelpp_toolbox_python-tests-(mpi-)?electric)$',
+      },
+    },
+  }),
+  testPreset('python-mor-ci', {
+    execution: { jobs: 4 },
+    filter: {
+      include: {
+        name: '^(feelpp_qs_python-(mpi-)?core|feelpp_mor_python-tests-(mpi-)?mor)$',
+      },
+    },
+  }),
+  testPreset('python-heat-ci', {
+    execution: { jobs: 4 },
+    filter: {
+      include: {
+        name: '^(feelpp_qs_python-(mpi-)?core|feelpp_toolbox_python-tests-(mpi-)?heat(-thermo2d|-time-stepping)?|feelpp_toolbox_python-tests-(mpi-)?interpolation)$',
+      },
+    },
+  }),
+  testPreset('python-solid-ci', {
+    execution: { jobs: 4 },
+    filter: {
+      include: {
+        name: '^(feelpp_qs_python-(mpi-)?core|feelpp_toolbox_python-tests-(mpi-)?solid)$',
+      },
+    },
+  }),
+  testPreset('python-hdg-ci', {
+    execution: { jobs: 4 },
+    filter: {
+      include: {
+        name: '^(feelpp_qs_python-(mpi-)?core|feelpp_toolbox_python-tests-(mpi-)?hdg)$',
+      },
+    },
+  }),
+];
 
 // ============================================================================
 // Workflow Presets (CMake 3.25+)
@@ -689,7 +842,8 @@ std.flattenArrays([
   testPreset('feelpp-python', {}),
   testPreset('feelpp-python-dbg', {}),
   testPreset('mor_python', {}),
-];
+] +
+pythonCiTestPresets;
 
 // ============================================================================
 // Final Output

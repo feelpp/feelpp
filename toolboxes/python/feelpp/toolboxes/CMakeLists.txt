@@ -66,6 +66,9 @@ if ( TARGET  Feelpp::feelpp_toolbox_hdg_lib )
   add_dependencies(pyfeelpptoolboxes _hdg)
 endif()
 
+# Advection, Maxwell, and FSI wrappers are kept out of the main build until
+# they have maintained tests and dedicated CI coverage. The stale LevelSet and
+# MultiFluid thermoelectric placeholder bindings were removed.
 # if ( TARGET  Feelpp::feelpp_toolbox_fsi_lib )
 #   add_subdirectory( fsi )
 #   add_dependencies(pyfeelpptoolboxes _fsi)
