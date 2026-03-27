@@ -184,7 +184,7 @@ ModelAlgebraic::updateLinearPDEDofElimination( DataUpdateLinear & data ) const
 
 void
 ModelAlgebraic::updateDofEliminationIds( std::string const& spaceName,
-                                         std::map<ElementsType, std::tuple<std::set<size_type>,std::set<size_type>>> const& dofIds,
+                                         dof_elimination_ids_value_type const& dofIds,
                                          DataNewtonInitialGuess & data ) const
 {
     CHECK( this->hasStartSubBlockSpaceIndex( spaceName ) ) << "no space name registered : " << spaceName;
@@ -201,7 +201,7 @@ ModelAlgebraic::updateDofEliminationIds( std::string const& spaceName,
 }
 void
 ModelAlgebraic::updateDofEliminationIds( std::string const& spaceName,
-                                         std::map<ElementsType, std::tuple<std::set<size_type>,std::set<size_type>>> const& dofIds,
+                                         dof_elimination_ids_value_type const& dofIds,
                                          DataUpdateResidual & data ) const
 {
     CHECK( this->hasStartSubBlockSpaceIndex( spaceName ) ) << "no space name registered : " << spaceName;
@@ -221,7 +221,7 @@ ModelAlgebraic::updateDofEliminationIds( std::string const& spaceName,
 }
 void
 ModelAlgebraic::updateDofEliminationIds( std::string const& spaceName,
-                                         std::map<ElementsType, std::tuple<std::set<size_type>,std::set<size_type>>> const& dofIds,
+                                         dof_elimination_ids_value_type const& dofIds,
                                          DataUpdateJacobian & data ) const
 {
     CHECK( this->hasStartSubBlockSpaceIndex( spaceName ) ) << "no space name registered : " << spaceName;

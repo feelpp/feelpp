@@ -276,6 +276,7 @@ using periodic = NA::named_argument_t<struct periodic_tag>;
 using collect_garbage = NA::named_argument_t<struct collect_garbage_tag>;
 
 using savehdf5 = NA::named_argument_t<struct savehdf5_tag>;
+using partitioning = NA::named_argument_t<struct partitioning_tag>;
 using partitions = NA::named_argument_t<struct partitions_tag>;
 using partition_file = NA::named_argument_t<struct partition_file_tag>;
 using respect_partition = NA::named_argument_t<struct respect_partition_tag>;
@@ -349,6 +350,9 @@ using physic = NA::named_argument_t<struct physic_tag>;
 using quality = NA::named_argument_t<struct quality_tag>;
 using robust = NA::named_argument_t<struct robust_tag>;
 using ray = NA::named_argument_t<struct ray_tag>;
+
+using gamma = NA::named_argument_t<struct gamma_tag>;
+using beta = NA::named_argument_t<struct beta_tag>;
 
 } // namespace na
 
@@ -587,6 +591,7 @@ inline constexpr auto& _periodic = NA::identifier<na::periodic>;
 inline constexpr auto& _collect_garbage = NA::identifier<na::collect_garbage>;
 
 inline constexpr auto& _savehdf5 = NA::identifier<na::savehdf5>;
+inline constexpr auto& _partitioning = NA::identifier<na::partitioning>;
 inline constexpr auto& _partitions = NA::identifier<na::partitions>;
 inline constexpr auto& _partition_file = NA::identifier<na::partition_file>;
 inline constexpr auto& _respect_partition = NA::identifier<na::respect_partition>;
@@ -664,6 +669,9 @@ inline constexpr auto& _selector = NA::identifier<na::selector>;
 inline constexpr auto& _quality = NA::identifier<na::quality>;
 inline constexpr auto& _robust = NA::identifier<na::robust>;
 inline constexpr auto& _ray = NA::identifier<na::ray>;
+
+inline constexpr auto& _gamma = NA::identifier<na::gamma>;
+inline constexpr auto& _beta = NA::identifier<na::beta>;
 
 } // Feel
 

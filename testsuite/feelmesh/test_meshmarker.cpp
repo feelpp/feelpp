@@ -79,7 +79,12 @@ BOOST_AUTO_TEST_CASE( test_meshmarker1 )
 BOOST_AUTO_TEST_CASE( test_meshmarker2 )
 {
     using namespace Feel;
-    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2,1>>,_filename="${cfgdir}/test_meshmarker_square_4mat.geo");
+    using mesh_type = Mesh<Simplex<2,1>>;
+    auto mesh = loadMesh(_mesh=new mesh_type,_filename="${cfgdir}/test_meshmarker_square_4mat.geo");
+    mesh->saveHDF5( "mesh.json" );
+    auto meshReloaded = loadMesh(_mesh=new mesh_type, _filename="mesh.json" );
+
+
     for ( std::string markerName : {"mat1","mat2","mat3","mat4","mat1_2","mat1_2_3","mat1_2_3_4"} )
         BOOST_CHECK( mesh->hasElementMarker( markerName ) );
 
@@ -115,26 +120,34 @@ BOOST_AUTO_TEST_CASE( test_meshmarker2 )
     BOOST_CHECK_EQUAL( nMarkedPoints_point_geo_all, 9 );
 
 
-    auto submeshElt = createSubmesh(_mesh=mesh,_range=markedelements(mesh,"mat1_2_3"));
-    for (int i=0;i<3;++i)
+    auto submeshEltOriginal = createSubmesh(_range=markedelements(mesh,"mat1_2_3"));
+    submeshEltOriginal->saveHDF5( "submeshElt.json" );
+    auto submeshEltReloaded = loadMesh(_mesh=new mesh_type, _filename="submeshElt.json" );
+    std::vector<std::shared_ptr<mesh_type>> submeshesElt = { submeshEltOriginal, submeshEltReloaded };
+    if ( mesh->worldComm().localSize() > 1 )
+        submeshesElt.push_back( loadMesh(_mesh=new mesh_type{Environment::worldCommSeqPtr()}, _filename="submeshElt.json" ) );
+    for ( auto submeshElt : submeshesElt )
     {
-        double submeshElt_matMeaure = measure(_range=markedelements(submeshElt,fmt::format("mat{}",i+1)));
-        BOOST_CHECK_CLOSE( submeshElt_matMeaure, 0.25, 1e-10 );
+        for (int i=0;i<3;++i)
+        {
+            double submeshElt_matMeaure = measure(_range=markedelements(submeshElt,fmt::format("mat{}",i+1)));
+            BOOST_CHECK_CLOSE( submeshElt_matMeaure, 0.25, 1e-10 );
+        }
+        double submeshElt_matMeaure1_2 = measure(_range=markedelements(submeshElt,"mat1_2"));
+        BOOST_CHECK_CLOSE( submeshElt_matMeaure1_2, 0.5, 1e-10 );
+        double submeshElt_matMeaure1_2_3 = measure(_range=markedelements(submeshElt,"mat1_2_3"));
+        BOOST_CHECK_CLOSE( submeshElt_matMeaure1_2_3, 0.75, 1e-10 );
+
+        double submeshElt_measure_gamma_x0_mat1 = measure(_range=markedfaces( submeshElt,"gamma_x0_mat1"));
+        BOOST_CHECK_CLOSE( submeshElt_measure_gamma_x0_mat1, 0.5, 1e-10 );
+        double submeshElt_measure_gamma_x0_mat1_3 = measure(_range=markedfaces( submeshElt,"gamma_x0_mat1_3"));
+        BOOST_CHECK_CLOSE( submeshElt_measure_gamma_x0_mat1_3, 1.0, 1e-10 );
+        double submeshElt_measure_gamma_all = measure(_range=markedfaces( submeshElt,"gamma_all"));
+        BOOST_CHECK_CLOSE( submeshElt_measure_gamma_all, 3.0, 1e-10 );
+
+        size_type submeshElt_nMarkedPoints_point_geo_all = nelements( markedpoints(submeshElt,"point_geo_all"), true );
+        BOOST_CHECK( submeshElt_nMarkedPoints_point_geo_all == 8 );
     }
-    double submeshElt_matMeaure1_2 = measure(_range=markedelements(submeshElt,"mat1_2"));
-    BOOST_CHECK_CLOSE( submeshElt_matMeaure1_2, 0.5, 1e-10 );
-    double submeshElt_matMeaure1_2_3 = measure(_range=markedelements(submeshElt,"mat1_2_3"));
-    BOOST_CHECK_CLOSE( submeshElt_matMeaure1_2_3, 0.75, 1e-10 );
-
-    double submeshElt_measure_gamma_x0_mat1 = measure(_range=markedfaces( submeshElt,"gamma_x0_mat1"));
-    BOOST_CHECK_CLOSE( submeshElt_measure_gamma_x0_mat1, 0.5, 1e-10 );
-    double submeshElt_measure_gamma_x0_mat1_3 = measure(_range=markedfaces( submeshElt,"gamma_x0_mat1_3"));
-    BOOST_CHECK_CLOSE( submeshElt_measure_gamma_x0_mat1_3, 1.0, 1e-10 );
-    double submeshElt_measure_gamma_all = measure(_range=markedfaces( submeshElt,"gamma_all"));
-    BOOST_CHECK_CLOSE( submeshElt_measure_gamma_all, 3.0, 1e-10 );
-
-    size_type submeshElt_nMarkedPoints_point_geo_all = nelements( markedpoints(submeshElt,"point_geo_all"), true );
-    BOOST_CHECK( submeshElt_nMarkedPoints_point_geo_all == 8 );
 
 }
 

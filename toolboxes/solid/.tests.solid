@@ -1,5 +1,9 @@
-TurekHron-csm1 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/TurekHron/csm1.cfg
+TurekHron-csm1-simplex --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/TurekHron/csm1.cfg
+TurekHron-csm1-hypercube --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/TurekHron/csm1.cfg --case.convex=Hypercube --solid.json.patch={"op":"replace","path":"/Meshes/solid/Import/filename","value":"$cfgdir/csm_quad.geo"}
 TurekHron-csm2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/TurekHron/csm2.cfg
-NAFEMS-LE1-dform --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/NAFEMS-LE1/le1.cfg --solid.formulation=displacement
-NAFEMS-LE1-dpform --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/NAFEMS-LE1/le1.cfg --solid.formulation=displacement-pressure
-NAFEMS-LE10 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/NAFEMS-LE10/le10.cfg
+NAFEMS-LE1-dform-simplex --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/NAFEMS-LE1/le1.cfg --solid.formulation=displacement
+NAFEMS-LE1-dform-hypercube --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/NAFEMS-LE1/le1.cfg --solid.formulation=displacement --case.convex=Hypercube --solid.json.patch={"op":"replace","path":"/Meshes/solid/Import/filename","value":"$cfgdir/le1_quad.geo"} --solid.checker=0
+NAFEMS-LE1-dpform-simplex --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/NAFEMS-LE1/le1.cfg --solid.formulation=displacement-pressure
+NAFEMS-LE1-dpform-hypercube --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/NAFEMS-LE1/le1.cfg --solid.formulation=displacement-pressure --case.convex=Hypercube --solid.json.patch={"op":"replace","path":"/Meshes/solid/Import/filename","value":"$cfgdir/le1_quad.geo"} --solid.checker=0
+NAFEMS-LE10-simplex --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/NAFEMS-LE10/le10.cfg
+NAFEMS-LE10-hypercube --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/NAFEMS-LE10/le10.cfg  --case.convex=Hypercube --solid.json.patch={"op":"replace","path":"/Meshes/solid/Import/filename","value":"$cfgdir/le10_hexa.geo"}

@@ -194,11 +194,34 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) cons
 
         if ( this->algebraicFactory() )
             this->algebraicFactory()->updateInformationObject( p["Algebraic Solver"] );
+
+        if ( !this->isStationary() )
+        {
+            subPt.clear();
+            subPt.emplace( "initial time", this->timeStepBase()->timeInitial() );
+            subPt.emplace( "final time", this->timeStepBase()->timeFinal() );
+            subPt.emplace( "time step", this->timeStepBase()->timeStep() );
+            subPt.emplace( "type", M_timeStepping );
+            if ( M_timeStepping == "Newmark" )
+            {
+                subPt.emplace( "newmark.gamma", this->timeStepNewmark()->gamma() );
+                subPt.emplace( "newmark.beta", this->timeStepNewmark()->beta() );
+            }
+            else if ( M_timeStepping == "BDF" )
+                subPt.emplace( "bdf.order", M_timeStepBdfDisplacement->timeOrder() );
+            else if ( M_timeStepping == "Theta" )
+                subPt.emplace( "theta.value", M_timeStepThetaValue );
+            p["Time Discretization"] = subPt;
+        }
+
     }
 
     if ( this->hasSolidEquation1dReduced() )
         p["Toolbox Solid 1d Reduced"] = M_solid1dReduced->journalSection().to_string();
     //M_solid1dReduced->updateInformationObject( p["Toolbox Solid 1d Reduced"] );
+
+
+
 
 }
 
@@ -251,6 +274,14 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonIn
     // fields
     if ( jsonInfo.contains("Fields") )
         tabInfo->add( "Fields", TabulateInformationTools::FromJSON::tabulateInformationsModelFields( jsonInfo.at("Fields"), tabInfoProp ) );
+
+    // time discretisation
+    if ( jsonInfo.contains("Time Discretization") )
+    {
+        Feel::Table tabInfoTimeDiscr;
+        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoTimeDiscr, jsonInfo.at("Time Discretization"), tabInfoProp );
+        tabInfo->add( "Time Discretization", TabulateInformations::New( tabInfoTimeDiscr, tabInfoProp ) );
+    }
 
     // Algebraic Solver
     if ( jsonInfo.contains( "Algebraic Solver" ) )
@@ -881,6 +912,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
             {
                 M_timeStepBdfDisplacement->start( *M_fieldDisplacement );
                 M_timeStepBdfVelocity->start( *M_fieldVelocity );
+                if ( M_timeStepping == "Theta" )
+                    M_saveTsAcceleration->start( *M_fieldAcceleration );
             }
         }
         // start save pressure
@@ -922,6 +955,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
         {
             M_timeStepBdfDisplacement->next( *M_fieldDisplacement );
             M_timeStepBdfVelocity->next( *M_fieldVelocity );
+            if ( M_timeStepping == "Theta" )
+                M_saveTsAcceleration->next( *M_fieldAcceleration );
         }
 
         if ( this->hasDisplacementPressureFormulation() )
@@ -1083,11 +1118,32 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateVelocity()
     {
         if ( M_timeStepping == "Newmark" )
             M_timeStepNewmark->updateFromDisp(*M_fieldDisplacement);
-        else if ( M_timeStepping == "BDF" || M_timeStepping == "Theta" )
+        else if ( M_timeStepping == "Theta" )
         {
+            if ( !M_timeSteppingUseMixedFormulation )
+            {
+                M_fieldVelocity->zero();
+                M_fieldVelocity->add( 1./(M_timeStepThetaValue*M_timeStepBdfDisplacement->timeStep()), *M_fieldDisplacement );
+                M_fieldVelocity->add( -1./(M_timeStepThetaValue*M_timeStepBdfDisplacement->timeStep()), M_timeStepBdfDisplacement->unknown(0) );
+                M_fieldVelocity->add( -(1-M_timeStepThetaValue)/M_timeStepThetaValue, M_timeStepBdfVelocity->unknown(0) );
+            }
+            M_fieldAcceleration->zero();
+            M_fieldAcceleration->add( 1./(std::pow(M_timeStepThetaValue,2)*std::pow(M_timeStepBdfDisplacement->timeStep(),2)), *M_fieldDisplacement );
+            M_fieldAcceleration->add( -1./(std::pow(M_timeStepThetaValue,2)*std::pow(M_timeStepBdfDisplacement->timeStep(),2)), M_timeStepBdfDisplacement->unknown(0) );
+            M_fieldAcceleration->add( -1./(std::pow(M_timeStepThetaValue,2)*M_timeStepBdfDisplacement->timeStep()), M_timeStepBdfVelocity->unknown(0) );
+            M_fieldAcceleration->add( -(1-M_timeStepThetaValue)/M_timeStepThetaValue, M_saveTsAcceleration->unknown(0) );
+        }
+        else if ( M_timeStepping == "BDF" )
+        {
+            if ( !M_timeSteppingUseMixedFormulation )
+            {
+                M_fieldVelocity->zero();
+                M_fieldVelocity->add( M_timeStepBdfDisplacement->polyDerivCoefficient(0), *M_fieldDisplacement );
+                M_fieldVelocity->add( -1., M_timeStepBdfDisplacement->polyDeriv() );
+            }
             M_fieldAcceleration->zero();
             M_fieldAcceleration->add( M_timeStepBdfVelocity->polyDerivCoefficient(0), *M_fieldVelocity );
-            M_fieldAcceleration->add( -1.,  M_timeStepBdfVelocity->polyDeriv() );
+            M_fieldAcceleration->add( -1., M_timeStepBdfVelocity->polyDeriv() );
         }
     }
 
