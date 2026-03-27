@@ -90,6 +90,8 @@ public :
 
     void setTheta(double v);
 
+    element_disp_type const& oldSol() const { return *M_oldSol; }
+
 private :
 
     solid_ptrtype M_solid;

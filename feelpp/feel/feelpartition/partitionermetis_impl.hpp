@@ -43,7 +43,7 @@ using clock = std::chrono::system_clock;
 
 template<typename MeshType>
 void
-PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, std::vector<range_element_type> const& partitionByRange )
+PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, std::vector<range_element_type> const& partitionByRangeArgs )
 {
     LOG(INFO) << "PartitionerMetis::partitionImpl starts...";
     tic();
@@ -54,6 +54,44 @@ PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, std:
         this->singlePartition (mesh);
         return;
     }
+
+
+    nl::json jPartitioner;
+    if ( this->M_config.contains("partitioner") )
+        jPartitioner = this->M_config.at( "partitioner" );
+
+    // get a splitting of partitioning if required in JSON setup
+    std::vector<range_element_type> M_partitionByRange;
+    if ( jPartitioner.contains("splitting") && partitionByRangeArgs.empty() )
+    {
+        auto jSplitting = jPartitioner.at("splitting");
+
+        std::map<int,std::set<std::string>> splittingMarkers;
+        int splitId = 0;
+
+        for ( auto const& [key,val] : jSplitting.items() )
+        {
+            std::set<std::string> markerNames;
+            if ( val.is_array() )
+            {
+                for ( auto const& [subkey,subval] : val.items() )
+                    markerNames.insert( subval.template get<std::string>() );
+            }
+            else if ( val.is_string() )
+                markerNames.insert( val.template get<std::string>() );
+            if ( !markerNames.empty() )
+                splittingMarkers.emplace( splitId, std::move( markerNames) );
+            ++splitId;
+        }
+
+        M_partitionByRange.resize( jSplitting.size() );
+        auto collectionMarkerElts = collectionOfMarkedelements( mesh, splittingMarkers );
+        for ( auto const& [splitId,rangeElt] : collectionMarkerElts )
+            M_partitionByRange[splitId] = rangeElt;
+    }
+    // select partitioning splitting : form JSON or function arg
+    auto const& partitionByRange = partitionByRangeArgs.empty()? M_partitionByRange : partitionByRangeArgs;
+
 
     bool usePartitionByRange = !partitionByRange.empty();
 
@@ -69,6 +107,43 @@ PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, std:
 
     auto t = toc("PartitionerMetis::partitionImpl", Environment::logVerbosityLevel() > 0 );
     LOG(INFO) << "PartitionerMetis::partitionImpl done in " << t << "s";
+
+
+
+    // get constraints
+    std::set<std::string> noInterprocessFacesMarkers;
+    if ( jPartitioner.contains("constraints") )
+    {
+        auto const& jConstraints = jPartitioner.at("constraints");
+        if ( jConstraints.contains("no_interprocess_faces") )
+        {
+            auto const& jNoInterprocessFaces = jConstraints.at("no_interprocess_faces");
+            if ( jNoInterprocessFaces.is_array() )
+                for ( auto const& [key,jval] : jNoInterprocessFaces.items() )
+                    noInterprocessFacesMarkers.insert( jval.template get<std::string>() );
+            else if ( jNoInterprocessFaces.is_string() )
+                noInterprocessFacesMarkers.insert( jNoInterprocessFaces.template get<std::string>() );
+        }
+    }
+
+    // apply constraints
+    if ( !noInterprocessFacesMarkers.empty() )
+    {
+        auto rangeFaces = markedfaces(mesh, noInterprocessFacesMarkers );
+        for ( auto const& faceWrap : rangeFaces )
+        {
+            auto const& face = unwrap_ref( faceWrap );
+            if ( !face.isConnectedTo0() || !face.isConnectedTo1() )
+                continue;
+            rank_type pidElt0 = face.pidElement0();
+            rank_type pidElt1 = face.pidElement1();
+            if ( pidElt0 == pidElt1 )
+                continue;
+            rank_type pidUsed = std::min(pidElt0,pidElt1);
+            auto const& eltModified = pidElt0 < pidElt1 ? face.element1() : face.element0();
+            const_cast<std::decay_t<decltype(eltModified)>&>(eltModified).setProcessId( pidUsed );
+        }
+    }
 
 }
 
@@ -314,6 +389,8 @@ PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, Iter
             std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [metis] ] aggregate {} markers:{} different pid\n", gmtimeNow(), name, agg.markers() ) << std::endl;
         }
     }
+
+
 }
 
 
