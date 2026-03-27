@@ -44,10 +44,18 @@ endif()
 list(REMOVE_DUPLICATES _feelpp_ld_library_path_entries)
 
 set(PYFILES
+  _cfpdes_test_utils.py
   _case_paths.py
   _heat_test_utils.py
+  _solid_test_utils.py
   conftest.py
   test_cfpdes.py
+  test_cfpdes_heat_thermal_bridges.py
+  test_cfpdes_heat_thermo2d.py
+  test_cfpdes_p_laplacian.py
+  test_cfpdes_remesh.py
+  test_cfpdes_square.py
+  test_cfpdes_thermoelectric.py
   test_collision.py
   test_electric.py
   test_fluid.py
@@ -59,6 +67,7 @@ set(PYFILES
   test_interpolation.py
   test_multitoolboxes.py
   test_solid.py
+  test_solid_nafems_le1.py
   test_thermoelectric.py
   test_toolboxes.py
 )
@@ -108,6 +117,21 @@ foreach(toolbox IN LISTS _enabled_toolboxes)
       "heat|test_heat.py"
       "heat-thermo2d|test_heat_thermo2d.py"
       "heat-time-stepping|test_heat_time_stepping.py"
+    )
+  elseif(toolbox STREQUAL "cfpdes")
+    set(_toolbox_test_specs
+      "cfpdes|test_cfpdes.py"
+      "cfpdes-p-laplacian|test_cfpdes_p_laplacian.py"
+      "cfpdes-square|test_cfpdes_square.py"
+      "cfpdes-thermoelectric|test_cfpdes_thermoelectric.py"
+      "cfpdes-heat-thermal-bridges|test_cfpdes_heat_thermal_bridges.py"
+      "cfpdes-heat-thermo2d|test_cfpdes_heat_thermo2d.py"
+      "cfpdes-remesh|test_cfpdes_remesh.py"
+    )
+  elseif(toolbox STREQUAL "solid")
+    set(_toolbox_test_specs
+      "solid|test_solid.py"
+      "solid-nafems-le1|test_solid_nafems_le1.py"
     )
   else()
     set(_toolbox_test_specs "${toolbox}|test_${toolbox}.py")
