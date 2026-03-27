@@ -1,5 +1,5 @@
 name: Scheduled CI
-run-name : "Scheduled Feel++ CI [${{ matrix.flavor }}/${{ matrix.version }}]"
+run-name : "Scheduled Feel++ CI [${{ github.event.schedule }}]"
 
 on: 
   schedule:
@@ -19,8 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       github.repository == 'feelpp/feelpp' &&
-      !startsWith(github.event.head_commit.message, 'Release ') &&
-      !contains(github.event.head_commit.message, 'ci skip')
+      !startsWith(github.event.head_commit.message || '', 'Release ') &&
+      !contains(github.event.head_commit.message || '', 'ci skip')
     steps:
     - run: echo ok go
 
@@ -48,5 +48,4 @@ jobs:
           token: ${{ secrets.CR_PAT }}
           repository: feelpp/feelpp
           event-type: trigger-feelpp-build
-          client-payload: '{"flavor":"${{ matrix.flavor }}","version":"${{ matrix.version }}", "preset":"${{ matrix.preset }}"'
-
+          client-payload: '{"flavor":"${{ matrix.flavor }}","version":"${{ matrix.version }}","preset":"${{ matrix.preset }}"}'
