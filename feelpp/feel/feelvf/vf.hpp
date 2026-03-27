@@ -53,6 +53,7 @@
 #include <feel/feelvf/operations.hpp>
 
 #include <feel/feelvf/operators.hpp>
+#include <feel/feelvf/basis.hpp>
 //#include <feel/feelvf/operators2.hpp>
 //#include <feel/feelvf/operators3.hpp>
 #include <feel/feelvf/geometricdata.hpp>

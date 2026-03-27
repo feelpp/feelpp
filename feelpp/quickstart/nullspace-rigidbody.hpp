@@ -24,31 +24,35 @@
 #ifndef FEELPP_NULLSPACE_RIGIDBODY_HPP
 #define FEELPP_NULLSPACE_RIGIDBODY_HPP 1
 
+#include <type_traits>
+
 namespace Feel
 {
 template <typename SpaceType>
-NullSpace<double> qsNullSpace( SpaceType const& space, mpl::int_<2> /**/ )
+NullSpace<double> qsNullSpace( SpaceType const& space )
 {
+    using space_type = std::remove_cvref_t<decltype( *space )>;
+    constexpr auto dim = space_type::nRealDim;
+    static_assert( dim == 2 || dim == 3, "qsNullSpace only supports 2D and 3D vector spaces" );
+
     auto mode1 = space->element( oneX() );
     auto mode2 = space->element( oneY() );
-    auto mode3 = space->element( vec(Py(),-Px()) );
-    NullSpace<double> userNullSpace( { mode1,mode2,mode3 } );
-    return userNullSpace;
-}
-template <typename SpaceType>
-NullSpace<double> qsNullSpace( SpaceType const& space, mpl::int_<3> /**/ )
-{
-    auto mode1 = space->element( oneX() );
-    auto mode2 = space->element( oneY() );
-    auto mode3 = space->element( oneZ() );
-    auto mode4 = space->element( vec(Py(),-Px(),cst(0.)) );
-    auto mode5 = space->element( vec(-Pz(),cst(0.),Px()) );
-    auto mode6 = space->element( vec(cst(0.),Pz(),-Py()) );
-    NullSpace<double> userNullSpace( { mode1,mode2,mode3,mode4,mode5,mode6 } );
-    return userNullSpace;
+
+    if constexpr ( dim == 2 )
+    {
+        auto mode3 = space->element( vec( Py(), -Px() ) );
+        return NullSpace<double>( { mode1, mode2, mode3 } );
+    }
+    else
+    {
+        auto mode3 = space->element( oneZ() );
+        auto mode4 = space->element( vec( Py(), -Px(), cst( 0. ) ) );
+        auto mode5 = space->element( vec( -Pz(), cst( 0. ), Px() ) );
+        auto mode6 = space->element( vec( cst( 0. ), Pz(), -Py() ) );
+        return NullSpace<double>( { mode1, mode2, mode3, mode4, mode5, mode6 } );
+    }
 }
 
 }
 
 #endif
-
