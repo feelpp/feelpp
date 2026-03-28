@@ -831,7 +831,21 @@ std.flattenArrays([
 [testPreset('release-clang-spack', { inherits: 'default' })] +
 [testPreset('release-clang-cpp20-spack', { inherits: 'default' })] +
 // Component presets (inherit from default, use 4 jobs, retry failed tests 3 times)
-[testPresetWithRetry(comp, { inherits: 'default', execution+: { jobs: 4 } }) for comp in components] +
+[
+  if comp == 'mor' then
+    testPresetWithRetry(comp, {
+      inherits: 'default',
+      execution+: { jobs: 4 },
+      filter: {
+        include: {
+          name: '^(feelpp_test_.*|feelpp_mor_python-tests-(mpi-)?(mor|nirb))$',
+        },
+      },
+    })
+  else
+    testPresetWithRetry(comp, { inherits: 'default', execution+: { jobs: 4 } })
+  for comp in components
+] +
 // Special presets
 [
   testPreset('feelpp-usrlocal', { inherits: 'feelpp' }),
