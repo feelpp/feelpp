@@ -2,6 +2,7 @@ include(FetchContent)
 
 
 option(FEELPP_ENABLE_OPENTURNS "Enable OPENTURNS" ON)
+option(FEELPP_ENABLE_OPENTURNS_TESTS "Enable upstream OpenTURNS tests" OFF)
 
 if(FEELPP_ENABLE_OPENTURNS)
     message(STATUS "------------------------------------------------------------")
@@ -20,7 +21,7 @@ if(FEELPP_ENABLE_OPENTURNS)
     set(BUILD_PYTHON OFF)
     set(USE_SPHINX OFF)
     set(USE_DOXYGEN OFF)
-    set(BUILD_OPENTURNS_TESTS ON)
+    set(BUILD_OPENTURNS_TESTS ${FEELPP_ENABLE_OPENTURNS_TESTS})
     set(OPENTURNS_HEADER_INSTALL_DIR "${CMAKE_INSTALL_INCLUDEDIR}/")
     set(OPENTURNS_CMAKE_INSTALL_DIR "share/feelpp/openturns")
     set(OPENTURNS_DOC_INSTALL_DIR "share/doc/feelpp/openturns")
