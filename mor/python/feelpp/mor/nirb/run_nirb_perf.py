@@ -1,9 +1,9 @@
 import sys
-from feelpp.mor.nirb.nirb import *
-from feelpp.mor.nirb.utils import init_feelpp_environment, generatedAndSaveSampling, merge_JsonFiles
+from .nirb import *
+from .utils import init_feelpp_environment, generatedAndSaveSampling, merge_JsonFiles
 import pandas as pd
 from pathlib import Path
-from nirb_perf import *
+from .nirb_perf import *
 import argparse
 import feelpp.core as fppc
 from feelpp.core.timing import tic, toc
