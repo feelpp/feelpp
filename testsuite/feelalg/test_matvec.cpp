@@ -32,6 +32,7 @@
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelfilters/unitsquare.hpp>
 #include <feel/feelvf/vf.hpp>
+#include <cmath>
 using namespace Feel;
 
 int main( int argc, char* argv[] )
@@ -52,19 +53,23 @@ int main( int argc, char* argv[] )
     auto v4 = trans(v1); 
     auto mv1 = m*v1; //OK
     auto mv2 = m*v2; //OK
-    auto mv3 = m*v3; // NOT OK
-    auto mv4 = m*v4; // NOT OK
+    auto mv3 = v3*m; // row vector times matrix is the valid orientation
+    auto mv4 = v4*m; // row vector times matrix is the valid orientation
     
     double int_1 = integrate( _range = elements( mesh ), _expr= trans(v1)*mv1 ).evaluate()(0,0);
     double int_2 = integrate( _range = elements( mesh ), _expr= trans(v2)*mv2 ).evaluate()(0,0);
-    double int_3 = integrate( _range = elements( mesh ), _expr= trans(v3)*mv3 ).evaluate()(0,0);
-    double int_4 = integrate( _range = elements( mesh ), _expr= trans(v4)*mv4 ).evaluate()(0,0);
+    double int_3 = integrate( _range = elements( mesh ), _expr= mv3*trans(v3) ).evaluate()(0,0);
+    double int_4 = integrate( _range = elements( mesh ), _expr= mv4*trans(v4) ).evaluate()(0,0);
 
-    std::cout 
-      << int_1 << "\t"
-      << int_2 << "\t"
-      << int_3 << "\t"
-      << int_4 
-      << std::endl;
+    auto isClose = []( double value ) { return std::abs( value - 2.0 ) < 1e-12; };
+    if ( !isClose( int_1 ) || !isClose( int_2 ) || !isClose( int_3 ) || !isClose( int_4 ) )
+    {
+        std::cerr << "unexpected row/column vector contraction values: "
+                  << int_1 << '\t'
+                  << int_2 << '\t'
+                  << int_3 << '\t'
+                  << int_4 << '\n';
+        return 1;
+    }
+    return 0;
 } 
-

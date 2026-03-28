@@ -385,6 +385,15 @@ struct mn_to_shape
 template<typename Left, typename Right>
 struct shape_op_mul
 {
+    static inline const bool is_scalar_product = Left::is_scalar || Right::is_scalar;
+    static inline const bool is_contractible = ( Left::N == Right::M );
+    static inline const bool is_componentwise_compatible = ( Left::M == Right::M ) && ( Left::N == Right::N );
+
+    BOOST_MPL_ASSERT_MSG( mpl::bool_<is_scalar_product || is_contractible || is_componentwise_compatible>::value,
+                          INVALID_MULTIPLICATION,
+                          ( mpl::int_<Left::M>, mpl::int_<Left::N>,
+                            mpl::int_<Right::M>, mpl::int_<Right::N>,
+                            Left, Right ) );
 
     typedef typename mpl::if_<mpl::bool_<Left::is_scalar>,
             mpl::identity<Right>,
@@ -396,10 +405,7 @@ struct shape_op_mul
                               mpl::identity<ShapeGeneric<Left::nDim,Left::M,Right::N > >,
             mpl::identity<typename shape_op_id<Left, Right>::type> >::type >::type>::type::type type;
 
-    static const int op = mpl::if_<mpl::or_<mpl::bool_<Left::is_scalar>,
-                     mpl::bool_<Right::is_scalar> >,
-                     mpl::int_<0>,
-                     mpl::int_<1> >::type::value;
+    static const int op = is_scalar_product ? 0 : ( is_contractible ? 1 : 0 );
     template<bool left_is_zero, bool right_is_zero>
     struct is_zero
     {

@@ -8,7 +8,7 @@ feelpp_get_compile_definition(Feelpp::feelpp FEELPP_HAS_SLEPC)
 if(FEELPP_HAS_PETSC)
   feelpp_add_test( topetsc  NO_MPI_TEST )
 
-  foreach(TEST vector matrix)
+  foreach(TEST vector matrix matvec)
     feelpp_add_test( ${TEST} )
   endforeach()
 endif()
@@ -27,4 +27,3 @@ endif()
 feelpp_add_test( ptap )
 feelpp_add_test( tensor )
 feelpp_add_test( functionspace_element_guard )
-
