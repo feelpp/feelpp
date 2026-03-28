@@ -44,6 +44,13 @@ on:
           default: ""
           type: string
     workflow_call:
+        outputs:
+            image:
+                description: 'Base feelpp image repository'
+                value: ${{ jobs.docker.outputs.image }}
+            image-dev:
+                description: 'Base feelpp dev image repository'
+                value: ${{ jobs.docker.outputs.image-dev }}
         inputs:
             flavor:
                 description: 'Flavor of the distribution'
@@ -59,6 +66,11 @@ on:
                 description: 'Version of Feel++ packages'
                 required: true
                 type: string
+            docker:
+                description: 'Build docker image'
+                required: false
+                type: string
+                default: "true"
             parallel:
                 description: 'Number of parallel jobs'
                 required: false

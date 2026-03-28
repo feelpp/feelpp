@@ -48,13 +48,9 @@ echo "--- Removing old Feel++ repository configurations"
 rm -f /etc/apt/sources.list.d/feelpp.list
 
 echo "--- Adding Feel++ repository"
-if [ "$DIST" = "jammy" -o "$DIST" = "focal" -o "$DIST" = "bookworm" -o "$DIST" = "trixie"  ]; then
-    wget -O - http://apt.feelpp.org/apt.gpg | apt-key add -
-    echo 'deb [trusted=yes] http://apt.feelpp.org/$FLAVOR/$DIST $DIST $CHANNEL' > /etc/apt/sources.list.d/feelpp.list 
-else
-    wget -O - http://apt.feelpp.org/apt.gpg 2>/dev/null | gpg --dearmor - |  tee /usr/share/keyrings/feelpp-archive-keyring.gpg >/dev/null
-    echo 'deb [signed-by=/usr/share/keyrings/feelpp-archive-keyring.gpg] http://apt.feelpp.org/$FLAVOR/$DIST $DIST $CHANNEL' | tee /etc/apt/sources.list.d/feelpp.list >/dev/null
-fi
+rm -f /usr/share/keyrings/feelpp-archive-keyring.gpg
+wget -qO- http://apt.feelpp.org/apt.gpg | gpg --dearmor --batch --yes -o /usr/share/keyrings/feelpp-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/feelpp-archive-keyring.gpg] http://apt.feelpp.org/$FLAVOR/$DIST $DIST $CHANNEL" > /etc/apt/sources.list.d/feelpp.list
 
 echo "--- Importing Feel++ repository GPG key"
 if ! grep -q "feelpp" /etc/apt/sources.list.d/feelpp.list; then

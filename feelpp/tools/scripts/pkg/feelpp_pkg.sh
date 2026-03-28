@@ -58,17 +58,7 @@ echo "--- setting directory build-$DIST to build source tarball"
 FEELPP_COMPONENT=$(echo $COMPONENT| sed -e s/^feelpp\-//) 
 cmake --preset $FEELPP_COMPONENT -DFEELPP_ENABLE_GIT=OFF -DLIBBSON_DIR=/usr -DLIBMONGOC_DIR=/usr
 cmake --build --preset $FEELPP_COMPONENT -t dist
-echo "--- cloning feelpp.pkg: ${BRANCH}"
-if test ! -d feelpp.pkg; then
-if  test -z "$BRANCH"; then
-    git clone  -q https://github.com/feelpp/feelpp.pkg.git
-else 
-#    git clone -b $BRANCH -q https://github.com/feelpp/feelpp.pkg.git
-    git clone -b develop -q https://github.com/feelpp/feelpp.pkg.git
-fi
-else
-    (cd feelpp.pkg && git pull)
-fi
+prepare_feelpp_pkg_checkout
 # local debug build
 #ln -s ../../Debian/feelpp.pkg
 
@@ -85,8 +75,8 @@ else
     version=$(echo build/$FEELPP_COMPONENT/${COMPONENT}-*.tar.gz | sed  "s/build\/$FEELPP_COMPONENT\/${COMPONENT}-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\1~\2/g" )
 fi
 echo "--- building archive $rename_archive for debian"
-cp build/$FEELPP_COMPONENT//${COMPONENT}-*.tar.gz feelpp.pkg/${COMPONENT}/$rename_archive
-cd feelpp.pkg/${COMPONENT}/$DIST && tar xzf ../$rename_archive --strip 1
+cp build/$FEELPP_COMPONENT//${COMPONENT}-*.tar.gz ${FEELPP_PKG_DIR}/${COMPONENT}/$rename_archive
+cd ${FEELPP_PKG_DIR}/${COMPONENT}/$DIST && tar xzf ../$rename_archive --strip 1
 
 echo "--- update changelog ${COMPONENT}  $version-1"
 export DEBEMAIL="christophe.prudhomme@cemosis.fr" 
