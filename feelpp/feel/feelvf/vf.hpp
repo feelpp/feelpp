@@ -57,6 +57,8 @@
 //#include <feel/feelvf/operators2.hpp>
 //#include <feel/feelvf/operators3.hpp>
 #include <feel/feelvf/geometricdata.hpp>
+#include <feel/feelvf/shellgeometric.hpp>
+#include <feel/feelvf/sb9.hpp>
 #include <feel/feelvf/stdmathfunctors.hpp>
 #include <feel/feelvf/trace.hpp>
 #include <feel/feelvf/det.hpp>
@@ -66,6 +68,9 @@
 #include <feel/feelvf/norm.hpp>
 #include <feel/feelvf/norm2.hpp>
 #include <feel/feelvf/ones.hpp>
+#include <feel/feelvf/tensorbasis.hpp>
+#include <feel/feelvf/voigt.hpp>
+#include <feel/feelvf/contractions.hpp>
 #include <feel/feelvf/inv.hpp>
 #include <feel/feelvf/twovalued.hpp>
 //#include <feel/feelvf/eye.hpp>
