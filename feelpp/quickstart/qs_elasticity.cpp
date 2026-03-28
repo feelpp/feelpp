@@ -37,41 +37,42 @@ int main(int argc, char**argv )
         auto Vh = Pchv<1>( mesh );
         toc("Vh");
 
-        auto u = Vh->element("u");
-        auto v = Vh->element("v");
+        auto u = trial( Vh, "u" );
+        auto v = test( Vh, "v" );
+        auto uh = Vh->element("u");
         auto nu = doption(_name="nu");
         auto E = doption(_name="E");
         auto lambda = E*nu/( (1+nu)*(1-2*nu) );
         auto mu = E/(2*(1+nu));
-        auto deft = sym(gradt(u));
-        auto def = sym(grad(u));
-        auto Id = eye<FEELPP_DIM,FEELPP_DIM>();
-        auto sigmat = lambda*trace(deft)*Id + 2*mu*deft;
-        auto sigma = lambda*trace(def)*Id + 2*mu*def;
+        auto C = isotropic_stiffness<FEELPP_DIM>( lambda, mu );
+        auto sigma = [=]( auto const& w )
+        {
+            return ddot( C, symm_grad( w ) );
+        };
         auto f = expr<FEELPP_DIM,1>( soption(_name="functions.f"), "f" );
         auto g = expr<FEELPP_DIM,1>( soption(_name="functions.g"), "g" );
 
         tic();
         auto l = form1( _test=Vh );
         l = integrate(_range=elements(mesh),
-                    _expr=inner(f,id(v)));
+                    _expr=inner(f,v));
         toc("l");
 
         tic();
         auto a = form2( _trial=Vh, _test=Vh);
         a = integrate(_range=elements(mesh),
-                    _expr=inner( sigmat, grad(v) ) );
+                    _expr=ddot( C, symm_grad( u ), symm_grad( v ) ) );
 
         if ( boption(_name="weakdir") )
         {
             double penaldir = doption(_name="gamma");
             a += integrate(_range=markedfaces(mesh,"Dirichlet"),
-                        _expr=-inner(sigmat*N(),id(u)) + inner(-sigma*N()+std::max(2*mu,lambda)*penaldir*id(u)/hFace(),idt(u)) );
+                        _expr=-inner( sigma( u )*N(), v ) + inner( -sigma( v )*N() + std::max( 2*mu, lambda )*penaldir*v/hFace(), u ) );
 
         }
         else
         {
-            a+=on(_range=markedfaces(mesh,"Dirichlet"), _rhs=l, _element=u, _expr=g );
+            a+=on(_range=markedfaces(mesh,"Dirichlet"), _rhs=l, _element=uh, _expr=g );
         }
         toc("a");
 
@@ -79,19 +80,20 @@ int main(int argc, char**argv )
         if ( !boption( "no-solve" ) )
         {
             tic();
-            std::shared_ptr<NullSpace<double> > myNullSpace( new NullSpace<double>(backend(),qsNullSpace(Vh,mpl::int_<FEELPP_DIM>())) );
-            backend()->attachNearNullSpace( myNullSpace );
+            auto b = backend();
+            auto rigidBodyModes = std::make_shared<NullSpace<double>>( b, qsNullSpace( Vh ) );
+            b->attachNearNullSpace( rigidBodyModes );
             if ( boption(_name="nullspace") )
-                backend()->attachNearNullSpace( myNullSpace );
+                b->attachNullSpace( rigidBodyModes );
 
-            a.solve(_rhs=l,_solution=u);
+            a.solve(_rhs=l,_solution=uh);
             toc("a.solve");
         }
 
         tic();
         auto e = exporter( _mesh=mesh );
         e->addRegions();
-        e->add( "u", u );
+        e->add( "u", uh );
         e->save();
         toc("Exporter");
         return 0;
