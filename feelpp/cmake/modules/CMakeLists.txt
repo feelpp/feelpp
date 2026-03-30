@@ -37,6 +37,7 @@ set(modules
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.dirs.cmake
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.directive.cmake
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.macros.cmake
+  ${CMAKE_CURRENT_SOURCE_DIR}/FeelppPythonSupport.cmake
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.macros.om.cmake
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.host.cmake
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.precompiled.headers.cmake

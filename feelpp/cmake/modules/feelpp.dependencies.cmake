@@ -554,8 +554,15 @@ if(FEELPP_ENABLE_PYTHON)
   #
   # Python
   #
-  FIND_PACKAGE(Python3 COMPONENTS Interpreter Development)
+  FIND_PACKAGE(Python3 COMPONENTS Interpreter Development Development.Module)
   if(Python3_FOUND)
+    set(Python3_EXECUTABLE "${Python3_EXECUTABLE}" CACHE FILEPATH "Python3 executable")
+    foreach(_feelpp_python_tgt Python3::Interpreter Python3::Module Python3::SABIModule Python3::Python)
+      if(TARGET ${_feelpp_python_tgt})
+        set_property(TARGET ${_feelpp_python_tgt} PROPERTY IMPORTED_GLOBAL TRUE)
+      endif()
+    endforeach()
+
     execute_process(COMMAND
       ${Python3_EXECUTABLE}
       -c "import sys; print(sys.version[0:3])"
@@ -587,6 +594,8 @@ if(FEELPP_ENABLE_PYTHON)
 
     Find_Package(MPI4PY)
     if ( MPI4PY_FOUND )
+      set(MPI4PY_FOUND "${MPI4PY_FOUND}" CACHE BOOL "mpi4py available")
+      set(MPI4PY_INCLUDE_DIR "${MPI4PY_INCLUDE_DIR}" CACHE STRING "mpi4py include path")
       set( FEELPP_HAS_MPI4PY 1 )
       message(STATUS "[feelpp] mpi4py installed; headers: ${MPI4PY_INCLUDE_DIR}")
     else()
@@ -595,6 +604,8 @@ if(FEELPP_ENABLE_PYTHON)
 
     Find_Package(PETSC4PY)
     if ( PETSC4PY_FOUND )
+      set(PETSC4PY_FOUND "${PETSC4PY_FOUND}" CACHE BOOL "petsc4py available")
+      set(PETSC4PY_INCLUDE_DIR "${PETSC4PY_INCLUDE_DIR}" CACHE STRING "petsc4py include path")
       set( FEELPP_HAS_PETSC4PY 1 )
       message(STATUS "[feelpp] petsc4py installed; headers: ${PETSC4PY_INCLUDE_DIR}")
     else()
@@ -613,19 +624,43 @@ if(FEELPP_ENABLE_PYTHON)
     set (FEELPP_PYTHON_MODULE_PATH ${PYTHON_SITE_PACKAGES})
   else ()
     execute_process(
-      COMMAND ${Python3_EXECUTABLE} -c
-        "
-import sys, sysconfig
+      COMMAND ${Python3_EXECUTABLE} -c "
+import sys, sysconfig, site, os
 base = '${CMAKE_INSTALL_PREFIX}'
+cands = []
 try:
-    # Python ≥3.12 (preferred)
-    print(sysconfig.get_path('platlib', vars={'base': base, 'platbase': base}))
+    cands += site.getsitepackages()
 except Exception:
-  try:
-    from distutils import sysconfig as dsys
-    print(dsys.get_python_lib(plat_specific=True, prefix=base))
-  except Exception as e:
-    sys.exit('Could not compute platlib path: %s' % e)"
+    pass
+cands.append(sysconfig.get_path('platlib', vars={'base': base, 'platbase': base}))
+# Prefer Debian-style paths under current base, then generic ABI paths.
+pyver = str(sys.version_info.major) + '.' + str(sys.version_info.minor)
+preferred = [
+    base + '/lib/python3/dist-packages',
+    base + '/lib/python' + pyver + '/dist-packages',
+    base + '/lib/python' + pyver + '/site-packages',
+    base + '/local/lib/python3/dist-packages',
+    base + '/local/lib/python' + pyver + '/dist-packages',
+    base + '/local/lib/python' + pyver + '/site-packages',
+]
+choice = None
+for p in cands:
+    if not p: continue
+    if any(p.startswith(pr) for pr in preferred):
+        choice = p; break
+# Next, prefer any path rooted in the current install prefix.
+if choice is None:
+    for p in cands:
+        if p and p.startswith(base + os.sep):
+            choice = p; break
+# Fallback to first candidate
+if choice is None and cands:
+    choice = cands[0]
+if choice:
+    print(choice)
+else:
+    sys.exit('Could not compute Python module path')
+"
       OUTPUT_VARIABLE _ABS_PYTHON_MODULE_PATH
       RESULT_VARIABLE _PYTHON_pythonlib_result
       OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -638,6 +673,7 @@ except Exception:
     get_filename_component (_ABS_PYTHON_MODULE_PATH ${_ABS_PYTHON_MODULE_PATH} ABSOLUTE)
     file (RELATIVE_PATH FEELPP_PYTHON_MODULE_PATH ${CMAKE_INSTALL_PREFIX} ${_ABS_PYTHON_MODULE_PATH})
   endif ()
+  set (FEELPP_PYTHON_MODULE_PATH "${FEELPP_PYTHON_MODULE_PATH}" CACHE STRING "Python module install path" FORCE)
   set (FEELPP_PYTHON${Python3_VERSION_MAJOR}_MODULE_PATH ${FEELPP_PYTHON_MODULE_PATH})
   message(STATUS "[feelpp] python module path: ${FEELPP_PYTHON_MODULE_PATH}")
 endif(FEELPP_ENABLE_PYTHON)
