@@ -26,6 +26,10 @@ message(STATUS "Contrib libraries")
 include(FetchContent)
 add_library(feelpp_contrib INTERFACE)
 add_library( Feelpp::feelpp_contrib ALIAS feelpp_contrib)
+if ( ${CMAKE_VERSION} VERSION_GREATER 3.7.2 )
+  target_compile_features(feelpp_contrib INTERFACE cxx_std_${FEELPP_STD_CPP})
+endif()
+set_property(TARGET feelpp_contrib PROPERTY FEELPP_STD_CPP ${FEELPP_STD_CPP})
 
 set( CMAKE_INSTALL_DATADIR "share/feelpp")
 if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
@@ -552,6 +556,8 @@ if ( FEELPP_ENABLE_FMI4CPP )
     set(FMI4CPP_LOG_LEVEL "OFF" CACHE STRING "FMI4cpp logging level")
   endif()
   set( FMI4CPP_HEADER_INSTALL_DIR "${CMAKE_INSTALL_INCLUDEDIR}/")
+  set( FMI4CPP_INSTALL_BIN_DIR "${CMAKE_INSTALL_BINDIR}")
+  set( FMI4CPP_INSTALL_LIB_DIR "${CMAKE_INSTALL_LIBDIR}")
   set( FMI4CPP_CMAKE_INSTALL_DIR "share/feelpp/fmi4cpp")
   set( FMI4CPP_DOC_INSTALL_DIR "share/doc/feelpp/fmi4cpp")
   set(FETCHCONTENT_SOURCE_DIR_FMI4CPP ${CMAKE_CURRENT_SOURCE_DIR}/fmi4cpp)
@@ -560,7 +566,11 @@ if ( FEELPP_ENABLE_FMI4CPP )
 
   FetchContent_MakeAvailable(fmi4cpp)
   add_library(feelpp_fmi4cpp INTERFACE)
-  set_target_properties(fmi4cpp PROPERTIES OUTPUT_NAME "feelpp_fmi4cpp")
+  set_target_properties(fmi4cpp PROPERTIES
+      OUTPUT_NAME "feelpp_fmi4cpp"
+      VERSION ${FEELPP_SHARED_VERSION}
+      SOVERSION ${FEELPP_SHARED_SOVERSION}
+      )
   if ( "${CMAKE_BUILD_TYPE}" STREQUAL "Release" )
     target_compile_definitions(fmi4cpp PRIVATE LOG_LEVEL_OFF)  #fix bug with macro name (missing M here https://github.com/feelpp/FMI4cpp/blob/master/src/fmi4cpp/mlog.hpp#L13C1-L14C1)
   endif()
@@ -883,7 +893,11 @@ if ( FEELPP_ENABLE_SPECX )
   FetchContent_MakeAvailable(specx)
   add_library(feelpp_specx INTERFACE)
 
-  set_target_properties(specx PROPERTIES OUTPUT_NAME "feelpp_specx")
+  set_target_properties(specx PROPERTIES
+      OUTPUT_NAME "feelpp_specx"
+      VERSION ${FEELPP_SHARED_VERSION}
+      SOVERSION ${FEELPP_SHARED_SOVERSION}
+      )
   target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_SPECX)
   target_link_libraries(feelpp_specx INTERFACE specx )
   add_library(Feelpp::feelpp_specx ALIAS feelpp_specx)

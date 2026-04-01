@@ -1,15 +1,17 @@
+#pragma once
+
+#include <cmath>
+#include <fstream>
+
 #include <feel/feelmodels/fluid/fluidmechanics.hpp>
 #include <feel/feelcore/json.hpp>
 #include <feel/feelvf/vf.hpp>
 
-
-using namespace Feel;
-using namespace Feel::FeelModels;
+namespace Feel::FeelModels
+{
 using json = nl::json;
 
-typedef Eigen::Matrix<double, 1, Eigen::Dynamic> RowVectord;
-
-namespace ns {
+namespace detail {
     struct MagnetoParam
     {
         std::string trajectory;
@@ -42,7 +44,7 @@ magnetoTorqueModelFSI(FluidMechanics const& t, DataType & data)
         jsonMagneto = j["MagnetoTorque"]["body"]["setup"];
     }
 
-    ns::MagnetoParam torqueParam = jsonMagneto["torqueParam"].get<ns::MagnetoParam>();
+    detail::MagnetoParam torqueParam = jsonMagneto["torqueParam"].get<detail::MagnetoParam>();
     std::string traj = torqueParam.trajectory;
     double freq = torqueParam.freq;
     double amp = torqueParam.amp;
@@ -251,3 +253,5 @@ contactForceModelsFSI(SolidMechanics const& t, typename FSIModel::element_solid_
     
 }
 */
+
+} // namespace Feel::FeelModels

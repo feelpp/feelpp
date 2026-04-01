@@ -35,7 +35,7 @@ set(FEELPP_MOR_BINARY_DIR ${PROJECT_BINARY_DIR})
 # with this it is possible to compile applications/MOR from an installed
 # version of feel++. This is useful also for staged compilation for docker
 list(FIND FEELPP_COMPONENT "mor" COMPONENT_MOR )
-if ( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR OR  MOR_COMPONENT GREATER -1 )
+if ( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR OR COMPONENT_MOR GREATER -1 )
   find_package(Feel++ COMPONENTS Toolboxes PATHS ${FEELPP_DIR}/share/feelpp/feel/cmake/modules $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
   if(NOT FEELPP_FOUND)
     message(WARNING "[mor] Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
@@ -60,6 +60,11 @@ else()
 #  include_directories(${FEELPP_MOR_BINARY_DIR})  
   set(FEELPP_FOUND ON)  
   set(FEELPP_TOOLBOXES_FOUND ON)
+endif()
+
+if ( FEELPP_HAS_PYTHON )
+  include("${CMAKE_CURRENT_LIST_DIR}/../python/cmake/FeelppPythonNormalize.cmake")
+  feelpp_python_normalize_module_path()
 endif()
 
 

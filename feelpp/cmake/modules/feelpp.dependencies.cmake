@@ -8,7 +8,7 @@
 # define the feel++ c++ standard level, it used to be hardcoded, this way we can
 # have builds to test the different standard flavors
 if (NOT DEFINED FEELPP_STD_CPP )
-  set(FEELPP_STD_CPP "17") # DOC STRING "define feel++ standard c++ (default c++11), values can be : 11, 14, 17, 2a")
+  set(FEELPP_STD_CPP "23") # DOC STRING "define feel++ standard c++ (default c++11), values can be : 11, 14, 17, 2a")
 endif()
 if (NOT DEFINED FEELPP_STDLIB_CPP AND NOT APPLE)
   set(FEELPP_STDLIB_CPP "stdc++") # DOC STRING "define feel++ standard c++ library (default libstdc++), values can be : libc++ libstdc++")
@@ -625,35 +625,52 @@ if(FEELPP_ENABLE_PYTHON)
   else ()
     execute_process(
       COMMAND ${Python3_EXECUTABLE} -c "
-import sys, sysconfig, site, os
-base = '${CMAKE_INSTALL_PREFIX}'
+import os, site, sys, sysconfig
+base = os.path.normpath('${CMAKE_INSTALL_PREFIX}')
+pyver = str(sys.version_info.major) + '.' + str(sys.version_info.minor)
+platlib = sysconfig.get_path('platlib', vars={'base': base, 'platbase': base})
 cands = []
+if platlib:
+    cands.append(platlib)
 try:
     cands += site.getsitepackages()
 except Exception:
     pass
-cands.append(sysconfig.get_path('platlib', vars={'base': base, 'platbase': base}))
-# Prefer Debian-style paths under current base, then generic ABI paths.
-pyver = str(sys.version_info.major) + '.' + str(sys.version_info.minor)
-preferred = [
-    base + '/lib/python3/dist-packages',
-    base + '/lib/python' + pyver + '/dist-packages',
-    base + '/lib/python' + pyver + '/site-packages',
-    base + '/local/lib/python3/dist-packages',
-    base + '/local/lib/python' + pyver + '/dist-packages',
-    base + '/local/lib/python' + pyver + '/site-packages',
-]
-choice = None
+seen = set()
+norm_cands = []
 for p in cands:
-    if not p: continue
-    if any(p.startswith(pr) for pr in preferred):
-        choice = p; break
-# Next, prefer any path rooted in the current install prefix.
+    if not p:
+        continue
+    p = os.path.normpath(p)
+    if p in seen:
+        continue
+    seen.add(p)
+    norm_cands.append(p)
+cands = norm_cands
+preferred = [
+    os.path.normpath(base + '/lib/python3/dist-packages'),
+    os.path.normpath(base + '/lib/python' + pyver + '/dist-packages'),
+    os.path.normpath(base + '/lib/python' + pyver + '/site-packages'),
+]
+local_base = os.path.normpath(base + '/local')
+choice = None
+for pref in preferred:
+    for p in cands:
+        if p == pref or p.startswith(pref + os.sep):
+            choice = p
+            break
+    if choice:
+        break
 if choice is None:
     for p in cands:
-        if p and p.startswith(base + os.sep):
-            choice = p; break
-# Fallback to first candidate
+        if not (p == base or p.startswith(base + os.sep)):
+            continue
+        if p == local_base or p.startswith(local_base + os.sep):
+            continue
+        choice = p
+        break
+if choice is None and platlib:
+    choice = os.path.normpath(platlib)
 if choice is None and cands:
     choice = cands[0]
 if choice:

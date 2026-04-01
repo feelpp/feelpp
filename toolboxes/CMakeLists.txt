@@ -52,6 +52,11 @@ else()
 endif()
 
 if ( FEELPP_HAS_PYTHON )
+  include("${CMAKE_CURRENT_LIST_DIR}/../python/cmake/FeelppPythonNormalize.cmake")
+  feelpp_python_normalize_module_path()
+endif()
+
+if ( FEELPP_HAS_PYTHON )
   message(STATUS "[feelpp-toolboxes] python module path:${FEELPP_PYTHON_MODULE_PATH}")
 endif()
 
