@@ -1767,21 +1767,14 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows,
                           Context const& on_context,
                           value_type value_on_diagonal )
 {
-    PetscBool assembled = PETSC_FALSE;
-    int ierr = MatAssembled( M_mat, &assembled );
-    CHKERRABORT( this->comm(), ierr );
+    // zeroRows() enters a collective PETSc path when used by blockform + on().
+    // Some preceding matrix updates may have marked the wrapper closed state
+    // only on a subset of ranks, so deciding whether to assemble from local
+    // closed()/MatAssembled() can diverge and deadlock. Finalize assembly
+    // collectively here instead.
+    this->close();
 
-    // zeroRows() requires a fully assembled matrix. Do not rely only on the
-    // wrapper closed() flag here because block/product assembly may leave the
-    // PETSc Mat in a not-yet-assembled state even when the wrapper believes it
-    // is closed.
-    if ( !this->closed() || assembled == PETSC_FALSE )
-    {
-        this->close();
-        ierr = MatAssembled( M_mat, &assembled );
-        CHKERRABORT( this->comm(), ierr );
-        CHECK( assembled == PETSC_TRUE ) << "PETSc matrix must be assembled before zeroRows()";
-    }
+    int ierr = 0;
     if ( !rhs.closed() )
         rhs.close();
 
@@ -3252,17 +3245,7 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
     bool hasAllProcess = true;
     if ( hasAllProcess )
     {
-        PetscBool assembled = PETSC_FALSE;
-        int ierr = MatAssembled( this->M_mat, &assembled );
-        CHKERRABORT( this->comm(), ierr );
-
-        if ( !this->closed() || assembled == PETSC_FALSE )
-        {
-            this->close();
-            ierr = MatAssembled( this->M_mat, &assembled );
-            CHKERRABORT( this->comm(), ierr );
-            CHECK( assembled == PETSC_TRUE ) << "PETSc matrix must be assembled before zeroRows()";
-        }
+        this->close();
         if ( !rhs.closed() )
             rhs.close();
     }
