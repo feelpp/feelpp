@@ -678,7 +678,11 @@ else:
   message(STATUS "[feelpp] python module path: ${FEELPP_PYTHON_MODULE_PATH}")
 endif(FEELPP_ENABLE_PYTHON)
 
-option(FEELPP_ENABLE_PYTHON_WRAPPING "Enable Python wrapping implementation" ON)
+option(FEELPP_ENABLE_PYTHON_WRAPPING "Enable Python wrapping implementation" ${FEELPP_ENABLE_PYTHON})
+if(NOT FEELPP_HAS_PYTHON AND FEELPP_ENABLE_PYTHON_WRAPPING)
+  message(STATUS "[feelpp] disabling Python wrapping because Python support is unavailable")
+  set(FEELPP_ENABLE_PYTHON_WRAPPING OFF CACHE BOOL "Enable Python wrapping implementation" FORCE)
+endif()
 
 # Boost
 SET(BOOST_MIN_VERSION "1.65.0")
