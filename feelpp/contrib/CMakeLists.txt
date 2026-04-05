@@ -262,7 +262,10 @@ set(BUILD_TESTING OFF)
 set(EIGEN_LEAVE_TEST_IN_ALL_TARGET 0)
 set(EIGEN_TEST_NOQT 1)
 set(FETCHCONTENT_SOURCE_DIR_EIGEN ${CMAKE_CURRENT_SOURCE_DIR}/eigen)
-set(INCLUDE_INSTALL_DIR "include/feelpp/eigen")
+# Eigen 5 reads its install layout from cache variables inside the subproject.
+# Force the vendored install tree to remain under the historical Feel++ prefix
+# so exported Feel++ targets keep referencing an installed path that exists.
+set(INCLUDE_INSTALL_DIR "include/feelpp/eigen" CACHE PATH "Eigen headers install dir" FORCE)
 
 FetchContent_Declare(eigen GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git GIT_TAG bc3b39870ecb690a623a3f49149a358b95c5781d) # upstream 5.0.1
 FetchContent_MakeAvailable(eigen)
