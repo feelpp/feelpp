@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required(VERSION 3.13.0)
+cmake_minimum_required(VERSION 3.21)
 if(DEFINED PROJECT_NAME)
   set( MOR_SUBPROJECT ON )
 endif()

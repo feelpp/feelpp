@@ -231,8 +231,10 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     endif()
 endif()
 
-# Disable searching for MPI-2 C++ bindings
-set(MPI_CXX_SKIP_MPICXX TRUE)
+# Disable searching for deprecated MPI-2 C++ bindings.
+# On newer Debian/OpenMPI toolchains, libmpi_cxx.so is no longer shipped.
+# Force the cache entry so CMake's FindMPI does not recreate it with FALSE.
+set(MPI_CXX_SKIP_MPICXX TRUE CACHE BOOL "Disable deprecated MPI C++ bindings" FORCE)
 FIND_PACKAGE(MPI REQUIRED)
 IF ( MPI_FOUND )
   #SET(CMAKE_REQUIRED_INCLUDES "${MPI_INCLUDE_PATH};${CMAKE_REQUIRED_INCLUDES}")
@@ -550,10 +552,19 @@ endif()
 
 # Python libs
 option( FEELPP_ENABLE_PYTHON "Enable Python Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+option( FEELPP_ALLOW_AMBIENT_CONDA_PYTHON "Allow auto-detected Conda/Miniconda Python installations" OFF )
 if(FEELPP_ENABLE_PYTHON)
   #
   # Python
   #
+  if(NOT FEELPP_ALLOW_AMBIENT_CONDA_PYTHON AND EXISTS "/usr/bin/python3")
+    if(DEFINED Python3_EXECUTABLE AND NOT "${Python3_EXECUTABLE}" STREQUAL "" AND NOT "${Python3_EXECUTABLE}" STREQUAL "/usr/bin/python3")
+      message(STATUS "[feelpp] Ignoring ambient Python ${Python3_EXECUTABLE}; using /usr/bin/python3")
+    else()
+      message(STATUS "[feelpp] Using system Python /usr/bin/python3")
+    endif()
+    set(Python3_EXECUTABLE "/usr/bin/python3" CACHE FILEPATH "Python3 executable" FORCE)
+  endif()
   FIND_PACKAGE(Python3 COMPONENTS Interpreter Development Development.Module)
   if(Python3_FOUND)
     set(Python3_EXECUTABLE "${Python3_EXECUTABLE}" CACHE FILEPATH "Python3 executable")
@@ -721,9 +732,19 @@ if ( NOT Boost_ARCHITECTURE )
   set(Boost_ARCHITECTURE "-x64")
 endif()
 set(Boost_ADDITIONAL_VERSIONS "1.61" "1.62" "1.63" "1.64" "1.65" "1.66" "1.67" "1.68" "1.69" "1.70" "1.71")
-set(BOOST_COMPONENTS_REQUIRED date_time filesystem system program_options unit_test_framework ${FEELPP_BOOST_MPI} regex serialization iostreams )
-FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} REQUIRED COMPONENTS ${BOOST_COMPONENTS_REQUIRED})
+set(BOOST_COMPONENTS_REQUIRED date_time filesystem program_options unit_test_framework ${FEELPP_BOOST_MPI} regex serialization iostreams )
+set(BOOST_COMPONENTS_OPTIONAL system)
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 NEW)
+endif()
+FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} REQUIRED COMPONENTS ${BOOST_COMPONENTS_REQUIRED} OPTIONAL_COMPONENTS ${BOOST_COMPONENTS_OPTIONAL})
 if(Boost_FOUND)
+  if(Boost_VERSION_STRING VERSION_GREATER_EQUAL 1.69 AND NOT TARGET Boost::system)
+    set(FEELPP_BOOST_SYSTEM_HEADER_ONLY 1)
+    message(STATUS "[feelpp] Boost.System is header-only; no Boost::system target to link")
+  else()
+    unset(FEELPP_BOOST_SYSTEM_HEADER_ONLY)
+  endif()
   IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "51")
     #add_definitions(-DBOOST_RESULT_OF_USE_TR1)
     #message(STATUS "[feelpp] added -DBOOST_RESULT_OF_USE_TR1" )
@@ -1482,16 +1503,13 @@ if ( FEELPP_ENABLE_ASCIIDOCTOR )
   include( feelpp.adoc )
 endif()
 
-# Enable precompiled headers (PCH)
-option( FEELPP_ENABLE_PCH "Enable precompiled headers (pch)" OFF )
-option( FEELPP_ENABLE_PCH_APPLICATIONS "Enable precompiled headers (pch) for applications" OFF )
-
-if( FEELPP_ENABLE_PCH )
-    set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PCH" )
-endif()
-if( FEELPP_ENABLE_PCH_APPLICATIONS )
-    set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PCH_Apps" )
-endif()
+foreach(_feelpp_retired_pch_option FEELPP_ENABLE_PCH FEELPP_ENABLE_PCH_APPLICATIONS)
+  if(DEFINED ${_feelpp_retired_pch_option} AND ${_feelpp_retired_pch_option})
+    message(WARNING "${_feelpp_retired_pch_option} is retired and ignored.")
+  endif()
+  set(${_feelpp_retired_pch_option} OFF CACHE INTERNAL
+    "Retired precompiled header option." FORCE)
+endforeach()
 
 # Enable Feel++ interpreter using cling.
 option( FEELPP_ENABLE_CLING_INTERPRETER "Enable feel++ interpreter [ EXPERIMENTAL ]" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )

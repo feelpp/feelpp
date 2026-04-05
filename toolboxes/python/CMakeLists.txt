@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.21)
 project(pyfeelpp-toolboxes)
 set(FEELPP_PYTHON_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 include("${CMAKE_CURRENT_LIST_DIR}/../../feelpp/cmake/modules/FeelppPythonSupport.cmake")

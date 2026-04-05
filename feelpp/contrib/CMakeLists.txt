@@ -261,7 +261,7 @@ set(BUILD_TESTING OFF)
 set(EIGEN_LEAVE_TEST_IN_ALL_TARGET 0)
 set(EIGEN_TEST_NOQT 1)
 set(FETCHCONTENT_SOURCE_DIR_EIGEN ${CMAKE_CURRENT_SOURCE_DIR}/eigen)
-set( EIGEN_INCLUDE_INSTALL_DIR "include/feelpp/eigen" )
+set(INCLUDE_INSTALL_DIR "include/feelpp/eigen")
 
 FetchContent_Declare(eigen GIT_REPOSITORY git@gitlab.com:feelpp/eigen.git GIT_TAG 08bd619a45b642d68ccf80c011d7391bb213ecba) # the commit hash for 1.5.0
 FetchContent_MakeAvailable(eigen)
@@ -444,7 +444,6 @@ if(FEELPP_USE_EXTERNAL_PYBIND11)
   target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_PYBIND11)
   target_link_libraries(feelpp_contrib INTERFACE pybind11::module)
 else()
-  set(PYBIND11_CPP_STANDARD -std=c++${FEELPP_STD_CPP})
   if ( FEELPP_ENABLE_PYBIND11 )
     feelppContribPrepare( pybind11 )
     if ( FEELPP_CONTRIB_PREPARE_SUCCEED )
@@ -741,6 +740,10 @@ if ( FEELPP_ENABLE_MATPLOT )
     message( STATUS "matplot++ CMAKE_INSTALL_INCLUDE_DIR: ${CMAKE_INSTALL_INCLUDEDIR}")
     set( BUILD_SHARED_LIBS ON )
     set( BUILD_INSTALLER ON )
+    # Vendored matplot pulls bundled CImg code, which may warn on newer distro
+    # toolchains. Keep its own developer-only warnings-as-errors disabled when
+    # embedded in Feel++ so package builds are not blocked by third-party warnings.
+    set( BUILD_WITH_PEDANTIC_WARNINGS OFF CACHE BOOL "" FORCE )
     set(OPTIMIZATION_FLAG_IS_SET ON)
     add_subdirectory( matplot )
     target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_MATPLOT )

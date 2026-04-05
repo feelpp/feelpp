@@ -16,7 +16,7 @@ if [ "$BUILDKITE_BRANCH" = "main" -o "$BRANCH" = "main" -o "$BUILDKITE_BRANCH" =
 fi 
 DIST=${DIST:-noble}
 case "$DIST" in
-    focal|jammy|lunar|mantic|noble)
+    focal|jammy|lunar|mantic|noble|resolute)
         FLAVOR=ubuntu
         ;;
     bullseye|bookworm|trixie|testing|sid)
@@ -109,12 +109,6 @@ feelpp-pbuilder-dist() {
     if [ -z "${FEELPP_PBUILDER_MIRRORSITE}" ]; then
         echo "pbuilder mirrorsite is not configured" >&2
         echo "Run feelpp-pkg build ... or set FEELPP_PBUILDER_MIRRORSITE." >&2
-        exit 1
-    fi
-
-    if [ -z "${FEELPP_PBUILDER_OTHERMIRROR}" ]; then
-        echo "pbuilder othermirror set is not configured" >&2
-        echo "Run feelpp-pkg build ... or set FEELPP_PBUILDER_OTHERMIRROR." >&2
         exit 1
     fi
 
