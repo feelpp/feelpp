@@ -257,13 +257,14 @@ if ( FEELPP_USE_EXTERNAL_EIGEN3 )
 else()
 
 set(EIGEN_BUILD_DOC OFF)
+set(EIGEN_BUILD_CMAKE_PACKAGE ON)
 set(BUILD_TESTING OFF)
 set(EIGEN_LEAVE_TEST_IN_ALL_TARGET 0)
 set(EIGEN_TEST_NOQT 1)
 set(FETCHCONTENT_SOURCE_DIR_EIGEN ${CMAKE_CURRENT_SOURCE_DIR}/eigen)
 set(INCLUDE_INSTALL_DIR "include/feelpp/eigen")
 
-FetchContent_Declare(eigen GIT_REPOSITORY git@gitlab.com:feelpp/eigen.git GIT_TAG 08bd619a45b642d68ccf80c011d7391bb213ecba) # the commit hash for 1.5.0
+FetchContent_Declare(eigen GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git GIT_TAG bc3b39870ecb690a623a3f49149a358b95c5781d) # upstream 5.0.1
 FetchContent_MakeAvailable(eigen)
 target_include_directories( feelpp_contrib BEFORE
       INTERFACE
