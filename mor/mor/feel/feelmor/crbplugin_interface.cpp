@@ -126,7 +126,6 @@ factoryCRBPlugin( std::string const& pluginname, std::string const& pluginlibnam
             auto loaded = Feel::detail::CRBPluginManager::instance().find( pluginname );
             auto plugin = loaded->second();
             LOG( INFO ) << fmt::format( "[feelpp.mor.factoryCRBPlugin] loaded plugin: {}", libpath.string() );
-            google::FlushLogFiles( google::GLOG_INFO );
             return plugin;
         };
 
@@ -134,7 +133,6 @@ factoryCRBPlugin( std::string const& pluginname, std::string const& pluginlibnam
         {
             auto decorated_path = ( dirpath / stem ).make_preferred();
             LOG( INFO ) << fmt::format( "[feelpp.mor.factoryCRBPlugin] loading plugin: {}...", decorated_path.string() );
-            google::FlushLogFiles( google::GLOG_INFO );
             return try_load( decorated_path, dll::load_mode::append_decorations );
         }
         catch ( std::exception const& err )
@@ -148,7 +146,6 @@ factoryCRBPlugin( std::string const& pluginname, std::string const& pluginlibnam
             try
             {
                 LOG( INFO ) << fmt::format( "[feelpp.mor.factoryCRBPlugin] trying versioned plugin candidate: {}", candidate.string() );
-                google::FlushLogFiles( google::GLOG_INFO );
                 return try_load( candidate, dll::load_mode::default_mode );
             }
             catch ( std::exception const& err )
