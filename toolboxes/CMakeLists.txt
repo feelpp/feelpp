@@ -22,7 +22,7 @@
 #
 #
 
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.21)
 
 project(toolboxes)
 set(PROJECT_SHORTNAME "toolbox")
@@ -49,6 +49,11 @@ else()
   # useful for pyfeelpp-toolboxes
   set(FEELPP_DIR ${CMAKE_INSTALL_PREFIX})
   set(FEELPP_FOUND ON)
+endif()
+
+if ( FEELPP_HAS_PYTHON )
+  include("${CMAKE_CURRENT_LIST_DIR}/../python/cmake/FeelppPythonNormalize.cmake")
+  feelpp_python_normalize_module_path()
 endif()
 
 if ( FEELPP_HAS_PYTHON )
@@ -170,6 +175,10 @@ if ( FEELPP_TOOLBOXES_ENABLE_MAXWELL )
 endif()
 
 message(STATUS "[toolboxes] Toolboxes enabled : ${TOOLBOXES}")
+
+if (FEELPP_TOOLBOXES_ENABLE_PYTHON)
+  add_subdirectory(python)
+endif()
 
 OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ON)
 if (FEELPP_ENABLE_TESTS  )

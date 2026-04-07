@@ -1,0 +1,48 @@
+[build-system]
+requires = ["scikit-build-core>=0.9", "pybind11>=2.11"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "feelpp-core"
+version = "0.111.0.dev13"
+description = "Feel++ core Python bindings for finite element methods"
+readme = "README.md"
+license = "LGPL-3.0-or-later"
+requires-python = ">=3.10"
+authors = [
+    { name = "Christophe Prud'homme", email = "christophe.prudhomme@feelpp.org" },
+    { name = "Feel++ Consortium" },
+]
+keywords = ["finite-element", "FEM", "PDE", "simulation", "HPC", "MPI", "pybind11"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: C++",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+dependencies = [
+    "numpy>=1.21",
+]
+
+[project.optional-dependencies]
+gmsh = ["gmsh>=4.11"]
+test = ["pytest>=7.0", "gmsh>=4.11"]
+
+[project.urls]
+Homepage = "https://www.feelpp.org"
+Documentation = "https://docs.feelpp.org"
+Repository = "https://github.com/feelpp/feelpp"
+Issues = "https://github.com/feelpp/feelpp/issues"
+
+[tool.scikit-build]
+cmake.minimum-version = "3.24"
+cmake.build-type = "Release"
+wheel.packages = []
+install.strip = false

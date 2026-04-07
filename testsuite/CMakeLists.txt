@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required(VERSION 3.13.0)
+cmake_minimum_required(VERSION 3.21)
 project(testsuite)
 set(PROJECT_SHORTNAME "test")
 

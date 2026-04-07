@@ -186,6 +186,11 @@ endif()
 foreach(COMPONENT ${BOOST_COMPONENTS_REQUIRED})
   target_link_libraries( feelpp PUBLIC Boost::${COMPONENT} )
 endforeach()
+if ( TARGET Boost::system )
+  target_link_libraries( feelpp PUBLIC Boost::system )
+elseif ( FEELPP_BOOST_SYSTEM_HEADER_ONLY )
+  target_compile_definitions( feelpp PUBLIC BOOST_ERROR_CODE_HEADER_ONLY BOOST_SYSTEM_NO_LIB )
+endif()
 endif()
 
 if ( FFTW_FOUND )
@@ -298,28 +303,26 @@ set_target_properties(PkgConfig::LibZip PROPERTIES
 target_link_libraries(feelpp PUBLIC LibZip::LibZip)
 
 
-
-get_property(INC_DIR_LIST TARGET feelpp PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
-message(STATUS "[feelpp]: include_dir ${INC_DIR_LIST}")
-get_property(INC_DIR_LIST TARGET feelpp PROPERTY PRIVATE_INCLUDE_DIRECTORIES)
-message(STATUS "[feelpp]: private einclude_dir ${INC_DIR_LIST}")
-get_property(INC_DIR_LIST TARGET feelpp PROPERTY PRIVATE_LINK_LIBRARIES)
-message(STATUS "[feelpp]: private libs ${INC_DIR_LIST}")
-get_property(INC_DIR_LIST TARGET feelpp PROPERTY PUBLIC_LINK_LIBRARIES)
-message(STATUS "[feelpp]: public libs ${INC_DIR_LIST}")
-get_property(INC_DIR_LIST TARGET feelpp PROPERTY LINK_LIBRARIES)
-message(STATUS "[feelpp]: libs ${INC_DIR_LIST}")
+if(FEELPP_ENABLE_VERBOSE_CMAKE)
+  get_property(INC_DIR_LIST TARGET feelpp PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+  message(STATUS "[feelpp] interface include dirs: ${INC_DIR_LIST}")
+  get_property(INC_DIR_LIST TARGET feelpp PROPERTY PRIVATE_INCLUDE_DIRECTORIES)
+  message(STATUS "[feelpp] private include dirs: ${INC_DIR_LIST}")
+  get_property(INC_DIR_LIST TARGET feelpp PROPERTY PRIVATE_LINK_LIBRARIES)
+  message(STATUS "[feelpp] private link libraries: ${INC_DIR_LIST}")
+  get_property(INC_DIR_LIST TARGET feelpp PROPERTY PUBLIC_LINK_LIBRARIES)
+  message(STATUS "[feelpp] public link libraries: ${INC_DIR_LIST}")
+  get_property(INC_DIR_LIST TARGET feelpp PROPERTY LINK_LIBRARIES)
+  message(STATUS "[feelpp] link libraries: ${INC_DIR_LIST}")
+endif()
 
 #target_link_libraries(feelpp ${FEELPP_LIBRARIES})
-if( FEELPP_ENABLE_PCH )
-    add_precompiled_header( feelpp )
-endif()
 include(GNUInstallDirs)
 # Install feelpp
 install(TARGETS feelpp EXPORT FeelppTargets
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Libs
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Libs
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT Libs
   INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   )
 install(EXPORT FeelppTargets

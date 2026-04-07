@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required (VERSION 3.13.0)
+cmake_minimum_required (VERSION 3.21)
 
 if(FEELPP_COMPONENT STREQUAL "toolboxes" OR
   FEELPP_COMPONENT STREQUAL "mor" OR
@@ -146,13 +146,28 @@ OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" OFF)
 OPTION(FEELPP_ENABLE_TOOLBOXES "enable Feel++ toolboxes" OFF)
 option(FEELPP_ENABLE_MOR "Enable MOR(Model Order Reduction) Applications in Feel++" OFF)
 option(FEELPP_ENABLE_FEELPP_PYTHON "Enable Feel++ python component" OFF)
+option(FEELPP_ENABLE_PYTHON "Enable Feel++ core Python bindings" OFF)
+option(FEELPP_TOOLBOXES_ENABLE_PYTHON "Enable Feel++ toolboxes Python bindings" OFF)
+option(FEELPP_MOR_ENABLE_PYTHON "Enable Feel++ MOR Python bindings" OFF)
 
-# enable PCH only for GCC as for now
-if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	OPTION(FEELPP_ENABLE_PCH_FOR_APPLICATIONS "enable Pre-Compiled Headers (PCH) for Feel++ applications" OFF)
-else()
-	set(FEELPP_ENABLE_PCH_FOR_APPLICATIONS OFF)
+if (FEELPP_ENABLE_FEELPP_PYTHON)
+  if (NOT FEELPP_ENABLE_PYTHON AND NOT FEELPP_TOOLBOXES_ENABLE_PYTHON AND NOT FEELPP_MOR_ENABLE_PYTHON)
+    set(FEELPP_ENABLE_PYTHON ON CACHE BOOL "Enable Feel++ core Python bindings" FORCE)
+    if (FEELPP_ENABLE_TOOLBOXES)
+      set(FEELPP_TOOLBOXES_ENABLE_PYTHON ON CACHE BOOL "Enable Feel++ toolboxes Python bindings" FORCE)
+    endif()
+    if (FEELPP_ENABLE_MOR)
+      set(FEELPP_MOR_ENABLE_PYTHON ON CACHE BOOL "Enable Feel++ MOR Python bindings" FORCE)
+    endif()
+  endif()
 endif()
+
+if(DEFINED FEELPP_ENABLE_PCH_FOR_APPLICATIONS AND FEELPP_ENABLE_PCH_FOR_APPLICATIONS)
+  message(WARNING
+    "FEELPP_ENABLE_PCH_FOR_APPLICATIONS is retired and ignored.")
+endif()
+set(FEELPP_ENABLE_PCH_FOR_APPLICATIONS OFF CACHE INTERNAL
+  "Retired precompiled header option." FORCE)
 OPTION(FEELPP_ENABLE_RESEARCH "enable Feel++ research" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ${FEELPP_DEFAULT})
 # default TimeOut for Feel++ testsuite 
@@ -246,9 +261,10 @@ if ( FEELPP_HAS_MOR )
 endif()
 
 #include(feelpp.module.pyfeelpp)
-if ( FEELPP_ENABLE_FEELPP_PYTHON )
-  add_subdirectory(python)
+if (FEELPP_ENABLE_PYTHON)
+  add_subdirectory(feelpp/python)
 endif()
+# toolboxes/python and mor/python are added by their parent CMakeLists.txt
 
 #
 # Enable testing
