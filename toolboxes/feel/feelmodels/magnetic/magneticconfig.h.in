@@ -1,0 +1,31 @@
+#undef MAGNETIC_DIM
+#undef MAGNETIC_ORDERGEO
+#undef MAGNETIC_ORDERPOLY
+
+#define MAGNETIC_DIM @MAGNETIC_DIM@
+#define MAGNETIC_ORDERGEO @MAGNETIC_ORDERGEO@
+//#define MAGNETIC_ORDERPOLY @MAGNETIC_ORDERPOLY@
+#define MAGNETIC_FE_BASIS_TYPE @MAGNETIC_FE_BASIS_TYPE@
+
+
+// #define MAGNETIC_VECTORPOTENTIAL_INTERPOLATIONPOINTS PointSetFekete
+
+#define MAGNETIC_CLASS_TEMPLATE_DECLARATIONS                            \
+  template< typename ConvexType, typename BasisVectorPotentialType> \
+  /**/
+#define MAGNETIC_CLASS_TEMPLATE_TYPE                    \
+  Magnetic<ConvexType,BasisVectorPotentialType> \
+  /**/
+// #define MAGNETIC_CLASS_TYPE                                             \
+//   Magnetic< Simplex<MAGNETIC_DIM,MAGNETIC_ORDERGEO,MAGNETIC_DIM>,       \
+//             Lagrange<MAGNETIC_ORDERPOLY, Scalar,Continuous,MAGNETIC_VECTORPOTENTIAL_INTERPOLATIONPOINTS > \
+//             >                                                           \
+  /**/
+#define MAGNETIC_CLASS_TYPE                                             \
+  Magnetic< Simplex<MAGNETIC_DIM,MAGNETIC_ORDERGEO,MAGNETIC_DIM>,       \
+            MAGNETIC_FE_BASIS_TYPE                                      \
+    >                                                                   \
+  /**/
+#define MAGNETIC_CLASS_INSTANTIATION            \
+  template class MAGNETIC_CLASS_TYPE ;          \
+  /**/

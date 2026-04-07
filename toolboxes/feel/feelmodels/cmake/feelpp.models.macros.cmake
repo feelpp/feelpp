@@ -1095,3 +1095,54 @@ macro( genLibHdg )
   endif()
 endmacro(genLibHdg)
 
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+macro( genLibMagnetic )
+  PARSE_ARGUMENTS(FEELMODELS_APP
+    "DIM;GEO_ORDER;P_FE_BASIS_TYPE;P_FE_BASIS_TAG"
+    ""
+    ${ARGN}
+    )
+
+    if ( NOT ( FEELMODELS_APP_DIM OR FEELMODELS_APP_P_FE_BASIS_TYPE OR FEELMODELS_APP_P_FE_BASIS_TAG OR FEELMODELS_APP_GEO_ORDER ) )
+      message(FATAL_ERROR "miss argument! FEELMODELS_APP_DIM OR FEELMODELS_APP_P_FE_BASIS_TYPE OR FEELMODELS_APP_P_FE_BASIS_TAG OR FEELMODELS_APP_GEO_ORDER")
+    endif()
+
+  set(MAGNETIC_DIM ${FEELMODELS_APP_DIM})
+  set(MAGNETIC_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
+  set(MAGNETIC_FE_BASIS_TYPE ${FEELMODELS_APP_P_FE_BASIS_TYPE})
+  set(MAGNETIC_FE_BASIS_TAG ${FEELMODELS_APP_P_FE_BASIS_TAG})
+
+  set(MAGNETIC_LIB_VARIANTS ${MAGNETIC_DIM}d${MAGNETIC_FE_BASIS_TAG}G${MAGNETIC_ORDERGEO} )
+  set(MAGNETIC_LIB_NAME feelpp_toolbox_magnetic_lib_${MAGNETIC_LIB_VARIANTS})
+
+  if ( NOT TARGET ${MAGNETIC_LIB_NAME} )
+    # configure the lib
+    set(MAGNETIC_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/magnetic/${MAGNETIC_LIB_VARIANTS})
+    set(MAGNETIC_CODEGEN_FILES_TO_COPY
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/magnetic/magnetic_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/magnetic/magneticassemblylinear_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/magnetic/magneticassemblyjacobian_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/magnetic/magneticassemblyresidual_inst.cpp
+      )
+    set(MAGNETIC_CODEGEN_SOURCES
+      ${MAGNETIC_LIB_DIR}/magnetic_inst.cpp
+      ${MAGNETIC_LIB_DIR}/magneticassemblylinear_inst.cpp
+      ${MAGNETIC_LIB_DIR}/magneticassemblyjacobian_inst.cpp
+      ${MAGNETIC_LIB_DIR}/magneticassemblyresidual_inst.cpp
+      )
+    set(MAGNETIC_LIB_DEPENDS feelpp_modelmesh feelpp_modelcore feelpp_toolbox_magneticbase )
+    # generate the lib target
+    genLibBase(
+      LIB_NAME ${MAGNETIC_LIB_NAME}
+      LIB_DIR ${MAGNETIC_LIB_DIR}
+      LIB_DEPENDS ${MAGNETIC_LIB_DEPENDS}
+      FILES_TO_COPY ${MAGNETIC_CODEGEN_FILES_TO_COPY}
+      FILES_SOURCES ${MAGNETIC_CODEGEN_SOURCES}
+      CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/magnetic/magneticconfig.h.in
+      )
+  endif()
+endmacro(genLibMagnetic)

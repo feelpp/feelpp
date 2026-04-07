@@ -393,7 +393,7 @@ public :
     ModelPhysicHeat( ModelPhysicHeat const& ) = default;
     ModelPhysicHeat( ModelPhysicHeat && ) = default;
 
-    std::vector<HeatSource> heatSources() const { return M_heatSources; }
+    std::vector<HeatSource> const& heatSources() const { return M_heatSources; }
 
     bool hasConvectionEnabled() const { return M_convection && M_convection->enabled(); }
     Convection const& convection() const { CHECK( M_convection ) << "no convection"; return *M_convection; }
@@ -455,6 +455,52 @@ public :
     tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 private :
 };
+
+  /**
+   * @brief Magnetic Physic Model
+   * @ingroup ModelCore
+   * 
+   * @tparam Dim real dimension of the model
+   */
+  template <uint16_type Dim>
+  class ModelPhysicMagnetic : public ModelPhysic<Dim>
+  {
+    using super_type = ModelPhysic<Dim>;
+    using self_type = ModelPhysicMagnetic<Dim>;
+  public :
+
+    struct CurrentDensitySource
+    {
+        CurrentDensitySource( self_type * mparent, std::string const& name ) : M_parent( mparent ), M_name( name ) {}
+        CurrentDensitySource( CurrentDensitySource const& ) = default;
+        CurrentDensitySource( CurrentDensitySource && ) = default;
+
+        void setup( nl::json const& jarg );
+
+        template <typename SymbolsExprType = symbols_expression_empty_t>
+        auto expr( SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+            {
+              return M_parent->template parameterExpr<Dim,1>( M_name + "_j", se );
+            }
+
+        void updateInformationObject( nl::json & p ) const;
+        static tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
+    private:
+        self_type * M_parent;
+        std::string M_name;
+    };
+
+    ModelPhysicMagnetic( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
+    ModelPhysicMagnetic( ModelPhysicMagnetic const& ) = default;
+    ModelPhysicMagnetic( ModelPhysicMagnetic && ) = default;
+
+    std::vector<CurrentDensitySource> const& currentDensitySources() const { return M_currentDensitySources; }
+
+    void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+  private :
+    std::vector<CurrentDensitySource> M_currentDensitySources;
+  };
 
 /**
  * @brief ThermoElectric Physic Model

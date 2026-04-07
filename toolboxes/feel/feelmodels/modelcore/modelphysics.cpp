@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
  */
 
 #include <feel/feelmodels/modelcore/modelphysics.hpp>
@@ -42,6 +42,10 @@ ModelPhysic<Dim>::ModelPhysic( std::string const& modeling, std::string const& t
     {
         this->addMaterialPropertyDescription( "electric-conductivity", "sigma", { scalarShape } );
     }
+    if ( M_modeling == "magnetic" || M_modeling == "electro-magnetic" )
+    {
+        this->addMaterialPropertyDescription( "magnetic-relative-permeability", "mu_r", { scalarShape,matrixShape } );
+    }
     if ( M_modeling == "solid" || M_modeling == "fsi" )
     {
         this->addMaterialPropertyDescription( "Young-modulus", "E", { scalarShape } );
@@ -77,6 +81,8 @@ ModelPhysic<Dim>::New( ModelPhysics<Dim> const& mphysics, std::string const& mod
         return std::make_shared<ModelPhysicHeat<Dim>>( mphysics, modeling, type, name, model );
     else if ( modeling == "electric" )
         return std::make_shared<ModelPhysicElectric<Dim>>( mphysics, modeling, type, name, model );
+    else if ( modeling == "magnetic" )
+        return std::make_shared<ModelPhysicMagnetic<Dim>>( mphysics, modeling, type, name, model );
     else if ( modeling == "thermo-electric" )
         return std::make_shared<ModelPhysicThermoElectric<Dim>>( mphysics, modeling, type, name, model );
     else if ( modeling == "fluid" )
@@ -440,6 +446,127 @@ ModelPhysicElectric<Dim>::tabulateInformations( nl::json const& jsonInfo, Tabula
     }
     return tabInfo;
 }
+
+template <uint16_type Dim>
+ModelPhysicMagnetic<Dim>::ModelPhysicMagnetic( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model )
+    :
+    super_type( modeling, type, name, mphysics, model )
+{
+    auto const& j_setup = model.setup();
+
+    if ( j_setup.contains( "current_density-sources" ) )
+    {
+        auto const& j_setup_currentdensitysources = j_setup.at( "current_density-sources" );
+        if ( j_setup_currentdensitysources.is_array() )
+          {
+            for ( auto const& [j_setup_currentdensitysourceskey,j_setup_currentdensitysourcesval] : j_setup_currentdensitysources.items() )
+              {
+                CHECK( j_setup_currentdensitysourcesval.is_object() ) << "j_setup_currentdensitysourcesval should be an object";
+                CurrentDensitySource hs( this, fmt::format("currentdensitysource{}",M_currentDensitySources.size()) );
+                hs.setup( j_setup_currentdensitysourcesval );
+                M_currentDensitySources.push_back( std::move( hs ) );
+              }
+          }
+        else if ( j_setup_currentdensitysources.is_object() )
+          {
+            CurrentDensitySource hs( this, fmt::format("currentdensitysource{}",M_currentDensitySources.size()) );
+            hs.setup( j_setup_currentdensitysources );
+            M_currentDensitySources.push_back( std::move( hs ) );
+          }
+    }
+}
+
+template <uint16_type Dim>
+void
+ModelPhysicMagnetic<Dim>::updateInformationObject( nl::json & p ) const
+{
+    super_type::updateInformationObject( p["Generic"] );
+
+    nl::json & pMagnetic = p["Magnetic"];
+    std::string eqTermSource = "0", eqTermTimeDerivative;
+    if ( !M_currentDensitySources.empty() )
+      {
+        eqTermSource = "j";
+        nl::json & pCurrentDensitySources = pMagnetic["CurrentDensitySources"];
+        for ( auto const& cds : M_currentDensitySources )
+          {
+            nl::json jprops;
+            cds.updateInformationObject( jprops );
+            pCurrentDensitySources.push_back( std::move( jprops ) );
+          }
+      }
+    std::string heateq;
+    heateq += " curl( 1/mu * curl(A) ) = " + eqTermSource;
+    pMagnetic["Equation"] = heateq;
+}
+
+template <uint16_type Dim>
+tabulate_informations_ptr_t
+ModelPhysicMagnetic<Dim>::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+    if ( jsonInfo.contains("Generic") )
+    {
+        super_type::updateTabulateInformationsBasic( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+    }
+
+    if ( jsonInfo.contains("Magnetic") )
+      {
+        auto const& jsonInfoMagnetic = jsonInfo.at("Magnetic");
+        Feel::Table tabInfoEquation;
+        TabulateInformationTools::FromJSON::addKeyToValues( tabInfoEquation, jsonInfoMagnetic, tabInfoProp, { "Equation" } );
+        tabInfo->add( "", TabulateInformations::New( tabInfoEquation, tabInfoProp ) );
+
+        if ( jsonInfoMagnetic.contains("CurrentDensitySources") )
+          {
+            auto tabInfoCurrentDensitySources = TabulateInformationsSections::New( tabInfoProp );
+            for ( auto const& [hskey,hsval] : jsonInfoMagnetic.at("CurrentDensitySources").items() )
+              tabInfoCurrentDensitySources->add( "", CurrentDensitySource::tabulateInformations( hsval, tabInfoProp ) );
+            tabInfo->add( "Current Density Sources", tabInfoCurrentDensitySources );
+          }
+      }
+    if ( jsonInfo.contains("Generic") )
+      {
+        //super_type::updateTabulateInformationsSubphysics( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+        super_type::updateTabulateInformationsParameters( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+      }
+
+    return tabInfo;
+}
+
+
+template <uint16_type Dim>
+void
+ModelPhysicMagnetic<Dim>::CurrentDensitySource::setup( nl::json const& jarg )
+{
+    CHECK( jarg.contains( "expr" ) ) << "no expr";
+    M_parent->addParameter( M_name + "_j", jarg.at("expr") );
+}
+
+template <uint16_type Dim>
+void
+ModelPhysicMagnetic<Dim>::CurrentDensitySource::updateInformationObject( nl::json & p ) const
+{
+    p["name"] = M_name;
+    auto [exprStr,compInfo] = M_parent->parameterModelExpr(M_name+"_j").exprInformations();
+    p["expr"] = exprStr;
+}
+
+template <uint16_type Dim>
+tabulate_informations_ptr_t
+ModelPhysicMagnetic<Dim>::CurrentDensitySource::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+{
+    Feel::Table tabInfo;
+    TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "name","expr" } );
+    tabInfo.format()
+        .setShowAllBorders( false )
+        .setColumnSeparator(":")
+        .setHasRowSeparator( false );
+    return TabulateInformations::New( tabInfo, tabInfoProp );
+}
+
+
+
 
 template <uint16_type Dim>
 ModelPhysicThermoElectric<Dim>::ModelPhysicThermoElectric( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model )
@@ -1606,6 +1733,8 @@ template class ModelPhysicHeat<2>;
 template class ModelPhysicHeat<3>;
 template class ModelPhysicElectric<2>;
 template class ModelPhysicElectric<3>;
+template class ModelPhysicMagnetic<2>;
+template class ModelPhysicMagnetic<3>;
 template class ModelPhysicThermoElectric<2>;
 template class ModelPhysicThermoElectric<3>;
 template class ModelPhysicFluid<2>;

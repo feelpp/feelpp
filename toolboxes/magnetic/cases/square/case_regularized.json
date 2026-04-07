@@ -1,0 +1,103 @@
+// -*- mode: javascript -*-
+{
+    "Name": "magnetostatic_h-conv",
+    "ShortName":"magnetostatic_h-conv",
+    "Models":
+    {
+        "magnetic":
+        {
+            //"name":"toto",
+            //"materials":["mymat1","mymat2"],
+            "setup": {
+                //"current_density":"{2/materials_mu,2/materials_mu}:materials_mu"
+                "current_density-sources":{
+                    "expr":"{2/1e-3,2/1e-3}"
+                }
+            }
+        }
+    },
+
+    // "Models":
+    // {
+    // //     "cfpdes":{
+    // //         "equations":"magneto"
+    // //     },
+    //     "magneto":{
+    //         "setup":{
+    //             "unknown":{
+    //                 "basis":"Ned1h0",
+    //                 "name":"potential",
+    //                 "symbol":"A"
+    //             },
+    //             "coefficients":{
+    //                 "zeta":"1/materials_mu:materials_mu",
+    //                 "a":"1",
+    //                 "f":"{2/materials_mu,2/materials_mu}:materials_mu"
+    //             }
+    //         }
+    //     }
+    // },
+    "Meshes":
+    {
+        "magnetic":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/square.geo",
+                "hsize":0.025//0.0125//0.025
+            }
+        }
+    },
+    "Parameters":
+    {
+        "epsilon":1, // regularized param
+        "solution_exact":"{1-y^2,1-x^2}:x:y"
+    },
+    "Materials":
+    {
+        "Omega":
+        {
+            "mu_r":1000
+        }
+    },
+    "BoundaryConditions":
+    {
+        "magnetic":
+        {
+            "magnetic_potential_imposed":
+            {
+                "boundary":
+                {
+                    "markers":["Left","Bottom","Right","Top"],
+                    "expr":"{solution_exact_0,solution_exact_1}:solution_exact_0:solution_exact_1"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "magnetic":
+        {
+            "Exports":
+            {
+                "fields":["vector_potential","pid"],
+                "expr": {
+                    "solution_exact":"{solution_exact_0,solution_exact_1}:solution_exact_0:solution_exact_1",
+                    "vector_potential":"{magnetic_A_0,magnetic_A_1}:magnetic_A_0:magnetic_A_1"
+                }
+            },
+            "Measures":
+            {
+                "Norm":
+                {
+                    "error-evaluated":
+                    {
+                        "field":"magneto.potential",
+                        "type":["L2-error"],
+                        "solution":"{solution_exact_0,solution_exact_1}:solution_exact_0:solution_exact_1"
+                    }
+                }
+            }
+        }
+    }
+}

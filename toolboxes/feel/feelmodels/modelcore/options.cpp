@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -427,6 +427,16 @@ electricity_options(std::string const& prefix)
     return electricityOptions.add( modelnumerical_options( prefix ) );
 }
 Feel::po::options_description
+magnetic_options( std::string const& prefix )
+{
+    Feel::po::options_description magneticOptions("Magnectic options");
+    magneticOptions.add_options()
+      (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >()->default_value( "automatic" ), "numeric solver : automatic, Newton, Picard, Linear")
+      //(prefixvm(prefix,"electric-conductivity").c_str(), Feel::po::value<double>()->default_value( 1 ), "electric-conductivity")
+      ;
+    return magneticOptions.add( modelnumerical_options( prefix ) );
+}
+Feel::po::options_description
 maxwell_options(std::string const& prefix)
 {
     Feel::po::options_description maxwellOptions("Maxwell options");
@@ -757,6 +767,8 @@ toolboxes_options( std::string const& type, std::string const& prefix )
         toolboxesOptions.add(multifluid_options(prefix));
     else if (type == "electric")
         toolboxesOptions.add(electricity_options(prefix));
+    else if (type == "magnetic")
+      toolboxesOptions.add(magnetic_options(prefix));
     else if (type == "thermo-electric")
         toolboxesOptions.add(thermoElectric_options(prefix));
     else if (type == "heat-fluid")

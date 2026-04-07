@@ -84,6 +84,12 @@ endif()
 if ( FEELPP_TOOLBOXES_ENABLE_HDG  AND ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" ) )
   add_subdirectory(hdg)
 endif()
+
+
+if ( FEELPP_TOOLBOXES_ENABLE_MAGNETIC )
+  add_subdirectory( magnetic )
+endif()
+
 if ( FEELPP_TOOLBOXES_ENABLE_MAXWELL )
   add_subdirectory( maxwell )
 endif()
