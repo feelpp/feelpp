@@ -4,8 +4,9 @@ run-name: "Feelpp PKG CI | debian: ${{ inputs.enable-debian}} | ubuntu: ${{ inpu
 on:
   push:
     branches:
- #      - develop
-     - 2259-add-script-to-get-feelpp-version
+     - main
+     - develop
+     - 2442-refactor-feel-debianubuntu-packaging-for-reproducible-builds-and-snapshot-based-publication
   workflow_dispatch:
     inputs:
       parallel:
@@ -123,4 +124,3 @@ jobs:
         feelpp-main-version: "${{ needs.version.outputs.main_version }}"
         feelpp-extra-version: "${{ needs.version.outputs.extra_version }}"
     secrets: inherit
-

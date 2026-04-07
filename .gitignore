@@ -58,6 +58,8 @@ __pycache__
 /testsuite/feeldiscr/#test_mortar.cpp#
 /testsuite/feeldiscr/.#test_mortar.cpp
 /contrib/eigen-eigen*
+/.pytest_cache/
+*.egg-info
 *.sw?
 \#*
 \.\#*
@@ -194,5 +196,11 @@ conftest.o
 python/notebooks/feelpp-python/
 install/
 .venv*/
+/ops/.pytest_cache/
+/ops/src/*.egg-info
+/tests/pkg/__pycache__/
+/packaging/.pytest_cache/
+/packaging/src/*.egg-info
+/packaging/tests/__pycache__/
 # CMake Preset backup files
 CMakePresets.json.backup

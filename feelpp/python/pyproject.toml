@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "feelpp-core"
-version = "0.111.0.dev12"
+version = "0.111.0.dev13"
 description = "Feel++ core Python bindings for finite element methods"
 readme = "README.md"
 license = "LGPL-3.0-or-later"

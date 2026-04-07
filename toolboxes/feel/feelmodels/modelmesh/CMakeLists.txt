@@ -18,12 +18,9 @@ target_include_directories(feelpp_modelmesh PUBLIC
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
   $<INSTALL_INTERFACE:include/feelpp/toolboxes>  )
 set_property(TARGET feelpp_modelmesh PROPERTY MACOSX_RPATH ON)
-if( FEELPP_ENABLE_PCH_MODELS )
-    add_precompiled_header( feelpp_modelmesh )
-  endif()
-  include(GNUInstallDirs)
+include(GNUInstallDirs)
 
-  set_target_properties(feelpp_modelmesh PROPERTIES VERSION ${FEELPP_TOOLBOXES_SHARED_VERSION} SOVERSION ${FEELPP_TOOLBOXES_SHARED_SOVERSION})
+set_target_properties(feelpp_modelmesh PROPERTIES VERSION ${FEELPP_TOOLBOXES_SHARED_VERSION} SOVERSION ${FEELPP_TOOLBOXES_SHARED_SOVERSION})
 install(TARGETS feelpp_modelmesh EXPORT feelpp-toolboxes-targets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Libs
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Libs

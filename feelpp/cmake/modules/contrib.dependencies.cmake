@@ -1,9 +1,14 @@
 add_library(feelpp_contrib INTERFACE)
+if ( ${CMAKE_VERSION} VERSION_GREATER 3.7.2 )
+  target_compile_features(feelpp_contrib INTERFACE cxx_std_${FEELPP_STD_CPP})
+endif()
+set_property(TARGET feelpp_contrib PROPERTY FEELPP_STD_CPP ${FEELPP_STD_CPP})
 
 
 
-set(FEELPP_HAS_GFLAGS 1)
-set(FEELPP_HAS_GLOG 1)
+# Legacy gflags/glog support is disabled; Feel++ uses spdlog now.
+set(FEELPP_HAS_GFLAGS 0)
+set(FEELPP_HAS_GLOG 0)
 set(FEELPP_HAS_GINAC 1)
 
 if ( FEELPP_HAS_GFLAGS )
