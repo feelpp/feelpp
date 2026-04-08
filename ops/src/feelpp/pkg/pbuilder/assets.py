@@ -6,6 +6,7 @@ import os
 import shutil
 import shlex
 import subprocess
+import tempfile
 
 from ..config import PackagingContext
 from ..shell import run_checked
@@ -93,14 +94,22 @@ def _feelpp_apt_signing_key() -> str:
 
 def refresh_feelpp_keyring(target: Path) -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path: Path | None = None
     try:
+        with tempfile.NamedTemporaryFile(
+            dir=target.parent,
+            prefix=f"{target.stem}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            tmp_path = Path(handle.name)
         run_checked(
             [
                 "gpg",
                 "--batch",
                 "--yes",
                 "--output",
-                str(target),
+                str(tmp_path),
                 "--export",
                 _feelpp_apt_signing_key(),
             ],
@@ -108,9 +117,16 @@ def refresh_feelpp_keyring(target: Path) -> None:
             stderr=subprocess.DEVNULL,
         )
     except (FileNotFoundError, subprocess.CalledProcessError):
+        if tmp_path is not None:
+            tmp_path.unlink(missing_ok=True)
         return
-    if target.is_file():
-        target.chmod(0o644)
+    if tmp_path is None or not tmp_path.is_file():
+        return
+    if tmp_path.stat().st_size == 0:
+        tmp_path.unlink(missing_ok=True)
+        return
+    tmp_path.chmod(0o644)
+    tmp_path.replace(target)
 
 
 def _generate_keyrings_hook(context: PackagingContext) -> str:

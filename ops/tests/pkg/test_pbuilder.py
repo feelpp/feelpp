@@ -252,6 +252,24 @@ class PbuilderTests(unittest.TestCase):
             run_mock.assert_called_once()
             self.assertIn("NEWKEY", run_mock.call_args.args[0])
 
+    def test_prepare_runtime_assets_keeps_bundled_feelpp_keyring_when_local_export_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            context = self.make_context(tmpdir)
+
+            def failing_export(_: list[str], **__: object) -> None:
+                raise subprocess.CalledProcessError(2, ["gpg"])
+
+            with mock.patch("feelpp.pkg.pbuilder.assets.run_checked", side_effect=failing_export):
+                prepare_runtime_assets(context)
+
+            keyring_path = context.pbuilder_keyrings_dir / "feelpp.gpg"
+            self.assertEqual(b"fake", keyring_path.read_bytes())
+            keyring_hook = context.pbuilder_runtime_hookdir / "G10-feelpp-keyrings"
+            self.assertIn(
+                "/etc/apt/trusted.gpg.d/feelpp.gpg",
+                keyring_hook.read_text(encoding="utf-8"),
+            )
+
     def test_prepare_runtime_assets_prefers_staged_feelpp_keyring(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             context = self.make_context(tmpdir)
