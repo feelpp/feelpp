@@ -90,13 +90,20 @@ jobs:
           run: |
             if [ -n "${FEELPP_PKG_DOCKER_STATE_ROOT_BASE}" ]; then
               state_root_base="${FEELPP_PKG_DOCKER_STATE_ROOT_BASE}"
-            elif [ -d "/nvme0/prudhomm/.cache" ] && [ -w "/nvme0/prudhomm/.cache" ]; then
-              state_root_base="/nvme0/prudhomm/.cache/feelpp-pkg/docker"
+            elif [ -d "/nvme0/cemosis" ] && [ -w "/nvme0/cemosis" ]; then
+              state_root_base="/nvme0/cemosis/.cache/feelpp-pkg/docker"
+            elif [ -n "${XDG_CACHE_HOME:-}" ]; then
+              state_root_base="${XDG_CACHE_HOME}/feelpp-pkg/docker"
+            elif [ -n "${HOME:-}" ]; then
+              state_root_base="${HOME}/.cache/feelpp-pkg/docker"
             else
               state_root_base="${RUNNER_TOOL_CACHE}/feelpp-pkg/docker"
             fi
             state_root="${state_root_base}/${FLAVOR}/${DIST}"
-            mkdir -p "${state_root}"
+            if ! mkdir -p "${state_root}" 2>/dev/null; then
+              state_root="${RUNNER_TOOL_CACHE}/feelpp-pkg/docker/${FLAVOR}/${DIST}"
+              mkdir -p "${state_root}"
+            fi
             echo "FEELPP_PKG_DOCKER_STATE_ROOT=${state_root}" >> "${GITHUB_ENV}"
         - name: Install feelpp-pkg
           run: |
@@ -149,12 +156,19 @@ jobs:
         run: |
           if [ -n "${FEELPP_PKG_DOCKER_STATE_ROOT_BASE}" ]; then
             state_root_base="${FEELPP_PKG_DOCKER_STATE_ROOT_BASE}"
-          elif [ -d "/nvme0/prudhomm/.cache" ] && [ -w "/nvme0/prudhomm/.cache" ]; then
-            state_root_base="/nvme0/prudhomm/.cache/feelpp-pkg/docker"
+          elif [ -d "/nvme0/cemosis" ] && [ -w "/nvme0/cemosis" ]; then
+            state_root_base="/nvme0/cemosis/.cache/feelpp-pkg/docker"
+          elif [ -n "${XDG_CACHE_HOME:-}" ]; then
+            state_root_base="${XDG_CACHE_HOME}/feelpp-pkg/docker"
+          elif [ -n "${HOME:-}" ]; then
+            state_root_base="${HOME}/.cache/feelpp-pkg/docker"
           else
             state_root_base="${RUNNER_TOOL_CACHE}/feelpp-pkg/docker"
           fi
           state_root="${state_root_base}/${FLAVOR}/${DIST}"
+          if ! mkdir -p "${state_root}" 2>/dev/null; then
+            state_root="${RUNNER_TOOL_CACHE}/feelpp-pkg/docker/${FLAVOR}/${DIST}"
+          fi
           mkdir -p "${state_root}" "${FEELPP_PKG_PUBLISH_INPUT_DIR}"
           echo "FEELPP_PKG_DOCKER_STATE_ROOT=${state_root}" >> "${GITHUB_ENV}"
       - name: Install feelpp-pkg
