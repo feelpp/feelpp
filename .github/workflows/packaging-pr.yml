@@ -25,7 +25,7 @@ jobs:
       structural: ${{ steps.classify.outputs.structural }}
       changed_changelogs: ${{ steps.classify.outputs.changed_changelogs }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -98,7 +98,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: classify
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Parse changed Debian changelogs
         shell: bash
@@ -133,9 +133,9 @@ jobs:
     needs: classify
     if: needs.classify.outputs.structural == 'true'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 

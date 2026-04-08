@@ -74,15 +74,29 @@ jobs:
             FLAVOR: ${{ inputs.flavor }}
             DEB_BUILD_OPTIONS: "parallel=${{ inputs.parallel }}"
             FEELPP_PKG_JOB_ID: ${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}-${{ inputs.flavor }}-${{ inputs.dist }}
-            FEELPP_PKG_JOB_ROOT: ${{ runner.temp }}/feelpp-pkg/${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}-${{ inputs.flavor }}-${{ inputs.dist }}
-            FEELPP_PKG_LOCAL_REPO_DIR: ${{ runner.temp }}/feelpp-pkg/${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}-${{ inputs.flavor }}-${{ inputs.dist }}/local-repo
-            FEELPP_PKG_ARTIFACTS_DIR: ${{ runner.temp }}/feelpp-pkg/${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}-${{ inputs.flavor }}-${{ inputs.dist }}/artifacts
-            FEELPP_PKG_RESULTS_DIR: ${{ runner.temp }}/feelpp-pkg/${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}-${{ inputs.flavor }}-${{ inputs.dist }}/results
         steps:
         - name: Checkout code
-          uses: actions/checkout@v4
+          uses: actions/checkout@v5
           with: 
             submodules: true
+        - name: Resolve package workspace
+          id: pkg_workspace
+          shell: bash
+          run: |
+            runner_temp="${RUNNER_TEMP:-${TMPDIR:-/tmp}}"
+            job_root="${runner_temp}/feelpp-pkg/${FEELPP_PKG_JOB_ID}"
+            {
+              echo "job_root=${job_root}"
+              echo "local_repo_dir=${job_root}/local-repo"
+              echo "artifacts_dir=${job_root}/artifacts"
+              echo "results_dir=${job_root}/results"
+            } >> "${GITHUB_OUTPUT}"
+            {
+              echo "FEELPP_PKG_JOB_ROOT=${job_root}"
+              echo "FEELPP_PKG_LOCAL_REPO_DIR=${job_root}/local-repo"
+              echo "FEELPP_PKG_ARTIFACTS_DIR=${job_root}/artifacts"
+              echo "FEELPP_PKG_RESULTS_DIR=${job_root}/results"
+            } >> "${GITHUB_ENV}"
         - name: Resolve docker state root
           shell: bash
           env:
@@ -126,7 +140,7 @@ jobs:
           uses: actions/upload-artifact@v4
           with:
             name: feelpp-pkg-${{ inputs.flavor }}-${{ inputs.dist }}
-            path: ${{ env.FEELPP_PKG_ARTIFACTS_DIR }}
+            path: ${{ steps.pkg_workspace.outputs.artifacts_dir }}
             if-no-files-found: error
             retention-days: 7
 
@@ -139,15 +153,28 @@ jobs:
           DIST: ${{ inputs.dist }}
           FLAVOR: ${{ inputs.flavor }}
           FEELPP_PKG_JOB_ID: ${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}-${{ inputs.flavor }}-${{ inputs.dist }}
-          FEELPP_PKG_JOB_ROOT: ${{ runner.temp }}/feelpp-pkg/${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}-${{ inputs.flavor }}-${{ inputs.dist }}
-          FEELPP_PKG_PUBLISH_INPUT_DIR: ${{ runner.temp }}/feelpp-pkg/${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}-${{ inputs.flavor }}-${{ inputs.dist }}/publish-input
           FEELPP_PKG_SNAPSHOT_ID: ${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flavor }}-${{ inputs.dist }}
       steps:
       - name: Checkout code
         if: ${{ !contains( github.event.head_commit.message, 'skip publish' ) && !contains( inputs.skip, 'skip publish' ) }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: true
+      - name: Resolve publish workspace
+        if: ${{ !contains( github.event.head_commit.message, 'skip publish' ) && !contains( inputs.skip, 'skip publish' ) }}
+        id: publish_workspace
+        shell: bash
+        run: |
+          runner_temp="${RUNNER_TEMP:-${TMPDIR:-/tmp}}"
+          job_root="${runner_temp}/feelpp-pkg/${FEELPP_PKG_JOB_ID}"
+          {
+            echo "job_root=${job_root}"
+            echo "publish_input_dir=${job_root}/publish-input"
+          } >> "${GITHUB_OUTPUT}"
+          {
+            echo "FEELPP_PKG_JOB_ROOT=${job_root}"
+            echo "FEELPP_PKG_PUBLISH_INPUT_DIR=${job_root}/publish-input"
+          } >> "${GITHUB_ENV}"
       - name: Resolve docker state root
         if: ${{ !contains( github.event.head_commit.message, 'skip publish' ) && !contains( inputs.skip, 'skip publish' ) }}
         shell: bash
@@ -180,7 +207,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: feelpp-pkg-${{ inputs.flavor }}-${{ inputs.dist }}
-          path: ${{ env.FEELPP_PKG_PUBLISH_INPUT_DIR }}
+          path: ${{ steps.publish_workspace.outputs.publish_input_dir }}
       - name: Publish package repository
         if: ${{ !contains( github.event.head_commit.message, 'skip publish' ) && !contains( inputs.skip, 'skip publish' ) }}
         run: |

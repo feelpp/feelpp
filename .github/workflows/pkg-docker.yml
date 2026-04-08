@@ -120,7 +120,7 @@ jobs:
     name: Build and Push feelpp/${{ matrix.service }}:${{ matrix.tag }}
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
 #        lfs: true
         token: ${{ secrets.CR_PAT }}
