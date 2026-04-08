@@ -1,0 +1,579 @@
+feelpp (0.108.0~alpha.2-1) unstable; urgency=medium
+
+  * add python3-feelpp
+
+ -- Christophe Prud'homme <christophe.prudhomme@cemosis.fr>  Wed, 21 Oct 2020 19:18:04 +0100
+
+feelpp (0.107.0~alpha.1+gita75a0ef12-5) unstable; urgency=medium
+
+  * libfeelpp1,libfeelpp-dev: really fix kwsys shared lib versioning
+
+ -- Christophe Prud'homme <christophe.prudhomme@feelpp.org>  Mon, 28 Oct 2019 19:18:04 +0100
+
+feelpp (0.107.0~alpha.1+gita75a0ef12-4) unstable; urgency=medium
+
+  * upstream: Fix upstream kwsys and metis shared libs
+
+ -- Christophe Prud'homme <christophe.prudhomme@feelpp.org>  Mon, 28 Oct 2019 14:59:22 +0100
+
+feelpp (0.107.0~alpha.1+gita75a0ef12-3) unstable; urgency=medium
+
+  * feelpp-tools: fix Depends 
+  * feelpp-quickstart: fix Depends
+
+ -- Christophe Prud'homme <christophe.prudhomme@feelpp.org>  Mon, 28 Oct 2019 11:34:48 +0100
+
+feelpp (0.107.0~alpha.1+gita75a0ef12-2) unstable; urgency=medium
+
+  * fix Depends
+
+ -- Christophe Prud'homme <christophe.prudhomme@feelpp.org>  Mon, 28 Oct 2019 10:38:52 +0100
+
+feelpp (0.107.0~alpha.1+gita75a0ef12-1) unstable; urgency=medium
+
+  * New upstream release
+
+ -- Christophe Prud'homme <christophe.prudhomme@feelpp.org>  Sun, 27 Oct 2019 08:01:23 +0100
+
+feel++ (0.103.2-3) unstable; urgency=medium
+
+  * d/control:
+     add libmongoc-dev as a Depends for libfeel++-dev
+     add paraview-python as a Depends for libfeel++-dev
+
+ -- Christophe Trophime <christophe.trophime@lncmi.cnrs.fr>  Mon, 29 Jan 2018 09:15:37 +0200
+
+feel++ (0.103.2-3) unstable; urgency=medium
+
+  * d/control:
+     rebuild against hdf5-1.8, petsc 3.7.5, slepc 3.7.3, paraview 5.4.1, openmpi 2.0.2
+
+ -- Christophe Trophime <christophe.trophime@lncmi.cnrs.fr>  Thu, 17 Nov 2017 09:15:37 +0200
+
+feel++ (0.103.2-2) unstable; urgency=medium
+
+  * d/control:
+     force libgmsh-tetgen-dev
+     only build libfeelpp and quickstart
+     rebuild against hdf5-1.8, petsc 3.7.5, slepc 3.7.3, paraview 5.2.1, openmpi 2.0.2
+
+ -- Christophe Trophime <christophe.trophime@lncmi.cnrs.fr>  Thu, 17 Nov 2017 09:15:37 +0200
+
+feel++ (0.103.2-1) unstable; urgency=medium
+
+  * new upstream release
+  * try to fix libfeelpp_nlopt.so pb
+  * install separate toolboxes
+  * d/rules:
+     quick and dirty hack for libfeelpp_nlopt
+     list missing installed files
+  * d/libfeel++-dev.install: add missing cmake files
+  * d/control:
+     force libgmsh-tetgen-dev
+     only build libfeelpp and quickstart
+     rebuild against petsc 3.7.5, slepc 3.7.3, paraview 5.2.1
+
+ -- Christophe Trophime <christophe.trophime@lncmi.cnrs.fr>  Thu, 22 Jun 2017 16:45:37 +0200
+
+feel++ (1:0.99.0-final.1-1) unstable; urgency=low
+
+  * new upstream release
+
+ -- Christophe Prud'Homme <prudhomm@debian.org>  Sun, 07 Sep 2014 22:11:36 +0000
+
+feel++ (1:0.99.0-beta.9-1) unstable; urgency=low
+
+  * new upstream release
+
+ -- Christophe Prud'Homme <prudhomm@debian.org>  Sun, 07 Sep 2014 20:15:33 +0000
+
+feel++ (1:0.98.0-final-4) unstable; urgency=medium
+
+  * fix ftbs due to clang changes  (Closes: #759275).
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Thu, 28 Aug 2014 03:28:07 +0000
+
+feel++ (1:0.98.0-final-3) unstable; urgency=medium
+
+  * fix ftbs with g++ 4.9 (Closes: #746842).
+  * use default g++ (Closes: #751310).
+  * add explicit build dependency on libhdf5-mpi-dev (Closes: #756435).
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Wed, 06 Aug 2014 21:18:18 +0000
+
+feel++ (1:0.98.0-final-2) unstable; urgency=low
+
+  [ Gilles Filippini ]
+  * Added explicit build dependency on libhdf5-mpi-dev. It was
+    previously pulled in by libslepc3.4.2-dev from which it should
+    be removed (#755180).
+
+  [ Christophe Prud'homme ]
+  * upload
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Wed, 06 Aug 2014 20:30:18 +0000
+
+feel++ (1:0.98.0-final-1) unstable; urgency=medium
+
+  * New upstream release
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Fri, 23 May 2014 07:31:30 +0000
+
+feel++ (1:0.98.0-beta.2-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Tue, 06 May 2014 22:50:46 +0000
+
+feel++ (1:0.98.0-beta.1-1) unstable; urgency=medium
+
+  * New upstream release
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Thu, 27 Mar 2014 12:32:10 +0000
+
+feel++ (1:0.97.3-final-1) unstable; urgency=medium
+
+  * New upstream release
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Mon, 17 Mar 2014 15:15:35 +0000
+
+feel++ (1:0.97.2-final-1) unstable; urgency=medium
+
+  * New upstream release
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Sun, 16 Mar 2014 20:25:53 +0000
+
+feel++ (1:0.97.1-final-1) unstable; urgency=medium
+
+  * New upstream release
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Sun, 16 Mar 2014 01:22:28 +0000
+
+feel++ (1:0.97.0-final-1) unstable; urgency=medium
+
+  * New upstream release
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Fri, 14 Mar 2014 08:30:35 +0000
+
+feel++ (1:0.97.0-beta.1-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Sun, 09 Mar 2014 20:32:12 +0000
+
+feel++ (1:0.97.0-alpha.3-3) unstable; urgency=medium
+
+  * try harder to fix powerpc build
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Fri, 07 Mar 2014 13:29:06 +0000
+
+feel++ (1:0.97.0-alpha.3-2) unstable; urgency=medium
+
+  * try fixing powerpc build
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Wed, 26 Feb 2014 15:18:54 +0000
+
+feel++ (1:0.97.0-alpha.3-1) unstable; urgency=medium
+
+  * New upstream release
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Wed, 26 Feb 2014 12:21:05 +0000
+
+feel++ (1:0.97.0-alpha.1+git5a4f83e-1) unstable; urgency=medium
+
+  * New upstream release
+
+ -- Christophe Prud'Homme <prudhomm@debian.org>  Sat, 15 Feb 2014 12:32:56 +0100
+
+feel++ (1:0.95.0-final-1) unstable; urgency=low
+
+  [ Christophe Prud'homme ]
+  * New upstream release: final 0.95.0 release
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Fri, 04 Oct 2013 10:02:09 +0200
+
+feel++ (1:0.95.0-beta.4-1) unstable; urgency=low
+
+  [ Christophe Prud'homme ]
+  * New upstream release: beta.4
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Thu, 03 Oct 2013 23:23:51 +0200
+
+feel++ (1:0.95.0~gitcd3b85a-3) unstable; urgency=low
+
+  * use g++-4.8 on sparc
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Thu, 03 Oct 2013 09:42:23 +0200
+
+feel++ (1:0.95.0~gitcd3b85a-2) unstable; urgency=low
+
+  [Christophe Prud'homme]
+  * use g++ on sparc
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Thu, 03 Oct 2013 00:25:20 +0200
+
+feel++ (1:0.95.0~gitcd3b85a-1) unstable; urgency=low
+
+  [ Christophe Prud'homme ]
+  * New upstream release
+  * Ship glog and gflags modified libraries that fit feel++ needs
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Tue, 01 Oct 2013 23:12:41 +0200
+
+feel++ (1:0.95.0~git7a87e68-1) unstable; urgency=low
+
+  [ Christophe Prud'homme ]
+  * New upstream release : beta3
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Tue, 01 Oct 2013 00:05:52 +0200
+
+feel++ (0.95.0~gitc88a9ee-1) unstable; urgency=low
+
+  [ Christophe Prud'homme ]
+    * New upstream beta2 release
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Mon, 30 Sep 2013 00:16:53 +0200
+
+feel++ (0.95.0~gitb8726d5-1) unstable; urgency=low
+
+  [ Christophe Prud'homme ]
+  * New upstream beta1 release
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Sat, 28 Sep 2013 21:47:32 +0200
+
+feel++ (0.94.0~gita1ad50c-2) unstable; urgency=low
+
+  [Christophe Prud'homme]
+  * debian/control: added libgmsh-dev to libfeel++-dev Depends
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Sun, 01 Sep 2013 14:11:39 +0200
+
+feel++ (0.94.0~gita1ad50c-1) unstable; urgency=low
+
+  [Christophe Prud'homme]
+  * New upstream release
+    The new upstream fixes the Boost 1.54 compilation errors and
+    should allow to pass the Boost1.54 transition
+  * debian/control: update Standards-Version to 3.9.4 (no change)
+  * removed embedded eigen3 copy from tarball (Closes: #714022).
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Sun, 01 Sep 2013 13:37:14 +0200
+
+feel++ (0.93.0-1) unstable; urgency=low
+
+  [ Anton Gladky ]
+  * Add libgmsh-dev to build-depends (Closes: #682650)
+
+  [ Christophe Prud'homme]
+  * New upstream release
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Sat, 25 May 2013 13:00:25 +0200
+
+feel++ (0.91.4-3) unstable; urgency=low
+
+  [ Christophe Prud'homme ]
+  * debian/control: update Standards-Version to 3.9.3 (no change)
+  * debian/rules: revert back to g++-4.6, g++-4.7 is too broken
+
+  [ Dmitrijs Ledkovs ]
+  * debian/control: remove alternative dependencies on libboost1.46-* in
+    the libfeel++-dev package. BinNMUs can and have transitioned the
+    package to boost1.49 by now, so the dependency should only be on the
+    default boost packages. This will get the package 'unstuck' in the
+    boost1.49 transition tracker.
+
+  [ Daniel Leidert ]
+  * debian/watch: sent watch file patch for google code
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Mon, 11 Jun 2012 00:32:51 +0200
+
+feel++ (0.91.4-2) unstable; urgency=low
+
+  * debian/control: openturns-wrapper no longer exists, do no depend on it
+    anymore
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Sun, 20 May 2012 21:48:47 +0200
+
+feel++ (0.91.4-1) unstable; urgency=low
+
+  [ Christophe Prud'homme ]
+  * New upstream release
+  * debian/{control,rules}: remove trilinos deps and support
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Sat, 19 May 2012 00:03:11 +0200
+
+feel++ (0.91.3-4) unstable; urgency=low
+
+  * debian/control: depend only on slepc which depend on petsc and depend
+    on slepc3.1(hence petsc3.1) as well as slepc3.2 (hence petsc3.2). This
+    change should allow to compile on Ubuntu.
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Sat, 07 Apr 2012 07:42:58 +0200
+
+feel++ (0.91.3-3) unstable; urgency=low
+
+  * debian/copyright: update.
+  * debian/control: remove some build-depends (e.g. python-{pyx,scipy})
+    that are no longer necessary
+  * debian/control: only build for amd64, i386 ia64, powerpc and
+    sparc. The other architectures are not targets for feel++ which
+    requires a lot of memory to compile.
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Wed, 04 Apr 2012 12:04:06 +0200
+
+feel++ (0.91.3-2) unstable; urgency=low
+
+  * debian/rules: remove sparc specific config
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Tue, 03 Apr 2012 10:05:33 +0200
+
+feel++ (0.91.3-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Tue, 03 Apr 2012 09:10:57 +0200
+
+feel++ (0.91.2-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Mon, 02 Apr 2012 23:32:28 +0200
+
+feel++ (0.91.1-2) unstable; urgency=low
+
+  * Fix  conflicting installation of cmake files (Closes: 664594)
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Tue, 20 Mar 2012 05:56:30 +0100
+
+feel++ (0.91.1-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Sun, 18 Mar 2012 17:02:49 +0100
+
+feel++ (0.91.0-1) unstable; urgency=low
+
+  * New upstream release
+  * using gcc4.6 allows to reduce memory usage footprint (Closes: #650642).
+  * Feel++ uses now gcc4.6  (Closes: #654730).
+  * Feel++ uses now gcc4.6  (Closes: #654731).
+  * Feel++ uses now gcc4.6  (Closes: #654732).
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Sun, 11 Mar 2012 23:17:00 +0100
+
+feel++ (0.91.0~svn7215-3) unstable; urgency=low
+
+  * debian/rules: fix PETSC_ARCH for armel. It should fix the build
+    failure on this arch
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Tue, 14 Jun 2011 08:10:15 +0200
+
+feel++ (0.91.0~svn7215-2) unstable; urgency=low
+
+  * debian/rules: define the proper PETSC_ARCH and fix kfreebsd build
+  * fix compilation in i386 (Closes: #628426).
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Mon, 13 Jun 2011 18:51:33 +0200
+
+feel++ (0.91.0~svn7215-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Mon, 13 Jun 2011 00:01:48 +0200
+
+feel++ (0.91.0~svn7079-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Wed, 25 May 2011 07:23:05 +0200
+
+feel++ (0.91.0~svn7063-2) unstable; urgency=low
+
+  * debian/rules: re-enabled lam on sparc, hopefully fixing build on sparc
+  * Fixed issue with g++-4.6 miscompilation (Closes: #625093).
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Mon, 16 May 2011 23:39:20 +0200
+
+feel++ (0.91.0~svn7063-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Mon, 16 May 2011 17:13:56 +0200
+
+feel++ (0.91.0~svn7044-1) unstable; urgency=low
+
+  [Christophe Prud'homme]
+  * New upstream release
+  * debian/control: Updated standard-versions to 3.9.2 (no change)
+  * debian/control: Added texlive-fonts-extra for manual to b-d
+  * Switch to dpkg-source 3.0 (quilt) format
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Mon, 09 May 2011 23:31:49 +0200
+
+feel++ (0.91.0~svn7013-2) unstable; urgency=low
+
+  * debian/patches/manual.patch: try again to fix the latex font creation
+    on some platforms
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Tue, 26 Apr 2011 05:56:22 +0200
+
+feel++ (0.91.0~svn7013-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Sun, 24 Apr 2011 19:25:17 +0200
+
+feel++ (0.91.0~svn7009-3) unstable; urgency=low
+
+  * debian/rules: in Release mode, use -O2 instead of -O3 as the former
+    use less memory and produces the same efficiency
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Sun, 24 Apr 2011 14:43:23 +0200
+
+feel++ (0.91.0~svn7009-2) unstable; urgency=low
+
+  * debian/control: apply ubuntu patch
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Sun, 24 Apr 2011 12:57:03 +0200
+
+feel++ (0.91.0~svn7009-1) unstable; urgency=low
+
+  * New upstream release
+  * debian/patches:  removed patches, applied upstream
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Sat, 23 Apr 2011 23:49:32 +0200
+
+feel++ (0.90.0-13) unstable; urgency=low
+
+  * debian/control: libfeel++-dev update Depends
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Wed, 20 Apr 2011 05:35:57 +0200
+
+feel++ (0.90.0-12) unstable; urgency=low
+
+  * debian/control: d-b on texlive-fonts-recommended to avoid font issues
+    with pdflatex on some arches
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Tue, 19 Apr 2011 19:45:05 +0200
+
+feel++ (0.90.0-11) unstable; urgency=low
+
+  * debian/control: b-d on libslepc3.0.0 for testing
+  * debian/patches: update minconf.patch to reduce even more the minimum
+    configuration
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Tue, 19 Apr 2011 17:17:06 +0200
+
+feel++ (0.90.0-10) unstable; urgency=low
+
+  * debian/control: added texlive-latex-recommended to fix manual
+    compilation on some arch
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Mon, 11 Apr 2011 20:57:24 +0200
+
+feel++ (0.90.0-9) unstable; urgency=low
+
+  * debian/control: depend on doxygen-latex and not on texlive-* packages
+    anymore
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Sun, 10 Apr 2011 20:27:57 +0200
+
+feel++ (0.90.0-8) unstable; urgency=low
+
+  * debian/control: Fix tbb depends for non amd64/i386 arch (Closes: #620645).
+  * fix feel-manual compilation
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Sun, 10 Apr 2011 09:57:26 +0200
+
+feel++ (0.90.0-7) unstable; urgency=low
+
+  [Christophe Prud'homme]
+  * debian/patches/minconf.patch: even more minimal configuration for low
+    memory configuration
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Sun, 20 Mar 2011 21:41:20 +0100
+
+feel++ (0.90.0-6) unstable; urgency=low
+
+  [Christophe Prud'homme]
+  * debian/patches/s390.patches: fix for s390
+  * debian/rules: tring minimal configuration for failing arches
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Sat, 19 Mar 2011 10:56:20 +0100
+
+feel++ (0.90.0-5) unstable; urgency=low
+
+  [Christophe Prud'homme]
+  * debian/control: build-depends on tbb only on amd64 and i386
+  * debian/patches/sse.patch: remove sse options to build on non intel arches
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Fri, 18 Mar 2011 11:17:34 +0100
+
+feel++ (0.90.0-4) unstable; urgency=low
+
+  [Christophe Prud'homme]
+  * debian/control: tighten up build-depends to help building on more platforms
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Fri, 18 Mar 2011 07:56:02 +0100
+
+feel++ (0.90.0-3) unstable; urgency=low
+
+  [Christophe Prud'homme]
+  * debian/{control,rules}: use quilt
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Fri, 18 Mar 2011 06:53:33 +0100
+
+feel++ (0.90.0-2) unstable; urgency=low
+
+  [Christophe Prud'homme]
+  * debian/patches/feelgeo: fix compilation in buildd
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Thu, 17 Mar 2011 21:41:36 +0100
+
+feel++ (0.90.0-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Thu, 17 Mar 2011 11:52:26 +0100
+
+feel++ (0.90.0~svn6918-1) experimental; urgency=low
+
+  [ Christophe Prud'homme ]
+  * New upstream release
+  * debian/control: fix lintian warnings
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Sun, 20 Feb 2011 17:28:51 +0100
+
+feel++ (0.90.0~svn6917-1) experimental; urgency=low
+
+  [ Christophe Prud'homme ]
+  * New upstream release
+  * debian/control: update slepc deps to 3.1
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Sun, 20 Feb 2011 10:13:13 +0100
+
+feel++ (0.90.0~svn6901-1) experimental; urgency=low
+
+  * New upstream release
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Sat, 29 Jan 2011 11:36:01 +0100
+
+feel++ (0.90.0~svn6893-1) experimental; urgency=low
+
+  * New upstream release
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Sun, 16 Jan 2011 12:59:48 +0100
+
+feel++ (0.90.0~svn6877-1) experimental; urgency=low
+
+  * New upstream release
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Sun, 02 Jan 2011 22:49:39 +0100
+
+feel++ (0.90.0~svn6870-1) experimental; urgency=low
+
+  [Christophe Prud'homme]
+  * Feel++ is near release 0.90.0
+  * Life was renamed Feel++ and Feel++ package will replace Life package
+
+ -- Christophe Prud'homme <prudhomm@debian.org>  Fri, 31 Dec 2010 17:39:18 +0100

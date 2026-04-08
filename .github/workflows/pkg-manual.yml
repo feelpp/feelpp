@@ -10,19 +10,14 @@ on:
         type: choice
         options:
         - 'ubuntu'
-        - 'debian'
       dist:
         description: 'Distribution to build'
         required: true
         default: 'noble'
         type: choice
         options:
+        - 'resolute'
         - 'noble'
-        - 'noble'
-        - 'bookworm'
-        - 'trixie'
-        - 'testing'
-        - 'sid'
       parallel:
         description: 'Number of parallel jobs'
         required: false
@@ -56,11 +51,8 @@ jobs:
         id: version
         run: |
           case "${{ inputs.dist }}" in
+            resolute) echo "version=26.04" >> "$GITHUB_OUTPUT" ;;
             noble) echo "version=24.04" >> "$GITHUB_OUTPUT" ;;
-            bookworm) echo "version=12" >> "$GITHUB_OUTPUT" ;;
-            trixie) echo "version=13" >> "$GITHUB_OUTPUT" ;;
-            testing) echo "version=testing" >> "$GITHUB_OUTPUT" ;;
-            sid) echo "version=unstable" >> "$GITHUB_OUTPUT" ;;
             *)
               echo "Unsupported distribution: ${{ inputs.dist }}" >&2
               exit 1

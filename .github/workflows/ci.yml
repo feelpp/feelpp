@@ -4,8 +4,33 @@ on:
   workflow_dispatch:
   pull_request:
     branches: ['*']
+    paths-ignore:
+      - '.github/workflows/build_from_dispatch.yml'
+      - '.github/workflows/manual.yml'
+      - '.github/workflows/pkg*.yml'
+      - '.github/workflows/packaging-pr.yml'
+      - '.github/workflows/doxygen.yml'
+      - '.github/workflows/scheduled-ci.yml'
+      - '.github/workflows/stale.yml'
+      - '.github/workflows/version.yml'
+      - 'ops/**'
+      - 'packaging/**'
+      - '.gitignore'
   push:
     branches: [master, develop]
+    paths-ignore:
+      - '.github/workflows/build_from_dispatch.yml'
+      - '.github/workflows/manual.yml'
+      - '.github/workflows/pkg*.yml'
+      - '.github/workflows/packaging-pr.yml'
+      - '.github/workflows/doxygen.yml'
+      - '.github/workflows/scheduled-ci.yml'
+      - '.github/workflows/stale.yml'
+      - '.github/workflows/version.yml'
+      - 'ops/**'
+      - 'packaging/**'
+      - '.gitignore'
+
 
 env:
   REGISTRY: ghcr.io/feelpp

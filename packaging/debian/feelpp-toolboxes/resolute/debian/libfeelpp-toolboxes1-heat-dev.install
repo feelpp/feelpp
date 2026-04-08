@@ -1,0 +1,3 @@
+usr/lib/*/libfeelpp_toolbox_heat_*.so
+usr/lib/*/libfeelpp_toolbox_heatb*.so
+usr/include/feelpp/toolboxes/feel/feelmodels/heat/*.hpp

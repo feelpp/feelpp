@@ -1,0 +1,6 @@
+usr/lib/python3*/*-packages/feelpp/mor/*.py
+usr/lib/python3*/*-packages/feelpp/mor/*.so
+usr/lib/python3*/*-packages/feelpp/mor/nirb/*.py
+usr/lib/python3*/*-packages/feelpp/mor/reducedbasis/*.py
+usr/lib/python3*/*-packages/pyfeelpp_mor/*.py
+usr/lib/python3*/*-packages/pyfeelppmor/*.py
