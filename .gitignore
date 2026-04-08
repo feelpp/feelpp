@@ -204,3 +204,6 @@ install/
 /packaging/src/*.egg-info
 # CMake Preset backup files
 CMakePresets.json.backup
+!/ops/src/feelpp/pkg/build/
+!/ops/src/feelpp/pkg/build/**
+/ops/src/feelpp/pkg/build/__pycache__/
