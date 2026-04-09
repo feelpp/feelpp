@@ -49,12 +49,14 @@ Magnetic<ConvexType,BasisMagneticVectorPotentialType>::updateLinearPDE( DataUpda
     auto const& u = this->fieldVectorPotential();
     auto const& v = this->fieldVectorPotential();
 
-    auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=A,
-                                              _pattern=size_type(Pattern::COUPLED),
-                                              _rowstart=this->rowStartInMatrix(),
-                                              _colstart=this->colStartInMatrix() );
+    size_type startBlockIndexVectorPotential = this->startSubBlockSpaceIndex( FieldTag::vectorPotential(this).identifier() );
+
+    auto bilinearForm_A_A = form2( _test=Xh,_trial=Xh,_matrix=A,
+                                   _pattern=size_type(Pattern::COUPLED),
+                                   _rowstart=this->rowStartInMatrix()+startBlockIndexVectorPotential,
+                                   _colstart=this->colStartInMatrix()+startBlockIndexVectorPotential );
     auto myLinearForm = form1( _test=Xh, _vector=F,
-                               _rowstart=this->rowStartInVector() );
+                               _rowstart=this->rowStartInVector()+startBlockIndexVectorPotential );
     //--------------------------------------------------------------------------------------------------//
 
     double mu_0 = 1.25663706127e-6;
@@ -75,7 +77,7 @@ Magnetic<ConvexType,BasisMagneticVectorPotentialType>::updateLinearPDE( DataUpda
                     bool buildRotRot = mu_r.expression().isConstant()? buildCstPart : buildNonCstPart;
                     if ( doAssemblyLhs && buildRotRot )
                       {
-                        bilinearForm_PatternCoupled +=
+                        bilinearForm_A_A +=
                           integrate( _range=range,
                                      _expr= timeSteppingScaling*(1./mu_0)*inner(inv(mu_r)*curlt(u),curl(v)),
                                      _geomap=this->geomap() );
@@ -90,23 +92,23 @@ Magnetic<ConvexType,BasisMagneticVectorPotentialType>::updateLinearPDE( DataUpda
               bool buildRotRot = mu_r.expression().isConstant()? buildCstPart : buildNonCstPart;
               if ( doAssemblyLhs && buildRotRot )
                 {
-                    bilinearForm_PatternCoupled +=
+                    bilinearForm_A_A +=
                         integrate( _range=range,
                                    _expr= timeSteppingScaling*(1./(mu_0*mu_r))*inner(curlt(u),curl(v)),
                                    _geomap=this->geomap() );
                 }
             }
 
-            // additional term in regularized formulation
-            if ( buildCstPart )
-              {
-                double epsilonPenal = 1.;
-                bilinearForm_PatternCoupled +=
-                  integrate( _range=range,
-                             _expr= timeSteppingScaling*epsilonPenal*inner(idt(u),id(v)),
-                             _geomap=this->geomap() );
+            // // additional term in regularized formulation
+            // if ( buildCstPart )
+            //   {
+            //     double epsilonPenal = 1.;
+            //     bilinearForm_PatternCoupled +=
+            //       integrate( _range=range,
+            //                  _expr= timeSteppingScaling*epsilonPenal*inner(idt(u),id(v)),
+            //                  _geomap=this->geomap() );
 
-              }
+            //   }
             // current density sources
             for ( auto const& currentDensitySource : physicMagneticData->currentDensitySources() )
             {
@@ -122,6 +124,42 @@ Magnetic<ConvexType,BasisMagneticVectorPotentialType>::updateLinearPDE( DataUpda
               }
         }
     }
+
+
+    // additional term in regularized formulation
+    if ( M_nullSpaceMethod == "regularized-formulation" && buildCstPart )
+      {
+        double epsilonPenal = 1.;
+        bilinearForm_A_A +=
+          integrate( _range=this->rangeMeshElements(),
+                     _expr= timeSteppingScaling*epsilonPenal*inner(idt(u),id(v)),
+                     _geomap=this->geomap() );
+      }
+
+    if ( M_nullSpaceMethod == "saddle-point" && buildCstPart )
+      {
+        auto XhLm = this->spaceLagrangeMultiplierCoulombGauge();
+        auto const& p = this->fieldLagrangeMultiplierCoulombGauge();
+        size_type startBlockIndexLmCoulombGauge = this->startSubBlockSpaceIndex( FieldTag::lagrangeMultiplierCoulombGauge(this).identifier() );
+        auto bilinearForm_lm_A = form2( _test=XhLm,_trial=Xh,_matrix=A,
+                                        _pattern=size_type(Pattern::COUPLED),
+                                        _rowstart=this->rowStartInMatrix()+startBlockIndexLmCoulombGauge,
+                                        _colstart=this->colStartInMatrix()+startBlockIndexVectorPotential );
+        auto bilinearForm_A_lm = form2( _test=Xh,_trial=XhLm,_matrix=A,
+                                        _pattern=size_type(Pattern::COUPLED),
+                                        _rowstart=this->rowStartInMatrix()+startBlockIndexVectorPotential,
+                                        _colstart=this->colStartInMatrix()+startBlockIndexLmCoulombGauge );
+        bilinearForm_A_lm +=
+          integrate( _range=this->rangeMeshElements(),
+                     _expr= timeSteppingScaling*inner(id(v),trans(gradt(p))),
+                     _geomap=this->geomap() );
+
+        bilinearForm_lm_A +=
+          integrate( _range=this->rangeMeshElements(),
+                     _expr= timeSteppingScaling*inner(idt(u),trans(grad(p))),
+                     _geomap=this->geomap() );
+      }
+
 
     //--------------------------------------------------------------------------------------------------//
     // update weak bc
@@ -183,12 +221,26 @@ Magnetic<ConvexType,BasisMagneticVectorPotentialType>::updateLinearPDEDofElimina
     auto mesh = this->mesh();
     auto Xh = this->spaceVectorPotential();
     auto const& u = this->fieldVectorPotential();
-    auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A,
-                               _pattern=size_type(Pattern::COUPLED),
-                               _rowstart=this->rowStartInMatrix(),
-                               _colstart=this->colStartInMatrix() );
+    size_type startBlockIndexVectorPotential = this->startSubBlockSpaceIndex( FieldTag::vectorPotential(this).identifier() );
+    auto bilinearForm_A_A = form2( _test=Xh,_trial=Xh,_matrix=A,
+                                   _pattern=size_type(Pattern::COUPLED),
+                                   _rowstart=this->rowStartInMatrix()+startBlockIndexVectorPotential,
+                                   _colstart=this->colStartInMatrix()+startBlockIndexVectorPotential );
+    M_boundaryConditions->applyDofEliminationLinear( bilinearForm_A_A, F, mesh, u, se );
 
-    M_boundaryConditions->applyDofEliminationLinear( bilinearForm, F, mesh, u, se );
+    if ( M_nullSpaceMethod == "saddle-point" )
+      {
+        auto XhLm = this->spaceLagrangeMultiplierCoulombGauge();
+        auto const& p = this->fieldLagrangeMultiplierCoulombGauge();
+        size_type startBlockIndexLmCoulombGauge = this->startSubBlockSpaceIndex( FieldTag::lagrangeMultiplierCoulombGauge(this).identifier() );
+
+        form2( _test=XhLm,_trial=XhLm,_matrix=A,
+               _rowstart=this->rowStartInMatrix()+startBlockIndexLmCoulombGauge,
+               _colstart=this->colStartInMatrix()+startBlockIndexLmCoulombGauge ) +=
+          on( _range=boundaryfaces( support( this->spaceLagrangeMultiplierCoulombGauge() ) ),
+              _element=p,_rhs=F,_expr=cst(0.),
+              _vm=this->clovm(),_prefix=this->prefix() );
+      }
 
     this->log("Magnetic","updateLinearPDEDofElimination","finish" );
 }

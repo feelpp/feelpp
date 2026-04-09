@@ -432,7 +432,7 @@ magnetic_options( std::string const& prefix )
     Feel::po::options_description magneticOptions("Magnectic options");
     magneticOptions.add_options()
       (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >()->default_value( "automatic" ), "numeric solver : automatic, Newton, Picard, Linear")
-      //(prefixvm(prefix,"electric-conductivity").c_str(), Feel::po::value<double>()->default_value( 1 ), "electric-conductivity")
+      (prefixvm(prefix,"null-space.method").c_str(), Feel::po::value< std::string >()->default_value( "regularized-formulation" ), "possible values : regularized-formulation, saddle-point, ams")
       ;
     return magneticOptions.add( modelnumerical_options( prefix ) );
 }

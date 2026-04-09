@@ -30,6 +30,7 @@
 #ifndef FEELPP_MODELBASE_HPP
 #define FEELPP_MODELBASE_HPP 1
 
+#include <string_view>
 #include <feel/options.hpp>
 #include <feel/feelcore/environment.hpp>
 //#include <feel/feelcore/pslogger.hpp>

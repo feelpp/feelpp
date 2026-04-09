@@ -9,10 +9,10 @@ namespace FeelModels
 
 MAGNETIC_CLASS_TEMPLATE_DECLARATIONS
 MAGNETIC_CLASS_TEMPLATE_TYPE::Magnetic( std::string const& prefix,
-                                     std::string const& keyword,
-                                     worldcomm_ptr_t const& worldComm,
-                                     ModelBaseRepository const& modelRep,
-                                     ModelBaseCommandLineOptions const& modelOptions )
+                                        std::string const& keyword,
+                                        worldcomm_ptr_t const& worldComm,
+                                        ModelBaseRepository const& modelRep,
+                                        ModelBaseCommandLineOptions const& modelOptions )
     :
     super_type( prefix, keyword, worldComm, "", modelRep, modelOptions ),
     ModelPhysics<nDim>( "magnetic" ),
@@ -41,7 +41,10 @@ MAGNETIC_CLASS_TEMPLATE_DECLARATIONS
 void
 MAGNETIC_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 {
-  M_solverName = soption(_name="solver",_prefix=this->prefix(),_vm=this->clovm());
+    M_solverName = soption(_name="solver",_prefix=this->prefix(),_vm=this->clovm());
+    M_nullSpaceMethod = soption(_name="null-space.method",_prefix=this->prefix(),_vm=this->clovm());
+    if ( M_nullSpaceMethod != "regularized-formulation" && M_nullSpaceMethod != "saddle-point" && M_nullSpaceMethod != "ams" )
+        throw std::runtime_error( "null-space.method should be regularized-formulation, saddle-point or ams" );
 }
 
 MAGNETIC_CLASS_TEMPLATE_DECLARATIONS
@@ -109,31 +112,18 @@ MAGNETIC_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     }
     this->log("Magnetic","initFunctionSpaces", fmt::format("vector_potential space ndof : {}",M_spaceVectorPotential->nDof()) );
 
-    M_fieldVectorPotential = M_spaceVectorPotential->elementPtr( "vector_potential" );
+    M_fieldVectorPotential = M_spaceVectorPotential->elementPtr( FieldTag::vectorPotential(this).identifierString() );
+
+    if ( M_nullSpaceMethod == "saddle-point" )
+    {
+        M_spaceLagrangeMultiplierCoulombGauge = space_lm_coulombgauge_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=this->rangeMeshElements() );
+        this->log("Magnetic","initFunctionSpaces", fmt::format("lagrange_multiplier_CoulombGauge space ndof : {}",M_spaceLagrangeMultiplierCoulombGauge->nDof()) );
+        M_fieldLagrangeMultiplierCoulombGauge = M_spaceLagrangeMultiplierCoulombGauge->elementPtr( FieldTag::lagrangeMultiplierCoulombGauge(this).identifierString() );
+    }
 
     double tElpased = this->timerTool("Constructor").stop("initFunctionSpaces");
     this->log("Magnetic","initFunctionSpaces",(boost::format("finish in %1% s")%tElpased).str() );
 }
-
-MAGNETIC_CLASS_TEMPLATE_DECLARATIONS
-BlocksBaseGraphCSR
-MAGNETIC_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
-{
-    int nBlock = this->nBlockMatrixGraph();
-    BlocksBaseGraphCSR myblockGraph(nBlock,nBlock);
-    myblockGraph(0,0) = stencil(_test=this->spaceVectorPotential(),
-                                _trial=this->spaceVectorPotential() )->graph();
-    return myblockGraph;
-}
-#if 0
-MAGNETIC_CLASS_TEMPLATE_DECLARATIONS
-typename MAGNETIC_CLASS_TEMPLATE_TYPE::size_type
-MAGNETIC_CLASS_TEMPLATE_TYPE::nLocalDof() const
-{
-    size_type res = this->spaceTemperature()->nLocalDofWithGhost();
-    return res;
-}
-#endif
 
 MAGNETIC_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -177,7 +167,7 @@ MAGNETIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // automatic solver selection
     if ( M_solverName == "automatic" )
     {
-      bool isNonLinear = false;
+        bool isNonLinear = false;
 #if 0
         auto mfields = this->modelFields();
         auto se = this->symbolsExpr( mfields );
@@ -236,16 +226,47 @@ MAGNETIC_CLASS_TEMPLATE_TYPE::initAlgebraicModel()
 
     // subspaces index
     size_type currentStartIndex = 0;
-    this->setStartSubBlockSpaceIndex( "vector_potential", currentStartIndex++ );
+    this->setStartSubBlockSpaceIndex( FieldTag::vectorPotential(this).identifier(), currentStartIndex++ );
+    if ( M_nullSpaceMethod == "saddle-point" )
+        this->setStartSubBlockSpaceIndex( FieldTag::lagrangeMultiplierCoulombGauge(this).identifier(), currentStartIndex++ );
+    size_type nBlock = this->startSubBlockSpaceIndices().size();
 
     this->updateAlgebraicDofEliminationIds();
 
-     // vector solution
-    auto bvs = this->initAlgebraicBlockVectorSolution( 1 );
-    bvs->operator()(0) = this->fieldVectorPotentialPtr();
+    // vector solution
+    auto bvs = this->initAlgebraicBlockVectorSolution( nBlock );
+    bvs->operator()( this->startSubBlockSpaceIndex( FieldTag::vectorPotential(this).identifier() ) ) = this->fieldVectorPotentialPtr();
+    if ( M_nullSpaceMethod == "saddle-point" )
+        bvs->operator()( this->startSubBlockSpaceIndex( FieldTag::lagrangeMultiplierCoulombGauge(this).identifier() ) ) = this->fieldLagrangeMultiplierCoulombGaugePtr();
     // init petsc vector associated to the block
     bvs->buildVector( this->backend() );
 }
+
+MAGNETIC_CLASS_TEMPLATE_DECLARATIONS
+BlocksBaseGraphCSR
+MAGNETIC_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
+{
+    int nBlock = this->startSubBlockSpaceIndices().size();//this->nBlockMatrixGraph();
+    BlocksBaseGraphCSR myblockGraph(nBlock,nBlock);
+    size_type startVectorPotential = this->startSubBlockSpaceIndex( FieldTag::vectorPotential(this).identifier() );
+    this->log("Magnetic","buildBlockMatrixGraph", fmt::format("start with nBlock: {} et startVectorPotential{}", nBlock, startVectorPotential ) );
+
+    myblockGraph(startVectorPotential,startVectorPotential) = stencil(_test=this->spaceVectorPotential(),
+                                                                      _trial=this->spaceVectorPotential() )->graph();
+    if ( M_nullSpaceMethod == "saddle-point" )
+    {
+        size_type startLmCoulombGauge = this->startSubBlockSpaceIndex( FieldTag::lagrangeMultiplierCoulombGauge(this).identifier() );
+        myblockGraph(startVectorPotential,startLmCoulombGauge) = stencil(_test=this->spaceVectorPotential(),
+                                                                         _trial=this->spaceLagrangeMultiplierCoulombGauge() )->graph();
+        myblockGraph(startLmCoulombGauge,startVectorPotential) = stencil(_test=this->spaceLagrangeMultiplierCoulombGauge(),
+                                                                         _trial=this->spaceVectorPotential() )->graph();
+    }
+    myblockGraph.close();
+
+    this->log("Magnetic","buildBlockMatrixGraph", "finish" );
+    return myblockGraph;
+}
+
 
 MAGNETIC_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -261,7 +282,7 @@ void
 MAGNETIC_CLASS_TEMPLATE_TYPE::initTimeStep()
 {
 #if 0
-  this->log("Magnetic","initTimeStep", "start" );
+    this->log("Magnetic","initTimeStep", "start" );
     this->timerTool("Constructor").start();
 
     std::string myFileFormat = soption(_name="ts.file-format");// without prefix
@@ -302,10 +323,10 @@ MAGNETIC_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("Magnetic","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    this->setPostProcessExportsAllFieldsAvailable( { "vector_potential" } );
+    this->setPostProcessExportsAllFieldsAvailable( { FieldTag::vectorPotential(this).identifierString() } );
     this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->physicsAvailable() ) );
     this->setPostProcessExportsPidName( "pid" );
-    this->setPostProcessSaveAllFieldsAvailable( { "vector_potential" } );
+    this->setPostProcessSaveAllFieldsAvailable( { FieldTag::vectorPotential(this).identifierString() } );
     super_type::initPostProcess();
 
     if ( !this->postProcessExportsFields().empty() )
@@ -474,7 +495,7 @@ MAGNETIC_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, Ta
 
         nl::json::json_pointer jsonPointerSpaceVectorPotential( jsonInfoFunctionSpaces.at( "VectorPotential" ).template get<std::string>() );
         if ( JournalManager::journalData().contains( jsonPointerSpaceVectorPotential ) )
-          tabInfoFunctionSpaces->add( "VectorPotential", TabulateInformationTools::FromJSON::tabulateInformationsFunctionSpace( JournalManager::journalData().at( jsonPointerSpaceVectorPotential ), tabInfoProp ) );
+            tabInfoFunctionSpaces->add( "VectorPotential", TabulateInformationTools::FromJSON::tabulateInformationsFunctionSpace( JournalManager::journalData().at( jsonPointerSpaceVectorPotential ), tabInfoProp ) );
 
         tabInfo->add( "Function Spaces", tabInfoFunctionSpaces );
     }
@@ -562,7 +583,15 @@ void
 MAGNETIC_CLASS_TEMPLATE_TYPE::updateAlgebraicDofEliminationIds()
 {
     for ( auto const& [bcName,bcData] : M_boundaryConditions->magneticPotentialImposed() )
-        bcData->updateDofEliminationIds( *this, "vector_potential", this->spaceVectorPotential() );
+        bcData->updateDofEliminationIds( *this, FieldTag::vectorPotential(this).identifierString(), this->spaceVectorPotential() );
+
+    if ( M_nullSpaceMethod == "saddle-point" )
+    {
+        this->updateDofEliminationIds( FieldTag::lagrangeMultiplierCoulombGauge(this).identifierString(),
+                                       this->spaceLagrangeMultiplierCoulombGauge(),
+                                       boundaryfaces( support( this->spaceLagrangeMultiplierCoulombGauge() ) )
+                                       );
+    }
 }
 
 MAGNETIC_CLASS_TEMPLATE_DECLARATIONS

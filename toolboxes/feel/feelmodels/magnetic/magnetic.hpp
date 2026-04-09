@@ -42,14 +42,20 @@ public:
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     // basis
-    static const uint16_type nOrderVectorPotential = BasisVectorPotentialType::nOrder;
-    static const uint16_type nOrderPoly = nOrderVectorPotential;
+    // static const uint16_type nOrderVectorPotential = BasisVectorPotentialType::nOrder;
+    // static const uint16_type nOrderPoly = nOrderVectorPotential;
     typedef BasisVectorPotentialType basis_vector_potential_type;
-    // function space magnetic potential
-    typedef FunctionSpace<mesh_type, bases<basis_vector_potential_type> > space_vector_potential_type;
-    typedef std::shared_ptr<space_vector_potential_type> space_vector_potential_ptrtype;
-    typedef typename space_vector_potential_type::element_type element_vector_potential_type;
-    typedef std::shared_ptr<element_vector_potential_type> element_vector_potential_ptrtype;
+    // function space magnetic vector potential
+    using space_vector_potential_type = FunctionSpace<mesh_type, bases<basis_vector_potential_type>>;
+    using space_vector_potential_ptrtype = std::shared_ptr<space_vector_potential_type>;
+    using element_vector_potential_type = typename space_vector_potential_type::element_type;
+    using element_vector_potential_ptrtype = std::shared_ptr<element_vector_potential_type>;
+    // function space lagrange multiplier for Coulomb gauge
+    using space_lm_coulombgauge_type = FunctionSpace<mesh_type, bases<Lagrange<1,Scalar,Continuous,PointSetFekete>> >;
+    using space_lm_coulombgauge_ptrtype = std::shared_ptr<space_lm_coulombgauge_type>;
+    using element_lm_coulombgauge_type = typename space_lm_coulombgauge_type::element_type;
+    using element_lm_coulombgauge_ptrtype = std::shared_ptr<element_lm_coulombgauge_type>;
+
     // materials properties
     typedef MaterialsProperties<nRealDim> materialsproperties_type;
     typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
@@ -59,7 +65,8 @@ public:
 
     struct FieldTag
     {
-        static auto magneticPotential( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
+        static auto vectorPotential( self_type const* t ) { return ModelFieldTag<self_type,0,"vector_potential">( t ); }
+        static auto lagrangeMultiplierCoulombGauge( self_type const* t ) { return ModelFieldTag<self_type,1,"lagrange_multiplier_CoulombGauge">( t ); }
     };
 
     template <typename ... Ts>
@@ -96,16 +103,22 @@ public:
     element_vector_potential_ptrtype const& fieldVectorPotentialPtr() const { return M_fieldVectorPotential; }
     element_vector_potential_type const& fieldVectorPotential() const { return *M_fieldVectorPotential; }
 
+    space_lm_coulombgauge_ptrtype spaceLagrangeMultiplierCoulombGauge() const { return M_spaceLagrangeMultiplierCoulombGauge; }
+    element_lm_coulombgauge_ptrtype fieldLagrangeMultiplierCoulombGaugePtr() const { return M_fieldLagrangeMultiplierCoulombGauge; }
+    element_lm_coulombgauge_type const& fieldLagrangeMultiplierCoulombGauge() const { return *M_fieldLagrangeMultiplierCoulombGauge; }
+
     //___________________________________________________________________________________//
     // physical parameters
     materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
     materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
     void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
 
+
     //___________________________________________________________________________________//
 
     void updateInformationObject( nl::json & p ) const override;
     tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+  
 
 private :
     void loadParameterFromOptionsVm();
@@ -123,7 +136,7 @@ public :
     void initAlgebraicFactory();
 
     BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
-    int nBlockMatrixGraph() const { return 1; }
+    //int nBlockMatrixGraph() const { return 1; }
     void init( bool buildModelAlgebraicFactory=true );
 
     void updateParameterValues();
@@ -197,7 +210,7 @@ public :
         }
     auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
-            auto field_t = this->spaceVectorPotential()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( "vector_potential" ) );
+            auto field_t = this->spaceVectorPotential()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( FieldTag::vectorPotential(this).identifier() ) );
             return this->modelFields( field_t, prefix );
         }
     auto modelFields( std::map<std::string,std::tuple<vector_ptrtype,size_type> > const& vectorData, std::string const& prefix = "" ) const
@@ -206,18 +219,18 @@ public :
             CHECK( itFindSolution != vectorData.end() ) << "require solution data";
             vector_ptrtype sol = std::get<0>( itFindSolution->second );
             size_type rowStartInVector =  std::get<1>( itFindSolution->second );
-            auto field_t = this->spaceVectorPotential()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( "vector_potential" ) );
+            auto field_t = this->spaceVectorPotential()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( FieldTag::vectorPotential(this).identifier() ) );
             return this->modelFields( field_t, prefix );
         }
     template <typename MagneticVectorPotentialFieldType>
     auto modelFields( MagneticVectorPotentialFieldType const& field_t, std::string const& prefix = "" ) const
         {
-            return Feel::FeelModels::modelFields( modelField<FieldCtx::FULL>( FieldTag::magneticPotential(this), prefix, "vector_potential", field_t, "A", this->keyword() ) );
+            return Feel::FeelModels::modelFields( modelField<FieldCtx::FULL>( FieldTag::vectorPotential(this), prefix, FieldTag::vectorPotential(this).identifierString(), field_t, "A", this->keyword() ) );
         }
 
     auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const
         {
-            return Feel::FeelModels::selectorModelFields( selectorModelField( FieldTag::magneticPotential(this), "vector_potential", startBlockSpaceIndex ) );
+            return Feel::FeelModels::selectorModelFields( selectorModelField( FieldTag::vectorPotential(this), FieldTag::vectorPotential(this).identifierString(), startBlockSpaceIndex ) );
         }
 
     //___________________________________________________________________________________//
@@ -335,6 +348,9 @@ protected :
     space_vector_potential_ptrtype M_spaceVectorPotential;
     element_vector_potential_ptrtype M_fieldVectorPotential;
 
+    space_lm_coulombgauge_ptrtype M_spaceLagrangeMultiplierCoulombGauge;
+    element_lm_coulombgauge_ptrtype M_fieldLagrangeMultiplierCoulombGauge;
+
     std::map<std::string,double> M_currentParameterValues;
 
     // physical parameter
@@ -345,6 +361,7 @@ protected :
     std::shared_ptr<boundary_conditions_type> M_boundaryConditions;
 
     std::string M_solverName;
+    std::string M_nullSpaceMethod = "regularized-formulation"; // "regularized-formulation", "saddle-point", "ams"
 
     // post-process
     export_ptrtype M_exporter;
@@ -421,10 +438,8 @@ template <typename ModelFieldsType, typename SymbolsExpr, typename ModelMeasures
 void
 Magnetic<ConvexType,BasisVectorPotentialType>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ModelMeasuresQuantitiesType const& mquantities )
 {
-#if 0 // NOT COMPILE??
     // execute common post process and save measures
     super_type::executePostProcessMeasures( time, this->mesh(), M_rangeMeshElements, symbolsExpr, mfields, mquantities );
-#endif
 }
 
 } // namespace FeelModels

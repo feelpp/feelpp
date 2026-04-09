@@ -424,15 +424,16 @@ public:
     void setStartBlockSpaceIndexVector( size_type s ) { M_startBlockSpaceIndexVector = s; }
     void setStartBlockSpaceIndex( size_type s ) { this->setStartBlockSpaceIndexMatrixRow( s ); this->setStartBlockSpaceIndexMatrixCol( s ); this->setStartBlockSpaceIndexVector( s ); }
 
-    size_type startSubBlockSpaceIndex( std::string const& name ) const
+    std::map<std::string,size_type> const& startSubBlockSpaceIndices() const { return M_startSubBlockSpaceIndex; }
+    size_type startSubBlockSpaceIndex( std::string_view name ) const
         {
-            auto itFind = M_startSubBlockSpaceIndex.find( name );
+            auto itFind = M_startSubBlockSpaceIndex.find( std::string( name ) );
             if ( itFind != M_startSubBlockSpaceIndex.end() )
                 return itFind->second;
             return invalid_v<size_type>;
         }
-    bool hasStartSubBlockSpaceIndex( std::string const& name ) const { return (this->startSubBlockSpaceIndex( name ) != invalid_v<size_type>); }
-    void setStartSubBlockSpaceIndex( std::string const& name, size_type s ) { M_startSubBlockSpaceIndex[name] = s; }
+    bool hasStartSubBlockSpaceIndex( std::string_view name ) const { return (this->startSubBlockSpaceIndex( name ) != invalid_v<size_type>); }
+    void setStartSubBlockSpaceIndex( std::string_view name, size_type s ) { M_startSubBlockSpaceIndex[std::string(name)] = s; }
 
     //! update data useful for mpi synchronization of NewtonInitialGuess, impose value in residual or jacobian
     template <typename DataType>

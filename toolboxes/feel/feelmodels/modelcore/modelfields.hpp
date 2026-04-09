@@ -43,11 +43,22 @@ const size_type FULL = FieldCtx::ID|FieldCtx::MAGNITUDE|
 
 struct ModelFieldFeelppTag {};
 
-template <typename ToolboxType,uint16_type TheFieldTag>
+
+
+template <std::size_t N>
+struct ModelFieldFixedString
+{
+    char value[N];
+    constexpr ModelFieldFixedString(const char (&str)[N]) { std::copy_n(str, N, value); }
+};
+
+template <typename ToolboxType,uint16_type TheFieldTag,ModelFieldFixedString TheFieldName="">
 struct ModelFieldTag
 {
     using toolbox_type = ToolboxType;
     static constexpr uint16_type field_tag = TheFieldTag;
+    static constexpr std::string_view identifier() { return std::string_view(TheFieldName.value, sizeof(TheFieldName.value) - 1); }
+    static std::string identifierString() { return std::string( std::string_view(TheFieldName.value, sizeof(TheFieldName.value) - 1) ); }
 
     explicit ModelFieldTag( toolbox_type const* t ) : M_toolbox( t ) {}
     ModelFieldTag( ModelFieldTag const& ) = default;
