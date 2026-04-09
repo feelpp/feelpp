@@ -1,0 +1,481 @@
+{
+  "validations": {
+    "validation-traction-x": {
+      "description": "Pure traction case from validation.pdf: clamp XMoins and apply a total 1 N load on XPlus.",
+      "geometry": {
+        "kind": "rectangular",
+        "template": "$top_srcdir/feelpp/quickstart/meshes/sb9_rectangular_shell.geo.tmpl",
+        "length": 1.0,
+        "width": 1.0,
+        "thickness": 1.0,
+        "nx": 1,
+        "ny": 1,
+        "nz": 1
+      },
+      "material": {
+        "E": 1.0,
+        "nu": 0.45
+      },
+      "boundaryConditions": {
+        "clampMarkers": [ "XMoins" ]
+      },
+      "loads": {
+        "bodyForce": "{0,0,0}",
+        "totalForces": [
+          {
+            "marker": "XPlus",
+            "value": [ 1.0, 0.0, 0.0 ]
+          }
+        ]
+      },
+      "probe": {
+        "point": [ 1.0, 0.5, 0.5 ],
+        "direction": [ 1.0, 0.0, 0.0 ],
+        "label": "tip x displacement"
+      },
+      "reference": {
+        "probeValue": 1.0,
+        "absoluteTolerance": 1.0e-12,
+        "relativeTolerance": 1.0e-12,
+        "description": "Exact axial elongation FL/(EA) from validation.pdf setup"
+      }
+    },
+    "validation-traction-y": {
+      "description": "Pure traction case from validation.pdf: clamp YMoins and apply a total 1 N load on YPlus.",
+      "geometry": {
+        "kind": "rectangular",
+        "template": "$top_srcdir/feelpp/quickstart/meshes/sb9_rectangular_shell.geo.tmpl",
+        "length": 1.0,
+        "width": 1.0,
+        "thickness": 1.0,
+        "nx": 1,
+        "ny": 1,
+        "nz": 1
+      },
+      "material": {
+        "E": 1.0,
+        "nu": 0.45
+      },
+      "boundaryConditions": {
+        "clampMarkers": [ "YMoins" ]
+      },
+      "loads": {
+        "bodyForce": "{0,0,0}",
+        "totalForces": [
+          {
+            "marker": "YPlus",
+            "value": [ 0.0, 1.0, 0.0 ]
+          }
+        ]
+      },
+      "probe": {
+        "point": [ 0.5, 1.0, 0.5 ],
+        "direction": [ 0.0, 1.0, 0.0 ],
+        "label": "tip y displacement"
+      },
+      "reference": {
+        "probeValue": 1.0,
+        "absoluteTolerance": 1.0e-12,
+        "relativeTolerance": 1.0e-12,
+        "description": "Exact axial elongation FL/(EA) from validation.pdf setup"
+      }
+    },
+    "validation-traction-z": {
+      "description": "Pure traction case from validation.pdf: clamp ZMoins and apply a total 1 N load on ZPlus.",
+      "geometry": {
+        "kind": "rectangular",
+        "template": "$top_srcdir/feelpp/quickstart/meshes/sb9_rectangular_shell.geo.tmpl",
+        "length": 1.0,
+        "width": 1.0,
+        "thickness": 1.0,
+        "nx": 1,
+        "ny": 1,
+        "nz": 1
+      },
+      "material": {
+        "E": 1.0,
+        "nu": 0.45
+      },
+      "boundaryConditions": {
+        "clampMarkers": [ "ZMoins" ]
+      },
+      "loads": {
+        "bodyForce": "{0,0,0}",
+        "totalForces": [
+          {
+            "marker": "ZPlus",
+            "value": [ 0.0, 0.0, 1.0 ]
+          }
+        ]
+      },
+      "probe": {
+        "point": [ 0.5, 0.5, 0.5 ],
+        "direction": [ 0.0, 0.0, 1.0 ],
+        "label": "tip z displacement"
+      },
+      "reference": {
+        "probeValue": 1.0,
+        "absoluteTolerance": 1.0e-12,
+        "relativeTolerance": 1.0e-12,
+        "description": "Exact axial elongation FL/(EA) from validation.pdf setup"
+      }
+    },
+    "validation-traction-x-partial": {
+      "description": "Pure traction case from validation.pdf: impose the PDF node constraints on P1,P3,P7,P5 and apply a total 1 N load on XPlus.",
+      "geometry": {
+        "kind": "rectangular",
+        "template": "$top_srcdir/feelpp/quickstart/meshes/sb9_rectangular_shell.geo.tmpl",
+        "length": 1.0,
+        "width": 1.0,
+        "thickness": 1.0,
+        "nx": 1,
+        "ny": 1,
+        "nz": 1
+      },
+      "material": {
+        "E": 1.0,
+        "nu": 0.45
+      },
+      "boundaryConditions": {
+        "clampMarkers": [],
+        "pointConstraints": [
+          { "marker": "P1", "components": [ true, true, true ], "value": [ 0.0, 0.0, 0.0 ] },
+          { "marker": "P3", "components": [ true, false, true ], "value": [ 0.0, 0.0, 0.0 ] },
+          { "marker": "P7", "components": [ true, false, false ], "value": [ 0.0, 0.0, 0.0 ] },
+          { "marker": "P5", "components": [ true, true, false ], "value": [ 0.0, 0.0, 0.0 ] }
+        ]
+      },
+      "loads": {
+        "bodyForce": "{0,0,0}",
+        "totalForces": [
+          {
+            "marker": "XPlus",
+            "value": [ 1.0, 0.0, 0.0 ]
+          }
+        ]
+      },
+      "probe": {
+        "point": [ 1.0, 0.5, 0.5 ],
+        "direction": [ 1.0, 0.0, 0.0 ],
+        "label": "tip x displacement"
+      },
+      "reference": {
+        "probeValue": 1.0,
+        "absoluteTolerance": 1.0e-12,
+        "relativeTolerance": 1.0e-12,
+        "description": "Exact axial elongation FL/(EA) from validation.pdf setup with partial PDF node constraints"
+      }
+    },
+    "validation-traction-y-partial": {
+      "description": "Pure traction case from validation.pdf: impose the PDF node constraints on P2,P6,P5,P1 and apply a total 1 N load on YPlus.",
+      "geometry": {
+        "kind": "rectangular",
+        "template": "$top_srcdir/feelpp/quickstart/meshes/sb9_rectangular_shell.geo.tmpl",
+        "length": 1.0,
+        "width": 1.0,
+        "thickness": 1.0,
+        "nx": 1,
+        "ny": 1,
+        "nz": 1
+      },
+      "material": {
+        "E": 1.0,
+        "nu": 0.45
+      },
+      "boundaryConditions": {
+        "clampMarkers": [],
+        "pointConstraints": [
+          { "marker": "P2", "components": [ true, true, true ], "value": [ 0.0, 0.0, 0.0 ] },
+          { "marker": "P6", "components": [ true, true, false ], "value": [ 0.0, 0.0, 0.0 ] },
+          { "marker": "P5", "components": [ false, true, false ], "value": [ 0.0, 0.0, 0.0 ] },
+          { "marker": "P1", "components": [ false, true, true ], "value": [ 0.0, 0.0, 0.0 ] }
+        ]
+      },
+      "loads": {
+        "bodyForce": "{0,0,0}",
+        "totalForces": [
+          {
+            "marker": "YPlus",
+            "value": [ 0.0, 1.0, 0.0 ]
+          }
+        ]
+      },
+      "probe": {
+        "point": [ 0.5, 1.0, 0.5 ],
+        "direction": [ 0.0, 1.0, 0.0 ],
+        "label": "tip y displacement"
+      },
+      "reference": {
+        "probeValue": 1.0,
+        "absoluteTolerance": 1.0e-12,
+        "relativeTolerance": 1.0e-12,
+        "description": "Exact axial elongation FL/(EA) from validation.pdf setup with partial PDF node constraints"
+      }
+    },
+    "validation-traction-z-partial": {
+      "description": "Pure traction case from validation.pdf: impose the PDF node constraints on P1,P2,P4,P7 and apply a total 1 N load on ZPlus.",
+      "geometry": {
+        "kind": "rectangular",
+        "template": "$top_srcdir/feelpp/quickstart/meshes/sb9_rectangular_shell.geo.tmpl",
+        "length": 1.0,
+        "width": 1.0,
+        "thickness": 1.0,
+        "nx": 1,
+        "ny": 1,
+        "nz": 1
+      },
+      "material": {
+        "E": 1.0,
+        "nu": 0.45
+      },
+      "boundaryConditions": {
+        "clampMarkers": [],
+        "pointConstraints": [
+          { "marker": "P1", "components": [ true, true, true ], "value": [ 0.0, 0.0, 0.0 ] },
+          { "marker": "P2", "components": [ false, true, true ], "value": [ 0.0, 0.0, 0.0 ] },
+          { "marker": "P4", "components": [ false, false, true ], "value": [ 0.0, 0.0, 0.0 ] },
+          { "marker": "P7", "components": [ true, false, true ], "value": [ 0.0, 0.0, 0.0 ] }
+        ]
+      },
+      "loads": {
+        "bodyForce": "{0,0,0}",
+        "totalForces": [
+          {
+            "marker": "ZPlus",
+            "value": [ 0.0, 0.0, 1.0 ]
+          }
+        ]
+      },
+      "probe": {
+        "point": [ 0.5, 0.5, 0.5 ],
+        "direction": [ 0.0, 0.0, 1.0 ],
+        "label": "tip z displacement"
+      },
+      "reference": {
+        "probeValue": 1.0,
+        "absoluteTolerance": 1.0e-12,
+        "relativeTolerance": 1.0e-12,
+        "description": "Exact axial elongation FL/(EA) from validation.pdf setup with partial PDF node constraints"
+      }
+    },
+    "validation-moment-x": {
+      "description": "Moment case from validation.pdf: clamp XMoins and apply a unit resultant moment on XPlus through an equivalent tangential traction field.",
+      "geometry": {
+        "kind": "rectangular",
+        "template": "$top_srcdir/feelpp/quickstart/meshes/sb9_rectangular_shell.geo.tmpl",
+        "length": 1.0,
+        "width": 1.0,
+        "thickness": 1.0,
+        "nx": 1,
+        "ny": 1,
+        "nz": 1
+      },
+      "material": {
+        "E": 10.0,
+        "nu": 0.0
+      },
+      "boundaryConditions": {
+        "clampMarkers": [ "XMoins" ]
+      },
+      "loads": {
+        "bodyForce": "{0,0,0}",
+        "tractions": [
+          {
+            "marker": "XPlus",
+            "expr": "{0,-6*z,6*(y-0.5)}:x:y:z"
+          }
+        ]
+      },
+      "probe": {
+        "point": [ 1.0, 1.0, 0.5 ],
+        "direction": [ 0.0, 0.0, 1.0 ],
+        "label": "diagnostic z displacement"
+      }
+    },
+    "validation-moment-y": {
+      "description": "Moment case from validation.pdf: clamp YMoins and apply a unit resultant moment on YPlus through an equivalent tangential traction field.",
+      "geometry": {
+        "kind": "rectangular",
+        "template": "$top_srcdir/feelpp/quickstart/meshes/sb9_rectangular_shell.geo.tmpl",
+        "length": 1.0,
+        "width": 1.0,
+        "thickness": 1.0,
+        "nx": 1,
+        "ny": 1,
+        "nz": 1
+      },
+      "material": {
+        "E": 10.0,
+        "nu": 0.0
+      },
+      "boundaryConditions": {
+        "clampMarkers": [ "YMoins" ]
+      },
+      "loads": {
+        "bodyForce": "{0,0,0}",
+        "tractions": [
+          {
+            "marker": "YPlus",
+            "expr": "{6*z,0,-6*(x-0.5)}:x:y:z"
+          }
+        ]
+      },
+      "probe": {
+        "point": [ 1.0, 1.0, 0.5 ],
+        "direction": [ 0.0, 0.0, 1.0 ],
+        "label": "diagnostic z displacement"
+      }
+    },
+    "validation-moment-z": {
+      "description": "Moment case from validation.pdf: clamp ZMoins and apply a unit resultant moment on ZPlus through an equivalent tangential traction field.",
+      "geometry": {
+        "kind": "rectangular",
+        "template": "$top_srcdir/feelpp/quickstart/meshes/sb9_rectangular_shell.geo.tmpl",
+        "length": 1.0,
+        "width": 1.0,
+        "thickness": 1.0,
+        "nx": 1,
+        "ny": 1,
+        "nz": 1
+      },
+      "material": {
+        "E": 10.0,
+        "nu": 0.0
+      },
+      "boundaryConditions": {
+        "clampMarkers": [ "ZMoins" ]
+      },
+      "loads": {
+        "bodyForce": "{0,0,0}",
+        "tractions": [
+          {
+            "marker": "ZPlus",
+            "expr": "{-6*(y-0.5),6*(x-0.5),0}:x:y:z"
+          }
+        ]
+      },
+      "probe": {
+        "point": [ 1.0, 1.0, 0.5 ],
+        "direction": [ 1.0, 0.0, 0.0 ],
+        "label": "diagnostic x displacement"
+      }
+    },
+    "validation-flexion-z-moment": {
+      "description": "Flexion case from validation.pdf: clamp ZMoins and apply a unit resultant moment on ZPlus through an equivalent tangential traction field.",
+      "geometry": {
+        "kind": "rectangular",
+        "template": "$top_srcdir/feelpp/quickstart/meshes/sb9_rectangular_shell.geo.tmpl",
+        "length": 1.0,
+        "width": 1.0,
+        "thickness": 1.0,
+        "nx": 1,
+        "ny": 1,
+        "nz": 1
+      },
+      "material": {
+        "E": 10.0,
+        "nu": 0.45
+      },
+      "boundaryConditions": {
+        "clampMarkers": [ "ZMoins" ]
+      },
+      "loads": {
+        "bodyForce": "{0,0,0}",
+        "tractions": [
+          {
+            "marker": "ZPlus",
+            "expr": "{-6*(y-0.5),6*(x-0.5),0}:x:y:z"
+          }
+        ]
+      },
+      "probe": {
+        "point": [ 1.0, 1.0, 0.5 ],
+        "direction": [ 1.0, 0.0, 0.0 ],
+        "label": "diagnostic x displacement"
+      }
+    },
+    "validation-cantilever-z": {
+      "description": "Plate bending case from validation.pdf: clamp XMoins and apply a total -10 N load on XPlus in the Z direction, using one shell element through the thickness.",
+      "geometry": {
+        "kind": "rectangular",
+        "template": "$top_srcdir/feelpp/quickstart/meshes/sb9_rectangular_shell.geo.tmpl",
+        "length": 1.0,
+        "width": 1.0,
+        "thickness": 0.1,
+        "nx": 6,
+        "ny": 6,
+        "nz": 1
+      },
+      "material": {
+        "E": 2.1e11,
+        "nu": 0.0
+      },
+      "boundaryConditions": {
+        "clampMarkers": [ "XMoins" ]
+      },
+      "loads": {
+        "bodyForce": "{0,0,0}",
+        "totalForces": [
+          {
+            "marker": "XPlus",
+            "value": [ 0.0, 0.0, -10.0 ]
+          }
+        ]
+      },
+      "probe": {
+        "point": [ 1.0, 0.5, 0.0 ],
+        "direction": [ 0.0, 0.0, 1.0 ],
+        "label": "tip z displacement"
+      },
+      "reference": {
+        "probeValue": -1.9048e-7,
+        "absoluteTolerance": 1.0e-9,
+        "relativeTolerance": 5.0e-3,
+        "description": "Euler-Bernoulli cantilever value quoted in validation.pdf; accepted here on the 6x6x1 shell mesh within 0.5%"
+      }
+    },
+    "validation-flexion-corner": {
+      "description": "Plate flexion case from validation.pdf: impose the PDF node constraints on P1,P6,P8 and apply a 1 N point load on P3.",
+      "geometry": {
+        "kind": "rectangular",
+        "template": "$top_srcdir/feelpp/quickstart/meshes/sb9_rectangular_shell.geo.tmpl",
+        "length": 100.0,
+        "width": 100.0,
+        "thickness": 1.0,
+        "nx": 1,
+        "ny": 1,
+        "nz": 1
+      },
+      "material": {
+        "E": 200000.0,
+        "nu": 0.3
+      },
+      "boundaryConditions": {
+        "clampMarkers": [],
+        "pointConstraints": [
+          { "marker": "P1", "components": [ true, true, true ], "value": [ 0.0, 0.0, 0.0 ] },
+          { "marker": "P6", "components": [ false, true, true ], "value": [ 0.0, 0.0, 0.0 ] },
+          { "marker": "P8", "components": [ false, false, true ], "value": [ 0.0, 0.0, 0.0 ] }
+        ]
+      },
+      "loads": {
+        "bodyForce": "{0,0,0}",
+        "pointLoads": [
+          {
+            "marker": "P3",
+            "value": [ 0.0, 0.0, 1.0 ]
+          }
+        ]
+      },
+      "probe": {
+        "point": [ 0.0, 100.0, -0.5 ],
+        "direction": [ 0.0, 0.0, 1.0 ],
+        "label": "node 3 z displacement"
+      },
+      "reference": {
+        "probeValue": 0.39,
+        "description": "Node 3 z displacement reported in validation.pdf and attributed there to the Bassa reference"
+      }
+    }
+  }
+}

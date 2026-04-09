@@ -1,0 +1,6 @@
+{
+  "include": [
+    "$datadir/testcases/quickstart/shell/sb9_benchmarks.json",
+    "$datadir/testcases/quickstart/shell/sb9_validations.json"
+  ]
+}
