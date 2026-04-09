@@ -4,8 +4,33 @@ on:
   workflow_dispatch:
   pull_request:
     branches: ['*']
+    paths-ignore:
+      - '.github/workflows/build_from_dispatch.yml'
+      - '.github/workflows/manual.yml'
+      - '.github/workflows/pkg*.yml'
+      - '.github/workflows/packaging-pr.yml'
+      - '.github/workflows/doxygen.yml'
+      - '.github/workflows/scheduled-ci.yml'
+      - '.github/workflows/stale.yml'
+      - '.github/workflows/version.yml'
+      - 'ops/**'
+      - 'packaging/**'
+      - '.gitignore'
   push:
     branches: [master, develop]
+    paths-ignore:
+      - '.github/workflows/build_from_dispatch.yml'
+      - '.github/workflows/manual.yml'
+      - '.github/workflows/pkg*.yml'
+      - '.github/workflows/packaging-pr.yml'
+      - '.github/workflows/doxygen.yml'
+      - '.github/workflows/scheduled-ci.yml'
+      - '.github/workflows/stale.yml'
+      - '.github/workflows/version.yml'
+      - 'ops/**'
+      - 'packaging/**'
+      - '.gitignore'
+
 
 env:
   REGISTRY: ghcr.io/feelpp
@@ -27,7 +52,7 @@ jobs:
       targets_json: ${{ steps.plan.outputs.targets_json }}
       enabled_jobs: ${{ steps.plan.outputs.enabled_jobs }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: feelpp/ci-matrix-planner@v1.12
         id: plan
         with:
@@ -56,7 +81,7 @@ jobs:
           username: ${{ secrets.CR_LOGIN }}
           password: ${{ secrets.CR_PAT }}
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
 
@@ -103,7 +128,7 @@ jobs:
           username: ${{ secrets.CR_LOGIN }}
           password: ${{ secrets.CR_PAT }}
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
 
@@ -149,7 +174,7 @@ jobs:
           username: ${{ secrets.CR_LOGIN }}
           password: ${{ secrets.CR_PAT }}
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
 

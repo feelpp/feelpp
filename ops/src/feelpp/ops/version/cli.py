@@ -1,0 +1,104 @@
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+
+from feelpp.ops.common import PREFERRED_VERSION_CLI_NAME
+from feelpp.pkg.config import discover_repo_root
+
+from .models import SemanticVersion
+from .release import ReleaseService
+from .repository import VersionRepository
+
+
+def command_show(args: argparse.Namespace) -> int:
+    repository = VersionRepository(repo_root=args.repo_root)
+    print(json.dumps(repository.read_state().as_dict(), indent=2))
+    return 0
+
+
+def command_bump(args: argparse.Namespace) -> int:
+    repository = VersionRepository(repo_root=args.repo_root)
+    state = repository.bump_upstream(
+        SemanticVersion.parse(args.version),
+        message=args.message,
+    )
+    print(json.dumps(state.as_dict(), indent=2))
+    return 0
+
+
+def command_revision_bump(args: argparse.Namespace) -> int:
+    repository = VersionRepository(repo_root=args.repo_root)
+    state = repository.bump_revision(message=args.message)
+    print(json.dumps(state.as_dict(), indent=2))
+    return 0
+
+
+def command_release(args: argparse.Namespace) -> int:
+    service = ReleaseService(repo_root=args.repo_root)
+    plan = service.execute_release(args.version, dry_run=args.dry_run)
+    print(json.dumps(plan.as_dict(), indent=2))
+    return 0
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog=PREFERRED_VERSION_CLI_NAME)
+    parser.add_argument(
+        "--repo-root",
+        default=str(discover_repo_root()),
+        help="Path to the Feel++ repository root",
+    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    show_parser = subparsers.add_parser("show", help="Show the current version state")
+    show_parser.set_defaults(func=command_show)
+
+    bump_parser = subparsers.add_parser("bump", help="Bump the upstream semantic version")
+    bump_parser.add_argument("version", help="Semantic version to apply")
+    bump_parser.add_argument(
+        "--message",
+        default="New upstream release",
+        help="Debian changelog entry message",
+    )
+    bump_parser.set_defaults(func=command_bump)
+
+    revision_parser = subparsers.add_parser("revision", help="Packaging revision commands")
+    revision_subparsers = revision_parser.add_subparsers(dest="revision_command", required=True)
+    revision_bump_parser = revision_subparsers.add_parser(
+        "bump",
+        help="Increment the Debian packaging revision without changing the upstream semantic version",
+    )
+    revision_bump_parser.add_argument(
+        "--message",
+        default="Packaging revision update",
+        help="Debian changelog entry message",
+    )
+    revision_bump_parser.set_defaults(func=command_revision_bump)
+
+    release_parser = subparsers.add_parser("release", help="Create the git tag and GitHub release")
+    release_parser.add_argument(
+        "version",
+        help="Semantic version for upstream releases or full Debian package version for packaging-only releases",
+    )
+    release_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Run all validations and preview the generated release content without publishing",
+    )
+    release_parser.set_defaults(func=command_release)
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    try:
+        return int(args.func(args))
+    except (FileNotFoundError, RuntimeError, ValueError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

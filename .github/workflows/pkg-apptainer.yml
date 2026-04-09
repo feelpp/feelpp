@@ -17,7 +17,8 @@ on:
           default: 'noble'
           type: choice
           options:
-          - 'noble'
+          - 'resolute'
+          - 'trixie'
           - 'noble'
           - 'bullseye'
           - 'bookworm'
@@ -138,8 +139,8 @@ jobs:
     continue-on-error: ${{ inputs.continue-on-error == 'true' }}
     env:
         version: ${{ inputs.version || needs.version.outputs.version }}
-        docker: "${{ inputs.docker }}:v${{ inputs.version || needs.version.outputs.version }}-${{ inputs.dist }}"
-        sif: "${{ inputs.docker }}:v${{ inputs.version || needs.version.outputs.version }}-${{ inputs.dist }}-sif"
+        docker: "${{ inputs.docker }}:${{ inputs.dist }}-v${{ inputs.version || needs.version.outputs.version }}"
+        sif: "${{ inputs.docker }}:${{ inputs.dist }}-v${{ inputs.version || needs.version.outputs.version }}-sif"
         apptainer: /opt/apptainer/v${{ inputs.apptainer }}/apptainer/bin/apptainer
     steps:
       -
@@ -168,8 +169,8 @@ jobs:
     continue-on-error: ${{ inputs.continue-on-error == 'true' }}
     env:
         version: ${{ inputs.version || needs.version.outputs.version }}
-        docker-dev: "${{ inputs.docker-dev }}:v${{ inputs.version || needs.version.outputs.version }}-${{ inputs.dist }}"
-        sif-dev: "${{ inputs.docker-dev }}:v${{ inputs.version || needs.version.outputs.version }}-${{ inputs.dist }}-sif"
+        docker-dev: "${{ inputs.docker-dev }}:${{ inputs.dist }}-v${{ inputs.version || needs.version.outputs.version }}"
+        sif-dev: "${{ inputs.docker-dev }}:${{ inputs.dist }}-v${{ inputs.version || needs.version.outputs.version }}-sif"
         apptainer: /opt/apptainer/v${{ inputs.apptainer }}/apptainer/bin/apptainer
     steps:
       -

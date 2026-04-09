@@ -38,6 +38,7 @@ on:
         type: choice
         options:
         - 'all'
+        - 'resolute'
         - 'noble'
         - 'none'
       enable-spack:
@@ -87,8 +88,8 @@ jobs:
     uses: ./.github/workflows/pkg-factory.yml
     with:
         parallel: "${{ inputs.parallel || '20' }}"
-        enable-debian: "${{ inputs.enable-debian || 'all' }}"
-        enable-ubuntu: "${{ inputs.enable-ubuntu || 'all' }}"
+        enable-debian: "${{ inputs.enable-debian || 'none' }}"
+        enable-ubuntu: "${{ inputs.enable-ubuntu || 'noble' }}"
         enable-spack: "${{ inputs.enable-spack || 'none' }}"
         enable-apptainer: "${{ inputs.enable-apptainer || 'apptainer' }}"
         enable-docker: "${{ inputs.enable-docker || 'docker' }}"
