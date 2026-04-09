@@ -40,6 +40,8 @@
 #define FEELPP_VF_CONCEPTS_HPP 1
 
 #include <concepts>
+#include <type_traits>
+#include <Eigen/Core>
 #include <feel/feelcore/concepts.hpp>
 
 namespace Feel
@@ -171,6 +173,100 @@ template <typename T>
 concept TensorExpr = VfExpr<T> && requires {
     { T::rank } -> std::convertible_to<int>;
 };
+
+//
+// Shape and Evaluation Layout Concepts
+//
+
+template <typename T>
+concept VfShape = requires {
+    { T::M } -> std::convertible_to<int>;
+    { T::N } -> std::convertible_to<int>;
+    { T::is_scalar } -> std::convertible_to<bool>;
+};
+
+template <typename Left, typename Right>
+concept SameShape = VfShape<Left> && VfShape<Right> && ( Left::M == Right::M ) && ( Left::N == Right::N );
+
+template <typename Left, typename Right>
+concept ContractibleShapes = VfShape<Left> && VfShape<Right> && ( Left::N == Right::M );
+
+namespace vf::detail
+{
+
+template <typename T>
+inline constexpr int expression_rows_v = std::remove_cvref_t<T>::evaluate_type::RowsAtCompileTime;
+
+template <typename T>
+inline constexpr int expression_cols_v = std::remove_cvref_t<T>::evaluate_type::ColsAtCompileTime;
+
+template <int LeftExtent, int RightExtent>
+inline constexpr bool compatible_static_extent_v =
+    ( LeftExtent == RightExtent ) || ( LeftExtent == Eigen::Dynamic ) || ( RightExtent == Eigen::Dynamic );
+
+} // namespace vf::detail
+
+template <typename T>
+concept HasEvaluateType = requires {
+    typename std::remove_cvref_t<T>::evaluate_type;
+};
+
+template <typename T>
+concept MatrixComponentAccessible = requires(T const& t) {
+    t( 0, 0 );
+};
+
+template <typename T, int Rows>
+concept ExpressionRowsCompatible =
+    HasEvaluateType<T> &&
+    vf::detail::compatible_static_extent_v<vf::detail::expression_rows_v<T>, Rows>;
+
+template <typename T, int Cols>
+concept ExpressionColsCompatible =
+    HasEvaluateType<T> &&
+    vf::detail::compatible_static_extent_v<vf::detail::expression_cols_v<T>, Cols>;
+
+template <typename Left, typename Right>
+concept ComponentwiseCompatibleExpr =
+    HasEvaluateType<Left> &&
+    HasEvaluateType<Right> &&
+    vf::detail::compatible_static_extent_v<vf::detail::expression_rows_v<Left>, vf::detail::expression_rows_v<Right>> &&
+    vf::detail::compatible_static_extent_v<vf::detail::expression_cols_v<Left>, vf::detail::expression_cols_v<Right>>;
+
+namespace vf::detail
+{
+
+template <typename ExprT>
+concept StaticSquareMatrixExpression =
+    HasEvaluateType<ExprT> &&
+    ( expression_rows_v<ExprT> == expression_cols_v<ExprT> ) &&
+    ( expression_rows_v<ExprT> != Eigen::Dynamic ) &&
+    ( expression_rows_v<ExprT> > 0 );
+
+template <typename ExprT>
+inline constexpr int vector_length_v =
+    expression_rows_v<ExprT> == 1 ? expression_cols_v<ExprT> : expression_rows_v<ExprT>;
+
+template <int Size>
+consteval int
+symmetricDimensionFromStorageSize()
+{
+    for ( int dim = 1; dim <= Size; ++dim )
+        if ( dim*( dim+1 )/2 == Size )
+            return dim;
+    return -1;
+}
+
+template <typename ExprT>
+concept StaticSymmetricVectorExpression =
+    HasEvaluateType<ExprT> &&
+    ( expression_rows_v<ExprT> != Eigen::Dynamic ) &&
+    ( expression_cols_v<ExprT> != Eigen::Dynamic ) &&
+    ( ( expression_rows_v<ExprT> == 1 && expression_cols_v<ExprT> > 0 ) ||
+      ( expression_cols_v<ExprT> == 1 && expression_rows_v<ExprT> > 0 ) ) &&
+    ( symmetricDimensionFromStorageSize<vector_length_v<ExprT>>() > 0 );
+
+} // namespace vf::detail
 
 //
 // Integration and Form Concepts

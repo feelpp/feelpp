@@ -503,6 +503,7 @@ public:
                                               [&q]( auto const& e ) { return e.evalq( 0, 0, q ); },
                                               std::make_index_sequence<expression_type::matrix_size>{} );
         }
+
         tensor_matrix_type M_expr;
     };
 
@@ -633,6 +634,15 @@ visitVariantAndTupleAt( Variant&& variant, Tuple&& tuple, std::size_t flatIndex,
     }
 }
 
+template <int Cols, typename EntryFn, std::size_t... FlatIndex>
+auto
+makeStaticMatTuple( EntryFn&& entryFn, std::index_sequence<FlatIndex...> )
+{
+    return hana::make_tuple(
+        entryFn( std::integral_constant<int, static_cast<int>( FlatIndex/Cols )>{},
+                 std::integral_constant<int, static_cast<int>( FlatIndex%Cols )>{} )... );
+}
+
 template <int SharedDim, int RightCols, int Row, int Col, typename LeftTuple, typename RightTuple, std::size_t... SumIndex>
 auto
 makeMatProductEntry( LeftTuple const& leftTuple, RightTuple const& rightTuple, std::index_sequence<SumIndex...> )
@@ -641,15 +651,41 @@ makeMatProductEntry( LeftTuple const& leftTuple, RightTuple const& rightTuple, s
                matTupleComponent<RightTuple, RightCols, static_cast<int>( SumIndex ), Col>( rightTuple ) ) + ... );
 }
 
-template <int LeftRows, int SharedDim, int RightCols, typename LeftTuple, typename RightTuple, std::size_t... FlatIndex>
+template <int LeftRows, int SharedDim, int RightCols, typename LeftTuple, typename RightTuple>
 auto
-makeMatProductTuple( LeftTuple const& leftTuple, RightTuple const& rightTuple, std::index_sequence<FlatIndex...> )
+makeMatProductTuple( LeftTuple const& leftTuple, RightTuple const& rightTuple )
 {
-    return hana::make_tuple(
-        makeMatProductEntry<SharedDim,
-                            RightCols,
-                            static_cast<int>( FlatIndex/RightCols ),
-                            static_cast<int>( FlatIndex%RightCols )>( leftTuple, rightTuple, std::make_index_sequence<SharedDim>{} )... );
+    return makeStaticMatTuple<RightCols>(
+        [&leftTuple, &rightTuple]( auto row, auto col )
+        {
+            return makeMatProductEntry<SharedDim,
+                                       RightCols,
+                                       static_cast<int>( decltype( row )::value ),
+                                       static_cast<int>( decltype( col )::value )>(
+                leftTuple,
+                rightTuple,
+                std::make_index_sequence<SharedDim>{} );
+        },
+        std::make_index_sequence<LeftRows*RightCols>{} );
+}
+
+template <int Cols, typename LeftTuple, typename RightTuple, std::size_t... FlatIndex>
+auto
+makeMatHadamardTuple( LeftTuple const& leftTuple, RightTuple const& rightTuple, std::index_sequence<FlatIndex...> )
+{
+    return makeStaticMatTuple<Cols>(
+        [&leftTuple, &rightTuple]( auto row, auto col )
+        {
+            return matTupleComponent<LeftTuple,
+                                     Cols,
+                                     static_cast<int>( decltype( row )::value ),
+                                     static_cast<int>( decltype( col )::value )>( leftTuple ) *
+                   matTupleComponent<RightTuple,
+                                     Cols,
+                                     static_cast<int>( decltype( row )::value ),
+                                     static_cast<int>( decltype( col )::value )>( rightTuple );
+        },
+        std::index_sequence<FlatIndex...>{} );
 }
 
 } // detail
@@ -1275,7 +1311,21 @@ operator*( Expr<vf::detail::Mat<M, K, LeftTuple>> const& left, Expr<vf::detail::
 {
     auto const& leftTuple = left.expression().expression();
     auto const& rightTuple = right.expression().expression();
-    auto productTuple = vf::detail::makeMatProductTuple<M, K, N>( leftTuple, rightTuple, std::make_index_sequence<M*N>{} );
+    auto productTuple = vf::detail::makeMatProductTuple<M, K, N>( leftTuple, rightTuple );
+
+    using product_tuple_type = std::decay_t<decltype( productTuple )>;
+    using expr_t = vf::detail::Mat<M, N, product_tuple_type>;
+
+    return Expr<expr_t>( expr_t( std::move( productTuple ) ) );
+}
+
+template <int M, int N, typename LeftTuple, typename RightTuple>
+[[nodiscard]] inline auto
+hadamard( Expr<vf::detail::Mat<M, N, LeftTuple>> const& left, Expr<vf::detail::Mat<M, N, RightTuple>> const& right )
+{
+    auto const& leftTuple = left.expression().expression();
+    auto const& rightTuple = right.expression().expression();
+    auto productTuple = vf::detail::makeMatHadamardTuple<N>( leftTuple, rightTuple, std::make_index_sequence<M*N>{} );
 
     using product_tuple_type = std::decay_t<decltype( productTuple )>;
     using expr_t = vf::detail::Mat<M, N, product_tuple_type>;

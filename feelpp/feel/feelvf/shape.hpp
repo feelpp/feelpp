@@ -36,6 +36,8 @@
 #include <feel/feelcore/warnon.hpp>
 // clang-format on
 
+#include <feel/feelvf/concepts.hpp>
+
 namespace Feel
 {
 namespace vf
@@ -385,27 +387,40 @@ struct mn_to_shape
 template<typename Left, typename Right>
 struct shape_op_mul
 {
-    static inline const bool is_scalar_product = Left::is_scalar || Right::is_scalar;
-    static inline const bool is_contractible = ( Left::N == Right::M );
-    static inline const bool is_componentwise_compatible = ( Left::M == Right::M ) && ( Left::N == Right::N );
+    static constexpr bool is_scalar_product = Left::is_scalar || Right::is_scalar;
+    static constexpr bool is_contractible = ContractibleShapes<Left, Right>;
 
-    BOOST_MPL_ASSERT_MSG( mpl::bool_<is_scalar_product || is_contractible || is_componentwise_compatible>::value,
-                          INVALID_MULTIPLICATION,
-                          ( mpl::int_<Left::M>, mpl::int_<Left::N>,
-                            mpl::int_<Right::M>, mpl::int_<Right::N>,
-                            Left, Right ) );
+    static_assert( is_scalar_product || is_contractible,
+                   "feelvf operator*: only scalar scaling and contractive products are implicit; use hadamard() for componentwise multiplication" );
 
-    typedef typename mpl::if_<mpl::bool_<Left::is_scalar>,
-            mpl::identity<Right>,
-            typename mpl::if_<mpl::bool_<Right::is_scalar>,
-            mpl::identity<Left>,
-
-            // check that Left::N == Right::M
-            typename mpl::if_<mpl::equal_to<mpl::int_<Left::N>,mpl::int_<Right::M> >,
-                              mpl::identity<ShapeGeneric<Left::nDim,Left::M,Right::N > >,
-            mpl::identity<typename shape_op_id<Left, Right>::type> >::type >::type>::type::type type;
+    using type = std::conditional_t<Left::is_scalar,
+                                    Right,
+                                    std::conditional_t<Right::is_scalar,
+                                                       Left,
+                                                       ShapeGeneric<Left::nDim, Left::M, Right::N>>>;
 
     static const int op = is_scalar_product ? 0 : ( is_contractible ? 1 : 0 );
+    template<bool left_is_zero, bool right_is_zero>
+    struct is_zero
+    {
+        static inline const bool value = ( left_is_zero||right_is_zero );
+        static inline const bool update_and_eval_left = !value;
+        static inline const bool update_and_eval_right = !value;
+    };
+};
+
+template<typename Left, typename Right>
+struct shape_op_componentwise
+{
+    static constexpr bool is_componentwise_compatible = SameShape<Left, Right>;
+
+    static_assert( is_componentwise_compatible,
+                   "feelvf hadamard(): operands must have identical tensor shape" );
+
+    using type = Left;
+
+    static const int op = 0;
+
     template<bool left_is_zero, bool right_is_zero>
     struct is_zero
     {

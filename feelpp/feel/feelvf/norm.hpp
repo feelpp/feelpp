@@ -56,6 +56,13 @@ outer_prod( ExprL l, ExprR r ) -> decltype( l * trans( r ) )
  * \return the double dot product \f$(l : r)\f$
  */
 template<typename ExprL, typename ExprR>
+requires requires
+{
+    typename ExprL::evaluate_type;
+    typename ExprR::evaluate_type;
+} &&
+( ExprL::evaluate_type::RowsAtCompileTime == ExprR::evaluate_type::RowsAtCompileTime ) &&
+( ExprL::evaluate_type::ColsAtCompileTime == ExprR::evaluate_type::ColsAtCompileTime )
 inline
 auto
 ddot( ExprL l, ExprR r ) -> decltype( trace( trans( l ) * r ) )
