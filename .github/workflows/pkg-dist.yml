@@ -79,6 +79,13 @@ jobs:
           uses: actions/checkout@v5
           with: 
             submodules: true
+        - uses: actions/setup-python@v6
+          with:
+            python-version: '3.11'
+        - uses: astral-sh/setup-uv@v8.0.0
+          with:
+            enable-cache: true
+            cache-dependency-glob: ops/pyproject.toml
         - name: Resolve package workspace
           id: pkg_workspace
           shell: bash
@@ -120,8 +127,15 @@ jobs:
             fi
             echo "FEELPP_PKG_DOCKER_STATE_ROOT=${state_root}" >> "${GITHUB_ENV}"
         - name: Install feelpp-pkg
+          shell: bash
           run: |
-            python3 -m pip install --no-build-isolation -e packaging
+            uv pip install --system -e ./ops
+        - name: Verify feelpp-pkg CLI
+          shell: bash
+          run: |
+            command -v fpp-pkg
+            command -v feelpp-pkg
+            fpp-pkg --help >/dev/null
         - name: Prepare local package workspace
           run: |
             rm -rf "${FEELPP_PKG_JOB_ROOT}"
@@ -160,6 +174,15 @@ jobs:
         uses: actions/checkout@v5
         with:
           submodules: true
+      - uses: actions/setup-python@v6
+        if: ${{ !contains( github.event.head_commit.message, 'skip publish' ) && !contains( inputs.skip, 'skip publish' ) }}
+        with:
+          python-version: '3.11'
+      - uses: astral-sh/setup-uv@v8.0.0
+        if: ${{ !contains( github.event.head_commit.message, 'skip publish' ) && !contains( inputs.skip, 'skip publish' ) }}
+        with:
+          enable-cache: true
+          cache-dependency-glob: ops/pyproject.toml
       - name: Resolve publish workspace
         if: ${{ !contains( github.event.head_commit.message, 'skip publish' ) && !contains( inputs.skip, 'skip publish' ) }}
         id: publish_workspace
@@ -199,9 +222,17 @@ jobs:
           mkdir -p "${state_root}" "${FEELPP_PKG_PUBLISH_INPUT_DIR}"
           echo "FEELPP_PKG_DOCKER_STATE_ROOT=${state_root}" >> "${GITHUB_ENV}"
       - name: Install feelpp-pkg
+        shell: bash
         if: ${{ !contains( github.event.head_commit.message, 'skip publish' ) && !contains( inputs.skip, 'skip publish' ) }}
         run: |
-          python3 -m pip install --no-build-isolation -e packaging
+          uv pip install --system -e ./ops
+      - name: Verify feelpp-pkg CLI
+        if: ${{ !contains( github.event.head_commit.message, 'skip publish' ) && !contains( inputs.skip, 'skip publish' ) }}
+        shell: bash
+        run: |
+          command -v fpp-pkg
+          command -v feelpp-pkg
+          fpp-pkg --help >/dev/null
       - name: Download package artifacts
         if: ${{ !contains( github.event.head_commit.message, 'skip publish' ) && !contains( inputs.skip, 'skip publish' ) }}
         uses: actions/download-artifact@v4
