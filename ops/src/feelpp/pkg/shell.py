@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 import shlex
 import subprocess
@@ -24,6 +25,24 @@ def _print_dry_run_command(
         print(format_command(command))
 
 
+def _effective_env(
+    env: dict[str, str] | None,
+    env_overrides: dict[str, str] | None,
+) -> dict[str, str] | None:
+    if not env_overrides:
+        return env
+
+    merged = dict(os.environ) if env is None else dict(env)
+    merged.update(
+        {
+            key: str(value)
+            for key, value in env_overrides.items()
+            if value is not None
+        }
+    )
+    return merged
+
+
 def run_checked(
     args: Sequence[str],
     *,
@@ -38,7 +57,14 @@ def run_checked(
     if dry_run:
         _print_dry_run_command(command, env_overrides=env_overrides)
         return
-    subprocess.run(command, cwd=cwd, env=env, check=True, stdout=stdout, stderr=stderr)
+    subprocess.run(
+        command,
+        cwd=cwd,
+        env=_effective_env(env, env_overrides),
+        check=True,
+        stdout=stdout,
+        stderr=stderr,
+    )
 
 
 def run_capture(
@@ -58,7 +84,7 @@ def run_capture(
     completed = subprocess.run(
         command,
         cwd=cwd,
-        env=env,
+        env=_effective_env(env, env_overrides),
         check=False,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE if stderr is None else stderr,
@@ -91,7 +117,7 @@ def run_probe(
     completed = subprocess.run(
         command,
         cwd=cwd,
-        env=env,
+        env=_effective_env(env, env_overrides),
         check=False,
         stdout=subprocess.DEVNULL if stdout is None else stdout,
         stderr=subprocess.DEVNULL if stderr is None else stderr,
