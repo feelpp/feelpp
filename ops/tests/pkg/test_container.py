@@ -11,6 +11,7 @@ from feelpp.pkg.config import PackagingContext
 from feelpp.pkg.container import (
     CONTAINER_APTLY_CONFIG,
     CONTAINER_GNUPG_HOME,
+    CONTAINER_PBUILDER_ROOT,
     CONTAINER_STAGED_GNUPG_HOME,
     DEFAULT_STAGED_APT_KEYRING,
     default_image_for_context,
@@ -248,6 +249,24 @@ class ContainerTests(unittest.TestCase):
                 "python3 -m feelpp.pkg repo stage /work/results --dist noble --repo-root /work --job-root /tmp/feelpp-pkg-job",
                 bootstrap,
             )
+
+    def test_run_in_docker_mounts_explicit_host_pbuilder_root(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            explicit_root = Path(tmpdir) / "site-pbuilder"
+            with mock.patch.dict(os.environ, {"FEELPP_PBUILDER_ROOT": str(explicit_root)}, clear=False):
+                context = self.make_context(tmpdir)
+
+            with mock.patch("feelpp.pkg.container.staging.subprocess.run"):
+                with mock.patch("feelpp.pkg.container.runner.run") as run:
+                    run_in_docker(
+                        context,
+                        argv=["build", "chain", "--dist", "noble"],
+                        image="pkg-env:test",
+                    )
+
+            command = run.call_args.args[0]
+            self.assertIn(f"{explicit_root}:{CONTAINER_PBUILDER_ROOT}", command)
+            self.assertIn(f"FEELPP_PBUILDER_ROOT={CONTAINER_PBUILDER_ROOT}", command)
 
     def test_run_in_docker_restores_host_ownership_for_workspace_outputs(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

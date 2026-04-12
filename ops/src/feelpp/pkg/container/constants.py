@@ -6,6 +6,7 @@ from pathlib import Path
 CONTAINER_REPO_ROOT = Path("/work")
 CONTAINER_JOB_ROOT = Path("/tmp/feelpp-pkg-job")
 CONTAINER_EXTRA_ROOT = Path("/tmp/feelpp-pkg-extra")
+CONTAINER_PBUILDER_ROOT = Path("/root/pbuilder")
 CONTAINER_APTLY_ROOT = Path("/srv/aptly")
 CONTAINER_APTLY_CONFIG = CONTAINER_JOB_ROOT / "aptly.conf"
 CONTAINER_GNUPG_HOME = Path("/root/.gnupg")

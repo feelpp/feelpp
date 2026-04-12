@@ -126,6 +126,22 @@ jobs:
               mkdir -p "${state_root}"
             fi
             echo "FEELPP_PKG_DOCKER_STATE_ROOT=${state_root}" >> "${GITHUB_ENV}"
+        - name: Resolve pbuilder root
+          shell: bash
+          env:
+            FEELPP_PBUILDER_ROOT: ${{ vars.FEELPP_PBUILDER_ROOT }}
+          run: |
+            if [ -n "${FEELPP_PBUILDER_ROOT}" ]; then
+              pbuilder_root="${FEELPP_PBUILDER_ROOT}"
+            elif [ -d "/nvme0/prudhomm/pbuilder" ] && [ -w "/nvme0/prudhomm/pbuilder" ]; then
+              pbuilder_root="/nvme0/prudhomm/pbuilder"
+            elif [ -n "${HOME:-}" ]; then
+              pbuilder_root="${HOME}/pbuilder"
+            else
+              pbuilder_root="${RUNNER_TOOL_CACHE}/pbuilder"
+            fi
+            mkdir -p "${pbuilder_root}"
+            echo "FEELPP_PBUILDER_ROOT=${pbuilder_root}" >> "${GITHUB_ENV}"
         - name: Install feelpp-pkg
           shell: bash
           run: |
@@ -221,6 +237,23 @@ jobs:
           fi
           mkdir -p "${state_root}" "${FEELPP_PKG_PUBLISH_INPUT_DIR}"
           echo "FEELPP_PKG_DOCKER_STATE_ROOT=${state_root}" >> "${GITHUB_ENV}"
+      - name: Resolve pbuilder root
+        if: ${{ !contains( github.event.head_commit.message, 'skip publish' ) && !contains( inputs.skip, 'skip publish' ) }}
+        shell: bash
+        env:
+          FEELPP_PBUILDER_ROOT: ${{ vars.FEELPP_PBUILDER_ROOT }}
+        run: |
+          if [ -n "${FEELPP_PBUILDER_ROOT}" ]; then
+            pbuilder_root="${FEELPP_PBUILDER_ROOT}"
+          elif [ -d "/nvme0/prudhomm/pbuilder" ] && [ -w "/nvme0/prudhomm/pbuilder" ]; then
+            pbuilder_root="/nvme0/prudhomm/pbuilder"
+          elif [ -n "${HOME:-}" ]; then
+            pbuilder_root="${HOME}/pbuilder"
+          else
+            pbuilder_root="${RUNNER_TOOL_CACHE}/pbuilder"
+          fi
+          mkdir -p "${pbuilder_root}"
+          echo "FEELPP_PBUILDER_ROOT=${pbuilder_root}" >> "${GITHUB_ENV}"
       - name: Install feelpp-pkg
         shell: bash
         if: ${{ !contains( github.event.head_commit.message, 'skip publish' ) && !contains( inputs.skip, 'skip publish' ) }}

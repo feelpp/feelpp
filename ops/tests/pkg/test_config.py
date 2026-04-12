@@ -69,6 +69,26 @@ class ConfigTests(unittest.TestCase):
                 fake_home / "pbuilder" / "chroots" / "debian" / "trixie" / "latest",
             )
 
+    def test_context_respects_explicit_pbuilder_root(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo_root = Path(tmpdir) / "repo"
+            (repo_root / "packaging" / "pbuilder" / "hooks").mkdir(parents=True)
+            (repo_root / "packaging" / "pbuilder" / "pbuilderrc").write_text("", encoding="utf-8")
+            explicit_root = Path(tmpdir) / "site-pbuilder"
+
+            with mock.patch.dict("os.environ", {"FEELPP_PBUILDER_ROOT": str(explicit_root)}, clear=False):
+                context = PackagingContext.create(
+                    repo_root=repo_root,
+                    dist="noble",
+                    flavor="ubuntu",
+                    branch="develop",
+                    channel="latest",
+                    job_id="test-job",
+                    job_root=repo_root / "job",
+                )
+
+            self.assertEqual(context.pbuilder_root, explicit_root.resolve())
+
 
 if __name__ == "__main__":
     unittest.main()

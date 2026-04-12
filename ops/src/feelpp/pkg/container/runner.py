@@ -12,6 +12,7 @@ from .constants import (
     CONTAINER_APTLY_ROOT,
     CONTAINER_GNUPG_HOME,
     CONTAINER_JOB_ROOT,
+    CONTAINER_PBUILDER_ROOT,
     CONTAINER_REPO_ROOT,
 )
 from .runtime import _bootstrap_apt_packages, default_image_for_context, default_state_root
@@ -38,13 +39,13 @@ def run_in_docker(
     host_gid = os.getgid()
     host_state_root = Path(state_root).expanduser().resolve() if state_root else default_state_root()
     host_job_root = context.job_root
-    host_chroots = host_state_root / "chroots"
+    host_pbuilder_root = context.pbuilder_root
     host_aptcache = host_state_root / "aptcache"
     host_aptly = host_state_root / "aptly"
     host_aptly_config = _host_aptly_config_path() if publish_uses_aptly(argv) else None
     host_gnupg_home = _host_gnupg_home() if publish_uses_signing(argv) else None
 
-    for path in (host_state_root, host_chroots, host_aptcache, host_aptly, host_job_root):
+    for path in (host_state_root, host_pbuilder_root, host_aptcache, host_aptly, host_job_root):
         path.mkdir(parents=True, exist_ok=True)
     _stage_host_feelpp_apt_key(job_root=host_job_root)
     if host_aptly_config is not None:
@@ -62,7 +63,7 @@ def run_in_docker(
         "-v",
         f"{host_job_root}:{CONTAINER_JOB_ROOT}",
         "-v",
-        f"{host_chroots}:/root/pbuilder/chroots",
+        f"{host_pbuilder_root}:{CONTAINER_PBUILDER_ROOT}",
         "-v",
         f"{host_aptcache}:/var/cache/apt/archives",
         "-v",
@@ -76,6 +77,7 @@ def run_in_docker(
         command.extend(["-e", key])
     if host_aptly_config is not None:
         command.extend(["-e", f"FEELPP_APTLY_CONFIG={CONTAINER_APTLY_CONFIG}"])
+    command.extend(["-e", f"FEELPP_PBUILDER_ROOT={CONTAINER_PBUILDER_ROOT}"])
     command.extend(["-e", "FEELPP_PKG_IN_CONTAINER=1"])
 
     inner_argv, extra_mounts = _containerized_argv(context, argv)
