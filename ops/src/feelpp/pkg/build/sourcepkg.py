@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-import re
 import shutil
 import tarfile
 
@@ -25,6 +24,21 @@ def _orig_archive_name(component: str, version: str) -> str:
     return f"{component}_{version}.orig.tar.gz"
 
 
+def _archive_root_members(handle: tarfile.TarFile) -> set[str]:
+    roots: set[str] = set()
+    for member in handle.getmembers():
+        parts = Path(member.name).parts
+        if not parts:
+            continue
+        if parts[0] == ".":
+            if len(parts) == 1:
+                continue
+            roots.add(parts[1])
+        else:
+            roots.add(parts[0])
+    return roots
+
+
 def _prepare_source_tree(
     context: PackagingContext,
     component: str,
@@ -44,13 +58,25 @@ def _prepare_source_tree(
         return tree_root, dsc_path, version
 
     shutil.rmtree(source_root, ignore_errors=True)
-    tree_root.mkdir(parents=True, exist_ok=True)
+    source_root.mkdir(parents=True, exist_ok=True)
 
     orig_archive = source_root / _orig_archive_name(component, version)
-    source_root.mkdir(parents=True, exist_ok=True)
     shutil.copy2(archive_path, orig_archive)
     with tarfile.open(orig_archive, "r:gz") as handle:
-        handle.extractall(tree_root)
+        archive_roots = _archive_root_members(handle)
+        handle.extractall(source_root)
+
+    if len(archive_roots) != 1:
+        roots_text = ", ".join(sorted(archive_roots)) or "<none>"
+        raise ValueError(
+            f"Expected a single top-level directory in {orig_archive.name}, found {roots_text}"
+        )
+
+    extracted_root = source_root / next(iter(archive_roots))
+    if not extracted_root.exists():
+        raise FileNotFoundError(f"Extracted source root not found: {extracted_root}")
+    if extracted_root != tree_root:
+        extracted_root.rename(tree_root)
 
     if not packaging_dir.is_dir():
         raise FileNotFoundError(f"Packaging tree not found: {packaging_dir}")

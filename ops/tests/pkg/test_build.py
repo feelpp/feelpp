@@ -3,12 +3,14 @@ from __future__ import annotations
 from pathlib import Path
 import json
 import subprocess
+import tarfile
 import tempfile
 import unittest
 from unittest import mock
 import os
 
 from feelpp.pkg.build import build_component, validate_runtime_linkage
+from feelpp.pkg.build.sourcepkg import _prepare_source_tree
 from feelpp.pkg.build.outer_prefix import _bootstrap_outer_build_deps, _outer_internal_env
 from feelpp.pkg.build.runner import run_pbuilder_build
 from feelpp.pkg.config import PackagingContext
@@ -32,6 +34,90 @@ class BuildTests(unittest.TestCase):
             job_id="test-job",
             job_root=job_root,
         )
+
+    def make_packaging_tree(self, context: PackagingContext, component: str = "feelpp") -> Path:
+        packaging_dir = context.repo_root / "packaging" / "debian" / component / context.dist / "debian"
+        packaging_dir.mkdir(parents=True, exist_ok=True)
+        return packaging_dir
+
+    def make_source_archive(self, tmpdir: str, component: str, raw_version: str) -> Path:
+        archive_root = Path(tmpdir) / f"{component}-{raw_version}"
+        (archive_root / "data").mkdir(parents=True)
+        (archive_root / "data" / "payload.txt").write_text("payload\n", encoding="utf-8")
+        (archive_root / "data" / "payload-link").symlink_to("payload.txt")
+
+        archive_path = Path(tmpdir) / f"{component}-{raw_version}.tar.gz"
+        with tarfile.open(archive_path, "w:gz") as handle:
+            handle.add(archive_root, arcname=archive_root.name, recursive=True)
+        return archive_path
+
+    def test_prepare_source_tree_flattens_stable_archive_root(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            context = self.make_context(tmpdir)
+            self.make_packaging_tree(context)
+            archive_path = self.make_source_archive(tmpdir, "feelpp", "0.111.0")
+            source_root = context.job_root / "source-packages" / "feelpp"
+
+            with mock.patch("feelpp.pkg.build.sourcepkg.run") as run:
+                tree_root, dsc_path, version = _prepare_source_tree(context, "feelpp", archive_path)
+
+            self.assertEqual(version, "0.111.0")
+            self.assertEqual(tree_root, source_root / "feelpp-0.111.0")
+            self.assertEqual(dsc_path, source_root / "feelpp_0.111.0-1.dsc")
+            self.assertTrue((tree_root / "data" / "payload.txt").is_file())
+            self.assertTrue((tree_root / "data" / "payload-link").is_symlink())
+            self.assertFalse((tree_root / "feelpp-0.111.0").exists())
+            run.assert_has_calls(
+                [
+                    mock.call(
+                        [
+                            "dch",
+                            "-v",
+                            "0.111.0-1",
+                            "--distribution",
+                            "unstable",
+                            "-b",
+                            "New upstream commits",
+                        ],
+                        cwd=tree_root,
+                    ),
+                    mock.call(["dpkg-source", "-b", str(tree_root)], cwd=source_root),
+                ]
+            )
+
+    def test_prepare_source_tree_flattens_prerelease_archive_root(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            context = self.make_context(tmpdir)
+            self.make_packaging_tree(context)
+            archive_path = self.make_source_archive(tmpdir, "feelpp", "0.111.0-preview.13")
+            source_root = context.job_root / "source-packages" / "feelpp"
+
+            with mock.patch("feelpp.pkg.build.sourcepkg.run") as run:
+                tree_root, dsc_path, version = _prepare_source_tree(context, "feelpp", archive_path)
+
+            self.assertEqual(version, "0.111.0~preview.13")
+            self.assertEqual(tree_root, source_root / "feelpp-0.111.0~preview.13")
+            self.assertEqual(dsc_path, source_root / "feelpp_0.111.0~preview.13-1.dsc")
+            self.assertTrue((tree_root / "data" / "payload.txt").is_file())
+            self.assertTrue((tree_root / "data" / "payload-link").is_symlink())
+            self.assertFalse((tree_root / "feelpp-0.111.0-preview.13").exists())
+            run.assert_has_calls(
+                [
+                    mock.call(
+                        [
+                            "dch",
+                            "-v",
+                            "0.111.0~preview.13-1",
+                            "--distribution",
+                            "unstable",
+                            "-b",
+                            "New upstream commits",
+                        ],
+                        cwd=tree_root,
+                    ),
+                    mock.call(["dpkg-source", "-b", str(tree_root)], cwd=source_root),
+                ]
+            )
 
     def test_run_pbuilder_build_passes_mirror_arguments_explicitly(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
