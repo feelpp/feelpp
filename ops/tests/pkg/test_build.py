@@ -141,11 +141,24 @@ class BuildTests(unittest.TestCase):
 
             self.assertIn("--mirror", command)
             self.assertIn("--othermirror", command)
+            self.assertIn("--configfile", command)
+            self.assertIn("--hookdir", command)
             self.assertEqual(command[command.index("--mirror") + 1], mirrorsite)
             self.assertEqual(command[command.index("--othermirror") + 1], othermirrors)
+            self.assertEqual(command[command.index("--configfile") + 1], str(context.pbuilder_config))
+            self.assertEqual(command[command.index("--hookdir") + 1], str(context.pbuilder_runtime_hookdir))
             self.assertEqual(command[-1], str(dsc_path))
             self.assertEqual(kwargs["env_overrides"]["MIRRORSITE"], mirrorsite)
             self.assertEqual(kwargs["env_overrides"]["OTHERMIRROR"], othermirrors)
+            self.assertEqual(kwargs["env_overrides"]["PBUILDFOLDER"], str(context.pbuilder_root))
+            self.assertEqual(
+                kwargs["env_overrides"]["PBUILDAUTH"],
+                str(context.repo_root / "feelpp" / "tools" / "scripts" / "pkg" / "feelpp_pkg_sudo_auth.sh"),
+            )
+            self.assertEqual(
+                kwargs["env_overrides"]["FEELPP_PBUILDER_BINDMOUNTS"],
+                str(context.local_repo_dir),
+            )
             self.assertEqual(
                 kwargs["env_overrides"]["FEELPP_PBUILDER_ALLOW_PUBLIC_FEELPP_FALLBACK"],
                 "false",

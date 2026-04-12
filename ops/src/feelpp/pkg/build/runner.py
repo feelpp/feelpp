@@ -18,6 +18,7 @@ def run_pbuilder_build(
     result_dir.mkdir(parents=True, exist_ok=True)
     buildplace = context.pbuilder_root / "build"
     buildplace.mkdir(parents=True, exist_ok=True)
+    auth_script = context.repo_root / "feelpp" / "tools" / "scripts" / "pkg" / "feelpp_pkg_sudo_auth.sh"
 
     mirrorsite = pbuilder_mirrorsite(context)
     othermirrors = pbuilder_othermirrors(
@@ -29,18 +30,25 @@ def run_pbuilder_build(
         "CHANNEL": context.channel,
         "DIST": context.dist,
         "FEELPP_PBUILDER_ALLOW_PUBLIC_FEELPP_FALLBACK": "true" if allow_public_fallback else "false",
+        "FEELPP_PBUILDER_BINDMOUNTS": str(context.local_repo_dir),
         "FLAVOR": context.flavor,
         "MIRRORSITE": mirrorsite,
         "OTHERMIRROR": othermirrors,
+        "PBUILDAUTH": str(auth_script),
+        "PBUILDFOLDER": str(context.pbuilder_root),
     }
     command = [
         "pbuilder-dist",
         context.dist,
         "build",
+        "--configfile",
+        str(context.pbuilder_config),
         "--buildresult",
         str(result_dir),
         "--buildplace",
         str(buildplace),
+        "--hookdir",
+        str(context.pbuilder_runtime_hookdir),
         "--mirror",
         mirrorsite,
         "--othermirror",
