@@ -249,6 +249,23 @@ class ContainerTests(unittest.TestCase):
                 bootstrap,
             )
 
+    def test_run_in_docker_restores_host_ownership_for_workspace_outputs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            context = self.make_context(tmpdir)
+
+            with mock.patch("feelpp.pkg.container.staging.subprocess.run"):
+                with mock.patch("feelpp.pkg.container.runner.run") as run:
+                    run_in_docker(
+                        context,
+                        argv=["build", "chain", "--dist", "noble"],
+                        image="pkg-env:test",
+                    )
+
+            bootstrap = run.call_args.args[0][-1]
+            self.assertIn("trap cleanup EXIT", bootstrap)
+            self.assertIn("for path in /work/build /tmp/feelpp-pkg-job; do", bootstrap)
+            self.assertIn(f'chown -R {os.getuid()}:{os.getgid()} "${{path}}" || true', bootstrap)
+
 
 if __name__ == "__main__":
     unittest.main()

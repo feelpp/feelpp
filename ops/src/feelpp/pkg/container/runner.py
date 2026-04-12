@@ -34,6 +34,8 @@ def run_in_docker(
     dry_run: bool = False,
 ) -> None:
     image_name = image or default_image_for_context(context)
+    host_uid = os.getuid()
+    host_gid = os.getgid()
     host_state_root = Path(state_root).expanduser().resolve() if state_root else default_state_root()
     host_job_root = context.job_root
     host_chroots = host_state_root / "chroots"
@@ -88,6 +90,17 @@ def run_in_docker(
     inner_command_str = " ".join(shlex.quote(token) for token in inner_command)
     bootstrap_lines = [
         "set -e",
+        "cleanup() {",
+        "  status=$?",
+        "  trap - EXIT",
+        f"  for path in {shlex.quote(str(CONTAINER_REPO_ROOT / 'build'))} {shlex.quote(str(CONTAINER_JOB_ROOT))}; do",
+        '    if [ -e "${path}" ]; then',
+        f'      chown -R {host_uid}:{host_gid} "${{path}}" || true',
+        "    fi",
+        "  done",
+        "  exit ${status}",
+        "}",
+        "trap cleanup EXIT",
         "git config --global --add safe.directory /work || true",
         "git config --global --add safe.directory /work/.git || true",
         "rm -f /etc/apt/apt.conf.d/docker-clean",
