@@ -10,6 +10,7 @@ from unittest import mock
 import os
 
 from feelpp.pkg.build import build_component, validate_runtime_linkage
+from feelpp.pkg.build.archive import _build_source_archive
 from feelpp.pkg.build.sourcepkg import _prepare_source_tree
 from feelpp.pkg.build.outer_prefix import _bootstrap_outer_build_deps, _outer_internal_env
 from feelpp.pkg.build.runner import run_pbuilder_build
@@ -286,6 +287,30 @@ class BuildTests(unittest.TestCase):
             self.assertIn(str(prefix / "lib" / "x86_64-linux-gnu" / "pkgconfig"), env["PKG_CONFIG_PATH"])
             self.assertIn(str(prefix / "lib" / "python3" / "dist-packages"), env["PYTHONPATH"])
 
+    def test_build_source_archive_uses_build_env_for_configure_and_dist(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            context = self.make_context(tmpdir)
+            build_dir = context.repo_root / "build" / "mor"
+            build_dir.mkdir(parents=True, exist_ok=True)
+            archive_path = build_dir / "feelpp-mor-0.111.0~preview.13.tar.gz"
+            archive_path.write_text("", encoding="utf-8")
+            build_env = {
+                "FEELPP_DIR": "/tmp/outer/usr",
+                "CMAKE_PREFIX_PATH": "/tmp/outer/usr",
+            }
+
+            with mock.patch("feelpp.pkg.build.archive.run") as run:
+                resolved = _build_source_archive(
+                    context,
+                    "feelpp-mor",
+                    build_env=build_env,
+                )
+
+            self.assertEqual(resolved, archive_path)
+            self.assertEqual(run.call_count, 2)
+            self.assertEqual(run.call_args_list[0].kwargs["env"], build_env)
+            self.assertEqual(run.call_args_list[1].kwargs["env"], build_env)
+
     def test_validate_runtime_linkage_rejects_unversioned_feelpp_needed_entry(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             result_dir = Path(tmpdir)
@@ -351,34 +376,46 @@ class BuildTests(unittest.TestCase):
     def test_build_component_records_built_component_in_job_manifest(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             context = self.make_context(tmpdir)
+            build_env = {"FEELPP_DIR": str(context.job_root / "outer-prefix" / "usr")}
 
             with mock.patch("feelpp.pkg.build.prepare_runtime_assets"):
                 with mock.patch("feelpp.pkg.build.clear_result_dir"):
                     with mock.patch("feelpp.pkg.build.outer_prefix_module._bootstrap_outer_build_deps"):
                         with mock.patch(
-                            "feelpp.pkg.build.archive_module._build_source_archive",
-                            return_value=context.job_root / "source.tar.gz",
+                            "feelpp.pkg.build.outer_prefix_module._outer_internal_env",
+                            return_value=build_env,
                         ):
                             with mock.patch(
-                                "feelpp.pkg.build.sourcepkg_module._prepare_source_tree",
-                                return_value=(
-                                    context.job_root / "source-packages" / "feelpp",
-                                    context.job_root / "source-packages" / "feelpp" / "feelpp_0.111.0~preview.13-1.dsc",
-                                    "0.111.0~preview.13",
-                                ),
-                            ):
-                                with mock.patch("feelpp.pkg.build.run_pbuilder_build"):
-                                    with mock.patch(
-                                        "feelpp.pkg.build.collect_component_internal_build_dependencies",
-                                        return_value=[],
-                                    ):
-                                        with mock.patch("feelpp.pkg.build.validate_runtime_linkage"):
-                                            with mock.patch("feelpp.pkg.build.stage_outputs"):
-                                                build_component(
-                                                    context,
-                                                    "feelpp",
-                                                skip_pbuilder_prepare=True,
-                                            )
+                                "feelpp.pkg.build.archive_module._build_source_archive",
+                                return_value=context.job_root / "source.tar.gz",
+                            ) as build_source_archive:
+                                with mock.patch(
+                                    "feelpp.pkg.build.sourcepkg_module._prepare_source_tree",
+                                    return_value=(
+                                        context.job_root / "source-packages" / "feelpp",
+                                        context.job_root / "source-packages" / "feelpp" / "feelpp_0.111.0~preview.13-1.dsc",
+                                        "0.111.0~preview.13",
+                                    ),
+                                ):
+                                    with mock.patch("feelpp.pkg.build.run_pbuilder_build"):
+                                        with mock.patch(
+                                            "feelpp.pkg.build.collect_component_internal_build_dependencies",
+                                            return_value=[],
+                                        ):
+                                            with mock.patch("feelpp.pkg.build.validate_runtime_linkage"):
+                                                with mock.patch("feelpp.pkg.build.stage_outputs"):
+                                                    build_component(
+                                                        context,
+                                                        "feelpp",
+                                                        skip_pbuilder_prepare=True,
+                                                    )
+
+            build_source_archive.assert_called_once_with(
+                context,
+                "feelpp",
+                build_env=build_env,
+                dry_run=False,
+            )
 
             payload = json.loads(context.job_manifest_path.read_text(encoding="utf-8"))
             self.assertEqual(payload["state"], "built")
