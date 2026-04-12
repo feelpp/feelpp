@@ -53,9 +53,11 @@ def build_component(
         component,
         dry_run=dry_run,
     )
+    build_env = outer_prefix_module._outer_internal_env(context)
     archive_path = archive_module._build_source_archive(
         context,
         component,
+        build_env=build_env,
         dry_run=dry_run,
     )
     _, dsc_path, _ = sourcepkg_module._prepare_source_tree(

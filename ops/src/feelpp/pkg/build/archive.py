@@ -14,6 +14,7 @@ def _build_source_archive(
     context: PackagingContext,
     component: str,
     *,
+    build_env: dict[str, str] | None = None,
     dry_run: bool = False,
 ) -> Path:
     preset = _component_preset(component)
@@ -27,11 +28,13 @@ def _build_source_archive(
             "-DLIBMONGOC_DIR=/usr",
         ],
         cwd=context.repo_root,
+        env=build_env,
         dry_run=dry_run,
     )
     run(
         ["cmake", "--build", "--preset", preset, "-t", "dist"],
         cwd=context.repo_root,
+        env=build_env,
         dry_run=dry_run,
     )
 
