@@ -13,6 +13,8 @@ from .workspace import ensure_workspace
 
 DEFAULT_APPTAINER_TAG_SUFFIX = "_sif"
 DEFAULT_APPTAINER_ORAS_PREFIX = "oras://"
+DEFAULT_APPTAINER_DOCKER_PREFIX = "docker://"
+DEFAULT_APPTAINER_DOCKER_DAEMON_PREFIX = "docker-daemon:"
 DEFAULT_APPTAINER_BINARY_ENV = "FEELPP_PKG_APPTAINER_BIN"
 DEFAULT_APPTAINER_BINARY_FALLBACK = "/opt/apptainer/latest/bin/apptainer"
 
@@ -46,6 +48,21 @@ def as_oras_ref(target_ref: str) -> str:
     return f"{DEFAULT_APPTAINER_ORAS_PREFIX}{target_ref}"
 
 
+def as_apptainer_source_ref(source_ref: str) -> str:
+    if source_ref.startswith(
+        (
+            DEFAULT_APPTAINER_DOCKER_PREFIX,
+            DEFAULT_APPTAINER_DOCKER_DAEMON_PREFIX,
+            DEFAULT_APPTAINER_ORAS_PREFIX,
+            "library://",
+        )
+    ):
+        return source_ref
+    if "/" in source_ref:
+        return f"{DEFAULT_APPTAINER_DOCKER_PREFIX}{source_ref}"
+    return f"{DEFAULT_APPTAINER_DOCKER_DAEMON_PREFIX}{source_ref}"
+
+
 def default_apptainer_binary() -> str:
     configured = os.getenv(DEFAULT_APPTAINER_BINARY_ENV)
     if configured:
@@ -55,6 +72,13 @@ def default_apptainer_binary() -> str:
         return resolved
     if Path(DEFAULT_APPTAINER_BINARY_FALLBACK).is_file():
         return DEFAULT_APPTAINER_BINARY_FALLBACK
+    versioned_candidates = sorted(
+        Path("/opt/apptainer").glob("v*/apptainer/bin/apptainer"),
+        reverse=True,
+    )
+    for candidate in versioned_candidates:
+        if candidate.is_file():
+            return str(candidate)
     return "apptainer"
 
 
@@ -89,6 +113,7 @@ def publish_apptainer_image(
         tag=tag,
     )
     resolved_oras_ref = as_oras_ref(resolved_target_ref)
+    resolved_source_ref = as_apptainer_source_ref(source_ref)
     resolved_output_path = (
         Path(output_path).expanduser().resolve()
         if output_path
@@ -98,7 +123,7 @@ def publish_apptainer_image(
     apptainer_binary = default_apptainer_binary()
 
     run(
-        [apptainer_binary, "build", str(resolved_output_path), f"docker-daemon:{source_ref}"],
+        [apptainer_binary, "build", str(resolved_output_path), resolved_source_ref],
         cwd=context.repo_root,
         env=context.shell_env(),
         dry_run=dry_run,
@@ -111,6 +136,7 @@ def publish_apptainer_image(
     )
     result = {
         "source_ref": source_ref,
+        "resolved_source_ref": resolved_source_ref,
         "target_ref": resolved_target_ref,
         "oras_ref": resolved_oras_ref,
         "output_path": str(resolved_output_path),

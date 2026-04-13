@@ -6,6 +6,7 @@ import unittest
 from unittest import mock
 
 from feelpp.pkg.apptainer import (
+    as_apptainer_source_ref,
     as_oras_ref,
     default_apptainer_binary,
     default_apptainer_publish_ref,
@@ -56,6 +57,16 @@ class ApptainerTests(unittest.TestCase):
             "oras://ghcr.io/feelpp/feelpp:noble-preview.13_sif",
         )
 
+    def test_as_apptainer_source_ref_uses_docker_transport_for_remote_refs(self) -> None:
+        self.assertEqual(
+            as_apptainer_source_ref("ghcr.io/feelpp/feelpp:noble-preview.13"),
+            "docker://ghcr.io/feelpp/feelpp:noble-preview.13",
+        )
+        self.assertEqual(
+            as_apptainer_source_ref("feelpp:noble-preview.13"),
+            "docker-daemon:feelpp:noble-preview.13",
+        )
+
     def test_publish_apptainer_image_builds_and_pushes(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             context = self.make_context(tmpdir)
@@ -69,6 +80,7 @@ class ApptainerTests(unittest.TestCase):
                     )
 
             self.assertEqual(result["source_ref"], "feelpp:noble-preview.13")
+            self.assertEqual(result["resolved_source_ref"], "docker-daemon:feelpp:noble-preview.13")
             self.assertEqual(result["target_ref"], "ghcr.io/feelpp/custom:noble-preview.13_sif")
             self.assertEqual(result["oras_ref"], "oras://ghcr.io/feelpp/custom:noble-preview.13_sif")
             self.assertEqual(result["apptainer_binary"], "/opt/apptainer/latest/bin/apptainer")
@@ -90,6 +102,32 @@ class ApptainerTests(unittest.TestCase):
                     "push",
                     result["output_path"],
                     "oras://ghcr.io/feelpp/custom:noble-preview.13_sif",
+                ],
+            )
+
+    def test_publish_apptainer_image_can_build_from_remote_oci_ref(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            context = self.make_context(tmpdir)
+            with mock.patch("feelpp.pkg.apptainer.run") as run:
+                with mock.patch("feelpp.pkg.apptainer.default_apptainer_binary", return_value="/opt/apptainer/latest/bin/apptainer"):
+                    result = publish_apptainer_image(
+                        context,
+                        source_ref="ghcr.io/feelpp/feelpp:noble-preview.13",
+                        repository="feelpp/custom",
+                        dry_run=True,
+                    )
+
+            self.assertEqual(
+                result["resolved_source_ref"],
+                "docker://ghcr.io/feelpp/feelpp:noble-preview.13",
+            )
+            self.assertEqual(
+                run.call_args_list[0].args[0],
+                [
+                    "/opt/apptainer/latest/bin/apptainer",
+                    "build",
+                    result["output_path"],
+                    "docker://ghcr.io/feelpp/feelpp:noble-preview.13",
                 ],
             )
 
