@@ -8,12 +8,11 @@ import shutil
 import stat
 import subprocess
 
-from ..shell import run_checked
+from ..apt_keys import export_apt_public_keyring
 from .constants import (
     CONTAINER_APTLY_ROOT,
     CONTAINER_GNUPG_HOME,
     CONTAINER_STAGED_GNUPG_HOME,
-    DEFAULT_APT_SIGNING_KEY,
     DEFAULT_STAGED_APT_KEYRING,
 )
 
@@ -92,11 +91,6 @@ def _stage_host_gnupg_home(host_gnupg_home: Path, *, job_root: Path) -> Path:
 
     return staged_home
 
-
-def _feelpp_apt_signing_key() -> str:
-    return os.getenv("FEELPP_APT_GPG_KEY") or os.getenv("GPG_KEY") or DEFAULT_APT_SIGNING_KEY
-
-
 def _stage_host_feelpp_apt_key(*, job_root: Path) -> Path | None:
     staged_key = job_root / DEFAULT_STAGED_APT_KEYRING
     explicit_key_file = os.getenv("FEELPP_APT_KEY_FILE")
@@ -109,19 +103,7 @@ def _stage_host_feelpp_apt_key(*, job_root: Path) -> Path | None:
         return staged_key
 
     try:
-        run_checked(
-            [
-                "gpg",
-                "--batch",
-                "--yes",
-                "--output",
-                str(staged_key),
-                "--export",
-                _feelpp_apt_signing_key(),
-            ],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
+        export_apt_public_keyring(staged_key)
     except (FileNotFoundError, subprocess.CalledProcessError):
         return None
 

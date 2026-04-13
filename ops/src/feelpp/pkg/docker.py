@@ -7,11 +7,15 @@ import os
 import re
 import shlex
 import shutil
-import subprocess
 from urllib.request import urlopen
 
+from .apt_keys import (
+    default_apt_keyring_keys,
+    default_apt_signing_key,
+    export_apt_public_keyring,
+)
 from .config import PackagingContext
-from .shell import run, run_capture, run_checked
+from .shell import run, run_capture
 from .workspace import ensure_workspace
 
 
@@ -22,7 +26,6 @@ DEFAULT_RUNTIME_PACKAGES = [
     "feelpp-quickstart",
     "python3-feelpp",
 ]
-DEFAULT_APT_SIGNING_KEY = "BD86E2E0A3DA7E56A675D805EF232CA173566681"
 DEFAULT_APT_KEY_FILENAME = "feelpp-archive-keyring.gpg"
 DEFAULT_REPO_CACHE_TOKEN_ENV = "FEELPP_PKG_IMAGE_REPO_TOKEN"
 DEFAULT_OCI_REGISTRY = "ghcr.io"
@@ -53,10 +56,6 @@ def default_runtime_image_tag(context: PackagingContext, *, feelpp_version: str)
 
 def safe_workdir_name(raw: str) -> str:
     return re.sub(r"[^a-zA-Z0-9_.-]+", "-", raw).strip("-")
-
-
-def default_apt_signing_key() -> str:
-    return os.getenv("FEELPP_APT_GPG_KEY") or os.getenv("GPG_KEY") or DEFAULT_APT_SIGNING_KEY
 
 
 def apt_release_metadata_url(context: PackagingContext) -> str:
@@ -95,19 +94,9 @@ def stage_runtime_apt_key(
         staged_key.chmod(0o644)
         return staged_key
 
-    key_id = gpg_key or default_apt_signing_key()
-    run_checked(
-        [
-            "gpg",
-            "--batch",
-            "--yes",
-            "--output",
-            str(staged_key),
-            "--export",
-            key_id,
-        ],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+    export_apt_public_keyring(
+        staged_key,
+        key_ids=default_apt_keyring_keys(primary_key=gpg_key),
     )
     staged_key.chmod(0o644)
     return staged_key

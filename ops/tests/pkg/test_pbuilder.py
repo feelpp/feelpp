@@ -8,6 +8,7 @@ import tempfile
 import unittest
 from unittest import mock
 
+from feelpp.pkg.apt_keys import CURRENT_APT_SIGNING_KEY, LEGACY_APT_SIGNING_KEY
 from feelpp.pkg.config import PackagingContext
 from feelpp.pkg.localrepo import stage_outputs
 from feelpp.pkg.pbuilder import (
@@ -237,13 +238,13 @@ class PbuilderTests(unittest.TestCase):
     def test_prepare_runtime_assets_keeps_bundled_feelpp_keyring_by_default(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             context = self.make_context(tmpdir)
-            with mock.patch("feelpp.pkg.pbuilder.assets.subprocess.run") as run_mock:
+            with mock.patch("feelpp.pkg.apt_keys.run_checked") as run_checked_mock:
                 with mock.patch.dict("os.environ", {"GPG_KEY": "NEWKEY"}, clear=False):
                     prepare_runtime_assets(context)
 
             keyring_path = context.pbuilder_keyrings_dir / "feelpp.gpg"
             self.assertEqual(b"fake", keyring_path.read_bytes())
-            run_mock.assert_not_called()
+            run_checked_mock.assert_not_called()
 
     def test_prepare_runtime_assets_refreshes_feelpp_keyring_when_bundled_copy_missing(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -251,19 +252,21 @@ class PbuilderTests(unittest.TestCase):
             bundled_keyring = context.pbuilder_source_hookdir / "keyrings" / "feelpp.gpg.b64"
             bundled_keyring.unlink()
 
-            def fake_gpg_export(command: list[str], **_: object) -> subprocess.CompletedProcess[str]:
+            def fake_run_checked(command: list[str], **_: object) -> None:
                 output_path = Path(command[command.index("--output") + 1])
                 output_path.write_bytes(b"fresh-keyring")
-                return subprocess.CompletedProcess(command, 0)
 
-            with mock.patch("feelpp.pkg.pbuilder.assets.subprocess.run", side_effect=fake_gpg_export) as run_mock:
+            with mock.patch("feelpp.pkg.apt_keys.run_checked", side_effect=fake_run_checked) as run_checked_mock:
                 with mock.patch.dict("os.environ", {"GPG_KEY": "NEWKEY"}, clear=False):
                     prepare_runtime_assets(context)
 
             keyring_path = context.pbuilder_keyrings_dir / "feelpp.gpg"
             self.assertEqual(b"fresh-keyring", keyring_path.read_bytes())
-            run_mock.assert_called_once()
-            self.assertIn("NEWKEY", run_mock.call_args.args[0])
+            command = run_checked_mock.call_args.args[0]
+            self.assertEqual(
+                command[6:],
+                ["NEWKEY", LEGACY_APT_SIGNING_KEY, CURRENT_APT_SIGNING_KEY],
+            )
 
     def test_prepare_runtime_assets_keeps_bundled_feelpp_keyring_when_local_export_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -272,7 +275,7 @@ class PbuilderTests(unittest.TestCase):
             def failing_export(_: list[str], **__: object) -> None:
                 raise subprocess.CalledProcessError(2, ["gpg"])
 
-            with mock.patch("feelpp.pkg.pbuilder.assets.run_checked", side_effect=failing_export) as run_checked_mock:
+            with mock.patch("feelpp.pkg.apt_keys.run_checked", side_effect=failing_export) as run_checked_mock:
                 prepare_runtime_assets(context)
 
             keyring_path = context.pbuilder_keyrings_dir / "feelpp.gpg"
@@ -291,14 +294,14 @@ class PbuilderTests(unittest.TestCase):
             staged_keyring.parent.mkdir(parents=True, exist_ok=True)
             staged_keyring.write_bytes(b"staged-keyring")
 
-            with mock.patch("feelpp.pkg.pbuilder.assets.subprocess.run") as run_mock:
+            with mock.patch("feelpp.pkg.apt_keys.run_checked") as run_checked_mock:
                 prepare_runtime_assets(context)
 
             keyring_path = context.pbuilder_keyrings_dir / "feelpp.gpg"
             self.assertEqual(b"staged-keyring", keyring_path.read_bytes())
             keyring_hook = context.pbuilder_runtime_hookdir / "G10-feelpp-keyrings"
             self.assertIn("c3RhZ2VkLWtleXJpbmc=", keyring_hook.read_text(encoding="utf-8"))
-            run_mock.assert_not_called()
+            run_checked_mock.assert_not_called()
 
     def test_prepare_runtime_assets_recreates_missing_runtime_directories(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -318,8 +321,8 @@ class PbuilderTests(unittest.TestCase):
             target = Path(tmpdir) / "feelpp.gpg"
 
             with mock.patch(
-                "feelpp.pkg.pbuilder.assets.subprocess.run",
-                return_value=subprocess.CompletedProcess(["gpg"], 0),
+                "feelpp.pkg.apt_keys.run_checked",
+                return_value=None,
             ):
                 self.assertIsNone(refresh_feelpp_keyring(target))
 

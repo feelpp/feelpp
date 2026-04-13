@@ -7,6 +7,7 @@ import tempfile
 import unittest
 from unittest import mock
 
+from feelpp.pkg.apt_keys import CURRENT_APT_SIGNING_KEY, LEGACY_APT_SIGNING_KEY
 from feelpp.pkg.config import PackagingContext
 from feelpp.pkg.container import (
     CONTAINER_APTLY_CONFIG,
@@ -172,12 +173,11 @@ class ContainerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             context = self.make_context(tmpdir)
 
-            def fake_gpg_export(command: list[str], **_: object) -> object:
+            def fake_run_checked(command: list[str], **_: object) -> None:
                 output_path = Path(command[command.index("--output") + 1])
                 output_path.write_bytes(b"fresh-public-key")
-                return object()
 
-            with mock.patch("feelpp.pkg.container.staging.subprocess.run", side_effect=fake_gpg_export) as run_mock:
+            with mock.patch("feelpp.pkg.apt_keys.run_checked", side_effect=fake_run_checked) as run_checked_mock:
                 with mock.patch("feelpp.pkg.container.runner.run") as run:
                     run_in_docker(
                         context,
@@ -190,14 +190,18 @@ class ContainerTests(unittest.TestCase):
                 b"fresh-public-key",
                 (context.job_root / DEFAULT_STAGED_APT_KEYRING).read_bytes(),
             )
-            run_mock.assert_called_once()
+            command = run_checked_mock.call_args.args[0]
+            self.assertEqual(
+                command[6:],
+                [CURRENT_APT_SIGNING_KEY, LEGACY_APT_SIGNING_KEY],
+            )
             run.assert_called_once()
 
     def test_run_in_docker_bootstrap_installs_debian_archive_keyring_for_debian_dists(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             context = self.make_context(tmpdir, dist="trixie", flavor="debian")
 
-            with mock.patch("feelpp.pkg.container.staging.subprocess.run"):
+            with mock.patch("feelpp.pkg.apt_keys.run_checked", return_value=None):
                 with mock.patch("feelpp.pkg.container.runner.run") as run:
                     run_in_docker(
                         context,
@@ -219,12 +223,13 @@ class ContainerTests(unittest.TestCase):
                 "FEELPP_APTLY_SKIP_SIGNING": "true",
             }
             with mock.patch.dict(os.environ, env, clear=False):
-                with mock.patch("feelpp.pkg.container.runner.run") as run:
-                    run_in_docker(
-                        context,
-                        argv=["publish", "snapshot", "--dist", "noble"],
-                        image="pkg-env:test",
-                    )
+                with mock.patch("feelpp.pkg.apt_keys.run_checked", return_value=None):
+                    with mock.patch("feelpp.pkg.container.runner.run") as run:
+                        run_in_docker(
+                            context,
+                            argv=["publish", "snapshot", "--dist", "noble"],
+                            image="pkg-env:test",
+                        )
 
             command = run.call_args.args[0]
             self.assertNotIn(str(CONTAINER_STAGED_GNUPG_HOME), command)
@@ -234,7 +239,7 @@ class ContainerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             context = self.make_context(tmpdir)
 
-            with mock.patch("feelpp.pkg.container.staging.subprocess.run"):
+            with mock.patch("feelpp.pkg.apt_keys.run_checked", return_value=None):
                 with mock.patch("feelpp.pkg.container.runner.run") as run:
                     run_in_docker(
                         context,
@@ -256,7 +261,7 @@ class ContainerTests(unittest.TestCase):
             with mock.patch.dict(os.environ, {"FEELPP_PBUILDER_ROOT": str(explicit_root)}, clear=False):
                 context = self.make_context(tmpdir)
 
-            with mock.patch("feelpp.pkg.container.staging.subprocess.run"):
+            with mock.patch("feelpp.pkg.apt_keys.run_checked", return_value=None):
                 with mock.patch("feelpp.pkg.container.runner.run") as run:
                     run_in_docker(
                         context,
@@ -272,7 +277,7 @@ class ContainerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             context = self.make_context(tmpdir)
 
-            with mock.patch("feelpp.pkg.container.staging.subprocess.run"):
+            with mock.patch("feelpp.pkg.apt_keys.run_checked", return_value=None):
                 with mock.patch("feelpp.pkg.container.runner.run") as run:
                     run_in_docker(
                         context,

@@ -2,14 +2,13 @@ from __future__ import annotations
 
 import base64
 from pathlib import Path
-import os
 import shutil
 import shlex
 import subprocess
 import tempfile
 
+from ..apt_keys import export_apt_public_keyring
 from ..config import PackagingContext
-from ..shell import run_checked
 from ..workspace import ensure_workspace
 from .constants import STAGED_APT_KEYRING_NAME
 from .seed import _batched, _builddeps_batch_size, _load_builddeps
@@ -17,7 +16,6 @@ from .seed import _batched, _builddeps_batch_size, _load_builddeps
 
 DEFAULT_APT_ACQUIRE_RETRIES = 8
 DEFAULT_APT_HTTP_TIMEOUT = 30
-DEFAULT_APT_SIGNING_KEY = "BD86E2E0A3DA7E56A675D805EF232CA173566681"
 
 
 def resolve_packaging_tree(context: PackagingContext, component: str) -> tuple[Path, Path]:
@@ -87,11 +85,6 @@ case "${{DISTRIBUTION}}" in
 esac
 """
 
-
-def _feelpp_apt_signing_key() -> str:
-    return os.getenv("FEELPP_APT_GPG_KEY") or os.getenv("GPG_KEY") or DEFAULT_APT_SIGNING_KEY
-
-
 def refresh_feelpp_keyring(target: Path) -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
     tmp_path: Path | None = None
@@ -103,19 +96,7 @@ def refresh_feelpp_keyring(target: Path) -> None:
             delete=False,
         ) as handle:
             tmp_path = Path(handle.name)
-        run_checked(
-            [
-                "gpg",
-                "--batch",
-                "--yes",
-                "--output",
-                str(tmp_path),
-                "--export",
-                _feelpp_apt_signing_key(),
-            ],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
+        export_apt_public_keyring(tmp_path)
     except (FileNotFoundError, subprocess.CalledProcessError):
         if tmp_path is not None:
             tmp_path.unlink(missing_ok=True)

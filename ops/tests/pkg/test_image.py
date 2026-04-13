@@ -5,6 +5,7 @@ import tempfile
 import unittest
 from unittest import mock
 
+from feelpp.pkg.apt_keys import CURRENT_APT_SIGNING_KEY, LEGACY_APT_SIGNING_KEY
 from feelpp.pkg.config import PackagingContext
 from feelpp.pkg.image import (
     DEFAULT_APT_KEY_FILENAME,
@@ -112,6 +113,26 @@ class ImageTests(unittest.TestCase):
 
             self.assertEqual(staged.read_bytes(), b"keydata")
             self.assertEqual(staged.name, DEFAULT_APT_KEY_FILENAME)
+
+    def test_stage_runtime_apt_key_exports_archive_keyring_set(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            image_dir = Path(tmpdir) / "image"
+            image_dir.mkdir()
+
+            def fake_run_checked(command: list[str], **_: object) -> None:
+                output_path = Path(command[command.index("--output") + 1])
+                output_path.write_bytes(b"archive-keyring")
+
+            with mock.patch("feelpp.pkg.apt_keys.run_checked", side_effect=fake_run_checked) as run_checked_mock:
+                staged = stage_runtime_apt_key(image_dir, gpg_key="TESTKEY")
+
+            self.assertEqual(staged.read_bytes(), b"archive-keyring")
+            command = run_checked_mock.call_args.args[0]
+            self.assertEqual(command[:6], ["gpg", "--batch", "--yes", "--output", str(staged), "--export"])
+            self.assertEqual(
+                command[6:],
+                ["TESTKEY", LEGACY_APT_SIGNING_KEY, CURRENT_APT_SIGNING_KEY],
+            )
 
     def test_build_runtime_image_writes_dockerfile_and_invokes_docker(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
