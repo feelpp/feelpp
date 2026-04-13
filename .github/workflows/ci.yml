@@ -80,7 +80,7 @@ jobs:
           if [ -n "${ENABLED_JOBS_JSON_RAW}" ]; then
             echo "enabled_jobs_json=${ENABLED_JOBS_JSON_RAW}" >> "${GITHUB_OUTPUT}"
           else
-            python3 -c 'import json, os; jobs = [item for item in os.environ.get("ENABLED_JOBS_RAW", "").split() if item]; print(f"enabled_jobs_json={json.dumps(jobs)}")' >> "${GITHUB_OUTPUT}"
+            echo "enabled_jobs_json=$(jq -Rn --arg jobs "${ENABLED_JOBS_RAW}" '$jobs | split(" ") | map(select(length > 0))')" >> "${GITHUB_OUTPUT}"
           fi
       - name: Debug planner output
         run: |
@@ -221,46 +221,7 @@ jobs:
         env:
           DIST: ${{ steps.dist.outputs.dist }}
           BRANCH: ${{ github.head_ref || github.ref_name }}
-  python:
-    name: Build Python (${{ matrix.target }})
-    needs: [plan_ci, mor]
-    runs-on: self-docker
-    if: |
-      always() &&
-      (needs.mor.result == 'success' || needs.mor.result == 'skipped') &&
-      contains(fromJSON(needs.plan_ci.outputs.enabled_jobs_json), 'python')
-    timeout-minutes: 600
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJSON(needs.plan_ci.outputs.matrix_json) }}
-    steps:
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ secrets.CR_LOGIN }}
-          password: ${{ secrets.CR_PAT }}
 
-      - name: Clone or update docker repo
-        run: |
-          if [ -d docker ]; then
-            cd docker && git pull --ff-only
-          else
-            git clone --depth=1 https://github.com/feelpp/docker.git
-          fi
-
-      - name: Set DIST from TARGET
-        id: dist
-        run: |
-          DIST=$(echo "${{ matrix.target }}" | tr ':' '-')
-          echo "dist=${DIST}" >> $GITHUB_OUTPUT
-
-      - name: Build and push Python runtime
-        working-directory: docker
-        run: docker buildx bake python-runtime --push
-        env:
-          DIST: ${{ steps.dist.outputs.dist }}
-          BRANCH: ${{ github.head_ref || github.ref_name }}
   # =============================================================================
   # Full Build Mode - Build entire Feel++ stack in a single image
   # =============================================================================
