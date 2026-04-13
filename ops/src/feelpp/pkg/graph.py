@@ -19,6 +19,9 @@ class ComponentSpec:
     dependencies: tuple[str, ...]
     python_packages: tuple[str, ...]
     publish: bool
+    package_revision: str = "1"
+    package_epoch: str | None = None
+    package_revision_by_dist: dict[str, str] | None = None
 
     def as_dict(self) -> dict[str, object]:
         return {
@@ -27,7 +30,18 @@ class ComponentSpec:
             "dependencies": list(self.dependencies),
             "python_packages": list(self.python_packages),
             "publish": self.publish,
+            "package_revision": self.package_revision,
+            "package_epoch": self.package_epoch,
+            "package_revision_by_dist": dict(self.package_revision_by_dist or {}),
         }
+
+    def revision_for_dist(self, dist: str) -> str:
+        overrides = self.package_revision_by_dist or {}
+        return str(overrides.get(dist, self.package_revision))
+
+    def package_version(self, upstream: str, dist: str) -> str:
+        prefix = f"{self.package_epoch}:" if self.package_epoch else ""
+        return f"{prefix}{upstream}-{self.revision_for_dist(dist)}"
 
 
 @dataclass(frozen=True)
@@ -73,6 +87,20 @@ def load_manifest(path: Path) -> Manifest:
             dependencies=tuple(component.get("dependencies", ())),
             python_packages=tuple(component.get("python_packages", ())),
             publish=bool(component.get("publish", True)),
+            package_revision=str(component.get("package_revision", "1")),
+            package_epoch=(
+                str(component["package_epoch"])
+                if component.get("package_epoch") is not None
+                else None
+            ),
+            package_revision_by_dist=(
+                {
+                    str(dist): str(revision)
+                    for dist, revision in component.get("package_revision_by_dist", {}).items()
+                }
+                if component.get("package_revision_by_dist")
+                else {}
+            ),
         )
     return Manifest(
         path=path,

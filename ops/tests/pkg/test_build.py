@@ -21,7 +21,39 @@ class BuildTests(unittest.TestCase):
     def make_context(self, tmpdir: str) -> PackagingContext:
         repo_root = Path(tmpdir) / "repo"
         (repo_root / "packaging" / "pbuilder" / "hooks").mkdir(parents=True)
+        (repo_root / "packaging" / "manifest").mkdir(parents=True)
         (repo_root / "packaging" / "pbuilder" / "pbuilderrc").write_text("", encoding="utf-8")
+        (repo_root / "packaging" / "manifest" / "components.toml").write_text(
+            "\n".join(
+                [
+                    "version = 1",
+                    'default_components = ["feelpp", "feelpp-toolboxes", "feelpp-mor"]',
+                    "",
+                    "[components.feelpp]",
+                    'distros = ["noble"]',
+                    "dependencies = []",
+                    'python_packages = ["python3-feelpp"]',
+                    "publish = true",
+                    'package_revision = "3"',
+                    "",
+                    '[components."feelpp-toolboxes"]',
+                    'distros = ["noble"]',
+                    'dependencies = ["feelpp"]',
+                    'python_packages = ["python3-feelpp-toolboxes"]',
+                    "publish = true",
+                    'package_revision = "4"',
+                    "",
+                    '[components."feelpp-mor"]',
+                    'distros = ["noble"]',
+                    'dependencies = ["feelpp-toolboxes"]',
+                    'python_packages = ["python3-feelpp-mor"]',
+                    "publish = true",
+                    'package_revision = "5"',
+                    "",
+                ]
+            ),
+            encoding="utf-8",
+        )
         auth_script = repo_root / "feelpp" / "tools" / "scripts" / "pkg" / "feelpp_pkg_sudo_auth.sh"
         auth_script.parent.mkdir(parents=True, exist_ok=True)
         auth_script.write_text("#!/bin/sh\n", encoding="utf-8")
@@ -62,9 +94,9 @@ class BuildTests(unittest.TestCase):
             with mock.patch("feelpp.pkg.build.sourcepkg.run") as run:
                 tree_root, dsc_path, version = _prepare_source_tree(context, "feelpp", archive_path)
 
-            self.assertEqual(version, "0.111.0")
+            self.assertEqual(version, "0.111.0-3")
             self.assertEqual(tree_root, source_root / "feelpp-0.111.0")
-            self.assertEqual(dsc_path, source_root / "feelpp_0.111.0-1.dsc")
+            self.assertEqual(dsc_path, source_root / "feelpp_0.111.0-3.dsc")
             self.assertTrue((tree_root / "data" / "payload.txt").is_file())
             self.assertTrue((tree_root / "data" / "payload-link").is_symlink())
             self.assertFalse((tree_root / "feelpp-0.111.0").exists())
@@ -74,7 +106,7 @@ class BuildTests(unittest.TestCase):
                         [
                             "dch",
                             "-v",
-                            "0.111.0-1",
+                            "0.111.0-3",
                             "--distribution",
                             "unstable",
                             "-b",
@@ -96,9 +128,9 @@ class BuildTests(unittest.TestCase):
             with mock.patch("feelpp.pkg.build.sourcepkg.run") as run:
                 tree_root, dsc_path, version = _prepare_source_tree(context, "feelpp", archive_path)
 
-            self.assertEqual(version, "0.111.0~preview.13")
+            self.assertEqual(version, "0.111.0~preview.13-3")
             self.assertEqual(tree_root, source_root / "feelpp-0.111.0~preview.13")
-            self.assertEqual(dsc_path, source_root / "feelpp_0.111.0~preview.13-1.dsc")
+            self.assertEqual(dsc_path, source_root / "feelpp_0.111.0~preview.13-3.dsc")
             self.assertTrue((tree_root / "data" / "payload.txt").is_file())
             self.assertTrue((tree_root / "data" / "payload-link").is_symlink())
             self.assertFalse((tree_root / "feelpp-0.111.0-preview.13").exists())
@@ -108,7 +140,7 @@ class BuildTests(unittest.TestCase):
                         [
                             "dch",
                             "-v",
-                            "0.111.0~preview.13-1",
+                            "0.111.0~preview.13-3",
                             "--distribution",
                             "unstable",
                             "-b",
@@ -119,6 +151,34 @@ class BuildTests(unittest.TestCase):
                     mock.call(["dpkg-source", "-b", str(tree_root)], cwd=source_root),
                 ]
             )
+
+    def test_prepare_source_tree_skips_dch_when_changelog_already_has_target_version(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            context = self.make_context(tmpdir)
+            packaging_dir = self.make_packaging_tree(context)
+            (packaging_dir / "changelog").write_text(
+                "\n".join(
+                    [
+                        "feelpp (0.111.0~preview.13-3) unstable; urgency=medium",
+                        "",
+                        "  * Packaging metadata sync",
+                        "",
+                        " -- Test User <test@example.com>  Mon, 01 Jan 2024 00:00:00 +0000",
+                        "",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            archive_path = self.make_source_archive(tmpdir, "feelpp", "0.111.0-preview.13")
+            source_root = context.job_root / "source-packages" / "feelpp"
+
+            with mock.patch("feelpp.pkg.build.sourcepkg.run") as run:
+                tree_root, dsc_path, version = _prepare_source_tree(context, "feelpp", archive_path)
+
+            self.assertEqual(version, "0.111.0~preview.13-3")
+            self.assertEqual(tree_root, source_root / "feelpp-0.111.0~preview.13")
+            self.assertEqual(dsc_path, source_root / "feelpp_0.111.0~preview.13-3.dsc")
+            run.assert_called_once_with(["dpkg-source", "-b", str(tree_root)], cwd=source_root)
 
     def test_run_pbuilder_build_passes_mirror_arguments_explicitly(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

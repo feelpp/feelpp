@@ -23,6 +23,7 @@ def command_bump(args: argparse.Namespace) -> int:
     state = repository.bump_upstream(
         SemanticVersion.parse(args.version),
         message=args.message,
+        dry_run=args.dry_run,
     )
     print(json.dumps(state.as_dict(), indent=2))
     return 0
@@ -30,7 +31,11 @@ def command_bump(args: argparse.Namespace) -> int:
 
 def command_revision_bump(args: argparse.Namespace) -> int:
     repository = VersionRepository(repo_root=args.repo_root)
-    state = repository.bump_revision(message=args.message)
+    state = repository.bump_revision(
+        message=args.message,
+        dists=tuple(args.dist) or None,
+        dry_run=args.dry_run,
+    )
     print(json.dumps(state.as_dict(), indent=2))
     return 0
 
@@ -39,6 +44,17 @@ def command_release(args: argparse.Namespace) -> int:
     service = ReleaseService(repo_root=args.repo_root)
     plan = service.execute_release(args.version, dry_run=args.dry_run)
     print(json.dumps(plan.as_dict(), indent=2))
+    return 0
+
+
+def command_sync(args: argparse.Namespace) -> int:
+    repository = VersionRepository(repo_root=args.repo_root)
+    state = repository.sync_changelogs(
+        message=args.message,
+        dists=tuple(args.dist) or None,
+        dry_run=args.dry_run,
+    )
+    print(json.dumps(state.as_dict(), indent=2))
     return 0
 
 
@@ -61,6 +77,11 @@ def build_parser() -> argparse.ArgumentParser:
         default="New upstream release",
         help="Debian changelog entry message",
     )
+    bump_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Preview the updated version state without writing files",
+    )
     bump_parser.set_defaults(func=command_bump)
 
     revision_parser = subparsers.add_parser("revision", help="Packaging revision commands")
@@ -74,7 +95,40 @@ def build_parser() -> argparse.ArgumentParser:
         default="Packaging revision update",
         help="Debian changelog entry message",
     )
+    revision_bump_parser.add_argument(
+        "--dist",
+        action="append",
+        default=[],
+        help="Restrict the revision bump to a distro. Repeat to target multiple distros.",
+    )
+    revision_bump_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Preview the updated version state without writing files",
+    )
     revision_bump_parser.set_defaults(func=command_revision_bump)
+
+    sync_parser = subparsers.add_parser(
+        "sync",
+        help="Sync Debian changelog heads from the root CMake version and manifest package revisions",
+    )
+    sync_parser.add_argument(
+        "--message",
+        default="Packaging metadata sync",
+        help="Debian changelog entry message",
+    )
+    sync_parser.add_argument(
+        "--dist",
+        action="append",
+        default=[],
+        help="Restrict changelog sync to a distro. Repeat to target multiple distros.",
+    )
+    sync_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Preview the synced version state without writing files",
+    )
+    sync_parser.set_defaults(func=command_sync)
 
     release_parser = subparsers.add_parser("release", help="Create the git tag and GitHub release")
     release_parser.add_argument(

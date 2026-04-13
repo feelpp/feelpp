@@ -1,3 +1,9 @@
+feelpp (0.111.0~preview.13-1) unstable; urgency=medium
+
+  * Packaging metadata sync
+
+ -- Christophe Prud'homme <christophe.prudhomme@cemosis.fr>  Mon, 13 Apr 2026 06:53:16 +0200
+
 feelpp (0.108.0~alpha.2-1) unstable; urgency=medium
 
   * add python3-feelpp

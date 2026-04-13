@@ -5,6 +5,7 @@
 Current commands:
 
 - `fpp-pkg` (preferred)
+- `fpp-version` (preferred)
 
 Current Python namespaces:
 
@@ -26,6 +27,7 @@ python3 -m venv .venv-ops
 . .venv-ops/bin/activate
 pip install -e ops
 fpp-pkg --help
+fpp-version --help
 ```
 
 Run the package-tool test suite with `pytest`:
@@ -33,6 +35,23 @@ Run the package-tool test suite with `pytest`:
 ```bash
 pytest -q ops/tests/pkg
 ```
+
+`fpp-version` uses the repository root [`feelpp.version.cmake`](../feelpp.version.cmake)
+as the upstream source of truth and per-component `package_revision` metadata from
+[`packaging/manifest/components.toml`](../packaging/manifest/components.toml) to
+derive package versions across all configured distros/flavors. Optional
+`package_revision_by_dist` overrides let you bump selected distros without
+changing the default revision fallback. Use:
+
+```bash
+fpp-version show
+fpp-version sync
+fpp-version sync --dist noble --dry-run
+fpp-version revision bump --dist noble --dist trixie --dry-run
+```
+
+to inspect the desired package versions and then align Debian changelog heads with
+that central version state.
 
 The `feelpp.ops.common` namespace is the shared home for cross-tool support
 code such as naming, future logging helpers, and execution/runtime helpers.

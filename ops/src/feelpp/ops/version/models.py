@@ -141,18 +141,22 @@ class DebianPackageRecord:
     source_name: str
     path: Path
     version: DebianPackageVersion
-    distribution: str
-    urgency: str
+    flavor: str | None = None
+    distribution: str | None = None
+    urgency: str | None = None
+    origin: str = "manifest"
 
     def as_dict(self) -> dict[str, str]:
         return {
             "component": self.component,
             "dist": self.dist,
+            "flavor": self.flavor,
             "source_name": self.source_name,
             "path": str(self.path),
             "version": str(self.version),
             "distribution": self.distribution,
             "urgency": self.urgency,
+            "origin": self.origin,
         }
 
 
@@ -205,6 +209,7 @@ class RepoVersionState:
     repo_root: Path
     cmake_versions: tuple[CMakeVersionRecord, ...]
     package_versions: tuple[DebianPackageRecord, ...]
+    changelog_versions: tuple[DebianPackageRecord, ...] = ()
 
     def canonical_upstream_version(self) -> SemanticVersion:
         unique = {str(record.version): record.version for record in self.cmake_versions}
@@ -233,20 +238,38 @@ class RepoVersionState:
                 return record
         raise KeyError(f"Missing package version for {component}/{dist}")
 
+    def changelog_record(self, component: str, dist: str) -> DebianPackageRecord:
+        for record in self.changelog_versions:
+            if record.component == component and record.dist == dist:
+                return record
+        raise KeyError(f"Missing changelog version for {component}/{dist}")
+
     def as_dict(self) -> dict[str, object]:
         cmake_versions = [record.as_dict() for record in self.cmake_versions]
         package_versions = [record.as_dict() for record in self.package_versions]
+        changelog_versions = [record.as_dict() for record in self.changelog_versions]
         cmake_consistent = len({record["version"] for record in cmake_versions}) == 1
         package_upstreams = {
             str(DebianPackageVersion.parse(record["version"]).semver) for record in package_versions
         }
+        changelog_sync = True
+        changelog_map = {
+            (record.component, record.dist): str(record.version)
+            for record in self.changelog_versions
+        }
+        for record in self.package_versions:
+            if changelog_map.get((record.component, record.dist)) != str(record.version):
+                changelog_sync = False
+                break
         return {
             "repo_root": str(self.repo_root),
             "cmake_versions": cmake_versions,
             "package_versions": package_versions,
+            "changelog_versions": changelog_versions,
             "consistency": {
                 "cmake_versions": cmake_consistent,
                 "package_upstreams": len(package_upstreams) == 1,
+                "changelog_sync": changelog_sync,
             },
         }
 

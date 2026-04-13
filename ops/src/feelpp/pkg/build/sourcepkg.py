@@ -3,8 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 import shutil
 import tarfile
+import re
 
 from ..config import PackagingContext
+from ..graph import load_manifest
 from ..shell import run
 
 
@@ -24,6 +26,13 @@ def _orig_archive_name(component: str, version: str) -> str:
     return f"{component}_{version}.orig.tar.gz"
 
 
+def _package_version(context: PackagingContext, component: str, upstream_version: str) -> str:
+    manifest = load_manifest(context.manifest_path)
+    if component not in manifest.components:
+        raise KeyError(f"Unknown component in packaging manifest: {component}")
+    return manifest.components[component].package_version(upstream_version, context.dist)
+
+
 def _archive_root_members(handle: tarfile.TarFile) -> set[str]:
     roots: set[str] = set()
     for member in handle.getmembers():
@@ -39,6 +48,21 @@ def _archive_root_members(handle: tarfile.TarFile) -> set[str]:
     return roots
 
 
+_CHANGELOG_HEAD_RE = re.compile(r"^(?P<source>\S+) \((?P<version>[^)]+)\) ")
+
+
+def _changelog_head_version(path: Path) -> str | None:
+    if not path.is_file():
+        return None
+    lines = path.read_text(encoding="utf-8").splitlines()
+    if not lines:
+        return None
+    match = _CHANGELOG_HEAD_RE.match(lines[0])
+    if not match:
+        return None
+    return match.group("version")
+
+
 def _prepare_source_tree(
     context: PackagingContext,
     component: str,
@@ -46,13 +70,14 @@ def _prepare_source_tree(
     *,
     dry_run: bool = False,
 ) -> tuple[Path, Path, str]:
-    version = _archive_version(component, archive_path)
+    upstream_version = _archive_version(component, archive_path)
+    version = _package_version(context, component, upstream_version)
     source_root = context.job_root / "source-packages" / component
-    tree_root = source_root / f"{component}-{version}"
+    tree_root = source_root / f"{component}-{upstream_version}"
     packaging_dir = (
         context.repo_root / "packaging" / "debian" / component / context.dist / "debian"
     )
-    dsc_path = source_root / f"{component}_{version}-1.dsc"
+    dsc_path = source_root / f"{component}_{version}.dsc"
 
     if dry_run:
         return tree_root, dsc_path, version
@@ -60,7 +85,7 @@ def _prepare_source_tree(
     shutil.rmtree(source_root, ignore_errors=True)
     source_root.mkdir(parents=True, exist_ok=True)
 
-    orig_archive = source_root / _orig_archive_name(component, version)
+    orig_archive = source_root / _orig_archive_name(component, upstream_version)
     shutil.copy2(archive_path, orig_archive)
     with tarfile.open(orig_archive, "r:gz") as handle:
         archive_roots = _archive_root_members(handle)
@@ -82,17 +107,18 @@ def _prepare_source_tree(
         raise FileNotFoundError(f"Packaging tree not found: {packaging_dir}")
     shutil.copytree(packaging_dir, tree_root / "debian", dirs_exist_ok=True)
 
-    run(
-        [
-            "dch",
-            "-v",
-            f"{version}-1",
-            "--distribution",
-            "unstable",
-            "-b",
-            "New upstream commits",
-        ],
-        cwd=tree_root,
-    )
+    if _changelog_head_version(tree_root / "debian" / "changelog") != version:
+        run(
+            [
+                "dch",
+                "-v",
+                version,
+                "--distribution",
+                "unstable",
+                "-b",
+                "New upstream commits",
+            ],
+            cwd=tree_root,
+        )
     run(["dpkg-source", "-b", str(tree_root)], cwd=source_root)
     return tree_root, dsc_path, version

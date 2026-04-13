@@ -33,8 +33,10 @@ class VersionTests(unittest.TestCase):
         )
         for path, values in {
             repo_root / "feelpp.version.cmake": (0, 111, 0, "-preview.13"),
-            repo_root / "toolboxes" / "cmake" / "feelpp.version.cmake": (0, 111, 0, "-preview.13"),
-            repo_root / "mor" / "cmake" / "feelpp.version.cmake": (0, 111, 0, "-preview.13"),
+            # Legacy per-component version files may still exist in the tree,
+            # but fpp-version should ignore them in favor of the repo root.
+            repo_root / "toolboxes" / "cmake" / "feelpp.version.cmake": (0, 108, 0, "-beta.1"),
+            repo_root / "mor" / "cmake" / "feelpp.version.cmake": (0, 109, 0, "-beta.1"),
         }.items():
             path.write_text(
                 version_template.format(
@@ -56,18 +58,21 @@ class VersionTests(unittest.TestCase):
                 "dependencies = []",
                 'python_packages = ["python3-feelpp"]',
                 "publish = true",
+                'package_revision = "2"',
                 "",
                 '[components."feelpp-toolboxes"]',
                 'distros = ["noble"]',
                 'dependencies = ["feelpp"]',
                 'python_packages = ["python3-feelpp-toolboxes"]',
                 "publish = true",
+                'package_revision = "4"',
                 "",
                 '[components."feelpp-mor"]',
                 'distros = ["noble"]',
                 'dependencies = ["feelpp-toolboxes"]',
                 'python_packages = ["python3-feelpp-mor"]',
                 "publish = true",
+                'package_revision = "5"',
                 "",
             ]
         )
@@ -106,7 +111,11 @@ class VersionTests(unittest.TestCase):
             state = VersionRepository(repo_root).read_state()
 
             self.assertEqual(str(state.canonical_upstream_version()), "0.111.0-preview.13")
-            self.assertEqual(state.package_record("feelpp", "noble").version.revision, "1")
+            self.assertEqual(state.package_record("feelpp", "noble").version.revision, "2")
+            self.assertEqual(state.package_record("feelpp-toolboxes", "noble").version.revision, "4")
+            self.assertEqual(len(state.cmake_versions), 1)
+            self.assertEqual(state.package_record("feelpp", "noble").origin, "manifest")
+            self.assertEqual(state.changelog_record("feelpp", "noble").origin, "changelog")
 
     def test_bump_updates_all_version_targets(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -121,8 +130,33 @@ class VersionTests(unittest.TestCase):
             )
 
             self.assertIn('set(FEELPP_VERSION_MINOR "112")', (repo_root / "feelpp.version.cmake").read_text(encoding="utf-8"))
+            manifest_text = (repo_root / "packaging" / "manifest" / "components.toml").read_text(encoding="utf-8")
+            self.assertIn('package_revision = "1"', manifest_text)
             self.assertIn("feelpp (0.112.0-1)", (repo_root / "packaging" / "debian" / "feelpp" / "noble" / "debian" / "changelog").read_text(encoding="utf-8").splitlines()[0])
             self.assertIn("feelpp-toolboxes (0.112.0-1)", (repo_root / "packaging" / "debian" / "feelpp-toolboxes" / "noble" / "debian" / "changelog").read_text(encoding="utf-8").splitlines()[0])
+
+    def test_bump_dry_run_does_not_persist_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo_root = self.make_repo(tmpdir)
+            repository = VersionRepository(repo_root)
+            version_file = repo_root / "feelpp.version.cmake"
+            manifest_file = repo_root / "packaging" / "manifest" / "components.toml"
+            changelog_file = repo_root / "packaging" / "debian" / "feelpp" / "noble" / "debian" / "changelog"
+            before = {
+                version_file: version_file.read_text(encoding="utf-8"),
+                manifest_file: manifest_file.read_text(encoding="utf-8"),
+                changelog_file: changelog_file.read_text(encoding="utf-8"),
+            }
+
+            preview = repository.bump_upstream(
+                version=repository.read_state().canonical_upstream_version().parse("0.112.0"),
+                dry_run=True,
+            )
+
+            self.assertEqual(str(preview.canonical_upstream_version()), "0.112.0")
+            self.assertEqual(str(preview.package_record("feelpp", "noble").version), "0.112.0-1")
+            for path, expected in before.items():
+                self.assertEqual(path.read_text(encoding="utf-8"), expected)
 
     def test_revision_bump_increments_debian_revision_only(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -132,12 +166,125 @@ class VersionTests(unittest.TestCase):
 
             repository.bump_revision(timestamp=fixed_time)
 
-            self.assertIn("feelpp (0.111.0~preview.13-2)", (repo_root / "packaging" / "debian" / "feelpp" / "noble" / "debian" / "changelog").read_text(encoding="utf-8").splitlines()[0])
+            manifest_text = (repo_root / "packaging" / "manifest" / "components.toml").read_text(encoding="utf-8")
+            self.assertIn('package_revision = "3"', manifest_text)
+            self.assertIn('package_revision = "5"', manifest_text)
+            self.assertIn('package_revision = "6"', manifest_text)
+            self.assertIn("feelpp (0.111.0~preview.13-3)", (repo_root / "packaging" / "debian" / "feelpp" / "noble" / "debian" / "changelog").read_text(encoding="utf-8").splitlines()[0])
             self.assertIn('set(FEELPP_VERSION_MINOR "111")', (repo_root / "feelpp.version.cmake").read_text(encoding="utf-8"))
+
+    def test_revision_bump_can_target_specific_dists(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo_root = self.make_repo(tmpdir)
+            repository = VersionRepository(repo_root)
+            fixed_time = datetime(2026, 4, 8, 12, 0, 0, tzinfo=timezone.utc)
+
+            state = repository.bump_revision(
+                timestamp=fixed_time,
+                dists=("noble",),
+            )
+
+            manifest_text = (repo_root / "packaging" / "manifest" / "components.toml").read_text(encoding="utf-8")
+            self.assertIn('package_revision = "2"', manifest_text)
+            self.assertIn('package_revision_by_dist = { noble = "3" }', manifest_text)
+            self.assertEqual(str(state.package_record("feelpp", "noble").version), "0.111.0~preview.13-3")
+            self.assertEqual(str(state.package_record("feelpp", "resolute").version), "0.111.0~preview.13-2")
+            self.assertIn(
+                "feelpp (0.111.0~preview.13-3)",
+                (
+                    repo_root
+                    / "packaging"
+                    / "debian"
+                    / "feelpp"
+                    / "noble"
+                    / "debian"
+                    / "changelog"
+                ).read_text(encoding="utf-8").splitlines()[0],
+            )
+            self.assertIn(
+                "feelpp (0.111.0~preview.13-1)",
+                (
+                    repo_root
+                    / "packaging"
+                    / "debian"
+                    / "feelpp"
+                    / "resolute"
+                    / "debian"
+                    / "changelog"
+                ).read_text(encoding="utf-8").splitlines()[0],
+            )
+
+    def test_revision_bump_dry_run_does_not_persist_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo_root = self.make_repo(tmpdir)
+            repository = VersionRepository(repo_root)
+            manifest_file = repo_root / "packaging" / "manifest" / "components.toml"
+            noble_changelog = repo_root / "packaging" / "debian" / "feelpp" / "noble" / "debian" / "changelog"
+            resolute_changelog = repo_root / "packaging" / "debian" / "feelpp" / "resolute" / "debian" / "changelog"
+            before = {
+                manifest_file: manifest_file.read_text(encoding="utf-8"),
+                noble_changelog: noble_changelog.read_text(encoding="utf-8"),
+                resolute_changelog: resolute_changelog.read_text(encoding="utf-8"),
+            }
+
+            preview = repository.bump_revision(
+                dists=("noble",),
+                dry_run=True,
+            )
+
+            self.assertEqual(str(preview.package_record("feelpp", "noble").version), "0.111.0~preview.13-3")
+            self.assertEqual(str(preview.package_record("feelpp", "resolute").version), "0.111.0~preview.13-2")
+            for path, expected in before.items():
+                self.assertEqual(path.read_text(encoding="utf-8"), expected)
+
+    def test_sync_changelogs_aligns_headers_with_manifest_versions(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo_root = self.make_repo(tmpdir)
+            repository = VersionRepository(repo_root)
+            fixed_time = datetime(2026, 4, 8, 12, 0, 0, tzinfo=timezone.utc)
+
+            state = repository.read_state()
+            self.assertFalse(state.as_dict()["consistency"]["changelog_sync"])
+
+            state = repository.sync_changelogs(timestamp=fixed_time)
+
+            self.assertTrue(state.as_dict()["consistency"]["changelog_sync"])
+            self.assertIn(
+                "feelpp (0.111.0~preview.13-2)",
+                (
+                    repo_root
+                    / "packaging"
+                    / "debian"
+                    / "feelpp"
+                    / "noble"
+                    / "debian"
+                    / "changelog"
+                ).read_text(encoding="utf-8").splitlines()[0],
+            )
+
+    def test_sync_dry_run_does_not_persist_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo_root = self.make_repo(tmpdir)
+            repository = VersionRepository(repo_root)
+            changelog_file = repo_root / "packaging" / "debian" / "feelpp" / "noble" / "debian" / "changelog"
+            before = changelog_file.read_text(encoding="utf-8")
+
+            state = repository.sync_changelogs(dry_run=True)
+
+            self.assertTrue(state.as_dict()["consistency"]["changelog_sync"])
+            self.assertEqual(changelog_file.read_text(encoding="utf-8"), before)
 
     def test_release_dry_run_builds_plan_without_publishing(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             repo_root = self.make_repo(tmpdir)
+            manifest_path = repo_root / "packaging" / "manifest" / "components.toml"
+            manifest_path.write_text(
+                manifest_path.read_text(encoding="utf-8")
+                .replace('package_revision = "2"', 'package_revision = "1"')
+                .replace('package_revision = "4"', 'package_revision = "1"')
+                .replace('package_revision = "5"', 'package_revision = "1"'),
+                encoding="utf-8",
+            )
             service = ReleaseService(repo_root)
 
             git_outputs = {
@@ -175,6 +322,26 @@ class VersionTests(unittest.TestCase):
         parser = build_version_parser()
         args = parser.parse_args(["revision", "bump"])
         self.assertEqual(args.revision_command, "bump")
+        self.assertEqual(args.dist, [])
+        self.assertFalse(args.dry_run)
+
+    def test_cli_exposes_sync_command(self) -> None:
+        parser = build_version_parser()
+        args = parser.parse_args(["sync"])
+        self.assertEqual(args.command, "sync")
+        self.assertEqual(args.dist, [])
+        self.assertFalse(args.dry_run)
+
+    def test_cli_parses_revision_bump_dist_and_dry_run(self) -> None:
+        parser = build_version_parser()
+        args = parser.parse_args(["revision", "bump", "--dist", "noble", "--dist", "trixie", "--dry-run"])
+        self.assertEqual(args.dist, ["noble", "trixie"])
+        self.assertTrue(args.dry_run)
+
+    def test_cli_parses_bump_dry_run(self) -> None:
+        parser = build_version_parser()
+        args = parser.parse_args(["bump", "0.112.0", "--dry-run"])
+        self.assertTrue(args.dry_run)
 
     def test_main_prints_error_for_invalid_semver(self) -> None:
         stderr = io.StringIO()
@@ -194,6 +361,7 @@ class VersionTests(unittest.TestCase):
             self.assertEqual(rc, 0)
             payload = json.loads(stdout.getvalue())
             self.assertEqual(payload["consistency"]["cmake_versions"], True)
+            self.assertEqual(payload["package_versions"][0]["origin"], "manifest")
 
 
 if __name__ == "__main__":

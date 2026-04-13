@@ -77,8 +77,10 @@ class DebianChangelogTarget:
             source_name=match.group("source"),
             path=self.path,
             version=DebianPackageVersion.parse(match.group("version")),
+            flavor=None,
             distribution=match.group("distribution"),
             urgency=match.group("urgency"),
+            origin="changelog",
         )
 
     def prepend_entry(
@@ -107,6 +109,8 @@ class DebianChangelogTarget:
             source_name=current.source_name,
             path=current.path,
             version=version,
+            flavor=current.flavor,
             distribution=current.distribution,
             urgency=current.urgency,
+            origin=current.origin,
         )
