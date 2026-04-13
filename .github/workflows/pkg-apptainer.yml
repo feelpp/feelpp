@@ -184,7 +184,7 @@ jobs:
           echo "binary=${candidate}" >> "${GITHUB_OUTPUT}"
       - name: Login to GitHub Container Registry
         run: |
-          "${{ steps.apptainer_bin.outputs.binary }}" remote login -u "${{ github.repository_owner }}" -p "${{ secrets.CR_PAT }}" oras://ghcr.io
+          "${{ steps.apptainer_bin.outputs.binary }}" registry login -u "${{ github.repository_owner }}" -p "${{ secrets.CR_PAT }}" oras://ghcr.io
       - name: Publish feelpp apptainer image ${{ env.sif }}
         shell: bash
         run: |
@@ -244,7 +244,7 @@ jobs:
           echo "binary=${candidate}" >> "${GITHUB_OUTPUT}"
       - name: Login to GitHub Container Registry
         run: |
-          "${{ steps.apptainer_bin.outputs.binary }}" remote login -u "${{ github.repository_owner }}" -p "${{ secrets.CR_PAT }}" oras://ghcr.io
+          "${{ steps.apptainer_bin.outputs.binary }}" registry login -u "${{ github.repository_owner }}" -p "${{ secrets.CR_PAT }}" oras://ghcr.io
       - name: Publish feelpp-dev apptainer image ${{ env.sif-dev }}
         shell: bash
         run: |
