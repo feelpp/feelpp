@@ -32,10 +32,10 @@ on:
         apptainer:
           description: 'Build apptainer image'
           required: false
-          default: '1.3.3'
+          default: 'latest'
           type: choice
           options:
-          - '1.4.0'
+          - 'latest'
           - 'false'
         docker:
           description: 'docker image'
@@ -102,7 +102,7 @@ on:
                 description: 'Build apptainer image'
                 required: false
                 type: string
-                default: "1.3.5"
+                default: "latest"
             skip:
                 description: 'Skip apptainer build'
                 required: false
@@ -168,7 +168,11 @@ jobs:
         id: apptainer_bin
         shell: bash
         run: |
-          candidate="/opt/apptainer/v${{ inputs.apptainer }}/apptainer/bin/apptainer"
+          if [ "${{ inputs.apptainer }}" = "latest" ]; then
+            candidate="/opt/apptainer/latest/bin/apptainer"
+          else
+            candidate="/opt/apptainer/v${{ inputs.apptainer }}/apptainer/bin/apptainer"
+          fi
           if [ ! -x "${candidate}" ]; then
             candidate="$(python3 -c 'from feelpp.pkg.apptainer import default_apptainer_binary; print(default_apptainer_binary())')"
           fi
@@ -224,7 +228,11 @@ jobs:
         id: apptainer_bin
         shell: bash
         run: |
-          candidate="/opt/apptainer/v${{ inputs.apptainer }}/apptainer/bin/apptainer"
+          if [ "${{ inputs.apptainer }}" = "latest" ]; then
+            candidate="/opt/apptainer/latest/bin/apptainer"
+          else
+            candidate="/opt/apptainer/v${{ inputs.apptainer }}/apptainer/bin/apptainer"
+          fi
           if [ ! -x "${candidate}" ]; then
             candidate="$(python3 -c 'from feelpp.pkg.apptainer import default_apptainer_binary; print(default_apptainer_binary())')"
           fi
