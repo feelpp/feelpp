@@ -184,7 +184,7 @@ def prepare_runtime_assets(context: PackagingContext) -> None:
     if staged_keyring.is_file():
         shutil.copy2(staged_keyring, runtime_feelpp_keyring)
         runtime_feelpp_keyring.chmod(0o644)
-    else:
+    elif not runtime_feelpp_keyring.is_file() or runtime_feelpp_keyring.stat().st_size == 0:
         refresh_feelpp_keyring(runtime_feelpp_keyring)
 
     for existing in context.pbuilder_runtime_hookdir.iterdir():

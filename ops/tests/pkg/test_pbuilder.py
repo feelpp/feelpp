@@ -234,9 +234,22 @@ class PbuilderTests(unittest.TestCase):
             self.assertIn("file://%s", apt_refresh_hook.read_text(encoding="utf-8"))
             self.assertIn("apt-get update", apt_refresh_hook.read_text(encoding="utf-8"))
 
-    def test_prepare_runtime_assets_refreshes_feelpp_keyring_from_local_gpg(self) -> None:
+    def test_prepare_runtime_assets_keeps_bundled_feelpp_keyring_by_default(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             context = self.make_context(tmpdir)
+            with mock.patch("feelpp.pkg.pbuilder.assets.subprocess.run") as run_mock:
+                with mock.patch.dict("os.environ", {"GPG_KEY": "NEWKEY"}, clear=False):
+                    prepare_runtime_assets(context)
+
+            keyring_path = context.pbuilder_keyrings_dir / "feelpp.gpg"
+            self.assertEqual(b"fake", keyring_path.read_bytes())
+            run_mock.assert_not_called()
+
+    def test_prepare_runtime_assets_refreshes_feelpp_keyring_when_bundled_copy_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            context = self.make_context(tmpdir)
+            bundled_keyring = context.pbuilder_source_hookdir / "keyrings" / "feelpp.gpg.b64"
+            bundled_keyring.unlink()
 
             def fake_gpg_export(command: list[str], **_: object) -> subprocess.CompletedProcess[str]:
                 output_path = Path(command[command.index("--output") + 1])
@@ -259,11 +272,12 @@ class PbuilderTests(unittest.TestCase):
             def failing_export(_: list[str], **__: object) -> None:
                 raise subprocess.CalledProcessError(2, ["gpg"])
 
-            with mock.patch("feelpp.pkg.pbuilder.assets.run_checked", side_effect=failing_export):
+            with mock.patch("feelpp.pkg.pbuilder.assets.run_checked", side_effect=failing_export) as run_checked_mock:
                 prepare_runtime_assets(context)
 
             keyring_path = context.pbuilder_keyrings_dir / "feelpp.gpg"
             self.assertEqual(b"fake", keyring_path.read_bytes())
+            run_checked_mock.assert_not_called()
             keyring_hook = context.pbuilder_runtime_hookdir / "G10-feelpp-keyrings"
             self.assertIn(
                 "/etc/apt/trusted.gpg.d/feelpp.gpg",
@@ -293,17 +307,10 @@ class PbuilderTests(unittest.TestCase):
             context.pbuilder_runtime_hookdir.mkdir(parents=True, exist_ok=True)
             shutil.rmtree(context.pbuilder_keyrings_dir)
             shutil.rmtree(context.pbuilder_runtime_hookdir)
-
-            def fake_gpg_export(command: list[str], **_: object) -> subprocess.CompletedProcess[str]:
-                output_path = Path(command[command.index("--output") + 1])
-                output_path.parent.mkdir(parents=True, exist_ok=True)
-                output_path.write_bytes(b"fresh-keyring")
-                return subprocess.CompletedProcess(command, 0)
-
-            with mock.patch("feelpp.pkg.pbuilder.assets.subprocess.run", side_effect=fake_gpg_export):
-                prepare_runtime_assets(context)
+            prepare_runtime_assets(context)
 
             self.assertTrue((context.pbuilder_keyrings_dir / "feelpp.gpg").is_file())
+            self.assertEqual(b"fake", (context.pbuilder_keyrings_dir / "feelpp.gpg").read_bytes())
             self.assertTrue((context.pbuilder_runtime_hookdir / "H05-feelpp-local-repo-preferences").is_file())
 
     def test_refresh_feelpp_keyring_ignores_missing_output_from_gpg(self) -> None:
