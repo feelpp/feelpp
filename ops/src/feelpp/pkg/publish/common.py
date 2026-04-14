@@ -74,9 +74,14 @@ def aptly_base_command() -> list[str]:
 
 
 def has_binary_packages(input_dir: Path) -> bool:
-    return any(
-        path.is_file() and path.suffix in {".deb", ".udeb"}
+    return bool(binary_package_paths(input_dir))
+
+
+def binary_package_paths(input_dir: Path) -> list[Path]:
+    return sorted(
+        path
         for path in input_dir.rglob("*")
+        if path.is_file() and path.suffix in {".deb", ".udeb"}
     )
 
 

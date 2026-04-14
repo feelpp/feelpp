@@ -7,9 +7,9 @@ from ..config import PackagingContext
 from .common import (
     aptly_base_command,
     assert_publish_ready,
+    binary_package_paths,
     build_publish_args,
     create_passphrase_file,
-    has_binary_packages,
     publish_identity,
     publish_snapshot_from_repo,
     repo_name,
@@ -29,6 +29,7 @@ def _dry_run_publish(
     publish_component: str,
     publish_target: str,
     input_dir: Path,
+    binary_packages: list[Path],
     has_binary_packages_value: bool,
     publish_args: list[str],
 ) -> None:
@@ -48,7 +49,9 @@ def _dry_run_publish(
     )
     if has_binary_packages_value:
         run_checked(
-            base + ["repo", "add", "-force-replace", repo_name_value, str(input_dir)],
+            base
+            + ["repo", "add", "-force-replace", repo_name_value]
+            + [str(path) for path in binary_packages],
             cwd=cwd,
             env=env,
             dry_run=True,
@@ -95,6 +98,7 @@ def publish_snapshot(
     publish_distribution, publish_component, publish_target = publish_identity(context)
 
     if dry_run:
+        binary_packages = binary_package_paths(effective_input_dir) if effective_input_dir.is_dir() else []
         publish_args = build_publish_args(
             passphrase_file=Path("/tmp/aptly-passphrase") if os.getenv("GPG_PASSPHRASE") else None
         )
@@ -107,7 +111,8 @@ def publish_snapshot(
             publish_component=publish_component,
             publish_target=publish_target,
             input_dir=effective_input_dir,
-            has_binary_packages_value=effective_input_dir.is_dir() and has_binary_packages(effective_input_dir),
+            binary_packages=binary_packages,
+            has_binary_packages_value=bool(binary_packages),
             publish_args=publish_args,
         )
         return
@@ -119,6 +124,7 @@ def publish_snapshot(
     try:
         publish_args = build_publish_args(passphrase_file=passphrase_file)
         aptly = aptly_base_command()
+        binary_packages = binary_package_paths(effective_input_dir)
 
         repo_exists = run_probe(
             aptly + ["repo", "show", repo_name_value],
@@ -140,9 +146,11 @@ def publish_snapshot(
                 dry_run=False,
             )
 
-        if has_binary_packages(effective_input_dir):
+        if binary_packages:
             run_checked(
-                aptly + ["repo", "add", "-force-replace", repo_name_value, str(effective_input_dir)],
+                aptly
+                + ["repo", "add", "-force-replace", repo_name_value]
+                + [str(path) for path in binary_packages],
                 cwd=context.repo_root,
                 env=env,
                 dry_run=False,

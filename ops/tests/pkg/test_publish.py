@@ -124,7 +124,7 @@ class PublishTests(unittest.TestCase):
                         "add",
                         "-force-replace",
                         "feelpp-noble-latest",
-                        str(context.artifacts_dir),
+                        str(context.artifacts_dir / "feelpp-tools_1_amd64.deb"),
                     ],
                     [
                         "aptly",
@@ -245,6 +245,59 @@ class PublishTests(unittest.TestCase):
             passphrase_arg = next(arg for arg in publish_command if arg.startswith("-passphrase-file="))
             passphrase_file = Path(passphrase_arg.split("=", 1)[1])
             self.assertFalse(passphrase_file.exists())
+
+    def test_publish_snapshot_repo_add_ignores_source_package_sidecars(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            context = self.make_context(tmpdir)
+            write_job_manifest(
+                context,
+                state="built",
+                plan=self.make_plan(),
+                built_components=["feelpp", "feelpp-toolboxes"],
+            )
+            context.artifacts_dir.mkdir(parents=True, exist_ok=True)
+            (context.artifacts_dir / "feelpp-tools_1_amd64.deb").write_text("deb", encoding="utf-8")
+            (context.artifacts_dir / "feelpp_1.dsc").write_text("dsc", encoding="utf-8")
+            (context.artifacts_dir / "feelpp_1.orig.tar.gz").write_text("orig", encoding="utf-8")
+
+            with mock.patch.dict(
+                os.environ,
+                {
+                    "FEELPP_PKG_SNAPSHOT_ID": "test-snapshot",
+                    "GPG_KEY": "",
+                    "GPG_PASSPHRASE": "",
+                },
+                clear=False,
+            ):
+                with mock.patch(
+                    "feelpp.pkg.shell.subprocess.run",
+                    side_effect=[
+                        _completed(returncode=1),
+                        _completed(),
+                        _completed(),
+                        _completed(),
+                        _completed(returncode=1),
+                        _completed(),
+                    ],
+                ) as run_mock:
+                    publish_snapshot(context)
+
+            repo_add_command = next(
+                call.args[0]
+                for call in run_mock.call_args_list
+                if call.args[0][0:3] == ["aptly", "repo", "add"]
+            )
+            self.assertEqual(
+                repo_add_command,
+                [
+                    "aptly",
+                    "repo",
+                    "add",
+                    "-force-replace",
+                    "feelpp-noble-latest",
+                    str(context.artifacts_dir / "feelpp-tools_1_amd64.deb"),
+                ],
+            )
 
     def test_publish_snapshot_skips_repo_add_when_no_binaries_exist(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
