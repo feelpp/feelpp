@@ -12,6 +12,41 @@ from .release import ReleaseService
 from .repository import VersionRepository
 
 
+def _format_release_plan(plan) -> str:
+    lines = [
+        f"Release: {plan.title}",
+        f"Tag: {plan.tag}",
+        f"Kind: {plan.release_kind}",
+        f"Branch: {plan.branch}",
+        f"Channel: {plan.channel}",
+        f"Head: {plan.head_sha}",
+        f"Previous tag: {plan.previous_tag or '<none>'}",
+        f"Prerelease: {'yes' if plan.prerelease else 'no'}",
+        f"Dry run: {'yes' if plan.dry_run else 'no'}",
+    ]
+
+    if plan.package_checks:
+        lines.extend(["", "Package checks:"])
+        for check in plan.package_checks:
+            lines.append(
+                f"- {check.dist}: {check.package_name} {check.expected_version} @ {check.url}"
+            )
+
+    if plan.container_checks:
+        lines.extend(["", "Container checks:"])
+        for check in plan.container_checks:
+            lines.append(
+                f"- {check.dist} {check.artifact_type}: {', '.join(check.candidate_refs)}"
+            )
+
+    lines.extend(["", "Package notes:", plan.package_notes])
+
+    if plan.generated_notes_preview:
+        lines.extend(["", "Generated notes preview:", plan.generated_notes_preview])
+
+    return "\n".join(lines)
+
+
 def command_show(args: argparse.Namespace) -> int:
     repository = VersionRepository(repo_root=args.repo_root)
     print(json.dumps(repository.read_state().as_dict(), indent=2))
@@ -43,7 +78,10 @@ def command_revision_bump(args: argparse.Namespace) -> int:
 def command_release(args: argparse.Namespace) -> int:
     service = ReleaseService(repo_root=args.repo_root)
     plan = service.execute_release(args.version, dry_run=args.dry_run, dists=tuple(args.dist) or None)
-    print(json.dumps(plan.as_dict(), indent=2))
+    if args.pretty:
+        print(_format_release_plan(plan))
+    else:
+        print(json.dumps(plan.as_dict(), indent=2))
     return 0
 
 
@@ -145,6 +183,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--dry-run",
         action="store_true",
         help="Run all validations and preview the generated release content without publishing",
+    )
+    release_parser.add_argument(
+        "--pretty",
+        action="store_true",
+        help="Print the release plan in a human-readable format instead of JSON.",
     )
     release_parser.set_defaults(func=command_release)
     return parser

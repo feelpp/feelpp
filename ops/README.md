@@ -49,6 +49,7 @@ fpp-version sync
 fpp-version sync --dist noble --dry-run
 fpp-version revision bump --dist noble --dist trixie --dry-run
 fpp-version release 0.111.0-preview.13 --dist noble --dist trixie --dry-run
+fpp-version release 0.111.0-preview.13 --dist noble --dist trixie --dry-run --pretty
 ```
 
 to inspect the desired package versions and then align Debian changelog heads with
