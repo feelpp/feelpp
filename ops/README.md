@@ -48,8 +48,11 @@ fpp-version show
 fpp-version sync
 fpp-version sync --dist noble --dry-run
 fpp-version revision bump --dist noble --dist trixie --dry-run
+fpp-version publications --pretty
+fpp-version publications --pretty --rows 10 --since 2026-01-01
 fpp-version release 0.111.0-preview.13 --dist noble --dist trixie --dry-run
 fpp-version release 0.111.0-preview.13 --dist noble --dist trixie --dry-run --pretty
+fpp-version release 0.111.0-preview.13 --dist noble --dist trixie --dry-run --pretty --publications-rows 10 --publications-since 2026-01-01
 ```
 
 to inspect the desired package versions and then align Debian changelog heads with
@@ -60,6 +63,12 @@ Feel++ packaging availability notes, install/pull commands for the released
 distros, plus GitHub-generated release notes preview, without the lower-level
 validation detail blocks. Flavor and distro release versions are sourced from
 the packaging catalog in [`.github/plan-ci.json`](../.github/plan-ci.json).
+`publications --pretty` harvests recent HAL records from the `FEEL` and
+`CEMOSIS` collections and renders them as a Markdown section that can be added
+to release notes or discussion posts. Use `--rows` to change how many
+publications are shown and `--since` to limit the slice to a release-specific
+window. The release command mirrors those controls with
+`--publications-rows` and `--publications-since`.
 
 The `feelpp.ops.common` namespace is the shared home for cross-tool support
 code such as naming, future logging helpers, and execution/runtime helpers.

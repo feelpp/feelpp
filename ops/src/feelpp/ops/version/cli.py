@@ -8,6 +8,7 @@ from feelpp.ops.common import PREFERRED_VERSION_CLI_NAME
 from feelpp.pkg.config import discover_repo_root
 
 from .models import SemanticVersion
+from .publications import HalPublicationService
 from .release import ReleaseService
 from .repository import VersionRepository
 
@@ -63,11 +64,33 @@ def command_revision_bump(args: argparse.Namespace) -> int:
 
 def command_release(args: argparse.Namespace) -> int:
     service = ReleaseService(repo_root=args.repo_root)
-    plan = service.execute_release(args.version, dry_run=args.dry_run, dists=tuple(args.dist) or None)
+    plan = service.execute_release(
+        args.version,
+        dry_run=args.dry_run,
+        dists=tuple(args.dist) or None,
+        publication_rows=args.publications_rows,
+        publication_since=args.publications_since,
+    )
     if args.pretty:
         print(_format_release_plan(plan))
     else:
         print(json.dumps(plan.as_dict(), indent=2))
+    return 0
+
+
+def command_publications(args: argparse.Namespace) -> int:
+    service = HalPublicationService(repo_root=args.repo_root)
+    publications = service.fetch(
+        query=args.query,
+        rows=args.rows,
+        sort=args.sort,
+        collections=tuple(args.collection) or None,
+        since=args.since,
+    )
+    if args.pretty:
+        print(service.format_markdown(publications))
+    else:
+        print(json.dumps([publication.as_dict() for publication in publications], indent=2))
     return 0
 
 
@@ -175,7 +198,56 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print the release plan in a human-readable format instead of JSON.",
     )
+    release_parser.add_argument(
+        "--publications-rows",
+        type=int,
+        default=None,
+        help="Limit the number of HAL publications included in the release notes.",
+    )
+    release_parser.add_argument(
+        "--publications-since",
+        default=None,
+        help="Limit HAL publications in the release notes to items produced since YYYY-MM-DD or a full RFC3339 timestamp.",
+    )
     release_parser.set_defaults(func=command_release)
+
+    publications_parser = subparsers.add_parser(
+        "publications",
+        help="Fetch recent Feel++ publications from HAL",
+    )
+    publications_parser.add_argument(
+        "--query",
+        default=None,
+        help="Optional HAL query override. Defaults to the configured collection-driven query.",
+    )
+    publications_parser.add_argument(
+        "--collection",
+        action="append",
+        default=[],
+        help="Restrict HAL harvesting to a collection code. Repeat to target multiple collections.",
+    )
+    publications_parser.add_argument(
+        "--rows",
+        type=int,
+        default=None,
+        help="Maximum number of HAL records to return.",
+    )
+    publications_parser.add_argument(
+        "--sort",
+        default=None,
+        help="HAL sort expression, for example 'producedDate_tdate desc'.",
+    )
+    publications_parser.add_argument(
+        "--since",
+        default=None,
+        help="Optional lower bound for producedDate_tdate, as YYYY-MM-DD or full RFC3339 timestamp.",
+    )
+    publications_parser.add_argument(
+        "--pretty",
+        action="store_true",
+        help="Render the publications as a Markdown release-notes section.",
+    )
+    publications_parser.set_defaults(func=command_publications)
     return parser
 
 

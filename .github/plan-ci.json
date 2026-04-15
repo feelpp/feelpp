@@ -108,5 +108,14 @@
         "spack-openmpi": ["spack:openmpi"]
       }
     }
+  },
+  "releaseNotes": {
+    "publications": {
+      "hal": {
+        "collections": ["FEEL", "CEMOSIS"],
+        "rows": 5,
+        "sort": "producedDate_tdate desc"
+      }
+    }
   }
 }
