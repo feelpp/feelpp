@@ -1,0 +1,80 @@
+{
+  "title": "Feel++",
+  "version": "v0.111.0-preview.13",
+  "upload_type": "software",
+  "license": "lgpl-3.0",
+  "access_right": "open",
+  "language": "eng",
+  "creators": [
+    {
+      "name": "Prud'homme, Christophe",
+      "affiliation": "University of Strasbourg",
+      "orcid": "0000-0003-2287-2961"
+    },
+    {
+      "name": "Chabannes, Vincent",
+      "affiliation": "University of Strasbourg",
+      "orcid": "0009-0005-3602-3524"
+    }
+  ],
+  "contributors": [
+    {
+      "name": "Saigre, Thomas",
+      "affiliation": "IRMA",
+      "type": "Researcher"
+    },
+    {
+      "name": "Pincon, Philippe",
+      "type": "Researcher"
+    }
+  ],
+  "keywords": [
+    "finite element",
+    "spectral element",
+    "domain decomposition",
+    "solvers",
+    "multiphysics",
+    "model order reduction",
+    "python bindings",
+    "HPC",
+    "MPI"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/feelpp/feelpp",
+      "relation": "isSupplementTo",
+      "resource_type": "software"
+    }
+  ],
+  "grants": [
+    {
+      "id": "10.13039/501100001665::ANR-22-EXNU-0002"
+    },
+    {
+      "id": "10.13039/501100001665::ANR-25-CE46-1157"
+    },
+    {
+      "id": "10.13039/501100001665::ANR-10-IDEX-0002"
+    },
+    {
+      "id": "10.13039/501100001665::ANR-20-SFRI-0012"
+    },
+    {
+      "id": "10.13039/501100000780::101093457"
+    }
+  ],
+  "communities": [
+    {
+      "identifier": "numpex"
+    },
+    {
+      "identifier": "feelpp"
+    },
+    {
+      "identifier": "hidalgo2"
+    },
+    {
+      "identifier": "eu"
+    }
+  ]
+}

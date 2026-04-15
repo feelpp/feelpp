@@ -30,11 +30,18 @@
   "codeRepository": "https://github.com/feelpp/feelpp",
   "issueTracker": "https://github.com/feelpp/feelpp/issues",
   "downloadUrl": "https://github.com/feelpp/feelpp/releases",
+  "funding": [
+    "ANR-22-EXNU-0002 Exa-MA",
+    "ANR-25-CE46-1157 JNL-G - Jumeau Numerique du Laboratoire National des Champs Magnetiques Intenses-Grenoble",
+    "ANR-10-IDEX-0002 IdEx Unistra / ITI IRMIA++",
+    "ANR-20-SFRI-0012 SFRI-STRAT'US / ITI IRMIA++",
+    "101093457 HiDALGO2"
+  ],
   "license": [
     "https://spdx.org/licenses/LGPL-3.0-only.html",
     "https://spdx.org/licenses/GPL-3.0-only.html"
   ],
-  "version": "v0.111.0-preview.11",
+  "version": "v0.111.0-preview.13",
   "programmingLanguage": [
     {
       "@type": "ComputerLanguage",
@@ -62,6 +69,11 @@
       "@type": "Person",
       "givenName": "Thomas",
       "familyName": "Saigre"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Philippe",
+      "familyName": "Pincon"
     }
   ],
   "copyrightHolder": [
