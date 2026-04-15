@@ -377,6 +377,28 @@ class ReleaseService:
             )
         return checks
 
+    def _packaging_target_metadata(self) -> dict[str, dict[str, str]]:
+        config_path = self.repo_root / ".github" / "plan-ci.json"
+        try:
+            payload = json.loads(config_path.read_text(encoding="utf-8"))
+        except (FileNotFoundError, json.JSONDecodeError):
+            return {}
+
+        catalog = payload.get("profiles", {}).get("packaging", {}).get("catalog", {})
+        metadata_by_dist: dict[str, dict[str, str]] = {}
+        for target, row in catalog.items():
+            if not isinstance(row, dict):
+                continue
+            dist = str(row.get("dist") or "").strip()
+            if not dist:
+                continue
+            metadata_by_dist[dist] = {
+                "target": str(target),
+                "flavor": str(row.get("flavor") or "").strip(),
+                "version": str(row.get("version") or "").strip(),
+            }
+        return metadata_by_dist
+
     def _ensure_container_available(self, check: ContainerAvailabilityCheck) -> None:
         for candidate_ref in check.candidate_refs:
             command = ["docker", "manifest", "inspect", candidate_ref]
@@ -405,27 +427,42 @@ class ReleaseService:
         package_names_by_dist: dict[str, list[str]] = {}
         for check in package_checks:
             package_names_by_dist.setdefault(check.dist, []).append(check.package_name)
+        target_metadata = self._packaging_target_metadata()
 
         lines = [
             "## Packages",
             "",
         ]
         if package_versions_by_dist:
-            released = ", ".join(sorted(package_versions_by_dist))
+            released_labels = []
+            for dist in sorted(package_versions_by_dist):
+                metadata = target_metadata.get(dist, {})
+                flavor = metadata.get("flavor") or detect_flavor(dist)
+                distro_version = metadata.get("version")
+                if distro_version:
+                    released_labels.append(f"{dist} ({flavor} {distro_version})")
+                else:
+                    released_labels.append(f"{dist} ({flavor})")
+            released = ", ".join(released_labels)
             lines.append(f"- APT packages available for: `{released}`")
             lines.append(f"- Docker images available for: `{released}`")
             lines.append(f"- Apptainer images available for: `{released}`")
         if omitted_dists:
             lines.append(f"- Omitted distros in this release: `{', '.join(omitted_dists)}`")
         for dist, version in sorted(package_versions_by_dist.items()):
-            flavor = detect_flavor(dist)
+            metadata = target_metadata.get(dist, {})
+            flavor = metadata.get("flavor") or detect_flavor(dist)
+            distro_version = metadata.get("version")
             normalized = normalize_package_version_tag(str(version))
             repo_url = f"http://apt.feelpp.org/{flavor}/{dist}"
             package_names = sorted(set(package_names_by_dist.get(dist, [])))
+            target_label = f"{flavor}/{dist}"
+            if distro_version:
+                target_label = f"{target_label} ({distro_version})"
             lines.extend(
                 [
                     "",
-                    f"### {dist}",
+                    f"### {target_label}",
                     "",
                     f"- APT package version: `{version}`",
                     f"- APT channel: `{channel}`",

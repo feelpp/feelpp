@@ -58,7 +58,8 @@ semantic version, while `--dist` lets release validation and notes cover only th
 distros shipped in that release. `release --dry-run --pretty` shows the explicit
 Feel++ packaging availability notes, install/pull commands for the released
 distros, plus GitHub-generated release notes preview, without the lower-level
-validation detail blocks.
+validation detail blocks. Flavor and distro release versions are sourced from
+the packaging catalog in [`.github/plan-ci.json`](../.github/plan-ci.json).
 
 The `feelpp.ops.common` namespace is the shared home for cross-tool support
 code such as naming, future logging helpers, and execution/runtime helpers.

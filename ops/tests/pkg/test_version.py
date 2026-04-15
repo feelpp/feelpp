@@ -16,6 +16,7 @@ from feelpp.ops.version.repository import VersionRepository
 class VersionTests(unittest.TestCase):
     def make_repo(self, tmpdir: str) -> Path:
         repo_root = Path(tmpdir) / "repo"
+        (repo_root / ".github").mkdir(parents=True)
         (repo_root / "toolboxes" / "cmake").mkdir(parents=True)
         (repo_root / "mor" / "cmake").mkdir(parents=True)
         (repo_root / "packaging" / "manifest").mkdir(parents=True)
@@ -77,6 +78,22 @@ class VersionTests(unittest.TestCase):
             ]
         )
         (repo_root / "packaging" / "manifest" / "components.toml").write_text(manifest, encoding="utf-8")
+        (repo_root / ".github" / "plan-ci.json").write_text(
+            json.dumps(
+                {
+                    "profiles": {
+                        "packaging": {
+                            "catalog": {
+                                "ubuntu:noble": {"flavor": "ubuntu", "dist": "noble", "version": "24.04"},
+                                "ubuntu:resolute": {"flavor": "ubuntu", "dist": "resolute", "version": "26.04"},
+                                "debian:trixie": {"flavor": "debian", "dist": "trixie", "version": "13"},
+                            }
+                        }
+                    }
+                }
+            ),
+            encoding="utf-8",
+        )
 
         changelog_template = (
             "{source} ({version}) unstable; urgency=medium\n\n"
@@ -319,6 +336,11 @@ class VersionTests(unittest.TestCase):
             self.assertGreaterEqual(container_checks.call_count, 1)
             self.assertEqual(plan.tag, "v0.111.0-preview.13")
             self.assertIn("## Packages", plan.package_notes)
+            self.assertIn(
+                "APT packages available for: `noble (ubuntu 24.04), resolute (ubuntu 26.04)`",
+                plan.package_notes,
+            )
+            self.assertIn("### ubuntu/noble (24.04)", plan.package_notes)
             self.assertIn("sudo apt install python3-feelpp", plan.package_notes)
             self.assertIn("docker pull ghcr.io/feelpp/feelpp:noble-v0.111.0-preview.13", plan.package_notes)
             self.assertIn("apptainer pull oras://ghcr.io/feelpp/feelpp:noble-v0.111.0-preview.13-sif", plan.package_notes)
@@ -373,7 +395,7 @@ class VersionTests(unittest.TestCase):
             self.assertEqual(container_checks.call_count, 2)
             self.assertEqual({check.dist for check in plan.package_checks}, {"noble"})
             self.assertEqual({check.dist for check in plan.container_checks}, {"noble"})
-            self.assertIn("APT packages available for: `noble`", plan.package_notes)
+            self.assertIn("APT packages available for: `noble (ubuntu 24.04)`", plan.package_notes)
             self.assertIn("Omitted distros in this release: `resolute`", plan.package_notes)
 
     def test_generated_notes_preview_uses_github_release_notes_api(self) -> None:
