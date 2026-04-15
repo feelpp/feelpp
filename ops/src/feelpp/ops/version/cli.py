@@ -25,20 +25,6 @@ def _format_release_plan(plan) -> str:
         f"Dry run: {'yes' if plan.dry_run else 'no'}",
     ]
 
-    if plan.package_checks:
-        lines.extend(["", "Package checks:"])
-        for check in plan.package_checks:
-            lines.append(
-                f"- {check.dist}: {check.package_name} {check.expected_version} @ {check.url}"
-            )
-
-    if plan.container_checks:
-        lines.extend(["", "Container checks:"])
-        for check in plan.container_checks:
-            lines.append(
-                f"- {check.dist} {check.artifact_type}: {', '.join(check.candidate_refs)}"
-            )
-
     lines.extend(["", "Package notes:", plan.package_notes])
 
     if plan.generated_notes_preview:

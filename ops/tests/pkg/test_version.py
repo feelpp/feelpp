@@ -295,7 +295,6 @@ class VersionTests(unittest.TestCase):
                 ("tag", "--list", "v0.111.0-preview.13"): "",
                 ("describe", "--tags", "--abbrev=0", "--match", "v*"): "v0.111.0-preview.12\n",
                 ("remote", "get-url", "origin"): "https://github.com/feelpp/feelpp.git\n",
-                ("log", "--pretty=format:* %h %s", "v0.111.0-preview.12..HEAD"): "* abc123 Test commit\n",
             }
 
             def fake_git_capture(args: list[str], *, check: bool = True) -> str:
@@ -308,7 +307,12 @@ class VersionTests(unittest.TestCase):
                 with mock.patch.object(service, "_ensure_github_checks_green") as gh_checks:
                     with mock.patch.object(service, "_ensure_package_available") as apt_checks:
                         with mock.patch.object(service, "_ensure_container_available") as container_checks:
-                            plan = service.execute_release("0.111.0-preview.13", dry_run=True)
+                            with mock.patch.object(
+                                service,
+                                "_generated_notes_preview",
+                                return_value="## What's Changed\n* Fix packaging",
+                            ):
+                                plan = service.execute_release("0.111.0-preview.13", dry_run=True)
 
             gh_checks.assert_called_once()
             self.assertGreaterEqual(apt_checks.call_count, 1)
@@ -316,7 +320,7 @@ class VersionTests(unittest.TestCase):
             self.assertEqual(plan.tag, "v0.111.0-preview.13")
             self.assertIn("## Packages", plan.package_notes)
             self.assertIn("0.111.0~preview.13-2", plan.package_notes)
-            self.assertIn("Test commit", plan.generated_notes_preview)
+            self.assertIn("## What's Changed", plan.generated_notes_preview)
 
     def test_release_dry_run_can_scope_distros_and_note_omissions(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -339,7 +343,6 @@ class VersionTests(unittest.TestCase):
                 ("tag", "--list", "v0.111.0-preview.13"): "",
                 ("describe", "--tags", "--abbrev=0", "--match", "v*"): "v0.111.0-preview.12\n",
                 ("remote", "get-url", "origin"): "https://github.com/feelpp/feelpp.git\n",
-                ("log", "--pretty=format:* %h %s", "v0.111.0-preview.12..HEAD"): "* abc123 Test commit\n",
             }
 
             def fake_git_capture(args: list[str], *, check: bool = True) -> str:
@@ -352,11 +355,16 @@ class VersionTests(unittest.TestCase):
                 with mock.patch.object(service, "_ensure_github_checks_green") as gh_checks:
                     with mock.patch.object(service, "_ensure_package_available") as apt_checks:
                         with mock.patch.object(service, "_ensure_container_available") as container_checks:
-                            plan = service.execute_release(
-                                "0.111.0-preview.13",
-                                dry_run=True,
-                                dists=("noble",),
-                            )
+                            with mock.patch.object(
+                                service,
+                                "_generated_notes_preview",
+                                return_value="## What's Changed\n* Scoped release",
+                            ):
+                                plan = service.execute_release(
+                                    "0.111.0-preview.13",
+                                    dry_run=True,
+                                    dists=("noble",),
+                                )
 
             gh_checks.assert_called_once()
             self.assertEqual(apt_checks.call_count, 3)
@@ -365,6 +373,39 @@ class VersionTests(unittest.TestCase):
             self.assertEqual({check.dist for check in plan.container_checks}, {"noble"})
             self.assertIn("Released distros: `noble`", plan.package_notes)
             self.assertIn("Omitted distros in this release: `resolute`", plan.package_notes)
+
+    def test_generated_notes_preview_uses_github_release_notes_api(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo_root = self.make_repo(tmpdir)
+            service = ReleaseService(repo_root)
+            with mock.patch(
+                "feelpp.ops.version.release.run_capture",
+                return_value=json.dumps({"body": "## What's Changed\n* closes #1"}),
+            ) as run_capture_mock:
+                preview = service._generated_notes_preview(
+                    repo_slug="feelpp/feelpp",
+                    tag="v0.111.0-preview.13",
+                    head_sha="abc123",
+                    previous_tag="v0.111.0-preview.12",
+                )
+
+        self.assertIn("## What's Changed", preview)
+        self.assertEqual(
+            run_capture_mock.call_args.args[0],
+            [
+                "gh",
+                "api",
+                "repos/feelpp/feelpp/releases/generate-notes",
+                "-X",
+                "POST",
+                "-f",
+                "tag_name=v0.111.0-preview.13",
+                "-f",
+                "target_commitish=abc123",
+                "-f",
+                "previous_tag_name=v0.111.0-preview.12",
+            ],
+        )
 
     def test_cli_exposes_revision_bump_command(self) -> None:
         parser = build_version_parser()
@@ -466,6 +507,8 @@ class VersionTests(unittest.TestCase):
             self.assertIn("Release: v0.111.0-preview.13", output)
             self.assertIn("Package notes:", output)
             self.assertIn("Generated notes preview:", output)
+            self.assertNotIn("Package checks:", output)
+            self.assertNotIn("Container checks:", output)
 
 
 if __name__ == "__main__":

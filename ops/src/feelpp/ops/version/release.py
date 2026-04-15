@@ -112,7 +112,12 @@ class ReleaseService:
             channel=channel,
             omitted_dists=omitted_dists,
         )
-        generated_notes_preview = self._generated_notes_preview(previous_tag)
+        generated_notes_preview = self._generated_notes_preview(
+            repo_slug=repo_slug,
+            tag=tag,
+            head_sha=head_sha,
+            previous_tag=previous_tag,
+        )
         return ReleasePlan(
             requested_version=requested_version,
             release_kind=release_kind,
@@ -222,15 +227,33 @@ class ReleaseService:
             ).strip()
         return previous or None
 
-    def _generated_notes_preview(self, previous_tag: str | None) -> str:
-        range_expr = f"{previous_tag}..HEAD" if previous_tag else "HEAD"
-        log_output = self._git_capture(
-            ["log", "--pretty=format:* %h %s", range_expr],
-            check=False,
-        ).strip()
-        if log_output:
-            return log_output
-        return "* No commits found in the selected range."
+    def _generated_notes_preview(
+        self,
+        *,
+        repo_slug: str,
+        tag: str,
+        head_sha: str,
+        previous_tag: str | None,
+    ) -> str:
+        command = [
+            "gh",
+            "api",
+            f"repos/{repo_slug}/releases/generate-notes",
+            "-X",
+            "POST",
+            "-f",
+            f"tag_name={tag}",
+            "-f",
+            f"target_commitish={head_sha}",
+        ]
+        if previous_tag:
+            command.extend(["-f", f"previous_tag_name={previous_tag}"])
+        try:
+            payload = json.loads(run_capture(command, cwd=self.repo_root))
+        except (FileNotFoundError, RuntimeError, ValueError, json.JSONDecodeError):
+            return "* GitHub-generated release notes preview unavailable."
+        body = str(payload.get("body", "")).strip()
+        return body or "* GitHub-generated release notes preview unavailable."
 
     def _ensure_github_checks_green(self, repo_slug: str, sha: str) -> None:
         status_output = run_capture(
