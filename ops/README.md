@@ -56,8 +56,9 @@ to inspect the desired package versions and then align Debian changelog heads wi
 that central version state. Upstream GitHub releases stay tied to the upstream
 semantic version, while `--dist` lets release validation and notes cover only the
 distros shipped in that release. `release --dry-run --pretty` shows the explicit
-Feel++ packaging availability notes plus GitHub-generated release notes preview,
-without the lower-level validation detail blocks.
+Feel++ packaging availability notes, install/pull commands for the released
+distros, plus GitHub-generated release notes preview, without the lower-level
+validation detail blocks.
 
 The `feelpp.ops.common` namespace is the shared home for cross-tool support
 code such as naming, future logging helpers, and execution/runtime helpers.

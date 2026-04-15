@@ -109,6 +109,7 @@ class ReleaseService:
         previous_tag = self._previous_tag(tag)
         package_notes = self._package_notes(
             package_versions_by_dist=dist_versions,
+            package_checks=package_checks,
             channel=channel,
             omitted_dists=omitted_dists,
         )
@@ -397,23 +398,63 @@ class ReleaseService:
         self,
         *,
         package_versions_by_dist: dict[str, DebianPackageVersion],
+        package_checks: list[PackageAvailabilityCheck],
         channel: str,
         omitted_dists: list[str],
     ) -> str:
+        package_names_by_dist: dict[str, list[str]] = {}
+        for check in package_checks:
+            package_names_by_dist.setdefault(check.dist, []).append(check.package_name)
+
         lines = [
             "## Packages",
             "",
-            f"- APT channel: `{channel}`",
         ]
         if package_versions_by_dist:
-            lines.append(f"- Released distros: `{', '.join(sorted(package_versions_by_dist))}`")
+            released = ", ".join(sorted(package_versions_by_dist))
+            lines.append(f"- APT packages available for: `{released}`")
+            lines.append(f"- Docker images available for: `{released}`")
+            lines.append(f"- Apptainer images available for: `{released}`")
         if omitted_dists:
             lines.append(f"- Omitted distros in this release: `{', '.join(omitted_dists)}`")
         for dist, version in sorted(package_versions_by_dist.items()):
             flavor = detect_flavor(dist)
             normalized = normalize_package_version_tag(str(version))
-            lines.append(f"- `{dist}` package version: `{version}`")
-            lines.append(f"- APT repository `{flavor}/{dist}`: `http://apt.feelpp.org/{flavor}/{dist}`")
-            lines.append(f"- Docker image `{dist}`: `{OCI_REGISTRY}/{OCI_REPOSITORY}:{dist}-{normalized}`")
-            lines.append(f"- Apptainer artifact `{dist}`: `{OCI_REGISTRY}/{OCI_REPOSITORY}:{dist}-{normalized}-sif`")
+            repo_url = f"http://apt.feelpp.org/{flavor}/{dist}"
+            package_names = sorted(set(package_names_by_dist.get(dist, [])))
+            lines.extend(
+                [
+                    "",
+                    f"### {dist}",
+                    "",
+                    f"- APT package version: `{version}`",
+                    f"- APT channel: `{channel}`",
+                    f"- APT repository: `{repo_url}`",
+                    "",
+                    "Install with APT:",
+                    "",
+                    "```bash",
+                    "sudo install -d -m 0755 /etc/apt/keyrings",
+                    f"curl -fsSL http://apt.feelpp.org/apt.gpg | sudo gpg --dearmor -o /etc/apt/keyrings/feelpp.gpg",
+                    (
+                        f"echo 'deb [signed-by=/etc/apt/keyrings/feelpp.gpg] {repo_url} {dist} {channel}' "
+                        "| sudo tee /etc/apt/sources.list.d/feelpp.list >/dev/null"
+                    ),
+                    "sudo apt update",
+                    f"sudo apt install {' '.join(package_names)}",
+                    "```",
+                    "",
+                    "Docker image:",
+                    "",
+                    "```bash",
+                    f"docker pull {OCI_REGISTRY}/{OCI_REPOSITORY}:{dist}-{normalized}",
+                    "```",
+                    "",
+                    "Apptainer image:",
+                    "",
+                    "```bash",
+                    f"apptainer pull oras://{OCI_REGISTRY}/{OCI_REPOSITORY}:{dist}-{normalized}-sif",
+                    "```",
+                ]
+            )
         return "\n".join(lines)

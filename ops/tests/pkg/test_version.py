@@ -319,7 +319,9 @@ class VersionTests(unittest.TestCase):
             self.assertGreaterEqual(container_checks.call_count, 1)
             self.assertEqual(plan.tag, "v0.111.0-preview.13")
             self.assertIn("## Packages", plan.package_notes)
-            self.assertIn("0.111.0~preview.13-2", plan.package_notes)
+            self.assertIn("sudo apt install python3-feelpp", plan.package_notes)
+            self.assertIn("docker pull ghcr.io/feelpp/feelpp:noble-v0.111.0-preview.13", plan.package_notes)
+            self.assertIn("apptainer pull oras://ghcr.io/feelpp/feelpp:noble-v0.111.0-preview.13-sif", plan.package_notes)
             self.assertIn("## What's Changed", plan.generated_notes_preview)
 
     def test_release_dry_run_can_scope_distros_and_note_omissions(self) -> None:
@@ -371,7 +373,7 @@ class VersionTests(unittest.TestCase):
             self.assertEqual(container_checks.call_count, 2)
             self.assertEqual({check.dist for check in plan.package_checks}, {"noble"})
             self.assertEqual({check.dist for check in plan.container_checks}, {"noble"})
-            self.assertIn("Released distros: `noble`", plan.package_notes)
+            self.assertIn("APT packages available for: `noble`", plan.package_notes)
             self.assertIn("Omitted distros in this release: `resolute`", plan.package_notes)
 
     def test_generated_notes_preview_uses_github_release_notes_api(self) -> None:
@@ -479,7 +481,7 @@ class VersionTests(unittest.TestCase):
                 previous_tag = "v0.111.0-preview.12"
                 prerelease = True
                 dry_run = True
-                package_notes = "## Packages\n\n- Released distros: `noble, trixie`"
+                package_notes = "## Packages\n\n- APT packages available for: `noble, trixie`"
                 generated_notes_preview = "* abc123 Test commit"
                 package_checks = (
                     mock.Mock(
