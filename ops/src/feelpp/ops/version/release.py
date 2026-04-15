@@ -35,10 +35,20 @@ class ReleaseService:
         self.repository = VersionRepository(repo_root=repo_root)
         self.repo_root = self.repository.repo_root
 
-    def prepare_release(self, requested_version: str, *, dry_run: bool = False) -> ReleasePlan:
+    def prepare_release(
+        self,
+        requested_version: str,
+        *,
+        dry_run: bool = False,
+        dists: tuple[str, ...] | None = None,
+    ) -> ReleasePlan:
         state = self.repository.read_state()
         canonical_upstream = state.canonical_upstream_version()
         state.require_matching_package_upstreams(expected=canonical_upstream)
+        selected_records = self._selected_package_records(state, dists)
+        dist_versions = self._package_versions_by_dist(selected_records)
+        selected_dists = sorted(dist_versions)
+        omitted_dists = sorted({record.dist for record in state.package_versions} - set(selected_dists))
 
         try:
             requested_semver = SemanticVersion.parse(requested_version)
@@ -56,16 +66,6 @@ class ReleaseService:
                 raise ValueError(
                     f"Requested version {requested_semver} does not match repository version {canonical_upstream}"
                 )
-            mismatched = [
-                str(record.version)
-                for record in state.package_versions
-                if record.version.semver != requested_semver or record.version.revision != "1"
-            ]
-            if mismatched:
-                raise ValueError(
-                    "Upstream release requires package revisions to be aligned at -1; "
-                    f"found: {', '.join(mismatched)}"
-                )
             tag = f"v{requested_semver}"
             title = tag
             prerelease = requested_semver.prerelease is not None
@@ -77,11 +77,11 @@ class ReleaseService:
                     f"Requested package version {requested_package} does not match repository version {canonical_upstream}"
                 )
             mismatched = [
-                str(record.version) for record in state.package_versions if str(record.version) != str(requested_package)
+                str(record.version) for record in selected_records if str(record.version) != str(requested_package)
             ]
             if mismatched:
                 raise ValueError(
-                    "Packaging release requires all changelog heads to match the requested package version; "
+                    "Packaging release requires selected package versions to match the requested package version; "
                     f"found: {', '.join(mismatched)}"
                 )
             tag = f"pkg/{requested_package.tag_safe()}"
@@ -98,25 +98,19 @@ class ReleaseService:
         self._ensure_tag_absent(tag)
         self._ensure_github_checks_green(repo_slug, head_sha)
 
-        package_checks = self._package_checks(state, channel=channel)
+        package_checks = self._package_checks(selected_records, channel=channel)
         for check in package_checks:
             self._ensure_package_available(check)
 
-        container_checks = self._container_checks(
-            requested_package or DebianPackageVersion(upstream=canonical_upstream.debian_upstream, revision="1"),
-            sorted({check.dist for check in package_checks}),
-        )
+        container_checks = self._container_checks(dist_versions)
         for check in container_checks:
             self._ensure_container_available(check)
 
         previous_tag = self._previous_tag(tag)
         package_notes = self._package_notes(
-            package_version=requested_package or DebianPackageVersion(
-                upstream=canonical_upstream.debian_upstream,
-                revision="1",
-            ),
+            package_versions_by_dist=dist_versions,
             channel=channel,
-            distros=[check.dist for check in package_checks],
+            omitted_dists=omitted_dists,
         )
         generated_notes_preview = self._generated_notes_preview(previous_tag)
         return ReleasePlan(
@@ -137,8 +131,14 @@ class ReleaseService:
             dry_run=dry_run,
         )
 
-    def execute_release(self, requested_version: str, *, dry_run: bool = False) -> ReleasePlan:
-        plan = self.prepare_release(requested_version, dry_run=dry_run)
+    def execute_release(
+        self,
+        requested_version: str,
+        *,
+        dry_run: bool = False,
+        dists: tuple[str, ...] | None = None,
+    ) -> ReleasePlan:
+        plan = self.prepare_release(requested_version, dry_run=dry_run, dists=dists)
         if dry_run:
             return plan
 
@@ -256,29 +256,49 @@ class ReleaseService:
         if failures:
             raise RuntimeError(f"GitHub checks are not green for {sha}: {', '.join(failures)}")
 
-    def _package_checks(self, state, *, channel: str) -> list[PackageAvailabilityCheck]:
+    def _selected_package_records(self, state, dists: tuple[str, ...] | None) -> tuple:
+        if not dists:
+            return state.package_versions
+        selected_dists = tuple(dict.fromkeys(dists))
+        available = {record.dist for record in state.package_versions}
+        missing = [dist for dist in selected_dists if dist not in available]
+        if missing:
+            raise ValueError(f"Unknown or unpublished dist selection: {', '.join(missing)}")
+        return tuple(record for record in state.package_versions if record.dist in set(selected_dists))
+
+    def _package_versions_by_dist(self, package_records) -> dict[str, DebianPackageVersion]:
+        versions_by_dist: dict[str, DebianPackageVersion] = {}
+        for record in package_records:
+            existing = versions_by_dist.get(record.dist)
+            if existing is None:
+                versions_by_dist[record.dist] = record.version
+                continue
+            if str(existing) != str(record.version):
+                raise RuntimeError(
+                    f"Release requires a single package version per dist, but {record.dist} "
+                    f"has both {existing} and {record.version}"
+                )
+        return versions_by_dist
+
+    def _package_checks(self, package_records, *, channel: str) -> list[PackageAvailabilityCheck]:
         manifest = load_manifest(self.repository.manifest_path)
         checks: list[PackageAvailabilityCheck] = []
-        for component_name, component in manifest.components.items():
-            if not component.publish:
-                continue
-            package_name = component.python_packages[0] if component.python_packages else component_name
-            for dist in component.distros:
-                record = state.package_record(component_name, dist)
-                flavor = detect_flavor(dist)
-                url = (
-                    f"http://apt.feelpp.org/{flavor}/{dist}/dists/{dist}/{channel}/binary-amd64"
+        for record in package_records:
+            component = manifest.components[record.component]
+            package_name = component.python_packages[0] if component.python_packages else record.component
+            url = (
+                f"http://apt.feelpp.org/{record.flavor}/{record.dist}/dists/{record.dist}/{channel}/binary-amd64"
+            )
+            checks.append(
+                PackageAvailabilityCheck(
+                    component=record.component,
+                    dist=record.dist,
+                    flavor=record.flavor,
+                    package_name=package_name,
+                    expected_version=str(record.version),
+                    url=url,
                 )
-                checks.append(
-                    PackageAvailabilityCheck(
-                        component=component_name,
-                        dist=dist,
-                        flavor=flavor,
-                        package_name=package_name,
-                        expected_version=str(record.version),
-                        url=url,
-                    )
-                )
+            )
         return checks
 
     def _ensure_package_available(self, check: PackageAvailabilityCheck) -> None:
@@ -311,12 +331,11 @@ class ReleaseService:
 
     def _container_checks(
         self,
-        package_version: DebianPackageVersion,
-        distros: list[str],
+        package_versions_by_dist: dict[str, DebianPackageVersion],
     ) -> list[ContainerAvailabilityCheck]:
-        normalized = normalize_package_version_tag(str(package_version))
         checks: list[ContainerAvailabilityCheck] = []
-        for dist in distros:
+        for dist, package_version in sorted(package_versions_by_dist.items()):
+            normalized = normalize_package_version_tag(str(package_version))
             base_ref = f"{OCI_REGISTRY}/{OCI_REPOSITORY}:{dist}-{normalized}"
             checks.append(
                 ContainerAvailabilityCheck(
@@ -354,19 +373,24 @@ class ReleaseService:
     def _package_notes(
         self,
         *,
-        package_version: DebianPackageVersion,
+        package_versions_by_dist: dict[str, DebianPackageVersion],
         channel: str,
-        distros: list[str],
+        omitted_dists: list[str],
     ) -> str:
-        normalized = normalize_package_version_tag(str(package_version))
         lines = [
             "## Packages",
             "",
-            f"- Docker images: `{OCI_REGISTRY}/{OCI_REPOSITORY}:<dist>-{normalized}`",
-            f"- Apptainer artifacts: `{OCI_REGISTRY}/{OCI_REPOSITORY}:<dist>-{normalized}-sif`",
             f"- APT channel: `{channel}`",
         ]
-        for dist in sorted(set(distros)):
+        if package_versions_by_dist:
+            lines.append(f"- Released distros: `{', '.join(sorted(package_versions_by_dist))}`")
+        if omitted_dists:
+            lines.append(f"- Omitted distros in this release: `{', '.join(omitted_dists)}`")
+        for dist, version in sorted(package_versions_by_dist.items()):
             flavor = detect_flavor(dist)
+            normalized = normalize_package_version_tag(str(version))
+            lines.append(f"- `{dist}` package version: `{version}`")
             lines.append(f"- APT repository `{flavor}/{dist}`: `http://apt.feelpp.org/{flavor}/{dist}`")
+            lines.append(f"- Docker image `{dist}`: `{OCI_REGISTRY}/{OCI_REPOSITORY}:{dist}-{normalized}`")
+            lines.append(f"- Apptainer artifact `{dist}`: `{OCI_REGISTRY}/{OCI_REPOSITORY}:{dist}-{normalized}-sif`")
         return "\n".join(lines)

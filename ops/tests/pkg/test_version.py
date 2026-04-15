@@ -280,9 +280,8 @@ class VersionTests(unittest.TestCase):
             manifest_path = repo_root / "packaging" / "manifest" / "components.toml"
             manifest_path.write_text(
                 manifest_path.read_text(encoding="utf-8")
-                .replace('package_revision = "2"', 'package_revision = "1"')
-                .replace('package_revision = "4"', 'package_revision = "1"')
-                .replace('package_revision = "5"', 'package_revision = "1"'),
+                .replace('package_revision = "4"', 'package_revision = "2"')
+                .replace('package_revision = "5"', 'package_revision = "2"'),
                 encoding="utf-8",
             )
             service = ReleaseService(repo_root)
@@ -316,7 +315,56 @@ class VersionTests(unittest.TestCase):
             self.assertGreaterEqual(container_checks.call_count, 1)
             self.assertEqual(plan.tag, "v0.111.0-preview.13")
             self.assertIn("## Packages", plan.package_notes)
+            self.assertIn("0.111.0~preview.13-2", plan.package_notes)
             self.assertIn("Test commit", plan.generated_notes_preview)
+
+    def test_release_dry_run_can_scope_distros_and_note_omissions(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo_root = self.make_repo(tmpdir)
+            manifest_path = repo_root / "packaging" / "manifest" / "components.toml"
+            manifest_path.write_text(
+                manifest_path.read_text(encoding="utf-8")
+                .replace('package_revision = "4"', 'package_revision = "2"')
+                .replace('package_revision = "5"', 'package_revision = "2"'),
+                encoding="utf-8",
+            )
+            service = ReleaseService(repo_root)
+
+            git_outputs = {
+                ("branch", "--show-current"): "main\n",
+                ("rev-parse", "HEAD"): "abc123\n",
+                ("status", "--short"): "",
+                ("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"): "origin/main\n",
+                ("rev-parse", "origin/main"): "abc123\n",
+                ("tag", "--list", "v0.111.0-preview.13"): "",
+                ("describe", "--tags", "--abbrev=0", "--match", "v*"): "v0.111.0-preview.12\n",
+                ("remote", "get-url", "origin"): "https://github.com/feelpp/feelpp.git\n",
+                ("log", "--pretty=format:* %h %s", "v0.111.0-preview.12..HEAD"): "* abc123 Test commit\n",
+            }
+
+            def fake_git_capture(args: list[str], *, check: bool = True) -> str:
+                key = tuple(args)
+                if key not in git_outputs:
+                    raise AssertionError(f"Unexpected git command: {args}")
+                return git_outputs[key]
+
+            with mock.patch.object(service, "_git_capture", side_effect=fake_git_capture):
+                with mock.patch.object(service, "_ensure_github_checks_green") as gh_checks:
+                    with mock.patch.object(service, "_ensure_package_available") as apt_checks:
+                        with mock.patch.object(service, "_ensure_container_available") as container_checks:
+                            plan = service.execute_release(
+                                "0.111.0-preview.13",
+                                dry_run=True,
+                                dists=("noble",),
+                            )
+
+            gh_checks.assert_called_once()
+            self.assertEqual(apt_checks.call_count, 3)
+            self.assertEqual(container_checks.call_count, 2)
+            self.assertEqual({check.dist for check in plan.package_checks}, {"noble"})
+            self.assertEqual({check.dist for check in plan.container_checks}, {"noble"})
+            self.assertIn("Released distros: `noble`", plan.package_notes)
+            self.assertIn("Omitted distros in this release: `resolute`", plan.package_notes)
 
     def test_cli_exposes_revision_bump_command(self) -> None:
         parser = build_version_parser()
@@ -341,6 +389,12 @@ class VersionTests(unittest.TestCase):
     def test_cli_parses_bump_dry_run(self) -> None:
         parser = build_version_parser()
         args = parser.parse_args(["bump", "0.112.0", "--dry-run"])
+        self.assertTrue(args.dry_run)
+
+    def test_cli_parses_release_dist_and_dry_run(self) -> None:
+        parser = build_version_parser()
+        args = parser.parse_args(["release", "0.111.0-preview.13", "--dist", "noble", "--dist", "trixie", "--dry-run"])
+        self.assertEqual(args.dist, ["noble", "trixie"])
         self.assertTrue(args.dry_run)
 
     def test_main_prints_error_for_invalid_semver(self) -> None:

@@ -42,7 +42,7 @@ def command_revision_bump(args: argparse.Namespace) -> int:
 
 def command_release(args: argparse.Namespace) -> int:
     service = ReleaseService(repo_root=args.repo_root)
-    plan = service.execute_release(args.version, dry_run=args.dry_run)
+    plan = service.execute_release(args.version, dry_run=args.dry_run, dists=tuple(args.dist) or None)
     print(json.dumps(plan.as_dict(), indent=2))
     return 0
 
@@ -133,7 +133,13 @@ def build_parser() -> argparse.ArgumentParser:
     release_parser = subparsers.add_parser("release", help="Create the git tag and GitHub release")
     release_parser.add_argument(
         "version",
-        help="Semantic version for upstream releases or full Debian package version for packaging-only releases",
+        help="Upstream semantic version for GitHub releases or full Debian package version for packaging-only releases",
+    )
+    release_parser.add_argument(
+        "--dist",
+        action="append",
+        default=[],
+        help="Restrict release validation to a distro. Repeat to target multiple distros.",
     )
     release_parser.add_argument(
         "--dry-run",
