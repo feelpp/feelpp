@@ -110,7 +110,7 @@ if ( MPI_FOUND )
 endif()
 
 message(CHECK_START "[feelpp] configuring python3 development")
-if(Python3_Development_FOUND)
+if(FEELPP_HAS_PYTHON AND Python3_Development_FOUND)
 
   target_compile_definitions( feelpp PUBLIC FEELPP_HAS_PYTHON )
   set_property( TARGET feelpp PROPERTY FEELPP_PYTHON_MODULE_PATH ${FEELPP_PYTHON_MODULE_PATH})
