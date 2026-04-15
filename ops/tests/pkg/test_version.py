@@ -11,7 +11,7 @@ from unittest import mock
 from feelpp.ops.version.cli import build_parser as build_version_parser, main as version_main
 from feelpp.ops.version.models import GitHubContributor
 from feelpp.ops.version.publications import HalPublication, HalPublicationService
-from feelpp.ops.version.release import ReleaseService
+from feelpp.ops.version.release import GENERATED_NOTES_UNAVAILABLE, ReleaseService
 from feelpp.ops.version.repository import VersionRepository
 
 
@@ -280,6 +280,19 @@ class VersionTests(unittest.TestCase):
 
             self.assertNotIn("prudhomm", json.dumps(zenodo_payload))
             self.assertNotIn("prudhomm", json.dumps(codemeta_payload))
+
+    def test_sync_metadata_can_clear_release_contributors(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo_root = self.make_repo(tmpdir)
+            repository = VersionRepository(repo_root)
+
+            repository.sync_metadata(contributors=())
+
+            zenodo_payload = json.loads((repo_root / ".zenodo.json").read_text(encoding="utf-8"))
+            self.assertEqual(zenodo_payload["contributors"], [])
+
+            codemeta_payload = json.loads((repo_root / "codemeta.json").read_text(encoding="utf-8"))
+            self.assertEqual(codemeta_payload["contributor"], [])
 
     def test_revision_bump_increments_debian_revision_only(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -610,26 +623,22 @@ class VersionTests(unittest.TestCase):
 
         self.assertEqual(previous, "v0.111.0")
 
-    def test_release_contributors_are_derived_from_compare_range(self) -> None:
+    def test_release_contributors_are_derived_from_generated_notes(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             repo_root = self.make_repo(tmpdir)
             service = ReleaseService(repo_root)
             plan = mock.Mock(
-                previous_tag="v0.111.0-preview.12",
-                repo_slug="feelpp/feelpp",
-                head_sha="abc123",
+                generated_notes_preview=(
+                    "## What's Changed\n"
+                    "* Fix packaging by @prudhomm in https://github.com/feelpp/feelpp/pull/1\n"
+                    "* Improve release notes by @Philand in https://github.com/feelpp/feelpp/pull/2\n"
+                    "## New Contributors\n"
+                    "* @Philand made their first contribution in https://github.com/feelpp/feelpp/pull/2\n"
+                    "* @dependabot[bot] updated dependencies in https://github.com/feelpp/feelpp/pull/3\n"
+                )
             )
 
             responses = [
-                {
-                    "commits": [
-                        {"author": {"login": "prudhomm"}},
-                        {"author": {"login": "Philand"}},
-                        {"author": {"login": "dependabot[bot]"}},
-                        {"author": {"login": "Philand"}},
-                        {"author": None},
-                    ]
-                },
                 {"login": "prudhomm", "name": "Christophe Prud'homme", "type": "User"},
                 {"login": "Philand", "name": "Philippe Pincon", "type": "User"},
                 {"login": "dependabot[bot]", "name": "dependabot", "type": "Bot"},
@@ -649,15 +658,15 @@ class VersionTests(unittest.TestCase):
                 ),
             )
 
-    def test_release_contributors_require_previous_tag(self) -> None:
+    def test_release_contributors_are_empty_when_notes_are_unavailable(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             repo_root = self.make_repo(tmpdir)
             service = ReleaseService(repo_root)
-            plan = mock.Mock(previous_tag=None, repo_slug="feelpp/feelpp", head_sha="abc123")
+            plan = mock.Mock(generated_notes_preview=GENERATED_NOTES_UNAVAILABLE)
 
             contributors = service._release_contributors(plan)
 
-            self.assertIsNone(contributors)
+            self.assertEqual(contributors, ())
 
     def test_execute_release_commits_metadata_before_tag(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

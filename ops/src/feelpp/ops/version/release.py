@@ -7,9 +7,9 @@ import gzip
 import json
 import lzma
 import os
+import re
 import subprocess
 import tempfile
-from urllib.parse import quote
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -34,6 +34,7 @@ OCI_REPOSITORY = os.getenv("FEELPP_PKG_OCI_REPOSITORY") or "feelpp/feelpp"
 OCI_REGISTRY = os.getenv("FEELPP_PKG_OCI_REGISTRY") or "ghcr.io"
 APPTAINER_TAG_SUFFIXES = ("-sif", "_sif")
 GENERATED_NOTES_UNAVAILABLE = "* GitHub-generated release notes preview unavailable."
+GITHUB_LOGIN_RE = re.compile(r"(?<![A-Za-z0-9/])@(?P<login>[A-Za-z0-9][A-Za-z0-9-]*(?:\[[A-Za-z0-9-]+\])?)")
 
 
 class ReleaseService:
@@ -401,28 +402,14 @@ class ReleaseService:
         run_checked(["git", "push", "origin", plan.branch], cwd=self.repo_root)
         return self._git_capture(["rev-parse", "HEAD"]).strip()
 
-    def _release_contributors(self, plan: ReleasePlan) -> tuple[GitHubContributor, ...] | None:
-        if not plan.previous_tag:
-            return None
+    def _release_contributors(self, plan: ReleasePlan) -> tuple[GitHubContributor, ...]:
+        if not plan.generated_notes_preview or plan.generated_notes_preview == GENERATED_NOTES_UNAVAILABLE:
+            return ()
 
         logins: list[str] = []
         seen_logins: set[str] = set()
-        compare_path = (
-            f"repos/{plan.repo_slug}/compare/"
-            f"{quote(plan.previous_tag, safe='')}...{quote(plan.head_sha, safe='')}"
-        )
-        try:
-            payload = json.loads(run_capture(["gh", "api", compare_path], cwd=self.repo_root))
-        except (FileNotFoundError, RuntimeError, ValueError, json.JSONDecodeError):
-            return None
-
-        for commit in payload.get("commits", []):
-            if not isinstance(commit, dict):
-                continue
-            author = commit.get("author")
-            if not isinstance(author, dict):
-                continue
-            login = str(author.get("login") or "").strip()
+        for match in GITHUB_LOGIN_RE.finditer(plan.generated_notes_preview):
+            login = str(match.group("login") or "").strip()
             if not login:
                 continue
             normalized = login.lower()
