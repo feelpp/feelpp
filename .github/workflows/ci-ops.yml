@@ -1,4 +1,4 @@
-name: Packaging PR Validation
+name: CI Ops
 
 on:
   pull_request:
@@ -6,20 +6,20 @@ on:
     paths:
       - 'packaging/**'
       - 'ops/**'
-      - '.github/workflows/packaging-pr.yml'
+      - '.github/workflows/ci-ops.yml'
   push:
     branches: [master, develop]
     paths:
       - 'packaging/**'
       - 'ops/**'
-      - '.github/workflows/packaging-pr.yml'
+      - '.github/workflows/ci-ops.yml'
 
 permissions:
   contents: read
 
 jobs:
   classify:
-    name: Classify packaging changes
+    name: Classify ops and packaging changes
     runs-on: ubuntu-latest
     outputs:
       structural: ${{ steps.classify.outputs.structural }}
@@ -56,7 +56,7 @@ jobs:
               "ops/",
           )
           relevant_exact = {
-              ".github/workflows/packaging-pr.yml",
+              ".github/workflows/ci-ops.yml",
           }
           metadata_patterns = (
               re.compile(r"^packaging/README\.md$"),
@@ -128,7 +128,7 @@ jobs:
           fi
 
   structural:
-    name: Validate packaging structure
+    name: Validate ops tooling
     runs-on: ubuntu-latest
     needs: classify
     if: needs.classify.outputs.structural == 'true'
@@ -144,7 +144,7 @@ jobs:
           enable-cache: true
           cache-dependency-glob: ops/pyproject.toml
 
-      - name: Install packaging tooling
+      - name: Install ops tooling
         shell: bash
         run: uv pip install --system -e 'ops[test]'
 
