@@ -148,6 +148,6 @@ jobs:
         shell: bash
         run: uv pip install --system -e 'ops[test]'
 
-      - name: Run packaging tool tests
+      - name: Run ops tests
         shell: bash
-        run: python -m pytest -q ops/tests/pkg
+        run: python -m pytest -q ops/tests

@@ -30,10 +30,10 @@ fpp-pkg --help
 fpp-version --help
 ```
 
-Run the package-tool test suite with `pytest`:
+Run the `ops` test suite with `pytest`:
 
 ```bash
-pytest -q ops/tests/pkg
+pytest -q ops/tests
 ```
 
 `fpp-version` uses the repository root [`feelpp.version.cmake`](../feelpp.version.cmake)
