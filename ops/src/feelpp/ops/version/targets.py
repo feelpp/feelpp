@@ -3,9 +3,17 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+import json
 import re
 
-from .models import CMakeVersionRecord, DebianPackageRecord, DebianPackageVersion, MaintainerIdentity, SemanticVersion
+from .models import (
+    CMakeVersionRecord,
+    DebianPackageRecord,
+    DebianPackageVersion,
+    MaintainerIdentity,
+    MetadataVersionRecord,
+    SemanticVersion,
+)
 
 
 def _replace_assignment(text: str, name: str, value: str) -> str:
@@ -52,6 +60,78 @@ class CMakeVersionTarget:
         text = _replace_assignment(text, "FEELPP_VERSION_MICRO", str(version.patch))
         text = _replace_assignment(text, "FEELPP_VERSION_PRERELEASE", version.cmake_prerelease)
         self.path.write_text(text, encoding="utf-8")
+
+
+def _coerce_metadata_version(raw: object, *, source: Path) -> SemanticVersion:
+    text = str(raw or "").strip().strip('"').strip("'")
+    if not text:
+        raise ValueError(f"Unable to read version metadata from {source}")
+    if text.startswith("v"):
+        text = text[1:]
+    return SemanticVersion.parse(text)
+
+
+@dataclass(frozen=True)
+class JsonMetadataVersionTarget:
+    name: str
+    path: Path
+    key: str = "version"
+
+    def read(self) -> MetadataVersionRecord:
+        payload = json.loads(self.path.read_text(encoding="utf-8"))
+        return MetadataVersionRecord(
+            name=self.name,
+            path=self.path,
+            version=_coerce_metadata_version(payload.get(self.key), source=self.path),
+        )
+
+    def write(self, version: SemanticVersion) -> None:
+        payload = json.loads(self.path.read_text(encoding="utf-8"))
+        payload[self.key] = f"v{version}"
+        self.path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def _replace_or_insert_line(text: str, *, key: str, value: str, insert_after: str | None = None) -> str:
+    pattern = re.compile(rf"^(?P<prefix>{re.escape(key)}:\s*)(?P<value>.*)$", re.MULTILINE)
+    replacement = rf"\g<prefix>{value}"
+    updated, count = pattern.subn(replacement, text, count=1)
+    if count == 1:
+        return updated
+
+    lines = text.splitlines()
+    insert_at = len(lines)
+    if insert_after is not None:
+        for index, line in enumerate(lines):
+            if line.startswith(f"{insert_after}:"):
+                insert_at = index + 1
+                break
+    lines.insert(insert_at, f"{key}: {value}")
+    rendered = "\n".join(lines)
+    if text.endswith("\n") or not text:
+        rendered += "\n"
+    return rendered
+
+
+@dataclass(frozen=True)
+class CitationCffVersionTarget:
+    name: str
+    path: Path
+
+    def read(self) -> MetadataVersionRecord:
+        text = self.path.read_text(encoding="utf-8")
+        match = re.search(r"^version:\s*(?P<value>.+?)\s*$", text, re.MULTILINE)
+        if not match:
+            raise ValueError(f"Unable to read version metadata from {self.path}")
+        return MetadataVersionRecord(
+            name=self.name,
+            path=self.path,
+            version=_coerce_metadata_version(match.group("value"), source=self.path),
+        )
+
+    def write(self, version: SemanticVersion) -> None:
+        text = self.path.read_text(encoding="utf-8")
+        updated = _replace_or_insert_line(text, key="version", value=f"v{version}", insert_after="title")
+        self.path.write_text(updated, encoding="utf-8")
 
 
 CHANGELOG_HEADER_RE = re.compile(

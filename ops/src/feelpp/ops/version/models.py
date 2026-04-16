@@ -135,6 +135,16 @@ class CMakeVersionRecord:
 
 
 @dataclass(frozen=True)
+class MetadataVersionRecord:
+    name: str
+    path: Path
+    version: SemanticVersion
+
+    def as_dict(self) -> dict[str, str]:
+        return {"name": self.name, "path": str(self.path), "version": str(self.version)}
+
+
+@dataclass(frozen=True)
 class DebianPackageRecord:
     component: str
     dist: str
@@ -168,6 +178,16 @@ class MaintainerIdentity:
     @property
     def formatted(self) -> str:
         return f"{self.name} <{self.email}>"
+
+
+@dataclass(frozen=True)
+class GitHubContributor:
+    login: str
+    name: str | None = None
+
+    @property
+    def display_name(self) -> str:
+        return self.name or self.login
 
 
 @dataclass(frozen=True)
@@ -209,6 +229,7 @@ class RepoVersionState:
     repo_root: Path
     cmake_versions: tuple[CMakeVersionRecord, ...]
     package_versions: tuple[DebianPackageRecord, ...]
+    metadata_versions: tuple[MetadataVersionRecord, ...] = ()
     changelog_versions: tuple[DebianPackageRecord, ...] = ()
 
     def canonical_upstream_version(self) -> SemanticVersion:
@@ -232,6 +253,20 @@ class RepoVersionState:
             )
         return resolved
 
+    def require_matching_metadata_versions(self, expected: SemanticVersion | None = None) -> SemanticVersion | None:
+        if not self.metadata_versions:
+            return expected
+        unique = {str(record.version): record.version for record in self.metadata_versions}
+        if len(unique) != 1:
+            details = ", ".join(f"{record.name}={record.version}" for record in self.metadata_versions)
+            raise ValueError(f"Mismatched metadata versions: {details}")
+        resolved = next(iter(unique.values()))
+        if expected and str(resolved) != str(expected):
+            raise ValueError(
+                f"Metadata version {resolved} does not match CMake version {expected}"
+            )
+        return resolved
+
     def package_record(self, component: str, dist: str) -> DebianPackageRecord:
         for record in self.package_versions:
             if record.component == component and record.dist == dist:
@@ -247,11 +282,14 @@ class RepoVersionState:
     def as_dict(self) -> dict[str, object]:
         cmake_versions = [record.as_dict() for record in self.cmake_versions]
         package_versions = [record.as_dict() for record in self.package_versions]
+        metadata_versions = [record.as_dict() for record in self.metadata_versions]
         changelog_versions = [record.as_dict() for record in self.changelog_versions]
         cmake_consistent = len({record["version"] for record in cmake_versions}) == 1
         package_upstreams = {
             str(DebianPackageVersion.parse(record["version"]).semver) for record in package_versions
         }
+        canonical_version = cmake_versions[0]["version"] if cmake_versions else None
+        metadata_consistent = all(record["version"] == canonical_version for record in metadata_versions)
         changelog_sync = True
         changelog_map = {
             (record.component, record.dist): str(record.version)
@@ -265,10 +303,12 @@ class RepoVersionState:
             "repo_root": str(self.repo_root),
             "cmake_versions": cmake_versions,
             "package_versions": package_versions,
+            "metadata_versions": metadata_versions,
             "changelog_versions": changelog_versions,
             "consistency": {
                 "cmake_versions": cmake_consistent,
                 "package_upstreams": len(package_upstreams) == 1,
+                "metadata_versions": metadata_consistent,
                 "changelog_sync": changelog_sync,
             },
         }

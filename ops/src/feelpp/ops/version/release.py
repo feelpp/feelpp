@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from dataclasses import replace
+from functools import cmp_to_key
 from pathlib import Path
 import gzip
 import json
 import lzma
 import os
+import re
 import subprocess
 import tempfile
 from urllib.error import HTTPError, URLError
@@ -15,9 +18,11 @@ from feelpp.pkg.graph import load_manifest
 from feelpp.pkg.image import normalize_package_version_tag
 from feelpp.pkg.shell import run_capture, run_checked
 
+from .publications import HalPublicationService
 from .models import (
     ContainerAvailabilityCheck,
     DebianPackageVersion,
+    GitHubContributor,
     PackageAvailabilityCheck,
     ReleasePlan,
     SemanticVersion,
@@ -28,6 +33,8 @@ from .repository import VersionRepository
 OCI_REPOSITORY = os.getenv("FEELPP_PKG_OCI_REPOSITORY") or "feelpp/feelpp"
 OCI_REGISTRY = os.getenv("FEELPP_PKG_OCI_REGISTRY") or "ghcr.io"
 APPTAINER_TAG_SUFFIXES = ("-sif", "_sif")
+GENERATED_NOTES_UNAVAILABLE = "* GitHub-generated release notes preview unavailable."
+GITHUB_LOGIN_RE = re.compile(r"(?<![A-Za-z0-9/])@(?P<login>[A-Za-z0-9][A-Za-z0-9-]*(?:\[[A-Za-z0-9-]+\])?)")
 
 
 class ReleaseService:
@@ -41,6 +48,8 @@ class ReleaseService:
         *,
         dry_run: bool = False,
         dists: tuple[str, ...] | None = None,
+        publication_rows: int | None = None,
+        publication_since: str | None = None,
     ) -> ReleasePlan:
         state = self.repository.read_state()
         canonical_upstream = state.canonical_upstream_version()
@@ -113,6 +122,12 @@ class ReleaseService:
             channel=channel,
             omitted_dists=omitted_dists,
         )
+        publication_notes = self._publication_notes(
+            rows=publication_rows,
+            since=publication_since,
+        )
+        if publication_notes:
+            package_notes = f"{package_notes}\n\n{publication_notes}"
         generated_notes_preview = self._generated_notes_preview(
             repo_slug=repo_slug,
             tag=tag,
@@ -143,19 +158,28 @@ class ReleaseService:
         *,
         dry_run: bool = False,
         dists: tuple[str, ...] | None = None,
+        publication_rows: int | None = None,
+        publication_since: str | None = None,
     ) -> ReleasePlan:
-        plan = self.prepare_release(requested_version, dry_run=dry_run, dists=dists)
+        plan = self.prepare_release(
+            requested_version,
+            dry_run=dry_run,
+            dists=dists,
+            publication_rows=publication_rows,
+            publication_since=publication_since,
+        )
         if dry_run:
             return plan
 
+        release_head_sha = self._sync_release_metadata(plan)
         run_checked(
-            ["git", "tag", "-a", plan.tag, "-m", plan.title, plan.head_sha],
+            ["git", "tag", "-a", plan.tag, "-m", plan.title, release_head_sha],
             cwd=self.repo_root,
         )
         run_checked(["git", "push", "origin", f"refs/tags/{plan.tag}"], cwd=self.repo_root)
 
         with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as handle:
-            handle.write(plan.package_notes)
+            handle.write(self._render_release_notes(plan))
             notes_path = Path(handle.name)
 
         try:
@@ -169,14 +193,13 @@ class ReleaseService:
                 plan.title,
                 "--notes-file",
                 str(notes_path),
-                "--generate-notes",
             ]
             if plan.prerelease:
                 command.append("--prerelease")
             run_checked(command, cwd=self.repo_root)
         finally:
             notes_path.unlink(missing_ok=True)
-        return plan
+        return replace(plan, head_sha=release_head_sha)
 
     def _current_branch(self) -> str:
         return self._git_capture(["branch", "--show-current"]).strip() or "develop"
@@ -216,17 +239,109 @@ class ReleaseService:
             raise RuntimeError(f"Tag already exists: {tag}")
 
     def _previous_tag(self, tag: str) -> str | None:
-        match = "pkg/*" if tag.startswith("pkg/") else "v*"
-        previous = self._git_capture(
-            ["describe", "--tags", "--abbrev=0", "--match", match],
-            check=False,
-        ).strip()
-        if previous == tag:
+        if tag.startswith("pkg/"):
             previous = self._git_capture(
-                ["describe", "--tags", "--abbrev=0", "--match", match, f"{tag}^"],
+                ["describe", "--tags", "--abbrev=0", "--match", "pkg/*"],
                 check=False,
             ).strip()
-        return previous or None
+            if previous == tag:
+                previous = self._git_capture(
+                    ["describe", "--tags", "--abbrev=0", "--match", "pkg/*", f"{tag}^"],
+                    check=False,
+                ).strip()
+            return previous or None
+
+        if not tag.startswith("v"):
+            return None
+
+        current = SemanticVersion.parse(tag[1:])
+        raw_tags = self._git_capture(["tag", "--merged", "HEAD", "--list", "v*"], check=False)
+        candidates: list[tuple[str, SemanticVersion]] = []
+        for raw_tag in raw_tags.splitlines():
+            candidate_tag = raw_tag.strip()
+            if not candidate_tag or candidate_tag == tag or not candidate_tag.startswith("v"):
+                continue
+            try:
+                candidate_version = SemanticVersion.parse(candidate_tag[1:])
+            except ValueError:
+                continue
+            candidates.append((candidate_tag, candidate_version))
+
+        if not candidates:
+            return None
+
+        if current.prerelease is not None:
+            same_series = [
+                (candidate_tag, candidate_version)
+                for candidate_tag, candidate_version in candidates
+                if candidate_version.base == current.base
+                and candidate_version.prerelease is not None
+                and self._compare_semver(candidate_version, current) < 0
+            ]
+            if same_series:
+                return max(same_series, key=cmp_to_key(self._compare_semver_tag))[0]
+
+        stable_candidates = [
+            (candidate_tag, candidate_version)
+            for candidate_tag, candidate_version in candidates
+            if candidate_version.prerelease is None
+            and self._compare_semver(candidate_version, current) < 0
+        ]
+        if stable_candidates:
+            return max(stable_candidates, key=cmp_to_key(self._compare_semver_tag))[0]
+        return None
+
+    def _compare_semver_tag(
+        self,
+        left: tuple[str, SemanticVersion],
+        right: tuple[str, SemanticVersion],
+    ) -> int:
+        return self._compare_semver(left[1], right[1])
+
+    def _compare_semver(self, left: SemanticVersion, right: SemanticVersion) -> int:
+        left_core = (left.major, left.minor, left.patch)
+        right_core = (right.major, right.minor, right.patch)
+        if left_core < right_core:
+            return -1
+        if left_core > right_core:
+            return 1
+        return self._compare_prerelease(left.prerelease, right.prerelease)
+
+    def _compare_prerelease(self, left: str | None, right: str | None) -> int:
+        if left is None and right is None:
+            return 0
+        if left is None:
+            return 1
+        if right is None:
+            return -1
+
+        left_parts = left.split(".")
+        right_parts = right.split(".")
+        for left_part, right_part in zip(left_parts, right_parts):
+            left_numeric = left_part.isdigit()
+            right_numeric = right_part.isdigit()
+            if left_numeric and right_numeric:
+                left_value = int(left_part)
+                right_value = int(right_part)
+                if left_value < right_value:
+                    return -1
+                if left_value > right_value:
+                    return 1
+                continue
+            if left_numeric and not right_numeric:
+                return -1
+            if not left_numeric and right_numeric:
+                return 1
+            if left_part < right_part:
+                return -1
+            if left_part > right_part:
+                return 1
+
+        if len(left_parts) < len(right_parts):
+            return -1
+        if len(left_parts) > len(right_parts):
+            return 1
+        return 0
 
     def _generated_notes_preview(
         self,
@@ -252,9 +367,82 @@ class ReleaseService:
         try:
             payload = json.loads(run_capture(command, cwd=self.repo_root))
         except (FileNotFoundError, RuntimeError, ValueError, json.JSONDecodeError):
-            return "* GitHub-generated release notes preview unavailable."
+            return GENERATED_NOTES_UNAVAILABLE
         body = str(payload.get("body", "")).strip()
-        return body or "* GitHub-generated release notes preview unavailable."
+        return body or GENERATED_NOTES_UNAVAILABLE
+
+    def _release_semver(self, requested_version: str) -> SemanticVersion:
+        try:
+            return SemanticVersion.parse(requested_version)
+        except ValueError:
+            return DebianPackageVersion.parse(requested_version).semver
+
+    def _metadata_path_args(self) -> list[str]:
+        return [str(path.relative_to(self.repo_root)) for path in self.repository.metadata_paths()]
+
+    def _metadata_paths_changed(self) -> bool:
+        metadata_paths = self._metadata_path_args()
+        if not metadata_paths:
+            return False
+        status = self._git_capture(["status", "--short", "--", *metadata_paths]).strip()
+        return bool(status)
+
+    def _sync_release_metadata(self, plan: ReleasePlan) -> str:
+        release_version = self._release_semver(plan.requested_version)
+        self.repository.sync_metadata(version=release_version, contributors=self._release_contributors(plan))
+        if not self._metadata_paths_changed():
+            return self._git_capture(["rev-parse", "HEAD"]).strip()
+
+        metadata_paths = self._metadata_path_args()
+        run_checked(["git", "add", "--", *metadata_paths], cwd=self.repo_root)
+        run_checked(
+            ["git", "commit", "-m", f"chore(release): sync metadata for {plan.tag} [ci skip]"],
+            cwd=self.repo_root,
+        )
+        run_checked(["git", "push", "origin", plan.branch], cwd=self.repo_root)
+        return self._git_capture(["rev-parse", "HEAD"]).strip()
+
+    def _release_contributors(self, plan: ReleasePlan) -> tuple[GitHubContributor, ...]:
+        if not plan.generated_notes_preview or plan.generated_notes_preview == GENERATED_NOTES_UNAVAILABLE:
+            return ()
+
+        logins: list[str] = []
+        seen_logins: set[str] = set()
+        for match in GITHUB_LOGIN_RE.finditer(plan.generated_notes_preview):
+            login = str(match.group("login") or "").strip()
+            if not login:
+                continue
+            normalized = login.lower()
+            if normalized in seen_logins:
+                continue
+            seen_logins.add(normalized)
+            logins.append(login)
+
+        contributors: list[GitHubContributor] = []
+        for login in logins:
+            contributor = self._github_contributor(login)
+            if contributor is not None:
+                contributors.append(contributor)
+        return tuple(contributors)
+
+    def _github_contributor(self, login: str) -> GitHubContributor | None:
+        try:
+            payload = json.loads(run_capture(["gh", "api", f"users/{login}"], cwd=self.repo_root))
+        except (FileNotFoundError, RuntimeError, ValueError, json.JSONDecodeError):
+            return GitHubContributor(login=login, name=None)
+
+        if str(payload.get("type") or "").strip().lower() == "bot":
+            return None
+
+        resolved_login = str(payload.get("login") or login).strip() or login
+        resolved_name = str(payload.get("name") or "").strip() or None
+        return GitHubContributor(login=resolved_login, name=resolved_name)
+
+    def _render_release_notes(self, plan: ReleasePlan) -> str:
+        sections = [plan.package_notes.strip()]
+        if plan.generated_notes_preview and plan.generated_notes_preview != GENERATED_NOTES_UNAVAILABLE:
+            sections.append(plan.generated_notes_preview.strip())
+        return "\n\n".join(section for section in sections if section)
 
     def _ensure_github_checks_green(self, repo_slug: str, sha: str) -> None:
         status_output = run_capture(
@@ -495,3 +683,16 @@ class ReleaseService:
                 ]
             )
         return "\n".join(lines)
+
+    def _publication_notes(
+        self,
+        *,
+        rows: int | None = None,
+        since: str | None = None,
+    ) -> str:
+        service = HalPublicationService(repo_root=self.repo_root)
+        try:
+            publications = service.fetch(rows=rows, since=since)
+        except RuntimeError:
+            return ""
+        return service.format_markdown(publications)

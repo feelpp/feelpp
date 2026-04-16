@@ -2,15 +2,30 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+import json
 import os
+import re
 from typing import Callable, TypeVar
+import unicodedata
 
 from feelpp.pkg.config import detect_flavor, discover_repo_root
 from feelpp.pkg.graph import ComponentSpec, load_manifest
 from feelpp.pkg.shell import run_capture
 
-from .models import DebianPackageRecord, DebianPackageVersion, MaintainerIdentity, RepoVersionState, SemanticVersion
-from .targets import CMakeVersionTarget, DebianChangelogTarget
+from .models import (
+    DebianPackageRecord,
+    DebianPackageVersion,
+    GitHubContributor,
+    MaintainerIdentity,
+    RepoVersionState,
+    SemanticVersion,
+)
+from .targets import (
+    CMakeVersionTarget,
+    CitationCffVersionTarget,
+    DebianChangelogTarget,
+    JsonMetadataVersionTarget,
+)
 
 
 CMAKE_TARGET_PATHS = (
@@ -18,6 +33,7 @@ CMAKE_TARGET_PATHS = (
 )
 
 T = TypeVar("T")
+NON_ALNUM_RE = re.compile(r"[^a-z0-9]+")
 
 
 def current_timestamp() -> datetime:
@@ -43,6 +59,51 @@ def _git_config(repo_root: Path, key: str) -> str | None:
     return value or None
 
 
+def _name_tokens(raw: str) -> tuple[str, ...]:
+    normalized = unicodedata.normalize("NFKD", raw)
+    ascii_text = "".join(char for char in normalized if not unicodedata.combining(char))
+    lowered = NON_ALNUM_RE.sub(" ", ascii_text.lower())
+    return tuple(token for token in lowered.split() if token)
+
+
+def _normalize_person_name(raw: str) -> str:
+    return " ".join(sorted(_name_tokens(raw)))
+
+
+def _person_name_from_object(payload: object) -> str | None:
+    if not isinstance(payload, dict):
+        return None
+    name = str(payload.get("name") or "").strip()
+    if name:
+        return name
+    given = str(payload.get("givenName") or "").strip()
+    family = str(payload.get("familyName") or "").strip()
+    combined = " ".join(part for part in (given, family) if part).strip()
+    return combined or None
+
+
+def _format_zenodo_person_name(raw: str) -> str:
+    cleaned = " ".join(raw.split())
+    if "," in cleaned:
+        return cleaned
+    parts = cleaned.split()
+    if len(parts) < 2:
+        return cleaned
+    return f"{parts[-1]}, {' '.join(parts[:-1])}"
+
+
+def _codemeta_person_entry(contributor: GitHubContributor) -> dict[str, object]:
+    display_name = " ".join(contributor.display_name.split())
+    parts = display_name.split()
+    entry: dict[str, object] = {"@type": "Person"}
+    if len(parts) >= 2:
+        entry["givenName"] = " ".join(parts[:-1])
+        entry["familyName"] = parts[-1]
+    else:
+        entry["name"] = display_name
+    return entry
+
+
 class VersionRepository:
     def __init__(self, repo_root: str | Path | None = None) -> None:
         self.repo_root = Path(repo_root).expanduser().resolve() if repo_root else discover_repo_root()
@@ -65,6 +126,17 @@ class VersionRepository:
             dist = path.parts[-3]
             targets.append(DebianChangelogTarget(component=component, dist=dist, path=path))
         return tuple(targets)
+
+    def metadata_targets(self) -> tuple[JsonMetadataVersionTarget | CitationCffVersionTarget, ...]:
+        candidates = (
+            JsonMetadataVersionTarget(name="codemeta", path=self.repo_root / "codemeta.json"),
+            JsonMetadataVersionTarget(name="zenodo", path=self.repo_root / ".zenodo.json"),
+            CitationCffVersionTarget(name="citation", path=self.repo_root / "CITATION.cff"),
+        )
+        return tuple(target for target in candidates if target.path.exists())
+
+    def metadata_paths(self) -> tuple[Path, ...]:
+        return tuple(target.path for target in self.metadata_targets())
 
     def manifest(self):
         return load_manifest(self.manifest_path)
@@ -91,6 +163,8 @@ class VersionRepository:
     def _mutable_paths(self) -> tuple[Path, ...]:
         unique: dict[Path, None] = {}
         for target in self.cmake_targets():
+            unique[target.path] = None
+        for target in self.metadata_targets():
             unique[target.path] = None
         unique[self.manifest_path] = None
         for target in self.changelog_targets():
@@ -284,8 +358,93 @@ class VersionRepository:
             repo_root=self.repo_root,
             cmake_versions=cmake_versions,
             package_versions=self.package_versions(canonical),
+            metadata_versions=tuple(target.read() for target in self.metadata_targets()),
             changelog_versions=tuple(target.read() for target in self.changelog_targets()),
         )
+
+    def _sync_release_contributors(self, contributors: tuple[GitHubContributor, ...]) -> None:
+        zenodo_path = self.repo_root / ".zenodo.json"
+        if zenodo_path.exists():
+            payload = json.loads(zenodo_path.read_text(encoding="utf-8"))
+            creator_names = {
+                normalized
+                for entry in payload.get("creators", [])
+                if isinstance(entry, dict)
+                if (normalized := _normalize_person_name(str(entry.get("name") or "")))
+            }
+            existing_by_name = {
+                normalized: entry
+                for entry in payload.get("contributors", [])
+                if isinstance(entry, dict)
+                if (normalized := _normalize_person_name(str(entry.get("name") or "")))
+            }
+            rendered_contributors: list[dict[str, object]] = []
+            seen_names: set[str] = set()
+            for contributor in contributors:
+                normalized_name = _normalize_person_name(contributor.display_name)
+                if not normalized_name or normalized_name in creator_names or normalized_name in seen_names:
+                    continue
+                seen_names.add(normalized_name)
+                existing = existing_by_name.get(normalized_name)
+                if isinstance(existing, dict):
+                    rendered_contributors.append(existing)
+                    continue
+                rendered_contributors.append(
+                    {
+                        "name": _format_zenodo_person_name(contributor.display_name),
+                        "type": "Researcher",
+                    }
+                )
+            payload["contributors"] = rendered_contributors
+            zenodo_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+        codemeta_path = self.repo_root / "codemeta.json"
+        if codemeta_path.exists():
+            payload = json.loads(codemeta_path.read_text(encoding="utf-8"))
+            author_names = {
+                normalized
+                for entry in payload.get("author", [])
+                if (name := _person_name_from_object(entry))
+                if (normalized := _normalize_person_name(name))
+            }
+            existing_by_name = {
+                normalized: entry
+                for entry in payload.get("contributor", [])
+                if (name := _person_name_from_object(entry))
+                if (normalized := _normalize_person_name(name))
+            }
+            rendered_contributors = []
+            seen_names: set[str] = set()
+            for contributor in contributors:
+                normalized_name = _normalize_person_name(contributor.display_name)
+                if not normalized_name or normalized_name in author_names or normalized_name in seen_names:
+                    continue
+                seen_names.add(normalized_name)
+                existing = existing_by_name.get(normalized_name)
+                if isinstance(existing, dict):
+                    rendered_contributors.append(existing)
+                    continue
+                rendered_contributors.append(_codemeta_person_entry(contributor))
+            payload["contributor"] = rendered_contributors
+            codemeta_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+    def sync_metadata(
+        self,
+        *,
+        version: SemanticVersion | None = None,
+        contributors: tuple[GitHubContributor, ...] | None = None,
+        dry_run: bool = False,
+    ) -> RepoVersionState:
+        def apply() -> RepoVersionState:
+            state = self.read_state()
+            target_version = version or state.canonical_upstream_version()
+            for target in self.metadata_targets():
+                target.write(target_version)
+            if contributors is not None:
+                self._sync_release_contributors(contributors)
+            return self.read_state()
+
+        return self._run_with_rollback(apply) if dry_run else apply()
 
     def bump_upstream(
         self,
@@ -302,6 +461,9 @@ class VersionRepository:
             manifest = self.manifest()
 
             for target in self.cmake_targets():
+                target.write(version)
+
+            for target in self.metadata_targets():
                 target.write(version)
 
             for component_name in manifest.components:
