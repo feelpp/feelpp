@@ -19,6 +19,7 @@ class VersionTests(unittest.TestCase):
     def make_repo(self, tmpdir: str) -> Path:
         repo_root = Path(tmpdir) / "repo"
         (repo_root / ".github").mkdir(parents=True)
+        (repo_root / "ops").mkdir(parents=True)
         (repo_root / "toolboxes" / "cmake").mkdir(parents=True)
         (repo_root / "mor" / "cmake").mkdir(parents=True)
         (repo_root / "packaging" / "manifest").mkdir(parents=True)
@@ -143,15 +144,24 @@ class VersionTests(unittest.TestCase):
                             }
                         }
                     },
-                    "releaseNotes": {
-                        "publications": {
-                            "hal": {
-                                "collections": ["FEEL", "CEMOSIS"],
-                                "rows": 4,
-                            }
-                        }
-                    },
                 }
+            ),
+            encoding="utf-8",
+        )
+        (repo_root / "ops" / "pyproject.toml").write_text(
+            "\n".join(
+                [
+                    "[project]",
+                    'name = "feelpp-ops"',
+                    'version = "0.1.0"',
+                    'requires-python = ">=3.10"',
+                    "",
+                    "[tool.feelpp-ops.releaseNotes.publications.hal]",
+                    'collections = ["FEEL", "CEMOSIS"]',
+                    "rows = 4",
+                    'sort = "producedDate_tdate desc"',
+                    "",
+                ]
             ),
             encoding="utf-8",
         )

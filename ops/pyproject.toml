@@ -8,6 +8,9 @@ version = "0.1.0"
 description = "Feel++ operational tooling"
 readme = "README.md"
 requires-python = ">=3.10"
+dependencies = [
+    "tomli>=2; python_version < '3.11'",
+]
 authors = [
     { name = "Christophe Prud'homme", email = "christophe.prudhomme@feelpp.org" },
     { name = "Feel++ Consortium" },
@@ -52,3 +55,8 @@ namespaces = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.feelpp-ops.releaseNotes.publications.hal]
+collections = ["FEEL", "CEMOSIS"]
+rows = 5
+sort = "producedDate_tdate desc"

@@ -8,6 +8,11 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - exercised on Python 3.10
+    import tomli as tomllib  # type: ignore[no-redef]
+
 
 HAL_API_URL = "https://api.archives-ouvertes.fr/search/"
 DEFAULT_HAL_QUERY = "*:*"
@@ -97,12 +102,14 @@ def _coerce_collections(value) -> tuple[str, ...]:
 
 def load_hal_publication_config(repo_root: str | Path) -> dict[str, object]:
     repo_root = Path(repo_root)
-    config_path = repo_root / ".github" / "plan-ci.json"
+    config_path = repo_root / "ops" / "pyproject.toml"
     try:
-        payload = json.loads(config_path.read_text(encoding="utf-8"))
-    except (FileNotFoundError, json.JSONDecodeError):
+        payload = tomllib.loads(config_path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, tomllib.TOMLDecodeError):
         return {}
-    release_notes = payload.get("releaseNotes", {})
+    tool = payload.get("tool", {})
+    feelpp_ops = tool.get("feelpp-ops", {})
+    release_notes = feelpp_ops.get("releaseNotes", {})
     publications = release_notes.get("publications", {})
     hal = publications.get("hal", {})
     return hal if isinstance(hal, dict) else {}

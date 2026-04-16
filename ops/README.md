@@ -68,7 +68,8 @@ the packaging catalog in [`.github/plan-ci.json`](../.github/plan-ci.json).
 to release notes or discussion posts. Use `--rows` to change how many
 publications are shown and `--since` to limit the slice to a release-specific
 window. The release command mirrors those controls with
-`--publications-rows` and `--publications-since`.
+`--publications-rows` and `--publications-since`. The default HAL publication
+settings live in [`ops/pyproject.toml`](./pyproject.toml).
 
 The `feelpp.ops.common` namespace is the shared home for cross-tool support
 code such as naming, future logging helpers, and execution/runtime helpers.
