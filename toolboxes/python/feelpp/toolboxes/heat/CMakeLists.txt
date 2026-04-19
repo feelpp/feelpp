@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.21)
 project(toolboxes-heat)
 
 feelpp_add_pymodule(heat SRCS heat.cpp DESTINATION feelpp/toolboxes/heat LINK_LIBRARIES Feelpp::feelpp_toolbox_heat_lib)

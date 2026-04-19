@@ -21,7 +21,7 @@ from ._ts import  *
 from ._vf import  *
 from ._models import *
 
-__version__ = '0.111.0-preview.12'
+__version__ = '0.111.0-preview.13'
 
 def readCfg(filename):
     """read a Feel++ config file and get a ConfigParser to manipulate the options
