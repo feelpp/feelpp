@@ -28,12 +28,14 @@ message(STATUS "[feelpp-mor::tests] mpiexec: ${MPIEXEC}")
 enable_testing()
 include(CTest)
 
-# Label MOR tests to allow targeted ctest runs
-set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-mor")
+# Label MOR tests separately so `ctest -L testsuite` stays scoped to the
+# repository `testsuite/` tree.
+set_directory_properties(PROPERTIES LABELS "mor-tests")
+set(FEELPP_TEST_AGGREGATE_TARGET testsuite-mor)
 
 if ( NOT TARGET testsuite-mor )
   add_custom_target(testsuite-mor
-    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -L testsuite-mor --test-dir ${CMAKE_BINARY_DIR}
+    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -L mor-tests --test-dir ${CMAKE_BINARY_DIR}
     USES_TERMINAL
   )
 endif()

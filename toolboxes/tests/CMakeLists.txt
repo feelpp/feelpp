@@ -28,12 +28,14 @@ message(STATUS "[feelpp-toolboxes::tests] mpiexec: ${MPIEXEC}")
 enable_testing()
 include(CTest)
 
-# Label toolboxes tests to allow targeted ctest runs
-set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-toolboxes")
+# Label toolbox tests separately so `ctest -L testsuite` stays scoped to the
+# repository `testsuite/` tree.
+set_directory_properties(PROPERTIES LABELS "toolboxes-tests")
+set(FEELPP_TEST_AGGREGATE_TARGET testsuite-toolboxes)
 
 if ( NOT TARGET testsuite-toolboxes )
   add_custom_target(testsuite-toolboxes
-    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -L testsuite-toolboxes --test-dir ${CMAKE_BINARY_DIR}
+    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -L toolboxes-tests --test-dir ${CMAKE_BINARY_DIR}
     USES_TERMINAL
   )
 endif()
