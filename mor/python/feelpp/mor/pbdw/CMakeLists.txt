@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.21)
 
 message(STATUS "[pyfeelpp-mor] add pymodule pbdw")
 feelpp_add_pymodule(pbdw SRCS pbdw.cpp DESTINATION feelpp/mor/pbdw LINK_LIBRARIES Feelpp::feelpp_mor )

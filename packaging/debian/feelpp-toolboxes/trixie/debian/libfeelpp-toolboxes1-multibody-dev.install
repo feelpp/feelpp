@@ -1,0 +1,2 @@
+usr/lib/*/libfeelpp_toolbox_multibody.so
+usr/include/feelpp/toolboxes/feel/feelmodels/multibody/*.hpp

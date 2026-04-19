@@ -8,6 +8,13 @@ foreach( dep nlopt eigen3 )
   endif()
 endforeach()
 
+find_dependency(Boost 1.65.0 REQUIRED COMPONENTS filesystem serialization mpi OPTIONAL_COMPONENTS system)
+if (NOT TARGET Boost::system)
+  add_library(Boost::system INTERFACE IMPORTED)
+  set_property(TARGET Boost::system PROPERTY
+    INTERFACE_COMPILE_DEFINITIONS "BOOST_ERROR_CODE_HEADER_ONLY;BOOST_SYSTEM_NO_LIB")
+endif()
+
 find_dependency( Eigen3 REQUIRED )
 find_dependency( pybind11 )
 find_dependency( tabulate )

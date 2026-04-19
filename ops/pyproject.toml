@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "feelpp-ops"
+version = "0.1.0"
+description = "Feel++ operational tooling"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "tomli>=2; python_version < '3.11'",
+]
+authors = [
+    { name = "Christophe Prud'homme", email = "christophe.prudhomme@feelpp.org" },
+    { name = "Feel++ Consortium" },
+]
+license = { text = "LGPL-3.0-or-later" }
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: System :: Clustering",
+    "Topic :: System :: Packaging",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[project.scripts]
+fpp-pkg = "feelpp.pkg.cli:main"
+feelpp-pkg = "feelpp.pkg.cli:main"
+fpp-version = "feelpp.ops.version.cli:main"
+feelpp-version = "feelpp.ops.version.cli:main"
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = [
+    "feelpp.ops",
+    "feelpp.ops.*",
+    "feelpp.pkg",
+    "feelpp.pkg.*",
+    "feelpp.simulate",
+    "feelpp.simulate.*",
+]
+namespaces = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.feelpp-ops.releaseNotes.publications.hal]
+collections = ["FEEL", "CEMOSIS"]
+rows = 5
+sort = "producedDate_tdate desc"

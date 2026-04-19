@@ -2028,7 +2028,6 @@ public:
         {
             //LOG(INFO) << "call logRandom...\n";
             //LOG(INFO) << "call logRandom broadcast: " << broadcast << "...\n";
-            //google::FlushLogFiles(google::GLOG_INFO);
             if ( broadcast )
             {
                 element_type mu( space );
@@ -2039,11 +2038,9 @@ public:
                 if( space->worldComm().isMasterRank() )
                 {
                     //LOG(INFO) << "generate random mu...\n";
-                    //google::FlushLogFiles(google::GLOG_INFO);
                     mu = logRandom1( space );
                 }
                 //LOG(INFO) << "broadcast...\n";
-                //google::FlushLogFiles(google::GLOG_INFO);
                 boost::mpi::broadcast( space->worldComm() , mu , space->worldComm().masterRank() );
                 //Environment::worldComm().barrier();
                 //LOG(INFO) << "check...\n";
@@ -2062,12 +2059,6 @@ public:
                 return mur;
             mur.array() = element_type::Random(space->dimension(),1).array().abs();
             //LOG(INFO) << "random1 generate random mur= " << mur << " \n";
-#if 0
-            google::FlushLogFiles(google::GLOG_INFO);
-            element_type mu( space );
-            mu.array() = ( space->min().array().log()+mur.array()*( space->max().array().log()-space->min().array().log() ) ).array().exp();
-            //LOG(INFO) << "random1 generate random mu= " << mu << " \n";
-#else
             element_type mu( space );
             element_type muShift( space );
             element_type muMin( space );
@@ -2080,8 +2071,6 @@ public:
             }
             mu.array() = ( muMin.array().log()+mur.array()*( muMax.array().log()-muMin.array().log() ) ).exp();
             mu.array() -= muShift.array();
-
-#endif
             return mu;
         }
 

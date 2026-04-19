@@ -26,6 +26,10 @@ message(STATUS "Contrib libraries")
 include(FetchContent)
 add_library(feelpp_contrib INTERFACE)
 add_library( Feelpp::feelpp_contrib ALIAS feelpp_contrib)
+if ( ${CMAKE_VERSION} VERSION_GREATER 3.7.2 )
+  target_compile_features(feelpp_contrib INTERFACE cxx_std_${FEELPP_STD_CPP})
+endif()
+set_property(TARGET feelpp_contrib PROPERTY FEELPP_STD_CPP ${FEELPP_STD_CPP})
 
 set( CMAKE_INSTALL_DATADIR "share/feelpp")
 if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
@@ -253,13 +257,17 @@ if ( FEELPP_USE_EXTERNAL_EIGEN3 )
 else()
 
 set(EIGEN_BUILD_DOC OFF)
+set(EIGEN_BUILD_CMAKE_PACKAGE ON)
 set(BUILD_TESTING OFF)
 set(EIGEN_LEAVE_TEST_IN_ALL_TARGET 0)
 set(EIGEN_TEST_NOQT 1)
 set(FETCHCONTENT_SOURCE_DIR_EIGEN ${CMAKE_CURRENT_SOURCE_DIR}/eigen)
-set( EIGEN_INCLUDE_INSTALL_DIR "include/feelpp/eigen" )
+# Eigen 5 reads its install layout from cache variables inside the subproject.
+# Force the vendored install tree to remain under the historical Feel++ prefix
+# so exported Feel++ targets keep referencing an installed path that exists.
+set(INCLUDE_INSTALL_DIR "include/feelpp/eigen" CACHE PATH "Eigen headers install dir" FORCE)
 
-FetchContent_Declare(eigen GIT_REPOSITORY git@gitlab.com:feelpp/eigen.git GIT_TAG 08bd619a45b642d68ccf80c011d7391bb213ecba) # the commit hash for 1.5.0
+FetchContent_Declare(eigen GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git GIT_TAG bc3b39870ecb690a623a3f49149a358b95c5781d) # upstream 5.0.1
 FetchContent_MakeAvailable(eigen)
 target_include_directories( feelpp_contrib BEFORE
       INTERFACE
@@ -440,7 +448,6 @@ if(FEELPP_USE_EXTERNAL_PYBIND11)
   target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_PYBIND11)
   target_link_libraries(feelpp_contrib INTERFACE pybind11::module)
 else()
-  set(PYBIND11_CPP_STANDARD -std=c++${FEELPP_STD_CPP})
   if ( FEELPP_ENABLE_PYBIND11 )
     feelppContribPrepare( pybind11 )
     if ( FEELPP_CONTRIB_PREPARE_SUCCEED )
@@ -552,6 +559,8 @@ if ( FEELPP_ENABLE_FMI4CPP )
     set(FMI4CPP_LOG_LEVEL "OFF" CACHE STRING "FMI4cpp logging level")
   endif()
   set( FMI4CPP_HEADER_INSTALL_DIR "${CMAKE_INSTALL_INCLUDEDIR}/")
+  set( FMI4CPP_INSTALL_BIN_DIR "${CMAKE_INSTALL_BINDIR}")
+  set( FMI4CPP_INSTALL_LIB_DIR "${CMAKE_INSTALL_LIBDIR}")
   set( FMI4CPP_CMAKE_INSTALL_DIR "share/feelpp/fmi4cpp")
   set( FMI4CPP_DOC_INSTALL_DIR "share/doc/feelpp/fmi4cpp")
   set(FETCHCONTENT_SOURCE_DIR_FMI4CPP ${CMAKE_CURRENT_SOURCE_DIR}/fmi4cpp)
@@ -560,7 +569,11 @@ if ( FEELPP_ENABLE_FMI4CPP )
 
   FetchContent_MakeAvailable(fmi4cpp)
   add_library(feelpp_fmi4cpp INTERFACE)
-  set_target_properties(fmi4cpp PROPERTIES OUTPUT_NAME "feelpp_fmi4cpp")
+  set_target_properties(fmi4cpp PROPERTIES
+      OUTPUT_NAME "feelpp_fmi4cpp"
+      VERSION ${FEELPP_SHARED_VERSION}
+      SOVERSION ${FEELPP_SHARED_SOVERSION}
+      )
   if ( "${CMAKE_BUILD_TYPE}" STREQUAL "Release" )
     target_compile_definitions(fmi4cpp PRIVATE LOG_LEVEL_OFF)  #fix bug with macro name (missing M here https://github.com/feelpp/FMI4cpp/blob/master/src/fmi4cpp/mlog.hpp#L13C1-L14C1)
   endif()
@@ -731,6 +744,10 @@ if ( FEELPP_ENABLE_MATPLOT )
     message( STATUS "matplot++ CMAKE_INSTALL_INCLUDE_DIR: ${CMAKE_INSTALL_INCLUDEDIR}")
     set( BUILD_SHARED_LIBS ON )
     set( BUILD_INSTALLER ON )
+    # Vendored matplot pulls bundled CImg code, which may warn on newer distro
+    # toolchains. Keep its own developer-only warnings-as-errors disabled when
+    # embedded in Feel++ so package builds are not blocked by third-party warnings.
+    set( BUILD_WITH_PEDANTIC_WARNINGS OFF CACHE BOOL "" FORCE )
     set(OPTIMIZATION_FLAG_IS_SET ON)
     add_subdirectory( matplot )
     target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_MATPLOT )
@@ -883,7 +900,11 @@ if ( FEELPP_ENABLE_SPECX )
   FetchContent_MakeAvailable(specx)
   add_library(feelpp_specx INTERFACE)
 
-  set_target_properties(specx PROPERTIES OUTPUT_NAME "feelpp_specx")
+  set_target_properties(specx PROPERTIES
+      OUTPUT_NAME "feelpp_specx"
+      VERSION ${FEELPP_SHARED_VERSION}
+      SOVERSION ${FEELPP_SHARED_SOVERSION}
+      )
   target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_SPECX)
   target_link_libraries(feelpp_specx INTERFACE specx )
   add_library(Feelpp::feelpp_specx ALIAS feelpp_specx)

@@ -265,7 +265,7 @@ public:
                  AboutData const& about,
                  Repository::Config const& config );
 
-#if defined(FEELPP_ENABLE_PYTHON_WRAPPING)
+#if defined(FEELPP_HAS_PYTHON)
     /**
      * @brief Construct a new Environment object
      *

@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.21)
 
 feelpp_add_pymodule(modelcore SRCS modelcore.cpp modelcore_modelmeshes.cpp DESTINATION feelpp/toolboxes/core LINK_LIBRARIES Feelpp::feelpp_modelcore )
 if ( TARGET Feelpp::feelpp_modelmeshale )
@@ -34,4 +34,3 @@ install(FILES  __init__.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolb
         COMPONENT ${FEELPP_PYTHON_INSTALL_COMPONENT})
 
 add_dependencies(pyfeelpptoolboxes _modelcore _modelmesh) 
-

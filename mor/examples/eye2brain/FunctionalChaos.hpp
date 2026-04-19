@@ -61,8 +61,8 @@ OT::FunctionalChaosResult computeSparseLeastSquaresChaos( OT::Sample X, OT::Samp
  */
 void checkMetaModel(OT::Sample X_test, OT::Sample Y_test, OT::Function metamodel)
 {
-    OT::MetaModelValidation validation(X_test, Y_test, metamodel);
-    OT::Scalar Q2 = validation.computePredictivityFactor()[0];
+    OT::MetaModelValidation validation(Y_test, metamodel(X_test));
+    OT::Scalar Q2 = validation.computeR2Score()[0];
     OT::GridLayout graph = validation.drawValidation();
     OT::Graph graphDrawable = graph.getGraph(0, 0);
     //graphDrawable.draw("validation.png");

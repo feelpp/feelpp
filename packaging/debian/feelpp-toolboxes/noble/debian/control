@@ -1,0 +1,302 @@
+Source: feelpp-toolboxes
+Section: science
+Priority: extra
+Maintainer: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+Uploaders: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+Build-Depends: quilt, debhelper (>= 10), cmake, ninja-build, rsync, dh-python, python3, python3-dev, chrpath, libfeelpp-dev, feelpp-tools
+Standards-Version: 3.9.4
+X-Python-Version: current
+Homepage: http://www.feelpp.org
+Vcs-Svn: svn://svn.debian.org/svn/debian-science/packages/feel++/trunk
+Vcs-Browser: http://svn.debian.org/wsvn/debian-science/packages/feel++/trunk
+
+Package: libfeelpp-toolboxes1-core
+Section: libs
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: libfeelpp1  (= ${binary:Version})
+Description: Feel++ toolboxes model libraries 
+ Provides Feel++ toolboxes model libraries
+
+Package: libfeelpp-toolboxes1-core-dev
+Section: libdevel
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: libfeelpp-toolboxes1-core (= ${binary:Version}), libfeelpp-dev 
+Description: Development files for Feel++ toolboxes model
+ Provides the header files and static libraries.
+
+Package: libfeelpp-toolboxes1-coefficientformpdes
+Section: libs
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: libfeelpp-toolboxes1-core (= ${binary:Version}) 
+Description: Feel++ toolboxes coefficientformpdes libraries
+ Provides Feel++ toolboxes coefficientformpdes libraries
+
+Package: libfeelpp-toolboxes1-coefficientformpdes-dev
+Section: libdevel
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: libfeelpp-toolboxes1-coefficientformpdes (= ${binary:Version}), libfeelpp-toolboxes1-core-dev (= ${binary:Version})
+Description: Development files for Feel++ toolboxes coefficientformpdes
+ Provides the header files and static libraries.
+
+Package: feelpp-toolboxes-coefficientformpdes
+Section: science
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: ${shlibs:Depends}, ${misc:Depends}, libfeelpp-toolboxes1-coefficientformpdes (= ${binary:Version})
+Recommends: feelpp-toolboxes-data
+Description: Feel++ toolboxes coefficientformpdes
+ Provides Feel++ toolboxes coefficientformpdes
+
+Package: libfeelpp-toolboxes1-heat
+Section: libs
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: libfeelpp-toolboxes1-core (= ${binary:Version})
+Description: Feel++ toolboxes heat libraries
+ Provides Feel++ toolboxes heat libraries
+
+Package: libfeelpp-toolboxes1-heat-dev
+Section: libdevel
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: libfeelpp-toolboxes1-heat (= ${binary:Version}), libfeelpp-toolboxes1-core-dev (= ${binary:Version})
+Description: Development files for Feel++ toolboxes heat
+ Provides the header files and static libraries.
+
+Package: feelpp-toolboxes-heat
+Section: science
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: ${shlibs:Depends}, ${misc:Depends}, libfeelpp-toolboxes1-heat (= ${binary:Version})
+Recommends: feelpp-toolboxes-data
+Description: Feel++ toolboxes heat
+ Provides Feel++ toolboxes heat
+
+Package: libfeelpp-toolboxes1-electric
+Section: libs
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: libfeelpp-toolboxes1-core (= ${binary:Version})
+Description: Feel++ toolboxes electric libraries
+ Provides Feel++ toolboxes electric libraries
+
+Package: libfeelpp-toolboxes1-electric-dev
+Section: libdevel
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: libfeelpp-toolboxes1-electric (= ${binary:Version}), libfeelpp-toolboxes1-core-dev (= ${binary:Version})
+Description: Development files for Feel++ toolboxes electric
+ Provides the header files and static libraries.
+
+Package: feelpp-toolboxes-electric
+Section: science
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: ${shlibs:Depends}, ${misc:Depends}, libfeelpp-toolboxes1-electric (= ${binary:Version})
+Recommends: feelpp-toolboxes-data
+Description: Feel++ toolboxes electric
+ Provides Feel++ toolboxes electric
+
+Package: libfeelpp-toolboxes1-fluid
+Section: libs
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: libfeelpp-toolboxes1-core (= ${binary:Version}), libfeelpp-toolboxes1-multibody (= ${binary:Version})
+Description: Feel++ toolboxes fluid libraries
+ Provides Feel++ toolboxes fluid libraries
+
+Package: libfeelpp-toolboxes1-fluid-dev
+Section: libdevel
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: libfeelpp-toolboxes1-fluid (= ${binary:Version}), libfeelpp-toolboxes1-core-dev (= ${binary:Version}), libfeelpp-toolboxes1-multibody-dev (= ${binary:Version})
+Description: Development files for Feel++ toolboxes fluid
+ Provides the header files and static libraries.
+
+Package: feelpp-toolboxes-fluid
+Section: science
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: ${shlibs:Depends}, ${misc:Depends}, libfeelpp-toolboxes1-fluid (= ${binary:Version})
+Recommends: feelpp-toolboxes-data
+Description: Feel++ toolboxes fluid
+ Provides Feel++ toolboxes fluid
+
+Package: libfeelpp-toolboxes1-multibody
+Section: libs
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: libfeelpp-toolboxes1-core (= ${binary:Version})
+Description: Feel++ toolboxes multibody support libraries
+ Provides Feel++ toolboxes multibody support libraries
+
+Package: libfeelpp-toolboxes1-multibody-dev
+Section: libdevel
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: libfeelpp-toolboxes1-multibody (= ${binary:Version}), libfeelpp-toolboxes1-core-dev (= ${binary:Version})
+Description: Development files for Feel++ toolboxes multibody support
+ Provides the header files and shared-library link targets.
+
+Package: libfeelpp-toolboxes1-solid
+Section: libs
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: libfeelpp-toolboxes1-core (= ${binary:Version})
+Description: Feel++ toolboxes solid libraries
+ Provides Feel++ toolboxes solid libraries
+
+Package: libfeelpp-toolboxes1-solid-dev
+Section: libdevel
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: libfeelpp-toolboxes1-solid (= ${binary:Version}), libfeelpp-toolboxes1-core-dev (= ${binary:Version})
+Description: Development files for Feel++ toolboxes solid
+ Provides the header files and static libraries.
+
+Package: feelpp-toolboxes-solid
+Section: science
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: ${shlibs:Depends}, ${misc:Depends}, libfeelpp-toolboxes1-solid (= ${binary:Version})
+Recommends: feelpp-toolboxes-data
+Description: Feel++ toolboxes solid
+ Provides Feel++ toolboxes solid
+
+Package: feelpp-toolboxes-alemesh
+Section: science
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: ${shlibs:Depends}, ${misc:Depends}, libfeelpp-toolboxes1-core (= ${binary:Version})
+Recommends: feelpp-toolboxes-data
+Description: Feel++ toolboxes ALE mesh utilities
+ Provides Feel++ ALE mesh adaptation utilities
+
+Package: libfeelpp-toolboxes1-heatfluid
+Section: libs
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: libfeelpp-toolboxes1-fluid (= ${binary:Version}), libfeelpp-toolboxes1-heat (= ${binary:Version})
+Description: Feel++ toolboxes heatfluid libraries
+ Provides Feel++ toolboxes heatfluid libraries
+
+Package: libfeelpp-toolboxes1-heatfluid-dev
+Section: libdevel
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: libfeelpp-toolboxes1-heatfluid (= ${binary:Version}), libfeelpp-toolboxes1-fluid-dev (= ${binary:Version}), libfeelpp-toolboxes1-heat-dev (= ${binary:Version})
+Description: Development files for Feel++ toolboxes heatfluid
+ Provides the header files and static libraries.
+
+Package: feelpp-toolboxes-heatfluid
+Section: science
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: ${shlibs:Depends}, ${misc:Depends}, libfeelpp-toolboxes1-heatfluid (= ${binary:Version})
+Recommends: feelpp-toolboxes-data
+Description: Feel++ toolboxes heatfluid
+ Provides Feel++ toolboxes heatfluid
+
+Package: libfeelpp-toolboxes1-thermoelectric
+Section: libs
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: libfeelpp-toolboxes1-heat (= ${binary:Version}), libfeelpp-toolboxes1-electric (= ${binary:Version})
+Description: Feel++ toolboxes thermoelectric libraries
+ Provides Feel++ toolboxes thermoelectric libraries
+
+Package: libfeelpp-toolboxes1-thermoelectric-dev
+Section: libdevel
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: libfeelpp-toolboxes1-thermoelectric (= ${binary:Version}), libfeelpp-toolboxes1-heat-dev (= ${binary:Version}), libfeelpp-toolboxes1-electric-dev (= ${binary:Version})
+Description: Development files for Feel++ toolboxes thermoelectric
+ Provides the header files and static libraries.
+
+Package: feelpp-toolboxes-thermoelectric
+Section: science
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: ${shlibs:Depends}, ${misc:Depends}, libfeelpp-toolboxes1-thermoelectric (= ${binary:Version})
+Recommends: feelpp-toolboxes-data
+Description: Feel++ toolboxes thermoelectric
+ Provides Feel++ toolboxes thermoelectric
+
+Package: libfeelpp-toolboxes1
+Section: libs
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: libfeelpp-toolboxes1-core (= ${binary:Version}), libfeelpp-toolboxes1-coefficientformpdes (= ${binary:Version}), libfeelpp-toolboxes1-heat (= ${binary:Version}), libfeelpp-toolboxes1-electric (= ${binary:Version}), libfeelpp-toolboxes1-fluid (= ${binary:Version}), libfeelpp-toolboxes1-multibody (= ${binary:Version}), libfeelpp-toolboxes1-solid (= ${binary:Version}), libfeelpp-toolboxes1-heatfluid (= ${binary:Version}), libfeelpp-toolboxes1-thermoelectric (= ${binary:Version})
+Description: Feel++ toolboxes libraries 
+ Provides Feel++ toolboxes libraries
+
+Package: libfeelpp-toolboxes1-all-dev
+Section: libdevel
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: libfeelpp-toolboxes1-core-dev (= ${binary:Version}), libfeelpp-toolboxes1-coefficientformpdes-dev (= ${binary:Version}), libfeelpp-toolboxes1-heat-dev (= ${binary:Version}), libfeelpp-toolboxes1-electric-dev (= ${binary:Version}), libfeelpp-toolboxes1-fluid-dev (= ${binary:Version}), libfeelpp-toolboxes1-multibody-dev (= ${binary:Version}), libfeelpp-toolboxes1-solid-dev (= ${binary:Version}), libfeelpp-toolboxes1-heatfluid-dev (= ${binary:Version}), libfeelpp-toolboxes1-thermoelectric-dev (= ${binary:Version})
+Description: Development files for Feel++ toolboxes
+ Provides the header files and static libraries.
+
+Package: feelpp-toolboxes
+Section: science
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: ${shlibs:Depends}, ${misc:Depends}, libfeelpp-toolboxes1 (= ${binary:Version}), feelpp-toolboxes-coefficientformpdes (= ${binary:Version}), feelpp-toolboxes-heat (= ${binary:Version}), feelpp-toolboxes-electric (= ${binary:Version}), feelpp-toolboxes-fluid (= ${binary:Version}), feelpp-toolboxes-alemesh (= ${binary:Version}), feelpp-toolboxes-solid (= ${binary:Version}), feelpp-toolboxes-heatfluid (= ${binary:Version}), feelpp-toolboxes-thermoelectric (= ${binary:Version})
+Recommends: feelpp-toolboxes-data
+Description: Feel++ toolboxes
+ Provides Feel++ toolboxes
+
+Package: feelpp-toolboxes-data
+Section: science
+Architecture: all
+Depends: ${misc:Depends}
+Description: Feel++ toolboxes data
+ Provides Feel++ toolboxes data
+
+Package: python3-feelpp-toolboxes
+Section: python
+Architecture: all
+Depends: ${misc:Depends}, ${python3:Depends}, python3-feelpp-toolboxes-core (= ${binary:Version}), python3-feelpp-toolboxes-coefficientformpdes (= ${binary:Version}), python3-feelpp-toolboxes-heat (= ${binary:Version}), python3-feelpp-toolboxes-electric (= ${binary:Version}), python3-feelpp-toolboxes-fluid (= ${binary:Version}), python3-feelpp-toolboxes-solid (= ${binary:Version}), python3-feelpp-toolboxes-heatfluid (= ${binary:Version}), python3-feelpp-toolboxes-thermoelectric (= ${binary:Version})
+Recommends: feelpp-toolboxes-data
+Description: Feel++ toolboxes Python bindings
+ Provides the Feel++ toolbox Python bindings.
+
+Package: python3-feelpp-toolboxes-core
+Section: python
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends}, libfeelpp-toolboxes1-core (= ${binary:Version}), python3-feelpp
+Recommends: feelpp-toolboxes-data
+Description: Feel++ toolboxes core Python bindings
+ Provides the Feel++ core toolbox Python bindings.
+
+Package: python3-feelpp-toolboxes-coefficientformpdes
+Section: python
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends}, libfeelpp-toolboxes1-coefficientformpdes (= ${binary:Version}), python3-feelpp-toolboxes-core
+Recommends: feelpp-toolboxes-data
+Description: Feel++ toolboxes coefficientformpdes Python bindings
+ Provides the Feel++ coefficientformpdes toolbox Python bindings.
+
+Package: python3-feelpp-toolboxes-heat
+Section: python
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends}, libfeelpp-toolboxes1-heat (= ${binary:Version}), python3-feelpp-toolboxes-core
+Recommends: feelpp-toolboxes-data
+Description: Feel++ toolboxes heat Python bindings
+ Provides the Feel++ heat toolbox Python bindings.
+
+Package: python3-feelpp-toolboxes-electric
+Section: python
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends}, libfeelpp-toolboxes1-electric (= ${binary:Version}), python3-feelpp-toolboxes-core
+Recommends: feelpp-toolboxes-data
+Description: Feel++ toolboxes electric Python bindings
+ Provides the Feel++ electric toolbox Python bindings.
+
+Package: python3-feelpp-toolboxes-fluid
+Section: python
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends}, libfeelpp-toolboxes1-fluid (= ${binary:Version}), python3-feelpp-toolboxes-core
+Recommends: feelpp-toolboxes-data
+Description: Feel++ toolboxes fluid Python bindings
+ Provides the Feel++ fluid toolbox Python bindings.
+
+Package: python3-feelpp-toolboxes-solid
+Section: python
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends}, libfeelpp-toolboxes1-solid (= ${binary:Version}), python3-feelpp-toolboxes-core
+Recommends: feelpp-toolboxes-data
+Description: Feel++ toolboxes solid Python bindings
+ Provides the Feel++ solid toolbox Python bindings.
+
+Package: python3-feelpp-toolboxes-heatfluid
+Section: python
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends}, libfeelpp-toolboxes1-heatfluid (= ${binary:Version}), python3-feelpp-toolboxes-heat, python3-feelpp-toolboxes-fluid
+Recommends: feelpp-toolboxes-data
+Description: Feel++ toolboxes heatfluid Python bindings
+ Provides the Feel++ heatfluid toolbox Python bindings.
+
+Package: python3-feelpp-toolboxes-thermoelectric
+Section: python
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends}, libfeelpp-toolboxes1-thermoelectric (= ${binary:Version}), python3-feelpp-toolboxes-heat, python3-feelpp-toolboxes-electric
+Recommends: feelpp-toolboxes-data
+Description: Feel++ toolboxes thermoelectric Python bindings
+ Provides the Feel++ thermoelectric toolbox Python bindings.

@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.21)
 project(toolboxes-hdg)
 
 feelpp_add_pymodule(hdg SRCS hdg.cpp LINK_LIBRARIES Feelpp::feelpp_toolbox_hdg_lib DESTINATION feelpp/toolboxes/hdg )

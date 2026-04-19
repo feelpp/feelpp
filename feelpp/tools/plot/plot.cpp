@@ -33,6 +33,8 @@ int main( int argc, char** argv )
 {
     using namespace Feel;
     using Feel::cout;
+    std::vector<std::string> default_scalar_expr = { "t:t" };
+    std::vector<std::string> default_vectorial_expr = { "gv|{sin(2*pi*x),sin(2*pi*x),sin(2*pi*x)}:x|nodal|element" };
     po::options_description meshpartoptions( "Plot options" );
 	meshpartoptions.add_options()
         ( "tmin", po::value<double>()->default_value( 0 ), "min value" )
@@ -40,8 +42,8 @@ int main( int argc, char** argv )
         ( "tstep", po::value<double>()->default_value( 100 ), "number of value between tmin and tmax" )
         ( "tsamp", po::value<std::string>()->default_value( "linear" ), "type of t sampling: linear or log" )
         ( "type", po::value<std::string>()->default_value( "plot" ), "plot, semilogx, semilogy, loglog" )
-        ( "scalar_expr", po::value<std::vector<std::string>>()->default_value( {"t:t"} ), "list of scalar expressions with name and representations" )
-        ( "vectorial_expr", po::value<std::vector<std::string>>()->default_value( {"gv|{sin(2*pi*x),sin(2*pi*x),sin(2*pi*x)}:x|nodal|element"} ), "list of vectorial  expressions with name and representations" )
+        ( "scalar_expr", po::value<std::vector<std::string>>()->multitoken()->default_value( default_scalar_expr, "t:t" ), "list of scalar expressions with name and representations" )
+        ( "vectorial_expr", po::value<std::vector<std::string>>()->multitoken()->default_value( default_vectorial_expr, "gv|{sin(2*pi*x),sin(2*pi*x),sin(2*pi*x)}:x|nodal|element" ), "list of vectorial  expressions with name and representations" )
 
         ;
     Environment env( _argc=argc, _argv=argv,
@@ -85,4 +87,3 @@ int main( int argc, char** argv )
     return 0;
 
 }
-

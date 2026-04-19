@@ -1,0 +1,49 @@
+#!/bin/sh
+
+set -eu
+
+apt_update() {
+    apt-get -o Acquire::Retries=8 -o Acquire::http::Timeout=30 update -yq
+}
+
+install_batch() {
+    attempt=1
+    max_attempts=5
+    while true; do
+        if apt-get -o Acquire::Retries=8 -o Acquire::http::Timeout=30 -o APT::Install-Recommends=false -o APT::Install-Suggests=false install -yq --no-install-recommends --fix-missing "$@"; then
+            return 0
+        fi
+        if [ "${attempt}" -ge "${max_attempts}" ]; then
+            return 1
+        fi
+        attempt=$((attempt + 1))
+        apt_update
+    done
+}
+
+apt_update
+install_batch quilt debhelper cmake clang llvm-18-linker-tools dh-python python3 python3-dev
+install_batch python3-setuptools python3-sympy python3-mpi4py chrpath libcurl4-openssl-dev libboost-all-dev libcln-dev libeigen3-dev
+install_batch petsc-dev slepc-dev python3-petsc4py-real python3-slepc4py-real python3-petsc4py-real3.19 python3-slepc4py-real3.19 libhdf5-openmpi-dev libnlopt-dev
+install_batch libgsl-dev libnetcdf-dev libgl2ps-dev libglu1-mesa-dev libsm-dev libxt-dev libfftw3-mpi-dev libmetis-dev
+install_batch libscotch-dev libxml2-dev libgmsh-dev gmsh bison flex doxygen doxygen-latex
+install_batch transfig imagemagick libtbb-dev libann-dev libglpk-dev libbz2-dev libbson-dev libmongoc-dev
+install_batch libmongoclient-dev python3-pymongo ruby-progressbar ruby-tilt asciidoctor ruby-asciidoctor-pdf libglew-dev gnuplot
+install_batch libglfw3-dev rsync
+
+case "${DISTRIBUTION}" in
+    bullseye)
+        attempt=1
+        max_attempts=5
+        while true; do
+            if apt-get -o Acquire::Retries=8 -o Acquire::http::Timeout=30 install -yq --fix-missing -t bullseye-backports cmake; then
+                break
+            fi
+            if [ "${attempt}" -ge "${max_attempts}" ]; then
+                exit 1
+            fi
+            attempt=$((attempt + 1))
+            apt_update
+        done
+        ;;
+esac

@@ -26,7 +26,10 @@ target_link_libraries( feelpp-applications-crb-benchmarkgrepl-options Feelpp::fe
 target_include_directories(feelpp-applications-crb-benchmarkgrepl-options PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
   $<INSTALL_INTERFACE:include/feelpp/mor/BenchmarkGrepl>  )
-INSTALL(TARGETS feelpp-applications-crb-benchmarkgrepl-options DESTINATION lib/ COMPONENT Libs)
+set_target_properties(feelpp-applications-crb-benchmarkgrepl-options PROPERTIES
+  VERSION ${FEELPP_SHARED_VERSION}
+  SOVERSION ${FEELPP_SHARED_SOVERSION})
+INSTALL(TARGETS feelpp-applications-crb-benchmarkgrepl-options DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Libs)
 install(FILES benchmarkgrepl-options.hpp benchmarkgrepl-linear-elliptic.hpp benchmarkgrepl-nonlinear-elliptic.hpp DESTINATION include/feelpp/mor/BenchmarkGrepl COMPONENT Devel)
 set(FEELPP_CRB_BenchmarkGrepl_LIBRARIES  feelpp-applications-crb-benchmarkgrepl-options PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_BenchmarkGrepl_LIBRARIES PARENT_SCOPE)

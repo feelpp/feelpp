@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "Feel++"
+version: v0.111.0-preview.13
+type: software
+license: LGPL-3.0-or-later
+abstract: "Feel++ is an open-source C++ framework for continuous and discontinuous Galerkin methods and reduced basis methods for parallel PDE simulation."
+authors:
+  - family-names: Prud'homme
+    given-names: Christophe
+    affiliation: University of Strasbourg
+    orcid: https://orcid.org/0000-0003-2287-2961
+  - family-names: Chabannes
+    given-names: Vincent
+    affiliation: Feel++ Consortium
+    orcid: https://orcid.org/0009-0005-3602-3524
+repository-code: "https://github.com/feelpp/feelpp"
+url: "https://docs.feelpp.org"
+keywords:
+  - finite and spectral element methods
+  - mono and multiphysic toolboxes
+  - model order reduction
+  - python bindings
+  - HPC

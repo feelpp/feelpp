@@ -56,7 +56,7 @@ jobs:
       tag: ${{ github.event.client_payload.flavor || inputs.flavor }}-${{ github.event.client_payload.version || inputs.version }}
     name: feelpp-runner:${{ github.event.client_payload.flavor || inputs.flavor }}-${{ github.event.client_payload.version || inputs.version }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
       - name: Configure feelpp

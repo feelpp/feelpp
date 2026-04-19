@@ -1,0 +1,19 @@
+:feelpp: Feel++
+
+= {feelpp} packages
+
+== debian packaging
+
+.from scratch
+----
+debuild -us -uc
+----
+
+.no clean
+----                                                                                                                                                  debuild -us -uc -nc
+----     
+
+use upload bintray.sh to upload on bintray
+----
+upload_bintray.sh 0.107
+----

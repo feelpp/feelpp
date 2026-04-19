@@ -1,4 +1,5 @@
 function(feelpp_python_normalize_module_path)
+  set(_FEELPP_PYTHON_PATH_SCRIPT "\nimport os, site, sys, sysconfig\nbase = os.path.normpath('${CMAKE_INSTALL_PREFIX}')\npyver = str(sys.version_info.major) + '.' + str(sys.version_info.minor)\nplatlib = sysconfig.get_path('platlib', vars={'base': base, 'platbase': base})\ncands = []\nif platlib:\n    cands.append(platlib)\ntry:\n    cands += site.getsitepackages()\nexcept Exception:\n    pass\nseen = set()\nnorm_cands = []\nfor p in cands:\n    if not p:\n        continue\n    p = os.path.normpath(p)\n    if p in seen:\n        continue\n    seen.add(p)\n    norm_cands.append(p)\ncands = norm_cands\npreferred = [\n    os.path.normpath(base + '/lib/python3/dist-packages'),\n    os.path.normpath(base + '/lib/python' + pyver + '/dist-packages'),\n    os.path.normpath(base + '/lib/python' + pyver + '/site-packages'),\n]\nlocal_base = os.path.normpath(base + '/local')\nchoice = None\nfor pref in preferred:\n    for p in cands:\n        if p == pref or p.startswith(pref + os.sep):\n            choice = p\n            break\n    if choice:\n        break\nif choice is None:\n    for p in cands:\n        if not (p == base or p.startswith(base + os.sep)):\n            continue\n        if p == local_base or p.startswith(local_base + os.sep):\n            continue\n        choice = p\n        break\nif choice is None and platlib:\n    choice = os.path.normpath(platlib)\nif choice is None and cands:\n    choice = cands[0]\nprint(choice)\n")
   # Honor an explicit override first
   if (DEFINED PYTHON_SITE_PACKAGES)
     set(_REQ_PY_SITE "${PYTHON_SITE_PACKAGES}")
@@ -53,7 +54,7 @@ function(feelpp_python_normalize_module_path)
     endif()
     if (Python3_EXECUTABLE)
       execute_process(
-        COMMAND ${Python3_EXECUTABLE} -c "\nimport sys, sysconfig, site, os\nbase='${CMAKE_INSTALL_PREFIX}'\ncands=[]\ntry:\n    cands+=site.getsitepackages()\nexcept Exception:\n    pass\ncands.append(sysconfig.get_path('platlib', vars={'base': base, 'platbase': base}))\npreferred=[base + '/lib/python3/dist-packages']\nchoice=None\nfor p in cands:\n    if not p: continue\n    if any(p.startswith(pr) for pr in preferred):\n        choice=p; break\nif choice is None:\n    for p in cands:\n        if p.startswith(base+os.sep):\n            choice=p; break\nif choice is None:\n    choice=cands[0]\nprint(choice)\n"
+        COMMAND ${Python3_EXECUTABLE} -c "${_FEELPP_PYTHON_PATH_SCRIPT}"
         OUTPUT_VARIABLE _ABS_PYTHON_MODULE_PATH
         OUTPUT_STRIP_TRAILING_WHITESPACE)
       if (NOT "${_ABS_PYTHON_MODULE_PATH}" STREQUAL "")

@@ -1,0 +1,23 @@
+# shellcheck shell=bash
+
+# Shared pbuilder defaults. The wrapper injects distro- and channel-specific
+# mirrors through MIRRORSITE/OTHERMIRROR and passes the hook directory on the
+# command line.
+
+APTCACHE="${APTCACHE:-/var/cache/apt/archives}"
+APTCACHEHARDLINK=no
+EXTRAPACKAGES="${EXTRAPACKAGES:-ca-certificates wget gnupg apt-transport-https}"
+export DEBIAN_FRONTEND=noninteractive
+
+if [ -n "${FEELPP_PBUILDER_BINDMOUNTS:-}" ]; then
+    BINDMOUNTS="${FEELPP_PBUILDER_BINDMOUNTS}"
+fi
+
+if [ -n "${FEELPP_PBUILDER_KEYRINGS_DIR:-}" ] && [ -d "${FEELPP_PBUILDER_KEYRINGS_DIR}" ]; then
+    APTKEYRINGS=()
+    for keyring in "${FEELPP_PBUILDER_KEYRINGS_DIR}"/*.gpg; do
+        if [ -f "${keyring}" ]; then
+            APTKEYRINGS+=("${keyring}")
+        fi
+    done
+fi
