@@ -593,9 +593,8 @@ void applyDeferredDirichletEntries( EntryRange const& entries,
 
     for ( auto& groupState : groupedStates )
     {
-        if ( groupState.dofSet.empty() )
-            continue;
-
+        // Even ranks with no local constrained rows must stay in lockstep with
+        // the deferred elimination materialization for this group.
         synchronizeDeferredDirichletCandidates( groupState.values, groupState.localCandidates );
 
         std::vector<int> dofs( groupState.dofSet.begin(), groupState.dofSet.end() );
