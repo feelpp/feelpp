@@ -94,6 +94,7 @@ pcTypeConvertStrToEnum( std::string const& type )
     else if ( type=="blockms" )      return PreconditionerType::FEELPP_BLOCKMS_PRECOND;
     else if ( type=="ml" )           return PreconditionerType::ML_PRECOND;
     else if ( type=="gamg" )         return PreconditionerType::GAMG_PRECOND;
+    else if ( type=="hpddm" )        return PreconditionerType::HPDDM_PRECOND;
     else if ( type=="boomeramg" )    return PreconditionerType::BOOMERAMG_PRECOND;
     else if ( type=="ams" )          return PreconditionerType::AMS_PRECOND;
     else if ( type=="redundant" )    return PreconditionerType::REDUNDANT_PRECOND;

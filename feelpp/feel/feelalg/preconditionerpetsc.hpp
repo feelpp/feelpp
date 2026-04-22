@@ -32,6 +32,7 @@
 #include <feel/feelcore/feelpetsc.hpp>
 #include <feel/feelalg/preconditioner.hpp>
 #include <feel/feelalg/backend.hpp>
+#include <feel/feelalg/matrixpetsc.hpp>
 
 namespace Feel
 {
@@ -51,6 +52,7 @@ public:
     using super = super_type;
     typedef typename MatrixSparse<T>::indexsplit_type indexsplit_type;
     typedef typename MatrixSparse<T>::indexsplit_ptrtype indexsplit_ptrtype;
+    using petsc_index_set_ptrtype = std::shared_ptr<std::remove_pointer_t<IS>>;
 
 
     /** @name Constants
@@ -104,8 +106,11 @@ public:
     {
         if ( this != &o )
         {
+            super::operator=( o );
             M_pc = o.M_pc;
             M_mat = o.M_mat;
+            M_indexSplitHasChanged = o.M_indexSplitHasChanged;
+            M_auxiliaryIndexSet = o.M_auxiliaryIndexSet;
         }
 
         return *this;
@@ -123,6 +128,22 @@ public:
     {
         return M_pc;
     }
+
+    bool hasAuxiliaryIndexSet( std::string const& key ) const { return M_auxiliaryIndexSet.find( key ) != M_auxiliaryIndexSet.end(); }
+    petsc_index_set_ptrtype const& auxiliaryIndexSet( std::string const& key ) const
+    {
+        CHECK( this->hasAuxiliaryIndexSet( key ) ) << " auxiliary index set not given for this key : " << key;
+        return M_auxiliaryIndexSet.find( key )->second;
+    }
+
+    static constexpr char const* hpddmAuxiliaryMatrixKey() { return "hpddm-auxiliary-matrix"; }
+    static constexpr char const* hpddmAuxiliaryISKey() { return "hpddm-auxiliary-is"; }
+
+    bool hasHpddmAuxiliaryMatrix() const { return this->hasAuxiliarySparseMatrix( hpddmAuxiliaryMatrixKey() ); }
+    typename super::sparse_matrix_ptrtype const& hpddmAuxiliaryMatrix() const { return this->auxiliarySparseMatrix( hpddmAuxiliaryMatrixKey() ); }
+
+    bool hasHpddmAuxiliaryIS() const { return this->hasAuxiliaryIndexSet( hpddmAuxiliaryISKey() ); }
+    petsc_index_set_ptrtype const& hpddmAuxiliaryIS() const { return this->auxiliaryIndexSet( hpddmAuxiliaryISKey() ); }
 
 
 
@@ -143,6 +164,59 @@ public:
                                              std::string const& prefix="");
 
     void setPrecMatrixStructure( MatrixStructure mstruct  ) override;
+
+    void attachAuxiliaryIndexSet( std::string const& key, IS is )
+    {
+        CHECK( is != nullptr ) << "cannot attach a null PETSc IS";
+        this->check( PetscObjectReference( reinterpret_cast<PetscObject>( is ) ) );
+        M_auxiliaryIndexSet[key] = petsc_index_set_ptrtype( is, []( std::remove_pointer_t<IS>* p )
+                                                            {
+                                                                IS isDestroy = reinterpret_cast<IS>( p );
+                                                                if ( isDestroy )
+                                                                    ISDestroy( &isDestroy );
+                                                            } );
+    }
+
+    void attachHpddmAuxiliaryMatrix( typename super::sparse_matrix_ptrtype const& mat )
+    {
+        this->attachAuxiliarySparseMatrix( hpddmAuxiliaryMatrixKey(), mat );
+    }
+
+    void attachHpddmAuxiliaryIS( IS is )
+    {
+        this->attachAuxiliaryIndexSet( hpddmAuxiliaryISKey(), is );
+    }
+
+    void attachHpddmAuxiliaryData( IS is, typename super::sparse_matrix_ptrtype const& mat )
+    {
+        this->attachHpddmAuxiliaryIS( is );
+        this->attachHpddmAuxiliaryMatrix( mat );
+    }
+
+    void attachHpddmAuxiliaryData( typename super::sparse_matrix_ptrtype const& mat )
+    {
+        CHECK( mat ) << "cannot attach a null HPDDM auxiliary matrix";
+        auto matPetsc = std::dynamic_pointer_cast<MatrixPetsc<T>>( mat );
+        CHECK( matPetsc ) << "HPDDM auxiliary matrix must be a PETSc matrix";
+        auto const& rowMap = mat->mapRowPtr();
+        CHECK( rowMap ) << "HPDDM auxiliary matrix row map is not available";
+        auto const& gpToGc = rowMap->mapGlobalProcessToGlobalCluster();
+        CHECK( !gpToGc.empty() )
+            << "invalid row map for HPDDM auxiliary matrix: empty process-to-cluster map";
+
+        std::vector<PetscInt> hpddmLocalRows( gpToGc.size() );
+        std::transform( gpToGc.begin(), gpToGc.end(),
+                        hpddmLocalRows.begin(),
+                        []( auto dof ) { return static_cast<PetscInt>( dof ); } );
+
+        IS is = nullptr;
+        this->check( ISCreateGeneral( this->worldComm().globalComm(),
+                                      static_cast<PetscInt>( hpddmLocalRows.size() ),
+                                      hpddmLocalRows.data(),
+                                      PETSC_COPY_VALUES, &is ) );
+        this->attachHpddmAuxiliaryData( is, mat );
+        this->check( ISDestroy( &is ) );
+    }
 
     //@}
 
@@ -183,6 +257,7 @@ protected:
 private:
 
     bool M_indexSplitHasChanged;
+    std::map<std::string,petsc_index_set_ptrtype> M_auxiliaryIndexSet;
     /**
      * Some PETSc preconditioners (ILU, LU) don't work in parallel.  This function
      * is called from setPetscPreconditionerType() to set additional options
@@ -575,6 +650,24 @@ private :
     std::string M_prefixMGCoarse;
     std::string M_coarsePCtype, M_coarsePCMatSolverPackage;
     bool M_coarsePCview;
+};
+
+class ConfigurePCHPDDM : public ConfigurePCBase
+{
+public :
+    ConfigurePCHPDDM( PC& pc, PreconditionerPetsc<double> * precFeel, worldcomm_ptr_t const& worldComm,
+                      std::string const& sub, std::string const& prefix );
+
+private :
+    void run( PC& pc );
+
+private :
+    bool M_useConfigDefaultPetsc;
+    bool M_hasNeumann, M_defineSubdomains, M_shareSubKSP;
+    std::string M_coarseCorrection;
+    std::optional<int> M_levels1EpsNev;
+    bool M_levels1EpsUseInertia;
+    std::optional<double> M_levels1EpsThresholdAbsolute;
 };
 
 /**
