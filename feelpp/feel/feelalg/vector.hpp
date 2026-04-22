@@ -138,6 +138,11 @@ public:
         return M_is_closed;
     }
 
+    std::size_t revision() const noexcept
+    {
+        return M_revision;
+    }
+
     /**
      * Call the assemble functions
      */
@@ -660,6 +665,10 @@ public:
     {}
 
 protected:
+    void touchRevision() noexcept
+    {
+        ++M_revision;
+    }
 
     /**
      * Flag to see if the Numeric
@@ -677,6 +686,7 @@ protected:
      * data distribution map of the vector over the processors
      */
     datamap_ptrtype M_map;
+    std::size_t M_revision = 0;
 };
 
 typedef Vector<double> vector_type;

@@ -23,6 +23,7 @@ feelpp_add_test( pow CFG test_pow.cfg)
 feelpp_add_test( projtangent )
 
 feelpp_add_test( forms )
+feelpp_add_test( forms_dirichlet CFG test_forms_dirichlet.cfg GEO ../feeldiscr/square_mmarked.geo )
 
 feelpp_add_test( idf_functor )
 feelpp_add_test( idf2_functor )
@@ -32,4 +33,3 @@ feelpp_add_test(productspace_dofs)
 feelpp_add_test( expr_evaluate )
 feelpp_add_test( symbolic_diff )
 feelpp_add_test( functionexpr )
-
