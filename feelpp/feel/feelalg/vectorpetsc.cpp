@@ -131,6 +131,7 @@ VectorPetsc<T>::set( const value_type& value )
 
     ierr = VecSet ( M_vec, petsc_value );
     CHKERRABORT( this->comm(),ierr );
+    this->touchRevision();
 }
 template <typename T>
 void
@@ -144,6 +145,7 @@ VectorPetsc<T>::set( const size_type i, const value_type& value )
 
     ierr = VecSetValues ( M_vec, 1, &i_val, &petsc_value, INSERT_VALUES );
     CHKERRABORT( this->comm(),ierr );
+    this->touchRevision();
 }
 
 template <typename T>
@@ -158,6 +160,7 @@ VectorPetsc<T>::setVector ( int* i, int n, value_type* v )
     int ierr=0;
     ierr = VecSetValues ( M_vec, n, i, v, INSERT_VALUES );
     CHKERRABORT( this->comm(),ierr );
+    this->touchRevision();
 }
 
 template <typename T>
@@ -172,6 +175,7 @@ VectorPetsc<T>::add ( const size_type i, const value_type& value )
 
     ierr = VecSetValues ( M_vec, 1, &i_val, &petsc_value, ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );
+    this->touchRevision();
 }
 
 template <typename T>
@@ -186,6 +190,7 @@ VectorPetsc<T>::addVector ( int* i, int n, value_type* v, size_type K, size_type
     int ierr=0;
     ierr = VecSetValues ( M_vec, n, i, v, ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );
+    this->touchRevision();
 }
 template <typename T>
 typename VectorPetsc<T>::value_type
@@ -274,6 +279,7 @@ VectorPetsc<T>::operator= ( const Vector<value_type> &V )
         int ierr=0;
         ierr = VecCopy( vecPetsc->vec(), M_vec );
         CHKERRABORT( this->comm(),ierr );
+        this->touchRevision();
         return *this;
     }
 
@@ -313,6 +319,7 @@ VectorPetsc<T>::pointwiseOperationsImpl( Vector<T> const& xx, Vector<T> const& y
         else
             ierr =  VecPointwiseDivide( this->vec(), vecxPetsc->vec(), vecyPetsc->vec() );
         CHKERRABORT( this->comm(),ierr );
+        this->touchRevision();
         return;
     }
 
@@ -368,6 +375,7 @@ VectorPetsc<T>::zero()
     ierr = VecSet ( M_vec, z );
     CHKERRABORT( this->comm(),ierr );
 #endif
+    this->touchRevision();
 }
 
 template <typename T>
@@ -381,6 +389,7 @@ VectorPetsc<T>::reciprocal()
     int ierr=0;
     ierr = VecReciprocal( M_vec );
     CHKERRABORT( this->comm(),ierr );
+    this->touchRevision();
     return ierr;
 }
 
@@ -443,6 +452,7 @@ VectorPetsc<T>::scale ( T factor_in )
     ierr = VecScale( M_vec, factor );
     CHKERRABORT( this->comm(),ierr );
 #endif
+    this->touchRevision();
 }
 template <typename T>
 void
@@ -455,6 +465,7 @@ VectorPetsc<T>::add ( const value_type& v_in )
     int ierr=0;
     ierr = VecShift( M_vec, v );
     CHKERRABORT( this->comm(),ierr );
+    this->touchRevision();
 }
 template <typename T>
 void
@@ -484,6 +495,7 @@ VectorPetsc<T>::add ( const value_type& a_in, const Vector<value_type>& v_in )
         ierr = VecAXPY( M_vec, a, vecPetsc->M_vec );
         CHKERRABORT( this->comm(),ierr );
 #endif
+        this->touchRevision();
         return;
     }
 
@@ -564,6 +576,7 @@ VectorPetsc<T>::abs()
     int ierr = 0;
     ierr = VecAbs( M_vec );
     CHKERRABORT( this->comm(),ierr );
+    this->touchRevision();
 }
 
 
@@ -768,6 +781,7 @@ VectorPetsc<T>::addVector ( const Vector<value_type>& V_in,
         CHKERRABORT( this->comm(),ierr );
         // update ghost values (do nothing in sequential)
         this->localize();
+        this->touchRevision();
         return;
     }
 
@@ -1193,6 +1207,7 @@ VectorPetscMPI<T>::operator= ( const Vector<value_type> &V )
             ierr = VecGhostRestoreLocalForm(this->vec(),&lxOut);
             CHKERRABORT( this->comm(),ierr );
 
+            this->touchRevision();
             return *this;
         }
         const VectorPetscMPI<T>* vecPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &V );
@@ -1210,6 +1225,7 @@ VectorPetscMPI<T>::operator= ( const Vector<value_type> &V )
             CHKERRABORT( this->comm(),ierr );
             ierr = VecGhostRestoreLocalForm(vecPetscMPI->vec(),&lxIn);
             CHKERRABORT( this->comm(),ierr );
+            this->touchRevision();
             return *this;
         }
     }
@@ -1238,6 +1254,7 @@ VectorPetscMPI<T>::set( const value_type& value )
     CHKERRABORT( this->comm(),ierr );
     ierr = VecGhostRestoreLocalForm(this->vec(),&lx);
     CHKERRABORT( this->comm(),ierr );
+    this->touchRevision();
 }
 
 template <typename T>
@@ -1255,6 +1272,7 @@ VectorPetscMPI<T>::add( const value_type& v_in )
     CHKERRABORT( this->comm(),ierr );
     ierr = VecGhostRestoreLocalForm(this->vec(),&lx);
     CHKERRABORT( this->comm(),ierr );
+    this->touchRevision();
 }
 
 template <typename T>
@@ -1305,6 +1323,7 @@ VectorPetscMPI<T>::add( const value_type& a_in, const Vector<value_type>& v_in )
             ierr = VecGhostRestoreLocalForm(this->vec(),&lxOut);
             CHKERRABORT( this->comm(),ierr );
 
+            this->touchRevision();
             return;
         }
         const VectorPetscMPI<T>* vecPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &v_in );
@@ -1328,6 +1347,7 @@ VectorPetscMPI<T>::add( const value_type& a_in, const Vector<value_type>& v_in )
             CHKERRABORT( this->comm(),ierr );
             ierr = VecGhostRestoreLocalForm(vecPetscMPI->vec(),&lxIn);
             CHKERRABORT( this->comm(),ierr );
+            this->touchRevision();
             return;
         }
     }
@@ -1347,6 +1367,7 @@ VectorPetscMPI<T>::set( size_type i, const value_type& value )
 
     ierr=VecSetValuesLocal( this->vec(),1,&i_val,&petsc_value,INSERT_VALUES );
     CHKERRABORT( this->comm(),ierr );
+    this->touchRevision();
 }
 
 template <typename T>
@@ -1362,6 +1383,7 @@ VectorPetscMPI<T>::setVector ( int* i, int n, value_type* v )
     int ierr=0;
     ierr=VecSetValuesLocal( this->vec(), n, i, v, INSERT_VALUES );
     CHKERRABORT( this->comm(),ierr );
+    this->touchRevision();
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -1377,6 +1399,7 @@ VectorPetscMPI<T>::add ( const size_type i, const value_type& value )
 
     ierr=VecSetValuesLocal( this->vec(), 1, &i_val, &petsc_value, ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );
+    this->touchRevision();
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -1394,6 +1417,7 @@ VectorPetscMPI<T>::addVector ( int* i, int n, value_type* v, size_type K, size_t
     int ierr=0;
     ierr=VecSetValuesLocal( this->vec(), n, i, v, ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );
+    this->touchRevision();
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -1441,6 +1465,7 @@ VectorPetscMPI<T>::pointwiseMult( Vector<T> const& x, Vector<T> const& y )
                 CHKERRABORT( this->comm(),ierr );
                 ierr = VecGhostRestoreLocalForm(vecyPetscMPI->vec(),&lxIny);
                 CHKERRABORT( this->comm(),ierr );
+                this->touchRevision();
                 return;
             }
         }
@@ -1494,6 +1519,7 @@ VectorPetscMPI<T>::pointwiseDivide( Vector<T> const& x, Vector<T> const& y )
                 CHKERRABORT( this->comm(),ierr );
                 ierr = VecGhostRestoreLocalForm(vecyPetscMPI->vec(),&lxIny);
                 CHKERRABORT( this->comm(),ierr );
+                this->touchRevision();
                 return;
             }
         }
@@ -1631,6 +1657,7 @@ VectorPetscMPI<T>::pointwiseOperationOthersPetscImpl( Vector<T> const& x, Vector
         CHKERRABORT( this->comm(),ierr );
     }
 
+    this->touchRevision();
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -1651,6 +1678,7 @@ VectorPetscMPI<T>::zero()
     CHKERRABORT( this->comm(),ierr );
     ierr = VecGhostRestoreLocalForm(this->vec(),&lx);
     CHKERRABORT( this->comm(),ierr );
+    this->touchRevision();
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -1711,6 +1739,7 @@ VectorPetscMPI<T>::reciprocal()
     CHKERRABORT( this->comm(),ierr );
     ierr = VecGhostRestoreLocalForm(this->vec(),&lx);
     CHKERRABORT( this->comm(),ierr );
+    this->touchRevision();
     return ierr;
 }
 
@@ -2357,6 +2386,7 @@ VectorPetscMPIRange<T>::operator= ( const Vector<value_type> &V )
         CHKERRABORT( this->comm(),ierr );
         ierr = VecCopy( vecPetscMPIRange->vecGhost(), this->vecGhost() );
         CHKERRABORT( this->comm(),ierr );
+        this->touchRevision();
         return *this;
     }
     const VectorPetscMPI<T>* vecPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &V );
@@ -2392,6 +2422,7 @@ VectorPetscMPIRange<T>::operator= ( const Vector<value_type> &V )
         ierr = VecGhostRestoreLocalForm(vecPetscMPI->vec(),&lxIn);
         CHKERRABORT( this->comm(),ierr );
 
+        this->touchRevision();
         return *this;
     }
 
@@ -2417,6 +2448,7 @@ VectorPetscMPIRange<T>::set( const value_type& value )
     CHKERRABORT( this->comm(),ierr );
     ierr = VecSet ( M_vecGhost, val );
     CHKERRABORT( this->comm(),ierr );
+    this->touchRevision();
 }
 
 template <typename T>
@@ -2431,6 +2463,7 @@ VectorPetscMPIRange<T>::add( const value_type& v_in )
     CHKERRABORT( this->comm(),ierr );
     ierr = VecShift( M_vecGhost, v );
     CHKERRABORT( this->comm(),ierr );
+    this->touchRevision();
 }
 
 template <typename T>
@@ -2460,6 +2493,7 @@ VectorPetscMPIRange<T>::add( const value_type& a_in, const Vector<value_type>& v
         ierr = VecAXPY( this->vecGhost(), a, vecPetscMPIRange->vecGhost() );
         CHKERRABORT( this->comm(),ierr );
 #endif
+        this->touchRevision();
         return;
     }
     const VectorPetscMPI<T>* vecPetscMPI =  dynamic_cast<const VectorPetscMPI<T>*>( &v_in );
@@ -2497,6 +2531,7 @@ VectorPetscMPIRange<T>::add( const value_type& a_in, const Vector<value_type>& v
         ierr = VecGhostRestoreLocalForm(vecPetscMPI->vec(),&lxIn);
         CHKERRABORT( this->comm(),ierr );
 
+        this->touchRevision();
         return;
     }
 
@@ -2522,6 +2557,7 @@ VectorPetscMPIRange<T>::pointwiseMult( Vector<T> const& x, Vector<T> const& y )
         CHKERRABORT( this->comm(),ierr );
         ierr = VecPointwiseMult(this->vecGhost(), vecxPetscMPIRange->vecGhost(), vecyPetscMPIRange->vecGhost() );
         CHKERRABORT( this->comm(),ierr );
+        this->touchRevision();
         return;
     }
 
@@ -2546,6 +2582,7 @@ VectorPetscMPIRange<T>::pointwiseDivide( Vector<T> const& x, Vector<T> const& y 
         CHKERRABORT( this->comm(),ierr );
         ierr = VecPointwiseDivide(this->vecGhost(), vecxPetscMPIRange->vecGhost(), vecyPetscMPIRange->vecGhost() );
         CHKERRABORT( this->comm(),ierr );
+        this->touchRevision();
         return;
     }
     super_type::pointwiseDivide( x,y );
@@ -2564,6 +2601,7 @@ VectorPetscMPIRange<T>::zero()
     CHKERRABORT( this->comm(),ierr );
     ierr = VecSet( M_vecGhost, z );
     CHKERRABORT( this->comm(),ierr );
+    this->touchRevision();
 }
 
 template <typename T>
@@ -2577,6 +2615,7 @@ VectorPetscMPIRange<T>::reciprocal()
     CHKERRABORT( this->comm(),ierr );
     ierr = VecReciprocal( M_vecGhost );
     CHKERRABORT( this->comm(),ierr );
+    this->touchRevision();
     return ierr;
 }
 
