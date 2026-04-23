@@ -1,6 +1,6 @@
 {
   "jobs": ["feelpp", "testsuite", "toolboxes", "mor"],
-  "targets": ["ubuntu:noble", "debian:trixie"],
+  "targets": ["ubuntu:noble", "debian:trixie", "ubuntu:resolute"],
   "defaults": {
     "mode": "components",
     "jobs": ["feelpp", "testsuite", "toolboxes", "mor"],
@@ -13,7 +13,7 @@
   "profiles": {
     "ci": {
       "jobs": ["feelpp", "testsuite", "toolboxes", "mor"],
-      "targets": ["ubuntu:noble", "debian:trixie"],
+      "targets": ["ubuntu:noble", "debian:trixie", "ubuntu:resolute"],
       "matrixCatalogProfile": "images",
       "defaults": {
         "mode": "components",
