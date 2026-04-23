@@ -2207,8 +2207,8 @@ template <typename T>
 void
 VectorPetscMPIRange<T>::initVecScatterGhost()
 {
-
-    M_destroyVecScatterGhostOnExit = false;
+    // This helper creates a new scatter owned by the current range view.
+    M_destroyVecScatterGhostOnExit = true;
 
 
     int ierr=0;
@@ -2284,25 +2284,12 @@ template <typename T>
 void
 VectorPetscMPIRange<T>::clear()
 {
-    super_type::clear();
-
     if ( !this->isInitialized() )
         return;
 
     int ierr=0;
 
-    if ( M_destroyVecGhostOnExit )
-    {
-#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-        ierr = VecDestroy( &M_vecGhost );
-        CHKERRABORT( this->comm(),ierr );
-#else
-        ierr = VecDestroy( M_vecGhost );
-        CHKERRABORT( this->comm(),ierr );
-#endif
-    }
-
-    if ( M_destroyVecScatterGhostOnExit )
+    if ( M_destroyVecScatterGhostOnExit && M_vecScatterGhost )
     {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
         ierr = VecScatterDestroy( &M_vecScatterGhost );
@@ -2312,6 +2299,21 @@ VectorPetscMPIRange<T>::clear()
         CHKERRABORT( this->comm(),ierr );
 #endif
     }
+    M_vecScatterGhost = nullptr;
+
+    if ( M_destroyVecGhostOnExit && M_vecGhost )
+    {
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
+        ierr = VecDestroy( &M_vecGhost );
+        CHKERRABORT( this->comm(),ierr );
+#else
+        ierr = VecDestroy( M_vecGhost );
+        CHKERRABORT( this->comm(),ierr );
+#endif
+    }
+    M_vecGhost = nullptr;
+
+    super_type::clear();
 }
 
 template <typename T>
