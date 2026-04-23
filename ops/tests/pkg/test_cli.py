@@ -222,9 +222,13 @@ class CliTests(unittest.TestCase):
                 "COPY packaging/spack /opt/feelpp/packaging/spack",
                 dockerfile.read_text(encoding="utf-8"),
             )
+            self.assertIn('"group": {', bake_file.read_text(encoding="utf-8"))
             self.assertIn('"spack-openmpi"', bake_file.read_text(encoding="utf-8"))
             self.assertIn('"ghcr.io/feelpp/feelpp:spack-openmpi-full-dev"', bake_file.read_text(encoding="utf-8"))
             self.assertIn('"packaging_target": "spack:openmpi"', stdout.getvalue())
+            self.assertIn('"recommended_groups": [', stdout.getvalue())
+            self.assertIn('"docker_bake_command": "docker buildx bake -f ', stdout.getvalue())
+            self.assertIn(' default"', stdout.getvalue())
             self.assertFalse((context_dir / "packaging" / "spack" / "environments" / "cpu" / "openmpi" / ".spack-env").exists())
 
     def test_top_level_image_targets_lists_repo_owned_images_profile(self) -> None:
@@ -266,7 +270,10 @@ class CliTests(unittest.TestCase):
             self.assertIn('"full-all"', bake_payload)
             self.assertIn('"feelpp_env_image": "target:feelpp-env"', bake_payload)
             self.assertIn('"docker_bake_command": "docker buildx bake -f ', stdout.getvalue())
+            self.assertIn(' default all"', stdout.getvalue())
             self.assertIn('"available_groups": [', stdout.getvalue())
+            self.assertIn('"recommended_groups": [', stdout.getvalue())
+            self.assertIn('"default_group": "default"', stdout.getvalue())
 
     def test_main_prints_clean_error_for_expected_packaging_failures(self) -> None:
         stderr = io.StringIO()

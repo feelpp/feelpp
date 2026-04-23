@@ -144,6 +144,11 @@ def generate_spack_bake(
     )
 
     bake_payload = {
+        "group": {
+            "default": {
+                "targets": [resolved_bake_target],
+            }
+        },
         "target": {
             resolved_bake_target: {
                 "context": ".",
@@ -158,6 +163,7 @@ def generate_spack_bake(
     }
     bake_file = context_dir / "docker-bake.json"
     bake_file.write_text(json.dumps(bake_payload, indent=2) + "\n", encoding="utf-8")
+    recommended_groups = ["default"]
 
     return {
         "repo_root": str(workspace.repo_root),
@@ -174,6 +180,8 @@ def generate_spack_bake(
         "context_dir": str(context_dir),
         "dockerfile": str(dockerfile_path),
         "bake_file": str(bake_file),
-        "docker_bake_command": f"docker buildx bake -f {bake_file} {resolved_bake_target}",
+        "default_group": "default",
+        "available_groups": ["default"],
+        "recommended_groups": recommended_groups,
+        "docker_bake_command": f"docker buildx bake -f {bake_file} {' '.join(recommended_groups)}",
     }
-
