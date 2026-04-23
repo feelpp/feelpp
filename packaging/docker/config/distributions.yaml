@@ -1,0 +1,57 @@
+distributions:
+  ubuntu:
+    template: ubuntu.dockerfile.j2
+    versions:
+      - name: noble
+        version: "24.04"
+        base_image: "ubuntu:24.04"
+        platforms: ["linux/amd64", "linux/arm64"]
+        experimental: false
+        openmpi_packages:
+          - libopenmpi-dev
+          - openmpi-bin
+      - name: resolute
+        version: "26.04"
+        base_image: "ubuntu:26.04"
+        platforms: ["linux/amd64", "linux/arm64"]
+        experimental: true
+        openmpi_packages:
+          - libopenmpi-dev
+          - openmpi-bin
+
+  debian:
+    template: debian.dockerfile.j2
+    versions:
+      - name: bookworm
+        version: "12"
+        base_image: "debian:12"
+        platforms: ["linux/amd64", "linux/arm64"]
+        experimental: false
+        openmpi_packages:
+          - libopenmpi-dev
+          - openmpi-bin
+      - name: trixie
+        version: "13"
+        base_image: "debian:13"
+        platforms: ["linux/amd64", "linux/arm64"]
+        experimental: false
+        openmpi_packages:
+          - libopenmpi-dev
+          - openmpi-bin
+      - name: testing
+        version: "testing"
+        base_image: "debian:testing"
+        platforms: ["linux/amd64"]
+        experimental: true
+        openmpi_packages:
+          - libopenmpi-dev
+          - openmpi-bin
+      - name: sid
+        version: "unstable"
+        base_image: "debian:sid"
+        platforms: ["linux/amd64"]
+        experimental: true
+        openmpi_packages:
+          - libopenmpi-dev
+          - openmpi-bin
+

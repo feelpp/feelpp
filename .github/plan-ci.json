@@ -1,27 +1,125 @@
 {
   "jobs": ["feelpp", "testsuite", "toolboxes", "mor"],
-  "targets": ["ubuntu:24.04", "debian:13", "fedora:42"],
+  "targets": ["ubuntu:noble", "debian:trixie"],
   "defaults": {
     "mode": "components",
     "jobs": ["feelpp", "testsuite", "toolboxes", "mor"],
-    "targets": ["ubuntu:24.04"]
+    "targets": ["ubuntu:noble"]
   },
   "fullBuild": {
     "job": "feelpp-full",
-    "targets": ["ubuntu:24.04"]
+    "targets": ["ubuntu:noble"]
   },
   "profiles": {
     "ci": {
       "jobs": ["feelpp", "testsuite", "toolboxes", "mor"],
-      "targets": ["ubuntu:24.04", "debian:13", "fedora:42"],
+      "targets": ["ubuntu:noble", "debian:trixie"],
       "defaults": {
         "mode": "components",
         "jobs": ["feelpp", "testsuite", "toolboxes", "mor"],
-        "targets": ["ubuntu:24.04"]
+        "targets": ["ubuntu:noble"]
       },
       "fullBuild": {
         "job": "feelpp-full",
-        "targets": ["ubuntu:24.04"]
+        "targets": ["ubuntu:noble"]
+      }
+    },
+    "images": {
+      "jobs": ["images"],
+      "defaults": {
+        "targets": ["ubuntu:noble"]
+      },
+      "catalog": {
+        "ubuntu:noble": {
+          "flavor": "ubuntu",
+          "dist": "noble",
+          "version": "24.04",
+          "docker": "true",
+          "continue-on-error": "false",
+          "oci_dist": "ubuntu-24.04",
+          "image_backend": "apt",
+          "image_strategy": "components",
+          "component_set": "default",
+          "base_image": "ubuntu:24.04"
+        },
+        "debian:bookworm": {
+          "flavor": "debian",
+          "dist": "bookworm",
+          "version": "12",
+          "docker": "true",
+          "continue-on-error": "false",
+          "oci_dist": "debian-12",
+          "image_backend": "apt",
+          "image_strategy": "components",
+          "component_set": "default",
+          "base_image": "debian:12"
+        },
+        "debian:trixie": {
+          "flavor": "debian",
+          "dist": "trixie",
+          "version": "13",
+          "docker": "true",
+          "continue-on-error": "false",
+          "oci_dist": "debian-13",
+          "image_backend": "apt",
+          "image_strategy": "components",
+          "component_set": "default",
+          "base_image": "debian:13"
+        },
+        "debian:testing": {
+          "flavor": "debian",
+          "dist": "testing",
+          "version": "testing",
+          "docker": "true",
+          "continue-on-error": "true",
+          "oci_dist": "debian-testing",
+          "image_backend": "apt",
+          "image_strategy": "components",
+          "component_set": "default",
+          "base_image": "debian:testing"
+        },
+        "debian:sid": {
+          "flavor": "debian",
+          "dist": "sid",
+          "version": "unstable",
+          "docker": "true",
+          "continue-on-error": "true",
+          "oci_dist": "debian-sid",
+          "image_backend": "apt",
+          "image_strategy": "components",
+          "component_set": "default",
+          "base_image": "debian:sid"
+        },
+        "spack:openmpi": {
+          "flavor": "spack",
+          "dist": "openmpi",
+          "version": "latest",
+          "docker": "true",
+          "continue-on-error": "true",
+          "oci_dist": "spack-openmpi",
+          "image_backend": "spack",
+          "image_strategy": "full",
+          "spack_environment": "cpu/openmpi",
+          "base_image": "ubuntu:24.04"
+        }
+      },
+      "groups": {
+        "component-ci": ["ubuntu:noble", "debian:trixie"],
+        "ubuntu": ["ubuntu:noble"],
+        "noble": ["ubuntu:noble"],
+        "debian": [
+          "debian:bookworm",
+          "debian:trixie",
+          "debian:testing",
+          "debian:sid"
+        ],
+        "bookworm": ["debian:bookworm"],
+        "trixie": ["debian:trixie"],
+        "testing": ["debian:testing"],
+        "sid": ["debian:sid"],
+        "spack": ["spack:openmpi"],
+        "openmpi": ["spack:openmpi"],
+        "spack-openmpi": ["spack:openmpi"]
       }
     },
     "packaging": {
@@ -75,16 +173,16 @@
           "flavor": "spack",
           "dist": "mpich",
           "version": "latest",
-          "docker": "true",
-          "apptainer": "true",
+          "docker": "false",
+          "apptainer": "false",
           "continue-on-error": "true"
         },
         "spack:openmpi": {
           "flavor": "spack",
           "dist": "openmpi",
           "version": "latest",
-          "docker": "true",
-          "apptainer": "true",
+          "docker": "false",
+          "apptainer": "false",
           "continue-on-error": "true"
         }
       },

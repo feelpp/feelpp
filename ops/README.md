@@ -5,7 +5,24 @@
 Current commands:
 
 - `fpp-pkg` (preferred)
+- `fpp-spack` (preferred alias for `fpp-pkg spack`)
 - `fpp-version` (preferred)
+
+Canonical backend entry points:
+
+- `fpp-pkg debian ...`
+- `fpp-pkg spack ...`
+- `fpp-pkg image ...`
+
+Internal package layout:
+
+- shared workspace/repository helpers live under `feelpp.pkg.core`
+- backend-specific command and context code lives under `feelpp.pkg.backends.debian` and `feelpp.pkg.backends.spack`
+- `feelpp.pkg.cli_commands` remains as a compatibility shim while imports transition
+
+Current top-level Debian commands such as `fpp-pkg job ...` and
+`fpp-pkg build ...` remain available as compatibility aliases while the CLI
+transitions to explicit backend grouping.
 
 Current Python namespaces:
 
@@ -73,6 +90,32 @@ settings live in [`ops/pyproject.toml`](./pyproject.toml).
 
 The `feelpp.ops.common` namespace is the shared home for cross-tool support
 code such as naming, future logging helpers, and execution/runtime helpers.
+
+The `fpp-spack` alias is the first backend-specific convenience entry point. In
+Phase 0 it exposes the repository-owned Spack environment scaffolding under
+`packaging/spack/` and the initial `spack env` inspection commands.
+
+It now also exposes generic `image` commands plus the `spack image` alias for
+CI-oriented Docker generation. Use:
+
+```bash
+fpp-pkg image targets
+fpp-pkg image bake --target ubuntu:noble
+fpp-pkg image bake --target debian:trixie
+fpp-pkg image bake --target spack:openmpi
+```
+
+for repo-owned OCI planning and bake-file generation, and:
+
+```bash
+fpp-spack image targets
+fpp-spack image bake --target spack:openmpi
+```
+
+to generate a bake-ready Docker context and `docker-bake.json` file under the
+packaging job root. The generated target is keyed by the `images` profile in
+[`.github/plan-ci.json`](../.github/plan-ci.json) so OCI image generation stays
+aligned across Ubuntu, Debian, and Spack targets.
 
 The Python tooling in `ops/` should stay source-only. Generated artifacts such
 as `.pytest_cache`, `__pycache__`, and `*.egg-info` must not be kept here.

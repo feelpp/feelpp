@@ -1,0 +1,88 @@
+# =============================================================================
+# Feel++ Full Build - Multistage Dockerfile
+# =============================================================================
+
+ARG FROM_IMAGE=ghcr.io/feelpp/feelpp-env:ubuntu-24.04
+ARG DESCRIPTION="Feel++ Full Stack"
+
+FROM ${FROM_IMAGE} AS builder
+LABEL maintainer="Feel++ Support <support@feelpp.org>"
+LABEL org.opencontainers.image.description="${DESCRIPTION}"
+
+ARG BRANCH=develop
+ARG BUILD_JOBS=20
+ARG CMAKE_FLAGS=""
+ARG FEELPP_GIRDER_API_KEY=""
+ARG FEELPP_GITHUB_TOKEN=""
+ARG FEELPP_CKAN_API_KEY=""
+ARG FEELPP_CKAN_URL=""
+ARG FEELPP_CKAN_ORGANIZATION=""
+ARG CXX=clang++
+ARG CC=clang
+
+ENV OMPI_ALLOW_RUN_AS_ROOT=1
+ENV OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+
+ENV FEELPP_GIRDER_API_KEY=${FEELPP_GIRDER_API_KEY}
+ENV FEELPP_GITHUB_TOKEN=${FEELPP_GITHUB_TOKEN}
+ENV FEELPP_CKAN_API_KEY=${FEELPP_CKAN_API_KEY}
+ENV FEELPP_CKAN_URL=${FEELPP_CKAN_URL}
+ENV FEELPP_CKAN_ORGANIZATION=${FEELPP_CKAN_ORGANIZATION}
+
+WORKDIR /src
+RUN git config --global user.name "Docker Robot" \
+    && git config --global user.email "docker@feelpp.org" \
+    && git config --global --add safe.directory /src/feelpp \
+    && git clone --depth=1 --branch=${BRANCH} https://github.com/feelpp/feelpp.git feelpp \
+    && cd feelpp \
+    && git submodule update --init --recursive
+
+WORKDIR /src/feelpp
+RUN cmake --preset default \
+        -DCMAKE_INSTALL_PREFIX=/usr/local \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_CXX_COMPILER=${CXX} \
+        -DCMAKE_C_COMPILER=${CC} \
+        -DFEELPP_ENABLE_FEELPP_PYTHON=ON \
+        ${CMAKE_FLAGS} \
+    && cmake --build --preset default -j ${BUILD_JOBS} \
+    && cmake --build --preset default -t install -j ${BUILD_JOBS} \
+    && ldconfig \
+    && ctest --preset default || true \
+    && rm -rf build/default /root/feelppdb /root/.cache /feel
+
+ARG FROM_IMAGE
+ARG DESCRIPTION
+FROM ${FROM_IMAGE} AS runtime
+LABEL maintainer="Feel++ Support <support@feelpp.org>"
+LABEL org.opencontainers.image.description="${DESCRIPTION} (runtime)"
+
+COPY --from=builder /usr/local/bin/feelpp* /usr/local/bin/
+COPY --from=builder /usr/local/lib/libfeelpp* /usr/local/lib/
+COPY --from=builder /usr/local/include/feelpp /usr/local/include/feelpp
+COPY --from=builder /usr/local/share/feelpp /usr/local/share/feelpp
+
+RUN --mount=from=builder,source=/usr/local,target=/mnt/builder \
+    for d in /mnt/builder/lib/python3*/dist-packages /mnt/builder/local/lib/python3*/dist-packages; do \
+        if [ -d "$d" ] && ls "$d"/feelpp* >/dev/null 2>&1; then \
+            pyver=$(echo "$d" | grep -oP 'python3[^/]*') && \
+            mkdir -p "/usr/local/lib/$pyver/dist-packages" && \
+            cp -r "$d"/feelpp* "/usr/local/lib/$pyver/dist-packages/"; \
+        fi; \
+    done
+
+RUN ldconfig
+
+USER feelpp
+ENV HOME=/home/feelpp
+ENV FEELPP_REPOSITORY=/feel
+ENV PYTHONPATH=/usr/local/lib/python3/dist-packages:${PYTHONPATH}
+
+WORKDIR ${HOME}
+CMD ["/bin/bash"]
+
+FROM builder AS default
+USER root
+WORKDIR /root
+CMD ["/bin/bash"]
+
