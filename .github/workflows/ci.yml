@@ -2,6 +2,27 @@ name: Feel++ CI
 
 on:
   workflow_dispatch:
+    inputs:
+      targets:
+        description: 'CI targets or groups from profiles.ci'
+        required: false
+        default: ''
+        type: string
+      only:
+        description: 'Restrict CI jobs, for example feelpp or feelpp testsuite'
+        required: false
+        default: ''
+        type: string
+      skip:
+        description: 'Skip CI jobs, for example toolboxes mor'
+        required: false
+        default: ''
+        type: string
+      mode:
+        description: 'Planner mode override'
+        required: false
+        default: ''
+        type: string
   pull_request:
     branches: ['*']
     paths-ignore:
@@ -65,15 +86,49 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Resolve planner directives
+        id: directives
+        shell: bash
+        env:
+          RAW_TARGETS: ${{ inputs.targets }}
+          RAW_ONLY: ${{ inputs.only }}
+          RAW_SKIP: ${{ inputs.skip }}
+          RAW_MODE: ${{ inputs.mode }}
+        run: |
+          set -euo pipefail
+          message=""
+          if [ -n "${RAW_TARGETS:-}" ]; then
+            message="${message}targets=${RAW_TARGETS}"$'\n'
+          fi
+          if [ -n "${RAW_ONLY:-}" ]; then
+            message="${message}only=${RAW_ONLY}"$'\n'
+          fi
+          if [ -n "${RAW_SKIP:-}" ]; then
+            message="${message}skip=${RAW_SKIP}"$'\n'
+          fi
+          if [ -n "${RAW_MODE:-}" ]; then
+            message="${message}mode=${RAW_MODE}"$'\n'
+          fi
+          {
+            echo "message<<EOF"
+            printf "%s" "${message}"
+            echo
+            echo "EOF"
+          } >> "${GITHUB_OUTPUT}"
+
       - uses: feelpp/ci-matrix-planner@v1
         id: plan
         with:
           config-path: .github/plan-ci.json
+          message-override: ${{ steps.directives.outputs.message }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Debug planner output
         shell: bash
         run: |
+          echo "message_override: <<EOF"
+          printf '%s\n' "${{ steps.directives.outputs.message }}"
+          echo "EOF"
           echo "matrix_json: ${{ steps.plan.outputs.matrix_json }}"
           echo "targets_json: ${{ steps.plan.outputs.targets_json }}"
           echo "enabled_jobs_json: ${{ steps.plan.outputs.enabled_jobs_json }}"
@@ -98,6 +153,8 @@ jobs:
         with:
           submodules: recursive
           clean: true
+
+      - uses: ./.github/actions/git-safe-directory
 
       - name: Configure Feel++
         run: cmake --preset feelpp
@@ -128,6 +185,8 @@ jobs:
           submodules: recursive
           clean: true
 
+      - uses: ./.github/actions/git-safe-directory
+
       - name: Configure Testsuite
         run: cmake --preset testsuite
 
@@ -156,6 +215,8 @@ jobs:
         with:
           submodules: recursive
           clean: true
+
+      - uses: ./.github/actions/git-safe-directory
 
       - name: Configure Toolboxes
         run: cmake --preset toolboxes
@@ -186,6 +247,8 @@ jobs:
           submodules: recursive
           clean: true
 
+      - uses: ./.github/actions/git-safe-directory
+
       - name: Configure MOR
         run: cmake --preset mor
 
@@ -214,6 +277,8 @@ jobs:
         with:
           submodules: recursive
           clean: true
+
+      - uses: ./.github/actions/git-safe-directory
 
       - name: Configure Full Build
         run: cmake --preset default
