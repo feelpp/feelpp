@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -224,8 +225,9 @@ class CliTests(unittest.TestCase):
             )
             self.assertIn('"group": {', bake_file.read_text(encoding="utf-8"))
             self.assertIn('"spack-openmpi"', bake_file.read_text(encoding="utf-8"))
-            self.assertIn('"ghcr.io/feelpp/feelpp:spack-openmpi-full-dev"', bake_file.read_text(encoding="utf-8"))
+            self.assertIn('"ghcr.io/feelpp/feelpp-env:spack-openmpi"', bake_file.read_text(encoding="utf-8"))
             self.assertIn('"packaging_target": "spack:openmpi"', stdout.getvalue())
+            self.assertIn('"oci_dist": "spack-openmpi"', stdout.getvalue())
             self.assertIn('"recommended_groups": [', stdout.getvalue())
             self.assertIn('"docker_bake_command": "docker buildx bake -f ', stdout.getvalue())
             self.assertIn(' default"', stdout.getvalue())
@@ -238,6 +240,7 @@ class CliTests(unittest.TestCase):
 
         self.assertEqual(rc, 0)
         self.assertIn('"target": "ubuntu:noble"', stdout.getvalue())
+        self.assertIn('"target": "ubuntu:resolute"', stdout.getvalue())
         self.assertIn('"image_backend": "apt"', stdout.getvalue())
 
     def test_top_level_image_bake_writes_component_bake_graph(self) -> None:
@@ -264,13 +267,18 @@ class CliTests(unittest.TestCase):
             self.assertEqual(rc, 0)
             self.assertTrue(env_dockerfile.is_file())
             self.assertTrue(bake_file.is_file())
-            bake_payload = bake_file.read_text(encoding="utf-8")
-            self.assertIn('"feelpp-env"', bake_payload)
-            self.assertIn('"toolboxes-runtime"', bake_payload)
-            self.assertIn('"full-all"', bake_payload)
-            self.assertIn('"feelpp_env_image": "target:feelpp-env"', bake_payload)
+            bake_payload = json.loads(bake_file.read_text(encoding="utf-8"))
+            self.assertEqual(bake_payload["group"]["default"]["targets"], ["feelpp-env"])
+            self.assertEqual(bake_payload["group"]["env"]["targets"], ["feelpp-env"])
+            self.assertIn("feelpp-env", bake_payload["target"])
+            self.assertIn("toolboxes-runtime", bake_payload["target"])
+            self.assertIn("full-all", bake_payload["group"])
+            self.assertEqual(
+                bake_payload["target"]["feelpp"]["contexts"]["feelpp_env_image"],
+                "target:feelpp-env",
+            )
             self.assertIn('"docker_bake_command": "docker buildx bake -f ', stdout.getvalue())
-            self.assertIn(' default all"', stdout.getvalue())
+            self.assertIn(' default"', stdout.getvalue())
             self.assertIn('"available_groups": [', stdout.getvalue())
             self.assertIn('"recommended_groups": [', stdout.getvalue())
             self.assertIn('"default_group": "default"', stdout.getvalue())

@@ -28,7 +28,7 @@
     "images": {
       "jobs": ["images"],
       "defaults": {
-        "targets": ["ubuntu:noble"]
+        "targets": ["ubuntu:noble", "ubuntu:resolute", "debian:trixie", "spack:openmpi"]
       },
       "catalog": {
         "ubuntu:noble": {
@@ -39,9 +39,21 @@
           "continue-on-error": "false",
           "oci_dist": "ubuntu-24.04",
           "image_backend": "apt",
-          "image_strategy": "components",
+          "image_strategy": "environment",
           "component_set": "default",
           "base_image": "ubuntu:24.04"
+        },
+        "ubuntu:resolute": {
+          "flavor": "ubuntu",
+          "dist": "resolute",
+          "version": "26.04",
+          "docker": "true",
+          "continue-on-error": "false",
+          "oci_dist": "ubuntu-26.04",
+          "image_backend": "apt",
+          "image_strategy": "environment",
+          "component_set": "default",
+          "base_image": "ubuntu:26.04"
         },
         "debian:bookworm": {
           "flavor": "debian",
@@ -51,7 +63,7 @@
           "continue-on-error": "false",
           "oci_dist": "debian-12",
           "image_backend": "apt",
-          "image_strategy": "components",
+          "image_strategy": "environment",
           "component_set": "default",
           "base_image": "debian:12"
         },
@@ -63,7 +75,7 @@
           "continue-on-error": "false",
           "oci_dist": "debian-13",
           "image_backend": "apt",
-          "image_strategy": "components",
+          "image_strategy": "environment",
           "component_set": "default",
           "base_image": "debian:13"
         },
@@ -75,7 +87,7 @@
           "continue-on-error": "true",
           "oci_dist": "debian-testing",
           "image_backend": "apt",
-          "image_strategy": "components",
+          "image_strategy": "environment",
           "component_set": "default",
           "base_image": "debian:testing"
         },
@@ -87,7 +99,7 @@
           "continue-on-error": "true",
           "oci_dist": "debian-sid",
           "image_backend": "apt",
-          "image_strategy": "components",
+          "image_strategy": "environment",
           "component_set": "default",
           "base_image": "debian:sid"
         },
@@ -96,18 +108,22 @@
           "dist": "openmpi",
           "version": "latest",
           "docker": "true",
-          "continue-on-error": "true",
+          "continue-on-error": "false",
           "oci_dist": "spack-openmpi",
           "image_backend": "spack",
-          "image_strategy": "full",
+          "image_strategy": "environment",
           "spack_environment": "cpu/openmpi",
           "base_image": "ubuntu:24.04"
         }
       },
       "groups": {
-        "component-ci": ["ubuntu:noble", "debian:trixie"],
-        "ubuntu": ["ubuntu:noble"],
+        "env-current": ["ubuntu:noble", "ubuntu:resolute", "debian:trixie", "spack:openmpi"],
+        "apt-current": ["ubuntu:noble", "ubuntu:resolute", "debian:trixie"],
+        "ubuntu": ["ubuntu:noble", "ubuntu:resolute"],
         "noble": ["ubuntu:noble"],
+        "resolute": ["ubuntu:resolute"],
+        "24.04": ["ubuntu:noble"],
+        "26.04": ["ubuntu:resolute"],
         "debian": [
           "debian:bookworm",
           "debian:trixie",
@@ -118,6 +134,8 @@
         "trixie": ["debian:trixie"],
         "testing": ["debian:testing"],
         "sid": ["debian:sid"],
+        "unstable": ["debian:sid"],
+        "future": ["debian:testing", "debian:sid"],
         "spack": ["spack:openmpi"],
         "openmpi": ["spack:openmpi"],
         "spack-openmpi": ["spack:openmpi"]
