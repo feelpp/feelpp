@@ -595,6 +595,49 @@ void runDeferredDirichletSingleApplyZeroRowsCount()
 
     BOOST_CHECK_EQUAL( counters->zeroRowsCalls, 1 );
 }
+
+template<int Dim>
+void runDeferredDirichletApplyZeroRowsCountWithEmptyLocalRows()
+{
+    if ( Environment::worldComm().globalSize() < 2 )
+        return;
+
+    auto mesh = unitHypercube<Dim>();
+    auto Vh = Pch<1>( mesh );
+    auto u = Vh->element();
+    auto v = Vh->element();
+
+    backend( _rebuild=true );
+
+    auto counters = std::make_shared<DeferredDirichletMaterializationCounters>();
+    auto countingMatrix = std::make_shared<CountingMatrixSparse<double>>( backend()->newMatrix( _test=Vh, _trial=Vh ),
+                                                                          counters );
+    auto a = form2( _test=Vh, _trial=Vh, _matrix=countingMatrix );
+    auto l = form1( _test=Vh );
+
+    assembleScalarForm2System( mesh, u, v, a, l );
+
+    auto const& rowMap = countingMatrix->mapRow();
+    BOOST_REQUIRE_GT( rowMap.nLocalDofWithoutGhost(), 0 );
+
+    std::vector<int> localDofs;
+    if ( Environment::worldComm().globalRank() == 0 )
+        localDofs.push_back( 0 );
+    std::vector<double> values( localDofs.size(), 0.0 );
+
+    vf::DeferredDirichletSet<double> constraints;
+    constraints.append( localDofs, values, Feel::Context( ContextOn::ELIMINATION ), 1.0 );
+
+    countingMatrix->close();
+    l.vectorPtr()->close();
+    counters->reset();
+
+    auto const merged = constraints.mergedEntries();
+    BOOST_REQUIRE_EQUAL( merged.size(), 1 );
+    vf::applyDeferredDirichletEntries( merged, countingMatrix, l.vectorPtr() );
+
+    BOOST_CHECK_EQUAL( counters->zeroRowsCalls, 1 );
+}
 } // namespace
 
 inline
@@ -886,6 +929,11 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_form2_faces, T, dim_t )
         BOOST_TEST_MESSAGE( "a12b(1)=" << a12beval );
     LOG(INFO) << "a12b ends";
     BOOST_MESSAGE( "test_form2_faces ends for dim=" << T::value);
+}
+
+BOOST_AUTO_TEST_CASE( test_deferred_dirichlet_collective_zero_rows_with_empty_local_rows )
+{
+    runDeferredDirichletApplyZeroRowsCountWithEmptyLocalRows<2>();
 }
 
 BOOST_DATA_TEST_CASE( test_repeated_dirichlet_on_form2,

@@ -1792,7 +1792,11 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows,
                 return;
 
             char const* text = nullptr;
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 19, 0 )
+            char* specific = nullptr;
+#else
             char const* specific = nullptr;
+#endif
             PetscErrorMessage( ierr, &text, &specific );
             CHECK( ierr == 0 ) << call << " failed with ierr=" << ierr
                                << " text=" << ( text ? text : "<null>" )
