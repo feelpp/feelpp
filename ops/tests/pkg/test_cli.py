@@ -192,6 +192,7 @@ class CliTests(unittest.TestCase):
             manifest = repo_root / "packaging" / "spack" / "environments" / "cpu" / "openmpi" / "spack.yaml"
             manifest.parent.mkdir(parents=True)
             manifest.write_text("spack:\n  specs: []\n", encoding="utf-8")
+            (manifest.parent / "spack.lock").write_text("stale lock\n", encoding="utf-8")
             (repo_root / "packaging" / "spack" / "README.md").write_text("spack docs\n", encoding="utf-8")
             generated_state = manifest.parent / ".spack-env"
             generated_state.mkdir()
@@ -223,6 +224,10 @@ class CliTests(unittest.TestCase):
                 "COPY packaging/spack /opt/feelpp/packaging/spack",
                 dockerfile.read_text(encoding="utf-8"),
             )
+            self.assertIn(
+                f"spack -e /opt/feelpp/packaging/spack/environments/cpu/openmpi concretize -f",
+                dockerfile.read_text(encoding="utf-8"),
+            )
             self.assertIn('"group": {', bake_file.read_text(encoding="utf-8"))
             self.assertIn('"spack-openmpi"', bake_file.read_text(encoding="utf-8"))
             self.assertIn('"ghcr.io/feelpp/feelpp-env:spack-openmpi"', bake_file.read_text(encoding="utf-8"))
@@ -232,6 +237,7 @@ class CliTests(unittest.TestCase):
             self.assertIn('"docker_bake_command": "docker buildx bake -f ', stdout.getvalue())
             self.assertIn(' default"', stdout.getvalue())
             self.assertFalse((context_dir / "packaging" / "spack" / "environments" / "cpu" / "openmpi" / ".spack-env").exists())
+            self.assertFalse((context_dir / "packaging" / "spack" / "environments" / "cpu" / "openmpi" / "spack.lock").exists())
 
     def test_top_level_image_targets_lists_repo_owned_images_profile(self) -> None:
         stdout = io.StringIO()
