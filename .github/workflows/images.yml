@@ -15,18 +15,33 @@ on:
         type: boolean
   pull_request:
     branches: ['*']
+    types: [opened, reopened, ready_for_review]
     paths:
       - '.github/plan-ci.json'
       - '.github/workflows/images.yml'
-      - 'ops/**'
-      - 'packaging/**'
+      - 'ops/pyproject.toml'
+      - 'ops/src/feelpp/pkg/**'
+      - 'packaging/docker/assets/**'
+      - 'packaging/docker/config/**'
+      - 'packaging/docker/templates/**'
+      - 'packaging/manifest/components.toml'
+      - 'packaging/spack/environments/**'
+      - 'packaging/spack/includes/**'
+      - 'packaging/spack/repo/**'
   push:
     branches: [master, develop]
     paths:
       - '.github/plan-ci.json'
       - '.github/workflows/images.yml'
-      - 'ops/**'
-      - 'packaging/**'
+      - 'ops/pyproject.toml'
+      - 'ops/src/feelpp/pkg/**'
+      - 'packaging/docker/assets/**'
+      - 'packaging/docker/config/**'
+      - 'packaging/docker/templates/**'
+      - 'packaging/manifest/components.toml'
+      - 'packaging/spack/environments/**'
+      - 'packaging/spack/includes/**'
+      - 'packaging/spack/repo/**'
 
 permissions:
   contents: read
