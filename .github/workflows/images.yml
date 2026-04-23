@@ -125,8 +125,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan_images.outputs.matrix_json) }}
+    env:
+      CHECKOUT_DIR: src-${{ github.run_id }}-${{ matrix.oci_dist }}
+      REPO_ROOT: ${{ github.workspace }}/src-${{ github.run_id }}-${{ matrix.oci_dist }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          path: ${{ env.CHECKOUT_DIR }}
+          clean: false
 
       - uses: actions/setup-python@v5
         with:
@@ -137,7 +143,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install --upgrade pip
-          python -m pip install -e ops
+          python -m pip install -e "${REPO_ROOT}/ops"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -168,7 +174,7 @@ jobs:
           metadata_file="${JOB_ROOT}/image-metadata.json"
 
           fpp-pkg image bake \
-            --repo-root "${GITHUB_WORKSPACE}" \
+            --repo-root "${REPO_ROOT}" \
             --job-root "${JOB_ROOT}" \
             --target "${TARGET}" \
             > "${metadata_file}"
