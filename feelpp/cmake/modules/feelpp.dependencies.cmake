@@ -552,12 +552,40 @@ endif()
 
 # Python libs
 option( FEELPP_ENABLE_PYTHON "Enable Python Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+option( FEELPP_ALLOW_AMBIENT_PYTHON "Allow auto-detected non-system Python installations (Spack, Conda, virtualenvs)" OFF )
 option( FEELPP_ALLOW_AMBIENT_CONDA_PYTHON "Allow auto-detected Conda/Miniconda Python installations" OFF )
 if(FEELPP_ENABLE_PYTHON)
   #
   # Python
   #
-  if(NOT FEELPP_ALLOW_AMBIENT_CONDA_PYTHON AND EXISTS "/usr/bin/python3")
+  set(_feelpp_active_spack_env FALSE)
+  set(_feelpp_spack_view "")
+  if(DEFINED ENV{SPACK_ENV} AND NOT "$ENV{SPACK_ENV}" STREQUAL "")
+    set(_feelpp_active_spack_env TRUE)
+    set(_feelpp_spack_prefix_hints "$ENV{CMAKE_PREFIX_PATH}")
+    if(_feelpp_spack_prefix_hints)
+      if(UNIX)
+        string(REPLACE ":" ";" _feelpp_spack_prefix_hints "${_feelpp_spack_prefix_hints}")
+      endif()
+      list(GET _feelpp_spack_prefix_hints 0 _feelpp_spack_view)
+    endif()
+    find_program(_feelpp_spack_python
+      NAMES python3 python
+      HINTS "${_feelpp_spack_view}/bin"
+      NO_DEFAULT_PATH
+    )
+    if(_feelpp_spack_python)
+      message(STATUS "[feelpp] Active Spack environment detected; using ${_feelpp_spack_python}")
+      set(Python3_EXECUTABLE "${_feelpp_spack_python}" CACHE FILEPATH "Python3 executable" FORCE)
+    else()
+      message(STATUS "[feelpp] Active Spack environment detected; Python will be resolved from PATH")
+    endif()
+    if(_feelpp_spack_view)
+      set(Python3_ROOT_DIR "${_feelpp_spack_view}" CACHE PATH "Python3 root directory" FORCE)
+    endif()
+  endif()
+
+  if(NOT FEELPP_ALLOW_AMBIENT_PYTHON AND NOT FEELPP_ALLOW_AMBIENT_CONDA_PYTHON AND NOT _feelpp_active_spack_env AND EXISTS "/usr/bin/python3")
     if(DEFINED Python3_EXECUTABLE AND NOT "${Python3_EXECUTABLE}" STREQUAL "" AND NOT "${Python3_EXECUTABLE}" STREQUAL "/usr/bin/python3")
       message(STATUS "[feelpp] Ignoring ambient Python ${Python3_EXECUTABLE}; using /usr/bin/python3")
     else()

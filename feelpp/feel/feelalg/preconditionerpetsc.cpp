@@ -57,9 +57,13 @@ extern "C" {
 #include <feel/feelalg/preconditionerpetscpcd.cpp>
 #include <feel/feelalg/preconditionerpetscfeelpp.cpp>
 
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,19,0 )
+PetscErrorCode __feel_destroy_petsc_prec_ksp_monitor(void** ctx)
+#else
 PetscErrorCode __feel_destroy_petsc_prec_ksp_monitor(PetscCtxRt ctx)
+#endif
 {
-    auto* ctxPtr = static_cast<Feel::ConfigureKSP**>( ctx );
+    auto* ctxPtr = reinterpret_cast<Feel::ConfigureKSP**>( ctx );
     if ( ctxPtr == nullptr )
         return 0;
     Feel::ConfigureKSP* solver = *ctxPtr;
