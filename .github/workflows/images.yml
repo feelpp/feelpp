@@ -124,10 +124,12 @@ jobs:
     timeout-minutes: 600
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix: ${{ fromJSON(needs.plan_images.outputs.matrix_json) }}
     env:
       CHECKOUT_DIR: src-${{ github.run_id }}-${{ matrix.oci_dist }}
       REPO_ROOT: ${{ github.workspace }}/src-${{ github.run_id }}-${{ matrix.oci_dist }}
+      DOCKER_CONFIG: /nvme0/prudhomm/.docker/actions/${{ github.run_id }}-${{ matrix.oci_dist }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -145,13 +147,22 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e "${REPO_ROOT}/ops"
 
+      - name: Prepare Docker client config
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${DOCKER_CONFIG}"
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
+        with:
+          cache-image: false
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
           version: v0.33.0
+          cache-binary: false
 
       - name: Login to GitHub Container Registry
         if: needs.plan_images.outputs.publish_images == 'true'
