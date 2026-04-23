@@ -70,7 +70,7 @@ env:
   FEELPP_CKAN_ORGANIZATION: ${{ secrets.FEELPP_CKAN_ORGANIZATION }}
 
 # CI consumes the repository-owned image chain published by images.yml:
-#   ghcr.io/feelpp/feelpp:<oci_dist>-dev        for Feel++ and testsuite builds
+#   ghcr.io/feelpp/feelpp-env:<oci_dist>        for source builds (Feel++, testsuite, full)
 #   ghcr.io/feelpp/feelpp:<oci_dist>            for toolboxes builds
 #   ghcr.io/feelpp/feelpp-toolboxes:<oci_dist>  for MOR builds
 
@@ -140,7 +140,7 @@ jobs:
     runs-on: self-docker
     if: contains(fromJSON(needs.plan_ci.outputs.enabled_jobs_json), 'feelpp')
     container:
-      image: ghcr.io/feelpp/feelpp:${{ matrix.oci_dist }}-dev
+      image: ghcr.io/feelpp/feelpp-env:${{ matrix.oci_dist }}
       credentials:
         username: ${{ secrets.CR_LOGIN }}
         password: ${{ secrets.CR_PAT }}
@@ -171,7 +171,7 @@ jobs:
     runs-on: self-docker
     if: contains(fromJSON(needs.plan_ci.outputs.enabled_jobs_json), 'testsuite')
     container:
-      image: ghcr.io/feelpp/feelpp:${{ matrix.oci_dist }}-dev
+      image: ghcr.io/feelpp/feelpp-env:${{ matrix.oci_dist }}
       credentials:
         username: ${{ secrets.CR_LOGIN }}
         password: ${{ secrets.CR_PAT }}
@@ -264,7 +264,7 @@ jobs:
     runs-on: self-docker
     if: contains(fromJSON(needs.plan_ci.outputs.enabled_jobs_json), 'feelpp-full')
     container:
-      image: ghcr.io/feelpp/feelpp:${{ matrix.oci_dist }}-dev
+      image: ghcr.io/feelpp/feelpp-env:${{ matrix.oci_dist }}
       credentials:
         username: ${{ secrets.CR_LOGIN }}
         password: ${{ secrets.CR_PAT }}
