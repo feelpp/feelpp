@@ -14,6 +14,7 @@
     "ci": {
       "jobs": ["feelpp", "testsuite", "toolboxes", "mor"],
       "targets": ["ubuntu:noble", "debian:trixie"],
+      "matrixCatalogProfile": "images",
       "defaults": {
         "mode": "components",
         "jobs": ["feelpp", "testsuite", "toolboxes", "mor"],
