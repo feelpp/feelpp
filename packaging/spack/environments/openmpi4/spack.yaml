@@ -1,0 +1,115 @@
+# Imported during Phase 0 from the legacy hidden path:
+#   .spack/openmpi4/spack.yaml
+#
+# This manifest is intentionally preserved as a visible repository-owned
+# starting point. It still contains assumptions that should be reduced or
+# externalized in the next phase.
+#
+# Phase 1 introduced the cleaned shared environment at:
+#   packaging/spack/environments/cpu/openmpi/spack.yaml
+#
+# This manifest is now kept as legacy imported bootstrap material for
+# comparison and migration only.
+spack:
+  config:
+    target: x86_64_v3
+    install_tree:
+      padded_length: 128
+  packages:
+    gcc:
+      externals:
+      - spec: gcc@9.5.0 languages=c,fortran
+        prefix: /usr
+        extra_attributes:
+          compilers:
+            c: /usr/bin/gcc-9
+            fortran: /usr/bin/gfortran-9
+      - spec: gcc@11.4.0 languages='c,c++,fortran'
+        prefix: /usr
+        extra_attributes:
+          compilers:
+            c: /usr/bin/gcc
+            cxx: /usr/bin/g++
+            fortran: /usr/bin/gfortran
+      - spec: gcc@12.3.0 languages='c,c++,fortran'
+        prefix: /usr
+        extra_attributes:
+          compilers:
+            c: /usr/bin/gcc-12
+            cxx: /usr/bin/g++-12
+            fortran: /usr/bin/gfortran-12
+    llvm:
+      externals:
+      - spec: llvm@14.0.0+clang~lld+lldb
+        prefix: /usr
+        extra_attributes:
+          compilers:
+            c: /usr/bin/clang
+            cxx: /usr/bin/clang++
+    mpi:
+      require: ['openmpi@:4.1.6 fabrics=cma,ucx']
+  definitions:
+  - targets: [target=x86_64_v3]
+  - compilers: [gcc@11:]
+  - fppcompilers: ['llvm@20:']
+  - mpis: [mpi]
+  - petscs: [petsc +mumps+hwloc+ptscotch +suite-sparse+hdf5 +hypre]
+  - packages: [$petscs, boost+regex+date_time+filesystem+iostreams+mpi+multithreaded+program_options+serialization+shared+system+test, scotch, parmmg]
+  - opengls: [mesa@23.3.6]
+  - pys: [py-pytest, py-pandas, py-tabulate, py-plotly, py-ipykernel, py-sympy, py-pybind11, py-tqdm, py-scipy]
+  specs:
+  - matrix:
+    - [$compilers]
+    - [$targets]
+  - matrix:
+    - [$mpis]
+    - [^ucx@1.18 ~rocm +cma +thread_multiple]
+    - [$%compilers]
+    - [$targets]
+  - matrix:
+    - [cmake, bison, flex, libzip@1.11, curl, 'llvm@18:18', libunwind, cln, ninja, 'metis@5.3.1-rc.8: +shared', parmetis@4.0.4-rc.4 +shared, pugixml, glpk, gl2ps, ruby, gsl, libaec, sz, superlu, gflags, glog, fmt +shared cxxstd=17, eigen@master, eigenrand, cpr, fmi4cpp@master, nanoflann, simple-web-server@master, nlopt+cxx, ipopt, indicators, tabulate, napp, hwloc~gl, ginac, bvh, ut]
+    - [$%compilers]
+    - [$targets]
+#  - matrix:
+#    - [kokkos +threads +hwloc ~rocm ~cuda]
+#    - [$%compilers]
+#    - [$targets]
+  - matrix:
+    - ['fftw precision=float,double,long_double +mpi +openmp']
+    - [$^mpis]
+    - [$%compilers]
+    - [$targets]
+  - matrix:
+    - [$packages]
+    - [$^mpis]
+    - [$%compilers]
+    - [$targets]
+  - matrix:
+    - [slepc, py-petsc4py] #, py-slepc4py]
+    - [^python]
+    - [$^petscs]
+    - [$^mpis]
+    - [$%compilers]
+    - [$targets]
+  - matrix:
+    - [gmsh +opencascade+mmg+fltk]
+    - [$^opengls]
+    - [$%compilers]
+    - [$targets]
+  - matrix:
+    - [$pys]
+    - [^python]
+    - [$targets]
+  view: true
+  concretizer:
+    targets:
+      granularity: generic
+      host_compatible: true
+    unify: when_possible
+  mirrors:
+#    spack-mirror: oci://ghcr.io/feelpp/spack
+    numpex-buildcache: oci://ghcr.io/numpex/spack-buildcache
+    feelpp-buildcache: oci://ghcr.io/feelpp/spack-buildcache
+  repos:
+    - https://github.com/numpex/spack.numpex.git
+    - https://github.com/spack/spack-packages.git

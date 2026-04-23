@@ -128,10 +128,16 @@ local spackPreset = {
   inherits: ['default'],
   cacheVariables: {
     CMAKE_INSTALL_RPATH_USE_LINK_PATH: 'ON',
+    FEELPP_ALLOW_AMBIENT_PYTHON: 'ON',
     FEELPP_USE_EXTERNAL_CLN: 'ON',
+    FEELPP_USE_EXTERNAL_EIGEN3: 'ON',
     FEELPP_ENABLE_VTK: 'OFF',
     USE_VTK: 'OFF',
     FEELPP_ENABLE_OPENTURNS: 'OFF',
+    PYBIND11_FINDPYTHON: 'ON',
+    CPR_USE_SYSTEM_CURL: 'ON',
+    CPR_USE_SYSTEM_LIB_PSL: 'OFF',
+    CURL_NO_CURL_CMAKE: 'ON'
   },
   environment: {
     VERBOSE: '1',
@@ -374,18 +380,16 @@ local feelppUsrlocalPreset = {
 
 local feelppCpp20SpackPreset = {
   name: 'feelpp-cpp20-spack',
-  inherits: ['cpp20', 'clang', 'spack', 'release-cmake'],
+  inherits: ['feelpp', 'cpp20', 'spack'],
   displayName: 'feelpp | clang | cpp20 | release | spack package manager',
   description: 'Build only the Feel++ library Component',
-  cacheVariables: {
-    FEELPP_COMPONENT: 'feelpp',
-    FEELPP_ENABLE_MOR: 'OFF',
-    FEELPP_ENABLE_TOOLBOXES: 'OFF',
-    FEELPP_ENABLE_FEELPP_PYTHON: 'OFF',
-    FEELPP_ENABLE_TESTS: 'OFF',
-    FEELPP_ENABLE_FMILIB: 'OFF',
-    FEELPP_ENABLE_BENCHMARKS: 'OFF',
-  },
+};
+
+local feelppCpp23SpackPreset = {
+  name: 'feelpp-cpp23-spack',
+  inherits: ['feelpp', 'cpp23', 'spack'],
+  displayName: 'feelpp | clang | cpp23 | release | spack package manager',
+  description: 'Build only the Feel++ library Component',
 };
 
 local feelppSpecxPreset = {
@@ -635,6 +639,7 @@ local configurePresets =
   [
     feelppUsrlocalPreset,
     feelppCpp20SpackPreset,
+    feelppCpp23SpackPreset,
     feelppSpecxPreset,
     morDbgPreset,
     researchMorPreset,
@@ -683,6 +688,7 @@ std.flattenArrays([
 [
   buildPreset('feelpp-usrlocal'),
   buildPreset('feelpp-cpp20-spack'),
+  buildPreset('feelpp-cpp23-spack'),
   buildPreset('feelpp+specx'),
   buildPreset('mor-dbg'),
   buildPreset('research-mor'),
