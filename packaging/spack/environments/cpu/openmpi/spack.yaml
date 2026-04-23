@@ -1,0 +1,50 @@
+# Supported shared Feel++ CPU/OpenMPI environment.
+#
+# This manifest is the cleaned Phase 1 baseline derived from the broader legacy
+# `openmpi4/` bootstrap environment. It focuses on the immediate
+# PETSc/HPDDM-enabled workflow and intentionally avoids embedding site-local
+# compiler externals, local mirrors, or unrelated optional packages.
+spack:
+  packages:
+    mpi:
+      require:
+      - "openmpi@:4.1 fabrics=cma,ucx"
+
+  specs:
+  - "openmpi fabrics=cma,ucx ^ucx~rocm+cma+thread_multiple"
+  - "cmake"
+  - "ninja"
+  - "bison"
+  - "flex"
+  - "boost+regex+date_time+filesystem+iostreams+mpi+multithreaded+program_options+serialization+shared+system+test"
+  - "fmt+shared cxxstd=20"
+  - "curl"
+  - "libzip"
+  - "hwloc"
+  - "cln"
+  - "ginac"
+  - "eigen"
+  - "py-pybind11"
+  - "py-mpi4py"
+  - "py-petsc4py@3.25.0"
+  - "py-slepc4py@3.25.0"
+  - "py-sympy"
+  - "py-pytest"
+  - "petsc@3.25.0+hpddm+mumps+hwloc+ptscotch+suite-sparse+hdf5+hypre"
+  - "slepc@3.25.0+hpddm"
+
+  # Keep the generated view outside the repository checkout so activated CMake
+  # builds do not export include directories that are prefixed by the source
+  # tree. Set SPACK_USER_CACHE_PATH to place this on fast local storage.
+  view: $user_cache_path/views/feelpp/cpu-openmpi
+
+  concretizer:
+    unify: when_possible
+
+  repos:
+    # Repository-owned local overrides to unblock shared environment installs.
+    feelpp: $env/../../../repo/spack_repo/feelpp
+    # Transitional package repository for Feel++ until an in-repo overlay or
+    # upstream Spack package fully replaces it.
+    numpex:
+      git: https://github.com/numpex/spack.numpex.git
