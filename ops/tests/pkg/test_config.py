@@ -5,7 +5,13 @@ import tempfile
 import unittest
 from unittest import mock
 
-from feelpp.pkg.config import PackagingContext, detect_channel, detect_flavor
+from feelpp.pkg.config import (
+    DebianPackagingContext,
+    PackagingContext,
+    WorkspaceContext,
+    detect_channel,
+    detect_flavor,
+)
 
 
 class ConfigTests(unittest.TestCase):
@@ -18,6 +24,39 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(detect_flavor("noble"), "ubuntu")
         self.assertEqual(detect_flavor("resolute"), "ubuntu")
         self.assertEqual(detect_flavor("bookworm"), "debian")
+
+    def test_workspace_context_is_backend_neutral(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo_root = Path(tmpdir) / "repo"
+            context = WorkspaceContext.create(
+                repo_root=repo_root,
+                branch="develop",
+                channel="latest",
+                job_id="test-job",
+                job_root=repo_root / "job",
+            )
+
+            self.assertEqual(context.repo_root, repo_root.resolve())
+            self.assertEqual(context.manifest_path, repo_root.resolve() / "packaging" / "manifest" / "components.toml")
+            self.assertFalse(hasattr(context, "pbuilder_root"))
+
+    def test_workspace_context_uses_repo_local_default_job_root(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo_root = Path(tmpdir) / "repo"
+            context = WorkspaceContext.create(
+                repo_root=repo_root,
+                branch="develop",
+                channel="latest",
+                job_id="test-job",
+            )
+
+            self.assertEqual(
+                context.job_root,
+                (repo_root / ".cache" / "feelpp-pkg" / "jobs" / "test-job").resolve(),
+            )
+
+    def test_packaging_context_alias_points_to_debian_context(self) -> None:
+        self.assertIs(PackagingContext, DebianPackagingContext)
 
     def test_context_uses_runtime_hookdir_under_job_root(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
