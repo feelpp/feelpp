@@ -23,7 +23,7 @@ def _environment_manifest(repo_root: Path, environment_name: str) -> Path:
 
 
 def _ignore_generated_spack_state(_root: str, names: list[str]) -> set[str]:
-    ignored = {".spack-env", "__pycache__"}
+    ignored = {".spack-env", "__pycache__", "spack.lock"}
     return {name for name in names if name in ignored}
 
 
@@ -68,7 +68,7 @@ COPY packaging/spack /opt/feelpp/packaging/spack
 
 RUN mkdir -p "$SPACK_USER_CONFIG_PATH" "$SPACK_USER_CACHE_PATH" \\
     && . "$SPACK_ROOT/share/spack/setup-env.sh" \\
-    && spack -e {environment_dir} concretize \\
+    && spack -e {environment_dir} concretize -f \\
     && spack -e {environment_dir} install \\
     && spack clean --all
 
