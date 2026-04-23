@@ -88,33 +88,12 @@ jobs:
 
       - name: Resolve planner directives
         id: directives
-        shell: bash
         env:
           RAW_TARGETS: ${{ inputs.targets }}
           RAW_ONLY: ${{ inputs.only }}
           RAW_SKIP: ${{ inputs.skip }}
           RAW_MODE: ${{ inputs.mode }}
-        run: |
-          set -euo pipefail
-          message=""
-          if [ -n "${RAW_TARGETS:-}" ]; then
-            message="${message}targets=${RAW_TARGETS}"$'\n'
-          fi
-          if [ -n "${RAW_ONLY:-}" ]; then
-            message="${message}only=${RAW_ONLY}"$'\n'
-          fi
-          if [ -n "${RAW_SKIP:-}" ]; then
-            message="${message}skip=${RAW_SKIP}"$'\n'
-          fi
-          if [ -n "${RAW_MODE:-}" ]; then
-            message="${message}mode=${RAW_MODE}"$'\n'
-          fi
-          {
-            echo "message<<EOF"
-            printf "%s" "${message}"
-            echo
-            echo "EOF"
-          } >> "${GITHUB_OUTPUT}"
+        run: PYTHONPATH=ops/src python3 -m feelpp.ops.ci.planner_directives --github-output "${GITHUB_OUTPUT}"
 
       - uses: feelpp/ci-matrix-planner@v1
         id: plan

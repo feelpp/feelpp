@@ -8,7 +8,7 @@
   },
   "fullBuild": {
     "job": "feelpp-full",
-    "targets": ["ubuntu:noble"]
+    "targets": ["ubuntu:noble", "spack:openmpi"]
   },
   "profiles": {
     "ci": {
@@ -22,7 +22,7 @@
       },
       "fullBuild": {
         "job": "feelpp-full",
-        "targets": ["ubuntu:noble"]
+        "targets": ["ubuntu:noble", "spack:openmpi"]
       }
     },
     "images": {
