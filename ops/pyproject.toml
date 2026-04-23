@@ -9,6 +9,7 @@ description = "Feel++ operational tooling"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "PyYAML>=6.0",
     "tomli>=2; python_version < '3.11'",
 ]
 authors = [
@@ -37,6 +38,7 @@ fpp-pkg = "feelpp.pkg.cli:main"
 feelpp-pkg = "feelpp.pkg.cli:main"
 fpp-version = "feelpp.ops.version.cli:main"
 feelpp-version = "feelpp.ops.version.cli:main"
+fpp-ip = "feelpp.ops.ip.cli:main"
 
 [tool.setuptools]
 include-package-data = false

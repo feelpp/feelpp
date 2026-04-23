@@ -1,0 +1,150 @@
+schema_version: 1
+software:
+  name: Feel++
+  short_name: feelpp
+  description: Feel++ is an open-source C++ framework for continuous and discontinuous
+    Galerkin methods, reduced basis methods, and parallel PDE simulation with multiphysics
+    toolboxes and Python bindings.
+  homepage: https://docs.feelpp.org
+  source_paths:
+  - README.adoc
+  - codemeta.json
+  - CITATION.cff
+repository:
+  hosting: GitHub
+  owner: feelpp
+  name: feelpp
+  url: https://github.com/feelpp/feelpp
+  default_branch: develop
+  issue_tracker: https://github.com/feelpp/feelpp/issues
+  source_paths:
+  - README.adoc
+  - codemeta.json
+languages:
+- name: C++
+  source_paths:
+  - CMakeLists.txt
+  - codemeta.json
+- name: Python
+  source_paths:
+  - feelpp/python
+  - toolboxes/python
+  - mor/python
+  - ops/pyproject.toml
+  - codemeta.json
+- name: Fortran
+  source_paths:
+  - CMakeLists.txt
+build_tools:
+- name: CMake
+  source_paths:
+  - CMakeLists.txt
+  - CMakePresets.json
+- name: Setuptools
+  source_paths:
+  - ops/pyproject.toml
+- name: Debian packaging
+  source_paths:
+  - packaging/manifest/components.toml
+  - packaging/debian
+- name: Docker
+  source_paths:
+  - feelpp/tools/scripts/pkg/Dockerfile
+  - .github/plan-ci.json
+public_license:
+  expressions:
+  - LGPL-3.0-or-later
+  - GPL-3.0-or-later
+  files:
+  - path: LICENSE
+    description: Repository root license text for GNU LGPL version 3.
+  - path: COPYING.adoc
+    description: Public licensing overview for the Feel++ libraries, applications,
+      examples, tests, and benchmarks.
+  - path: CITATION.cff
+    description: Public citation metadata declaring LGPL-3.0-or-later.
+  - path: codemeta.json
+    description: Public CodeMeta metadata listing LGPL-3.0-only and GPL-3.0-only SPDX
+      URLs.
+  notes: The public repository contains both library and application/example/test
+    materials; this metadata records the public license signals already present in
+    repository files and does not make private legal determinations.
+architecture:
+  overview: Feel++ is organized around a C++ core library, Python bindings, multiphysics
+    toolboxes, model order reduction components, operational packaging tooling, and
+    tests/documentation for public releases.
+  components:
+  - name: C++ core
+    paths:
+    - feelpp/feel
+    description: Shared C++ library and core framework components.
+  - name: Python bindings
+    paths:
+    - feelpp/python
+    - toolboxes/python
+    - mor/python
+    description: Python modules and tests built from the Feel++ core, toolbox, and model order reduction bindings.
+  - name: Toolboxes
+    paths:
+    - toolboxes
+    description: Public multiphysics application toolboxes.
+  - name: Model order reduction
+    paths:
+    - mor
+    description: Public model order reduction components.
+  - name: Operational tooling
+    paths:
+    - ops
+    - packaging
+    description: Public Python tooling and packaging metadata for release operations.
+public_funding:
+  source_paths:
+  - codemeta.json
+  - .zenodo.json
+  grants:
+  - label: ANR-22-EXNU-0002 Exa-MA
+    source_path: codemeta.json
+    identifier: 10.13039/501100001665::ANR-22-EXNU-0002
+  - label: ANR-25-CE46-1157 JNL-G - Jumeau Numerique du Laboratoire National des Champs
+      Magnetiques Intenses-Grenoble
+    source_path: codemeta.json
+    identifier: null
+  - label: ANR-10-IDEX-0002 IdEx Unistra / ITI IRMIA++
+    source_path: codemeta.json
+    identifier: 10.13039/501100001665::ANR-10-IDEX-0002
+  - label: ANR-20-SFRI-0012 SFRI-STRAT'US / ITI IRMIA++
+    source_path: codemeta.json
+    identifier: 10.13039/501100001665::ANR-20-SFRI-0012
+  - label: 101093457 HiDALGO2
+    source_path: codemeta.json
+    identifier: 10.13039/501100000780::101093457
+public_outputs:
+  citation:
+    path: CITATION.cff
+    title: Feel++
+    version: v0.111.0-preview.13
+  codemeta:
+    path: codemeta.json
+    identifier: https://doi.org/10.5281/zenodo.591797
+    version: v0.111.0-preview.13
+  zenodo:
+    path: .zenodo.json
+    upload_type: software
+    version: v0.111.0-preview.13
+metrics:
+  approximate_lines_of_code: 789220
+  approximate_bytes: 30717680
+  counted_files: 2959
+  method: tracked text source files, excluding generated/build/vendor paths
+private_boundary:
+  private_dossier_repository: cemosis/software-ip
+  excluded_information:
+  - private inventor records
+  - HR data
+  - personal addresses
+  - payroll data
+  - signature material
+  - private ownership allocations
+  - confidential company notes
+  note: This public repository is the metadata producer only. Final APP and SATT Conectus
+    dossier assembly happens in the private repository.

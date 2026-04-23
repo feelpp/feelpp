@@ -6,11 +6,13 @@ Current commands:
 
 - `fpp-pkg` (preferred)
 - `fpp-version` (preferred)
+- `fpp-ip` (preferred)
 
 Current Python namespaces:
 
 - `feelpp.pkg`
 - `feelpp.ops.common`
+- `feelpp.ops.ip`
 
 Scaffolded sibling namespaces:
 
@@ -28,6 +30,7 @@ python3 -m venv .venv-ops
 pip install -e ops
 fpp-pkg --help
 fpp-version --help
+fpp-ip --help
 ```
 
 Run the `ops` test suite with `pytest`:
@@ -73,6 +76,27 @@ settings live in [`ops/pyproject.toml`](./pyproject.toml).
 
 The `feelpp.ops.common` namespace is the shared home for cross-tool support
 code such as naming, future logging helpers, and execution/runtime helpers.
+
+`fpp-ip` validates and exports the public Feel++ IP/APP metadata stored in
+[`metadata/software.public.yml`](../metadata/software.public.yml). This public
+repository contains only structured public metadata and generated public
+exports; private inventor records, HR data, signatures, ownership allocations,
+and confidential company notes belong in the separate private
+`cemosis/software-ip` dossier workflow. Use:
+
+```bash
+fpp-ip validate-public
+fpp-ip show-public
+fpp-ip show-public --format json
+fpp-ip export-public --format yaml --out metadata/exports/feelpp.public-app.yml
+fpp-ip export-public --format json --out metadata/exports/feelpp.public-app.json
+fpp-ip stats
+fpp-ip stats --write-metadata
+```
+
+`stats --write-metadata` updates only the public `metrics` block with
+best-effort approximate source line, byte, and file counts. Exports are designed
+to be deterministic and omit timestamps by default.
 
 The Python tooling in `ops/` should stay source-only. Generated artifacts such
 as `.pytest_cache`, `__pycache__`, and `*.egg-info` must not be kept here.

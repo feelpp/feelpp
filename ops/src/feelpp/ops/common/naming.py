@@ -4,3 +4,4 @@ PREFERRED_PACKAGE_CLI_NAME = "fpp-pkg"
 LEGACY_PACKAGE_CLI_NAMES = ("feelpp-pkg",)
 PREFERRED_VERSION_CLI_NAME = "fpp-version"
 LEGACY_VERSION_CLI_NAMES = ("feelpp-version",)
+PREFERRED_IP_CLI_NAME = "fpp-ip"
