@@ -6,7 +6,10 @@ on:
     branches: ['*']
     paths-ignore:
       - '.github/workflows/build_from_dispatch.yml'
+      - '.github/workflows/ci.yml'
+      - '.github/workflows/images.yml'
       - '.github/workflows/manual.yml'
+      - '.github/plan-ci.json'
       - '.github/workflows/pkg*.yml'
       - '.github/workflows/ci-ops.yml'
       - '.github/workflows/doxygen.yml'
@@ -20,7 +23,10 @@ on:
     branches: [master, develop]
     paths-ignore:
       - '.github/workflows/build_from_dispatch.yml'
+      - '.github/workflows/ci.yml'
+      - '.github/workflows/images.yml'
       - '.github/workflows/manual.yml'
+      - '.github/plan-ci.json'
       - '.github/workflows/pkg*.yml'
       - '.github/workflows/ci-ops.yml'
       - '.github/workflows/doxygen.yml'
@@ -31,241 +37,189 @@ on:
       - 'packaging/**'
       - '.gitignore'
 
+permissions:
+  contents: read
+  packages: read
 
 env:
-  REGISTRY: ghcr.io/feelpp
   FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
   FEELPP_CKAN_API_KEY: ${{ secrets.FEELPP_CKAN_API_KEY }}
   FEELPP_CKAN_URL: ${{ secrets.FEELPP_CKAN_URL }}
   FEELPP_CKAN_ORGANIZATION: ${{ secrets.FEELPP_CKAN_ORGANIZATION }}
 
-# Image naming:
-#   Dev images (for CI):     ghcr.io/feelpp/feelpp:ubuntu-24.04-dev
-#   Runtime images (users):  ghcr.io/feelpp/feelpp:ubuntu-24.04
+# CI consumes the repository-owned image chain published by images.yml:
+#   ghcr.io/feelpp/feelpp:<oci_dist>-dev        for Feel++ and testsuite builds
+#   ghcr.io/feelpp/feelpp:<oci_dist>            for toolboxes builds
+#   ghcr.io/feelpp/feelpp-toolboxes:<oci_dist>  for MOR builds
 
 jobs:
   plan_ci:
     name: Plan CI matrix
     runs-on: ubuntu-latest
     outputs:
-      matrix_json: ${{ steps.normalize.outputs.matrix_json }}
+      matrix_json: ${{ steps.plan.outputs.matrix_json }}
       targets_json: ${{ steps.plan.outputs.targets_json }}
-      enabled_jobs_json: ${{ steps.normalize.outputs.enabled_jobs_json }}
+      enabled_jobs_json: ${{ steps.plan.outputs.enabled_jobs_json }}
       enabled_jobs: ${{ steps.plan.outputs.enabled_jobs }}
     steps:
       - uses: actions/checkout@v5
-      - uses: feelpp/ci-matrix-planner@v1.13.0
+
+      - uses: feelpp/ci-matrix-planner@v1
         id: plan
         with:
           config-path: .github/plan-ci.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Normalize planner outputs
-        id: normalize
-        shell: bash
-        env:
-          MATRIX_JSON_RAW: ${{ steps.plan.outputs.matrix_json }}
-          TARGETS_JSON_RAW: ${{ steps.plan.outputs.targets_json }}
-          ENABLED_JOBS_JSON_RAW: ${{ steps.plan.outputs.enabled_jobs_json }}
-          ENABLED_JOBS_RAW: ${{ steps.plan.outputs.enabled_jobs }}
-        run: |
-          set -euo pipefail
 
-          if [ -n "${MATRIX_JSON_RAW}" ]; then
-            echo "matrix_json=${MATRIX_JSON_RAW}" >> "${GITHUB_OUTPUT}"
-          else
-            echo "matrix_json={\"target\":${TARGETS_JSON_RAW:-[]}}" >> "${GITHUB_OUTPUT}"
-          fi
-
-          if [ -n "${ENABLED_JOBS_JSON_RAW}" ]; then
-            echo "enabled_jobs_json=${ENABLED_JOBS_JSON_RAW}" >> "${GITHUB_OUTPUT}"
-          else
-            echo "enabled_jobs_json=$(jq -Rn --arg jobs "${ENABLED_JOBS_RAW}" '$jobs | split(" ") | map(select(length > 0))')" >> "${GITHUB_OUTPUT}"
-          fi
       - name: Debug planner output
+        shell: bash
         run: |
-          echo "matrix_json: ${{ steps.normalize.outputs.matrix_json }}"
+          echo "matrix_json: ${{ steps.plan.outputs.matrix_json }}"
           echo "targets_json: ${{ steps.plan.outputs.targets_json }}"
-          echo "enabled_jobs_json: ${{ steps.normalize.outputs.enabled_jobs_json }}"
+          echo "enabled_jobs_json: ${{ steps.plan.outputs.enabled_jobs_json }}"
           echo "enabled_jobs: ${{ steps.plan.outputs.enabled_jobs }}"
 
   feelpp:
-    name: Build Feel++ (${{ matrix.target }})
+    name: Build/Test Feel++ (${{ matrix.target }})
     needs: [plan_ci]
     runs-on: self-docker
     if: contains(fromJSON(needs.plan_ci.outputs.enabled_jobs_json), 'feelpp')
+    container:
+      image: ghcr.io/feelpp/feelpp:${{ matrix.oci_dist }}-dev
+      credentials:
+        username: ${{ secrets.CR_LOGIN }}
+        password: ${{ secrets.CR_PAT }}
     timeout-minutes: 600
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan_ci.outputs.matrix_json) }}
     steps:
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ secrets.CR_LOGIN }}
-          password: ${{ secrets.CR_PAT }}
-
       - uses: actions/checkout@v5
         with:
           submodules: recursive
+          clean: true
 
-      - name: Clone or update docker repo
-        run: |
-          if [ -d docker ]; then
-            cd docker && git pull --ff-only
-          else
-            git clone --depth=1 https://github.com/feelpp/docker.git
-          fi
+      - name: Configure Feel++
+        run: cmake --preset feelpp
 
-      - name: Set DIST from TARGET
-        id: dist
-        run: |
-          # Convert debian:13 -> debian-13, ubuntu:24.04 -> ubuntu-24.04
-          DIST=$(echo "${{ matrix.target }}" | tr ':' '-')
-          echo "dist=${DIST}" >> $GITHUB_OUTPUT
+      - name: Build Feel++
+        run: cmake --build --preset feelpp -j20
 
-      - name: Build and push Feel++ runtime
-        working-directory: docker
-        run: docker buildx bake feelpp-runtime --push
-        env:
-          DIST: ${{ steps.dist.outputs.dist }}
-          BRANCH: ${{ github.head_ref || github.ref_name }}
+      - name: Test Feel++
+        run: ctest --preset feelpp -j4
+
+  testsuite:
+    name: Build/Test Testsuite (${{ matrix.target }})
+    needs: [plan_ci]
+    runs-on: self-docker
+    if: contains(fromJSON(needs.plan_ci.outputs.enabled_jobs_json), 'testsuite')
+    container:
+      image: ghcr.io/feelpp/feelpp:${{ matrix.oci_dist }}-dev
+      credentials:
+        username: ${{ secrets.CR_LOGIN }}
+        password: ${{ secrets.CR_PAT }}
+    timeout-minutes: 600
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan_ci.outputs.matrix_json) }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+          clean: true
+
+      - name: Configure Testsuite
+        run: cmake --preset testsuite
+
+      - name: Build Testsuite
+        run: cmake --build --preset testsuite -j20
+
+      - name: Test Testsuite
+        run: ctest --preset testsuite -j4
 
   toolboxes:
-    name: Build Toolboxes (${{ matrix.target }})
-    needs: [plan_ci, feelpp]
+    name: Build/Test Toolboxes (${{ matrix.target }})
+    needs: [plan_ci]
     runs-on: self-docker
-    if: |
-      always() &&
-      (needs.feelpp.result == 'success' || needs.feelpp.result == 'skipped') &&
-      contains(fromJSON(needs.plan_ci.outputs.enabled_jobs_json), 'toolboxes')
+    if: contains(fromJSON(needs.plan_ci.outputs.enabled_jobs_json), 'toolboxes')
+    container:
+      image: ghcr.io/feelpp/feelpp:${{ matrix.oci_dist }}
+      credentials:
+        username: ${{ secrets.CR_LOGIN }}
+        password: ${{ secrets.CR_PAT }}
     timeout-minutes: 600
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan_ci.outputs.matrix_json) }}
     steps:
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ secrets.CR_LOGIN }}
-          password: ${{ secrets.CR_PAT }}
-
       - uses: actions/checkout@v5
         with:
           submodules: recursive
+          clean: true
 
-      - name: Clone or update docker repo
-        run: |
-          if [ -d docker ]; then
-            cd docker && git pull --ff-only
-          else
-            git clone --depth=1 https://github.com/feelpp/docker.git
-          fi
+      - name: Configure Toolboxes
+        run: cmake --preset toolboxes
 
-      - name: Set DIST from TARGET
-        id: dist
-        run: |
-          DIST=$(echo "${{ matrix.target }}" | tr ':' '-')
-          echo "dist=${DIST}" >> $GITHUB_OUTPUT
+      - name: Build Toolboxes
+        run: cmake --build --preset toolboxes -j20
 
-      - name: Build and push Toolboxes runtime
-        working-directory: docker
-        run: docker buildx bake toolboxes-runtime --push
-        env:
-          DIST: ${{ steps.dist.outputs.dist }}
-          BRANCH: ${{ github.head_ref || github.ref_name }}
+      - name: Test Toolboxes
+        run: ctest --preset toolboxes -j4
 
   mor:
-    name: Build MOR (${{ matrix.target }})
-    needs: [plan_ci, toolboxes]
+    name: Build/Test MOR (${{ matrix.target }})
+    needs: [plan_ci]
     runs-on: self-docker
-    if: |
-      always() &&
-      (needs.toolboxes.result == 'success' || needs.toolboxes.result == 'skipped') &&
-      contains(fromJSON(needs.plan_ci.outputs.enabled_jobs_json), 'mor')
+    if: contains(fromJSON(needs.plan_ci.outputs.enabled_jobs_json), 'mor')
+    container:
+      image: ghcr.io/feelpp/feelpp-toolboxes:${{ matrix.oci_dist }}
+      credentials:
+        username: ${{ secrets.CR_LOGIN }}
+        password: ${{ secrets.CR_PAT }}
     timeout-minutes: 600
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan_ci.outputs.matrix_json) }}
     steps:
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ secrets.CR_LOGIN }}
-          password: ${{ secrets.CR_PAT }}
-
       - uses: actions/checkout@v5
         with:
           submodules: recursive
+          clean: true
 
-      - name: Clone or update docker repo
-        run: |
-          if [ -d docker ]; then
-            cd docker && git pull --ff-only
-          else
-            git clone --depth=1 https://github.com/feelpp/docker.git
-          fi
+      - name: Configure MOR
+        run: cmake --preset mor
 
-      - name: Set DIST from TARGET
-        id: dist
-        run: |
-          DIST=$(echo "${{ matrix.target }}" | tr ':' '-')
-          echo "dist=${DIST}" >> $GITHUB_OUTPUT
+      - name: Build MOR
+        run: cmake --build --preset mor -j20
 
-      - name: Build and push MOR runtime
-        working-directory: docker
-        run: docker buildx bake mor-runtime --push
-        env:
-          DIST: ${{ steps.dist.outputs.dist }}
-          BRANCH: ${{ github.head_ref || github.ref_name }}
-
-  # =============================================================================
-  # Full Build Mode - Build entire Feel++ stack in a single image
-  # =============================================================================
-  # Alternative to component builds - uses preset 'default' to build everything
-  # Image naming: ghcr.io/feelpp/feelpp:ubuntu-24.04-full-dev
-  #
-  # Trigger: Use "mode=full" in commit message or PR description
-  # Example: git commit -m "Build full stack mode=full"
-  # =============================================================================
+      - name: Test MOR
+        run: ctest --preset mor -j4
 
   feelpp-full:
-    name: Build Feel++ Full (${{ matrix.target }})
+    name: Build/Test Feel++ Full (${{ matrix.target }})
     needs: [plan_ci]
     runs-on: self-docker
     if: contains(fromJSON(needs.plan_ci.outputs.enabled_jobs_json), 'feelpp-full')
+    container:
+      image: ghcr.io/feelpp/feelpp:${{ matrix.oci_dist }}-dev
+      credentials:
+        username: ${{ secrets.CR_LOGIN }}
+        password: ${{ secrets.CR_PAT }}
     timeout-minutes: 600
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan_ci.outputs.matrix_json) }}
     steps:
-      - name: Login to GHCR
-        uses: docker/login-action@v3
+      - uses: actions/checkout@v5
         with:
-          registry: ghcr.io
-          username: ${{ secrets.CR_LOGIN }}
-          password: ${{ secrets.CR_PAT }}
+          submodules: recursive
+          clean: true
 
-      - name: Clone or update docker repo
-        run: |
-          if [ -d docker ]; then
-            cd docker && git pull --ff-only
-          else
-            git clone --depth=1 https://github.com/feelpp/docker.git
-          fi
+      - name: Configure Full Build
+        run: cmake --preset default
 
-      - name: Set DIST from TARGET
-        id: dist
-        run: |
-          DIST=$(echo "${{ matrix.target }}" | tr ':' '-')
-          echo "dist=${DIST}" >> $GITHUB_OUTPUT
+      - name: Build Full Stack
+        run: cmake --build --preset default -j20
 
-      - name: Build and push Feel++ Full runtime
-        working-directory: docker
-        run: docker buildx bake feelpp-full-runtime --push
-        env:
-          DIST: ${{ steps.dist.outputs.dist }}
-          BRANCH: ${{ github.head_ref || github.ref_name }}
+      - name: Test Full Stack
+        run: ctest --preset default -j4
