@@ -6,7 +6,7 @@ on:
       targets:
         description: 'Image targets or groups from profiles.images'
         required: false
-        default: 'component-ci'
+        default: 'env-current'
         type: string
       publish:
         description: 'Push generated OCI images to GHCR'
@@ -60,7 +60,7 @@ jobs:
           set -euo pipefail
           targets="${RAW_TARGETS:-}"
           if [ -z "${targets}" ]; then
-            targets="component-ci"
+            targets="env-current"
           fi
           echo "message=targets=${targets}" >> "${GITHUB_OUTPUT}"
 
@@ -179,11 +179,6 @@ jobs:
           from pathlib import Path
 
           metadata = json.loads(Path(os.environ["METADATA_FILE"]).read_text(encoding="utf-8"))
-          if metadata["image_strategy"] != "components":
-              raise SystemExit(
-                  f"Phase 2 only supports component image targets, got {metadata['image_strategy']}"
-              )
-
           groups = metadata.get("recommended_groups")
           if not isinstance(groups, list) or not groups or not all(isinstance(item, str) and item for item in groups):
               raise SystemExit("image metadata must provide a non-empty recommended_groups list")
@@ -195,7 +190,7 @@ jobs:
               fh.write(f"oci_dist={metadata['oci_dist']}\n")
           PY
 
-      - name: Build image chain
+      - name: Build recommended OCI image targets
         shell: bash
         working-directory: ${{ steps.bake.outputs.context_dir }}
         env:

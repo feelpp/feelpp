@@ -117,8 +117,8 @@ def generate_spack_bake(
     resolved_base_image = base_image or target.base_image
     resolved_bake_target = bake_target or default_bake_target_name(target.target)
     resolved_image_tag = image_tag or oci_image_ref(
-        "feelpp",
-        f"{target.oci_dist}-full-dev",
+        "feelpp-env",
+        target.oci_dist,
         registry=registry,
         namespace=namespace,
     )
@@ -172,6 +172,7 @@ def generate_spack_bake(
         "image_backend": target.image_backend,
         "image_strategy": target.image_strategy,
         "bake_target": resolved_bake_target,
+        "oci_dist": target.oci_dist,
         "image_tag": resolved_image_tag,
         "base_image": resolved_base_image,
         "spack_ref": spack_ref,

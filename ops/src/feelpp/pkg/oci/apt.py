@@ -392,7 +392,8 @@ def generate_apt_bake(
 
     bake_payload = {
         "group": {
-            "default": {"targets": ["feelpp"]},
+            "default": {"targets": ["feelpp-env"]},
+            "env": {"targets": ["feelpp-env"]},
             "all-dev": {"targets": [spec.bake_target for spec in component_specs]},
             "all": {"targets": [spec.runtime_target for spec in component_specs]},
             "full": {"targets": ["feelpp-full"]},
@@ -402,7 +403,7 @@ def generate_apt_bake(
     }
     bake_file = context_dir / "docker-bake.json"
     bake_file.write_text(json.dumps(bake_payload, indent=2) + "\n", encoding="utf-8")
-    recommended_groups = ["default", "all"]
+    recommended_groups = ["default"]
 
     return {
         "repo_root": str(workspace.repo_root),
@@ -418,7 +419,7 @@ def generate_apt_bake(
         "dockerfile": str(env_dockerfile),
         "bake_file": str(bake_file),
         "default_group": "default",
-        "available_groups": ["default", "all-dev", "all", "full", "full-all"],
+        "available_groups": ["default", "env", "all-dev", "all", "full", "full-all"],
         "recommended_groups": recommended_groups,
         "component_targets": [spec.component_name for spec in component_specs],
         "docker_bake_command": f"docker buildx bake -f {bake_file} {' '.join(recommended_groups)}",
