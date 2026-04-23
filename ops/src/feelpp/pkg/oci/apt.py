@@ -402,6 +402,7 @@ def generate_apt_bake(
     }
     bake_file = context_dir / "docker-bake.json"
     bake_file.write_text(json.dumps(bake_payload, indent=2) + "\n", encoding="utf-8")
+    recommended_groups = ["default", "all"]
 
     return {
         "repo_root": str(workspace.repo_root),
@@ -416,8 +417,9 @@ def generate_apt_bake(
         "context_dir": str(context_dir),
         "dockerfile": str(env_dockerfile),
         "bake_file": str(bake_file),
-        "default_group": "all-dev",
+        "default_group": "default",
         "available_groups": ["default", "all-dev", "all", "full", "full-all"],
+        "recommended_groups": recommended_groups,
         "component_targets": [spec.component_name for spec in component_specs],
-        "docker_bake_command": f"docker buildx bake -f {bake_file} all-dev",
+        "docker_bake_command": f"docker buildx bake -f {bake_file} {' '.join(recommended_groups)}",
     }
