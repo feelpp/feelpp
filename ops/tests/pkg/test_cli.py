@@ -551,6 +551,7 @@ spack:
             self.assertEqual(rc, 0)
             self.assertTrue(bake_file.is_file())
             self.assertIn(f"docker buildx bake -f {bake_file} --load default", stdout.getvalue())
+            self.assertNotIn("--allow=fs.read=", stdout.getvalue())
 
     def test_top_level_image_build_dry_run_supports_push_group_override_and_redacts_env(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -588,12 +589,39 @@ spack:
 
             command = stdout.getvalue()
             self.assertEqual(rc, 0)
+            self.assertIn(f"--allow=fs.read={repo_root}", command)
             self.assertIn("--push", command)
             self.assertIn("toolboxes-runtime", command)
             self.assertIn("*.args.FEELPP_GITHUB_TOKEN=***", command)
             self.assertIn("*.args.FEELPP_CKAN_URL=***", command)
             self.assertNotIn("super-secret-token", command)
             self.assertNotIn("https://data.example.invalid", command)
+
+    def test_top_level_image_build_passes_fs_read_allow_for_component_builds(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo_root = self.repo_root()
+            with mock.patch("feelpp.pkg.oci.commands.run_checked") as run_checked:
+                rc = main(
+                    [
+                        "image",
+                        "build",
+                        "--repo-root",
+                        str(repo_root),
+                        "--job-root",
+                        tmpdir,
+                        "--target",
+                        "ubuntu:noble",
+                        "--component",
+                        "feelpp",
+                        "--from-image",
+                        "ghcr.io/feelpp/feelpp-env:ubuntu-24.04",
+                    ]
+                )
+
+            self.assertEqual(rc, 0)
+            run_checked.assert_called_once()
+            command = run_checked.call_args.args[0]
+            self.assertIn(f"--allow=fs.read={repo_root}", command)
 
     def test_main_prints_clean_error_for_expected_packaging_failures(self) -> None:
         stderr = io.StringIO()

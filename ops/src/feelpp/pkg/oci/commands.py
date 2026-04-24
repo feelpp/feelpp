@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 
 from .apt import DEFAULT_VARIANT, describe_apt_target, generate_apt_bake
+from .bake_permissions import fs_read_allow_flags, required_fs_read_paths_from_bake_file
 from .catalog import get_image_target, list_image_targets
 from .common import add_workspace_arguments, workspace_from_args
 from .spack import DEFAULT_SPACK_REF, describe_spack_target, generate_spack_bake
@@ -97,6 +98,15 @@ def _build_arg_set_flags() -> tuple[list[str], list[str]]:
         actual.extend(["--set", f"*.args.{key}={value}"])
         display.extend(["--set", f"*.args.{key}=***"])
     return actual, display
+
+
+def _fs_read_allow_flags(metadata: dict[str, object], bake_groups: list[str]) -> list[str]:
+    return fs_read_allow_flags(
+        required_fs_read_paths_from_bake_file(
+            Path(str(metadata["bake_file"])),
+            groups=bake_groups,
+        )
+    )
 
 
 def _add_image_generation_arguments(
@@ -231,8 +241,9 @@ def command_image_build(args: argparse.Namespace) -> int:
     metadata = _generate_image_metadata(args)
     bake_groups = _selected_bake_groups(args, metadata)
     build_arg_flags, display_build_arg_flags = _build_arg_set_flags()
+    allow_flags = _fs_read_allow_flags(metadata, bake_groups)
 
-    command = ["docker", "buildx", "bake", "-f", str(metadata["bake_file"])]
+    command = ["docker", "buildx", "bake", *allow_flags, "-f", str(metadata["bake_file"])]
     if args.push:
         command.append("--push")
     else:
@@ -241,7 +252,7 @@ def command_image_build(args: argparse.Namespace) -> int:
     command.extend(bake_groups)
 
     if args.dry_run:
-        display_command = ["docker", "buildx", "bake", "-f", str(metadata["bake_file"])]
+        display_command = ["docker", "buildx", "bake", *allow_flags, "-f", str(metadata["bake_file"])]
         if args.push:
             display_command.append("--push")
         else:

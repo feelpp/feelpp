@@ -6,6 +6,7 @@ import shutil
 
 import yaml
 
+from .bake_permissions import fs_read_allow_flags, required_fs_read_paths_from_bake_payload
 from .catalog import ImageTarget, list_image_targets
 from .cmake_presets import resolve_cmake_preset
 from .common import branch_tag_suffix, default_bake_target_name, oci_image_ref
@@ -327,6 +328,13 @@ def generate_spack_bake(
         }
     bake_file = context_dir / "docker-bake.json"
     bake_file.write_text(json.dumps(bake_payload, indent=2) + "\n", encoding="utf-8")
+    fs_read_paths = required_fs_read_paths_from_bake_payload(
+        bake_payload,
+        base_dir=context_dir,
+        groups=recommended_groups,
+    )
+    docker_bake_command = ["docker", "buildx", "bake", *fs_read_allow_flags(fs_read_paths), "-f", str(bake_file)]
+    docker_bake_command.extend(recommended_groups)
 
     return {
         "repo_root": str(workspace.repo_root),
@@ -351,6 +359,7 @@ def generate_spack_bake(
         "default_group": "default",
         "available_groups": available_groups,
         "recommended_groups": recommended_groups,
+        "fs_read_paths": fs_read_paths,
         "image_refs": image_refs,
-        "docker_bake_command": f"docker buildx bake -f {bake_file} {' '.join(recommended_groups)}",
+        "docker_bake_command": " ".join(docker_bake_command),
     }
