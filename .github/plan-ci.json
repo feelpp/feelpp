@@ -40,6 +40,8 @@
           "oci_dist": "ubuntu-24.04",
           "image_backend": "apt",
           "image_strategy": "environment",
+          "ci_components": "true",
+          "ci_full": "true",
           "component_set": "default",
           "base_image": "ubuntu:24.04"
         },
@@ -52,6 +54,8 @@
           "oci_dist": "ubuntu-26.04",
           "image_backend": "apt",
           "image_strategy": "environment",
+          "ci_components": "true",
+          "ci_full": "false",
           "component_set": "default",
           "base_image": "ubuntu:26.04"
         },
@@ -64,6 +68,8 @@
           "oci_dist": "debian-12",
           "image_backend": "apt",
           "image_strategy": "environment",
+          "ci_components": "true",
+          "ci_full": "false",
           "component_set": "default",
           "base_image": "debian:12"
         },
@@ -76,6 +82,8 @@
           "oci_dist": "debian-13",
           "image_backend": "apt",
           "image_strategy": "environment",
+          "ci_components": "true",
+          "ci_full": "false",
           "component_set": "default",
           "base_image": "debian:13"
         },
@@ -88,6 +96,8 @@
           "oci_dist": "debian-testing",
           "image_backend": "apt",
           "image_strategy": "environment",
+          "ci_components": "true",
+          "ci_full": "false",
           "component_set": "default",
           "base_image": "debian:testing"
         },
@@ -100,6 +110,8 @@
           "oci_dist": "debian-sid",
           "image_backend": "apt",
           "image_strategy": "environment",
+          "ci_components": "true",
+          "ci_full": "false",
           "component_set": "default",
           "base_image": "debian:sid"
         },
@@ -112,6 +124,9 @@
           "oci_dist": "spack-openmpi",
           "image_backend": "spack",
           "image_strategy": "environment",
+          "ci_components": "false",
+          "ci_full": "true",
+          "cmake_full_preset": "release-clang-spack",
           "spack_environment": "cpu/openmpi",
           "base_image": "ubuntu:24.04"
         }

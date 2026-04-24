@@ -143,108 +143,43 @@ jobs:
       matrix: ${{ fromJSON(needs.plan_images.outputs.matrix_json) }}
     env:
       CHECKOUT_DIR: src-${{ github.run_id }}-${{ matrix.oci_dist }}
-      REPO_ROOT: ${{ github.workspace }}/src-${{ github.run_id }}-${{ matrix.oci_dist }}
       DOCKER_CONFIG: /nvme0/prudhomm/.docker/actions/${{ github.run_id }}-${{ matrix.oci_dist }}
+      JOB_ROOT: ${{ runner.temp }}/feelpp-images/${{ matrix.oci_dist }}
+      BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     steps:
-      - uses: actions/checkout@v5
+      - id: setup
+        uses: ./.github/actions/setup-oci-job
         with:
-          path: ${{ env.CHECKOUT_DIR }}
-          clean: false
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install feelpp-ops
-        shell: bash
-        run: |
-          set -euo pipefail
-          python -m pip install --upgrade pip
-          python -m pip install -e "${REPO_ROOT}/ops"
-
-      - name: Prepare Docker client config
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p "${DOCKER_CONFIG}"
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        with:
-          cache-image: false
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          version: v0.33.0
-          cache-binary: false
-
-      - name: Login to GitHub Container Registry
-        if: needs.plan_images.outputs.publish_images == 'true'
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ secrets.CR_LOGIN }}
-          password: ${{ secrets.CR_PAT }}
+          checkout-dir: ${{ env.CHECKOUT_DIR }}
+          docker-config: ${{ env.DOCKER_CONFIG }}
+          setup-buildx: "true"
+          registry-username: ${{ needs.plan_images.outputs.publish_images == 'true' && secrets.CR_LOGIN || '' }}
+          registry-password: ${{ needs.plan_images.outputs.publish_images == 'true' && secrets.CR_PAT || '' }}
 
       - name: Generate bake inputs
         id: bake
-        shell: bash
-        env:
-          TARGET: ${{ matrix.target }}
-          JOB_ROOT: ${{ runner.temp }}/feelpp-images/${{ matrix.oci_dist }}
-        run: |
-          set -euo pipefail
-          rm -rf "${JOB_ROOT}"
-          mkdir -p "${JOB_ROOT}"
-          metadata_file="${JOB_ROOT}/image-metadata.json"
-
-          fpp-pkg image bake \
-            --repo-root "${REPO_ROOT}" \
-            --job-root "${JOB_ROOT}" \
-            --target "${TARGET}" \
-            > "${metadata_file}"
-
-          METADATA_FILE="${metadata_file}" python - <<'PY'
-          import json
-          import os
-          from pathlib import Path
-
-          metadata = json.loads(Path(os.environ["METADATA_FILE"]).read_text(encoding="utf-8"))
-          groups = metadata.get("recommended_groups")
-          if not isinstance(groups, list) or not groups or not all(isinstance(item, str) and item for item in groups):
-              raise SystemExit("image metadata must provide a non-empty recommended_groups list")
-          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
-              fh.write(f"metadata_file={os.environ['METADATA_FILE']}\n")
-              fh.write(f"context_dir={metadata['context_dir']}\n")
-              fh.write(f"bake_file={metadata['bake_file']}\n")
-              fh.write(f"bake_groups={' '.join(groups)}\n")
-              fh.write(f"oci_dist={metadata['oci_dist']}\n")
-          PY
+        uses: ./.github/actions/generate-image-bake
+        with:
+          repo-root: ${{ steps.setup.outputs.repo_root }}
+          job-root: ${{ env.JOB_ROOT }}
+          branch: ${{ env.BRANCH_NAME }}
+          target: ${{ matrix.target }}
 
       - name: Build recommended OCI image targets
-        shell: bash
-        working-directory: ${{ steps.bake.outputs.context_dir }}
-        env:
-          BAKE_FILE: ${{ steps.bake.outputs.bake_file }}
-          BAKE_GROUPS: ${{ steps.bake.outputs.bake_groups }}
-          PUSH_IMAGES: ${{ needs.plan_images.outputs.publish_images }}
-        run: |
-          set -euo pipefail
-          read -r -a bake_groups <<< "${BAKE_GROUPS}"
-          cmd=(docker buildx bake -f "${BAKE_FILE}")
-          if [ "${PUSH_IMAGES}" = "true" ]; then
-            cmd+=(--push)
-          fi
-          cmd+=("${bake_groups[@]}")
-          printf '%q ' "${cmd[@]}"
-          echo
-          "${cmd[@]}"
+        uses: ./.github/actions/build-publish-generated-image
+        with:
+          context_dir: ${{ steps.bake.outputs.context_dir }}
+          bake_file: ${{ steps.bake.outputs.bake_file }}
+          bake_groups: ${{ steps.bake.outputs.bake_groups }}
+          image_refs_json: ${{ steps.bake.outputs.image_refs_json }}
+          runtime_ref_key: feelpp-env
+          oci_dist: ${{ matrix.oci_dist }}
+          publish: ${{ needs.plan_images.outputs.publish_images }}
 
       - name: Upload bake context
         if: always() && steps.bake.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: images-${{ steps.bake.outputs.oci_dist }}
+          name: images-${{ matrix.oci_dist }}
           path: ${{ steps.bake.outputs.context_dir }}
           if-no-files-found: error

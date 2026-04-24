@@ -14,6 +14,7 @@ LABEL org.opencontainers.image.description="${DESCRIPTION}"
 
 ARG BRANCH=develop
 ARG BUILD_JOBS=20
+ARG CMAKE_PRESET=toolboxes
 ARG CMAKE_FLAGS=""
 ARG CXX=clang++
 ARG CC=clang
@@ -33,25 +34,23 @@ ENV FEELPP_CKAN_URL=${FEELPP_CKAN_URL}
 ENV FEELPP_CKAN_ORGANIZATION=${FEELPP_CKAN_ORGANIZATION}
 
 WORKDIR /src
+COPY --from=feelpp_source / /src/feelpp
 RUN git config --global user.name "Docker Robot" \
     && git config --global user.email "docker@feelpp.org" \
-    && git config --global --add safe.directory /src/feelpp \
-    && git clone --depth=1 --branch=${BRANCH} https://github.com/feelpp/feelpp.git feelpp \
-    && cd feelpp \
-    && git submodule update --init --recursive
+    && git config --global --add safe.directory /src/feelpp
 
 WORKDIR /src/feelpp
-RUN cmake --preset toolboxes \
+RUN cmake --preset ${CMAKE_PRESET} \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX=/usr/local \
         -DCMAKE_CXX_COMPILER=${CXX} \
         -DCMAKE_C_COMPILER=${CC} \
         ${CMAKE_FLAGS} \
-    && cmake --build --preset toolboxes -j ${BUILD_JOBS} \
-    && cmake --build --preset toolboxes -t install -j ${BUILD_JOBS} \
+    && cmake --build --preset ${CMAKE_PRESET} -j ${BUILD_JOBS} \
+    && cmake --build --preset ${CMAKE_PRESET} -t install -j ${BUILD_JOBS} \
     && ldconfig \
-    && ctest --preset toolboxes \
-    && rm -rf build/toolboxes /root/feelppdb /root/.cache /feel
+    && ctest --preset ${CMAKE_PRESET} \
+    && rm -rf build/${CMAKE_PRESET} /root/feelppdb /root/.cache /feel
 
 ARG FROM_IMAGE
 ARG DESCRIPTION
@@ -87,4 +86,3 @@ ENV FEELPP_REPOSITORY=/feel
 ENV PYTHONPATH=/usr/local/lib/python3/dist-packages:${PYTHONPATH}
 WORKDIR ${HOME}
 CMD ["/bin/bash"]
-

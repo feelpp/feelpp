@@ -5,6 +5,10 @@
 # PETSc/HPDDM-enabled workflow and intentionally avoids embedding site-local
 # compiler externals, local mirrors, or unrelated optional packages.
 spack:
+  config:
+    installer: new
+    build_jobs: 16
+    concurrent_packages: 2
   packages:
     mpi:
       require:
