@@ -75,19 +75,14 @@ runs:
       run: |
         set -euo pipefail
         read -r -a bake_groups <<< "${BAKE_GROUPS}"
-        mapfile -t allow_flags < <(
-          BAKE_FILE="${BAKE_FILE}" BAKE_GROUPS="${BAKE_GROUPS}" python - <<'PY'
-          import os
-          from pathlib import Path
+        allow_flags_output="$(
+          BAKE_FILE="${BAKE_FILE}" BAKE_GROUPS="${BAKE_GROUPS}" python -c "import os; from pathlib import Path; from feelpp.pkg.oci.bake_permissions import fs_read_allow_flags, required_fs_read_paths_from_bake_file; bake_file = Path(os.environ['BAKE_FILE']); bake_groups = [item for item in os.environ['BAKE_GROUPS'].split() if item]; print(*fs_read_allow_flags(required_fs_read_paths_from_bake_file(bake_file, groups=bake_groups)), sep='\\n')"
+        )"
 
-          from feelpp.pkg.oci.bake_permissions import fs_read_allow_flags, required_fs_read_paths_from_bake_file
-
-          bake_file = Path(os.environ["BAKE_FILE"])
-          bake_groups = [item for item in os.environ["BAKE_GROUPS"].split() if item]
-          for flag in fs_read_allow_flags(required_fs_read_paths_from_bake_file(bake_file, groups=bake_groups)):
-              print(flag)
-          PY
-        )
+        allow_flags=()
+        if [ -n "${allow_flags_output}" ]; then
+          mapfile -t allow_flags <<< "${allow_flags_output}"
+        fi
 
         cmd=(docker buildx bake)
         cmd+=("${allow_flags[@]}")
