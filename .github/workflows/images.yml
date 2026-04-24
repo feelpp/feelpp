@@ -150,13 +150,14 @@ jobs:
       - name: Bootstrap local actions
         uses: actions/checkout@v5
         with:
+          path: .ci-actions
           clean: false
           fetch-depth: 1
           sparse-checkout: |
             .github/actions
 
       - id: setup
-        uses: ./.github/actions/setup-oci-job
+        uses: ./.ci-actions/.github/actions/setup-oci-job
         with:
           checkout-dir: ${{ env.CHECKOUT_DIR }}
           docker-config: ${{ env.DOCKER_CONFIG }}
@@ -166,7 +167,7 @@ jobs:
 
       - name: Generate bake inputs
         id: bake
-        uses: ./.github/actions/generate-image-bake
+        uses: ./.ci-actions/.github/actions/generate-image-bake
         with:
           repo-root: ${{ steps.setup.outputs.repo_root }}
           job-root: ${{ env.JOB_ROOT }}
@@ -174,7 +175,7 @@ jobs:
           target: ${{ matrix.target }}
 
       - name: Build recommended OCI image targets
-        uses: ./.github/actions/build-publish-generated-image
+        uses: ./.ci-actions/.github/actions/build-publish-generated-image
         with:
           context_dir: ${{ steps.bake.outputs.context_dir }}
           bake_file: ${{ steps.bake.outputs.bake_file }}

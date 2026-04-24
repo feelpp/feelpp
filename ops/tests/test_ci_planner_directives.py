@@ -10,7 +10,7 @@ from feelpp.ops.ci.planner_directives import PlannerDirectiveError, build_planne
 
 
 class PlannerDirectiveTests(unittest.TestCase):
-    def test_build_message_promotes_spack_targets_to_full_mode(self) -> None:
+    def test_build_message_promotes_spack_only_targets_to_full_mode(self) -> None:
         self.assertEqual(
             build_planner_message(targets="spack:openmpi"),
             "targets=spack:openmpi\nmode=full",
@@ -19,7 +19,7 @@ class PlannerDirectiveTests(unittest.TestCase):
     def test_build_message_normalizes_and_deduplicates_targets(self) -> None:
         self.assertEqual(
             build_planner_message(targets="Spack, openmpi spack-openmpi ubuntu:noble"),
-            "targets=spack:openmpi,ubuntu:noble\nmode=full",
+            "targets=spack:openmpi,ubuntu:noble",
         )
 
     def test_build_message_normalizes_only_skip_and_mode_values(self) -> None:
@@ -41,9 +41,15 @@ class PlannerDirectiveTests(unittest.TestCase):
         with self.assertRaisesRegex(PlannerDirectiveError, "does not support skip="):
             build_planner_message(targets="spack:openmpi", skip="mor")
 
-    def test_build_message_rejects_non_full_mode_for_spack_target(self) -> None:
+    def test_build_message_rejects_non_full_mode_for_spack_only_target(self) -> None:
         with self.assertRaisesRegex(PlannerDirectiveError, "mode=full"):
             build_planner_message(targets="spack:openmpi", mode="components")
+
+    def test_build_message_allows_components_mode_for_mixed_targets(self) -> None:
+        self.assertEqual(
+            build_planner_message(targets="ubuntu:noble spack:openmpi", mode="components"),
+            "targets=ubuntu:noble,spack:openmpi\nmode=components",
+        )
 
     def test_main_writes_message_to_github_output(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
