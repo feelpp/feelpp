@@ -68,6 +68,7 @@ env:
   FEELPP_CKAN_API_KEY: ${{ secrets.FEELPP_CKAN_API_KEY }}
   FEELPP_CKAN_URL: ${{ secrets.FEELPP_CKAN_URL }}
   FEELPP_CKAN_ORGANIZATION: ${{ secrets.FEELPP_CKAN_ORGANIZATION }}
+  CI_BUILD_PLATFORMS: linux/amd64
 
 defaults:
   run:
@@ -193,6 +194,7 @@ jobs:
           target: ${{ matrix.target }}
           component: feelpp
           from-image: ghcr.io/feelpp/feelpp-env:${{ matrix.oci_dist }}
+          platforms: ${{ env.CI_BUILD_PLATFORMS }}
 
       - name: Build and push Feel++ image(s)
         uses: ./.ci-actions/.github/actions/build-publish-generated-image
@@ -247,6 +249,7 @@ jobs:
           target: ${{ matrix.target }}
           component: feelpp
           from-image: ghcr.io/feelpp/feelpp-env:${{ matrix.oci_dist }}
+          platforms: ${{ env.CI_BUILD_PLATFORMS }}
 
       - name: Resolve Feel++ dev image reference
         id: image_ref
@@ -332,6 +335,7 @@ jobs:
           target: ${{ matrix.target }}
           component: feelpp
           from-image: ghcr.io/feelpp/feelpp-env:${{ matrix.oci_dist }}
+          platforms: ${{ env.CI_BUILD_PLATFORMS }}
 
       - name: Resolve Feel++ runtime image reference
         id: base_image
@@ -355,6 +359,7 @@ jobs:
           target: ${{ matrix.target }}
           component: toolboxes
           from-image: ${{ steps.base_image.outputs.feelpp_runtime_ref }}
+          platforms: ${{ env.CI_BUILD_PLATFORMS }}
 
       - name: Build and push Toolboxes image(s)
         uses: ./.ci-actions/.github/actions/build-publish-generated-image
@@ -408,6 +413,7 @@ jobs:
           branch: ${{ env.BRANCH_NAME }}
           target: ${{ matrix.target }}
           component: toolboxes
+          platforms: ${{ env.CI_BUILD_PLATFORMS }}
 
       - name: Resolve Toolboxes runtime image reference
         id: base_image
@@ -431,6 +437,7 @@ jobs:
           target: ${{ matrix.target }}
           component: mor
           from-image: ${{ steps.base_image.outputs.toolboxes_runtime_ref }}
+          platforms: ${{ env.CI_BUILD_PLATFORMS }}
 
       - name: Build and push MOR image(s)
         uses: ./.ci-actions/.github/actions/build-publish-generated-image
@@ -485,6 +492,7 @@ jobs:
           target: ${{ matrix.target }}
           component: full
           from-image: ghcr.io/feelpp/feelpp-env:${{ matrix.oci_dist }}
+          platforms: ${{ env.CI_BUILD_PLATFORMS }}
 
       - name: Build and push Feel++ full image(s)
         uses: ./.ci-actions/.github/actions/build-publish-generated-image

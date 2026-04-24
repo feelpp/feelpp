@@ -63,19 +63,19 @@ LABEL org.opencontainers.image.description="${DESCRIPTION} (runtime)"
 
 USER root
 
-COPY --from=builder /usr/local/bin/feelpp_mor* /usr/local/bin/
-COPY --from=builder /usr/local/lib/libfeelpp_mor* /usr/local/lib/
-COPY --from=builder /usr/local/lib/libfeelpp_openturns* /usr/local/lib/
-COPY --from=builder /usr/local/include/openturns /usr/local/include/openturns
+COPY --from=build_output /usr/local/bin/feelpp_mor* /usr/local/bin/
+COPY --from=build_output /usr/local/lib/libfeelpp_mor* /usr/local/lib/
+COPY --from=build_output /usr/local/lib/libfeelpp_openturns* /usr/local/lib/
+COPY --from=build_output /usr/local/include/openturns /usr/local/include/openturns
 
-RUN --mount=from=builder,source=/usr/local/lib,target=/mnt/lib \
+RUN --mount=from=build_output,source=/usr/local/lib,target=/mnt/lib \
     cp /mnt/lib/lib_*.so* /usr/local/lib/ 2>/dev/null || true \
     && cp /mnt/lib/libfeelpp-applications-crb-* /usr/local/lib/ 2>/dev/null || true
 
-COPY --from=builder /usr/local/include/feelpp/feel/feelmor /usr/local/include/feelpp/feel/feelmor
-COPY --from=builder /usr/local/share/feelpp/mor /usr/local/share/feelpp/mor
+COPY --from=build_output /usr/local/include/feelpp/feel/feelmor /usr/local/include/feelpp/feel/feelmor
+COPY --from=build_output /usr/local/share/feelpp/mor /usr/local/share/feelpp/mor
 
-RUN --mount=from=builder,source=/usr/local,target=/mnt/builder \
+RUN --mount=from=build_output,source=/usr/local,target=/mnt/builder \
     for d in /mnt/builder/lib/python3*/dist-packages /mnt/builder/local/lib/python3*/dist-packages; do \
         if [ -d "$d" ] && ls "$d"/feelpp* >/dev/null 2>&1; then \
             pyver=$(echo "$d" | grep -oP 'python3[^/]*') && \

@@ -85,6 +85,20 @@ class CliTests(unittest.TestCase):
         self.assertEqual(args.target, "ubuntu:noble")
         self.assertTrue(args.push)
 
+    def test_top_level_image_build_accepts_platform_override(self) -> None:
+        parser = build_parser()
+        args = parser.parse_args(
+            [
+                "image",
+                "build",
+                "--target",
+                "ubuntu:noble",
+                "--platform",
+                "linux/amd64",
+            ]
+        )
+        self.assertEqual(args.platform, ["linux/amd64"])
+
     def test_top_level_image_bake_accepts_component_options(self) -> None:
         parser = build_parser()
         args = parser.parse_args(
@@ -209,7 +223,7 @@ class CliTests(unittest.TestCase):
         manifest_path = self.repo_root() / "packaging" / "spack" / "environments" / "cpu" / "openmpi" / "spack.yaml"
         payload = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
         specs = payload["spack"]["specs"]
-        self.assertIn("gmsh +opencascade+mmg+fltk", specs)
+        self.assertIn("gmsh +opencascade+mmg~fltk", specs)
 
     def test_spack_image_bake_writes_bake_ready_context(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -419,6 +433,10 @@ spack:
                 "ghcr.io/feelpp/feelpp-env:spack-openmpi",
             )
             self.assertEqual(
+                bake_payload["target"]["feelpp-full-runtime"]["contexts"]["build_output"],
+                "target:feelpp-full",
+            )
+            self.assertEqual(
                 bake_payload["target"]["feelpp-full"]["args"]["CMAKE_PRESET"],
                 "release-clang-spack",
             )
@@ -426,9 +444,48 @@ spack:
                 bake_payload["target"]["feelpp-full"]["contexts"]["feelpp_source"],
                 str(repo_root),
             )
+            self.assertIn(
+                'COPY --from=build_output /usr/local/bin/feelpp* /usr/local/bin/',
+                dockerfile.read_text(encoding="utf-8"),
+            )
             self.assertIn('"selected_component": "full"', stdout.getvalue())
             self.assertIn('"recommended_groups": [', stdout.getvalue())
             self.assertIn(' full-all', stdout.getvalue())
+
+    def test_spack_image_bake_supports_platform_override(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo_root = self.repo_root()
+            stdout = io.StringIO()
+            with mock.patch("sys.stdout", stdout):
+                rc = main(
+                    [
+                        "image",
+                        "bake",
+                        "--repo-root",
+                        str(repo_root),
+                        "--job-root",
+                        tmpdir,
+                        "--target",
+                        "spack:openmpi",
+                        "--component",
+                        "full",
+                        "--from-image",
+                        "ghcr.io/feelpp/feelpp-env:spack-openmpi",
+                        "--platform",
+                        "linux/amd64",
+                    ]
+                )
+
+            bake_file = Path(tmpdir) / "images" / "spack-openmpi" / "docker-bake.json"
+            self.assertEqual(rc, 0)
+            bake_payload = json.loads(bake_file.read_text(encoding="utf-8"))
+            self.assertEqual(bake_payload["target"]["feelpp-full"]["platforms"], ["linux/amd64"])
+            self.assertEqual(
+                bake_payload["target"]["feelpp-full-runtime"]["platforms"],
+                ["linux/amd64"],
+            )
+            self.assertIn('"platforms": [', stdout.getvalue())
+            self.assertIn('"linux/amd64"', stdout.getvalue())
 
     def test_top_level_image_targets_lists_repo_owned_images_profile(self) -> None:
         stdout = io.StringIO()
@@ -464,10 +521,9 @@ spack:
             self.assertEqual(rc, 0)
             self.assertTrue(env_dockerfile.is_file())
             self.assertTrue(bake_file.is_file())
-            self.assertIn(
-                'SHELL ["/bin/bash", "-lc"]',
-                (context_dir / "feelpp" / "Dockerfile.multistage").read_text(encoding="utf-8"),
-            )
+            feelpp_dockerfile = (context_dir / "feelpp" / "Dockerfile.multistage").read_text(encoding="utf-8")
+            self.assertIn('SHELL ["/bin/bash", "-lc"]', feelpp_dockerfile)
+            self.assertIn('COPY --from=build_output /usr/local/bin/feelpp* /usr/local/bin/', feelpp_dockerfile)
             bake_payload = json.loads(bake_file.read_text(encoding="utf-8"))
             self.assertEqual(bake_payload["group"]["default"]["targets"], ["feelpp-env"])
             self.assertEqual(bake_payload["group"]["env"]["targets"], ["feelpp-env"])
@@ -482,6 +538,10 @@ spack:
                 bake_payload["target"]["feelpp"]["contexts"]["feelpp_source"],
                 str(repo_root),
             )
+            self.assertEqual(
+                bake_payload["target"]["feelpp-runtime"]["contexts"]["build_output"],
+                "target:feelpp",
+            )
             self.assertIn("feelpp-all", bake_payload["group"])
             self.assertIn("toolboxes-all", bake_payload["group"])
             self.assertIn("mor-all", bake_payload["group"])
@@ -490,6 +550,41 @@ spack:
             self.assertIn('"available_groups": [', stdout.getvalue())
             self.assertIn('"recommended_groups": [', stdout.getvalue())
             self.assertIn('"default_group": "default"', stdout.getvalue())
+
+    def test_top_level_image_bake_supports_platform_override(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo_root = self.repo_root()
+            stdout = io.StringIO()
+            with mock.patch("sys.stdout", stdout):
+                rc = main(
+                    [
+                        "image",
+                        "bake",
+                        "--repo-root",
+                        str(repo_root),
+                        "--job-root",
+                        tmpdir,
+                        "--target",
+                        "ubuntu:noble",
+                        "--component",
+                        "feelpp",
+                        "--from-image",
+                        "ghcr.io/feelpp/feelpp-env:ubuntu-24.04",
+                        "--platform",
+                        "linux/amd64",
+                    ]
+                )
+
+            bake_file = Path(tmpdir) / "images" / "ubuntu-noble" / "docker-bake.json"
+            self.assertEqual(rc, 0)
+            bake_payload = json.loads(bake_file.read_text(encoding="utf-8"))
+            self.assertEqual(bake_payload["target"]["feelpp"]["platforms"], ["linux/amd64"])
+            self.assertEqual(
+                bake_payload["target"]["feelpp-runtime"]["platforms"],
+                ["linux/amd64"],
+            )
+            self.assertIn('"platforms": [', stdout.getvalue())
+            self.assertIn('"linux/amd64"', stdout.getvalue())
 
     def test_top_level_image_bake_supports_external_base_images_for_components(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

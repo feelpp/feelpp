@@ -57,12 +57,12 @@ FROM ${FROM_IMAGE} AS runtime
 LABEL maintainer="Feel++ Support <support@feelpp.org>"
 LABEL org.opencontainers.image.description="${DESCRIPTION} (runtime)"
 
-COPY --from=builder /usr/local/bin/feelpp* /usr/local/bin/
-COPY --from=builder /usr/local/lib/libfeelpp* /usr/local/lib/
-COPY --from=builder /usr/local/include/feelpp /usr/local/include/feelpp
-COPY --from=builder /usr/local/share/feelpp /usr/local/share/feelpp
+COPY --from=build_output /usr/local/bin/feelpp* /usr/local/bin/
+COPY --from=build_output /usr/local/lib/libfeelpp* /usr/local/lib/
+COPY --from=build_output /usr/local/include/feelpp /usr/local/include/feelpp
+COPY --from=build_output /usr/local/share/feelpp /usr/local/share/feelpp
 
-RUN --mount=from=builder,source=/usr/local,target=/mnt/builder \
+RUN --mount=from=build_output,source=/usr/local,target=/mnt/builder \
     for d in /mnt/builder/lib/python3*/dist-packages /mnt/builder/local/lib/python3*/dist-packages; do \
         if [ -d "$d" ] && ls "$d"/feelpp* >/dev/null 2>&1; then \
             pyver=$(echo "$d" | grep -oP 'python3[^/]*') && \
