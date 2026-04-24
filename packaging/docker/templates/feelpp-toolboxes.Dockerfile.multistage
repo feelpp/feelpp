@@ -33,6 +33,8 @@ ENV FEELPP_CKAN_API_KEY=${FEELPP_CKAN_API_KEY}
 ENV FEELPP_CKAN_URL=${FEELPP_CKAN_URL}
 ENV FEELPP_CKAN_ORGANIZATION=${FEELPP_CKAN_ORGANIZATION}
 
+SHELL ["/bin/bash", "-lc"]
+
 WORKDIR /src
 COPY --from=feelpp_source / /src/feelpp
 RUN git config --global user.name "Docker Robot" \
