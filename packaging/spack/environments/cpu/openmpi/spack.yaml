@@ -28,6 +28,7 @@ spack:
   - "cln"
   - "ginac"
   - "eigen"
+  - "gmsh +opencascade+mmg+fltk"
   - "py-pybind11"
   - "py-mpi4py"
   - "py-petsc4py@3.25.0"
