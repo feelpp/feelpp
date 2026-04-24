@@ -136,6 +136,9 @@ export SPACK_USER_CACHE_PATH=/opt/spack-user-cache
 spack env activate {environment_dir}
 EOF
 
+ENV BASH_ENV=/etc/profile.d/feelpp-spack.sh
+SHELL ["/bin/bash", "-lc"]
+
 CMD ["/bin/bash"]
 """
 

@@ -274,6 +274,8 @@ class CliTests(unittest.TestCase):
             )
             self.assertIn("ARG SPACK_BUILD_JOBS=16", dockerfile.read_text(encoding="utf-8"))
             self.assertIn("ARG SPACK_CONCURRENT_PACKAGES=0", dockerfile.read_text(encoding="utf-8"))
+            self.assertIn('ENV BASH_ENV=/etc/profile.d/feelpp-spack.sh', dockerfile.read_text(encoding="utf-8"))
+            self.assertIn('SHELL ["/bin/bash", "-lc"]', dockerfile.read_text(encoding="utf-8"))
             self.assertIn(
                 'spack -e /opt/feelpp/packaging/spack/environments/cpu/openmpi install -j "${SPACK_BUILD_JOBS}";',
                 dockerfile.read_text(encoding="utf-8"),
@@ -402,6 +404,7 @@ spack:
             self.assertTrue(dockerfile.is_file())
             self.assertTrue(bake_file.is_file())
             bake_payload = json.loads(bake_file.read_text(encoding="utf-8"))
+            self.assertIn('SHELL ["/bin/bash", "-lc"]', dockerfile.read_text(encoding="utf-8"))
             self.assertEqual(bake_payload["group"]["default"]["targets"], ["feelpp-full", "feelpp-full-runtime"])
             self.assertEqual(
                 bake_payload["target"]["feelpp-full"]["args"]["FROM_IMAGE"],
@@ -453,6 +456,10 @@ spack:
             self.assertEqual(rc, 0)
             self.assertTrue(env_dockerfile.is_file())
             self.assertTrue(bake_file.is_file())
+            self.assertIn(
+                'SHELL ["/bin/bash", "-lc"]',
+                (context_dir / "feelpp" / "Dockerfile.multistage").read_text(encoding="utf-8"),
+            )
             bake_payload = json.loads(bake_file.read_text(encoding="utf-8"))
             self.assertEqual(bake_payload["group"]["default"]["targets"], ["feelpp-env"])
             self.assertEqual(bake_payload["group"]["env"]["targets"], ["feelpp-env"])
