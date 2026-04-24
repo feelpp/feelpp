@@ -8,6 +8,7 @@ import shutil
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 from .catalog import ImageTarget, list_image_targets
+from .bake_permissions import fs_read_allow_flags, required_fs_read_paths_from_bake_payload
 from .cmake_presets import resolve_cmake_preset
 from .common import (
     branch_tag_suffix,
@@ -477,6 +478,13 @@ def generate_apt_bake(
     bake_file = context_dir / "docker-bake.json"
     bake_file.write_text(json.dumps(bake_payload, indent=2) + "\n", encoding="utf-8")
     recommended_groups = _selected_groups(requested_component)
+    fs_read_paths = required_fs_read_paths_from_bake_payload(
+        bake_payload,
+        base_dir=context_dir,
+        groups=recommended_groups,
+    )
+    docker_bake_command = ["docker", "buildx", "bake", *fs_read_allow_flags(fs_read_paths), "-f", str(bake_file)]
+    docker_bake_command.extend(recommended_groups)
 
     return {
         "repo_root": str(workspace.repo_root),
@@ -514,7 +522,8 @@ def generate_apt_bake(
             "full-all",
         ],
         "recommended_groups": recommended_groups,
+        "fs_read_paths": fs_read_paths,
         "component_targets": [spec.component_name for spec in component_specs],
         "image_refs": image_refs,
-        "docker_bake_command": f"docker buildx bake -f {bake_file} {' '.join(recommended_groups)}",
+        "docker_bake_command": " ".join(docker_bake_command),
     }
