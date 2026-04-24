@@ -8,7 +8,7 @@
   },
   "fullBuild": {
     "job": "feelpp-full",
-    "targets": ["ubuntu:noble", "spack:openmpi"]
+    "targets": ["spack:openmpi"]
   },
   "profiles": {
     "ci": {
@@ -22,7 +22,7 @@
       },
       "fullBuild": {
         "job": "feelpp-full",
-        "targets": ["ubuntu:noble", "spack:openmpi"]
+        "targets": ["spack:openmpi"]
       }
     },
     "images": {
@@ -41,7 +41,7 @@
           "image_backend": "apt",
           "image_strategy": "environment",
           "ci_components": "true",
-          "ci_full": "true",
+          "ci_full": "false",
           "component_set": "default",
           "base_image": "ubuntu:24.04"
         },
