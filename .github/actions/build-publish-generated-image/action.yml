@@ -1,0 +1,103 @@
+name: Build And Publish Generated Image
+description: Build OCI images from a generated bake file and optionally publish metadata-action alias tags for the runtime image
+
+inputs:
+  context_dir:
+    description: Working directory containing the generated bake context
+    required: true
+  bake_file:
+    description: Path to the generated docker-bake.json file
+    required: true
+  bake_groups:
+    description: Space-separated bake groups to build and push
+    required: true
+  image_refs_json:
+    description: JSON object of generated image references
+    required: true
+  runtime_ref_key:
+    description: Key in image_refs_json used as the primary published runtime image
+    required: true
+  oci_dist:
+    description: OCI distribution tag prefix such as ubuntu-24.04
+    required: true
+  publish:
+    description: Whether to push the generated images and publish metadata alias tags
+    required: false
+    default: "true"
+
+outputs:
+  primary_ref:
+    description: Primary runtime image reference
+    value: ${{ steps.runtime.outputs.primary_ref }}
+
+runs:
+  using: composite
+  steps:
+    - id: runtime
+      shell: bash
+      env:
+        IMAGE_REFS_JSON: ${{ inputs.image_refs_json }}
+        RUNTIME_REF_KEY: ${{ inputs.runtime_ref_key }}
+      run: |
+        set -euo pipefail
+        IMAGE_REFS_JSON="${IMAGE_REFS_JSON}" python - <<'PY'
+        import json
+        import os
+
+        image_refs = json.loads(os.environ["IMAGE_REFS_JSON"])
+        runtime_key = os.environ["RUNTIME_REF_KEY"]
+        primary_ref = image_refs[runtime_key]
+        repository = primary_ref.rsplit(":", 1)[0]
+        with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+            fh.write(f"primary_ref={primary_ref}\n")
+            fh.write(f"repository={repository}\n")
+        PY
+
+    - name: Docker metadata
+      if: ${{ inputs.publish == 'true' }}
+      id: meta
+      uses: docker/metadata-action@v6
+      with:
+        images: ${{ steps.runtime.outputs.repository }}
+        flavor: latest=false
+        tags: |
+          type=sha,prefix=${{ inputs.oci_dist }}-sha-
+          type=raw,value=${{ inputs.oci_dist }}-pr-${{ github.event.pull_request.number }},enable=${{ github.event_name == 'pull_request' }}
+          type=raw,value=${{ inputs.oci_dist }},enable={{is_default_branch}}
+
+    - name: Build and push primary image set
+      shell: bash
+      working-directory: ${{ inputs.context_dir }}
+      env:
+        BAKE_FILE: ${{ inputs.bake_file }}
+        BAKE_GROUPS: ${{ inputs.bake_groups }}
+        PUBLISH_IMAGES: ${{ inputs.publish }}
+      run: |
+        set -euo pipefail
+        read -r -a bake_groups <<< "${BAKE_GROUPS}"
+        cmd=(docker buildx bake -f "${BAKE_FILE}")
+        if [ "${PUBLISH_IMAGES}" = "true" ]; then
+          cmd+=(--push)
+        fi
+        cmd+=(--set "*.args.FEELPP_GITHUB_TOKEN=${FEELPP_GITHUB_TOKEN}")
+        cmd+=(--set "*.args.FEELPP_GIRDER_API_KEY=${FEELPP_GIRDER_API_KEY}")
+        cmd+=(--set "*.args.FEELPP_CKAN_API_KEY=${FEELPP_CKAN_API_KEY}")
+        cmd+=(--set "*.args.FEELPP_CKAN_URL=${FEELPP_CKAN_URL}")
+        cmd+=(--set "*.args.FEELPP_CKAN_ORGANIZATION=${FEELPP_CKAN_ORGANIZATION}")
+        cmd+=("${bake_groups[@]}")
+        "${cmd[@]}"
+
+    - name: Publish metadata alias tags
+      if: ${{ inputs.publish == 'true' }}
+      shell: bash
+      env:
+        PRIMARY_REF: ${{ steps.runtime.outputs.primary_ref }}
+        META_TAGS: ${{ steps.meta.outputs.tags }}
+      run: |
+        set -euo pipefail
+        while IFS= read -r tag; do
+          if [ -z "${tag}" ] || [ "${tag}" = "${PRIMARY_REF}" ]; then
+            continue
+          fi
+          docker buildx imagetools create -t "${tag}" "${PRIMARY_REF}"
+        done <<< "${META_TAGS}"

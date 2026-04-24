@@ -60,7 +60,7 @@ on:
 
 permissions:
   contents: read
-  packages: read
+  packages: write
 
 env:
   FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -69,20 +69,37 @@ env:
   FEELPP_CKAN_URL: ${{ secrets.FEELPP_CKAN_URL }}
   FEELPP_CKAN_ORGANIZATION: ${{ secrets.FEELPP_CKAN_ORGANIZATION }}
 
-# CI consumes the repository-owned image chain published by images.yml:
-#   ghcr.io/feelpp/feelpp-env:<oci_dist>        for source builds (Feel++, testsuite, full)
-#   ghcr.io/feelpp/feelpp:<oci_dist>            for toolboxes builds
-#   ghcr.io/feelpp/feelpp-toolboxes:<oci_dist>  for MOR builds
+defaults:
+  run:
+    shell: bash -eo pipefail {0}
+
+# CI consumes the published environment images and turns them into pushed
+# component/full OCI images for the current revision:
+#   feelpp-env -> feelpp -> testsuite
+#   feelpp-env -> feelpp -> toolboxes -> mor
+#   feelpp-env -> feelpp-full
 
 jobs:
   plan_ci:
     name: Plan CI matrix
     runs-on: ubuntu-latest
     outputs:
-      matrix_json: ${{ steps.plan.outputs.matrix_json }}
       targets_json: ${{ steps.plan.outputs.targets_json }}
       enabled_jobs_json: ${{ steps.plan.outputs.enabled_jobs_json }}
       enabled_jobs: ${{ steps.plan.outputs.enabled_jobs }}
+      mode: ${{ steps.plan.outputs.mode }}
+      component_targets_json: ${{ steps.schedule.outputs.component_targets_json }}
+      full_targets_json: ${{ steps.schedule.outputs.full_targets_json }}
+      component_matrix_json: ${{ steps.schedule.outputs.component_matrix_json }}
+      full_matrix_json: ${{ steps.schedule.outputs.full_matrix_json }}
+      requested_component_jobs_json: ${{ steps.schedule.outputs.requested_component_jobs_json }}
+      rerouted_full_targets_json: ${{ steps.schedule.outputs.rerouted_full_targets_json }}
+      run_feelpp: ${{ steps.schedule.outputs.run_feelpp }}
+      run_testsuite: ${{ steps.schedule.outputs.run_testsuite }}
+      run_toolboxes: ${{ steps.schedule.outputs.run_toolboxes }}
+      run_mor: ${{ steps.schedule.outputs.run_mor }}
+      run_full: ${{ steps.schedule.outputs.run_full }}
+      workflow_warnings_json: ${{ steps.schedule.outputs.warnings_json }}
     steps:
       - uses: actions/checkout@v5
 
@@ -102,168 +119,334 @@ jobs:
           message-override: ${{ steps.directives.outputs.message }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Split workflow matrices
+        id: schedule
+        run: >
+          PYTHONPATH=ops/src python3 -m feelpp.ops.ci.workflow_plan
+          --config-path .github/plan-ci.json
+          --mode '${{ steps.plan.outputs.mode }}'
+          --targets-json '${{ steps.plan.outputs.targets_json }}'
+          --enabled-jobs-json '${{ steps.plan.outputs.enabled_jobs_json }}'
+          --github-output "${GITHUB_OUTPUT}"
+
       - name: Debug planner output
-        shell: bash
         run: |
           echo "message_override: <<EOF"
           printf '%s\n' "${{ steps.directives.outputs.message }}"
           echo "EOF"
-          echo "matrix_json: ${{ steps.plan.outputs.matrix_json }}"
+          echo "mode: ${{ steps.plan.outputs.mode }}"
           echo "targets_json: ${{ steps.plan.outputs.targets_json }}"
           echo "enabled_jobs_json: ${{ steps.plan.outputs.enabled_jobs_json }}"
           echo "enabled_jobs: ${{ steps.plan.outputs.enabled_jobs }}"
+          echo "component_targets_json: ${{ steps.schedule.outputs.component_targets_json }}"
+          echo "full_targets_json: ${{ steps.schedule.outputs.full_targets_json }}"
+          echo "component_matrix_json: ${{ steps.schedule.outputs.component_matrix_json }}"
+          echo "full_matrix_json: ${{ steps.schedule.outputs.full_matrix_json }}"
+          echo "rerouted_full_targets_json: ${{ steps.schedule.outputs.rerouted_full_targets_json }}"
+          echo "run_feelpp: ${{ steps.schedule.outputs.run_feelpp }}"
+          echo "run_testsuite: ${{ steps.schedule.outputs.run_testsuite }}"
+          echo "run_toolboxes: ${{ steps.schedule.outputs.run_toolboxes }}"
+          echo "run_mor: ${{ steps.schedule.outputs.run_mor }}"
+          echo "run_full: ${{ steps.schedule.outputs.run_full }}"
+          echo "warnings_json: ${{ steps.schedule.outputs.warnings_json }}"
 
   feelpp:
-    name: Build/Test Feel++ (${{ matrix.target }})
+    name: Build/Push Feel++ Image (${{ matrix.target }})
     needs: [plan_ci]
     runs-on: self-docker
-    if: contains(fromJSON(needs.plan_ci.outputs.enabled_jobs_json), 'feelpp')
-    container:
-      image: ghcr.io/feelpp/feelpp-env:${{ matrix.oci_dist }}
-      credentials:
-        username: ${{ secrets.CR_LOGIN }}
-        password: ${{ secrets.CR_PAT }}
+    if: needs.plan_ci.outputs.run_feelpp == 'true'
+    continue-on-error: ${{ matrix['continue-on-error'] == 'true' }}
     timeout-minutes: 600
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.plan_ci.outputs.matrix_json) }}
+      matrix: ${{ fromJSON(needs.plan_ci.outputs.component_matrix_json) }}
+    env:
+      CHECKOUT_DIR: src-${{ github.run_id }}-feelpp-${{ matrix.oci_dist }}
+      DOCKER_CONFIG: /nvme0/prudhomm/.docker/actions/${{ github.run_id }}-feelpp-${{ matrix.oci_dist }}
+      JOB_ROOT: ${{ runner.temp }}/feelpp-ci/feelpp/${{ matrix.oci_dist }}
+      BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     steps:
-      - uses: actions/checkout@v5
+      - id: setup
+        uses: ./.github/actions/setup-oci-job
         with:
-          submodules: recursive
-          clean: true
+          checkout-dir: ${{ env.CHECKOUT_DIR }}
+          docker-config: ${{ env.DOCKER_CONFIG }}
+          setup-buildx: "true"
+          registry-username: ${{ secrets.CR_LOGIN }}
+          registry-password: ${{ secrets.CR_PAT }}
 
-      - uses: ./.github/actions/git-safe-directory
+      - id: bake
+        uses: ./.github/actions/generate-image-bake
+        with:
+          repo-root: ${{ steps.setup.outputs.repo_root }}
+          job-root: ${{ env.JOB_ROOT }}
+          branch: ${{ env.BRANCH_NAME }}
+          target: ${{ matrix.target }}
+          component: feelpp
+          from-image: ghcr.io/feelpp/feelpp-env:${{ matrix.oci_dist }}
 
-      - name: Configure Feel++
-        run: cmake --preset feelpp
-
-      - name: Build Feel++
-        run: cmake --build --preset feelpp -j20
-
-      - name: Test Feel++
-        run: ctest --preset feelpp -j4
+      - name: Build and push Feel++ image(s)
+        uses: ./.github/actions/build-publish-generated-image
+        with:
+          context_dir: ${{ steps.bake.outputs.context_dir }}
+          bake_file: ${{ steps.bake.outputs.bake_file }}
+          bake_groups: ${{ steps.bake.outputs.bake_groups }}
+          image_refs_json: ${{ steps.bake.outputs.image_refs_json }}
+          runtime_ref_key: feelpp
+          oci_dist: ${{ matrix.oci_dist }}
 
   testsuite:
     name: Build/Test Testsuite (${{ matrix.target }})
-    needs: [plan_ci]
+    needs: [plan_ci, feelpp]
     runs-on: self-docker
-    if: contains(fromJSON(needs.plan_ci.outputs.enabled_jobs_json), 'testsuite')
-    container:
-      image: ghcr.io/feelpp/feelpp-env:${{ matrix.oci_dist }}
-      credentials:
-        username: ${{ secrets.CR_LOGIN }}
-        password: ${{ secrets.CR_PAT }}
+    if: needs.plan_ci.outputs.run_testsuite == 'true'
+    continue-on-error: ${{ matrix['continue-on-error'] == 'true' }}
     timeout-minutes: 600
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.plan_ci.outputs.matrix_json) }}
+      matrix: ${{ fromJSON(needs.plan_ci.outputs.component_matrix_json) }}
+    env:
+      CHECKOUT_DIR: src-${{ github.run_id }}-testsuite-${{ matrix.oci_dist }}
+      DOCKER_CONFIG: /nvme0/prudhomm/.docker/actions/${{ github.run_id }}-testsuite-${{ matrix.oci_dist }}
+      JOB_ROOT: ${{ runner.temp }}/feelpp-ci/testsuite/${{ matrix.oci_dist }}
+      BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     steps:
-      - uses: actions/checkout@v5
+      - id: setup
+        uses: ./.github/actions/setup-oci-job
         with:
-          submodules: recursive
-          clean: true
+          checkout-dir: ${{ env.CHECKOUT_DIR }}
+          docker-config: ${{ env.DOCKER_CONFIG }}
+          setup-buildx: "false"
+          registry-username: ${{ secrets.CR_LOGIN }}
+          registry-password: ${{ secrets.CR_PAT }}
 
-      - uses: ./.github/actions/git-safe-directory
+      - id: refs
+        uses: ./.github/actions/generate-image-bake
+        with:
+          repo-root: ${{ steps.setup.outputs.repo_root }}
+          job-root: ${{ env.JOB_ROOT }}
+          branch: ${{ env.BRANCH_NAME }}
+          target: ${{ matrix.target }}
+          component: feelpp
+          from-image: ghcr.io/feelpp/feelpp-env:${{ matrix.oci_dist }}
 
-      - name: Configure Testsuite
-        run: cmake --preset testsuite
+      - name: Resolve Feel++ dev image reference
+        id: image_ref
+        env:
+          IMAGE_REFS_JSON: ${{ steps.refs.outputs.image_refs_json }}
+        run: |
+          IMAGE_REFS_JSON="${IMAGE_REFS_JSON}" python - <<'PY'
+          import json
+          import os
+          image_refs = json.loads(os.environ["IMAGE_REFS_JSON"])
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+              fh.write(f"feelpp_dev_ref={image_refs['feelpp-dev']}\n")
+          PY
 
-      - name: Build Testsuite
-        run: cmake --build --preset testsuite -j20
+      - name: Pull Feel++ dev image
+        run: docker pull "${{ steps.image_ref.outputs.feelpp_dev_ref }}"
 
-      - name: Test Testsuite
-        run: ctest --preset testsuite -j4
+      - name: Configure, build, and test testsuite
+        env:
+          REPO_ROOT: ${{ steps.setup.outputs.repo_root }}
+          FEELPP_DEV_REF: ${{ steps.image_ref.outputs.feelpp_dev_ref }}
+        run: |
+          # testsuite consumes the published feelpp-dev image produced by the
+          # upstream feelpp job for the same matrix row.
+          docker run --rm \
+            -e FEELPP_GITHUB_TOKEN \
+            -e FEELPP_GIRDER_API_KEY \
+            -e FEELPP_CKAN_API_KEY \
+            -e FEELPP_CKAN_URL \
+            -e FEELPP_CKAN_ORGANIZATION \
+            -e OMPI_ALLOW_RUN_AS_ROOT=1 \
+            -e OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1 \
+            -v "${REPO_ROOT}:/src/feelpp" \
+            -w /src/feelpp \
+            "${FEELPP_DEV_REF}" \
+            bash --login -lc '
+              git config --global --add safe.directory /src/feelpp
+              cmake --preset testsuite
+              cmake --build --preset testsuite -j20
+              ctest --preset testsuite -j4
+            '
 
   toolboxes:
-    name: Build/Test Toolboxes (${{ matrix.target }})
-    needs: [plan_ci]
+    name: Build/Push Toolboxes Image (${{ matrix.target }})
+    needs: [plan_ci, feelpp]
     runs-on: self-docker
-    if: contains(fromJSON(needs.plan_ci.outputs.enabled_jobs_json), 'toolboxes')
-    container:
-      image: ghcr.io/feelpp/feelpp:${{ matrix.oci_dist }}
-      credentials:
-        username: ${{ secrets.CR_LOGIN }}
-        password: ${{ secrets.CR_PAT }}
+    if: needs.plan_ci.outputs.run_toolboxes == 'true'
+    continue-on-error: ${{ matrix['continue-on-error'] == 'true' }}
     timeout-minutes: 600
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.plan_ci.outputs.matrix_json) }}
+      matrix: ${{ fromJSON(needs.plan_ci.outputs.component_matrix_json) }}
+    env:
+      CHECKOUT_DIR: src-${{ github.run_id }}-toolboxes-${{ matrix.oci_dist }}
+      DOCKER_CONFIG: /nvme0/prudhomm/.docker/actions/${{ github.run_id }}-toolboxes-${{ matrix.oci_dist }}
+      JOB_ROOT: ${{ runner.temp }}/feelpp-ci/toolboxes/${{ matrix.oci_dist }}
+      BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     steps:
-      - uses: actions/checkout@v5
+      - id: setup
+        uses: ./.github/actions/setup-oci-job
         with:
-          submodules: recursive
-          clean: true
+          checkout-dir: ${{ env.CHECKOUT_DIR }}
+          docker-config: ${{ env.DOCKER_CONFIG }}
+          setup-buildx: "true"
+          registry-username: ${{ secrets.CR_LOGIN }}
+          registry-password: ${{ secrets.CR_PAT }}
 
-      - uses: ./.github/actions/git-safe-directory
+      - id: feelpp_refs
+        uses: ./.github/actions/generate-image-bake
+        with:
+          repo-root: ${{ steps.setup.outputs.repo_root }}
+          job-root: ${{ env.JOB_ROOT }}-refs
+          branch: ${{ env.BRANCH_NAME }}
+          target: ${{ matrix.target }}
+          component: feelpp
+          from-image: ghcr.io/feelpp/feelpp-env:${{ matrix.oci_dist }}
 
-      - name: Configure Toolboxes
-        run: cmake --preset toolboxes
+      - name: Resolve Feel++ runtime image reference
+        id: base_image
+        env:
+          IMAGE_REFS_JSON: ${{ steps.feelpp_refs.outputs.image_refs_json }}
+        run: |
+          IMAGE_REFS_JSON="${IMAGE_REFS_JSON}" python - <<'PY'
+          import json
+          import os
+          image_refs = json.loads(os.environ["IMAGE_REFS_JSON"])
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+              fh.write(f"feelpp_runtime_ref={image_refs['feelpp']}\n")
+          PY
 
-      - name: Build Toolboxes
-        run: cmake --build --preset toolboxes -j20
+      - id: bake
+        uses: ./.github/actions/generate-image-bake
+        with:
+          repo-root: ${{ steps.setup.outputs.repo_root }}
+          job-root: ${{ env.JOB_ROOT }}
+          branch: ${{ env.BRANCH_NAME }}
+          target: ${{ matrix.target }}
+          component: toolboxes
+          from-image: ${{ steps.base_image.outputs.feelpp_runtime_ref }}
 
-      - name: Test Toolboxes
-        run: ctest --preset toolboxes -j4
+      - name: Build and push Toolboxes image(s)
+        uses: ./.github/actions/build-publish-generated-image
+        with:
+          context_dir: ${{ steps.bake.outputs.context_dir }}
+          bake_file: ${{ steps.bake.outputs.bake_file }}
+          bake_groups: ${{ steps.bake.outputs.bake_groups }}
+          image_refs_json: ${{ steps.bake.outputs.image_refs_json }}
+          runtime_ref_key: toolboxes
+          oci_dist: ${{ matrix.oci_dist }}
 
   mor:
-    name: Build/Test MOR (${{ matrix.target }})
-    needs: [plan_ci]
+    name: Build/Push MOR Image (${{ matrix.target }})
+    needs: [plan_ci, toolboxes]
     runs-on: self-docker
-    if: contains(fromJSON(needs.plan_ci.outputs.enabled_jobs_json), 'mor')
-    container:
-      image: ghcr.io/feelpp/feelpp-toolboxes:${{ matrix.oci_dist }}
-      credentials:
-        username: ${{ secrets.CR_LOGIN }}
-        password: ${{ secrets.CR_PAT }}
+    if: needs.plan_ci.outputs.run_mor == 'true'
+    continue-on-error: ${{ matrix['continue-on-error'] == 'true' }}
     timeout-minutes: 600
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.plan_ci.outputs.matrix_json) }}
+      matrix: ${{ fromJSON(needs.plan_ci.outputs.component_matrix_json) }}
+    env:
+      CHECKOUT_DIR: src-${{ github.run_id }}-mor-${{ matrix.oci_dist }}
+      DOCKER_CONFIG: /nvme0/prudhomm/.docker/actions/${{ github.run_id }}-mor-${{ matrix.oci_dist }}
+      JOB_ROOT: ${{ runner.temp }}/feelpp-ci/mor/${{ matrix.oci_dist }}
+      BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     steps:
-      - uses: actions/checkout@v5
+      - id: setup
+        uses: ./.github/actions/setup-oci-job
         with:
-          submodules: recursive
-          clean: true
+          checkout-dir: ${{ env.CHECKOUT_DIR }}
+          docker-config: ${{ env.DOCKER_CONFIG }}
+          setup-buildx: "true"
+          registry-username: ${{ secrets.CR_LOGIN }}
+          registry-password: ${{ secrets.CR_PAT }}
 
-      - uses: ./.github/actions/git-safe-directory
+      - id: toolboxes_refs
+        uses: ./.github/actions/generate-image-bake
+        with:
+          repo-root: ${{ steps.setup.outputs.repo_root }}
+          job-root: ${{ env.JOB_ROOT }}-refs
+          branch: ${{ env.BRANCH_NAME }}
+          target: ${{ matrix.target }}
+          component: toolboxes
 
-      - name: Configure MOR
-        run: cmake --preset mor
+      - name: Resolve Toolboxes runtime image reference
+        id: base_image
+        env:
+          IMAGE_REFS_JSON: ${{ steps.toolboxes_refs.outputs.image_refs_json }}
+        run: |
+          IMAGE_REFS_JSON="${IMAGE_REFS_JSON}" python - <<'PY'
+          import json
+          import os
+          image_refs = json.loads(os.environ["IMAGE_REFS_JSON"])
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+              fh.write(f"toolboxes_runtime_ref={image_refs['toolboxes']}\n")
+          PY
 
-      - name: Build MOR
-        run: cmake --build --preset mor -j20
+      - id: bake
+        uses: ./.github/actions/generate-image-bake
+        with:
+          repo-root: ${{ steps.setup.outputs.repo_root }}
+          job-root: ${{ env.JOB_ROOT }}
+          branch: ${{ env.BRANCH_NAME }}
+          target: ${{ matrix.target }}
+          component: mor
+          from-image: ${{ steps.base_image.outputs.toolboxes_runtime_ref }}
 
-      - name: Test MOR
-        run: ctest --preset mor -j4
+      - name: Build and push MOR image(s)
+        uses: ./.github/actions/build-publish-generated-image
+        with:
+          context_dir: ${{ steps.bake.outputs.context_dir }}
+          bake_file: ${{ steps.bake.outputs.bake_file }}
+          bake_groups: ${{ steps.bake.outputs.bake_groups }}
+          image_refs_json: ${{ steps.bake.outputs.image_refs_json }}
+          runtime_ref_key: mor
+          oci_dist: ${{ matrix.oci_dist }}
 
   feelpp-full:
-    name: Build/Test Feel++ Full (${{ matrix.target }})
+    name: Build/Push Feel++ Full Image (${{ matrix.target }})
     needs: [plan_ci]
     runs-on: self-docker
-    if: contains(fromJSON(needs.plan_ci.outputs.enabled_jobs_json), 'feelpp-full')
-    container:
-      image: ghcr.io/feelpp/feelpp-env:${{ matrix.oci_dist }}
-      credentials:
-        username: ${{ secrets.CR_LOGIN }}
-        password: ${{ secrets.CR_PAT }}
+    if: needs.plan_ci.outputs.run_full == 'true'
+    continue-on-error: ${{ matrix['continue-on-error'] == 'true' }}
     timeout-minutes: 600
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.plan_ci.outputs.matrix_json) }}
+      matrix: ${{ fromJSON(needs.plan_ci.outputs.full_matrix_json) }}
+    env:
+      CHECKOUT_DIR: src-${{ github.run_id }}-full-${{ matrix.oci_dist }}
+      DOCKER_CONFIG: /nvme0/prudhomm/.docker/actions/${{ github.run_id }}-full-${{ matrix.oci_dist }}
+      JOB_ROOT: ${{ runner.temp }}/feelpp-ci/full/${{ matrix.oci_dist }}
+      BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     steps:
-      - uses: actions/checkout@v5
+      - id: setup
+        uses: ./.github/actions/setup-oci-job
         with:
-          submodules: recursive
-          clean: true
+          checkout-dir: ${{ env.CHECKOUT_DIR }}
+          docker-config: ${{ env.DOCKER_CONFIG }}
+          setup-buildx: "true"
+          registry-username: ${{ secrets.CR_LOGIN }}
+          registry-password: ${{ secrets.CR_PAT }}
 
-      - uses: ./.github/actions/git-safe-directory
+      - id: bake
+        uses: ./.github/actions/generate-image-bake
+        with:
+          repo-root: ${{ steps.setup.outputs.repo_root }}
+          job-root: ${{ env.JOB_ROOT }}
+          branch: ${{ env.BRANCH_NAME }}
+          target: ${{ matrix.target }}
+          component: full
+          from-image: ghcr.io/feelpp/feelpp-env:${{ matrix.oci_dist }}
 
-      - name: Configure Full Build
-        run: cmake --preset default
-
-      - name: Build Full Stack
-        run: cmake --build --preset default -j20
-
-      - name: Test Full Stack
-        run: ctest --preset default -j4
+      - name: Build and push Feel++ full image(s)
+        uses: ./.github/actions/build-publish-generated-image
+        with:
+          context_dir: ${{ steps.bake.outputs.context_dir }}
+          bake_file: ${{ steps.bake.outputs.bake_file }}
+          bake_groups: ${{ steps.bake.outputs.bake_groups }}
+          image_refs_json: ${{ steps.bake.outputs.image_refs_json }}
+          runtime_ref_key: feelpp-full
+          oci_dist: ${{ matrix.oci_dist }}

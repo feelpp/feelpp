@@ -8,6 +8,7 @@ import shutil
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 from .catalog import ImageTarget, list_image_targets
+from .cmake_presets import resolve_cmake_preset
 from .common import (
     branch_tag_suffix,
     default_bake_target_name,
@@ -72,6 +73,16 @@ COMPONENT_TEMPLATE_SPECS = {
         template_name="feelpp-mor.Dockerfile.multistage",
         description="Feel++ Model Order Reduction",
     ),
+}
+
+COMPONENT_REQUEST_ALIASES = {
+    "env": "env",
+    "feelpp": "feelpp",
+    "toolboxes": "toolboxes",
+    "feelpp-toolboxes": "toolboxes",
+    "mor": "mor",
+    "feelpp-mor": "mor",
+    "full": "full",
 }
 
 
@@ -207,6 +218,46 @@ def _component_targets_for_row(repo_root: Path, target: ImageTarget) -> list[Com
     return component_specs
 
 
+def _normalize_requested_component(component: str | None) -> str | None:
+    if component in {None, ""}:
+        return None
+    normalized = COMPONENT_REQUEST_ALIASES.get(str(component).strip().lower())
+    if not normalized:
+        known = ", ".join(sorted(COMPONENT_REQUEST_ALIASES))
+        raise ValueError(f"Unsupported image component: {component}. Known values: {known}")
+    return normalized
+
+
+def _component_context_dir_name(component_name: str) -> str:
+    return {
+        "feelpp": "feelpp",
+        "feelpp-toolboxes": "feelpp-toolboxes",
+        "feelpp-mor": "feelpp-mor",
+    }[component_name]
+
+
+def _component_image_names(component_name: str) -> tuple[str, str]:
+    if component_name == "feelpp":
+        return "feelpp", "feelpp"
+    if component_name == "feelpp-toolboxes":
+        return "feelpp-toolboxes", "feelpp-toolboxes"
+    return "feelpp-mor", "feelpp-mor"
+
+
+def _selected_groups(component: str | None) -> list[str]:
+    if component in {None, "env"}:
+        return ["default"]
+    if component == "feelpp":
+        return ["feelpp-all"]
+    if component == "toolboxes":
+        return ["toolboxes-all"]
+    if component == "mor":
+        return ["mor-all"]
+    if component == "full":
+        return ["full-all"]
+    raise ValueError(f"Unsupported image component selection: {component}")
+
+
 def generate_apt_bake(
     *,
     workspace: WorkspaceContext,
@@ -219,10 +270,13 @@ def generate_apt_bake(
     registry: str | None = None,
     namespace: str | None = None,
     bake_target: str | None = None,
+    component: str | None = None,
+    from_image: str | None = None,
 ) -> dict[str, object]:
     metadata = load_docker_metadata(workspace.repo_root)
     distribution = resolve_distribution_version(metadata, family=target.flavor, name=target.dist)
     component_specs = _component_targets_for_row(workspace.repo_root, target)
+    requested_component = _normalize_requested_component(component)
 
     resolved_bake_target = bake_target or default_bake_target_name(target.target)
     context_dir = workspace.job_root / "images" / resolved_bake_target
@@ -272,49 +326,54 @@ def generate_apt_bake(
             "platforms": list(distribution.platforms),
         }
     }
+    image_refs: dict[str, str] = {
+        "feelpp-env": _environment_image_ref(target, registry=registry, namespace=namespace),
+    }
 
     previous_runtime_target = "feelpp-env"
     previous_context_alias = "feelpp_env_image"
     for component_spec in component_specs:
-        context_dir_name = {
-            "feelpp": "feelpp",
-            "feelpp-toolboxes": "feelpp-toolboxes",
-            "feelpp-mor": "feelpp-mor",
-        }[component_spec.component_name]
+        context_dir_name = _component_context_dir_name(component_spec.component_name)
         builder_tag = _builder_tag(target, branch=workspace.branch)
         runtime_tag = _runtime_tag(target, branch=workspace.branch)
-        if component_spec.component_name == "feelpp":
-            builder_image_name = "feelpp"
-            runtime_image_name = "feelpp"
-        elif component_spec.component_name == "feelpp-toolboxes":
-            builder_image_name = "feelpp-toolboxes"
-            runtime_image_name = "feelpp-toolboxes"
-        else:
-            builder_image_name = "feelpp-mor"
-            runtime_image_name = "feelpp-mor"
+        builder_image_name, runtime_image_name = _component_image_names(component_spec.component_name)
 
-        contexts = {previous_context_alias: f"target:{previous_runtime_target}"}
+        builder_ref = _component_image_ref(
+            builder_image_name,
+            builder_tag,
+            registry=registry,
+            namespace=namespace,
+        )
+        runtime_ref = _component_image_ref(
+            runtime_image_name,
+            runtime_tag,
+            registry=registry,
+            namespace=namespace,
+        )
+        image_refs[f"{component_spec.bake_target}-dev"] = builder_ref
+        image_refs[component_spec.bake_target] = runtime_ref
+
+        contexts = {"feelpp_source": str(workspace.repo_root)}
+        from_image_arg = previous_context_alias
+        if requested_component == component_spec.bake_target and from_image:
+            from_image_arg = from_image
+        else:
+            contexts[previous_context_alias] = f"target:{previous_runtime_target}"
         targets[component_spec.bake_target] = {
             "context": context_dir_name,
             "dockerfile": "Dockerfile.multistage",
             "target": "builder",
             "contexts": contexts,
             "args": {
-                "FROM_IMAGE": previous_context_alias,
+                "FROM_IMAGE": from_image_arg,
                 "DESCRIPTION": f"{component_spec.description} (dev)",
                 "BRANCH": workspace.branch,
+                "CMAKE_PRESET": resolve_cmake_preset(target, component=component_spec.bake_target),
                 "CXX": cxx,
                 "CC": cc,
                 "CMAKE_FLAGS": cmake_flags,
             },
-            "tags": [
-                _component_image_ref(
-                    builder_image_name,
-                    builder_tag,
-                    registry=registry,
-                    namespace=namespace,
-                )
-            ],
+            "tags": [builder_ref],
             "platforms": list(distribution.platforms),
         }
         targets[component_spec.runtime_target] = {
@@ -323,70 +382,73 @@ def generate_apt_bake(
             "target": "runtime",
             "contexts": contexts,
             "args": {
-                "FROM_IMAGE": previous_context_alias,
+                "FROM_IMAGE": from_image_arg,
                 "DESCRIPTION": component_spec.description,
                 "BRANCH": workspace.branch,
+                "CMAKE_PRESET": resolve_cmake_preset(target, component=component_spec.bake_target),
                 "CXX": cxx,
                 "CC": cc,
                 "CMAKE_FLAGS": cmake_flags,
             },
-            "tags": [
-                _component_image_ref(
-                    runtime_image_name,
-                    runtime_tag,
-                    registry=registry,
-                    namespace=namespace,
-                )
-            ],
+            "tags": [runtime_ref],
             "platforms": list(distribution.platforms),
         }
         previous_runtime_target = component_spec.runtime_target
         previous_context_alias = f"{component_spec.bake_target}_runtime_image"
 
+    full_builder_ref = _component_image_ref(
+        "feelpp",
+        _full_builder_tag(target, branch=workspace.branch),
+        registry=registry,
+        namespace=namespace,
+    )
+    full_runtime_ref = _component_image_ref(
+        "feelpp",
+        _full_runtime_tag(target, branch=workspace.branch),
+        registry=registry,
+        namespace=namespace,
+    )
+    image_refs["feelpp-full-dev"] = full_builder_ref
+    image_refs["feelpp-full"] = full_runtime_ref
+
+    full_contexts = {"feelpp_source": str(workspace.repo_root)}
+    full_from_image_arg = "feelpp_env_image"
+    if requested_component == "full" and from_image:
+        full_from_image_arg = from_image
+    else:
+        full_contexts["feelpp_env_image"] = "target:feelpp-env"
     targets["feelpp-full"] = {
         "context": "feelpp",
         "dockerfile": "Dockerfile.full",
         "target": "builder",
-        "contexts": {"feelpp_env_image": "target:feelpp-env"},
+        "contexts": full_contexts,
         "args": {
-            "FROM_IMAGE": "feelpp_env_image",
+            "FROM_IMAGE": full_from_image_arg,
             "DESCRIPTION": "Feel++ Full Stack (dev)",
             "BRANCH": workspace.branch,
+            "CMAKE_PRESET": resolve_cmake_preset(target, component="full"),
             "CXX": cxx,
             "CC": cc,
             "CMAKE_FLAGS": cmake_flags,
         },
-        "tags": [
-            _component_image_ref(
-                "feelpp",
-                _full_builder_tag(target, branch=workspace.branch),
-                registry=registry,
-                namespace=namespace,
-            )
-        ],
+        "tags": [full_builder_ref],
         "platforms": list(distribution.platforms),
     }
     targets["feelpp-full-runtime"] = {
         "context": "feelpp",
         "dockerfile": "Dockerfile.full",
         "target": "runtime",
-        "contexts": {"feelpp_env_image": "target:feelpp-env"},
+        "contexts": full_contexts,
         "args": {
-            "FROM_IMAGE": "feelpp_env_image",
+            "FROM_IMAGE": full_from_image_arg,
             "DESCRIPTION": "Feel++ Full Stack",
             "BRANCH": workspace.branch,
+            "CMAKE_PRESET": resolve_cmake_preset(target, component="full"),
             "CXX": cxx,
             "CC": cc,
             "CMAKE_FLAGS": cmake_flags,
         },
-        "tags": [
-            _component_image_ref(
-                "feelpp",
-                _full_runtime_tag(target, branch=workspace.branch),
-                registry=registry,
-                namespace=namespace,
-            )
-        ],
+        "tags": [full_runtime_ref],
         "platforms": list(distribution.platforms),
     }
 
@@ -394,8 +456,19 @@ def generate_apt_bake(
         "group": {
             "default": {"targets": ["feelpp-env"]},
             "env": {"targets": ["feelpp-env"]},
+            "feelpp-dev": {"targets": ["feelpp"]},
+            "feelpp-runtime": {"targets": ["feelpp-runtime"]},
+            "feelpp-all": {"targets": ["feelpp", "feelpp-runtime"]},
+            "toolboxes-dev": {"targets": ["toolboxes"]},
+            "toolboxes-runtime": {"targets": ["toolboxes-runtime"]},
+            "toolboxes-all": {"targets": ["toolboxes", "toolboxes-runtime"]},
+            "mor-dev": {"targets": ["mor"]},
+            "mor-runtime": {"targets": ["mor-runtime"]},
+            "mor-all": {"targets": ["mor", "mor-runtime"]},
             "all-dev": {"targets": [spec.bake_target for spec in component_specs]},
             "all": {"targets": [spec.runtime_target for spec in component_specs]},
+            "full-dev": {"targets": ["feelpp-full"]},
+            "full-runtime": {"targets": ["feelpp-full-runtime"]},
             "full": {"targets": ["feelpp-full"]},
             "full-all": {"targets": ["feelpp-full", "feelpp-full-runtime"]},
         },
@@ -403,7 +476,7 @@ def generate_apt_bake(
     }
     bake_file = context_dir / "docker-bake.json"
     bake_file.write_text(json.dumps(bake_payload, indent=2) + "\n", encoding="utf-8")
-    recommended_groups = ["default"]
+    recommended_groups = _selected_groups(requested_component)
 
     return {
         "repo_root": str(workspace.repo_root),
@@ -414,13 +487,34 @@ def generate_apt_bake(
         "variant": variant_name,
         "oci_dist": target.oci_dist,
         "base_image": base_image or target.base_image,
+        "selected_component": requested_component or "env",
+        "from_image": from_image or "",
         "platforms": list(distribution.platforms),
         "context_dir": str(context_dir),
         "dockerfile": str(env_dockerfile),
         "bake_file": str(bake_file),
         "default_group": "default",
-        "available_groups": ["default", "env", "all-dev", "all", "full", "full-all"],
+        "available_groups": [
+            "default",
+            "env",
+            "feelpp-dev",
+            "feelpp-runtime",
+            "feelpp-all",
+            "toolboxes-dev",
+            "toolboxes-runtime",
+            "toolboxes-all",
+            "mor-dev",
+            "mor-runtime",
+            "mor-all",
+            "all-dev",
+            "all",
+            "full-dev",
+            "full-runtime",
+            "full",
+            "full-all",
+        ],
         "recommended_groups": recommended_groups,
         "component_targets": [spec.component_name for spec in component_specs],
+        "image_refs": image_refs,
         "docker_bake_command": f"docker buildx bake -f {bake_file} {' '.join(recommended_groups)}",
     }
