@@ -144,7 +144,7 @@ jobs:
     env:
       CHECKOUT_DIR: src-${{ github.run_id }}-${{ matrix.oci_dist }}
       DOCKER_CONFIG: /nvme0/prudhomm/.docker/actions/${{ github.run_id }}-${{ matrix.oci_dist }}
-      JOB_ROOT: ${{ runner.temp }}/feelpp-images/${{ matrix.oci_dist }}
+      JOB_ROOT: /nvme0/prudhomm/.cache/feelpp-actions/${{ github.run_id }}-${{ github.run_attempt }}/images/${{ matrix.oci_dist }}
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     steps:
       - id: setup
