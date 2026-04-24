@@ -7,6 +7,8 @@ import tempfile
 import unittest
 from unittest import mock
 
+import yaml
+
 from feelpp.pkg.cli import build_parser, main
 
 
@@ -202,6 +204,12 @@ class CliTests(unittest.TestCase):
         self.assertIn('"target": "spack:openmpi"', stdout.getvalue())
         self.assertIn('"environment": "cpu/openmpi"', stdout.getvalue())
         self.assertIn('"supported": true', stdout.getvalue())
+
+    def test_repo_spack_environment_includes_gmsh(self) -> None:
+        manifest_path = self.repo_root() / "packaging" / "spack" / "environments" / "cpu" / "openmpi" / "spack.yaml"
+        payload = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+        specs = payload["spack"]["specs"]
+        self.assertIn("gmsh +opencascade+mmg+fltk", specs)
 
     def test_spack_image_bake_writes_bake_ready_context(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
