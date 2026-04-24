@@ -169,13 +169,14 @@ jobs:
       - name: Bootstrap local actions
         uses: actions/checkout@v5
         with:
+          path: .ci-actions
           clean: false
           fetch-depth: 1
           sparse-checkout: |
             .github/actions
 
       - id: setup
-        uses: ./.github/actions/setup-oci-job
+        uses: ./.ci-actions/.github/actions/setup-oci-job
         with:
           checkout-dir: ${{ env.CHECKOUT_DIR }}
           docker-config: ${{ env.DOCKER_CONFIG }}
@@ -184,7 +185,7 @@ jobs:
           registry-password: ${{ secrets.CR_PAT }}
 
       - id: bake
-        uses: ./.github/actions/generate-image-bake
+        uses: ./.ci-actions/.github/actions/generate-image-bake
         with:
           repo-root: ${{ steps.setup.outputs.repo_root }}
           job-root: ${{ env.JOB_ROOT }}
@@ -194,7 +195,7 @@ jobs:
           from-image: ghcr.io/feelpp/feelpp-env:${{ matrix.oci_dist }}
 
       - name: Build and push Feel++ image(s)
-        uses: ./.github/actions/build-publish-generated-image
+        uses: ./.ci-actions/.github/actions/build-publish-generated-image
         with:
           context_dir: ${{ steps.bake.outputs.context_dir }}
           bake_file: ${{ steps.bake.outputs.bake_file }}
@@ -222,13 +223,14 @@ jobs:
       - name: Bootstrap local actions
         uses: actions/checkout@v5
         with:
+          path: .ci-actions
           clean: false
           fetch-depth: 1
           sparse-checkout: |
             .github/actions
 
       - id: setup
-        uses: ./.github/actions/setup-oci-job
+        uses: ./.ci-actions/.github/actions/setup-oci-job
         with:
           checkout-dir: ${{ env.CHECKOUT_DIR }}
           docker-config: ${{ env.DOCKER_CONFIG }}
@@ -237,7 +239,7 @@ jobs:
           registry-password: ${{ secrets.CR_PAT }}
 
       - id: refs
-        uses: ./.github/actions/generate-image-bake
+        uses: ./.ci-actions/.github/actions/generate-image-bake
         with:
           repo-root: ${{ steps.setup.outputs.repo_root }}
           job-root: ${{ env.JOB_ROOT }}
@@ -306,13 +308,14 @@ jobs:
       - name: Bootstrap local actions
         uses: actions/checkout@v5
         with:
+          path: .ci-actions
           clean: false
           fetch-depth: 1
           sparse-checkout: |
             .github/actions
 
       - id: setup
-        uses: ./.github/actions/setup-oci-job
+        uses: ./.ci-actions/.github/actions/setup-oci-job
         with:
           checkout-dir: ${{ env.CHECKOUT_DIR }}
           docker-config: ${{ env.DOCKER_CONFIG }}
@@ -321,7 +324,7 @@ jobs:
           registry-password: ${{ secrets.CR_PAT }}
 
       - id: feelpp_refs
-        uses: ./.github/actions/generate-image-bake
+        uses: ./.ci-actions/.github/actions/generate-image-bake
         with:
           repo-root: ${{ steps.setup.outputs.repo_root }}
           job-root: ${{ env.JOB_ROOT }}-refs
@@ -344,7 +347,7 @@ jobs:
           PY
 
       - id: bake
-        uses: ./.github/actions/generate-image-bake
+        uses: ./.ci-actions/.github/actions/generate-image-bake
         with:
           repo-root: ${{ steps.setup.outputs.repo_root }}
           job-root: ${{ env.JOB_ROOT }}
@@ -354,7 +357,7 @@ jobs:
           from-image: ${{ steps.base_image.outputs.feelpp_runtime_ref }}
 
       - name: Build and push Toolboxes image(s)
-        uses: ./.github/actions/build-publish-generated-image
+        uses: ./.ci-actions/.github/actions/build-publish-generated-image
         with:
           context_dir: ${{ steps.bake.outputs.context_dir }}
           bake_file: ${{ steps.bake.outputs.bake_file }}
@@ -382,13 +385,14 @@ jobs:
       - name: Bootstrap local actions
         uses: actions/checkout@v5
         with:
+          path: .ci-actions
           clean: false
           fetch-depth: 1
           sparse-checkout: |
             .github/actions
 
       - id: setup
-        uses: ./.github/actions/setup-oci-job
+        uses: ./.ci-actions/.github/actions/setup-oci-job
         with:
           checkout-dir: ${{ env.CHECKOUT_DIR }}
           docker-config: ${{ env.DOCKER_CONFIG }}
@@ -397,7 +401,7 @@ jobs:
           registry-password: ${{ secrets.CR_PAT }}
 
       - id: toolboxes_refs
-        uses: ./.github/actions/generate-image-bake
+        uses: ./.ci-actions/.github/actions/generate-image-bake
         with:
           repo-root: ${{ steps.setup.outputs.repo_root }}
           job-root: ${{ env.JOB_ROOT }}-refs
@@ -419,7 +423,7 @@ jobs:
           PY
 
       - id: bake
-        uses: ./.github/actions/generate-image-bake
+        uses: ./.ci-actions/.github/actions/generate-image-bake
         with:
           repo-root: ${{ steps.setup.outputs.repo_root }}
           job-root: ${{ env.JOB_ROOT }}
@@ -429,7 +433,7 @@ jobs:
           from-image: ${{ steps.base_image.outputs.toolboxes_runtime_ref }}
 
       - name: Build and push MOR image(s)
-        uses: ./.github/actions/build-publish-generated-image
+        uses: ./.ci-actions/.github/actions/build-publish-generated-image
         with:
           context_dir: ${{ steps.bake.outputs.context_dir }}
           bake_file: ${{ steps.bake.outputs.bake_file }}
@@ -457,13 +461,14 @@ jobs:
       - name: Bootstrap local actions
         uses: actions/checkout@v5
         with:
+          path: .ci-actions
           clean: false
           fetch-depth: 1
           sparse-checkout: |
             .github/actions
 
       - id: setup
-        uses: ./.github/actions/setup-oci-job
+        uses: ./.ci-actions/.github/actions/setup-oci-job
         with:
           checkout-dir: ${{ env.CHECKOUT_DIR }}
           docker-config: ${{ env.DOCKER_CONFIG }}
@@ -472,7 +477,7 @@ jobs:
           registry-password: ${{ secrets.CR_PAT }}
 
       - id: bake
-        uses: ./.github/actions/generate-image-bake
+        uses: ./.ci-actions/.github/actions/generate-image-bake
         with:
           repo-root: ${{ steps.setup.outputs.repo_root }}
           job-root: ${{ env.JOB_ROOT }}
@@ -482,7 +487,7 @@ jobs:
           from-image: ghcr.io/feelpp/feelpp-env:${{ matrix.oci_dist }}
 
       - name: Build and push Feel++ full image(s)
-        uses: ./.github/actions/build-publish-generated-image
+        uses: ./.ci-actions/.github/actions/build-publish-generated-image
         with:
           context_dir: ${{ steps.bake.outputs.context_dir }}
           bake_file: ${{ steps.bake.outputs.bake_file }}

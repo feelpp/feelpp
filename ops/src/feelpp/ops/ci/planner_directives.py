@@ -58,14 +58,12 @@ def build_planner_message(
     normalized_skip = normalize_list_value(skip)
     normalized_mode = mode.strip().lower()
     contains_spack = SPACK_TARGET in normalized_targets
+    spack_only = bool(normalized_targets) and all(target == SPACK_TARGET for target in normalized_targets)
 
     if normalized_targets:
         lines.append(f"targets={','.join(normalized_targets)}")
 
     if contains_spack:
-        if normalized_mode and normalized_mode != "full":
-            raise PlannerDirectiveError(f"{SPACK_TARGET} is only supported with mode=full")
-
         invalid_only = [
             token
             for token in _split_tokens(normalized_only)
@@ -82,7 +80,10 @@ def build_planner_message(
                 f"{SPACK_TARGET} does not support skip= filters; use mode=full without component job filters"
             )
 
-        if not normalized_mode:
+        if spack_only and normalized_mode and normalized_mode != "full":
+            raise PlannerDirectiveError(f"{SPACK_TARGET} is only supported with mode=full")
+
+        if spack_only and not normalized_mode:
             normalized_mode = "full"
 
     if normalized_only:

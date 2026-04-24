@@ -43,11 +43,13 @@ class WorkflowPlanTests(unittest.TestCase):
         )
 
         self.assertEqual(json.loads(outputs["component_targets_json"]), [])
-        self.assertEqual(json.loads(outputs["full_targets_json"]), ["ubuntu:noble", "spack:openmpi"])
+        self.assertEqual(json.loads(outputs["full_targets_json"]), ["spack:openmpi"])
         self.assertEqual(outputs["run_feelpp"], "false")
         self.assertEqual(outputs["run_toolboxes"], "false")
         self.assertEqual(outputs["run_full"], "true")
-        self.assertIn("does not support full builds", json.loads(outputs["warnings_json"])[0])
+        warnings = json.loads(outputs["warnings_json"])
+        self.assertEqual(len(warnings), 2)
+        self.assertTrue(all("does not support full builds" in warning for warning in warnings))
 
     def test_component_job_dependencies_are_closed_for_toolboxes(self) -> None:
         outputs = compute_workflow_plan(
