@@ -10,6 +10,7 @@ from .bake_permissions import fs_read_allow_flags, required_fs_read_paths_from_b
 from .catalog import ImageTarget, list_image_targets
 from .cmake_presets import resolve_cmake_preset
 from .common import branch_tag_suffix, default_bake_target_name, oci_image_ref
+from .platforms import normalize_platform_overrides
 from ..core.context import WorkspaceContext
 
 
@@ -196,6 +197,7 @@ def generate_spack_bake(
     cmake_flags: str = "",
     spack_build_jobs: int | None = None,
     spack_concurrent_packages: int | None = None,
+    platform_overrides: list[str] | None = None,
 ) -> dict[str, object]:
     resolved_environment = environment_name or target.spack_environment or f"cpu/{target.dist}"
     environment_manifest = _environment_manifest(workspace.repo_root, resolved_environment)
@@ -207,6 +209,7 @@ def generate_spack_bake(
         build_jobs=spack_build_jobs,
         concurrent_packages=spack_concurrent_packages,
     )
+    resolved_platforms = normalize_platform_overrides(platform_overrides)
     env_image_ref = image_tag or oci_image_ref(
         "feelpp-env",
         target.oci_dist,
@@ -243,6 +246,20 @@ def generate_spack_bake(
             encoding="utf-8",
         )
 
+        target_payload = {
+            "context": ".",
+            "dockerfile": "Dockerfile",
+            "tags": [env_image_ref],
+            "args": {
+                "BASE_IMAGE": resolved_base_image,
+                "SPACK_REF": spack_ref,
+                "SPACK_BUILD_JOBS": str(resolved_build_jobs),
+                "SPACK_CONCURRENT_PACKAGES": str(resolved_concurrent_packages),
+            },
+        }
+        if resolved_platforms is not None:
+            target_payload["platforms"] = list(resolved_platforms)
+
         bake_payload = {
             "group": {
                 "default": {
@@ -250,17 +267,7 @@ def generate_spack_bake(
                 }
             },
             "target": {
-                resolved_bake_target: {
-                    "context": ".",
-                    "dockerfile": "Dockerfile",
-                    "tags": [env_image_ref],
-                    "args": {
-                        "BASE_IMAGE": resolved_base_image,
-                        "SPACK_REF": spack_ref,
-                        "SPACK_BUILD_JOBS": str(resolved_build_jobs),
-                        "SPACK_CONCURRENT_PACKAGES": str(resolved_concurrent_packages),
-                    },
-                }
+                resolved_bake_target: target_payload,
             }
         }
     else:
@@ -287,6 +294,45 @@ def generate_spack_bake(
         recommended_groups = ["full-all"]
         available_groups = ["full-dev", "full-runtime", "full-all"]
 
+        full_builder_target = {
+            "context": "feelpp",
+            "dockerfile": "Dockerfile.full",
+            "target": "builder",
+            "contexts": {"feelpp_source": str(workspace.repo_root)},
+            "args": {
+                "FROM_IMAGE": from_image or env_image_ref,
+                "DESCRIPTION": "Feel++ Full Stack (dev)",
+                "BRANCH": workspace.branch,
+                "CMAKE_PRESET": resolve_cmake_preset(target, component="full"),
+                "CXX": cxx,
+                "CC": cc,
+                "CMAKE_FLAGS": cmake_flags,
+            },
+            "tags": [full_builder_ref],
+        }
+        full_runtime_target = {
+            "context": "feelpp",
+            "dockerfile": "Dockerfile.full",
+            "target": "runtime",
+            "contexts": {
+                "feelpp_source": str(workspace.repo_root),
+                "build_output": "target:feelpp-full",
+            },
+            "args": {
+                "FROM_IMAGE": from_image or env_image_ref,
+                "DESCRIPTION": "Feel++ Full Stack",
+                "BRANCH": workspace.branch,
+                "CMAKE_PRESET": resolve_cmake_preset(target, component="full"),
+                "CXX": cxx,
+                "CC": cc,
+                "CMAKE_FLAGS": cmake_flags,
+            },
+            "tags": [full_runtime_ref],
+        }
+        if resolved_platforms is not None:
+            full_builder_target["platforms"] = list(resolved_platforms)
+            full_runtime_target["platforms"] = list(resolved_platforms)
+
         bake_payload = {
             "group": {
                 "full-dev": {"targets": ["feelpp-full"]},
@@ -295,38 +341,8 @@ def generate_spack_bake(
                 "default": {"targets": ["feelpp-full", "feelpp-full-runtime"]},
             },
             "target": {
-                "feelpp-full": {
-                    "context": "feelpp",
-                    "dockerfile": "Dockerfile.full",
-                    "target": "builder",
-                    "contexts": {"feelpp_source": str(workspace.repo_root)},
-                    "args": {
-                        "FROM_IMAGE": from_image or env_image_ref,
-                        "DESCRIPTION": "Feel++ Full Stack (dev)",
-                        "BRANCH": workspace.branch,
-                        "CMAKE_PRESET": resolve_cmake_preset(target, component="full"),
-                        "CXX": cxx,
-                        "CC": cc,
-                        "CMAKE_FLAGS": cmake_flags,
-                    },
-                    "tags": [full_builder_ref],
-                },
-                "feelpp-full-runtime": {
-                    "context": "feelpp",
-                    "dockerfile": "Dockerfile.full",
-                    "target": "runtime",
-                    "contexts": {"feelpp_source": str(workspace.repo_root)},
-                    "args": {
-                        "FROM_IMAGE": from_image or env_image_ref,
-                        "DESCRIPTION": "Feel++ Full Stack",
-                        "BRANCH": workspace.branch,
-                        "CMAKE_PRESET": resolve_cmake_preset(target, component="full"),
-                        "CXX": cxx,
-                        "CC": cc,
-                        "CMAKE_FLAGS": cmake_flags,
-                    },
-                    "tags": [full_runtime_ref],
-                },
+                "feelpp-full": full_builder_target,
+                "feelpp-full-runtime": full_runtime_target,
             },
         }
     bake_file = context_dir / "docker-bake.json"
@@ -354,6 +370,7 @@ def generate_spack_bake(
         "spack_concurrent_packages": resolved_concurrent_packages,
         "selected_component": requested_component or "env",
         "from_image": from_image or "",
+        "platforms": list(resolved_platforms or []),
         "environment": resolved_environment,
         "environment_manifest": str(environment_manifest),
         "context_dir": str(context_dir),

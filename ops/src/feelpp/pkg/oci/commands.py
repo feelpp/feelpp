@@ -9,6 +9,7 @@ from .apt import DEFAULT_VARIANT, describe_apt_target, generate_apt_bake
 from .bake_permissions import fs_read_allow_flags, required_fs_read_paths_from_bake_file
 from .catalog import get_image_target, list_image_targets
 from .common import add_workspace_arguments, workspace_from_args
+from .platforms import normalize_platform_overrides
 from .spack import DEFAULT_SPACK_REF, describe_spack_target, generate_spack_bake
 from ..shell import format_command, run_checked
 
@@ -26,9 +27,14 @@ def _resolved_backend_filter(args: argparse.Namespace) -> str | None:
     return getattr(args, "catalog_backend_filter", None) or getattr(args, "backend", None)
 
 
+def _resolved_platform_overrides(args: argparse.Namespace) -> list[str] | None:
+    return normalize_platform_overrides(getattr(args, "platform", None))
+
+
 def _generate_image_metadata(args: argparse.Namespace) -> dict[str, object]:
     workspace = workspace_from_args(args)
     backend_filter = _resolved_backend_filter(args)
+    platform_overrides = _resolved_platform_overrides(args)
     target = get_image_target(
         args.target,
         repo_root=workspace.repo_root,
@@ -52,6 +58,7 @@ def _generate_image_metadata(args: argparse.Namespace) -> dict[str, object]:
             bake_target=getattr(args, "bake_target", None),
             component=getattr(args, "component", None),
             from_image=getattr(args, "from_image", None),
+            platform_overrides=platform_overrides,
         )
     if target.image_backend == "spack":
         return generate_spack_bake(
@@ -71,6 +78,7 @@ def _generate_image_metadata(args: argparse.Namespace) -> dict[str, object]:
             cmake_flags=getattr(args, "cmake_flags", ""),
             spack_build_jobs=getattr(args, "spack_build_jobs", None),
             spack_concurrent_packages=getattr(args, "spack_concurrent_packages", None),
+            platform_overrides=platform_overrides,
         )
     raise ValueError(f"Unsupported image backend: {target.image_backend}")
 
@@ -154,6 +162,12 @@ def _add_image_generation_arguments(
         "--namespace",
         default=None,
         help="Override the OCI namespace path, defaults to the namespace part of FEELPP_PKG_OCI_REPOSITORY",
+    )
+    parser.add_argument(
+        "--platform",
+        action="append",
+        default=[],
+        help="Override target OCI platforms. Repeat or use a comma-separated value, for example --platform linux/amd64",
     )
     if backend_filter is None or backend_filter == "apt":
         parser.add_argument(

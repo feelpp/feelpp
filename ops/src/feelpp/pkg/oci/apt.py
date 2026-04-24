@@ -21,6 +21,7 @@ from .docker_metadata import (
     packages_for_variant,
     resolve_distribution_version,
 )
+from .platforms import resolve_target_platforms
 from ..core.context import WorkspaceContext
 from ..graph import load_manifest
 
@@ -273,11 +274,13 @@ def generate_apt_bake(
     bake_target: str | None = None,
     component: str | None = None,
     from_image: str | None = None,
+    platform_overrides: list[str] | None = None,
 ) -> dict[str, object]:
     metadata = load_docker_metadata(workspace.repo_root)
     distribution = resolve_distribution_version(metadata, family=target.flavor, name=target.dist)
     component_specs = _component_targets_for_row(workspace.repo_root, target)
     requested_component = _normalize_requested_component(component)
+    resolved_platforms = resolve_target_platforms(distribution.platforms, platform_overrides)
 
     resolved_bake_target = bake_target or default_bake_target_name(target.target)
     context_dir = workspace.job_root / "images" / resolved_bake_target
@@ -324,7 +327,7 @@ def generate_apt_bake(
             "context": "feelpp-env",
             "dockerfile": "Dockerfile",
             "tags": [_environment_image_ref(target, registry=registry, namespace=namespace)],
-            "platforms": list(distribution.platforms),
+            "platforms": resolved_platforms,
         }
     }
     image_refs: dict[str, str] = {
@@ -360,6 +363,8 @@ def generate_apt_bake(
             from_image_arg = from_image
         else:
             contexts[previous_context_alias] = f"target:{previous_runtime_target}"
+        runtime_contexts = dict(contexts)
+        runtime_contexts["build_output"] = f"target:{component_spec.bake_target}"
         targets[component_spec.bake_target] = {
             "context": context_dir_name,
             "dockerfile": "Dockerfile.multistage",
@@ -375,13 +380,13 @@ def generate_apt_bake(
                 "CMAKE_FLAGS": cmake_flags,
             },
             "tags": [builder_ref],
-            "platforms": list(distribution.platforms),
+            "platforms": resolved_platforms,
         }
         targets[component_spec.runtime_target] = {
             "context": context_dir_name,
             "dockerfile": "Dockerfile.multistage",
             "target": "runtime",
-            "contexts": contexts,
+            "contexts": runtime_contexts,
             "args": {
                 "FROM_IMAGE": from_image_arg,
                 "DESCRIPTION": component_spec.description,
@@ -392,7 +397,7 @@ def generate_apt_bake(
                 "CMAKE_FLAGS": cmake_flags,
             },
             "tags": [runtime_ref],
-            "platforms": list(distribution.platforms),
+            "platforms": resolved_platforms,
         }
         previous_runtime_target = component_spec.runtime_target
         previous_context_alias = f"{component_spec.bake_target}_runtime_image"
@@ -418,6 +423,8 @@ def generate_apt_bake(
         full_from_image_arg = from_image
     else:
         full_contexts["feelpp_env_image"] = "target:feelpp-env"
+    full_runtime_contexts = dict(full_contexts)
+    full_runtime_contexts["build_output"] = "target:feelpp-full"
     targets["feelpp-full"] = {
         "context": "feelpp",
         "dockerfile": "Dockerfile.full",
@@ -433,13 +440,13 @@ def generate_apt_bake(
             "CMAKE_FLAGS": cmake_flags,
         },
         "tags": [full_builder_ref],
-        "platforms": list(distribution.platforms),
+        "platforms": resolved_platforms,
     }
     targets["feelpp-full-runtime"] = {
         "context": "feelpp",
         "dockerfile": "Dockerfile.full",
         "target": "runtime",
-        "contexts": full_contexts,
+        "contexts": full_runtime_contexts,
         "args": {
             "FROM_IMAGE": full_from_image_arg,
             "DESCRIPTION": "Feel++ Full Stack",
@@ -450,7 +457,7 @@ def generate_apt_bake(
             "CMAKE_FLAGS": cmake_flags,
         },
         "tags": [full_runtime_ref],
-        "platforms": list(distribution.platforms),
+        "platforms": resolved_platforms,
     }
 
     bake_payload = {
@@ -497,7 +504,7 @@ def generate_apt_bake(
         "base_image": base_image or target.base_image,
         "selected_component": requested_component or "env",
         "from_image": from_image or "",
-        "platforms": list(distribution.platforms),
+        "platforms": resolved_platforms,
         "context_dir": str(context_dir),
         "dockerfile": str(env_dockerfile),
         "bake_file": str(bake_file),
