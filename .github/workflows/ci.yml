@@ -166,6 +166,14 @@ jobs:
       JOB_ROOT: /nvme0/prudhomm/.cache/feelpp-actions/${{ github.run_id }}-${{ github.run_attempt }}/ci/feelpp/${{ matrix.oci_dist }}
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     steps:
+      - name: Bootstrap local actions
+        uses: actions/checkout@v5
+        with:
+          clean: false
+          fetch-depth: 1
+          sparse-checkout: |
+            .github/actions
+
       - id: setup
         uses: ./.github/actions/setup-oci-job
         with:
@@ -211,6 +219,14 @@ jobs:
       JOB_ROOT: /nvme0/prudhomm/.cache/feelpp-actions/${{ github.run_id }}-${{ github.run_attempt }}/ci/testsuite/${{ matrix.oci_dist }}
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     steps:
+      - name: Bootstrap local actions
+        uses: actions/checkout@v5
+        with:
+          clean: false
+          fetch-depth: 1
+          sparse-checkout: |
+            .github/actions
+
       - id: setup
         uses: ./.github/actions/setup-oci-job
         with:
@@ -287,6 +303,14 @@ jobs:
       JOB_ROOT: /nvme0/prudhomm/.cache/feelpp-actions/${{ github.run_id }}-${{ github.run_attempt }}/ci/toolboxes/${{ matrix.oci_dist }}
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     steps:
+      - name: Bootstrap local actions
+        uses: actions/checkout@v5
+        with:
+          clean: false
+          fetch-depth: 1
+          sparse-checkout: |
+            .github/actions
+
       - id: setup
         uses: ./.github/actions/setup-oci-job
         with:
@@ -355,6 +379,14 @@ jobs:
       JOB_ROOT: /nvme0/prudhomm/.cache/feelpp-actions/${{ github.run_id }}-${{ github.run_attempt }}/ci/mor/${{ matrix.oci_dist }}
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     steps:
+      - name: Bootstrap local actions
+        uses: actions/checkout@v5
+        with:
+          clean: false
+          fetch-depth: 1
+          sparse-checkout: |
+            .github/actions
+
       - id: setup
         uses: ./.github/actions/setup-oci-job
         with:
@@ -422,6 +454,14 @@ jobs:
       JOB_ROOT: /nvme0/prudhomm/.cache/feelpp-actions/${{ github.run_id }}-${{ github.run_attempt }}/ci/full/${{ matrix.oci_dist }}
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     steps:
+      - name: Bootstrap local actions
+        uses: actions/checkout@v5
+        with:
+          clean: false
+          fetch-depth: 1
+          sparse-checkout: |
+            .github/actions
+
       - id: setup
         uses: ./.github/actions/setup-oci-job
         with:
