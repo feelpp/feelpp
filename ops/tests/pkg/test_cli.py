@@ -64,6 +64,23 @@ class CliTests(unittest.TestCase):
         self.assertEqual(args.spack_build_jobs, 24)
         self.assertEqual(args.spack_concurrent_packages, 3)
 
+    def test_spack_image_build_accepts_install_failure_flags(self) -> None:
+        parser = build_parser()
+        args = parser.parse_args(
+            [
+                "spack",
+                "image",
+                "build",
+                "--target",
+                "spack:openmpi",
+                "--fail-fast",
+                "--show-log-on-error",
+                "--dry-run",
+            ]
+        )
+        self.assertTrue(args.fail_fast)
+        self.assertTrue(args.show_log_on_error)
+
     def test_top_level_image_targets_command_is_available(self) -> None:
         parser = build_parser()
         args = parser.parse_args(["image", "targets"])
@@ -223,7 +240,11 @@ class CliTests(unittest.TestCase):
         manifest_path = self.repo_root() / "packaging" / "spack" / "environments" / "cpu" / "openmpi" / "spack.yaml"
         payload = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
         specs = payload["spack"]["specs"]
-        self.assertIn("gmsh +opencascade+mmg~fltk", specs)
+        self.assertIn("gmsh@4.13.1 +opencascade+mmg~fltk", specs)
+        repos = payload["spack"]["repos"]
+        self.assertEqual(list(repos.keys()), ["feelpp"])
+        mesa_requirements = payload["spack"]["packages"]["mesa"]["require"]
+        self.assertEqual(mesa_requirements, ["~llvm"])
 
     def test_spack_image_bake_writes_bake_ready_context(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -299,7 +320,7 @@ class CliTests(unittest.TestCase):
             self.assertIn('ENV BASH_ENV=/etc/profile.d/feelpp-spack.sh', dockerfile.read_text(encoding="utf-8"))
             self.assertIn('SHELL ["/bin/bash", "-lc"]', dockerfile.read_text(encoding="utf-8"))
             self.assertIn(
-                'spack -e /opt/feelpp/packaging/spack/environments/cpu/openmpi install -j "${SPACK_BUILD_JOBS}";',
+                'spack -e /opt/feelpp/packaging/spack/environments/cpu/openmpi install --fail-fast --show-log-on-error -j "${SPACK_BUILD_JOBS}";',
                 dockerfile.read_text(encoding="utf-8"),
             )
             self.assertIn('"group": {', bake_file.read_text(encoding="utf-8"))
@@ -385,7 +406,7 @@ spack:
             self.assertIn("ARG SPACK_BUILD_JOBS=24", dockerfile.read_text(encoding="utf-8"))
             self.assertIn("ARG SPACK_CONCURRENT_PACKAGES=3", dockerfile.read_text(encoding="utf-8"))
             self.assertIn(
-                'install -j "${SPACK_BUILD_JOBS}" -p "${SPACK_CONCURRENT_PACKAGES}"',
+                'install --fail-fast --show-log-on-error -j "${SPACK_BUILD_JOBS}" -p "${SPACK_CONCURRENT_PACKAGES}"',
                 dockerfile.read_text(encoding="utf-8"),
             )
             bake_payload = json.loads(bake_file.read_text(encoding="utf-8"))
@@ -396,6 +417,66 @@ spack:
             )
             self.assertIn('"spack_build_jobs": 24', stdout.getvalue())
             self.assertIn('"spack_concurrent_packages": 3', stdout.getvalue())
+
+    def test_spack_image_bake_allows_disabling_install_failure_flags(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo_root = Path(tmpdir)
+            plan_path = repo_root / ".github" / "plan-ci.json"
+            plan_path.parent.mkdir(parents=True)
+            plan_path.write_text(
+                """
+{
+  "profiles": {
+    "images": {
+      "catalog": {
+        "spack:openmpi": {
+          "flavor": "spack",
+          "dist": "openmpi",
+          "version": "latest",
+          "docker": "true",
+          "image_backend": "spack",
+          "image_strategy": "full",
+          "base_image": "ubuntu:24.04",
+          "oci_dist": "spack-openmpi",
+          "spack_environment": "cpu/openmpi"
+        }
+      }
+    }
+  }
+}
+""".strip()
+                + "\n",
+                encoding="utf-8",
+            )
+            manifest = repo_root / "packaging" / "spack" / "environments" / "cpu" / "openmpi" / "spack.yaml"
+            manifest.parent.mkdir(parents=True)
+            manifest.write_text("spack:\n  specs: []\n", encoding="utf-8")
+
+            stdout = io.StringIO()
+            with mock.patch("sys.stdout", stdout):
+                rc = main(
+                    [
+                        "spack",
+                        "image",
+                        "bake",
+                        "--repo-root",
+                        tmpdir,
+                        "--job-root",
+                        str(repo_root / "job"),
+                        "--target",
+                        "spack:openmpi",
+                        "--no-fail-fast",
+                        "--no-show-log-on-error",
+                    ]
+                )
+
+            dockerfile = repo_root / "job" / "images" / "spack-openmpi" / "Dockerfile"
+            self.assertEqual(rc, 0)
+            dockerfile_text = dockerfile.read_text(encoding="utf-8")
+            self.assertNotIn("--fail-fast", dockerfile_text)
+            self.assertNotIn("--show-log-on-error", dockerfile_text)
+            self.assertIn('"spack_fail_fast": false', stdout.getvalue())
+            self.assertIn('"spack_show_log_on_error": false', stdout.getvalue())
 
     def test_spack_image_bake_supports_full_build_from_env_image(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

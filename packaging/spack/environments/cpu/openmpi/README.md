@@ -56,15 +56,20 @@ Notes:
 - the shared manifest pins `petsc`, `slepc`, `py-petsc4py`, and
   `py-slepc4py` to `3.25.0` so the C/C++ and Python solver stack stays on one
   coherent release line
+- the shared manifest currently also pins `gmsh@4.13.1`; the bundled Spack
+  `v1.0.0` builtin recipe otherwise selects `4.15.x`, which is not yet
+  validated for this environment
+- the shared manifest also forces `mesa~llvm`; this avoids the current Mesa
+  `llvm-config` tool mismatch in the GLX path pulled by `opencascade`
 - Feel++ CTest runs should propagate `PETSC_DIR` and `SLEPC_DIR` from the
   configured CMake paths so PETSc can locate `libhpddm_petsc` at runtime
-- this environment still references the external `numpex/spack.numpex`
-  repository as a transitional package source for `feelpp`
-- for Spack `v1.x`, that repository must be configured as a named Git-based
-  repo, not as a plain list entry
+- this environment intentionally uses only the repository-owned `feelpp`
+  overlay plus Spack builtin packages; external third-party package repos are
+  excluded here so shared env installs do not accidentally shadow core packages
+  such as `gmsh`
 - the community `spack/spack-packages` repository should not be listed here as
   a raw repo URL because Spack already provides it as the builtin package repo
-- that repository reference is intended to be temporary until Feel++ either
-  has an in-repo incubation overlay or is upstreamed to `spack/spack-packages`
+- the long-term goal remains the same: keep Feel++-specific packaging in the
+  repository-owned overlay until it is either upstreamed or no longer needed
 - site-local compiler or mirror preferences should be expressed through local
   Spack configuration or example files under `packaging/spack/includes/site/`

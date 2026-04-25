@@ -1,7 +1,7 @@
 # Supported shared Feel++ CPU/OpenMPI environment.
 #
-# This manifest is the cleaned Phase 1 baseline derived from the broader legacy
-# `openmpi4/` bootstrap environment. It focuses on the immediate
+# This manifest is the baseline package derived from the legacy
+# `openmpi4/` bootstrap environment. It focuses on the 
 # PETSc/HPDDM-enabled workflow and intentionally avoids embedding site-local
 # compiler externals, local mirrors, or unrelated optional packages.
 spack:
@@ -13,6 +13,9 @@ spack:
     mpi:
       require:
       - "openmpi@:4.1 fabrics=cma,ucx"
+    mesa:
+      require:
+      - "~llvm"
 
   specs:
   - "openmpi fabrics=cma,ucx ^ucx~rocm+cma+thread_multiple"
@@ -30,7 +33,9 @@ spack:
   - "eigen"
   # Feel++ needs the Gmsh library and CLI, not the FLTK GUI. Keep the
   # environment headless to avoid the extra GUI/OpenGL stack in Docker/CI.
-  - "gmsh +opencascade+mmg~fltk"
+  # Pin 4.13.1 for now: the bundled Spack v1.0.0 builtin package selects
+  # newer 4.15.x, which is not yet validated in this shared environment.
+  - "gmsh@4.13.1 +opencascade+mmg~fltk"
   - "py-pybind11"
   - "py-mpi4py"
   - "py-petsc4py@3.25.0"
@@ -51,7 +56,3 @@ spack:
   repos:
     # Repository-owned local overrides to unblock shared environment installs.
     feelpp: $env/../../../repo/spack_repo/feelpp
-    # Transitional package repository for Feel++ until an in-repo overlay or
-    # upstream Spack package fully replaces it.
-    numpex:
-      git: https://github.com/numpex/spack.numpex.git
