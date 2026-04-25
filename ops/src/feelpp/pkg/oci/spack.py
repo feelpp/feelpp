@@ -17,6 +17,8 @@ from ..core.context import WorkspaceContext
 DEFAULT_SPACK_REF = "v1.0.0"
 DEFAULT_SPACK_BUILD_JOBS = 16
 DEFAULT_SPACK_CONCURRENT_PACKAGES = 0
+DEFAULT_SPACK_FAIL_FAST = True
+DEFAULT_SPACK_SHOW_LOG_ON_ERROR = True
 SHARED_SPACK_DIR = Path("packaging") / "spack"
 DOCKER_TEMPLATE_DIR = Path("packaging") / "docker" / "templates"
 
@@ -82,8 +84,16 @@ def render_spack_dockerfile(
     environment_name: str,
     build_jobs: int,
     concurrent_packages: int,
+    fail_fast: bool,
+    show_log_on_error: bool,
 ) -> str:
     environment_dir = f"/opt/feelpp/packaging/spack/environments/{environment_name}"
+    install_flag_parts: list[str] = []
+    if fail_fast:
+        install_flag_parts.append("--fail-fast")
+    if show_log_on_error:
+        install_flag_parts.append("--show-log-on-error")
+    install_clause = " ".join(["install", *install_flag_parts])
     return f"""# syntax=docker/dockerfile:1
 ARG BASE_IMAGE={base_image}
 FROM ${{BASE_IMAGE}}
@@ -123,9 +133,9 @@ RUN mkdir -p "$SPACK_USER_CONFIG_PATH" "$SPACK_USER_CACHE_PATH" \\
     && . "$SPACK_ROOT/share/spack/setup-env.sh" \\
     && spack -e {environment_dir} concretize -f \\
     && if [ "${{SPACK_CONCURRENT_PACKAGES}}" -gt 0 ]; then \\
-         spack -e {environment_dir} install -j "${{SPACK_BUILD_JOBS}}" -p "${{SPACK_CONCURRENT_PACKAGES}}"; \\
+         spack -e {environment_dir} {install_clause} -j "${{SPACK_BUILD_JOBS}}" -p "${{SPACK_CONCURRENT_PACKAGES}}"; \\
        else \\
-         spack -e {environment_dir} install -j "${{SPACK_BUILD_JOBS}}"; \\
+         spack -e {environment_dir} {install_clause} -j "${{SPACK_BUILD_JOBS}}"; \\
        fi \\
     && spack clean --all
 
@@ -197,6 +207,8 @@ def generate_spack_bake(
     cmake_flags: str = "",
     spack_build_jobs: int | None = None,
     spack_concurrent_packages: int | None = None,
+    spack_fail_fast: bool | None = None,
+    spack_show_log_on_error: bool | None = None,
     platform_overrides: list[str] | None = None,
 ) -> dict[str, object]:
     resolved_environment = environment_name or target.spack_environment or f"cpu/{target.dist}"
@@ -208,6 +220,14 @@ def generate_spack_bake(
         environment_manifest,
         build_jobs=spack_build_jobs,
         concurrent_packages=spack_concurrent_packages,
+    )
+    resolved_fail_fast = (
+        DEFAULT_SPACK_FAIL_FAST if spack_fail_fast is None else bool(spack_fail_fast)
+    )
+    resolved_show_log_on_error = (
+        DEFAULT_SPACK_SHOW_LOG_ON_ERROR
+        if spack_show_log_on_error is None
+        else bool(spack_show_log_on_error)
     )
     resolved_platforms = normalize_platform_overrides(platform_overrides)
     env_image_ref = image_tag or oci_image_ref(
@@ -242,6 +262,8 @@ def generate_spack_bake(
                 environment_name=resolved_environment,
                 build_jobs=resolved_build_jobs,
                 concurrent_packages=resolved_concurrent_packages,
+                fail_fast=resolved_fail_fast,
+                show_log_on_error=resolved_show_log_on_error,
             ),
             encoding="utf-8",
         )
@@ -368,6 +390,8 @@ def generate_spack_bake(
         "spack_ref": spack_ref,
         "spack_build_jobs": resolved_build_jobs,
         "spack_concurrent_packages": resolved_concurrent_packages,
+        "spack_fail_fast": resolved_fail_fast,
+        "spack_show_log_on_error": resolved_show_log_on_error,
         "selected_component": requested_component or "env",
         "from_image": from_image or "",
         "platforms": list(resolved_platforms or []),

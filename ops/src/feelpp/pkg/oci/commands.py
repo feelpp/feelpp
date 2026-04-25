@@ -78,6 +78,8 @@ def _generate_image_metadata(args: argparse.Namespace) -> dict[str, object]:
             cmake_flags=getattr(args, "cmake_flags", ""),
             spack_build_jobs=getattr(args, "spack_build_jobs", None),
             spack_concurrent_packages=getattr(args, "spack_concurrent_packages", None),
+            spack_fail_fast=getattr(args, "fail_fast", None),
+            spack_show_log_on_error=getattr(args, "show_log_on_error", None),
             platform_overrides=platform_overrides,
         )
     raise ValueError(f"Unsupported image backend: {target.image_backend}")
@@ -217,6 +219,20 @@ def _add_image_generation_arguments(
             type=int,
             default=None,
             help="Override Spack install-level package concurrency for generated Spack environment images",
+        )
+        parser.add_argument(
+            "--fail-fast",
+            dest="fail_fast",
+            action=argparse.BooleanOptionalAction,
+            default=None,
+            help="Enable or disable Spack --fail-fast for generated Spack environment installs",
+        )
+        parser.add_argument(
+            "--show-log-on-error",
+            dest="show_log_on_error",
+            action=argparse.BooleanOptionalAction,
+            default=None,
+            help="Enable or disable Spack --show-log-on-error for generated Spack environment installs",
         )
 
 
