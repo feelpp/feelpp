@@ -5250,27 +5250,22 @@ public:
                 : nActiveDof;
 
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 22)
-        // PETSc >= 3.22: Use guards for safe array access
         auto guard = std::make_shared<Feel::PetscReadArrayGuard>( vecPetscConst->vec() );
-        
-        value_type* arrayActiveDof = nullptr;
-        value_type* arrayGhostDof = nullptr;
-        
+        element_type u( this->shared_from_this() );
+
         if ( nActiveDof > 0 )
         {
             auto const activeIndex = dmVec.dofIdToContainerId( blockIdStart, 0 );
-            arrayActiveDof = const_cast<value_type*>( guard->data() + activeIndex - guard->firstLocal() );
+            for ( size_type k = 0; k < nActiveDof; ++k )
+                u( k ) = guard->data()[activeIndex + k - guard->firstLocal()];
         }
         if ( nGhostDof > 0 )
         {
             auto const ghostIndex = dmVec.dofIdToContainerId( blockIdStart, nActiveDofFirstSubSpace );
-            arrayGhostDof = const_cast<value_type*>( guard->data() + ghostIndex - guard->firstLocal() );
+            for ( size_type k = 0; k < nGhostDof; ++k )
+                u( nActiveDof + k ) = guard->data()[ghostIndex + k - guard->firstLocal()];
         }
 
-        element_type u( this->shared_from_this(),
-                        nActiveDof, arrayActiveDof,
-                        nGhostDof, arrayGhostDof );
-        u.setBackingGuard( std::move( guard ) );
         return u;
 #else
         // PETSc < 3.22: Use original direct pointer access (working code)
@@ -5375,29 +5370,22 @@ public:
                 : nActiveDof;
 
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 22)
-        // PETSc >= 3.22: Use guards for safe array access
         auto guard = std::make_shared<Feel::PetscReadArrayGuard>( vecPetscConst->vec() );
-        
-        value_type* arrayActiveDof = nullptr;
-        value_type* arrayGhostDof = nullptr;
-        
+        element_ptrtype u = this->elementPtr();
+
         if ( nActiveDof > 0 )
         {
             auto const activeIndex = dmVec.dofIdToContainerId( blockIdStart, 0 );
-            arrayActiveDof = const_cast<value_type*>( guard->data() + activeIndex - guard->firstLocal() );
+            for ( size_type k = 0; k < nActiveDof; ++k )
+                ( *u )( k ) = guard->data()[activeIndex + k - guard->firstLocal()];
         }
         if ( nGhostDof > 0 )
         {
             auto const ghostIndex = dmVec.dofIdToContainerId( blockIdStart, nActiveDofFirstSubSpace );
-            arrayGhostDof = const_cast<value_type*>( guard->data() + ghostIndex - guard->firstLocal() );
+            for ( size_type k = 0; k < nGhostDof; ++k )
+                ( *u )( nActiveDof + k ) = guard->data()[ghostIndex + k - guard->firstLocal()];
         }
 
-        element_ptrtype u( new element_type(
-            this->shared_from_this(),
-            nActiveDof, arrayActiveDof,
-            nGhostDof, arrayGhostDof ) );
-
-        u->setBackingGuard( std::move( guard ) );
         return u;
 #else
         // PETSc < 3.22: Use original direct pointer access (working code)

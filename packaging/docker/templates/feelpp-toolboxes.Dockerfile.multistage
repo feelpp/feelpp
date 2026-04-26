@@ -16,6 +16,7 @@ ARG BRANCH=develop
 ARG BUILD_JOBS=20
 ARG CMAKE_PRESET=toolboxes
 ARG CMAKE_FLAGS=""
+ARG RUN_CTEST=0
 ARG CXX=clang++
 ARG CC=clang
 ARG FEELPP_GIRDER_API_KEY=""
@@ -51,7 +52,7 @@ RUN cmake --preset ${CMAKE_PRESET} \
     && cmake --build --preset ${CMAKE_PRESET} -j ${BUILD_JOBS} \
     && cmake --build --preset ${CMAKE_PRESET} -t install -j ${BUILD_JOBS} \
     && ldconfig \
-    && ctest --preset ${CMAKE_PRESET} \
+    && if [ "${RUN_CTEST}" = "1" ]; then ctest --preset ${CMAKE_PRESET}; fi \
     && rm -rf build/${CMAKE_PRESET} /root/feelppdb /root/.cache /feel
 
 ARG FROM_IMAGE

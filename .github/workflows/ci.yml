@@ -286,6 +286,7 @@ jobs:
             -w /src/feelpp \
             "${FEELPP_DEV_REF}" \
             bash --login -lc '
+              set -euo pipefail
               git config --global --add safe.directory /src/feelpp
               cmake --preset testsuite
               cmake --build --preset testsuite -j20
