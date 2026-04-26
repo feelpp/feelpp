@@ -33,6 +33,7 @@ runs:
       with:
         path: ${{ inputs.checkout-dir }}
         clean: false
+        fetch-depth: 0
         submodules: recursive
 
     - id: paths
