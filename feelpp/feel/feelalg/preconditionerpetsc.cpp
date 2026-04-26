@@ -57,12 +57,22 @@ extern "C" {
 #include <feel/feelalg/preconditionerpetscpcd.cpp>
 #include <feel/feelalg/preconditionerpetscfeelpp.cpp>
 
-#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,19,0 )
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,25,0 )
+PetscErrorCode __feel_destroy_petsc_prec_ksp_monitor(void* ctx)
+#elif PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,19,0 )
 PetscErrorCode __feel_destroy_petsc_prec_ksp_monitor(void** ctx)
 #else
 PetscErrorCode __feel_destroy_petsc_prec_ksp_monitor(PetscCtxRt ctx)
 #endif
 {
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,25,0 )
+    Feel::ConfigureKSP* solver = reinterpret_cast<Feel::ConfigureKSP*>( ctx );
+    if ( !solver )
+        return 0;
+    if ( solver->worldCommPtr()->isMasterRank() )
+        std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] ] KSP delete context", Feel::gmtimeNow(), solver->prefix(), 0.0 ) << std::endl;
+    delete solver;
+#else
     auto* ctxPtr = reinterpret_cast<Feel::ConfigureKSP**>( ctx );
     if ( ctxPtr == nullptr )
         return 0;
@@ -74,6 +84,7 @@ PetscErrorCode __feel_destroy_petsc_prec_ksp_monitor(PetscCtxRt ctx)
         delete solver;
     }
     *ctxPtr = nullptr;
+#endif
     return 0;
 }
 

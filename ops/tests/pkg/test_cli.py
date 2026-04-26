@@ -241,6 +241,8 @@ class CliTests(unittest.TestCase):
         payload = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
         specs = payload["spack"]["specs"]
         self.assertIn("gmsh@4.13.1 +opencascade+mmg~fltk", specs)
+        self.assertIn("pugixml", specs)
+        self.assertIn("rsync", specs)
         repos = payload["spack"]["repos"]
         self.assertEqual(list(repos.keys()), ["feelpp"])
         mesa_requirements = payload["spack"]["packages"]["mesa"]["require"]

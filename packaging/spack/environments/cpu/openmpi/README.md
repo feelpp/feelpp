@@ -61,6 +61,8 @@ Notes:
   validated for this environment
 - the shared manifest also forces `mesa~llvm`; this avoids the current Mesa
   `llvm-config` tool mismatch in the GLX path pulled by `opencascade`
+- the shared manifest includes `pugixml` explicitly so the FMI/XML-related
+  CMake checks resolve the same way they do in the apt-based environments
 - Feel++ CTest runs should propagate `PETSC_DIR` and `SLEPC_DIR` from the
   configured CMake paths so PETSc can locate `libhpddm_petsc` at runtime
 - this environment intentionally uses only the repository-owned `feelpp`
