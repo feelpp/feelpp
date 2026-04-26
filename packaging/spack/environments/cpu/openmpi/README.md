@@ -63,6 +63,8 @@ Notes:
   `llvm-config` tool mismatch in the GLX path pulled by `opencascade`
 - the shared manifest includes `pugixml` explicitly so the FMI/XML-related
   CMake checks resolve the same way they do in the apt-based environments
+- the shared manifest includes `rsync` explicitly because the shared Feel++
+  CMake modules require it during configuration and testcase setup
 - Feel++ CTest runs should propagate `PETSC_DIR` and `SLEPC_DIR` from the
   configured CMake paths so PETSc can locate `libhpddm_petsc` at runtime
 - this environment intentionally uses only the repository-owned `feelpp`
