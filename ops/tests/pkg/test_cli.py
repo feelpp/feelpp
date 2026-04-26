@@ -236,7 +236,7 @@ class CliTests(unittest.TestCase):
         self.assertIn('"environment": "cpu/openmpi"', stdout.getvalue())
         self.assertIn('"supported": true', stdout.getvalue())
 
-    def test_repo_spack_environment_includes_gmsh(self) -> None:
+    def test_repo_spack_environment_includes_required_baseline_entries(self) -> None:
         manifest_path = self.repo_root() / "packaging" / "spack" / "environments" / "cpu" / "openmpi" / "spack.yaml"
         payload = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
         specs = payload["spack"]["specs"]
