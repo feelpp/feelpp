@@ -203,15 +203,15 @@ VectorPetsc<T>::operator() ( const size_type i ) const
                                                    << " last local index:  " << this->lastLocalIndex();
 
     int ierr=0;
-    PetscScalar *values, value=0.;
+    const PetscScalar *values = nullptr;
+    PetscScalar value=0.;
 
-
-    ierr = VecGetArray( M_vec, &values );
+    ierr = VecGetArrayRead( M_vec, &values );
     CHKERRABORT( this->comm(),ierr );
 
     value = values[i - this->firstLocalIndex()];
 
-    ierr = VecRestoreArray( M_vec, &values );
+    ierr = VecRestoreArrayRead( M_vec, &values );
     CHKERRABORT( this->comm(),ierr );
 
     return static_cast<value_type>( value );
@@ -1125,11 +1125,11 @@ VectorPetscMPI<T>::operator() ( const size_type i ) const
     CHKERRABORT( this->comm(),ierr );
     CHECK( hola ) << "is not a GhostGetLocalForm2";
 #endif
-    PetscScalar *values;
-    ierr = VecGetArray(lx,&values);
+    const PetscScalar *values = nullptr;
+    ierr = VecGetArrayRead(lx,&values);
     CHKERRABORT( this->comm(),ierr );
-    PetscScalar& value =  values[i];
-    ierr = VecRestoreArray( lx, &values );
+    PetscScalar value =  values[i];
+    ierr = VecRestoreArrayRead( lx, &values );
     CHKERRABORT( this->comm(),ierr );
     ierr = VecGhostRestoreLocalForm(this->vec(),&lx);
     CHKERRABORT( this->comm(),ierr );
@@ -2321,22 +2321,22 @@ typename VectorPetscMPIRange<T>::value_type
 VectorPetscMPIRange<T>::operator() ( const size_type i ) const
 {
     int ierr=0;
-    PetscScalar *values;
+    const PetscScalar *values = nullptr;
     if ( i < this->map().nLocalDofWithoutGhost() )
     {
-        ierr = VecGetArray( this->vec(), &values );
+        ierr = VecGetArrayRead( this->vec(), &values );
         CHKERRABORT( this->comm(),ierr );
         PetscScalar value =  values[i];
-        ierr = VecRestoreArray( this->vec(), &values );
+        ierr = VecRestoreArrayRead( this->vec(), &values );
         CHKERRABORT( this->comm(),ierr );
         return static_cast<value_type>( value );
     }
     else
     {
-        ierr = VecGetArray( M_vecGhost, &values );
+        ierr = VecGetArrayRead( M_vecGhost, &values );
         CHKERRABORT( this->comm(),ierr );
         PetscScalar value =  values[i-this->map().nLocalDofWithoutGhost()];
-        ierr = VecRestoreArray( M_vecGhost, &values );
+        ierr = VecRestoreArrayRead( M_vecGhost, &values );
         CHKERRABORT( this->comm(),ierr );
         return static_cast<value_type>( value );
     }

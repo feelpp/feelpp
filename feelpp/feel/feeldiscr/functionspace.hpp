@@ -5183,29 +5183,37 @@ public:
     /**
      * @brief Build a read-only element view from a shared vector.
      *
-     * Convenience overload that forwards to
-     * element(Vector<value_type> const&, int).
+     * Non-const shared vectors keep the legacy external-array view semantics;
+     * const shared vectors use the const vector overload below.
      *
      * @param vec Shared pointer to an input vector (PETSc-backed).
      * @param blockIdStart If @p vec was built from a VectorBlock, the
      *        starting block id inside the distribution map (default: 0).
-     * @return element_type Read-only element view backed by @p vec.
-     *
-     * @see element(Vector<value_type> const&, int)
+     * @return element_type Element built from @p vec.
      */
+    element_type
+    element( std::shared_ptr<Vector<value_type>>& vec, int blockIdStart = 0 )
+    {
+        return this->element( *vec, blockIdStart );
+    }
+
     element_type
     element( std::shared_ptr<Vector<value_type>> const& vec, int blockIdStart = 0 )
     {
-        return this->element( *vec, blockIdStart );
+        return this->element( static_cast<Vector<value_type> const&>( *vec ), blockIdStart );
+    }
+
+    element_type
+    element( Vector<value_type>& vec, int blockIdStart = 0 )
+    {
+        return *this->elementPtr( vec, blockIdStart );
     }
 
     /**
      * @brief Build a read-only element whose storage directly views a PETSc Vec.
      *
-     * This returns an element that reads from the local portion of the PETSc vector
-     * without copying. A RAII guard keeps a PETSc array lock (VecGetArrayRead /
-     * VecRestoreArrayRead) active for the lifetime of the returned element, thereby
-     * avoiding dangling pointers and complying with PETSc ≥ 3.22 lock checks.
+     * For PETSc >= 3.22 this overload copies the current local values so it does
+     * not keep a read lock on @p vec while the returned element lives.
      *
      * Layout follows the distribution map: active DOFs first, then ghost DOFs.
      *
@@ -5219,8 +5227,7 @@ public:
      * @pre std::is_same_v<value_type, PetscScalar>.
      * @pre The vector distribution map matches this function space.
      *
-     * @post The returned element holds an internal backing guard keeping the PETSc
-     *       array valid until the element is destroyed.
+     * @post PETSc >= 3.22: no PETSc array lock is kept after this function returns.
      *
      * @warning Do not nest unrelated VecGetArray* calls on the same Vec while this
      *          element exists; PETSc 3.22 enforces lock correctness.
@@ -5297,10 +5304,8 @@ public:
     /**
      * @brief Create a read-only finite element view backed by a PETSc Vec (const overload).
      *
-     * This function builds an @c element_type that directly views the underlying PETSc
-     * vector storage for the local process. The view is read-only and remains valid
-     * for the lifetime of the returned element thanks to an internal RAII guard
-     * that holds a PETSc array lock (@c VecGetArrayRead / @c VecRestoreArrayRead).
+     * For PETSc >= 3.22 this function copies the current local PETSc values into
+     * the returned element so no PETSc read lock is kept after the call returns.
      *
      * Offsets are computed using the vector’s distribution map so that
      *   - @p blockIdStart selects the (sub-)block,
@@ -5321,15 +5326,13 @@ public:
      * @pre @p vec is initialized and its distribution map matches this function space.
      * @pre @p blockIdStart is in range; see parameter description.
      *
-     * @post The returned element holds an internal backing guard that keeps the
-     *       PETSc array lock active; the guard is released when the element is destroyed.
+     * @post PETSc >= 3.22: no PETSc array lock is kept after this function returns.
      *
      * @note This overload never writes into the PETSc Vec. Any attempt to modify the
      *       element data must use the non-const overload (writeable view) instead.
      *
-     * @warning Do not store raw pointers into external data structures that outlive
-     *          the returned element. Pointers are only valid while the element (and
-     *          its backing guard) is alive.
+     * @warning The PETSc >= 3.22 path is a snapshot; later changes to @p vec are
+     *          not reflected in the returned element.
      *
      * @par MPI / Thread Safety
      *   The view is local to the calling process and only covers the range
@@ -5343,7 +5346,7 @@ public:
      *   Aborts via @c CHKERRABORT if PETSc reports an error (e.g., invalid state,
      *   mismatched distribution, lock conflicts).
      *
-     * @since PETSc 3.22-safe implementation (array locks enforced).
+     * @since PETSc 3.22 snapshot implementation (no persistent read lock).
      *
      * @see elementPtr(Vector<value_type>&, int), setBackingGuard(std::shared_ptr<void>)
      */
@@ -5419,9 +5422,7 @@ public:
      * @brief Create a writeable finite element view backed by a PETSc Vec (non-const overload).
      *
      * This function builds an @c element_type that directly views (and can modify)
-     * the underlying PETSc vector storage for the local process. The view remains
-     * valid for the lifetime of the returned element via an internal RAII guard that
-     * holds a PETSc array lock (@c VecGetArray / @c VecRestoreArray).
+     * the underlying PETSc vector storage for the local process.
      *
      * Offsets are computed using the vector’s distribution map so that
      *   - @p blockIdStart selects the (sub-)block,
@@ -5442,16 +5443,14 @@ public:
      * @pre @p vec is initialized and its distribution map matches this function space.
      * @pre @p blockIdStart is in range; see parameter description.
      *
-     * @post The returned element holds an internal backing guard that keeps the
-     *       PETSc array lock active; the guard is released when the element is destroyed.
+     * @post The returned element follows the legacy external-array view behavior.
      *
      * @note The caller is responsible for any required PETSc assembly or synchronization
      *       after modifying the element (e.g., @c VecAssemblyBegin/End if values are
      *       set through PETSc APIs elsewhere).
      *
-     * @warning PETSc 3.22 introduces strict lock checking. Do not nest other calls to
-     *          @c VecGetArray*, @c VecGetArrayRead* or @c VecLockPush/Pop on the same
-     *          Vec while this element exists; such usage will trigger lock errors.
+     * @warning The returned element aliases PETSc-owned storage. Keep its lifetime
+     *          short and avoid PETSc operations that may reallocate the same Vec.
      *
      * @par MPI / Thread Safety
      *   The view is local to the calling process and only covers the range
@@ -5492,12 +5491,11 @@ public:
                 : nActiveDof;
 
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 22)
-        // PETSc >= 3.22: Use guards for safe array access
         auto guard = std::make_shared<Feel::PetscWriteArrayGuard>( vecPetsc->vec() );
-        
+
         value_type* arrayActiveDof = nullptr;
         value_type* arrayGhostDof = nullptr;
-        
+
         if ( nActiveDof > 0 )
         {
             auto const activeIndex = dmVec.dofIdToContainerId( blockIdStart, 0 );

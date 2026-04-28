@@ -327,10 +327,11 @@ extern "C"
 
         int size;
         VecGetSize( r,&size );
-        double *xa;
-        VecGetArray( x, &xa );
+        const PetscScalar *xa;
+        VecGetArrayRead( x, &xa );
         boost::numeric::ublas::vector<double> xx( size );
         std::copy( xa, xa+size, xx.begin() );
+        VecRestoreArrayRead( x, &xa );
 
         //LOG(INFO) << "dense_residual before xx= " << xx << "\n";
 
@@ -345,7 +346,6 @@ extern "C"
             VecSetValues( r,1,&i,&rr[i],INSERT_VALUES );
         }
 
-        VecRestoreArray( x, &xa );
         //LOG(INFO) << "dense_residual rr= " << rr << "\n";
 
         return ierr;
@@ -370,10 +370,11 @@ extern "C"
 
         int size;
         VecGetSize( x,&size );
-        double *xa;
-        VecGetArray( x, &xa );
+        const PetscScalar *xa;
+        VecGetArrayRead( x, &xa );
         boost::numeric::ublas::vector<double> xx( size );
         std::copy( xa, xa+size, xx.begin() );
+        VecRestoreArrayRead( x, &xa );
 
         ///LOG(INFO) << "dense_jacobian xx= " << xx << "\n";
 
@@ -411,8 +412,6 @@ extern "C"
         MatAssemblyEnd( jac,MAT_FINAL_ASSEMBLY );
 #endif
 
-        VecRestoreArray( x, &xa );
-
 #if PETSC_VERSION_LESS_THAN(3,5,0)
         *msflag = MatStructure::SAME_NONZERO_PATTERN;
 #endif
@@ -437,13 +436,17 @@ extern "C"
         int size;
         VecGetSize( x,&size );
 
-        double *xa;
-        VecGetArray( x, &xa );
+        const PetscScalar *xa;
+        VecGetArrayRead( x, &xa );
+        Eigen::Matrix<double, Eigen::Dynamic, 1> x_copy( size );
+        for ( int i = 0; i < size; ++i )
+            x_copy( i ) = static_cast<double>( xa[i] );
+        VecRestoreArrayRead( x, &xa );
 
         double *ra;
         VecGetArray( r, &ra );
 
-        Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic , 1> > map_x ( xa,size );
+        Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic , 1> > map_x ( x_copy.data(),size );
 
         Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic , 1> > map_r ( ra,size );
 
@@ -453,7 +456,6 @@ extern "C"
 
         //LOG(INFO) << "dense_residual after update map_r = \n" << map_r << "\n";
 
-        VecRestoreArray( x, &xa );
         VecRestoreArray( r, &ra );
 
         return ierr;
@@ -475,10 +477,14 @@ extern "C"
 
         int size;
         VecGetSize( x,&size );
-        double *xa;
-        VecGetArray( x, &xa );
+        const PetscScalar *xa;
+        VecGetArrayRead( x, &xa );
+        Eigen::Matrix<double, Eigen::Dynamic, 1> x_copy( size );
+        for ( int i = 0; i < size; ++i )
+            x_copy( i ) = static_cast<double>( xa[i] );
+        VecRestoreArrayRead( x, &xa );
 
-        Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> > map_x ( xa,size );
+        Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> > map_x ( x_copy.data(),size );
 
 
         int size1;
@@ -510,7 +516,6 @@ extern "C"
         //LOG(INFO) << "dense_jacobian map_jac = \n" << map_jac << "\n";
 
 
-        VecRestoreArray( x, &xa );
 #if PETSC_VERSION_LESS_THAN(3,4,0)
         MatRestoreArray(*jac, &ja);
 #elif PETSC_VERSION_LESS_THAN(3,5,0)
