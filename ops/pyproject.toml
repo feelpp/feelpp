@@ -40,6 +40,7 @@ feelpp-pkg = "feelpp.pkg.cli:main"
 fpp-spack = "feelpp.pkg.cli:main"
 fpp-version = "feelpp.ops.version.cli:main"
 feelpp-version = "feelpp.ops.version.cli:main"
+fpp-dev = "feelpp.ops.dev.cli:main"
 
 [tool.setuptools]
 include-package-data = false

@@ -1,0 +1,35 @@
+{
+   "name": "Feel++ Spack OpenMPI",
+   "image": "ghcr.io/feelpp/feelpp-env:spack-openmpi",
+   "workspaceFolder": "/workspaces/feelpp-7",
+   "remoteUser": "feelpp",
+   "updateRemoteUserUID": true,
+   "init": true,
+   "containerEnv": {
+      "FEELPP_CMAKE_PRESET": "container-spack-openmpi",
+      "DISTRIBUTION": "-spack-openmpi"
+   },
+   "remoteEnv": {
+      "CMAKE_BUILD_PARALLEL_LEVEL": "25"
+   },
+   "postCreateCommand": "${containerWorkspaceFolder}/.devcontainer/feelppconfig.sh ${containerWorkspaceFolder}",
+   "customizations": {
+      "vscode": {
+         "settings": {
+            "cmake.configurePreset": "container-spack-openmpi",
+            "cmake.buildPreset": "container-spack-openmpi"
+         },
+         "extensions": [
+            "ms-vscode.cpptools",
+            "ms-vscode.cmake-tools",
+            "josetr.cmake-language-support-vscode",
+            "asciidoctor.asciidoctor-vscode",
+            "ms-python.python",
+            "ms-toolsai.jupyter",
+            "ms-vsliveshare.vsliveshare",
+            "shardulm94.trailing-spaces",
+            "redhat.vscode-yaml"
+         ]
+      }
+   }
+}
