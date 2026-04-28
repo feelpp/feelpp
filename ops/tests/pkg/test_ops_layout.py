@@ -3,12 +3,14 @@ from __future__ import annotations
 import importlib
 
 from feelpp.ops.common import (
+    PREFERRED_DEV_CLI_NAME,
     LEGACY_PACKAGE_CLI_NAMES,
     LEGACY_VERSION_CLI_NAMES,
     PACKAGE_CLI_ALIAS_COMMANDS,
     PREFERRED_PACKAGE_CLI_NAME,
     PREFERRED_VERSION_CLI_NAME,
 )
+from feelpp.ops.dev.cli import build_parser as build_dev_parser
 from feelpp.pkg.cli import build_parser
 from feelpp.ops.version.cli import build_parser as build_version_parser
 
@@ -32,10 +34,15 @@ def test_version_cli_uses_shared_preferred_name() -> None:
     assert LEGACY_VERSION_CLI_NAMES == ("feelpp-version",)
 
 
+def test_dev_cli_uses_shared_preferred_name() -> None:
+    assert build_dev_parser().prog == PREFERRED_DEV_CLI_NAME
+
+
 def test_ops_common_namespace_is_importable() -> None:
     module = importlib.import_module("feelpp.ops.common")
     assert module.PREFERRED_PACKAGE_CLI_NAME == "fpp-pkg"
     assert module.PACKAGE_CLI_ALIAS_COMMANDS == {"fpp-spack": ("spack",)}
+    assert module.PREFERRED_DEV_CLI_NAME == "fpp-dev"
 
 
 def test_pkg_backend_subpackages_are_importable() -> None:

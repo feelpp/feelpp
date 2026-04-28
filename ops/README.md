@@ -7,6 +7,7 @@ Current commands:
 - `fpp-pkg` (preferred)
 - `fpp-spack` (preferred alias for `fpp-pkg spack`)
 - `fpp-version` (preferred)
+- `fpp-dev` (preferred)
 
 Canonical backend entry points:
 
@@ -28,6 +29,7 @@ Current Python namespaces:
 
 - `feelpp.pkg`
 - `feelpp.ops.common`
+- `feelpp.ops.dev`
 
 Scaffolded sibling namespaces:
 
@@ -94,6 +96,20 @@ code such as naming, future logging helpers, and execution/runtime helpers.
 The `fpp-spack` alias is the first backend-specific convenience entry point. In
 Phase 0 it exposes the repository-owned Spack environment scaffolding under
 `packaging/spack/` and the initial `spack env` inspection commands.
+
+`fpp-dev` owns generated developer-environment files. Dev Container profiles are
+derived from the `images` profile in [`.github/plan-ci.json`](../.github/plan-ci.json)
+and written under `.devcontainer/<profile>/devcontainer.json`, with the root
+`.devcontainer/devcontainer.json` kept as the default profile. Use:
+
+```bash
+fpp-dev devcontainer list
+fpp-dev devcontainer generate --all
+fpp-dev devcontainer validate
+```
+
+to inspect, regenerate, and check the committed Dev Container profiles and
+matching `CMakeUserPresets.json` container presets.
 
 It now also exposes generic `image` commands plus the `spack image` alias for
 CI-oriented Docker generation. Use:

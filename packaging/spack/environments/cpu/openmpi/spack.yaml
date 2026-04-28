@@ -44,8 +44,8 @@ spack:
   - "py-slepc4py@3.25.0"
   - "py-sympy"
   - "py-pytest"
-  - "petsc@3.25.0+hpddm+mumps+hwloc+ptscotch+suite-sparse+hdf5+hypre"
-  - "slepc@3.25.0+hpddm"
+  - "petsc+hpddm+mumps+hwloc+ptscotch+suite-sparse+hdf5+hypre"
+  - "slepc+hpddm"
 
   # Keep the generated view outside the repository checkout so activated CMake
   # builds do not export include directories that are prefixed by the source
