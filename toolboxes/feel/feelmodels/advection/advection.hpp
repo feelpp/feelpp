@@ -321,7 +321,8 @@ public :
         }
     auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
-            auto field_t = this->functionSpace()->elementPtr( *sol, rowStartInVector /*+ this->startSubBlockSpaceIndex( "field" )*/ );
+            auto const& solConst = *sol;
+            auto field_t = this->functionSpace()->elementPtr( solConst, rowStartInVector /*+ this->startSubBlockSpaceIndex( "field" )*/ );
             return this->modelFields( field_t, prefix );
         }
     template <typename TemperatureFieldType>

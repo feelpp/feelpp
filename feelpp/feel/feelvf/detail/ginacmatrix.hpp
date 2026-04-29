@@ -39,6 +39,15 @@ namespace vf {
 template<int M=1, int N=1, int Order = 2, typename SymbolsExprType = symbols_expression_empty_t>
 class FEELPP_EXPORT GinacMatrix : public Feel::vf::GiNaCBase
 {
+private:
+    static GiNaC::matrix makeMatrix( unsigned rows, unsigned cols, std::vector<GiNaC::ex> const& values )
+    {
+        GiNaC::lst entries;
+        for ( auto const& value : values )
+            entries.append( value );
+        return GiNaC::matrix( rows, cols, entries );
+    }
+
 public:
 
 
@@ -570,7 +579,7 @@ public:
         auto seWithDiff = Feel::vf::symbolsExpr( this->symbolsExpression(), diff_se );
         using symbols_expression_with_diff_type = std::decay_t<decltype( seWithDiff )>;
         using _expr_type = GinacMatrix<M,N,Order,symbols_expression_with_diff_type>;
-        GiNaC::matrix resmat(M,N,res);
+        GiNaC::matrix resmat = makeMatrix( M, N, res );
 #if 0
         std::string exprDesc = str( resmat );
 #else
@@ -643,7 +652,7 @@ public:
         auto seWithDiff = Feel::vf::symbolsExpr( this->symbolsExpression(), diff_se );
         using symbols_expression_with_diff_type = std::decay_t<decltype( seWithDiff )>;
         using _expr_type = GinacMatrix<M,Dim,Order,symbols_expression_with_diff_type>;
-        GiNaC::matrix resmat(M,Dim,res);
+        GiNaC::matrix resmat = makeMatrix( M, Dim, res );
         std::string exprDesc = (boost::format("grad(%1%)")% this->exprDesc() ).str();
         for ( std::string const& diffVariable : diffVariables )
             exprDesc += "_" + diffVariable;

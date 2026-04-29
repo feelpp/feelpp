@@ -5,7 +5,6 @@ import sys
 import py
 import pytest
 import feelpp.core as fppc
-import gmsh
 
 tb = None
 has_toolboxes_core = False
