@@ -23,6 +23,40 @@
 #
 include (FindPackageHandleStandardArgs)
 
+set(_GMSH_PREFIX_HINTS ${GMSH_DIR} $ENV{GMSH_DIR})
+set(_GMSH_NO_DEFAULT_PATH)
+if(DEFINED ENV{SPACK_ENV} AND NOT "$ENV{SPACK_ENV}" STREQUAL "")
+  list(APPEND _GMSH_PREFIX_HINTS ${CMAKE_PREFIX_PATH})
+  if(DEFINED ENV{CMAKE_PREFIX_PATH} AND NOT "$ENV{CMAKE_PREFIX_PATH}" STREQUAL "")
+    set(_GMSH_ENV_PREFIX_HINTS "$ENV{CMAKE_PREFIX_PATH}")
+    if(NOT WIN32)
+      string(REPLACE ":" ";" _GMSH_ENV_PREFIX_HINTS "$ENV{CMAKE_PREFIX_PATH}")
+    endif()
+    list(APPEND _GMSH_PREFIX_HINTS ${_GMSH_ENV_PREFIX_HINTS})
+  endif()
+  list(REMOVE_DUPLICATES _GMSH_PREFIX_HINTS)
+  set(_GMSH_NO_DEFAULT_PATH NO_DEFAULT_PATH)
+
+  foreach(_gmsh_cache_var GMSH_EXECUTABLE GMSH_INCLUDE_PATH GMSH_LIBRARY GL2PS_LIBRARY GL_LIBRARY)
+    if(DEFINED ${_gmsh_cache_var} AND NOT "${${_gmsh_cache_var}}" STREQUAL "")
+      set(_gmsh_cached_in_spack_prefix FALSE)
+      foreach(_gmsh_prefix IN LISTS _GMSH_PREFIX_HINTS)
+        if(NOT "${_gmsh_prefix}" STREQUAL "")
+          string(FIND "${${_gmsh_cache_var}}" "${_gmsh_prefix}/" _gmsh_prefix_pos)
+          if(_gmsh_prefix_pos EQUAL 0)
+            set(_gmsh_cached_in_spack_prefix TRUE)
+          endif()
+        endif()
+      endforeach()
+      if(NOT _gmsh_cached_in_spack_prefix)
+        message(STATUS "[gmsh] ignoring cached ${_gmsh_cache_var}='${${_gmsh_cache_var}}' outside active Spack prefixes")
+        unset(${_gmsh_cache_var} CACHE)
+        unset(${_gmsh_cache_var})
+      endif()
+    endif()
+  endforeach()
+endif()
+
 function(_gmsh_get_version _out_major _out_minor _out_patch _gmsh_include_h)
   message(STATUS "gmsh_inc: ${_gmsh_include_h}")
   if ( EXISTS ${_gmsh_include_h}/GmshVersion.h ) # version < 4
@@ -42,14 +76,18 @@ function(_gmsh_get_version _out_major _out_minor _out_patch _gmsh_include_h)
       file(STRINGS ${_gmsh_version_h} _gmsh_vinfo REGEX "^#define[\t ]+GMSH_API_VERSION.*")
       string(REGEX REPLACE "^.*GMSH_API_VERSION[ \t]+\"([0-9]+)\\.([0-9]+)\"$" "\\1" ${_out_major} "${_gmsh_vinfo}")
 	  string(REGEX REPLACE "^.*GMSH_API_VERSION[ \t]+\"([0-9]+)\\.([0-9]+)\"$" "\\2" ${_out_minor} "${_gmsh_vinfo}")
+      set( ${_out_patch} 0)
       if (NOT _gmsh_vinfo)
 	    message(FATAL_ERROR "include file ${_gmsh_version_h} does not exist")
 	  endif()
     else()
       string(REGEX REPLACE "^.*GMSH_API_VERSION_MAJOR[ \t]+([0-9]+).*" "\\1" ${_out_major} "${_gmsh_vinfo}")
 	  string(REGEX REPLACE "^.*GMSH_API_VERSION_MINOR[ \t]+([0-9]+).*" "\\1" ${_out_minor} "${_gmsh_vinfo}")
+      string(REGEX REPLACE "^.*GMSH_API_VERSION_PATCH[ \t]+([0-9]+).*" "\\1" ${_out_patch} "${_gmsh_vinfo}")
+      if (NOT ${_out_patch} MATCHES "[0-9]+")
+        set( ${_out_patch} 0)
+      endif()
     endif()
-    set( ${_out_patch} 0)
   endif()
 	if (NOT ${_out_major} MATCHES "[0-9]+")
 		message(FATAL_ERROR "failed to determine GMSH_MAJOR_VERSION, "
@@ -78,10 +116,10 @@ endfunction()
 find_program( GMSH_EXECUTABLE
   NAMES gmsh
   HINTS
-  ${GMSH_DIR}
-  $ENV{GMSH_DIR}
+  ${_GMSH_PREFIX_HINTS}
 #  ${CMAKE_BINARY_DIR}/contrib/gmsh
   PATH_SUFFIXES bin
+  ${_GMSH_NO_DEFAULT_PATH}
   DOC "GMSH mesh generator"
   )
 
@@ -93,19 +131,19 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
     FIND_PATH(GMSH_INCLUDE_PATH
       gmsh.h Gmsh.h Context.h GModel.h
       HINTS
-      ${GMSH_DIR}
-      $ENV{GMSH_DIR}
+      ${_GMSH_PREFIX_HINTS}
       PATH_SUFFIXES
       include include/gmsh
+      ${_GMSH_NO_DEFAULT_PATH}
       DOC "Directory where GMSH header files are stored" )
   else()
     FIND_PATH(GMSH_INCLUDE_PATH
       gmsh.h Gmsh.h 
       HINTS
-      ${GMSH_DIR}
-      $ENV{GMSH_DIR}
+      ${_GMSH_PREFIX_HINTS}
       PATH_SUFFIXES
       include include/gmsh
+      ${_GMSH_NO_DEFAULT_PATH}
       DOC "Directory where GMSH header files are stored" )
   endif()
   message(STATUS "[gmsh] header ${GMSH_INCLUDE_PATH}")
@@ -113,17 +151,18 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
   # first pass :search form GMSH_DIR cmake or env variable
   FIND_LIBRARY(GMSH_LIBRARY NAMES gmsh Gmsh gmsh-2.5.1 gmsh1
     HINTS
-    ${GMSH_DIR}
-    $ENV{GMSH_DIR}
+    ${_GMSH_PREFIX_HINTS}
     #${CMAKE_BINARY_DIR}/contrib/gmsh
     NO_DEFAULT_PATH
     PATH_SUFFIXES
     lib lib/x86_64-linux-gnu/ )
   
   # second pass : search in system
-  FIND_LIBRARY(GMSH_LIBRARY NAMES gmsh Gmsh gmsh-2.5.1 gmsh1
-    PATH_SUFFIXES
-    lib lib/x86_64-linux-gnu/ )
+  if(NOT _GMSH_NO_DEFAULT_PATH)
+    FIND_LIBRARY(GMSH_LIBRARY NAMES gmsh Gmsh gmsh-2.5.1 gmsh1
+      PATH_SUFFIXES
+      lib lib/x86_64-linux-gnu/ )
+  endif()
 
   message(STATUS "[gmsh] library ${GMSH_LIBRARY}")
   
@@ -165,21 +204,24 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
   OPTION( FEELPP_ENABLE_GL2PS "Enable the GL2PS library" ON )
   IF ( FEELPP_ENABLE_GL2PS )
     FIND_LIBRARY(GL2PS_LIBRARY NAMES gl2ps
-      PATH
-      $ENV{GMSH_DIR}
+      HINTS
+      ${_GMSH_PREFIX_HINTS}
+      PATHS
       ${CMAKE_BINARY_DIR}/contrib/gmsh/lib
-      ${CMAKE_SYSTEM_PREFIX_PATH}
       PATH_SUFFIXES
-      lib  )
+      lib
+      ${_GMSH_NO_DEFAULT_PATH} )
   ENDIF( FEELPP_ENABLE_GL2PS )
 
   IF ( FEELPP_ENABLE_OPENGL )
     FIND_LIBRARY(GL_LIBRARY NAMES GL
-      PATH
-      $ENV{GMSH_DIR}
+      HINTS
+      ${_GMSH_PREFIX_HINTS}
+      PATHS
       ${CMAKE_BINARY_DIR}/contrib/gmsh/
       PATH_SUFFIXES
-      lib  )
+      lib
+      ${_GMSH_NO_DEFAULT_PATH} )
   ENDIF()
 
   # should detect instead if MED is supported by Gmsh
