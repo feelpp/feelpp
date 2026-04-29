@@ -33,7 +33,7 @@
 #define __POD_H 1
 
 
-#include <boost/multi_array.hpp>
+#include <feel/feelcore/boostmultiarray.hpp>
 #include <boost/tuple/tuple.hpp>
 #include "boost/tuple/tuple_io.hpp"
 #include <boost/format.hpp>
@@ -635,5 +635,4 @@ int POD<TruthModelType>::pod( mode_set_type& ModeSet, bool is_primal, const wn_t
 }//namespace Feel
 
 #endif /* __POD_H */
-
 

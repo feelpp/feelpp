@@ -28,7 +28,7 @@
 
 
 #if defined( FEELPP_HAS_FFTW )
-#include <boost/multi_array.hpp>
+#include <feel/feelcore/boostmultiarray.hpp>
 #include <feel/feeldiscr/multiscaleimage.hpp>
 
 #include <feel/feelvf/expr.hpp>
