@@ -39,6 +39,7 @@ feelpp_add_testcase( cases PREFIX qs CATEGORY quickstart )
 feelpp_add_application( laplacian_2d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_LAPLACIAN_2D INSTALL TESTS)
 feelpp_add_application( laplacian_2dh SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 FEELPP_HYPERCUBE=1 EXEC QS_LAPLACIAN_2DH INSTALL)
 feelpp_add_application( laplacian_3d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_LAPLACIAN_3D INSTALL TESTS)
+feelpp_add_application( laplacian_nonconforming_2d SRCS qs_laplacian_nonconforming.cpp INCLUDE_IN_ALL EXEC QS_LAPLACIAN_NONCONFORMING_2D INSTALL TESTS NO_MPI_TEST)
 feelpp_add_application( laplacian_ibc_2d SRCS qs_laplacian_ibc.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_LAPLACIAN_IBC_2D INSTALL TESTS)
 feelpp_add_application( laplacian_ibc_3d SRCS qs_laplacian_ibc.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_LAPLACIAN_IBC_3D INSTALL TESTS)
 
@@ -47,7 +48,7 @@ feelpp_add_application( laplacian_ibc_3d SRCS qs_laplacian_ibc.cpp INCLUDE_IN_AL
 # CG laplacian using model properties
 feelpp_add_application( laplacian_model_2d SRCS qs_laplacian_model.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_MODEL_LAPLACIAN_2D )
 
-add_dependencies(qs_laplacian ${QS_LAPLACIAN_2D} ${QS_LAPLACIAN_2DH} ${QS_LAPLACIAN_3D} ${QS_LAPLACIAN_IBC_2D} ${QS_LAPLACIAN_IBC_3D} ${QS_MODEL_LAPLACIAN_2D} )
+add_dependencies(qs_laplacian ${QS_LAPLACIAN_2D} ${QS_LAPLACIAN_2DH} ${QS_LAPLACIAN_3D} ${QS_LAPLACIAN_NONCONFORMING_2D} ${QS_LAPLACIAN_IBC_2D} ${QS_LAPLACIAN_IBC_3D} ${QS_MODEL_LAPLACIAN_2D} )
 
 #
 # HDG Laplacian
