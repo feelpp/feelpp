@@ -59,6 +59,9 @@ Notes:
 - the shared manifest currently also pins `gmsh@4.13.1`; the bundled Spack
   `v1.0.0` builtin recipe otherwise selects `4.15.x`, which is not yet
   validated for this environment
+- the shared manifest includes `py-gmsh@4.13.1` so Python tests can import the
+  official `gmsh` module, matching the role of `python3-gmsh` in the apt-based
+  environments
 - the shared manifest also forces `mesa~llvm`; this avoids the current Mesa
   `llvm-config` tool mismatch in the GLX path pulled by `opencascade`
 - the shared manifest includes `pugixml` explicitly so the FMI/XML-related

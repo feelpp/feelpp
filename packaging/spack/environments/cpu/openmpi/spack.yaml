@@ -38,6 +38,7 @@ spack:
   # Pin 4.13.1 for now: the bundled Spack v1.0.0 builtin package selects
   # newer 4.15.x, which is not yet validated in this shared environment.
   - "gmsh@4.13.1 +opencascade+mmg~fltk"
+  - "py-gmsh@4.13.1"
   - "py-pybind11"
   - "py-mpi4py"
   - "py-petsc4py@3.25.0"
