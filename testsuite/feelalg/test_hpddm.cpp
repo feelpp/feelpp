@@ -30,11 +30,11 @@ inline AboutData makeAbout()
     AboutData about( "test_hpddm",
                      "test_hpddm",
                      "0.1",
-                     "test hpddm preconditioner plumbing",
+                     "test hpddm preconditioner",
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2026 Feel++ Consortium" );
 
-    about.addAuthor( "OpenAI", "developer", "support@openai.com", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "support@feelpp.org", "" );
     return about;
 }
 
