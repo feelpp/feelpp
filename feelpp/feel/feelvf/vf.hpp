@@ -36,64 +36,12 @@
  */
 #define AUTO( a, b ) auto a = (b);
 
-#include <feel/feelcore/feel.hpp>
-
-//#include <feel/feelvf/detail/gmc.hpp>
-#include <feel/feelvf/expr.hpp>
-#include <feel/feelvf/cast.hpp>
-#include <feel/feelvf/cst.hpp>
-#include <feel/feelvf/rand.hpp>
-#include <feel/feelvf/trans.hpp>
-#include <feel/feelvf/unary.hpp>
-#include <feel/feelvf/one.hpp>
-#include <feel/feelvf/pow.hpp>
-#include <feel/feelvf/minmax.hpp>
-
-
-#include <feel/feelvf/operations.hpp>
-
-#include <feel/feelvf/operators.hpp>
-//#include <feel/feelvf/operators2.hpp>
-//#include <feel/feelvf/operators3.hpp>
-#include <feel/feelvf/geometricdata.hpp>
-#include <feel/feelvf/stdmathfunctors.hpp>
-#include <feel/feelvf/trace.hpp>
-#include <feel/feelvf/det.hpp>
-#include <feel/feelvf/symm.hpp>
-#include <feel/feelvf/inner.hpp>
-#include <feel/feelvf/cross.hpp>
-#include <feel/feelvf/norm.hpp>
-#include <feel/feelvf/norm2.hpp>
-#include <feel/feelvf/ones.hpp>
-#include <feel/feelvf/inv.hpp>
-#include <feel/feelvf/twovalued.hpp>
-//#include <feel/feelvf/eye.hpp>
-#include <feel/feelvf/val.hpp>
-#include <feel/feelvf/function.hpp>
-#include <feel/feelvf/function2.hpp>
-#include <feel/feelvf/matvec.hpp>
-//#include <feel/feelvf/integral.hpp>
-
-#include <feel/feelvf/form.hpp>
-#include <feel/feelvf/integrate.hpp>
-#include <feel/feelvf/mean.hpp>
-#include <feel/feelvf/measure.hpp>
-#include <feel/feelvf/norml2.hpp>
-#include <feel/feelvf/norml2squared.hpp>
-#include <feel/feelvf/normh1.hpp>
-#include <feel/feelvf/normsemih1.hpp>
-#include <feel/feelvf/on.hpp>
-//#include <feel/feelvf/integratordirac.hpp>
-#include <feel/feelvf/projectors.hpp>
-#include <feel/feelvf/evaluator.hpp>
-#include <feel/feelvf/evaluatorcontext.hpp>
+#include <feel/feelvf/vf_dsl.hpp>
+#include <feel/feelvf/vf_eval.hpp>
 
 #if defined( FEELPP_HAS_FFTW)
 #include <feel/feelvf/msi.hpp>
 #endif
-
-
-#include <feel/feelvf/ginac.hpp>
 
 #include <boost/preprocessor/comparison/equal.hpp>
 

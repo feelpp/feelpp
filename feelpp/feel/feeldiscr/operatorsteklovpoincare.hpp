@@ -32,7 +32,9 @@
 #include <feel/feeldiscr/operatorlinear.hpp>
 #include <feel/feeldiscr/operatorlift.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelmesh/filters.hpp>
+#include <feel/feelvf/fieldops.hpp>
+#include <feel/feelvf/integrate.hpp>
 //#include<iostream>
 
 

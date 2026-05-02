@@ -26,7 +26,7 @@
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feells/distancetorange.hpp>
 #include <feel/feelmesh/filters.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/fieldops.hpp>
 #include <regex>
 #include <type_traits>
 

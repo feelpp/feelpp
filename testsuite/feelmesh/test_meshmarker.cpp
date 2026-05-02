@@ -3,7 +3,7 @@
 
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/geotool.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/vf_eval.hpp>
 
 
 FEELPP_ENVIRONMENT_NO_OPTIONS

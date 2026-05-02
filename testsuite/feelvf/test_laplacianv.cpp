@@ -37,6 +37,7 @@
 #include <feel/feelvf/operators.hpp>
 #include <feel/feelvf/operations.hpp>
 #include <feel/feelvf/ginac.hpp>
+#include <feel/feelvf/norml2.hpp>
 #include <feel/feelvf/norm2.hpp>
 #include <feel/feelvf/on.hpp>
 #include <feel/feelvf/matvec.hpp>

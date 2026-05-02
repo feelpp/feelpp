@@ -27,11 +27,16 @@
 #define FEELPP_Visitor_H 1
 
 #include <boost/mpl/assert.hpp>
+#include <boost/mpl/greater.hpp>
+#include <boost/mpl/identity.hpp>
+#include <boost/mpl/if.hpp>
 #include <boost/mpl/list.hpp>
+#include <boost/mpl/long.hpp>
 #include <boost/mpl/front.hpp>
 #include <boost/mpl/pop_front.hpp>
+#include <boost/mpl/size.hpp>
 
-#include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/feelmacros.hpp>
 
 namespace Feel
 {

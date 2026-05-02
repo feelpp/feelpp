@@ -30,7 +30,7 @@
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelmodels/modelproperties.hpp>
 #include <feel/feelpython/pyexpr.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/vf_eval.hpp>
 #include <feel/feelvf/print.hpp>
 #include <feel/feelpde/cg_laplacian.hpp>
 

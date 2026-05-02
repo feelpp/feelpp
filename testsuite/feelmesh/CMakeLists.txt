@@ -13,6 +13,7 @@ foreach(THETEST entity mesh regiontree mesh_codim1 kdtree P1mesh updatemarker pa
 
 endforeach()
 
+feelpp_add_test( meshadaptation_header SRCS test_meshadaptation_header.cpp NO_MPI_TEST )
 feelpp_add_test( periodic_mesh SRCS test_periodic_mesh.cpp NO_MPI_TEST )
 
 feelpp_add_test( meshmarker CFG test_meshmarker.cfg GEO test_meshmarker_square_4mat.geo )

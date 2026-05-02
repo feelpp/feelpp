@@ -55,7 +55,7 @@
 
 #include <feel/feelalg/backend.hpp>
 
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/vf_eval.hpp>
 #include <feel/feeldiscr/oseendata.hpp>
 
 namespace Feel

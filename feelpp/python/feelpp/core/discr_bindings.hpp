@@ -35,6 +35,7 @@
 #include <feel/feelvf/mean.hpp>
 #include <feel/feelvf/norml2.hpp>
 #include <feel/feelvf/normh1.hpp>
+#include <feel/feelvf/evaluator.hpp>
 #include <feel/feelvf/ginac.hpp>
 
 namespace py = pybind11;
@@ -66,7 +67,7 @@ template<typename RangeT, typename FunctionT>
 std::tuple<double,double,eigen_v2_t>
 f_minmax( RangeT const& elts, FunctionT const& f )
 {
-    auto e = minmax( _range=elts, _pset=_Q<3>(), _expr=idv(f) );
+    auto e = Feel::vf::minmax( _range=elts, _pset=_Q<3>(), _expr=idv(f) );
     return std::tuple{e.min(),e.max(),e.coords()};
 }
 

@@ -8,6 +8,7 @@
 #include <feel/feelmodels/modelexpression.hpp>
 #include <feel/feelmodels/modelcore/modelbase.hpp>
 #include <feel/feeldiscr/enums.hpp>
+#include <feel/feelvf/vf_eval.hpp>
 
 #include <feel/feelmodels/modelcore/markermanagement.hpp>
 
@@ -200,17 +201,17 @@ public:
             {
                 auto theExpr = this->expr(se);
                 bilinearForm +=
-                    on( _range=Feel::FeelModels::detail::rangeOfMarkedEntity<ET>(mesh,listMarkedEntities),
-                        _element=u,_rhs=F,_expr=theExpr,
-                        _vm=tbParent->clovm(),_prefix=tbParent->prefix() );
+                    Feel::vf::on( _range=Feel::FeelModels::detail::rangeOfMarkedEntity<ET>(mesh,listMarkedEntities),
+                                  _element=u,_rhs=F,_expr=theExpr,
+                                  _vm=tbParent->clovm(),_prefix=tbParent->prefix() );
             }
             else if constexpr ( Dim1 > 1 && Dim2 == 1 )
             {
                 auto theExpr = this->exprComponent(se);
                 bilinearForm +=
-                    on( _range=Feel::FeelModels::detail::rangeOfMarkedEntity<ET>(mesh, listMarkedEntities),
-                        _element=u.comp( comp ),_rhs=F,_expr=theExpr,
-                        _vm=tbParent->clovm(),_prefix=tbParent->prefix() );
+                    Feel::vf::on( _range=Feel::FeelModels::detail::rangeOfMarkedEntity<ET>(mesh, listMarkedEntities),
+                                  _element=u.comp( comp ),_rhs=F,_expr=theExpr,
+                                  _vm=tbParent->clovm(),_prefix=tbParent->prefix() );
             }
         }
 

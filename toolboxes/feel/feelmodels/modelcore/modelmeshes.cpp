@@ -8,6 +8,7 @@
 
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelvf/analysis.hpp>
 #include <feel/feells/distancetorange.hpp>
 
 
@@ -742,7 +743,7 @@ ModelMesh<IndexType>::updateDistanceToRange()
                 // mean normalization :  u_normalized = (u-average(u))/(max(u)-min(u))
                 if ( normalizationType == "mean" )
                 {
-                    double average = mean(_range=elements(support(u->functionSpace())),_expr=idv(u))(0,0);
+                    double average = Feel::mean(_range=elements(support(u->functionSpace())),_expr=idv(u))(0,0);
                     auto uNormalizedMean = Vh->elementPtr();
                     *uNormalizedMean = *u;
                     //*uNormalizedMean -= average;

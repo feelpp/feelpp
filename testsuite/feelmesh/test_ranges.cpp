@@ -29,7 +29,7 @@
 #include <feel/feelfilters/unitsquare.hpp>
 #include <feel/feelcore/enumerate.hpp>
 #include <feel/feelfilters/detail/meshcontiguousnumberingmapping.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/vf_eval.hpp>
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
 
@@ -126,4 +126,3 @@ BOOST_AUTO_TEST_CASE( test_range3 )
 }
 #endif
 BOOST_AUTO_TEST_SUITE_END()
-

@@ -65,8 +65,6 @@
 #include <feel/feelpoly/hdivpolynomialset.hpp>
 #include <feel/feelpoly/meta.hpp>
 
-#include <feel/feelvf/vf.hpp>
-
 namespace Feel
 {
 namespace detail

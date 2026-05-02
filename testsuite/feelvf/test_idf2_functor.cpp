@@ -33,6 +33,7 @@
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/function.hpp>
+#include <feel/feelvf/function2.hpp>
 
 
 
@@ -108,6 +109,6 @@ int main(int argc, char**argv )
     auto Vh= Pchv<3>(mesh);
     auto b = Vh->element();
     b_ana bfield;
-    b.on( _range=elements(mesh), _expr=idf2(bfield));
+    b.on( _range=elements(mesh), _expr=Feel::vf::idf2(bfield));
 
 }

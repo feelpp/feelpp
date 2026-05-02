@@ -7,6 +7,8 @@
 #include <feel/feelfilters/unitsphere.hpp>
 #include <feel/feeldiscr/ned1h.hpp>
 #include <feel/feelalg/solvereigen.hpp>
+#include <feel/feelvf/vf_dsl.hpp>
+#include <feel/feelvf/vf_eval.hpp>
 
 using namespace Feel;
 using namespace Feel::vf;

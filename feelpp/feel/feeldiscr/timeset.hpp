@@ -65,7 +65,8 @@
 #include <feel/feeldiscr/interpolate.hpp>
 
 #include <feel/feelmesh/filters.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/fieldops.hpp>
+#include <feel/feelvf/projectors.hpp>
 #include <feel/feeldiscr/elementdiv.hpp>
 
 #define TS_INITIAL_INDEX 1

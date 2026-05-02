@@ -44,7 +44,11 @@
 #include <boost/regex.hpp>
 #include <boost/lexical_cast.hpp>
 #include <random>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/feelmesh/filters.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelvf/fieldops.hpp>
+#include <feel/feelvf/projectors.hpp>
 
 //#define DISTANCE_FROM_UNORDERED_POINTS 1
 /*
@@ -276,7 +280,7 @@ public :
                 reduceDistanceFunction( shape );
 
 
-            auto mark2 = vf::project(M_spaceP0, marked2elements(M_mesh, 1), cst(1) );
+            auto mark2 = vf::project(M_spaceP0, marked2elements(M_mesh, 1), vf::cst(1) );
             auto exp = exporter(_mesh=M_mesh, _name="disttocurvehpp");
             exp->step(0)->add("shape_unsigned", shape_unsigned);
             exp->step(0)->add("shape_signed", *shape);
@@ -679,7 +683,7 @@ private :
     element_ptrtype makeDistanceFunctionSequential( bool shapeHasRevolution, bool signDistance = true )
         {
             auto shape = M_spaceP1->elementPtr();
-            shape->on(_range=elements(M_mesh), _expr=cst(bigdouble) );
+            shape->on(_range=elements(M_mesh), _expr=vf::cst(bigdouble) );
 
             // squared distance between a point where only its "t" is given, and a node nd2
             auto distToPt = [this] (size_type t, node_type nd2) -> double
@@ -804,7 +808,7 @@ private :
         {
             // given a distance function made by makeDistanceFunctionSequential which has different values on nodes being at the interface between several subdomain, make a nice, homogeneous distance function (requires several communications though all the proc !)
 
-            auto eltHavingPointP1 = vf::project(_space=M_spaceP1, _range=marked2elements(M_mesh, 1), _expr=cst(1) );
+            auto eltHavingPointP1 = vf::project(_space=M_spaceP1, _range=marked2elements(M_mesh, 1), _expr=vf::cst(1) );
 
 
             // search for all the dof being marked on at least one proc and being ghost on at least one proc (not necessarily the same proc)
@@ -1046,7 +1050,7 @@ private :
                 }
 
             eltHavingPoints = vf::project(_space=M_spaceP0, _range=elements(M_mesh),
-                                          _expr=vf::chi( idv(eltHavingPoints) + idv(widenBand) ) );
+                                          _expr=vf::chi( vf::idv(eltHavingPoints) + vf::idv(widenBand) ) );
 
             M_mesh->updateMarker2( eltHavingPoints );
 
@@ -1067,7 +1071,7 @@ private :
             CHECK( dim == 2 )<<"works only in 2d for now\n";
 
             auto shape = M_spaceP1->elementPtr();
-            shape->on(_range=elements(M_mesh), _expr=cst(bigdouble) );
+            shape->on(_range=elements(M_mesh), _expr=vf::cst(bigdouble) );
 
             auto it_elt = M_mesh->elementsWithMarker2(1, M_mesh->worldComm().localRank()).first;
             auto en_elt = M_mesh->elementsWithMarker2(1, M_mesh->worldComm().localRank()).second;

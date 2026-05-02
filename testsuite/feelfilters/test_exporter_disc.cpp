@@ -140,7 +140,7 @@ BOOST_AUTO_TEST_CASE( test_1 )
         {
             disp->scale(-1);
             meshMove( mesh, *disp );
-            disp->on(_range=elements(mesh),_expr=(t-timeByTimeSet[0][0])*P() );
+            disp->on(_range=elements(mesh),_expr=(t-timeByTimeSet[0][0])*vf::P() );
             meshMove( mesh, *disp );
             //std::cout << "k=" << k << " tsIndex="<<tsIndex << " t=" << t << std::endl;
             auto currentStep = e->step(t,tsIndex);
@@ -252,15 +252,15 @@ BOOST_DATA_TEST_CASE( test_2, bdata::make( std::array<int,2>{ { 2,3 } } ), dim )
     //e->add( "wTensor2", wTensor2 );
     e->add( "wTensor2Symm", wTensor2Symm );
 
-    e->add( "expr1Scalar", inner(P()), markedelements(mesh,"Omega1") );
-    e->add( "expr1Scalar", inner(P()), markedelements(mesh,"Omega2") );
-    e->add( "expr1Scalar", inner(P()), markedelements(mesh,"Omega3") );
+    e->add( "expr1Scalar", vf::inner(vf::P()), markedelements(mesh,"Omega1") );
+    e->add( "expr1Scalar", vf::inner(vf::P()), markedelements(mesh,"Omega2") );
+    e->add( "expr1Scalar", vf::inner(vf::P()), markedelements(mesh,"Omega3") );
 
     e->add( "expr2Scalar", cst(1.), markedelements(mesh,"Omega1"), "element" );
     e->add( "expr2Scalar", cst(2.), markedelements(mesh,"Omega2"), "element" );
     e->add( "expr2Scalar", cst(3.), markedelements(mesh,"Omega3"), "element" );
 
-    e->add( "expr3Vectorial", P(), std::set<std::string>{"nodal","element"} );
+    e->add( "expr3Vectorial", vf::P(), std::set<std::string>{"nodal","element"} );
     e->save();
 
 

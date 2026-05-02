@@ -66,8 +66,6 @@
 #include <feel/feelpoly/pointsetquadrature.hpp>
 #include <feel/feelpoly/fe.hpp>
 
-#include <feel/feelvf/vf.hpp>
-
 #include <feel/feelpoly/hcurlpolynomialset.hpp>
 
 namespace Feel

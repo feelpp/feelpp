@@ -31,7 +31,15 @@
 #ifndef FEELPP_FILTERS_EXPORTER_H
 #define FEELPP_FILTERS_EXPORTER_H
 
-#include <feel/feelcore/feel.hpp>
+#include <filesystem>
+
+#include <boost/format.hpp>
+
+#include <feel/options.hpp>
+#include <feel/feelcore/commobject.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/feelmacros.hpp>
+#include <feel/feelcore/feeltypes.hpp>
 #include <feel/feelcore/visitor.hpp>
 #include <feel/feelcore/factory.hpp>
 #include <feel/feelcore/singleton.hpp>
@@ -287,8 +295,8 @@ public:
      */
     void setPath( std::string path )
     {
-        if ( !fs::exists(path) && this->worldComm().isMasterRank() )
-            fs::create_directories( path );
+        if ( !std::filesystem::exists(path) && this->worldComm().isMasterRank() )
+            std::filesystem::create_directories( path );
         // be sure that all process can find the path after
         this->worldComm().barrier();
 
@@ -535,7 +543,7 @@ public:
                 step->cleanup();
             }
             // save metadata file (sould be done even the if step is not write on the disk
-            std::string filename = (fs::path(this->path()) / (prefix()+".timeset")).string();
+            std::string filename = (std::filesystem::path(this->path()) / (prefix()+".timeset")).string();
             __ts->save( filename, this->worldComm() );
         }
     }
@@ -556,7 +564,7 @@ public:
         for ( ; __ts_it != __ts_en ; ++__ts_it )
         {
             auto filename = this->path()+"/"+prefix()+".timeset";
-            if ( !fs::exists( filename ) )
+            if ( !std::filesystem::exists( filename ) )
                 return;
             ( *__ts_it )->load( filename,__time );
         }
@@ -600,7 +608,7 @@ auto exporter( Ts && ... v )
 
     std::string const& name = args.get_else_invocable(_name,[](){ return Environment::about().appName(); } );
     std::string const& geo = args.get_else_invocable(_geo, [](){ return soption(_name="exporter.geometry"); } );
-    auto && path = args.get_else_invocable(_path, [&name](){ return std::string((fs::path(Environment::exportsRepository())/fs::path(soption("exporter.format"))/name).string()); } );
+    auto && path = args.get_else_invocable(_path, [&name](){ return std::string((std::filesystem::path(Environment::exportsRepository())/std::filesystem::path(soption("exporter.format"))/name).string()); } );
 
     using exporter_type = Exporter<mesh_type,mesh_type::nOrder>;
 

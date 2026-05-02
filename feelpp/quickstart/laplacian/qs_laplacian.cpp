@@ -31,11 +31,15 @@
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelcore/table.hpp>
 #include <feel/feelpython/pyexpr.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/vf_dsl.hpp>
 #include <feel/feelvf/print.hpp>
 #include <feel/feelpde/cg_laplacian.hpp>
 
 using namespace Feel;
+
+#if !defined(FEELPP_DYNAMIC_ORDER)
+#define FEELPP_DYNAMIC_ORDER 0
+#endif
 
 template<int Dim, int Order>
 int cg_laplacian_app()
@@ -53,13 +57,15 @@ int cg_laplacian_app()
     toc( "loadMesh" );
 
     tic();
-    Pch_ptrtype<mesh_t,Order> Vh;
+    static constexpr int SpaceOrder = FEELPP_DYNAMIC_ORDER ? Dynamic : Order;
+    RuntimeOrder runtimeOrder{ static_cast<uint16_type>( Order ) };
+    Pch_ptrtype<mesh_t,SpaceOrder> Vh;
     if ( Environment::vm().count("marker.name") )
-        Vh = Pch<Order>( mesh, markedelements(mesh, soption("marker.name") ) );
+        Vh = Pch<SpaceOrder>( mesh, markedelements(mesh, soption("marker.name") ), runtimeOrder );
     else if ( Environment::vm().count("marker.levelset") )
-        Vh = Pch<Order>( mesh, elements(mesh, expr(soption("marker.levelset")) ) );
+        Vh = Pch<SpaceOrder>( mesh, elements(mesh, vf::expr(soption("marker.levelset")) ), runtimeOrder );
     else
-        Vh = Pch<Order>( mesh );
+        Vh = Pch<SpaceOrder>( mesh, runtimeOrder );
 
     std::map<std::string,std::string> inputs{{"dim",std::to_string(dimension(mesh))},
                                             {"k",soption("k")},{"r_1",soption("r_1")},{"u",""},{"un",soption("un")},{"f",soption("f")},{"g",soption("g")},{"r_2",soption("r_2")}};
@@ -88,14 +94,14 @@ int cg_laplacian_app()
 
     std::string p_exact_str = locals.at("p");
     std::string u_exact_str = locals.at("u");
-    auto p_exact = expr( p_exact_str );
-    auto u_exact = expr<FEELPP_DIM,1>( u_exact_str );
-    auto k = expr( locals.at("k") );
-    auto un = expr( locals.at("un") );
-    auto f = expr( locals.at("f") );
-    auto g = expr( locals.at("g") );
-    auto r_1 = expr( locals.at("r_1") );
-    auto r_2 = expr( locals.at("r_2") );
+    auto p_exact = vf::expr( p_exact_str );
+    auto u_exact = vf::expr<FEELPP_DIM,1>( u_exact_str );
+    auto k = vf::expr( locals.at("k") );
+    auto un = vf::expr( locals.at("un") );
+    auto f = vf::expr( locals.at("f") );
+    auto g = vf::expr( locals.at("g") );
+    auto r_1 = vf::expr( locals.at("r_1") );
+    auto r_2 = vf::expr( locals.at("r_2") );
     Table summary;
     summary.add_row({"Solving -div(( k grad p ) = f with the following boundary conditions"});
     summary(0,0).format().setFontAlign(Font::Align::center);
@@ -152,7 +158,7 @@ int cg_laplacian_app()
     if ( opt_u )
     {
         e->add( "p", *opt_u );
-        e->add( "u", -k*gradv(*opt_u), "element" );
+        e->add( "u", -k*vf::gradv(*opt_u), "element" );
     }
     e->add( "k", k );
     e->add( "f", f );

@@ -36,8 +36,8 @@
 
 #include <Eigen/Eigen>
 
-#include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/parameter.hpp>
+#include <feel/feelcore/feel.hpp>
 
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelpoly/quadmapped.hpp>
@@ -52,6 +52,7 @@
 #include <feel/feelvf/bilinearform.hpp>
 #include <feel/feelvf/linearform.hpp>
 #include <feel/feelvf/matvec.hpp>
+#include <feel/feelvf/detail/localform_lower_impl.hpp>
 #include <feel/feeldiscr/quadptlocalization.hpp>
 #if defined( FEELPP_HAS_GOOGLE_PROFILER_H )
 #include <google/profiler.h>
@@ -762,6 +763,15 @@ public:
 
 private:
 
+    template<typename Elem1, typename Elem2, typename FormType>
+    bool tryAssembleLoweredScalarLocalform( std::shared_ptr<Elem1> const& __u,
+                                            std::shared_ptr<Elem2> const& __v,
+                                            FormType& __form ) const;
+
+    template<typename Elem1, typename FormType>
+    bool tryAssembleLoweredScalarLocalform( std::shared_ptr<Elem1> const& __v,
+                                            FormType& __form ) const;
+
     template<typename FE1,typename FE2,typename ElemContType,typename FaceRangeType>
     bool useSameMesh( vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
                       FaceRangeType const& faceRange ) const;
@@ -887,6 +897,8 @@ private:
     //     mutable boost::prof::basic_profiler<boost::prof::basic_profile_manager<std::string, double, boost::high_resolution_timer, boost::prof::empty_logging_policy, boost::prof::default_stats_policy<std::string, double> > > M_profile_global_assembly;
 };
 
+#include <feel/feelvf/detail/integrator_localform_dispatch.hpp>
+
 template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
     requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename Elem1, typename Elem2, typename FormType>
@@ -905,6 +917,9 @@ Integrator<Elements, Im, Expr, Im2>::assemble( std::shared_ptr<Elem1> const& __u
     typedef typename boost::is_same<typename eval::gmc_type::element_type,typename Elem1::mesh_type::element_type>::type same1_mesh_type;
     typedef typename boost::is_same<typename eval::gmc_type::element_type,typename Elem2::mesh_type::element_type>::type same2_mesh_type;
     typedef typename boost::mpl::and_< same1_mesh_type,same2_mesh_type>::type same_mesh_type;
+
+    if ( tryAssembleLoweredScalarLocalform( __u, __v, __form ) )
+        return;
 
     // specifiy matrix (form2) is in assembly state
     __form.matrixPtr()->setIsClosed( false );
@@ -956,6 +971,9 @@ Integrator<Elements, Im, Expr, Im2>::assemble( std::shared_ptr<Elem1> const& __v
 #endif
 
     typedef typename boost::is_same<typename eval::gmc_type::element_type,typename Elem1::mesh_type::element_type>::type same_mesh_type;
+
+    if ( tryAssembleLoweredScalarLocalform( __v, __form ) )
+        return;
 
     // specifiy vector (form1) is in assembly state
     __form.vectorPtr()->setIsClosed( false );

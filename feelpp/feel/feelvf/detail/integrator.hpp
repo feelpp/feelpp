@@ -32,8 +32,8 @@
 #ifndef FEELPP_DETAIL_INTEGRATOR_HPP
 #define FEELPP_DETAIL_INTEGRATOR_HPP 1
 
-#include <feel/feelmesh/elements.hpp>
-#include <feel/feelvf/integrator.hpp>
+#include <feel/feelcore/feel.hpp>
+#include <feel/feelvf/expr.hpp>
 
 #if defined(FEELPP_HAS_HARTS)
 #include "RunTimeSystem/Model/RunTimeSysEnv.h"

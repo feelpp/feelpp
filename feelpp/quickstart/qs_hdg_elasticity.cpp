@@ -30,7 +30,7 @@
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
 #include <feel/feeldiscr/pdhm.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/vf_eval.hpp>
 #include <feel/feelpoly/raviartthomas.hpp>
 #include <feel/feelalg/vectorblock.hpp>
 #include <feel/feeldiscr/product.hpp>
@@ -94,7 +94,7 @@ makeAbout()
 }
 
 
-template<int Dim, int OrderP, int OrderG=1>
+template<int Dim, int OrderG=1>
 int hdg_elasticity( std::map<std::string,std::string>& locals )
 {
 
@@ -105,6 +105,9 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
 
     auto tau_constant =  cst(doption("hdg.tau.constant"));
     int tau_order =  ioption("hdg.tau.order");
+    int order = ioption( "order" );
+    CHECK( order >= 1 ) << "HDG approximation order must be >= 1";
+    auto runtimeOrder = RuntimeOrder::checked( order );
 #if 0
     auto displ_exact = expr<Dim,1>( locals.at("displ") );
     auto grad_displ_exact = expr<Dim,1>( locals.at("grad_displ") );
@@ -131,16 +134,16 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
     // We treat Vh, Wh, and Mh separately
     tic();
 
-    auto Vh = Pdhms<OrderP>( mesh );
-    auto Wh = Pdhv<OrderP>( mesh );
+    auto Vh = Pdhms<Dynamic>( mesh, runtimeOrder );
+    auto Wh = Pdhv<Dynamic>( mesh, runtimeOrder );
     auto face_mesh = createSubmesh( _mesh=mesh, _range=faces(mesh), _update=0 );
-    auto Mh = Pdhv<OrderP>( face_mesh );
+    auto Mh = Pdhv<Dynamic>( face_mesh, runtimeOrder );
 
     toc("spaces",true);
 
-    cout << "Vh<" << OrderP   << "> : " << Vh->nDof() << std::endl
-         << "Wh<" << OrderP+1 << "> : " << Wh->nDof() << std::endl
-         << "Mh<" << OrderP   << "> : " << Mh->nDof() << std::endl;
+    cout << "Vh<" << order << "> : " << Vh->nDof() << std::endl
+         << "Wh<" << order << "> : " << Wh->nDof() << std::endl
+         << "Mh<" << order << "> : " << Mh->nDof() << std::endl;
 
     auto sigma = Vh->element( "sigma" );
     auto v     = Vh->element( "v" );
@@ -298,7 +301,6 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
     }
 
     auto U = ps.element();
-    auto Ue = ps.element();
     //a.solve( _solution=U, _rhs=rhs, _rebuild=true, _condense=boption("sc.condense"));
     a.solve( _solution=U, _rhs=rhs, _condense=boption("sc.condense"));
     toc("solve",true);
@@ -313,11 +315,11 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
         auto displ_exact = displ;
         auto sigma_exact = locals.at("stress");
         auto grad_displ_exact = locals.at("grad_displ");
-        Ue(0_c).on( _range=elements(mesh), _expr=expr<Dim,Dim>( sigma_exact ) );
-        Ue(1_c).on( _range=elements(mesh), _expr=expr<Dim,1>( displ_exact ) );
-        Ue(2_c).on( _range=faces(mesh), _expr=expr<Dim,1>( displ_exact ) );
+        auto displ_exact_expr = expr<Dim,1>( displ_exact );
+        auto sigma_exact_expr = expr<Dim,Dim>( sigma_exact );
+        auto grad_displ_exact_expr = expr<Dim,Dim>( grad_displ_exact );
 
-        auto l2err_sigma = normL2( _range=elements(mesh), _expr=expr<Dim,Dim>(sigma_exact) - idv(sigmap) );
+        auto l2err_sigma = normL2( _range=elements(mesh), _expr=sigma_exact_expr - idv(sigmap) );
         Feel::cout << "L2 Error sigma: " << l2err_sigma << std::endl;
         toc("error");
 
@@ -325,7 +327,7 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
         auto norms_stress = [&]( std::string const& solution ) ->std::map<std::string,double>
             {
                 tic();
-                double l2 = normL2( _range=elements(mesh), _expr=expr<Dim,Dim>(sigma_exact) - idv(sigmap) );
+                double l2 = normL2( _range=elements(mesh), _expr=sigma_exact_expr - idv(sigmap) );
                 toc("L2 stress error norm");
 
                 return { { "L2", l2 } };
@@ -334,11 +336,11 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
         auto norms_displ = [&]( std::string const& solution ) ->std::map<std::string,double>
             {
 			tic();
-			double l2 = normL2( _range=elements(mesh), _expr=expr<Dim,1>(displ_exact) - idv(up) );
+			double l2 = normL2( _range=elements(mesh), _expr=displ_exact_expr - idv(up) );
 			toc("L2 displ error norm");
 
 			tic();
-			double h1 = normH1(_range=elements(mesh), _expr=idv(up)- expr<Dim,1>(displ_exact), _grad_expr=gradv(up)-expr<Dim,Dim>(grad_displ_exact) );
+			double h1 = normH1(_range=elements(mesh), _expr=idv(up)- displ_exact_expr, _grad_expr=gradv(up)-grad_displ_exact_expr );
 			toc("H1 displ error norm");
 
 			return { { "L2", l2 } , {  "H1", h1 } };
@@ -346,16 +348,12 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
 
         status_displ = checker(_name="L2/H1 displacement norms",_solution_key=displ_exact).runOnce( norms_displ, rate::hp( mesh->hMax(), Wh->fe()->order() ) );
         status_stress = checker(_name="L2 stress norms",_solution_key=displ_exact).runOnce( norms_stress, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
-        v.on( _range=elements(mesh), _expr=expr<Dim,Dim>(sigma_exact) );
-        w.on( _range=elements(mesh), _expr=expr<Dim,1>(displ_exact) );
     }
 
     tic();
     std::string exportName =  "hdg_elasticity";
     std::string sigmaName = "stress";
-    std::string sigma_exName = "stress-ex";
     std::string uName = "displacement";
-    std::string u_exName = "displacement-ex";
 
     auto e = exporter( _mesh=mesh, _name=exportName );
     e->setMesh( mesh );
@@ -365,12 +363,6 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
     e->add( "vonmises", vonmises(idv(sigmap)), reps );
     e->add( "principal_stress", eig(idv(sigmap)), reps );
     e->add( "magnitude_stress", sqrt(inner(idv(sigmap))), reps );
-
-    if ( boption("exact" ) )
-    {
-        e->add( sigma_exName, v, "nodal" );
-        e->add( u_exName, w, "nodal" );
-    }
 
     e->save();
 
@@ -413,10 +405,7 @@ int main( int argc, char** argv )
 
         for( auto d: locals )
             Feel::cout << d.first << ":" << d.second << std::endl;
-        if ( ioption( "order" ) == 1 )
-            return !hdg_elasticity<FEELPP_DIM,1>( locals );
-        if ( ioption( "order" ) == 2 )
-            return !hdg_elasticity<FEELPP_DIM,2>( locals );
+        return !hdg_elasticity<FEELPP_DIM>( locals );
     }
     catch( ... )
     {

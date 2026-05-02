@@ -25,7 +25,8 @@
 
 #include <feel/feeldiscr/traits.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelmesh/filters.hpp>
+#include <feel/feelvf/analysis.hpp>
 
 namespace Feel {
 

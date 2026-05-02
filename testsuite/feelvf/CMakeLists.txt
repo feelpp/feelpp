@@ -14,6 +14,7 @@ set(FEELPP_VF_SIMPLE_TESTS
     forms
     idf_functor
     idf2_functor
+    localform_lowering
     divergence
     productspace_dofs
     expr_evaluate
@@ -59,4 +60,3 @@ elseif ( TARGET Feelpp::feelpp )
 endif()
 
 add_dependencies( testvf ${FEELPP_VF_TEST_TARGETS} )
-

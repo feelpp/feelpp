@@ -32,7 +32,7 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelpython/pyexpr.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/vf_eval.hpp>
 #include <feel/feelvf/print.hpp>
 
 ///[stokes]
@@ -51,38 +51,38 @@ stokes(SpacePtrType Vh)
     auto v = U.template element<0>();
     auto q = U.template element<1>();
     auto mu = doption(_name="mu");
-    auto f = expr<FEELPP_DIM,1>( soption(_name="functions.f") );
+    auto f = vf::expr<FEELPP_DIM,1>( soption(_name="functions.f") );
     auto thechecker = checker(_name="qs_stokes",_solution_key=soption("checker.solution"));
-    auto solution = expr<FEELPP_DIM,1>( thechecker.check()? thechecker.solution() : soption(_name="functions.g") );
+    auto solution = vf::expr<FEELPP_DIM,1>( thechecker.check()? thechecker.solution() : soption(_name="functions.g") );
     auto g = solution;
     toc("Vh");
     // end::mesh_space[]
 
     // tag::forms[]
     tic();
-    auto l = form1( _test=Vh );
-    l = integrate(_range=elements(mesh),
-                  _expr=inner(f,id(v)));
+    auto l = Feel::form1( _test=Vh );
+    l = Feel::integrate(_range=elements(mesh),
+                        _expr=vf::inner(f,vf::id(v)));
     toc("l");
 
     tic();
-    auto a = form2( _trial=Vh, _test=Vh);
-    auto Id = eye<FEELPP_DIM,FEELPP_DIM>();
-    auto deft = sym(gradt(u));
-    auto sigmat = -idt(p)*Id + 2*mu*deft;
+    auto a = Feel::form2( _trial=Vh, _test=Vh);
+    auto Id = vf::eye<FEELPP_DIM,FEELPP_DIM>();
+    auto deft = vf::sym(vf::gradt(u));
+    auto sigmat = -vf::idt(p)*Id + 2*mu*deft;
     tic();
-    a = integrate(_range=elements(mesh),
-                  _expr=inner( 2*mu*deft, grad(v) ) );
-    a += integrate(_range=elements(mesh),
-                   _expr=-idt(p)*div(v) );
-    a += integrate(_range=elements(mesh),
-                   _expr=id(q)*divt(u) );
+    a = Feel::integrate(_range=elements(mesh),
+                        _expr=vf::inner( 2*mu*deft, vf::grad(v) ) );
+    a += Feel::integrate(_range=elements(mesh),
+                         _expr=-vf::idt(p)*vf::div(v) );
+    a += Feel::integrate(_range=elements(mesh),
+                         _expr=vf::id(q)*vf::divt(u) );
     toc("a");
 
     if ( mesh->hasAnyMarker({"inlet","Dirichlet"}) )
-        a+=on(_range=markedfaces(mesh,{"inlet","Dirichlet"}), _rhs=l, _element=u, _expr=g );
+        a += Feel::on(_range=markedfaces(mesh,{"inlet","Dirichlet"}), _rhs=l, _element=u, _expr=g );
     if ( mesh->hasAnyMarker({"wall","letters"}) )
-        a+=on(_range=markedfaces(mesh,{"wall","letters"}), _rhs=l, _element=u, _expr=zero<FEELPP_DIM,1>() );
+        a += Feel::on(_range=markedfaces(mesh,{"wall","letters"}), _rhs=l, _element=u, _expr=vf::zero<FEELPP_DIM,1>() );
     toc("a");
 
     tic();

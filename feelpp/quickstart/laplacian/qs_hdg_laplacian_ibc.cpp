@@ -31,7 +31,7 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelpython/pyexpr.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/vf_eval.hpp>
 #include <feel/feelvf/print.hpp>
 
 #include <feel/feelalg/vectorblock.hpp>
@@ -85,13 +85,17 @@ makeAbout()
 
 }
 
-template<int Dim, int OrderP>
+template<int Dim>
 int hdg_laplacian()
 {
     using Feel::cout;
 
     auto tau_constant =  cst(doption("hdg.tau.constant"));
     int tau_order =  ioption("hdg.tau.order");
+    int order = ioption( "order" );
+    CHECK( order >= 1 ) << "HDG approximation order must be >= 1";
+    auto runtimeOrder = RuntimeOrder::checked( order );
+    auto runtimePostOrder = RuntimeOrder::checked( order + 1 );
 
     tic();
     auto mesh = loadMesh( _mesh=new Mesh<Simplex<Dim>> );
@@ -114,7 +118,11 @@ int hdg_laplacian()
 
 #if defined(FEELPP_HAS_SYMPY)
 
-    std::map<std::string,std::string> inputs{{"dim",std::to_string(Dim)},{"k",soption("k")},{"p",soption("checker.solution")},{"grad_p",""}, {"u",""}, {"un",""}, {"f",""}, {"g",""}, {"J",""}, {"r_1",soption("r_1")}, {"r_2",soption("r_2")}};
+    std::string sympyPotential = soption( "solution.sympy.p" );
+    if ( sympyPotential == "1" && soption( "solution.p" ) != "1" )
+        sympyPotential = soption( "checker.solution" );
+
+    std::map<std::string,std::string> inputs{{"dim",std::to_string(Dim)},{"k",soption("k")},{"p",sympyPotential},{"grad_p",""}, {"u",""}, {"un",""}, {"f",""}, {"g",""}, {"J",""}, {"r_1",soption("r_1")}, {"r_2",soption("r_2")}};
     // if we do not check the results with a manufactured solution,
     // the right hand side is given by functions.f otherwise it is computed by the python script
     auto thechecker = checker( _name= "L2/H1 convergence",
@@ -130,11 +138,11 @@ int hdg_laplacian()
     auto u_exact = expr<FEELPP_DIM,1>( u_exact_str );
     auto k = expr( locals.at("k") );
     auto lambda = cst(1.)/k;
-    auto un = expr( locals.at("un") );
+    auto un = trans(u_exact)*N();
     auto f = expr( locals.at("f") );
     auto g = expr( locals.at("g") );
     auto r_1 = expr( locals.at("r_1") );
-    auto r_2 = expr( locals.at("r_2") );
+    auto r_2 = un - r_1*p_exact;
     auto J_exact = expr( locals.at("J") );
 #else
     std::string p_exact_str = soption("solution.p");
@@ -163,8 +171,8 @@ int hdg_laplacian()
     // We treat Vh, Wh, and Mh separately
     tic();
 
-    auto Vh = Pdhv<OrderP>( mesh );
-    auto Wh = Pdh<OrderP>( mesh );
+    auto Vh = Pdhv<Dynamic>( mesh, runtimeOrder );
+    auto Wh = Pdh<Dynamic>( mesh, runtimeOrder );
     auto select_faces = [mesh]( auto const& ewrap ) {
         auto const& e = unwrap_ref( ewrap );
         if ( e.hasMarker() && ( e.marker().value() == mesh->markerName( "Ibc" )  ||
@@ -176,7 +184,7 @@ int hdg_laplacian()
 
     auto face_mesh = createSubmesh( _mesh=mesh, _range=complement_integral_bdy, _update=0 );
     // auto face_mesh = createSubmesh( _mesh=mesh, _range=faces(mesh ), _update=0 );
-    auto Mh = Pdh<OrderP>( face_mesh );
+    auto Mh = Pdh<Dynamic>( face_mesh, runtimeOrder );
     auto ibc_mesh = createSubmesh( _mesh=mesh, _range=markedfaces(mesh, {"Ibc","IbcOde"}), _update=0 );
     auto Ch = Pch<0>( ibc_mesh );
 
@@ -184,7 +192,7 @@ int hdg_laplacian()
     auto P0dh = Pdh<0>(mesh);
     auto Xh = Pdh<0>(face_mesh);
     auto uf = Xh->element(cst(1.));
-    auto cgXh = Pch<OrderP>(mesh);
+    auto cgXh = Pch<Dynamic>( mesh, runtimeOrder );
 
     cout << "Exact potential if applicable: " << p_exact_str << "\n"
          << "Exact flux if applicable: " << u_exact_str << "\n";
@@ -193,9 +201,9 @@ int hdg_laplacian()
          << "#faces: " << mesh->numGlobalFaces() << std::endl
 
          << "#facesMh: " << face_mesh->numGlobalElements() << std::endl
-         << "Vh<" << OrderP << "> : " << Vh->nDof() << std::endl
-         << "Wh<" << OrderP << "> : " << Wh->nDof() << std::endl
-         << "Mh<" << OrderP << "> : " << Mh->nDof() << std::endl;
+         << "Vh<" << order << "> : " << Vh->nDof() << std::endl
+         << "Wh<" << order << "> : " << Wh->nDof() << std::endl
+         << "Mh<" << order << "> : " << Mh->nDof() << std::endl;
     if( nbIbc > 0 || nbIbcOde)
         cout << "Ch<0> : " << Ch->nDof() << std::endl;
     cout << mesh->numGlobalElements()  << " " << mesh->numGlobalFaces() << " "
@@ -205,8 +213,8 @@ int hdg_laplacian()
     int status_cg = 0;
     if ( boption( "solvecg" ) == true )
     {
-        auto cgXh = Pch<OrderP+1>(mesh);
-        Feel::cout << "cgXh<" << OrderP+1 << "> : " << cgXh->nDof() << std::endl;
+        auto cgXh = Pch<Dynamic>( mesh, runtimePostOrder );
+        Feel::cout << "cgXh<" << order+1 << "> : " << cgXh->nDof() << std::endl;
         auto u = cgLaplacian( _space=cgXh, _data=std::tuple{k,f,p_exact,un,r_1,r_2} );
 #if defined(FEELPP_HAS_SYMPY)
         if ( u )
@@ -450,7 +458,7 @@ int hdg_laplacian()
 
     tic();
     tic();
-    auto Whp = Pdh<OrderP+1>( mesh );
+    auto Whp = Pdh<Dynamic>( mesh, runtimePostOrder );
     auto pps = product( Whp );
     auto PP = pps.element();
     auto ppp = PP(0_c);
@@ -568,17 +576,7 @@ int main( int argc, char** argv )
                                       _author="Feel++ Consortium",
                                       _email="feelpp-devel@feelpp.org"));
         // end::env[]
-        if ( ioption( "order" ) == 1 )
-            return hdg_laplacian<FEELPP_DIM,1>();
-        if ( ioption( "order" ) == 2 )
-            return hdg_laplacian<FEELPP_DIM,2>();
-#if 0
-        if ( ioption( "order" ) == 3 )
-            return !hdg_laplacian<FEELPP_DIM,3>();
-        if ( ioption( "order" ) == 4 )
-            return !hdg_laplacian<FEELPP_DIM,4>();
-#endif
-        return 0;
+        return hdg_laplacian<FEELPP_DIM>();
     }
     catch( ... )
     {

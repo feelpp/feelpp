@@ -33,7 +33,7 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelalg/vectorblock.hpp>
 #include <feel/feeldiscr/product.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/vf_eval.hpp>
 #include <feel/feelvf/blockforms.hpp>
 #include <feel/feelvf/vonmises.hpp>
 #include <feel/feelvf/print.hpp>
@@ -96,7 +96,7 @@ makeAbout()
 
 
 
-template<int Dim, int OrderP, int OrderG = 1>
+template<int Dim, int OrderG = 1>
 int hdg_stokes( std::map<std::string,std::string>& locals )
 {
 
@@ -107,6 +107,9 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
 
     auto tau_constant =  cst(doption("hdg.tau.constant"));
     int tau_order =  ioption("hdg.tau.order");
+    int order = ioption( "order" );
+    CHECK( order >= 1 ) << "HDG approximation order must be >= 1";
+    auto runtimeOrder = RuntimeOrder::checked( order );
     auto mu = expr("1");//locals.at("mu"));
 
 #if 0
@@ -130,20 +133,20 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     // We treat Vh, Wh, Ph, and Mh separately
     tic();
 
-    auto Vh = Pdhms<OrderP>( mesh );
-    auto Wh = Pdhv<OrderP>( mesh );
-    auto Ph = Pdh<OrderP>( mesh );
+    auto Vh = Pdhms<Dynamic>( mesh, runtimeOrder );
+    auto Wh = Pdhv<Dynamic>( mesh, runtimeOrder );
+    auto Ph = Pdh<Dynamic>( mesh, runtimeOrder );
     auto Phm = Pch<0>( mesh );
     auto face_mesh = createSubmesh( _mesh=mesh, _range=faces(mesh), _update=0 );
-    auto Mh = Pdhv<OrderP>( face_mesh );
+    auto Mh = Pdhv<Dynamic>( face_mesh, runtimeOrder );
 
     toc("spaces",true);
 
-    cout << "Vh<" << OrderP << "> : " << Vh->nDof() << std::endl
-         << "Wh<" << OrderP << "> : " << Wh->nDof() << std::endl
-         << "Ph<" << OrderP << "> : " << Ph->nDof() << std::endl
-         << "Phm<" << OrderP << "> : " << Phm->nDof() << std::endl
-         << "Mh<" << OrderP << "> : " << Mh->nDof() << std::endl;
+    cout << "Vh<" << order << "> : " << Vh->nDof() << std::endl
+         << "Wh<" << order << "> : " << Wh->nDof() << std::endl
+         << "Ph<" << order << "> : " << Ph->nDof() << std::endl
+         << "Phm<0> : " << Phm->nDof() << std::endl
+         << "Mh<" << order << "> : " << Mh->nDof() << std::endl;
 
     auto delta = Vh->element( "delta" );
     auto gamma = Vh->element( "gamma" );
@@ -334,12 +337,12 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
         auto velocity_exact = velocity;
         auto delta_exact = expr<Dim,Dim>(locals.at("strain"));
         auto grad_velocity_exact = expr<Dim,Dim>(locals.at("grad_velocity"));
-        Ue(0_c).on( _range=elements(mesh), _expr=delta_exact );
-        Ue(1_c).on( _range=elements(mesh), _expr=velocity_exact );
-        Ue(2_c).on( _range=elements(mesh), _expr=pressure_exact );
-        Ue(3_c).on( _range=faces(mesh), _expr=velocity_exact );
         if ( Environment::isSequential() && boption("exporter.matlab") )
         {
+            Ue(0_c).on( _range=elements(mesh), _expr=delta_exact );
+            Ue(1_c).on( _range=elements(mesh), _expr=velocity_exact );
+            Ue(2_c).on( _range=elements(mesh), _expr=pressure_exact );
+            Ue(3_c).on( _range=faces(mesh), _expr=velocity_exact );
             Ue(0_c).printMatlab("se");
             Ue(1_c).printMatlab("ue");
             Ue(2_c).printMatlab("pe");
@@ -388,19 +391,13 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
         status_velocity = checker("L2/H1 velocity norms",velocity_exact).runOnce( norms_velocity, rate::hp( mesh->hMax(), Wh->fe()->order() ) );
         status_stress = checker("L2 stress norms",velocity_exact).runOnce( norms_stress, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
 #endif
-        delta.on( _range=elements(mesh), _expr=delta_exact );
-        u.on( _range=elements(mesh), _expr=velocity_exact );
-        p.on( _range=elements(mesh), _expr=pressure_exact );
     }
 
     tic();
     std::string exportName =  "hdg_stokes";
     std::string deltaName = "stress";
-    std::string delta_exName = "stress-ex";
     std::string uName = "velocity";
-    std::string u_exName = "velocity-ex";
     std::string pName = "pressure";
-    std::string p_exName = "pressure-ex";
     auto e = exporter( _mesh=mesh, _name=exportName );
     e->setMesh( mesh );
     e->addRegions();
@@ -411,13 +408,6 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     e->add( "vonmises", vonmises(idv(deltap)), reps );
     e->add( "principal_stress", eig(idv(deltap)), reps );
     e->add( "magnitude_stress", sqrt(inner(idv(deltap))), reps );
-
-    if ( boption("exact" ) )
-    {
-        e->add( delta_exName, delta, "nodal" );
-        e->add( u_exName, u, "nodal" );
-        e->add( p_exName, p, "nodal" );
-    }
 
     e->save();
 
@@ -461,10 +451,7 @@ int main( int argc, char** argv )
         for( auto d: locals )
             Feel::cout << fmt::format( " -- symbol {} expression {}\n", d.first, d.second) << std::endl;
 
-        if ( ioption( "order" ) == 1 )
-            return !hdg_stokes<FEELPP_DIM,1>( locals );
-        if ( ioption( "order" ) == 2 )
-            return !hdg_stokes<FEELPP_DIM,2>( locals );
+        return !hdg_stokes<FEELPP_DIM>( locals );
     }
     catch( ... )
     {

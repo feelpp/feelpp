@@ -25,6 +25,7 @@
 #define FEELPP_CG_LAPLACIAN_HPP 1
 
 #include <feel/feelmodels/modelproperties.hpp>
+#include <feel/feelvf/vf_eval.hpp>
 
 namespace Feel {
 

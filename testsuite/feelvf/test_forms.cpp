@@ -29,6 +29,7 @@
 #include <feel/feelfilters/unithypercube.hpp>
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
+#include <feel/feelvf/vf.hpp>
 
 /** use Feel namespace */
 using namespace Feel;

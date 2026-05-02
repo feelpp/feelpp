@@ -6,7 +6,7 @@
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/product.hpp>
 #include <feel/feelvf/blockforms.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/vf_eval.hpp>
 namespace Feel
 {
 template <typename SpaceType>

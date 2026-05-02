@@ -29,8 +29,9 @@
 #ifndef FEELPP_DISCR_OPERATORTRACE_H
 #define FEELPP_DISCR_OPERATORTRACE_H
 
+#include <feel/feelmesh/filters.hpp>
 #include <feel/feeldiscr/operatorlinear.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/projectors.hpp>
 #include<iostream>
 #include <feel/feeldiscr/functionspace.hpp>
 

@@ -32,7 +32,7 @@
 
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/fsfunctionallinear.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/forms.hpp>
 
 namespace Feel
 {

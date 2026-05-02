@@ -25,7 +25,7 @@
 #ifndef FEELPP_CRB_SENSORS_HPP
 #define FEELPP_CRB_SENSORS_HPP 1
 
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/vf_eval.hpp>
 #include <feel/feeldiscr/fsfunctionallinear.hpp>
 #include <feel/feeldiscr/geometricspace.hpp>
 #include <feel/feelcore/json.hpp>
