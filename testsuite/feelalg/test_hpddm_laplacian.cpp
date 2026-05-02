@@ -35,7 +35,7 @@ inline AboutData makeAbout()
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2026 Feel++ Consortium" );
 
-    about.addAuthor( "OpenAI", "developer", "support@openai.com", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "support@feelpp.org", "" );
     return about;
 }
 
