@@ -24,6 +24,8 @@
 cmake_minimum_required(VERSION 3.13...3.31)
 project(pyfeelpp)
 set(FEELPP_PYTHON_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+include("${CMAKE_CURRENT_LIST_DIR}/../cmake/modules/FeelppPythonSupport.cmake")
+set(FEELPP_PYTHON_INSTALL_COMPONENT Python)
 
 if ( (CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR) OR (FEELPP_COMPONENT STREQUAL "feelpp/pyfeelpp" ))
   find_package(Feel++ PATHS $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
@@ -72,4 +74,5 @@ add_subdirectory(feelpp)
 add_subdirectory(tests)
 
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pyfeelpp/__init__.py
-        DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/pyfeelpp)
+        DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/pyfeelpp
+        COMPONENT ${FEELPP_PYTHON_INSTALL_COMPONENT})

@@ -8,6 +8,136 @@ namespace FeelModels
 {
 
 
+// Rotation magneto swimmer
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::updateLinearPDEDofElimination_Magneto( DataUpdateLinear & data ) const
+{
+    if ( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" )
+    {
+        this->log("FSI","updateLinearPDEDofElimination_Magneto", "start" );
+
+        sparse_matrix_ptrtype& A = data.matrix();
+        vector_ptrtype& F = data.rhs();
+
+        auto mesh = M_solidModel->mesh();
+        auto Xh = M_solidModel->functionSpaceDisplacement();
+        auto const& u = M_solidModel->fieldDisplacement();
+
+        // Get head orientation and mass center
+  
+        for ( auto const& [bpname,bpbc] : M_fluidModel->bodySetBC() )
+        {
+            //auto angle = bpbc.body().rigidRotationAngles();
+            //double orientation = angle(0,0);
+            //std::cout << "Current Orientation Solid pb : " << orientation << std::endl;
+            //auto massCenterTrue = bpbc.body().massCenter();
+            // Define rigid motion
+            //auto rot = vec(
+            //    cos(orientation) * (Px() -  cst(xcm)) - sin(orientation) * (Py() - cst(ycm)) - Px() + cst(xcm) ,
+            //    sin(orientation) * (Px() -  cst(xcm)) + cos(orientation) * (Py() - cst(ycm)) - Py() + cst(ycm)
+            //);
+            
+            // Rotation matrix
+            auto R = bpbc.body().rigidRotationMatrixExpr();
+
+            // Translation
+            auto disp =  bpbc.body().rigidTranslationExpr();
+
+            // Mass center
+            auto massCenter = bpbc.body().massCenterExpr();
+    
+            auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A, 
+                                _pattern=size_type(Pattern::COUPLED),
+                                _rowstart=M_solidModel->rowStartInMatrix(),
+                                _colstart=M_solidModel->colStartInMatrix() );
+            
+            // Rotation of the rigid head 
+            ////bilinearForm +=on( _range=markedfaces(mesh,"magneto"),_element=u, _rhs=F,_expr= R*(P() - massCenter) + massCenter + disp -P());
+            //bilinearForm +=on( _range=markedelements(mesh,"Head"),_element=u, _rhs=F,_expr= R*(P() - massCenter) + massCenter + disp -P());
+            bilinearForm +=on( _range=markedelements(mesh,"Head"),_element=u, _rhs=F,_expr= idv(this->fieldBodyDisplacementOnSolid()) );
+        }
+
+        this->log("FSI","updateLinearPDEDofElimination_magneto", "finish" );
+    }
+}
+
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::updateNewtonInitialGuess_Magneto( DataNewtonInitialGuess & data ) const
+{
+    if ( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" )
+    {
+        this->log("FSI","updateNewtonInitialGuess_Magneto", "start" );
+
+        vector_ptrtype& U = data.initialGuess();
+
+        auto mesh = M_solidModel->mesh();
+        auto Xh = M_solidModel->functionSpaceDisplacement();
+        auto u = Xh->element( U, M_solidModel->rowStartInVector() );
+
+        
+        for ( auto const& [bpname,bpbc] : M_fluidModel->bodySetBC() )
+        {
+            //auto angle = bpbc.body().rigidRotationAngles();
+            //double orientation = angle(0,0);
+            //std::cout << "Current Orientation Solid pb : " << orientation << std::endl;
+            //auto massCenterTrue = bpbc.body().massCenter();
+            // Define rigid motion
+            //auto rot = vec(
+            //    cos(orientation) * (Px() -  cst(xcm)) - sin(orientation) * (Py() - cst(ycm)) - Px() + cst(xcm) ,
+            //    sin(orientation) * (Px() -  cst(xcm)) + cos(orientation) * (Py() - cst(ycm)) - Py() + cst(ycm)
+            //);
+            
+            // Rotation matrix
+            auto R = bpbc.body().rigidRotationMatrixExpr();
+
+            // Translation
+            auto disp =  bpbc.body().rigidTranslationExpr();
+
+            // Mass center
+            auto massCenter = bpbc.body().massCenterExpr();
+
+            // Rotation of the rigid head 
+            //u.on(_range=markedfaces(mesh,"magneto"), _expr= R*(P() - massCenter) + massCenter + disp -P());
+            //u.on( _range=markedelements(mesh,"Head"), _expr= R*(P() - massCenter) + massCenter + disp -P());
+            u.on( _range=markedelements(mesh,"Head"), _expr= idv(this->fieldBodyDisplacementOnSolid()) );
+        }
+
+        // update info for synchronization
+        M_solidModel->updateDofEliminationIds( "displacement", this->dofEliminationIds( "solid.displacement" ), data );
+
+        this->log("FSI","updateNewtonInitialGuess_Magneto", "finish" );
+    }
+}
+
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::updateJacobianDofElimination_Magneto( DataUpdateJacobian & data ) const
+{
+    if ( this->fsiCouplingBoundaryCondition() != "dirichlet-neumann" )
+        return;
+
+    this->log("FSI","updateJacobianDofElimination_Magneto", "start" );
+    
+    M_solidModel->updateDofEliminationIds( "displacement", this->dofEliminationIds( "solid.displacement" ), data );
+
+    this->log("FSI","updateJacobianDofElimination_Magneto", "finish" );
+}
+
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::updateResidualDofElimination_Magneto( DataUpdateResidual & data ) const
+{
+    if ( this->fsiCouplingBoundaryCondition() != "dirichlet-neumann" )
+        return;
+
+    this->log("FSI","updateResidualDofElimination_Magneto", "start" );
+    M_solidModel->updateDofEliminationIds( "displacement", this->dofEliminationIds( "solid.displacement" ), data );
+
+    this->log("FSI","updateResidualDofElimination_Magneto", "finish" );
+}
+
 template< class FluidType, class SolidType >
 void
 FSI<FluidType,SolidType>::updateLinearPDEDofElimination_Fluid( DataUpdateLinear & data ) const
@@ -27,7 +157,7 @@ FSI<FluidType,SolidType>::updateLinearPDEDofElimination_Fluid( DataUpdateLinear 
                                    _colstart=M_fluidModel->colStartInMatrix() );
         auto const& u = M_fluidModel->fieldVelocity();
         bilinearForm +=
-            on( _range=M_rangeFSI_fluid,
+            on( _range=M_rangeFsiWall_fluid,
                 _element=u, _rhs=F,
                 _expr=idv(this/*M_fluidModel*/->meshVelocity2()) );
 
@@ -39,7 +169,7 @@ template< class FluidType, class SolidType >
 void
 FSI<FluidType,SolidType>::updateNewtonInitialGuess_Fluid( DataNewtonInitialGuess & data ) const
 {
-    if ( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" )
+    if ( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" &&  this->hasDofEliminationIds( "fluid.velocity" ) )
     {
         this->log("FSI","updateNewtonInitialGuess_Fluid", "start" );
 
@@ -47,7 +177,7 @@ FSI<FluidType,SolidType>::updateNewtonInitialGuess_Fluid( DataNewtonInitialGuess
         auto mesh = M_fluidModel->mesh();
         auto XhV = M_fluidModel->functionSpaceVelocity();
         auto u = XhV->element( U, M_fluidModel->rowStartInVector() );
-        u.on(_range=M_rangeFSI_fluid,
+        u.on(_range=M_rangeFsiWall_fluid,
              _expr=idv( this/*M_fluidModel*/->meshVelocity2() ) );
         // update info for synchronization
         M_fluidModel->updateDofEliminationIds( "velocity", this->dofEliminationIds( "fluid.velocity" ), data );
@@ -64,8 +194,8 @@ FSI<FluidType,SolidType>::updateJacobianDofElimination_Fluid( DataUpdateJacobian
         return;
 
     this->log("FSI","updateJacobianDofElimination_Fluid", "start" );
-
-    M_fluidModel->updateDofEliminationIds( "velocity", this->dofEliminationIds( "fluid.velocity" ), data );
+    if ( this->hasDofEliminationIds( "fluid.velocity" ) )
+        M_fluidModel->updateDofEliminationIds( "velocity", this->dofEliminationIds( "fluid.velocity" ), data );
 
     this->log("FSI","updateJacobianDofElimination_Fluid", "finish" );
 }
@@ -79,7 +209,8 @@ FSI<FluidType,SolidType>::updateResidualDofElimination_Fluid( DataUpdateResidual
 
     this->log("FSI","updateResidualDofElimination_Fluid", "start" );
 
-    M_fluidModel->updateDofEliminationIds( "velocity", this->dofEliminationIds( "fluid.velocity" ), data );
+    if ( this->hasDofEliminationIds( "fluid.velocity" ) )
+        M_fluidModel->updateDofEliminationIds( "velocity", this->dofEliminationIds( "fluid.velocity" ), data );
 
     this->log("FSI","updateResidualDofElimination_Fluid", "finish" );
 }
@@ -557,6 +688,55 @@ FSI<FluidType,SolidType>::updateLinearPDE_Solid( DataUpdateLinear & data ) const
                        _geomap=this->geomap() );
     }
 
+#if 0
+    if (buildNonCstPart) // TODO VINCENT: this code should go in solid mechanic class
+    {
+        constexpr int nDim = solid_type::nDim;
+        for ( auto const& [physicName,physicData] : this->solidModel()->physicsFromCurrentType() )
+        {
+            auto physicSolidData = std::static_pointer_cast<ModelPhysicSolid<nDim>>(physicData);
+            for ( std::string const& matName : this->solidModel()->materialsProperties()->physicToMaterials( physicName ) )
+            {
+                auto const& matProperties = this->solidModel()->materialsProperties()->materialProperties( matName );
+                auto const& range = this->solidModel()->materialsProperties()->rangeMeshElementsByMaterial( this->solidModel()->mesh(),matName );
+
+                auto const& densityProp = this->solidModel()->materialsProperties()->density( matName );
+                auto densityExpr = expr( densityProp.expr()/*, se*/ ); // warning revert se
+                auto const& bbc = this->fluidModel()->bodySetBC().begin()->second;
+                // //auto rigVelExpr = bbc.rigidVelocityExpr(); // TODO: not work, a bug?
+                // auto rigVelExpr = bbc.rigidVelocityExprFromFields();
+                // TODO other than Newmark
+                auto rigidDisplacementExpr = this->rigidDisplacementExpr();
+                linearForm +=
+                    integrate( _range=range,
+                               _expr= -this->solidModel()->timeStepNewmark()->polySecondDerivCoefficient()*densityExpr*inner( rigidDisplacementExpr /*Feel::vf::zero<nDim,1>*/ ,id(u)), // TODO not compile with zero<..>
+                               _geomap=this->geomap() );
+
+
+                // Identity Matrix
+                auto const Id = eye<nDim,nDim>();
+                // deformation tensor
+                auto R = bbc.body().rigidRotationMatrixExpr();
+                //auto rigid_epsv = sym(R-Id);//0.5*(gradt(u)+trans(gradt(u)));
+                //auto const& fieldDisplacementAtPrevousTime = bbc.body().M_fieldDisplacementAtPreviousTime;
+                auto const& fieldDisplacementAtPrevousTime = this->solidModel()->timeStepNewmark()->previousUnknown();
+                auto R2 = Feel::vf::toExpr( fluid_type::Body::rigidRotationMatrix( bbc.body().M_rigidRotationAngles-bbc.body().M_rigidRotationAnglesAtPreviousTime ) );
+                auto rigid_epsv = sym(R*(Id+gradv(fieldDisplacementAtPrevousTime) ) - gradv(fieldDisplacementAtPrevousTime) -Id);
+
+                auto lameFirstExpr = expr( matProperties.property( "Lame-first-parameter" ).exprScalar()/*, se*/ );
+                auto lameSecondExpr = expr( matProperties.property( "Lame-second-parameter" ).exprScalar()/*, se*/ );
+                auto sigmat = lameFirstExpr*trace(rigid_epsv)*Id + 2*lameSecondExpr*rigid_epsv;
+
+                linearForm +=
+                    integrate (_range=range,
+                               _expr= -timeSteppingScaling*inner(sigmat,grad(u)), // trace( sigmat*trans(grad(v))),
+                               _geomap=this->geomap() );
+
+            }
+        }
+    }
+#endif
+
     if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||
          this->fsiCouplingBoundaryCondition() == "nitsche" )
     {
@@ -633,10 +813,6 @@ template< class FluidType, class SolidType >
 void
 FSI<FluidType,SolidType>::updateJacobian_Solid( DataUpdateJacobian & data ) const
 {
-    if ( this->fsiCouplingBoundaryCondition() != "robin-robin" && this->fsiCouplingBoundaryCondition() != "robin-robin-genuine" &&
-         this->fsiCouplingBoundaryCondition() != "nitsche" )
-        return;
-
     const vector_ptrtype& XVec = data.currentSolution();
     sparse_matrix_ptrtype& J = data.jacobian();
     bool buildCstPart = data.buildCstPart();
@@ -657,11 +833,25 @@ FSI<FluidType,SolidType>::updateJacobian_Solid( DataUpdateJacobian & data ) cons
                                _rowstart=M_solidModel->rowStartInMatrix(),
                                _colstart=M_solidModel->colStartInMatrix() );
 
+    auto rangeFSI = M_rangeFSI_solid;
 
     double timeSteppingScaling = 1.;
     if ( !this->solidModel()->isStationary() )
         timeSteppingScaling = data.doubleInfo( prefixvm(this->solidModel()->prefix(),"time-stepping.scaling") );
 
+#if 0
+    if ( buildNonCstPart )
+    {
+        auto normalStessExpr = idv(this->fieldNormalStressFromFluidPtr_solid());
+        bilinearForm +=
+            integrate( _range=rangeFSI,
+                       _expr= -timeSteppingScaling*inner(Feel::FeelModels::solidMecGeomapEulerianJacobian(u)*normalStessExpr,id(u) ),
+                       _geomap=this->geomap() );
+    }
+#endif
+    if ( this->fsiCouplingBoundaryCondition() != "robin-robin" && this->fsiCouplingBoundaryCondition() != "robin-robin-genuine" &&
+         this->fsiCouplingBoundaryCondition() != "nitsche" )
+        return;
 
     double gammaRobinFSI = M_couplingNitscheFamily_gamma;
 
@@ -678,7 +868,6 @@ FSI<FluidType,SolidType>::updateJacobian_Solid( DataUpdateJacobian & data ) cons
         auto gradVelocityExpr = gradVelocityExpr_fluid2solid( hana::int_<fluid_type::nDim>() );
         auto muFluid = Feel::FeelModels::fluidMecViscosity( gradVelocityExpr,*physicFluidData,matProps/*,se*/);
 
-        auto rangeFSI = M_rangeFSI_solid;
 
         if ( this->solidModel()->timeStepping() == "Newmark" )
         {
@@ -734,12 +923,34 @@ FSI<FluidType,SolidType>::updateResidual_Solid( DataUpdateResidual & data ) cons
     auto rangeFSI = M_rangeFSI_solid;
 
     // neumann boundary condition with normal stress (fsi boundary condition)
-    if ( buildCstPart )
+    if ( M_evaluateFluidNormalStressOnReferenceMesh )
     {
-        linearForm +=
-            integrate( _range=rangeFSI,
-                       _expr= timeSteppingScaling*inner(idv(this->fieldNormalStressFromFluidPtr_solid()),id(u)),
-                       _geomap=this->geomap() );
+        if ( buildCstPart )
+        {
+            linearForm +=
+                integrate( _range=rangeFSI,
+                           _expr= timeSteppingScaling*inner(idv(this->fieldNormalStressFromFluidPtr_solid()),id(u)),
+                           _geomap=this->geomap() );
+        }
+    }
+    else
+    {
+        if ( buildNonCstPart )
+        {
+            // First version : we use a linerarized form (use last solid solution (in fsi algo) instead of the current solution -> non linear)
+            auto normalStessExpr = idv(this->fieldNormalStressFromFluidPtr_solid());
+            auto Id = eye<mesh_solid_type::nDim,mesh_solid_type::nDim>();
+            //auto F = Id + gradv(u);
+            auto F = Id + gradv(this->aitkenRelaxTool()->oldSol());
+            auto J = det(F);
+            auto FinvTn = trans(inv(F));
+            auto tttExpr = norm2(FinvTn)*J*normalStessExpr;
+            linearForm +=
+                integrate( _range=rangeFSI,
+                           //_expr= -timeSteppingScaling*inner( Feel::FeelModels::solidMecGeomapEulerian(u)*normalStessExpr,id(u) ),
+                           _expr= timeSteppingScaling*inner( tttExpr,id(u) ),
+                           _geomap=this->geomap() );
+        }
     }
 
     if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||

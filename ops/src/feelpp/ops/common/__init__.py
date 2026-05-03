@@ -1,0 +1,15 @@
+"""Common helpers shared across Feel++ operational CLIs."""
+
+from .naming import (
+    LEGACY_PACKAGE_CLI_NAMES,
+    LEGACY_VERSION_CLI_NAMES,
+    PREFERRED_PACKAGE_CLI_NAME,
+    PREFERRED_VERSION_CLI_NAME,
+)
+
+__all__ = [
+    "LEGACY_PACKAGE_CLI_NAMES",
+    "LEGACY_VERSION_CLI_NAMES",
+    "PREFERRED_PACKAGE_CLI_NAME",
+    "PREFERRED_VERSION_CLI_NAME",
+]

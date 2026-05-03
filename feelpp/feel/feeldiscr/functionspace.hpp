@@ -4010,7 +4010,7 @@ public:
                 std::string const& suffix = args.get_else(_suffix,"");
                 std::string const& sep = args.get_else(_sep,"");
                 std::string const& space_path = args.get_else(_space_path,"");
-                return loadImpl( Environment::expand( path ), name, type, suffix, sep, space_path );
+                return loadImpl( Environment::expand( path ), name, type, suffix, sep, Environment::expand( space_path ) );
             }
 
         //!
@@ -5835,38 +5835,48 @@ public:
                 currentDofTableMapping.insert( {ptIds, dd} );
             }
 
-            // read hdf5 file
-            HDF5 hdf5;
-#if 0
-            hdf5.openFile( h5filepath.string(), (subComm)? *subComm : this->comm().comm(), true );
-#else
-            hdf5.openFile( h5filepath.string(), this->worldComm().comm(), true );
-#endif
-            std::string tableName = "doftable";
-            hsize_t dimsGlob[2];
-            hsize_t offsetElt[2] = {0,0};
-            hdf5.openTable( tableName, dimsGlob );
+            // read H5 file
+            std::vector<uint> dataReaded;
+            if ( this->worldComm().isMasterRank() )
+            {
+                // read hdf5 file
+                HDF5 hdf5;
+                hdf5.openFile( h5filepath.string(), this->worldComm().subWorldCommSeq(), true );
 
-            std::vector<uint> dataReaded( dimsGlob[0]*dimsGlob[1] );
+                std::string tableName = "doftable";
+                hsize_t dimsGlob[2];
+                hsize_t offsetElt[2] = {0,0};
+                hdf5.openTable( tableName, dimsGlob );
 
-            hdf5.read( tableName, H5T_NATIVE_UINT, dimsGlob, offsetElt, dataReaded.data() );
+                dataReaded.resize( dimsGlob[0]*dimsGlob[1] );
 
-            hdf5.closeTable( tableName );
-            hdf5.closeFile();
+                hdf5.read( tableName, H5T_NATIVE_UINT, dimsGlob, offsetElt, dataReaded.data() );
 
-            // update mapping
-            uint16_type nVerticesInElt = ptIds.size();
-            uint16_type nDofByElt = dd.size();
+                hdf5.closeTable( tableName );
+                hdf5.closeFile();
+            }
+            // TODO: using a unique elt Ids + active/ghost view, we can extract partitionning and apply a scatter
+            // instead of broadcast (reduce memory footprint)
+            mpi::broadcast( this->worldComm(), dataReaded, this->worldComm().masterRank() );
+
             std::vector<index_type> mappingWithFile( dof->nLocalDofWithGhost(), invalid_v<index_type> );
-
+            uint16_type nVerticesInElt = mesh_type::element_type::numVertices;
+            uint16_type nDofByElt = dof_type::nDofPerElement;
             for ( size_type k=0; k<dataReaded.size(); )
             {
                 index_type eltId = dataReaded[k++];
                 ptIds.resize( nVerticesInElt );
                 for ( int p=0;p<nVerticesInElt;++p )
                     ptIds[p] = dataReaded[k++];
-                auto const& curentLpDofs = currentDofTableMapping.at( ptIds );
 
+                auto itFind = currentDofTableMapping.find( ptIds );
+                if ( itFind == currentDofTableMapping.end() )
+                {
+                    k += nDofByElt;
+                    continue;
+                }
+
+                auto const& curentLpDofs = itFind->second;
                 for ( int ld=0;ld<nDofByElt;++ld )
                     mappingWithFile[ curentLpDofs[ld] ] = dataReaded[k++];
             }

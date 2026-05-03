@@ -71,7 +71,7 @@ int cg_laplacian_app()
                                             {"k",soption("k")},{"r_1",soption("r_1")},{"u",""},{"un",soption("un")},{"f",soption("f")},{"g",soption("g")},{"r_2",soption("r_2")}};
     // if we do not check the results with a manufactured solution,
     // the right hand side is given by functions.f otherwise it is computed by the python script
-    auto thechecker = checker( _name= "L1/H1 convergence", 
+    auto thechecker = checker( _name= "L1/H1 convergence",
                                _solution_key="p",
                                _gradient_key="grad_p",
                                _inputs=inputs
@@ -89,7 +89,7 @@ int cg_laplacian_app()
     check_data( soption( _name = "g" ), " set Dirichlet condition using option --g (eg. --g=0)",  support( Vh )->hasAnyMarker( {"Dirichlet"} ) );
     check_data( soption( _name = "un" ), " set Neumann condition using option --un (eg. --un=0)", support( Vh )->hasAnyMarker( {"Neumann"} ) );
     check_data( soption( _name = "r_2" ), " set Robin right hand side condition using option --r_2 (eg. --r_2=0)", support( Vh )->hasAnyMarker( {"Robin"} ) );
-    
+
     auto locals = thechecker.runScript();
 
     std::string p_exact_str = locals.at("p");
@@ -109,21 +109,21 @@ int cg_laplacian_app()
     //data.format().hide_border();
     data.add_row({"k",locals.at("k")});
     data.add_row({"f",locals.at("f")});
-    
-    if ( support( Vh )->hasAnyMarker( {"Dirichlet"} ) ) 
+
+    if ( support( Vh )->hasAnyMarker( {"Dirichlet"} ) )
     {
         data.add_row({"Dirichlet BC",std::to_string(nelements( markedfaces( support( Vh ), "Dirichlet" ) ))});
-        data.add_row({"p", locals.at("g")}); 
+        data.add_row({"p", locals.at("g")});
     }
-    if ( support( Vh )->hasAnyMarker( {"Neumann"} ) ) 
+    if ( support( Vh )->hasAnyMarker( {"Neumann"} ) )
     {
         data.add_row({"Neumann BC",std::to_string(nelements( markedfaces( support( Vh ), "Neumann" ) ))});
-        data.add_row({"-k*dn(p)", locals.at("un")}); 
+        data.add_row({"-k*dn(p)", locals.at("un")});
     }
-    if ( support( Vh )->hasAnyMarker( {"Robin"} ) ) 
+    if ( support( Vh )->hasAnyMarker( {"Robin"} ) )
     {
         data.add_row({"Robin BC",std::to_string(nelements( markedfaces( support( Vh ), "Robin" ) ))});
-        data.add_row({"-k*dn(p)+"+locals.at("r_1")+"*u", locals.at("r_2")}); 
+        data.add_row({"-k*dn(p)+"+locals.at("r_1")+"*u", locals.at("r_2")});
     }
     for ( int i=0;i<data.nRow();++i )
         data(i,0).format().setFontAlign(Font::Align::right);

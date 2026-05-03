@@ -1,13 +1,112 @@
 {
-  "jobs": ["feelpp", "testsuite", "toolboxes", "mor", "python"],
+  "jobs": ["feelpp", "testsuite", "toolboxes", "mor"],
   "targets": ["ubuntu:24.04", "debian:13", "fedora:42"],
   "defaults": {
     "mode": "components",
-    "jobs": ["feelpp", "testsuite", "toolboxes", "mor", "python"],
+    "jobs": ["feelpp", "testsuite", "toolboxes", "mor"],
     "targets": ["ubuntu:24.04"]
   },
   "fullBuild": {
     "job": "feelpp-full",
     "targets": ["ubuntu:24.04"]
+  },
+  "profiles": {
+    "ci": {
+      "jobs": ["feelpp", "testsuite", "toolboxes", "mor"],
+      "targets": ["ubuntu:24.04", "debian:13", "fedora:42"],
+      "defaults": {
+        "mode": "components",
+        "jobs": ["feelpp", "testsuite", "toolboxes", "mor"],
+        "targets": ["ubuntu:24.04"]
+      },
+      "fullBuild": {
+        "job": "feelpp-full",
+        "targets": ["ubuntu:24.04"]
+      }
+    },
+    "packaging": {
+      "jobs": ["packaging"],
+      "defaults": {
+        "targets": ["ubuntu:noble"]
+      },
+      "defaultOnBranches": ["develop"],
+      "catalog": {
+        "ubuntu:noble": {
+          "flavor": "ubuntu",
+          "dist": "noble",
+          "version": "24.04",
+          "docker": "true",
+          "apptainer": "true",
+          "continue-on-error": "false"
+        },
+        "debian:bookworm": {
+          "flavor": "debian",
+          "dist": "bookworm",
+          "version": "12",
+          "docker": "true",
+          "apptainer": "true",
+          "continue-on-error": "false"
+        },
+        "debian:trixie": {
+          "flavor": "debian",
+          "dist": "trixie",
+          "version": "13",
+          "docker": "true",
+          "apptainer": "true",
+          "continue-on-error": "false"
+        },
+        "debian:testing": {
+          "flavor": "debian",
+          "dist": "testing",
+          "version": "testing",
+          "docker": "true",
+          "apptainer": "true",
+          "continue-on-error": "true"
+        },
+        "debian:sid": {
+          "flavor": "debian",
+          "dist": "sid",
+          "version": "unstable",
+          "docker": "true",
+          "apptainer": "true",
+          "continue-on-error": "true"
+        },
+        "spack:mpich": {
+          "flavor": "spack",
+          "dist": "mpich",
+          "version": "latest",
+          "docker": "true",
+          "apptainer": "true",
+          "continue-on-error": "true"
+        },
+        "spack:openmpi": {
+          "flavor": "spack",
+          "dist": "openmpi",
+          "version": "latest",
+          "docker": "true",
+          "apptainer": "true",
+          "continue-on-error": "true"
+        }
+      },
+      "groups": {
+        "ubuntu": ["ubuntu:noble"],
+        "noble": ["ubuntu:noble"],
+        "debian": [
+          "debian:bookworm",
+          "debian:trixie",
+          "debian:testing",
+          "debian:sid"
+        ],
+        "bookworm": ["debian:bookworm"],
+        "trixie": ["debian:trixie"],
+        "testing": ["debian:testing"],
+        "sid": ["debian:sid"],
+        "spack": ["spack:mpich", "spack:openmpi"],
+        "mpich": ["spack:mpich"],
+        "openmpi": ["spack:openmpi"],
+        "spack-mpich": ["spack:mpich"],
+        "spack-openmpi": ["spack:openmpi"]
+      }
+    }
   }
 }

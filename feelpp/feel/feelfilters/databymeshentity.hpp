@@ -263,6 +263,7 @@ public :
             return ElementsType::MESH_POINTS;
         else
             CHECK( false ) << "invalid entity : " << entity ;
+        return ElementsType::MESH_ELEMENTS;
     }
 
     template <typename MeshType>

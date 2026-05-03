@@ -21,18 +21,6 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required(VERSION 3.3)
-project(toolboxes-advection)
-
-if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
-  find_package(Feel++ PATHS $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
-  if(NOT FEELPP_FOUND)
-      message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
-  endif()
-endif()
-
-
-pybind11_add_module(_advection  advection.cpp)
-target_include_directories(_advection PRIVATE ${PYTHON_INCLUDE_DIRS} ${MPI4PY_INCLUDE_DIR} ${FEELPP_DIR}/include/feelpp/toolboxes)
-find_library( FEELPP_ADVECTION feelpp_toolbox_advection_lib HINTS ${FEELPP_DIR}/lib)
-target_link_libraries( _advection PRIVATE ${FEELPP_ADVECTION}  ${FEELPP_LIBRARIES} )
+feelpp_add_pymodule(advection SRCS advection.cpp LINK_LIBRARIES Feelpp::feelpp_toolbox_advection_lib DESTINATION feelpp/toolboxes/advection)
+install(FILES __init__.py advection.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/advection
+        COMPONENT ${FEELPP_PYTHON_INSTALL_COMPONENT})

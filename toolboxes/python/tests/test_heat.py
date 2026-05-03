@@ -1,36 +1,19 @@
-import sys,os
 import feelpp.core as fppc
 import pytest
-from pathlib import Path
 from feelpp.toolboxes.core import *
 from feelpp.toolboxes.heat import *
+from _heat_test_utils import run_heat_case
+from _case_paths import toolbox_case
 
 heat_cases = [
-    ('heat/Building/ThermalBridgesENISO10211/case2.cfg', 2, 1),
-    ('heat/Building/ThermalBridgesENISO10211/case2.cfg', 2, 2),
-    ('heat/test_time-stepping/test.cfg', 2, 1),
-    ('heat/test_time-stepping/test.cfg', 2, 2),
-    ('heat/thermo2d/thermo2d.cfg', 2, 1),
-    ('heat/thermo2d/thermo2d.cfg', 2, 2)]
+    (toolbox_case('heat/Building/ThermalBridgesENISO10211/case2.cfg'), 2, 1),
+    (toolbox_case('heat/Building/ThermalBridgesENISO10211/case2.cfg'), 2, 2),
+]
 
 
 @pytest.mark.parametrize("casefile,dim,order", heat_cases)
 def test_heat(casefile,dim,order):
-    fppc.Environment.setConfigFile(casefile)
-    f = heat(dim=dim, order=order)
-    if not f.isStationary():
-        f.setTimeFinal(10*f.timeStep())
-    simulate(f)
-    meas = f.postProcessMeasures().values()
-
-    try:
-        import pandas as pd
-
-        df=pd.DataFrame([meas])
-    except ImportError:
-        print("cannot import pandas, no problem it was just a test")
-
-    return not f.checkResults()
+    run_heat_case(casefile, dim, order)
 
 parts = [2,3,6]
 
@@ -38,8 +21,9 @@ parts = [2,3,6]
 @pytest.mark.skip(reason="no way of currently testing this")
 @pytest.mark.parametrize("nparts", parts)
 def test_heat_ensemble(nparts):
-    c=fppc.readCfg(os.path.dirname(__file__)+'/heat/Building/ThermalBridgesENISO10211/case2.cfg')    
-    fppc.Environment.setConfigFile(os.path.dirname(__file__)+'/heat/Building/ThermalBridgesENISO10211/case2.cfg')
+    casefile = toolbox_case('heat/Building/ThermalBridgesENISO10211/case2.cfg')
+    c=fppc.readCfg(casefile)
+    fppc.Environment.setConfigFile(casefile)
     dim = int(c['feelpp']['case.dimension'])
     order = [int(s) for s in c['feelpp']['case.discretization'].split("P") if s.isdigit()][0]
     if fppc.Environment.numberOfProcessors() > 1 and fppc.Environment.numberOfProcessors() % nparts == 0:
@@ -61,7 +45,7 @@ def test_heat_ensemble(nparts):
 
 def test_heat_alg():
     fppc.Environment.setConfigFile(
-        'heat/Building/ThermalBridgesENISO10211/case2.cfg')
+        toolbox_case('heat/Building/ThermalBridgesENISO10211/case2.cfg'))
     f = heat(dim=2, order=1)
     f.init()
     if f.isStationary():
@@ -97,8 +81,5 @@ def test_heat_alg():
         n2 = err.norm(PETSc.NormType.NORM_2)
         print("error norm:",n2)
         assert(n2<1e-8)
-
-
-
 
 

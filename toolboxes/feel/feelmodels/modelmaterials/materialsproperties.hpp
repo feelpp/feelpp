@@ -68,7 +68,7 @@ public :
                 matProp.setParameterValues( mp );
         }
 
-    std::set<std::string> markers() const { return M_markers; }
+    std::set<std::string> const& markers() const noexcept { return M_markers; }
     void setMarkers( std::set<std::string> const& m ) { M_markers = m; }
 
     std::string const& materialName() const { return M_materialName; }

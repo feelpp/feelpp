@@ -243,10 +243,18 @@ FSIMesh<ConvexType>::buildMeshesPartitioning()
                       << "Write : " << this->mshPathFluidPartN() <<"\n";
             auto fluidmeshSeq = loadMesh(_mesh=new mesh_type(this->worldComm().subWorldCommSeqPtr()), _savehdf5=0,
                                          _filename=this->mshPathFluidPart1().string(),
-                                         _update=size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES),
+                                         // _update=size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES),
+                                         _update=size_type(MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES),
                                          _straighten=false );
             PartitionIO<mesh_fluid_type> iofluid( this->mshPathFluidPartN().string() );
-            iofluid.write( partitionMesh( fluidmeshSeq,  this->nPartitions() ) );
+            nl::json partConfig = {
+                { "partitioner", {
+                        { "constraints", {
+                                {"no_interprocess_faces", "fsi-wall" }
+                            }}
+                    }}
+            };
+            iofluid.write( partitionMesh( fluidmeshSeq,  this->nPartitions(), {}, partConfig ) );
         }
 
         if ( !fs::exists( this->mshPathSolidPartN() ) || this->forceRebuild() )

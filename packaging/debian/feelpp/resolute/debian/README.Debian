@@ -1,0 +1,7 @@
+feel++ for Debian
+-----------------
+
+Feel++ in Debian has all features enabled. Metis support is ensured by
+the Scotch metis interface which is free software.
+
+ -- Christophe Prud'homme <prudhomm@debian.org>, Fri, 29 Oct 2010 13:45:34 +0200

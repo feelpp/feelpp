@@ -71,10 +71,10 @@ using args_loadMesh_type = NA::arguments<
     typename na::physical_are_elementary_regions::template required_as_t<bool>,
     typename na::worldcomm::template required_as_t<worldcomm_ptr_t>,
     typename na::force_rebuild::template required_as_t<bool>,
+    typename na::partitioning::template required_as_t<nl::json>,
     typename na::respect_partition::template required_as_t<bool>,
     typename na::rebuild_partitions::template required_as_t<bool>,
     typename na::rebuild_partitions_filename::template required_as_t<std::string const&>,
-
     typename na::partitions::template required_as_t<rank_type>,
     typename na::partitioner::template required_as_t<int>,
     typename na::savehdf5::template required_as_t<bool>,
@@ -89,7 +89,7 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
 {
     auto && [mesh,prefix,vm,filename,desc,h,scale,straighten,refine,update,
              physical_are_elementary_regions,worldcomm,force_rebuild,
-             respect_partition,rebuild_partitions,rebuild_partitions_filename,
+             partitioning,respect_partition,rebuild_partitions,rebuild_partitions_filename,
              partitions,partitioner,savehdf5,partition_file,depends,verbose] = args.get_all();
 
     using _mesh_type = unwrap_ptr_t<std::decay_t<decltype(mesh)>>;
@@ -180,6 +180,7 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
             _physical_are_elementary_regions=physical_are_elementary_regions,
             _force_rebuild=force_rebuild,
             _worldcomm=worldcomm,
+            _partitioning=partitioning,
             _respect_partition=respect_partition,
             _rebuild_partitions=rebuild_partitions,
             _rebuild_partitions_filename=rebuild_partitions_filename,
@@ -220,6 +221,7 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
                                _update=update,
                                _physical_are_elementary_regions=physical_are_elementary_regions,
                                _worldcomm=worldcomm,
+                               _partitioning=partitioning,
                                _respect_partition=respect_partition,
                                _rebuild_partitions=rebuild_partitions,
                                _rebuild_partitions_filename=rebuild_partitions_filename,
@@ -254,9 +256,38 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
         LOG(INFO) << " Loading mesh in json+h5 format " << fs::absolute(mesh_name);
         CHECK( mesh ) << "Invalid mesh pointer to load " << mesh_name;
         _mesh_ptrtype m( mesh );
-        m->setWorldComm( worldcomm );
-        m->loadHDF5( mesh_name.string(), update, scale );
-        if ( straighten )
+        std::string fnamePartitioned = rebuild_partitions_filename;
+        if ( rebuild_partitions && partitions > 1 )
+        {
+            if ( worldcomm->isMasterRank() )
+            {
+                _mesh_ptrtype _meshSeq = std::make_shared<_mesh_type>( Environment::worldCommSeqPtr() );
+                size_type updateSeq = MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES|MESH_GEOMAP_NOT_CACHED;
+                if ( true ) // TODO: only required if partitioning has constraints
+                    updateSeq |= MESH_UPDATE_FACES_MINIMAL;
+                _meshSeq->loadHDF5( mesh_name.string(), updateSeq );
+
+                using io_t = PartitionIO<_mesh_type>;
+                if ( fnamePartitioned.empty() )
+                    fnamePartitioned = (fs::current_path() / mesh_name.filename().replace_extension( ".json" )).string();
+                else
+                    fnamePartitioned = fs::path( fnamePartitioned ).replace_extension( ".json" ).string();
+
+                io_t io( fnamePartitioned );
+                io.write( partitionMesh( _meshSeq, partitions, {}, partitioning ) );
+            }
+        }
+        else
+        {
+            m->setWorldComm( worldcomm );
+            m->loadHDF5( mesh_name.string(), update, scale );
+        }
+        if ( rebuild_partitions && partitions > 1 )
+        {
+            mpi::broadcast( worldcomm->globalComm(), fnamePartitioned, worldcomm->masterRank() );
+            m->loadHDF5( fnamePartitioned, update, scale );
+        }
+        if constexpr ( _mesh_type::nOrder > 1 )
         {
             if constexpr ( _mesh_type::is_order_dynamic )
             {
@@ -381,6 +412,7 @@ loadMesh( Ts && ... v )
                                                           NA::make_default_argument_invocable( _refine, [&prefix,&vm](){ return ioption(_prefix=prefix,_name="gmsh.refine",_vm=vm); } ),
                                                           NA::make_default_argument_invocable( _physical_are_elementary_regions, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.physical_are_elementary_regions",_vm=vm); } ),
                                                           NA::make_default_argument_invocable( _force_rebuild, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.rebuild",_vm=vm); } ),
+                                                          NA::make_default_argument( _partitioning, nl::json{} ),
                                                           NA::make_default_argument_invocable( _respect_partition, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.respect_partition",_vm=vm); } ),
                                                           NA::make_default_argument_invocable( _rebuild_partitions, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.partition",_vm=vm); } ),
                                                           NA::make_default_argument( _partitions, (worldcomm)?worldcomm->globalSize():1  ), //aiue

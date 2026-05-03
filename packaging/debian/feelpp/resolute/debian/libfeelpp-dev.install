@@ -1,0 +1,37 @@
+usr/lib/*/libfeelpp*.so
+# usr/lib/lib*.a
+usr/include/feelpp/boost/hana
+# usr/include/feelpp/bsoncxx
+usr/include/feelpp/bvh
+usr/include/feelpp/concepts
+usr/include/feelpp/contrib
+usr/include/feelpp/cpr
+usr/include/feelpp/eigen
+usr/include/feelpp/EigenRand
+usr/include/feelpp/feel
+usr/include/feelpp/feelpp_kwsys
+usr/include/feelpp/fmi4cpp
+usr/include/feelpp/fmt
+usr/include/feelpp/ginac
+usr/include/feelpp/indicators
+usr/include/feelpp/meta
+#usr/include/feelpp/metis
+usr/include/feelpp/mmg
+# usr/include/feelpp/mongocxx
+usr/include/feelpp/napp
+usr/include/feelpp/nlopt
+usr/include/feelpp/parmmg
+usr/include/feelpp/range
+usr/include/feelpp/simple-web-server
+usr/include/feelpp/specx
+usr/include/feelpp/spdlog
+usr/include/feelpp/std
+usr/include/feelpp/tabulate
+# usr/include/feelpp/taskflow
+usr/share/feelpp/feel
+usr/share/feelpp/eigen3
+usr/share/feelpp/docker
+# usr/share/feelpp/hana
+usr/share/feelpp/lsan
+usr/share/feelpp/pkgconfig
+usr/share/feelpp/scripts

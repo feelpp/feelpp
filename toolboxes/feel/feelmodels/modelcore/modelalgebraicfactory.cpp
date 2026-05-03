@@ -83,6 +83,10 @@ ModelAlgebraicFactory::ModelAlgebraicFactory( model_ptrtype const& model, backen
 void
 ModelAlgebraicFactory::init( model_ptrtype const& model, backend_ptrtype const& backend )
 {
+    M_hasBuildLinearJacobian = false;
+    M_hasBuildResidualCst = false;
+    M_hasBuildLinearSystemCst = false;
+
     model->timerTool("Constructor").start();
     auto graph = model->buildMatrixGraph();
     model->timerTool("Constructor").elapsed("graph");
@@ -208,7 +212,7 @@ void ModelAlgebraicFactory::initSolverPtAP( sparse_matrix_ptrtype matP, function
         M_solverPtAP_applyQ = applyQ;
 
         // if already built we assume that the new matP as the same stencil
-        if ( !M_solverPtAP_backend )
+        if ( true )// !M_solverPtAP_backend )
         {
             M_solverPtAP_backend = backend_type::build( soption( _name="backend" ), this->model()->prefix(), this->model()->worldCommPtr() );
 

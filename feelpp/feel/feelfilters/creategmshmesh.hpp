@@ -74,6 +74,7 @@ using args_createGMSHMesh_type = NA::arguments<
     typename na::force_rebuild::template required_as_t<bool>,
     typename na::physical_are_elementary_regions::template required_as_t<bool>,
     typename na::periodic::template required_as_t<PeriodicEntities const&>,
+    typename na::partitioning::template required_as_t<nl::json>,
     typename na::respect_partition::template required_as_t<bool>,
     typename na::rebuild_partitions::template required_as_t<bool>,
     typename na::rebuild_partitions_filename::template required_as_t<std::string const&>,
@@ -91,7 +92,7 @@ createGMSHMesh( args_createGMSHMesh_type<MeshType> && args )
 {
     auto && [mesh,desc,prefix,vm,format,h,scale,parametricnodes,in_memory,
              straighten,refine,structured,update,force_rebuild,physical_are_elementary_regions,
-             periodic,respect_partition,rebuild_partitions,rebuild_partitions_filename,
+             periodic,partitioning,respect_partition,rebuild_partitions,rebuild_partitions_filename,
              worldcomm,partitions,partition_file,partitioner,verbose,directory] = args.get_all();
 
     using _mesh_type = unwrap_ptr_t<std::decay_t<decltype(mesh)>>;
@@ -156,7 +157,10 @@ createGMSHMesh( args_createGMSHMesh_type<MeshType> && args )
                     _meshSeq = std::make_shared<_mesh_type>( Environment::worldCommSeqPtr() );
                 _meshSeq->accept( import );
                 _meshSeq->components().reset();
-                _meshSeq->components().set( size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_UPDATE_FACES|MESH_NO_UPDATE_MEASURES|MESH_GEOMAP_NOT_CACHED) );
+                size_type update_ = MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES|MESH_GEOMAP_NOT_CACHED;
+                if ( true ) // TODO: only required if partitioning has constraints
+                    update_ |= MESH_UPDATE_FACES_MINIMAL;
+                _meshSeq->components().set( update_ );
                 _meshSeq->updateForUse();
 #if defined(FEELPP_HAS_HDF5)
                 using io_t = PartitionIO<_mesh_type>;
@@ -166,8 +170,8 @@ createGMSHMesh( args_createGMSHMesh_type<MeshType> && args )
                 else
                     fname = fs::path( fnamePartitioned ).replace_extension( ".json" ).string();
                 io_t io( fname );
-                std::vector<Range<_mesh_type,MESH_ELEMENTS>> partitionByRange;
-                io.write( partitionMesh( _meshSeq, partitions, partitionByRange ) );
+                //std::vector<Range<_mesh_type,MESH_ELEMENTS>> partitionByRange;
+                io.write( partitionMesh( _meshSeq, partitions, {}, partitioning ) );
 #endif
             }
             else
@@ -232,6 +236,7 @@ createGMSHMesh( Ts && ... v )
                                                            NA::make_default_argument_invocable( _refine, [&prefix,&vm](){ return ioption(_prefix=prefix,_name="gmsh.refine",_vm=vm); } ),
                                                            NA::make_default_argument_invocable( _structured, [&prefix,&vm](){ return ioption(_prefix=prefix,_name="gmsh.structured",_vm=vm); } ),
                                                            NA::make_default_argument_invocable( _physical_are_elementary_regions, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.physical_are_elementary_regions",_vm=vm); } ),
+                                                           NA::make_default_argument( _partitioning, nl::json{} ),
                                                            NA::make_default_argument_invocable( _respect_partition, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.respect_partition",_vm=vm); } ),
                                                            NA::make_default_argument_invocable( _rebuild_partitions, [&prefix,&vm](){ return boption(_prefix=prefix,_name="gmsh.partition",_vm=vm); } ),
                                                            NA::make_default_argument( _worldcomm, mesh->worldCommPtr() ),

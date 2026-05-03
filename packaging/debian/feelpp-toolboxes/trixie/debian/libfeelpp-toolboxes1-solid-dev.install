@@ -1,0 +1,2 @@
+usr/lib/*/libfeelpp_toolbox_solid*.so
+usr/include/feelpp/toolboxes/feel/feelmodels/solid/*.hpp

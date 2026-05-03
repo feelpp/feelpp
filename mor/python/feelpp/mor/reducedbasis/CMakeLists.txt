@@ -21,8 +21,15 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.21)
 project(mor-reducedbasis)
 
-install(FILES  __init__.py reducedbasis.py reducedbasis_time.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/mor/reducedbasis)
-
+set(PYFILES __init__.py reducedbasis.py reducedbasis_time.py)
+feelpp_stage_python_files(
+  TARGET pyfeelppmor_reducedbasis_pyfiles
+  DESTINATION feelpp/mor/reducedbasis
+  FILES ${PYFILES}
+)
+add_dependencies(pyfeelppmor pyfeelppmor_reducedbasis_pyfiles)
+install(FILES ${PYFILES} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/mor/reducedbasis
+        COMPONENT ${FEELPP_PYTHON_INSTALL_COMPONENT})

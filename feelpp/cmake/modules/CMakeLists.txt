@@ -37,6 +37,7 @@ set(modules
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.dirs.cmake
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.directive.cmake
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.macros.cmake
+  ${CMAKE_CURRENT_SOURCE_DIR}/FeelppPythonSupport.cmake
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.macros.om.cmake
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.host.cmake
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.precompiled.headers.cmake
@@ -46,7 +47,6 @@ set(modules
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.sched.oar.cmake
   ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.sched.slurm.cmake
   ${CMAKE_CURRENT_SOURCE_DIR}/ParseArguments.cmake
-  ${CMAKE_CURRENT_SOURCE_DIR}/cotire.cmake
 )
 
 if ( FEELPP_HAS_ANN )
@@ -72,4 +72,5 @@ endif()
 INSTALL(FILES ${modules} DESTINATION share/feelpp/feel/cmake/modules COMPONENT Devel)
 INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/Feel++Config.cmake DESTINATION share/feelpp/feel/cmake/modules COMPONENT Devel)
 INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/FeelppContribConfig.cmake DESTINATION share/feelpp/feel/cmake/modules COMPONENT Devel)
+INSTALL(FILES ${CMAKE_SOURCE_DIR}/doc/stylesheet.css DESTINATION share/feelpp/feel/cmake/modules COMPONENT Devel)
 #INSTALL(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/feelpp.install.config.cmake COMPONENT Devel)

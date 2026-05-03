@@ -28,6 +28,17 @@ if ( TARGET pyfeelpp )
   add_dependencies(pyfeelpptoolboxes pyfeelpp)
 endif()
 
+set(PYFILES __init__.py)
+feelpp_stage_python_files(
+  TARGET pyfeelpptoolboxes_package_pyfiles
+  DESTINATION feelpp/toolboxes
+  FILES ${PYFILES}
+)
+add_dependencies(pyfeelpptoolboxes pyfeelpptoolboxes_package_pyfiles)
+install(FILES ${PYFILES}
+        DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes
+        COMPONENT ${FEELPP_PYTHON_INSTALL_COMPONENT})
+
 add_subdirectory( core )
 
 
@@ -66,6 +77,9 @@ if ( TARGET  Feelpp::feelpp_toolbox_hdg_lib )
   add_dependencies(pyfeelpptoolboxes _hdg)
 endif()
 
+# Advection, Maxwell, and FSI wrappers are kept out of the main build until
+# they have maintained tests and dedicated CI coverage. The stale LevelSet and
+# MultiFluid thermoelectric placeholder bindings were removed.
 # if ( TARGET  Feelpp::feelpp_toolbox_fsi_lib )
 #   add_subdirectory( fsi )
 #   add_dependencies(pyfeelpptoolboxes _fsi)

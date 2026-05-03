@@ -22,5 +22,5 @@
 #
 #
 feelpp_add_pymodule(solid SRCS solid.cpp LINK_LIBRARIES Feelpp::feelpp_toolbox_solid_lib DESTINATION feelpp/toolboxes/solid )
-install(FILES  __init__.py solid.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/solid)
-
+install(FILES  __init__.py solid.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/solid
+        COMPONENT ${FEELPP_PYTHON_INSTALL_COMPONENT})

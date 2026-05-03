@@ -355,7 +355,7 @@ FSI<FluidType,SolidType>::transfertDisplacement()
     else
         CHECK( false ) << "something wrong";
 
-    this->fluidModel()->meshMotionTool()->updateDisplacementImposed( idv(M_meshDisplacementOnInterface_fluid), M_rangeFSI_fluid );
+    this->fluidModel()->meshMotionTool()->updateDisplacementImposed( idv(M_meshDisplacementOnInterface_fluid), M_rangeFsiWall_fluid /*M_rangeFSI_fluid*/ );
 
     if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","transfertDisplacement", "finish",
                                                this->worldComm(),this->verboseAllProc());
@@ -374,6 +374,9 @@ FSI<FluidType,SolidType>::transfertDisplacementAndApplyMeshMoving()
     //sync( *M_meshVelocityInterface, "=", M_dofsVelocityInterfaceOnMovingBoundary);
 }
 
+
+
+
 //-----------------------------------------------------------------------------------//
 
 template< class FluidType, class SolidType >
@@ -383,7 +386,10 @@ FSI<FluidType,SolidType>::transfertStress()
     if (this->verbose()) Feel::FeelModels::Log("InterpolationFSI","transfertStress", "start",
                                                this->worldComm(),this->verboseAllProc());
     M_fieldNormalStressRefMesh_fluid->zero();
-    M_fluidModel->updateNormalStressOnReferenceMesh( "interface_fsi", M_fieldNormalStressRefMesh_fluid );
+    if ( M_evaluateFluidNormalStressOnReferenceMesh )
+        M_fluidModel->updateNormalStressOnReferenceMesh( "interface_fsi", M_fieldNormalStressRefMesh_fluid );
+    else
+        M_fluidModel->updateNormalStressOnCurrentMesh( "interface_fsi", M_fieldNormalStressRefMesh_fluid );
 
     if (M_solidModel->isStandardModel())
     {

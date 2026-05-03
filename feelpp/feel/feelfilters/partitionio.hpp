@@ -1573,8 +1573,6 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
     if (nProc == 1)
         return;
 
-    // prepare container to send  : ( pid -> (ptId1,PtId2,..),(ptId1,PtId2,..) )
-    //std::map< rank_type, std::vector< std::vector<size_type> > > dataToSend;
     // prepare container to send  : ( pid -> (pt0Id1,Pt0Id2,..,pt01d1,Pt1Id2,..) )
     std::map< rank_type, std::vector<size_type> > dataToSend;
     std::map< rank_type, std::vector<size_type> > memoryMsgToSend;
@@ -1587,11 +1585,6 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
         const rank_type pid = ghostelt.processId();
         for ( uint16_type vLocId = 0 ; vLocId < mesh_type::element_type::numPoints; ++vLocId )
             dataToSend[pid].push_back( ghostelt.point( vLocId ).id() );
-        //dataToSend[pid].resize( 3 );
-        // std::vector<size_type> ptIdsInElt( mesh_type::element_type::numPoints );
-        // for ( uint16_type vLocId = 0 ; vLocId < mesh_type::element_type::numPoints; ++vLocId )
-        //     ptIdsInElt[vLocId] = ghostelt.point( vLocId ).id();
-        // dataToSend[pid].push_back( ptIdsInElt );
         memoryMsgToSend[pid].push_back( ghostelt.id() );
     }
     for ( auto & [neighborRank,currentData] : dataToSend )
@@ -1600,7 +1593,27 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
         memoryMsgToSend[neighborRank].shrink_to_fit();
     }
 
-    int nbRequest = 2*dataToSend.size();
+
+    // define neighborSubdomains (rank ids) in order to ensure symetric comm
+    // TODO: neighborSubdomains data can be include in h5 file? and no need to apply all_to_all
+    std::set<rank_type> neighborSubdomains;
+    if ( true )
+    {
+        std::vector<std::int8_t> dataSendNeighborProcess( nProc, 0 );
+        std::vector<std::int8_t> dataRecvNeighborProcess( nProc, 0 );
+        for ( auto & [neighborRank,currentData] : dataToSend )
+        {
+            dataSendNeighborProcess[neighborRank] = true;
+            neighborSubdomains.insert( neighborRank );
+        }
+        mpi::all_to_all(  theWorldComm.localComm(), dataSendNeighborProcess, dataRecvNeighborProcess );
+
+        for ( rank_type p = 0; p < nProc; ++p )
+            if  ( dataRecvNeighborProcess.at(p) )
+                neighborSubdomains.insert( p );
+    }
+
+    int nbRequest = 2*neighborSubdomains.size();
     if ( nbRequest == 0 )
         return;
 
@@ -1610,8 +1623,9 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
     // get size of data to transfer
     std::map<rank_type,std::size_t> sizeSended;
     std::map<rank_type,std::size_t> sizeRecv;
-    for ( auto const& [neighborRank,currentData] : dataToSend )
+    for ( rank_type neighborRank : neighborSubdomains )
     {
+        auto & currentData = dataToSend[neighborRank];
         sizeSended[neighborRank] = currentData.size();
         reqs[cptRequest++] = theWorldComm.localComm().isend( neighborRank, 0, sizeSended[neighborRank] );
         reqs[cptRequest++] = theWorldComm.localComm().irecv( neighborRank, 0, sizeRecv[neighborRank] );
@@ -1619,12 +1633,12 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
     // wait all requests
     mpi::wait_all(std::begin(reqs), std::end(reqs));
     // first send/recv
-    //std::map< rank_type, std::vector< std::vector<size_type> > > dataToRecv;
     std::map< rank_type, std::vector<size_type> > dataToRecv;
 
     cptRequest = 0;
-    for ( auto const& [neighborRank,currentData] : dataToSend )
+    for ( rank_type neighborRank : neighborSubdomains )
     {
+        auto const& currentData = dataToSend.at( neighborRank );
         std::size_t nSendData = currentData.size();
         if ( nSendData > 0 )
             reqs[cptRequest++] = theWorldComm.localComm().isend( neighborRank, 0, currentData.data(), nSendData );
@@ -1636,6 +1650,7 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
     }
 
     // build map which allow to identify element from point ids (only for elt which touch the interprocess part)
+    // TODO: by using a gloabl element numbering over all partititons/process, we can reduce this kind of code
     std::map<std::set<size_type>,size_type> mapPointIdsToEltId;
     auto rangeElements = M_meshPartIn->elementsWithProcessId( partId );
     auto elt_it = std::get<0>( rangeElements );
@@ -1643,8 +1658,10 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
     for ( ; elt_it != elt_en ; ++elt_it )
     {
         auto const& elt = boost::unwrap_ref( *elt_it );
+#if 0
         if ( elt.numberOfNeighborPartitions() < 1 )
             continue;
+#endif
         std::set<size_type> ptIds;
         for ( uint16_type vLocId = 0 ; vLocId < mesh_type::element_type::numPoints; ++vLocId )
             ptIds.insert( elt.point( vLocId ).id() );
@@ -1677,9 +1694,10 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
     // send and recv info
     cptRequest=0;
     std::map<rank_type, std::vector<size_type> > finalDataToRecv;
-    for ( auto const& [neighborRank,currentData] : dataToReSend )
+    for ( rank_type neighborRank : neighborSubdomains )
     {
-        std::size_t nRecvData = memoryMsgToSend.at(neighborRank).size();
+        auto & currentData = dataToReSend[neighborRank];
+        std::size_t nRecvData = memoryMsgToSend[neighborRank].size();
         finalDataToRecv[neighborRank].resize( nRecvData );
         if ( nRecvData > 0 )
             reqs[cptRequest++] = theWorldComm.localComm().irecv( neighborRank, 1, finalDataToRecv[neighborRank].data(), nRecvData );

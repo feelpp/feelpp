@@ -1,10 +1,10 @@
 from time import time
 import feelpp.core as fppc
-from feelpp.mor.nirb.nirb import *
-from feelpp.mor.nirb.utils import WriteVecAppend, init_feelpp_environment, merge_JsonFiles
+from .nirb import *
+from .utils import WriteVecAppend, init_feelpp_environment, merge_JsonFiles
 import pandas as pd
 import os
-from feelpp.mor.nirb.nirb_perf import *
+from .nirb_perf import *
 import argparse
 from feelpp.core.timing import tic, toc
 

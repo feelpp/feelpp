@@ -88,6 +88,20 @@ ModelMeshCommon<IndexType>::ImportConfig::setupSequentialAndLoadByMasterRankOnly
     M_loadByMasterRankOnly = true;
 }
 
+
+template <typename IndexType>
+void
+ModelMeshCommon<IndexType>::ImportConfig::setupFromSubmesh( mesh_base_ptrtype m, std::set<std::string> const& markers )
+{
+    int codim = 0;
+    // M_inputMesh = m;
+    // M_submeshCoDimMarkers = { codim, markers };
+    // std::make_optional<std::tuple<mesh_base_ptrtype,int,std::set<std::string>>>( )
+    M_importFromSubmeshData = std::make_optional<std::tuple<mesh_base_ptrtype,int,std::set<std::string>>>( m, codim, markers );
+        //std::make_tuple< m,  codim, markers >
+    // TODO VINCENT
+}
+
 template <typename IndexType>
 void
 ModelMeshCommon<IndexType>::ImportConfig::updateForUse( ModelMeshes<IndexType> const& mMeshes )
@@ -210,6 +224,9 @@ ModelMesh<IndexType>::FieldsSetup::PartSetup::create( ModelMeshes<IndexType> con
     }
     if ( jarg.contains("filename") )
         ret.M_filename = Environment::expand( jarg.at("filename") );
+
+    if ( jarg.contains("space-filename") )
+        ret.M_spaceFilename = Environment::expand( jarg.at("space-filename") );
 
     return ret;
 }
@@ -370,6 +387,9 @@ ModelMesh<IndexType>::setup( nl::json const& jarg, ModelMeshes<IndexType> const&
     if ( jarg.contains("Import") )
         M_mmeshCommon->importConfig().setup( jarg.at("Import"), mMeshes );
 
+    if ( jarg.contains("Partitioning") )
+        M_mmeshCommon->partitioningSetup().updateForUse( jarg.at("Partitioning") );
+
     if ( jarg.contains("Data") )
     {
         for ( auto const& el : jarg.at("Data").items() )
@@ -413,14 +433,14 @@ ModelMesh<IndexType>::setup( nl::json const& jarg, ModelMeshes<IndexType> const&
         auto const& j_meshadapt = jarg.at("MeshAdaptation");
         if ( j_meshadapt.is_object() )
         {
-            typename MeshAdaptation::Setup mas( mMeshes, j_meshadapt );
+            typename MeshAdaptation::Setup mas( this, mMeshes, j_meshadapt );
             M_meshAdaptationSetup.push_back( std::move( mas ) );
         }
         else if ( j_meshadapt.is_array() )
         {
             for ( auto const& [j_meshadaptkey,j_meshadaptval] : j_meshadapt.items() )
             {
-                typename MeshAdaptation::Setup mas( mMeshes, j_meshadaptval );
+                typename MeshAdaptation::Setup mas( this, mMeshes, j_meshadaptval );
                 M_meshAdaptationSetup.push_back( std::move( mas ) );
             }
         }
@@ -465,6 +485,9 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes, Runti
 {
     using mesh_type = MeshType;
 
+    mMeshes.log("ModelMesh","updateForUse", "start");
+
+
     if ( !M_mmeshCommon->hasMesh() )
     {
         std::shared_ptr<mesh_type> meshLoaded;
@@ -472,9 +495,63 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes, Runti
         std::string meshFilenameBase = fmt::format("{}.mesh",mMeshes.keyword());
         auto & importConfig = M_mmeshCommon->importConfig();
         importConfig.updateForUse( mMeshes );
+        nl::json partConfig = {
+            { "partitioner", this->partitioningSetup().json() }
+        };
+
 
         auto wcPtr = ( importConfig.loadByMasterRankOnly() )? mMeshes.worldCommPtr()->subWorldCommSeqPtr() : mMeshes.worldCommPtr();
-        if ( importConfig.hasMeshFilename() )
+        if ( importConfig.importFromSubmesh() )
+        {
+            mMeshes.log("ModelMesh","updateForUse", fmt::format("load from submesh : nMarkers={}",importConfig.submeshMarkers().size()) );
+
+            if ( !importConfig.submeshMarkers().empty() )
+            {
+                switch ( importConfig.submeshCoDim() )
+                {
+                case 0:
+                {
+                    auto inputMesh = importConfig.template submeshInputMesh<mesh_type>();
+                    bool doRepartitioning = importConfig.generatePartitioning();//true;
+                    size_type updateSubmeshCtx = importConfig.meshComponents();
+                    if ( doRepartitioning )
+                    {
+                        updateSubmeshCtx = MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES|MESH_GEOMAP_NOT_CACHED;
+                        if ( true ) // TODO: only required if partitioning has constraints
+                            updateSubmeshCtx |= MESH_UPDATE_FACES_MINIMAL;
+                    }
+
+                    std::shared_ptr<mesh_type> submesh;
+                    if ( inputMesh )
+                        submesh = createSubmesh(_range=markedelements(inputMesh, importConfig.submeshMarkers() ),
+                                                _context=size_type(EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT), // WARNING not use relation, put an option!
+                                                _update=updateSubmeshCtx );
+
+                    if ( doRepartitioning )
+                    {
+                        if ( submesh )
+                            submesh->saveHDF5( "toto.json" );
+                        meshLoaded = loadMesh(_mesh=new mesh_type( M_name, wcPtr ),
+                                              _filename="toto.json",
+                                              _update=importConfig.meshComponents(),
+                                              _partitioning=partConfig,
+                                              //_partitions=importConfig.numberOfPartition(),
+                                              _rebuild_partitions=true );
+                    }
+                    else
+                        meshLoaded = submesh;
+
+                    // TODO straighten
+                    break;
+                }
+                default:
+                    CHECK( false ) << "TODO";
+                }
+            }
+            else
+                CHECK( false ) << "missing data for mesh import with an inputMesh";
+        }
+        else if ( importConfig.hasMeshFilename() )
         {
             std::string const& inputMeshFilename = importConfig.meshFilename();
             mMeshes.log("ModelMesh","updateForUse", "load mesh file : " + inputMeshFilename);
@@ -483,39 +560,23 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes, Runti
             std::string meshPartitionedFilename = (fs::path( rootpath ) / (meshFilenameBase + ".json")).string();
             std::string meshFileExt = fs::path( inputMeshFilename ).extension().string();
             bool generatePartitioning = importConfig.generatePartitioning();
-            if ( generatePartitioning && meshFileExt != ".msh" )
-                CHECK( false ) << "Can not rebuild at this time the mesh partitionining with other format than .msh : TODO";
+            // if ( generatePartitioning && meshFileExt != ".msh" )
+            //     CHECK( false ) << "Can not rebuild at this time the mesh partitionining with other format than .msh : TODO";
 
             if ( !importConfig.loadByMasterRankOnly() || mMeshes.worldCommPtr()->isMasterRank() )
             {
-                if constexpr ( mesh_type::is_order_dynamic )
-                {
-                    meshLoaded = loadMesh(_mesh=new mesh_type( runtimeGeometryOrder, M_name, wcPtr/*mMeshes.worldCommPtr()*/ ),
+                meshLoaded = loadMesh(_mesh=new mesh_type( M_name, wcPtr/*mMeshes.worldCommPtr()*/ ),
                                       _filename=inputMeshFilename,
                                       _prefix=mMeshes.prefix(),
                                       _vm=mMeshes.clovm(),
                                       _worldcomm=wcPtr/*mMeshes.worldCommPtr()*/,
                                       _straighten=importConfig.straightenMesh(),
+                                      _partitioning=partConfig,
                                       _rebuild_partitions=generatePartitioning,
                                       _rebuild_partitions_filename=meshPartitionedFilename,
                                       _partitions=importConfig.numberOfPartition(),
                                       _savehdf5=0,
                                       _update= importConfig.meshComponents()/*MESH_UPDATE_EDGES|MESH_UPDATE_FACES*/);
-                }
-                else
-                {
-                    meshLoaded = loadMesh(_mesh=new mesh_type( M_name, wcPtr/*mMeshes.worldCommPtr()*/ ),
-                                      _filename=inputMeshFilename,
-                                      _prefix=mMeshes.prefix(),
-                                      _vm=mMeshes.clovm(),
-                                      _worldcomm=wcPtr/*mMeshes.worldCommPtr()*/,
-                                      _straighten=importConfig.straightenMesh(),
-                                      _rebuild_partitions=generatePartitioning,
-                                      _rebuild_partitions_filename=meshPartitionedFilename,
-                                      _partitions=importConfig.numberOfPartition(),
-                                      _savehdf5=0,
-                                      _update= importConfig.meshComponents()/*MESH_UPDATE_EDGES|MESH_UPDATE_FACES*/);
-                }
             }
 
             meshFilename = (generatePartitioning)? meshPartitionedFilename : importConfig.meshFilename();
@@ -540,9 +601,7 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes, Runti
                                             _h=importConfig.meshSize());
                 // allow to have a geo and msh file with a filename equal to prefix
                 geodesc->setPrefix(meshFilenameBase);
-                if constexpr ( mesh_type::is_order_dynamic )
-                {
-                    meshLoaded = createGMSHMesh(_mesh=new mesh_type( runtimeGeometryOrder, M_name, wcPtr/*mMeshes.worldCommPtr()*/ ),
+                meshLoaded = createGMSHMesh(_mesh=new mesh_type( M_name, wcPtr/*mMeshes.worldCommPtr()*/ ),
                                             _desc=geodesc,
                                             _prefix=mMeshes.prefix(),
                                             _vm=mMeshes.clovm(),
@@ -550,22 +609,9 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes, Runti
                                             _h=importConfig.meshSize(),
                                             _straighten=importConfig.straightenMesh(),
                                             _partitions=importConfig.numberOfPartition(),
+                                            _partitioning=partConfig,
                                             _update=importConfig.meshComponents(),
                                             _directory=mMeshes.rootRepository() );
-                }
-                else
-                {
-                    meshLoaded = createGMSHMesh(_mesh=new mesh_type( M_name, wcPtr/*mMeshes.worldCommPtr()*/ ),
-                                            _desc=geodesc,
-                                            _prefix=mMeshes.prefix(),
-                                            _vm=mMeshes.clovm(),
-                                            _worldcomm=wcPtr/*mMeshes.worldCommPtr()*/,
-                                            _h=importConfig.meshSize(),
-                                            _straighten=importConfig.straightenMesh(),
-                                            _partitions=importConfig.numberOfPartition(),
-                                            _update=importConfig.meshComponents(),
-                                            _directory=mMeshes.rootRepository() );
-                }
             }
             meshFilename = mshfile;
         }
@@ -633,7 +679,7 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes, Runti
                                     {
                                         // TODO use rangeMeshElt
                                         CHECK( partSetup.markers().empty() ) << "TODO ModelMesh<IndexType>::updateForUse fields : requires the use of range elements with file loading";
-                                        u->load(_path=partSetup.filename(),_type="default");
+                                        u->load(_path=partSetup.filename(),_type="default",_space_path=partSetup.spaceFilename());
                                     }
                                 }
                                 M_fields[fs.name()] = u;
@@ -654,6 +700,7 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes, Runti
             mas.setParameterValues( paramValues );
         this->updateMeshAdaptation<MeshType>( MeshAdaptation::template createEvent<MeshAdaptation::Event::Type::after_import>(),
                                               Feel::vf::symbolsExpr( mMeshes.symbolsExprParameter(), mMeshes.template symbolsExpr<MeshType>() ) );
+        themesh = this->mesh<MeshType>();
     }
 
     if constexpr ( mesh_type::nDim>1 )
@@ -1003,7 +1050,9 @@ template class ModelMeshes<uint32_type>;
         ( ( Simplex,2,1,2),                                             \
           ( Simplex,3,1,3),                                             \
           ( Simplex,1,1,2),                                             \
-          ( Simplex,1,1,3) ) )                                          \
+          ( Simplex,1,1,3),                                             \
+          ( Hypercube,2,1,2),                                           \
+          ( Hypercube,3,1,3)  ) )                                       \
     /**/
 
 #define FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_CLASS_NAME(T)   BOOST_PP_TUPLE_ELEM(4, 0, T)
