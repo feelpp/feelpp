@@ -172,6 +172,12 @@ namespace FeelModels
         bool hasAuxiliarySparseMatrix( std::string const& key ) const;
         //! return  a sparse matrix attached
         sparse_matrix_ptrtype const& auxiliarySparseMatrix( std::string const& key ) const;
+        //! attach a vector to the preconditioner
+        void attachAuxiliaryVector( std::string const& key, vector_ptrtype const& vec );
+        //! return true if a vector has been attached
+        bool hasAuxiliaryVector( std::string const& key ) const;
+        //! return  a vector attached
+        vector_ptrtype const& auxiliaryVector( std::string const& key ) const;
 
         //! attach operator PCD to the preconditioner
         void attachOperatorPCD( std::string const& key, typename preconditioner_type::operator_pcdbase_ptrtype const& opPCD );

@@ -16,8 +16,8 @@ feelpp_toolboxes_add_library( magneticbase SRCS magneticboundaryconditions.cpp L
 #   "Ned1h0"
 # )
 
-set( _FE_BASIS_TYPE_LIST "Nedelec<0,NedelecKind::NED1>")
-set( _FE_BASIS_TAG_LIST "Ned1h0")
+set( _FE_BASIS_TYPE_LIST "Lagrange<1,Vectorial,Continuous,PointSetFekete>" "Nedelec<0,NedelecKind::NED1>")
+set( _FE_BASIS_TAG_LIST "Pchv1" "Ned1h0")
 foreach( _JJ IN ZIP_LISTS _FE_BASIS_TYPE_LIST _FE_BASIS_TAG_LIST)
   message("JJ=${_JJ_0} and ${_JJ_1}")
 endforeach()

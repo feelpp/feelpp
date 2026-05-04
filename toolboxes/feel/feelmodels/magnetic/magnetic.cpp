@@ -1,6 +1,7 @@
 //!
 
 #include <feel/feelmodels/magnetic/magnetic.hpp>
+#include <feel/feeldiscr/pch.hpp>
 
 namespace Feel
 {
@@ -240,6 +241,10 @@ MAGNETIC_CLASS_TEMPLATE_TYPE::initAlgebraicModel()
         bvs->operator()( this->startSubBlockSpaceIndex( FieldTag::lagrangeMultiplierCoulombGauge(this).identifier() ) ) = this->fieldLagrangeMultiplierCoulombGaugePtr();
     // init petsc vector associated to the block
     bvs->buildVector( this->backend() );
+
+
+    // InHousePreconditioner : Hypre-AMS
+    this->initInHousePreconditioner();
 }
 
 MAGNETIC_CLASS_TEMPLATE_DECLARATIONS
@@ -265,6 +270,77 @@ MAGNETIC_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 
     this->log("Magnetic","buildBlockMatrixGraph", "finish" );
     return myblockGraph;
+}
+
+
+MAGNETIC_CLASS_TEMPLATE_DECLARATIONS
+void
+MAGNETIC_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
+{
+    if ( M_nullSpaceMethod != "ams" )
+        return;
+
+    auto Xh = this->spaceVectorPotential();
+    auto XhL = Pch<1>( Xh->mesh(), this->rangeMeshElements() );
+    M_nullSpaceAmsMatrixG = Grad( _domainSpace=XhL, _imageSpace=Xh).matPtr();
+
+#if 0
+    for ( int k=0 ; k<nRealDim ; ++k )
+    {
+        M_nullSpaceAmsVectorOnes[k] = this->backend()->newVector(Xh);
+        auto oneField = Xh->element( M_nullSpaceAmsVectorOnes[k] );
+        oneField.on(_range=this->rangeMeshElements(),_expr=one<nRealDim>(k),_close=true);
+    }
+#else
+
+    if constexpr (nRealDim == 2 )
+    {
+        auto ozz = Xh->element();
+        auto zoz = Xh->element();
+        //auto zzo = Xh->element();
+        ozz.on(_range=elements(Xh->mesh()),_expr=vec(cst(1),cst(0)/*,cst(0)*/));
+        zoz.on(_range=elements(Xh->mesh()),_expr=vec(cst(0),cst(1)/*,cst(0)*/));
+        //zzo.on(_range=elements(Xh->mesh()),_expr=vec(cst(0),cst(0),cst(1)));
+        M_nullSpaceAmsVectorOnes[0] = this->backend()->newVector(Xh); *M_nullSpaceAmsVectorOnes[0] = ozz; M_nullSpaceAmsVectorOnes[0]->close();
+        M_nullSpaceAmsVectorOnes[1] = this->backend()->newVector(Xh); *M_nullSpaceAmsVectorOnes[1] = zoz; M_nullSpaceAmsVectorOnes[1]->close();
+    }
+    else if constexpr (nRealDim == 2 )
+    {
+        auto ozz = Xh->element();
+        auto zoz = Xh->element();
+        auto zzo = Xh->element();
+        ozz.on(_range=elements(Xh->mesh()),_expr=vec(cst(1),cst(0),cst(0)));
+        zoz.on(_range=elements(Xh->mesh()),_expr=vec(cst(0),cst(1),cst(0)));
+        zzo.on(_range=elements(Xh->mesh()),_expr=vec(cst(0),cst(0),cst(1)));
+        M_nullSpaceAmsVectorOnes[0] = this->backend()->newVector(Xh); *M_nullSpaceAmsVectorOnes[0] = ozz; M_nullSpaceAmsVectorOnes[0]->close();
+        M_nullSpaceAmsVectorOnes[1] = this->backend()->newVector(Xh); *M_nullSpaceAmsVectorOnes[1] = zoz; M_nullSpaceAmsVectorOnes[1]->close();
+    }
+
+    // WARNING TODO
+#endif
+}
+
+MAGNETIC_CLASS_TEMPLATE_DECLARATIONS
+void
+MAGNETIC_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( DataUpdateLinear & data ) const
+{
+#if 0
+    if ( !M_preconditionerAttachPMM && !M_preconditionerAttachPCD )
+        return;
+    vector_ptrtype const& vecSol = data.currentSolution();
+    this->updateInHousePreconditioner( data, this->modelContext( vecSol, this->rowStartInVector() ) );
+#endif
+}
+MAGNETIC_CLASS_TEMPLATE_DECLARATIONS
+void
+MAGNETIC_CLASS_TEMPLATE_TYPE::updateInHousePreconditioner( DataUpdateJacobian & data ) const
+{
+#if 0
+    if ( !M_preconditionerAttachPMM && !M_preconditionerAttachPCD )
+        return;
+    vector_ptrtype const& vecSol = data.currentSolution();
+    this->updateInHousePreconditioner( data, this->modelContext( vecSol, this->rowStartInVector() ) );
+#endif
 }
 
 
@@ -323,7 +399,7 @@ MAGNETIC_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("Magnetic","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    this->setPostProcessExportsAllFieldsAvailable( { FieldTag::vectorPotential(this).identifierString() } );
+    this->setPostProcessExportsAllFieldsAvailable( { FieldTag::vectorPotential(this).identifierString(), "flux-density", "field-intensity" } );
     this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->physicsAvailable() ) );
     this->setPostProcessExportsPidName( "pid" );
     this->setPostProcessSaveAllFieldsAvailable( { FieldTag::vectorPotential(this).identifierString() } );
@@ -396,6 +472,19 @@ MAGNETIC_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 {
     auto algebraicFactory = std::make_shared<model_algebraic_factory_type>( this->shared_from_this(),this->backend() );
     this->setAlgebraicFactory( algebraicFactory );
+
+    if ( M_nullSpaceMethod == "ams" )
+    {
+        this->algebraicFactory()->attachAuxiliarySparseMatrix( "G", M_nullSpaceAmsMatrixG );
+        this->algebraicFactory()->attachAuxiliaryVector( "Px", M_nullSpaceAmsVectorOnes.at(0) );
+        if ( M_nullSpaceAmsVectorOnes.size() > 1 )
+        this->algebraicFactory()->attachAuxiliaryVector( "Py", M_nullSpaceAmsVectorOnes.at(1) );
+        if ( M_nullSpaceAmsVectorOnes.size() > 2 )
+            this->algebraicFactory()->attachAuxiliaryVector( "Pz", M_nullSpaceAmsVectorOnes.at(2) );
+
+        //this->algebraicFactory()->attachAuxiliarySparseMatrix("a_beta",NULL);
+    }
+
 #if 0
     if ( M_timeStepping == "Theta" )
     {

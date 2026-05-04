@@ -31,19 +31,17 @@ class Magnetic : public ModelNumerical,
 public:
     typedef ModelNumerical super_type;
     using size_type = typename super_type::size_type;
-    typedef Magnetic<ConvexType,BasisVectorPotentialType> self_type;
-    typedef std::shared_ptr<self_type> self_ptrtype;
+    using self_type = Magnetic<ConvexType,BasisVectorPotentialType>;
+    using self_ptrtype = std::shared_ptr<self_type>;
     //___________________________________________________________________________________//
     // mesh
     typedef ConvexType convex_type;
-    static const uint16_type nDim = convex_type::nDim;
-    static const uint16_type nOrderGeo = convex_type::nOrder;
-    static const uint16_type nRealDim = convex_type::nRealDim;
-    typedef Mesh<convex_type> mesh_type;
-    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
+    static constexpr uint16_type nDim = convex_type::nDim;
+    static constexpr uint16_type nOrderGeo = convex_type::nOrder;
+    static constexpr uint16_type nRealDim = convex_type::nRealDim;
+    using mesh_type = Mesh<convex_type>;
+    using mesh_ptrtype = std::shared_ptr<mesh_type>;
     // basis
-    // static const uint16_type nOrderVectorPotential = BasisVectorPotentialType::nOrder;
-    // static const uint16_type nOrderPoly = nOrderVectorPotential;
     typedef BasisVectorPotentialType basis_vector_potential_type;
     // function space magnetic vector potential
     using space_vector_potential_type = FunctionSpace<mesh_type, bases<basis_vector_potential_type>>;
@@ -57,11 +55,11 @@ public:
     using element_lm_coulombgauge_ptrtype = std::shared_ptr<element_lm_coulombgauge_type>;
 
     // materials properties
-    typedef MaterialsProperties<nRealDim> materialsproperties_type;
-    typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
+    using materialsproperties_type = MaterialsProperties<nRealDim>;
+    using materialsproperties_ptrtype = std::shared_ptr<materialsproperties_type>;
     // exporter
-    typedef Exporter<mesh_type,nOrderGeo> export_type;
-    typedef std::shared_ptr<export_type> export_ptrtype;
+    using export_type = Exporter<mesh_type,nOrderGeo>;
+    using export_ptrtype = std::shared_ptr<export_type>;
 
     struct FieldTag
     {
@@ -172,27 +170,48 @@ public :
     template <typename SymbExprType>
     auto exprPostProcessExportsToolbox( SymbExprType const& se, std::string const& prefix ) const
         {
-#if 0
-            using _expr_velocity_convection_type = std::decay_t<decltype( std::declval<ModelPhysicHeat<nDim>>().convection().expr( se ) )>;
-            std::map<std::string,std::vector<std::tuple< _expr_velocity_convection_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprVelocityConvection;
+            auto const& A = this->fieldVectorPotential();
+            auto B = this->fluxDensityExpr();
+            using _expr_flux_density_type = std::decay_t<decltype( B )>;
+            using _expr_field_intensity_type = std::decay_t<decltype( this->fieldIntensityExpr( A, "", se ) )>;
+            using _range_mesh_type = Range<mesh_type,MESH_ELEMENTS>;
+            std::map<std::string,std::vector<std::tuple< _expr_flux_density_type, _range_mesh_type, std::string > > > mapExprFluxDensity;
+            std::map<std::string,std::vector<std::tuple< _expr_field_intensity_type, _range_mesh_type, std::string > > > mapExprFieldIntensity;
+            mapExprFluxDensity[prefixvm(prefix,"flux-density")].push_back( std::make_tuple( B, M_rangeMeshElements, "element" ) );
 
             for ( auto const& [physicId,physicData] : this->physicsFromCurrentType() )
             {
-                auto physicHeatData = std::static_pointer_cast<ModelPhysicHeat<nDim>>(physicData);
+                auto physicMagneticData = std::static_pointer_cast<ModelPhysicMagnetic<nDim>>(physicData);
+                auto mu_0 = physicMagneticData->vacuumPermeabilityExpr();
                 for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicId ) )
                 {
-                    auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
-                    if ( physicHeatData->hasConvectionEnabled() )
+                    auto const& matRange = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+                    auto const& magneticRelativePermeability = this->materialsProperties()->materialProperty( matName, "magnetic-relative-permeability" );
+                    if ( magneticRelativePermeability.isMatrix() )
                     {
-                        auto velocityConvectionExpr = physicHeatData->convection().expr( se );
-                        mapExprVelocityConvection[prefixvm(prefix,"velocity-convection")].push_back( std::make_tuple( velocityConvectionExpr, range, "nodal" ) );
+                        if constexpr (  nDim == 3 )
+                        {
+                            auto mu_r = expr( magneticRelativePermeability.template expr<nDim,nDim>(), se );
+                            // TODO
+                        }
                     }
+                    else
+                    {
+                      //auto mu_r = expr( magneticRelativePermeability.expr(), se );
+                        //mapExprFieldIntensityIsotropic[prefixvm(prefix,"field-intensity")].push_back( std::make_tuple( (1./(mu_0*mur))*B, matRange, "element" ) );
+                      mapExprFieldIntensity[prefixvm(prefix,"field-intensity")].push_back( std::make_tuple( this->fieldIntensityExpr( A, matName, se ), matRange, "element" ) );
+                    }
+
+                    // if ( physicHeatData->hasConvectionEnabled() )
+                    // {
+                    //     auto velocityConvectionExpr = physicHeatData->convection().expr( se );
+                    //     mapExprVelocityConvection[prefixvm(prefix,"velocity-convection")].push_back( std::make_tuple( velocityConvectionExpr, range, "nodal" ) );
+                    // }
                 }
             }
-            return hana::make_tuple( mapExprVelocityConvection );
-#else
-            return hana::make_tuple();
-#endif
+
+            return hana::make_tuple( mapExprFluxDensity, mapExprFieldIntensity );
+            //return hana::make_tuple();
         }
     template <typename SymbExprType>
     auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
@@ -294,18 +313,45 @@ public :
     //___________________________________________________________________________________//
     // toolbox expressions
     //___________________________________________________________________________________//
-#if 0
-    template <typename FieldTemperatureType, typename SymbolsExpr = symbols_expression_empty_t>
-    auto normalHeatFluxExpr( FieldTemperatureType const& t, bool isOutward = true, SymbolsExpr const& symbolsExpr = symbols_expression_empty_t{} ) const
+
+    auto fluxDensityExpr() const { return this->fluxDensityExpr( this->fieldVectorPotential() ); }
+
+    template <typename FieldVectorPotentialType>
+    auto fluxDensityExpr( FieldVectorPotentialType const& A ) const
         {
-            double signFlux = isOutward? -1.0 : 1.0;
-            auto kappa = this->materialsProperties()->thermalConductivityExpr( symbolsExpr );
-            if constexpr ( std::decay_t<decltype(kappa)>::template evaluator_t<typename mesh_type::element_type>::shape::is_scalar )
-                return signFlux*kappa*gradv(t)*N();
-            else
-                return signFlux*inner(kappa*trans(gradv(t)),N());
+          return curlv(A);
         }
-#endif
+
+    template <typename SymbolsExpr = symbols_expression_empty_t>
+    auto reluctivityExpr( std::string const& matName, SymbolsExpr const& symbolsExpr = symbols_expression_empty_t{} ) const
+    {
+        auto const& magneticRelativePermeability = this->materialsProperties()->materialProperty( matName, "magnetic-relative-permeability" );
+        double mu_0 = ModelPhysicMagnetic<nDim>::vacuumPermeabilityConstant();
+
+        if ( magneticRelativePermeability.isMatrix() )
+        {
+          if constexpr (  nDim == 3 )
+            {
+              auto mu_r = expr( magneticRelativePermeability.template expr<nDim,nDim>(), symbolsExpr );
+              // TODO
+            }
+        }
+
+        auto mu_r = expr( magneticRelativePermeability.expr(), symbolsExpr );
+        return 1./(mu_0*mu_r);
+    }
+
+    template <typename SymbolsExpr = symbols_expression_empty_t>
+    auto fieldIntensityExpr( std::string const& matName, SymbolsExpr const& symbolsExpr = symbols_expression_empty_t{} ) const
+        {
+            return this->fieldIntensityExpr( this->fieldVectorPotential(), matName, symbolsExpr );
+        }
+    template <typename FieldVectorPotentialType, typename SymbolsExpr = symbols_expression_empty_t>
+    auto fieldIntensityExpr( FieldVectorPotentialType const& A, std::string const& matName, SymbolsExpr const& symbolsExpr = symbols_expression_empty_t{} ) const
+        {
+          return this->reluctivityExpr( matName, symbolsExpr )*this->fluxDensityExpr( A );
+        }
+
     //___________________________________________________________________________________//
     // apply assembly and solver
     //___________________________________________________________________________________//
@@ -330,6 +376,10 @@ public :
     template <typename ModelContextType>
     void updateResidual( DataUpdateResidual & data, ModelContextType const& mfields ) const;
     void updateResidualDofElimination( DataUpdateResidual & data ) const override;
+
+    void initInHousePreconditioner();
+    void updateInHousePreconditioner( DataUpdateLinear & data ) const override;
+    void updateInHousePreconditioner( DataUpdateJacobian & data ) const override;
 
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -362,6 +412,8 @@ protected :
 
     std::string M_solverName;
     std::string M_nullSpaceMethod = "regularized-formulation"; // "regularized-formulation", "saddle-point", "ams"
+    sparse_matrix_ptrtype M_nullSpaceAmsMatrixG;
+    std::array<vector_ptrtype,nRealDim> M_nullSpaceAmsVectorOnes;
 
     // post-process
     export_ptrtype M_exporter;

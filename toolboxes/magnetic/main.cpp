@@ -41,8 +41,12 @@ main(int argc, char**argv )
         int dimension = ioption(_name="case.dimension");
         std::string discretization = soption(_name="case.discretization");
 
+        if ( discretization == "P1" )
+            discretization = "Pchv1";
+
         auto dimt = hana::make_tuple(hana::int_c<2>,hana::int_c<3>);
-        auto discretizationt = hana::make_tuple( hana::make_tuple("Ned1h0", std::type_identity<Nedelec<0,NedelecKind::NED1>>{} ) );
+        auto discretizationt = hana::make_tuple( hana::make_tuple( "Pchv1", std::type_identity<Lagrange<1,Vectorial,Continuous,PointSetFekete>>{} ),
+                                                 hana::make_tuple( "Ned1h0", std::type_identity<Nedelec<0,NedelecKind::NED1>>{} ) );
 
         int status = 0;
         hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)), [&discretization,&dimension,&status]( auto const& d )

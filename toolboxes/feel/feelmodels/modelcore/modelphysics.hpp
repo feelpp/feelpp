@@ -16,6 +16,7 @@
 #include <feel/feelmodels/modelmodels.hpp>
 #include <feel/feelmodels/modelexpression.hpp>
 #include <feel/feelmodels/modelcore/modelbase.hpp>
+#include <feel/feelvf/cst.hpp>
 
 namespace Feel
 {
@@ -496,10 +497,15 @@ private :
 
     std::vector<CurrentDensitySource> const& currentDensitySources() const { return M_currentDensitySources; }
 
+    // TODO: create a singleton which manage physic constants
+    auto vacuumPermeabilityExpr() const { return cst( vacuumPermeabilityConstant() ); }
+    static constexpr double vacuumPermeabilityConstant() { return 4*M_PI*1e-7; }
+
     void updateInformationObject( nl::json & p ) const override;
     tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
   private :
     std::vector<CurrentDensitySource> M_currentDensitySources;
+    std::string M_vacuumPermeabilityIdentifier = "mu_0";
   };
 
 /**

@@ -452,6 +452,9 @@ ModelPhysicMagnetic<Dim>::ModelPhysicMagnetic( ModelPhysics<Dim> const& mphysics
     :
     super_type( modeling, type, name, mphysics, model )
 {
+    // Vacuum permeability
+    this->addParameter( M_vacuumPermeabilityIdentifier, vacuumPermeabilityConstant() );
+
     auto const& j_setup = model.setup();
 
     if ( j_setup.contains( "current_density-sources" ) )

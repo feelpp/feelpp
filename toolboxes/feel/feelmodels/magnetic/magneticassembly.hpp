@@ -59,11 +59,10 @@ Magnetic<ConvexType,BasisMagneticVectorPotentialType>::updateLinearPDE( DataUpda
                                _rowstart=this->rowStartInVector()+startBlockIndexVectorPotential );
     //--------------------------------------------------------------------------------------------------//
 
-    double mu_0 = 1.25663706127e-6;
-
     for ( auto const& [physicId,physicData] : this->physicsFromCurrentType() )
     {
         auto physicMagneticData = std::static_pointer_cast<ModelPhysicMagnetic<nDim>>(physicData);
+        auto mu_0 = physicMagneticData->vacuumPermeabilityExpr();
         for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicId ) )
         {
             auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
@@ -73,7 +72,7 @@ Magnetic<ConvexType,BasisMagneticVectorPotentialType>::updateLinearPDE( DataUpda
               {
                 if constexpr (  nDim == 3 )
                   {
-                    auto const& mu_r = expr( magneticRelativePermeability.template expr<nDim,nDim>(), symbolsExpr );
+                    auto mu_r = expr( magneticRelativePermeability.template expr<nDim,nDim>(), symbolsExpr );
                     bool buildRotRot = mu_r.expression().isConstant()? buildCstPart : buildNonCstPart;
                     if ( doAssemblyLhs && buildRotRot )
                       {
@@ -88,7 +87,7 @@ Magnetic<ConvexType,BasisMagneticVectorPotentialType>::updateLinearPDE( DataUpda
             }
             else
             {
-              auto const& mu_r = expr( magneticRelativePermeability.expr(), symbolsExpr );
+              auto mu_r = expr( magneticRelativePermeability.expr(), symbolsExpr );
               bool buildRotRot = mu_r.expression().isConstant()? buildCstPart : buildNonCstPart;
               if ( doAssemblyLhs && buildRotRot )
                 {

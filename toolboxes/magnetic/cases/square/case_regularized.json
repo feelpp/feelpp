@@ -80,10 +80,13 @@
         {
             "Exports":
             {
-                "fields":["vector_potential","pid"],
+                "fields":["vector_potential","flux-density","field-intensity","pid"],
                 "expr": {
                     "solution_exact":"{solution_exact_0,solution_exact_1}:solution_exact_0:solution_exact_1",
-                    "vector_potential":"{magnetic_A_0,magnetic_A_1}:magnetic_A_0:magnetic_A_1"
+                    "vector_potential":{
+                        "expr":"{magnetic_A_0,magnetic_A_1}:magnetic_A_0:magnetic_A_1",
+                        "representation":"element"
+                    }
                 }
             },
             "Measures":

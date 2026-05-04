@@ -325,6 +325,26 @@ void ModelAlgebraicFactory::initSolverPtAP( sparse_matrix_ptrtype matP, function
     }
 
     void
+    ModelAlgebraicFactory::attachAuxiliaryVector( std::string const& key, vector_ptrtype const& vec )
+    {
+        M_PrecondManage->attachAuxiliaryVector( key, vec );
+        if ( M_solverPtAP_prec )
+            M_solverPtAP_prec->attachAuxiliaryVector( key, vec );
+    }
+
+    bool
+    ModelAlgebraicFactory::hasAuxiliaryVector( std::string const& key ) const
+    {
+        return M_PrecondManage->hasAuxiliaryVector( key );
+    }
+
+    vector_ptrtype const&
+    ModelAlgebraicFactory::auxiliaryVector( std::string const& key ) const
+    {
+        return M_PrecondManage->auxiliaryVector( key );
+    }
+
+    void
     ModelAlgebraicFactory::attachOperatorPCD( std::string const& key, typename preconditioner_type::operator_pcdbase_ptrtype const& opPCD )
     {
         M_PrecondManage->attachOperatorPCD( key, opPCD );
