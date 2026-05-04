@@ -1907,7 +1907,6 @@ ConfigurePCHYPRE_AMS::run( PC& pc )
                 petscOptionsValueAdded.push_back( key );
             }
         }
-
         // PCSetFromOptions is called here because PCHYPRESetType( pc, "ams" ) reset all param
         if ( !petscOptionsValueAdded.empty() )
             this->check( PCSetFromOptions( pc ) );
@@ -1917,22 +1916,28 @@ ConfigurePCHYPRE_AMS::run( PC& pc )
         {
             auto gMat = this->precFeel()->auxiliarySparseMatrix("G");
             CHECK(gMat) << "The pointer gMat is not initialized\n";
-            MatrixPetsc<double> * gPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*gMat) ) );
+            MatrixPetsc<double> * gPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( gMat.get() ) );
             CHECK( gPetsc && gPetsc->mat() ) << "gPetsc->mat() is not initialized\n";
             this->check( PCHYPRESetDiscreteGradient( pc, gPetsc->mat() ) );
         }
         else
             std::cerr << "G for hypre AMS has not been provided\n";
-
-        if ( this->precFeel()->hasAuxiliaryVector("Px") && this->precFeel()->hasAuxiliaryVector("Py") && this->precFeel()->hasAuxiliaryVector("Pz")  )
+        if ( this->precFeel()->hasAuxiliaryVector("Px") && this->precFeel()->hasAuxiliaryVector("Py") /*&& this->precFeel()->hasAuxiliaryVector("Pz")*/  )
         {
             auto pxVec = this->precFeel()->auxiliaryVector("Px");
             auto pyVec = this->precFeel()->auxiliaryVector("Py");
-            auto pzVec = this->precFeel()->auxiliaryVector("Pz");
             VectorPetsc<double> * pxPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pxVec) ) );
             VectorPetsc<double> * pyPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pyVec) ) );
-            VectorPetsc<double> * pzPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pzVec) ) );
-            this->check( PCHYPRESetEdgeConstantVectors(pc, pxPetsc->vec(), pyPetsc->vec(), pzPetsc->vec()) );
+            if ( this->precFeel()->hasAuxiliaryVector("Pz") )
+            {
+                auto pzVec = this->precFeel()->auxiliaryVector("Pz");
+                VectorPetsc<double> * pzPetsc   = const_cast<VectorPetsc<double> *>( dynamic_cast<VectorPetsc<double> const*>( &(*pzVec) ) );
+                this->check( PCHYPRESetEdgeConstantVectors(pc, pxPetsc->vec(), pyPetsc->vec(), pzPetsc->vec()) );
+            }
+            else
+            {
+                this->check( PCHYPRESetEdgeConstantVectors(pc, pxPetsc->vec(), pyPetsc->vec(), NULL ) );
+            }
         }
         else if ( this->precFeel()->hasAuxiliaryVector("X") && this->precFeel()->hasAuxiliaryVector("Y") && this->precFeel()->hasAuxiliaryVector("Z")  )
         {
@@ -1971,23 +1976,21 @@ ConfigurePCHYPRE_AMS::run( PC& pc )
     if ( this->precFeel()->hasAuxiliarySparseMatrix("a_alpha") )
     {
         auto gMat = this->precFeel()->auxiliarySparseMatrix("a_alpha");
-        MatrixPetsc<double> * gPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*gMat) ) );
+        MatrixPetsc<double> * gPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( gMat.get() ) );
         this->check( PCHYPRESetAlphaPoissonMatrix(pc, gPetsc->mat()) );
     }
+
     if ( this->precFeel()->hasAuxiliarySparseMatrix("a_beta") )
     {
         auto gMat = this->precFeel()->auxiliarySparseMatrix("a_beta");
-        if(!gMat)
-        {
-            this->check( PCHYPRESetBetaPoissonMatrix(pc, NULL) );
-        }
-        else
-        {
-          MatrixPetsc<double> * gPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &(*gMat) ) );
-          this->check( PCHYPRESetBetaPoissonMatrix(pc, gPetsc->mat()) );
-        }
+        MatrixPetsc<double> * gPetsc   = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( gMat.get() ) );
+        this->check( PCHYPRESetBetaPoissonMatrix(pc, gPetsc->mat()) );
     }
-
+    else
+    {
+        this->check( PCHYPRESetBetaPoissonMatrix(pc, NULL) );
+    }
+ 
     // setup sub-pc
     this->check( PCSetUp( pc ) );
 
