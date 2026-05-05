@@ -163,21 +163,25 @@ jobs:
       matrix: ${{ fromJSON(needs.plan_ci.outputs.component_matrix_json) }}
     env:
       CHECKOUT_DIR: src-${{ github.run_id }}-feelpp-${{ matrix.oci_dist }}
+      CI_ACTIONS_DIR: .ci-actions-feelpp
       DOCKER_CONFIG: /nvme0/prudhomm/.docker/actions/${{ github.run_id }}-feelpp-${{ matrix.oci_dist }}
       JOB_ROOT: /nvme0/prudhomm/.cache/feelpp-actions/${{ github.run_id }}-${{ github.run_attempt }}/ci/feelpp/${{ matrix.oci_dist }}
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     steps:
+      - name: Clean local actions checkout
+        run: rm -rf "${CI_ACTIONS_DIR}"
+
       - name: Bootstrap local actions
         uses: actions/checkout@v5
         with:
-          path: .ci-actions
+          path: ${{ env.CI_ACTIONS_DIR }}
           clean: false
           fetch-depth: 1
           sparse-checkout: |
             .github/actions
 
       - id: setup
-        uses: ./.ci-actions/.github/actions/setup-oci-job
+        uses: ./.ci-actions-feelpp/.github/actions/setup-oci-job
         with:
           checkout-dir: ${{ env.CHECKOUT_DIR }}
           docker-config: ${{ env.DOCKER_CONFIG }}
@@ -186,7 +190,7 @@ jobs:
           registry-password: ${{ secrets.CR_PAT }}
 
       - id: bake
-        uses: ./.ci-actions/.github/actions/generate-image-bake
+        uses: ./.ci-actions-feelpp/.github/actions/generate-image-bake
         with:
           repo-root: ${{ steps.setup.outputs.repo_root }}
           job-root: ${{ env.JOB_ROOT }}
@@ -197,7 +201,7 @@ jobs:
           platforms: ${{ env.CI_BUILD_PLATFORMS }}
 
       - name: Build and push Feel++ image(s)
-        uses: ./.ci-actions/.github/actions/build-publish-generated-image
+        uses: ./.ci-actions-feelpp/.github/actions/build-publish-generated-image
         with:
           context_dir: ${{ steps.bake.outputs.context_dir }}
           bake_file: ${{ steps.bake.outputs.bake_file }}
@@ -218,21 +222,25 @@ jobs:
       matrix: ${{ fromJSON(needs.plan_ci.outputs.component_matrix_json) }}
     env:
       CHECKOUT_DIR: src-${{ github.run_id }}-testsuite-${{ matrix.oci_dist }}
+      CI_ACTIONS_DIR: .ci-actions-testsuite
       DOCKER_CONFIG: /nvme0/prudhomm/.docker/actions/${{ github.run_id }}-testsuite-${{ matrix.oci_dist }}
       JOB_ROOT: /nvme0/prudhomm/.cache/feelpp-actions/${{ github.run_id }}-${{ github.run_attempt }}/ci/testsuite/${{ matrix.oci_dist }}
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     steps:
+      - name: Clean local actions checkout
+        run: rm -rf "${CI_ACTIONS_DIR}"
+
       - name: Bootstrap local actions
         uses: actions/checkout@v5
         with:
-          path: .ci-actions
+          path: ${{ env.CI_ACTIONS_DIR }}
           clean: false
           fetch-depth: 1
           sparse-checkout: |
             .github/actions
 
       - id: setup
-        uses: ./.ci-actions/.github/actions/setup-oci-job
+        uses: ./.ci-actions-testsuite/.github/actions/setup-oci-job
         with:
           checkout-dir: ${{ env.CHECKOUT_DIR }}
           docker-config: ${{ env.DOCKER_CONFIG }}
@@ -241,7 +249,7 @@ jobs:
           registry-password: ${{ secrets.CR_PAT }}
 
       - id: refs
-        uses: ./.ci-actions/.github/actions/generate-image-bake
+        uses: ./.ci-actions-testsuite/.github/actions/generate-image-bake
         with:
           repo-root: ${{ steps.setup.outputs.repo_root }}
           job-root: ${{ env.JOB_ROOT }}
@@ -305,21 +313,25 @@ jobs:
       matrix: ${{ fromJSON(needs.plan_ci.outputs.component_matrix_json) }}
     env:
       CHECKOUT_DIR: src-${{ github.run_id }}-toolboxes-${{ matrix.oci_dist }}
+      CI_ACTIONS_DIR: .ci-actions-toolboxes
       DOCKER_CONFIG: /nvme0/prudhomm/.docker/actions/${{ github.run_id }}-toolboxes-${{ matrix.oci_dist }}
       JOB_ROOT: /nvme0/prudhomm/.cache/feelpp-actions/${{ github.run_id }}-${{ github.run_attempt }}/ci/toolboxes/${{ matrix.oci_dist }}
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     steps:
+      - name: Clean local actions checkout
+        run: rm -rf "${CI_ACTIONS_DIR}"
+
       - name: Bootstrap local actions
         uses: actions/checkout@v5
         with:
-          path: .ci-actions
+          path: ${{ env.CI_ACTIONS_DIR }}
           clean: false
           fetch-depth: 1
           sparse-checkout: |
             .github/actions
 
       - id: setup
-        uses: ./.ci-actions/.github/actions/setup-oci-job
+        uses: ./.ci-actions-toolboxes/.github/actions/setup-oci-job
         with:
           checkout-dir: ${{ env.CHECKOUT_DIR }}
           docker-config: ${{ env.DOCKER_CONFIG }}
@@ -328,7 +340,7 @@ jobs:
           registry-password: ${{ secrets.CR_PAT }}
 
       - id: feelpp_refs
-        uses: ./.ci-actions/.github/actions/generate-image-bake
+        uses: ./.ci-actions-toolboxes/.github/actions/generate-image-bake
         with:
           repo-root: ${{ steps.setup.outputs.repo_root }}
           job-root: ${{ env.JOB_ROOT }}-refs
@@ -352,7 +364,7 @@ jobs:
           PY
 
       - id: bake
-        uses: ./.ci-actions/.github/actions/generate-image-bake
+        uses: ./.ci-actions-toolboxes/.github/actions/generate-image-bake
         with:
           repo-root: ${{ steps.setup.outputs.repo_root }}
           job-root: ${{ env.JOB_ROOT }}
@@ -363,7 +375,7 @@ jobs:
           platforms: ${{ env.CI_BUILD_PLATFORMS }}
 
       - name: Build and push Toolboxes image(s)
-        uses: ./.ci-actions/.github/actions/build-publish-generated-image
+        uses: ./.ci-actions-toolboxes/.github/actions/build-publish-generated-image
         with:
           context_dir: ${{ steps.bake.outputs.context_dir }}
           bake_file: ${{ steps.bake.outputs.bake_file }}
@@ -384,21 +396,25 @@ jobs:
       matrix: ${{ fromJSON(needs.plan_ci.outputs.component_matrix_json) }}
     env:
       CHECKOUT_DIR: src-${{ github.run_id }}-mor-${{ matrix.oci_dist }}
+      CI_ACTIONS_DIR: .ci-actions-mor
       DOCKER_CONFIG: /nvme0/prudhomm/.docker/actions/${{ github.run_id }}-mor-${{ matrix.oci_dist }}
       JOB_ROOT: /nvme0/prudhomm/.cache/feelpp-actions/${{ github.run_id }}-${{ github.run_attempt }}/ci/mor/${{ matrix.oci_dist }}
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     steps:
+      - name: Clean local actions checkout
+        run: rm -rf "${CI_ACTIONS_DIR}"
+
       - name: Bootstrap local actions
         uses: actions/checkout@v5
         with:
-          path: .ci-actions
+          path: ${{ env.CI_ACTIONS_DIR }}
           clean: false
           fetch-depth: 1
           sparse-checkout: |
             .github/actions
 
       - id: setup
-        uses: ./.ci-actions/.github/actions/setup-oci-job
+        uses: ./.ci-actions-mor/.github/actions/setup-oci-job
         with:
           checkout-dir: ${{ env.CHECKOUT_DIR }}
           docker-config: ${{ env.DOCKER_CONFIG }}
@@ -407,7 +423,7 @@ jobs:
           registry-password: ${{ secrets.CR_PAT }}
 
       - id: toolboxes_refs
-        uses: ./.ci-actions/.github/actions/generate-image-bake
+        uses: ./.ci-actions-mor/.github/actions/generate-image-bake
         with:
           repo-root: ${{ steps.setup.outputs.repo_root }}
           job-root: ${{ env.JOB_ROOT }}-refs
@@ -430,7 +446,7 @@ jobs:
           PY
 
       - id: bake
-        uses: ./.ci-actions/.github/actions/generate-image-bake
+        uses: ./.ci-actions-mor/.github/actions/generate-image-bake
         with:
           repo-root: ${{ steps.setup.outputs.repo_root }}
           job-root: ${{ env.JOB_ROOT }}
@@ -441,7 +457,7 @@ jobs:
           platforms: ${{ env.CI_BUILD_PLATFORMS }}
 
       - name: Build and push MOR image(s)
-        uses: ./.ci-actions/.github/actions/build-publish-generated-image
+        uses: ./.ci-actions-mor/.github/actions/build-publish-generated-image
         with:
           context_dir: ${{ steps.bake.outputs.context_dir }}
           bake_file: ${{ steps.bake.outputs.bake_file }}
@@ -462,21 +478,25 @@ jobs:
       matrix: ${{ fromJSON(needs.plan_ci.outputs.full_matrix_json) }}
     env:
       CHECKOUT_DIR: src-${{ github.run_id }}-full-${{ matrix.oci_dist }}
+      CI_ACTIONS_DIR: .ci-actions-full
       DOCKER_CONFIG: /nvme0/prudhomm/.docker/actions/${{ github.run_id }}-full-${{ matrix.oci_dist }}
       JOB_ROOT: /nvme0/prudhomm/.cache/feelpp-actions/${{ github.run_id }}-${{ github.run_attempt }}/ci/full/${{ matrix.oci_dist }}
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     steps:
+      - name: Clean local actions checkout
+        run: rm -rf "${CI_ACTIONS_DIR}"
+
       - name: Bootstrap local actions
         uses: actions/checkout@v5
         with:
-          path: .ci-actions
+          path: ${{ env.CI_ACTIONS_DIR }}
           clean: false
           fetch-depth: 1
           sparse-checkout: |
             .github/actions
 
       - id: setup
-        uses: ./.ci-actions/.github/actions/setup-oci-job
+        uses: ./.ci-actions-full/.github/actions/setup-oci-job
         with:
           checkout-dir: ${{ env.CHECKOUT_DIR }}
           docker-config: ${{ env.DOCKER_CONFIG }}
@@ -485,7 +505,7 @@ jobs:
           registry-password: ${{ secrets.CR_PAT }}
 
       - id: bake
-        uses: ./.ci-actions/.github/actions/generate-image-bake
+        uses: ./.ci-actions-full/.github/actions/generate-image-bake
         with:
           repo-root: ${{ steps.setup.outputs.repo_root }}
           job-root: ${{ env.JOB_ROOT }}
@@ -496,7 +516,7 @@ jobs:
           platforms: ${{ env.CI_BUILD_PLATFORMS }}
 
       - name: Build and push Feel++ full image(s)
-        uses: ./.ci-actions/.github/actions/build-publish-generated-image
+        uses: ./.ci-actions-full/.github/actions/build-publish-generated-image
         with:
           context_dir: ${{ steps.bake.outputs.context_dir }}
           bake_file: ${{ steps.bake.outputs.bake_file }}
