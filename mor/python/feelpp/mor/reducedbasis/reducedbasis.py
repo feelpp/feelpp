@@ -9,7 +9,11 @@ from slepc4py import SLEPc
 slepc4py.init(sys.argv)
 # import plotly.graph_objects as go
 import sys, os
-from tqdm import tqdm
+try:
+    from tqdm import tqdm
+except ModuleNotFoundError:
+    def tqdm(iterable=None, *args, **kwargs):
+        return iterable if iterable is not None else iter(())
 from scipy.sparse.linalg import splu, spsolve
 
 from mpi4py import MPI
@@ -891,5 +895,4 @@ class reducedbasisOffline(reducedbasis):
         self.DeltaMax = np.array(self.DeltaMax)
 
         return S
-
 
