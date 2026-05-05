@@ -79,9 +79,11 @@ int main(int argc, char**argv )
         if ( !boption( "no-solve" ) )
         {
             tic();
+            bool const useHpddm = soption(_name="pc-type") == "hpddm";
             std::shared_ptr<NullSpace<double> > myNullSpace( new NullSpace<double>(backend(),qsNullSpace(Vh,mpl::int_<FEELPP_DIM>())) );
-            backend()->attachNearNullSpace( myNullSpace );
-            if ( boption(_name="nullspace") )
+            if ( !useHpddm )
+                backend()->attachNearNullSpace( myNullSpace );
+            if ( boption(_name="nullspace") && !useHpddm )
                 backend()->attachNearNullSpace( myNullSpace );
 
             a.solve(_rhs=l,_solution=u);

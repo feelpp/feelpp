@@ -96,6 +96,37 @@ extern "C"
         return 0;
     }
 
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 24, 0 )
+    PetscErrorCode feel_petsc_snes_linesearch_precheck_maxstep( SNESLineSearch, Vec, Vec y, PetscBool* changed_y, void* ctx )
+    {
+        auto* b = static_cast<Feel::SolverNonLinearPetsc<double>*>( ctx );
+        if ( changed_y )
+            *changed_y = PETSC_FALSE;
+        if ( !b )
+            return 0;
+
+        PetscReal maxStep = static_cast<PetscReal>( Feel::doption( Feel::_prefix=b->prefix(), Feel::_name="snes-line-search-maxstep" ) );
+        if ( maxStep <= 0 )
+            return 0;
+
+        PetscReal ynorm = 0;
+        PetscErrorCode ierr = VecNorm( y, NORM_2, &ynorm );
+        if ( ierr )
+            return ierr;
+
+        if ( ynorm > maxStep )
+        {
+            ierr = VecScale( y, maxStep/ynorm );
+            if ( ierr )
+                return ierr;
+            if ( changed_y )
+                *changed_y = PETSC_TRUE;
+        }
+
+        return 0;
+    }
+#endif
+
     PetscErrorCode feel_petsc_post_nlsolve(KSP ksp,Vec x,Vec y,void* ctx)
     {
         Feel::SolverNonLinearPetsc<double>* b =
@@ -633,6 +664,10 @@ void SolverNonLinearPetsc<T>::init ()
 
             ierr = SNESLineSearchSetType( snesLineSearch,  toPetscName( this->nlSolverLineSearchType() ) );
             CHKERRABORT( this->worldComm().globalComm(), ierr );
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 24, 0 )
+            ierr = SNESLineSearchSetPreCheck( snesLineSearch, feel_petsc_snes_linesearch_precheck_maxstep, this );
+            CHKERRABORT( this->worldComm().globalComm(), ierr );
+#endif
         }
         break;
 
@@ -986,6 +1021,15 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
 
     ierr = SNESSetFromOptions( M_snes );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 24, 0 )
+    {
+        SNESLineSearch snesLineSearch;
+        ierr = SNESGetLineSearch( M_snes, &snesLineSearch );
+        CHKERRABORT( this->worldComm().globalComm(), ierr );
+        ierr = SNESLineSearchSetPreCheck( snesLineSearch, feel_petsc_snes_linesearch_precheck_maxstep, this );
+        CHKERRABORT( this->worldComm().globalComm(), ierr );
+    }
+#endif
 
     //Set the preconditioning matrix
     //if ( this->M_preconditioner )

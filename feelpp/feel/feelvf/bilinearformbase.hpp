@@ -706,6 +706,26 @@ public:
             state.constrainedVectorSourceRevision = rhs.vectorPtr()->revision();
         }
 
+    template<typename RhsType>
+        requires requires( RhsType& rhs ) { rhs.vectorPtr(); }
+    void applyDeferredDirichletToBaseOperator( RhsType& rhs )
+        {
+            if ( !this->hasDirichletConstraints() )
+                return;
+
+            this->applyDeferredDirichletToBaseOperatorVector( rhs.vectorPtr() );
+        }
+
+    template<typename RhsType>
+        requires requires( RhsType const& rhs ) { rhs.vectorPtr(); }
+    void applyDeferredDirichletToBaseOperator( RhsType const& rhs )
+        {
+            if ( !this->hasDirichletConstraints() )
+                return;
+
+            this->applyDeferredDirichletToBaseOperatorVector( rhs.vectorPtr() );
+        }
+
 protected:
     deferred_dirichlet_state_type& ensureDeferredDirichletState()
         {
@@ -741,6 +761,24 @@ protected:
             auto& state = this->ensureDeferredDirichletState();
             state.appliedConstraints.append( state.pendingConstraints );
             state.pendingConstraints.clear();
+        }
+
+    template<typename VectorPtrType>
+    void applyDeferredDirichletToBaseOperatorVector( VectorPtrType const& rhsVector )
+        {
+            this->get();
+            M_matrix->closeIfNeeded();
+            if ( !rhsVector->closed() )
+                rhsVector->close();
+
+            auto const deferredEntries = this->allDeferredDirichletConstraints().entries();
+            vf::applyDeferredDirichletEntries( deferredEntries, M_matrix, rhsVector );
+
+            M_matrix->close();
+            if ( !rhsVector->closed() )
+                rhsVector->close();
+
+            this->clearDeferredDirichlet();
         }
 
     template<typename VectorPtrType>
