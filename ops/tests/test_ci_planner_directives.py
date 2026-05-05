@@ -33,6 +33,18 @@ class PlannerDirectiveTests(unittest.TestCase):
             "targets=ubuntu:noble\nonly=feelpp,testsuite\nskip=mor\nmode=components",
         )
 
+    def test_build_message_extracts_inline_dispatch_directives_from_targets(self) -> None:
+        self.assertEqual(
+            build_planner_message(targets="ubuntu:noble,only=testsuite"),
+            "targets=ubuntu:noble\nonly=testsuite",
+        )
+
+    def test_build_message_extracts_prefixed_inline_dispatch_directives_from_targets(self) -> None:
+        self.assertEqual(
+            build_planner_message(targets="targets=ubuntu:noble,only=feelpp,testsuite,skip=mor,mode=components"),
+            "targets=ubuntu:noble\nonly=feelpp,testsuite\nskip=mor\nmode=components",
+        )
+
     def test_build_message_rejects_component_jobs_for_spack_target(self) -> None:
         with self.assertRaisesRegex(PlannerDirectiveError, "feelpp-full"):
             build_planner_message(targets="spack:openmpi", only="feelpp")

@@ -210,7 +210,7 @@ jobs:
     name: Build/Test Testsuite (${{ matrix.target }})
     needs: [plan_ci, feelpp]
     runs-on: self-docker
-    if: needs.plan_ci.outputs.run_testsuite == 'true'
+    if: ${{ always() && needs.plan_ci.outputs.run_testsuite == 'true' && (needs.plan_ci.outputs.run_feelpp != 'true' || needs.feelpp.result == 'success') }}
     continue-on-error: ${{ matrix['continue-on-error'] == 'true' }}
     timeout-minutes: 600
     strategy:
@@ -272,8 +272,8 @@ jobs:
           REPO_ROOT: ${{ steps.setup.outputs.repo_root }}
           FEELPP_DEV_REF: ${{ steps.image_ref.outputs.feelpp_dev_ref }}
         run: |
-          # testsuite consumes the published feelpp-dev image produced by the
-          # upstream feelpp job for the same matrix row.
+          # testsuite consumes the matching published feelpp-dev image. If the
+          # feelpp job is part of this run, this job waits for that image first.
           docker run --rm \
             -e FEELPP_GITHUB_TOKEN \
             -e FEELPP_GIRDER_API_KEY \
@@ -297,7 +297,7 @@ jobs:
     name: Build/Push Toolboxes Image (${{ matrix.target }})
     needs: [plan_ci, feelpp]
     runs-on: self-docker
-    if: needs.plan_ci.outputs.run_toolboxes == 'true'
+    if: ${{ always() && needs.plan_ci.outputs.run_toolboxes == 'true' && (needs.plan_ci.outputs.run_feelpp != 'true' || needs.feelpp.result == 'success') }}
     continue-on-error: ${{ matrix['continue-on-error'] == 'true' }}
     timeout-minutes: 600
     strategy:
@@ -376,7 +376,7 @@ jobs:
     name: Build/Push MOR Image (${{ matrix.target }})
     needs: [plan_ci, toolboxes]
     runs-on: self-docker
-    if: needs.plan_ci.outputs.run_mor == 'true'
+    if: ${{ always() && needs.plan_ci.outputs.run_mor == 'true' && (needs.plan_ci.outputs.run_toolboxes != 'true' || needs.toolboxes.result == 'success') }}
     continue-on-error: ${{ matrix['continue-on-error'] == 'true' }}
     timeout-minutes: 600
     strategy:

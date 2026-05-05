@@ -14,6 +14,11 @@ SPACK_TARGET_ALIASES = {
     "spack-openmpi": SPACK_TARGET,
 }
 VALID_SPACK_ONLY_JOBS = {"feelpp-full"}
+INLINE_DIRECTIVE_KEYS = ("targets", "only", "skip", "mode")
+INLINE_DIRECTIVE_RE = re.compile(
+    rf"(?:(?<=^)|(?<=[,\s]))({'|'.join(INLINE_DIRECTIVE_KEYS)})\s*=",
+    re.IGNORECASE,
+)
 
 
 class PlannerDirectiveError(ValueError):
@@ -45,6 +50,39 @@ def normalize_list_value(raw: str) -> str:
     return ",".join(_normalize_token_list(raw))
 
 
+def _extract_embedded_directives(raw_targets: str) -> tuple[str, dict[str, list[str]]]:
+    directives: dict[str, list[str]] = {key: [] for key in INLINE_DIRECTIVE_KEYS}
+    target_fragments: list[str] = []
+    matches = list(INLINE_DIRECTIVE_RE.finditer(raw_targets))
+
+    if not matches:
+        return raw_targets, directives
+
+    cursor = 0
+    for index, match in enumerate(matches):
+        prefix = raw_targets[cursor : match.start()].strip(" ,")
+        if prefix:
+            target_fragments.append(prefix)
+
+        key = match.group(1).lower()
+        value_start = match.end()
+        value_end = matches[index + 1].start() if index + 1 < len(matches) else len(raw_targets)
+        value = raw_targets[value_start:value_end].strip(" ,")
+        if value:
+            directives[key].append(value)
+        cursor = value_end
+
+    suffix = raw_targets[cursor:].strip(" ,")
+    if suffix:
+        target_fragments.append(suffix)
+
+    if directives["targets"]:
+        target_fragments.extend(directives["targets"])
+        directives["targets"] = []
+
+    return ",".join(target_fragments), directives
+
+
 def build_planner_message(
     *,
     targets: str = "",
@@ -53,10 +91,12 @@ def build_planner_message(
     mode: str = "",
 ) -> str:
     lines: list[str] = []
+    targets, embedded_directives = _extract_embedded_directives(targets)
     normalized_targets = normalize_targets(targets)
-    normalized_only = normalize_list_value(only)
-    normalized_skip = normalize_list_value(skip)
-    normalized_mode = mode.strip().lower()
+    normalized_only = normalize_list_value(" ".join([only, *embedded_directives["only"]]))
+    normalized_skip = normalize_list_value(" ".join([skip, *embedded_directives["skip"]]))
+    raw_mode = mode.strip() or " ".join(embedded_directives["mode"]).strip()
+    normalized_mode = raw_mode.lower()
     contains_spack = SPACK_TARGET in normalized_targets
     spack_only = bool(normalized_targets) and all(target == SPACK_TARGET for target in normalized_targets)
 
