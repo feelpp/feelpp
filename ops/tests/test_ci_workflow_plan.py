@@ -51,7 +51,7 @@ class WorkflowPlanTests(unittest.TestCase):
         self.assertEqual(len(warnings), 2)
         self.assertTrue(all("does not support full builds" in warning for warning in warnings))
 
-    def test_component_job_dependencies_are_closed_for_toolboxes(self) -> None:
+    def test_only_toolboxes_runs_toolboxes_without_feelpp(self) -> None:
         outputs = compute_workflow_plan(
             config=self.config,
             mode="components",
@@ -59,13 +59,13 @@ class WorkflowPlanTests(unittest.TestCase):
             enabled_jobs=["toolboxes"],
         )
 
-        self.assertEqual(outputs["run_feelpp"], "true")
+        self.assertEqual(outputs["run_feelpp"], "false")
         self.assertEqual(outputs["run_testsuite"], "false")
         self.assertEqual(outputs["run_toolboxes"], "true")
         self.assertEqual(outputs["run_mor"], "false")
         self.assertEqual(outputs["run_full"], "false")
 
-    def test_component_job_dependencies_are_closed_for_testsuite(self) -> None:
+    def test_only_testsuite_runs_testsuite_without_feelpp(self) -> None:
         outputs = compute_workflow_plan(
             config=self.config,
             mode="components",
@@ -73,13 +73,13 @@ class WorkflowPlanTests(unittest.TestCase):
             enabled_jobs=["testsuite"],
         )
 
-        self.assertEqual(outputs["run_feelpp"], "true")
+        self.assertEqual(outputs["run_feelpp"], "false")
         self.assertEqual(outputs["run_testsuite"], "true")
         self.assertEqual(outputs["run_toolboxes"], "false")
         self.assertEqual(outputs["run_mor"], "false")
         self.assertEqual(outputs["run_full"], "false")
 
-    def test_component_job_dependencies_are_closed_for_mor(self) -> None:
+    def test_only_mor_runs_mor_without_toolboxes(self) -> None:
         outputs = compute_workflow_plan(
             config=self.config,
             mode="components",
@@ -87,8 +87,8 @@ class WorkflowPlanTests(unittest.TestCase):
             enabled_jobs=["mor"],
         )
 
-        self.assertEqual(outputs["run_feelpp"], "true")
-        self.assertEqual(outputs["run_toolboxes"], "true")
+        self.assertEqual(outputs["run_feelpp"], "false")
+        self.assertEqual(outputs["run_toolboxes"], "false")
         self.assertEqual(outputs["run_mor"], "true")
 
     def test_main_writes_outputs_to_github_output(self) -> None:

@@ -151,11 +151,9 @@ def compute_workflow_plan(
     component_targets_present = bool(component_targets)
     full_targets_present = bool(full_targets)
 
-    run_feelpp = component_targets_present and bool(
-        {"feelpp", "testsuite", "toolboxes", "mor"} & set(requested_component_jobs)
-    )
+    run_feelpp = component_targets_present and "feelpp" in requested_component_jobs
     run_testsuite = component_targets_present and "testsuite" in requested_component_jobs
-    run_toolboxes = component_targets_present and bool({"toolboxes", "mor"} & set(requested_component_jobs))
+    run_toolboxes = component_targets_present and "toolboxes" in requested_component_jobs
     run_mor = component_targets_present and "mor" in requested_component_jobs
     run_full = full_targets_present and (requested_full or bool(rerouted_full_targets))
 
