@@ -33,7 +33,7 @@ extern "C"
 #ifdef __cplusplus
 }
 #endif
-#if defined(FEELPP_HAS_PYBIND11)
+#if defined(FEELPP_HAS_PYTHON)
 #include <feel/feelpython/pybind11/pybind11.h>
 #include <feel/feelpython/pybind11/embed.h>
 #endif
@@ -152,8 +152,10 @@ bool IsGoogleLoggingInitialized();
 namespace Feel
 {
 namespace pt =  boost::property_tree;
+#if defined(FEELPP_HAS_PYTHON)
 namespace py = pybind11;
 using namespace py::literals;
+#endif
 //namespace detail
 //{
 FEELPP_NO_EXPORT
@@ -329,7 +331,7 @@ Environment::Environment( int& argc, char**& argv )
 
 
 
-#if defined(FEELPP_ENABLE_PYTHON_WRAPPING)
+#if defined(FEELPP_HAS_PYTHON)
 struct PythonArgs
 {
 #if defined(FEELPP_HAS_BOOST_PYTHON)
@@ -405,7 +407,7 @@ Environment::Environment( boost::python::list arg )
 }
 #endif // 0
 
-#endif // FEELPP_ENABLE_PYTHON_WRAPPING
+#endif // FEELPP_HAS_PYTHON
 
 #if defined ( FEELPP_HAS_PETSC_H )
 void
@@ -559,6 +561,7 @@ Environment::Environment( int argc, char** argv,
     GmshInitialize();
 #endif
 #endif
+#if defined(FEELPP_HAS_PYTHON)
     if ( !Py_IsInitialized() )
     {
         py::initialize_interpreter();
@@ -566,6 +569,9 @@ Environment::Environment( int argc, char** argv,
     }
     else
         S_init_python = false;
+#else
+    S_init_python = false;
+#endif
 
     cout << "[ Feel++ ] "
          << "application " << about.appName()
@@ -885,8 +891,10 @@ Environment::~Environment()
 
     Environment::clearSomeMemory();
 
+#if defined(FEELPP_HAS_PYTHON)
     if ( S_init_python )
         py::finalize_interpreter();
+#endif
 #if defined(FEELPP_HAS_MONGOCXX )
     VLOG( 2 ) << "cleaning mongocxxInstance";
     MongoCxx::reset();

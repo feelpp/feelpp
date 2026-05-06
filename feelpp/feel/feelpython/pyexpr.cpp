@@ -22,6 +22,7 @@
 //! @copyright 2017 Feel++ Consortium
 //!
 #include <iostream>
+#include <stdexcept>
 #include <fmt/core.h>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -30,11 +31,22 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/feelio.hpp>
 #include <feel/feelpython/pyexpr.hpp>
+#if defined(FEELPP_HAS_PYTHON)
 #include <pybind11/stl.h>
+#endif
 
 namespace Feel
 {
 
+namespace
+{
+[[noreturn]] void pythonSupportUnavailable( std::string const& api )
+{
+    throw std::runtime_error( fmt::format( "{} requires Python support, but this Feel++ build was configured without Python embedding support.", api ) );
+}
+}
+
+#if defined(FEELPP_HAS_PYTHON)
 std::vector<std::string> lookups_ =
     {
         "$cfgdir/../../python/",
@@ -183,5 +195,24 @@ pyexpr( std::string const& pycode, std::vector<std::string> const& vars, std::ma
 
     return r;
 }
+#else
+void
+pyexprFromFile( std::string const&, std::map<std::string, std::string>& )
+{
+    pythonSupportUnavailable( "Feel::pyexprFromFile()" );
+}
+
+void
+pyexprFromFile( std::string const&, std::map<std::string, std::map<std::string, std::string>>& )
+{
+    pythonSupportUnavailable( "Feel::pyexprFromFile()" );
+}
+
+std::map<std::string, std::string>
+pyexpr( std::string const&, std::vector<std::string> const&, std::map<std::string, std::string> const& )
+{
+    pythonSupportUnavailable( "Feel::pyexpr()" );
+}
+#endif
 
 } // namespace Feel

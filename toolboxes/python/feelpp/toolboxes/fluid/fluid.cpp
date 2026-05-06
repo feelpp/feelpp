@@ -65,19 +65,19 @@ void defFM(py::module &m)
         // function spaces and elements
         .def("spaceVelocity",&fm_t::functionSpaceVelocity, "get the velocity function space")
         //.def("fieldVelocity",static_cast<typename fm_t::element_velocity_ptrtype& (fm_t::*)()>(&fm_t::fieldVelocityPtr), "get the velocity field")
-        .def("fieldVelocity",[]( std::shared_ptr<fm_t>& self ) {
-            self->fieldVelocityPtr()->printMatlab("velocityptr.m");
-            return self->fieldVelocityPtr();
+        .def("fieldVelocity",[]( fm_t& self ) {
+            self.fieldVelocityPtr()->printMatlab("velocityptr.m");
+            return self.fieldVelocityPtr();
         } )
         .def("setFieldVelocity",
-            []( std::shared_ptr<fm_t>& self, typename fm_t::element_velocity_ptrtype& v ) {
+            []( fm_t& self, typename fm_t::element_velocity_ptrtype& v ) {
                 v->printMatlab("v.m");
-                self->fieldVelocity() = *v;
-                self->fieldVelocityPtr()->printMatlab("velocity.m");
+                self.fieldVelocity() = *v;
+                self.fieldVelocityPtr()->printMatlab("velocity.m");
             }, "set the velocity field", py::arg("field"))
         .def("setFieldPressure",
-            []( std::shared_ptr<fm_t>& self, typename fm_t::element_pressure_ptrtype& p ) {
-                self->fieldPressure() = *p;
+            []( fm_t& self, typename fm_t::element_pressure_ptrtype& p ) {
+                self.fieldPressure() = *p;
             }, "set the pressure field", py::arg("field"))
         .def("spacePressure",&fm_t::functionSpacePressure, "get the pressure function space")
         .def("fieldPressure",static_cast<typename fm_t::element_pressure_ptrtype const& (fm_t::*)() const>(&fm_t::fieldPressurePtr), "get the pressure field")
@@ -94,10 +94,10 @@ void defFM(py::module &m)
 
         // remesh
         .def("applyRemesh",
-        []( std::shared_ptr<fm_t>& self,typename fm_t::mesh_ptrtype meshOld, typename fm_t::mesh_ptrtype meshNew ) 
+        []( fm_t& self,typename fm_t::mesh_ptrtype meshOld, typename fm_t::mesh_ptrtype meshNew )
         {
             std::shared_ptr<RemeshInterpolation> remeshInterp = std::make_shared<RemeshInterpolation>();
-            self->applyRemesh(meshOld,meshNew,remeshInterp);            
+            self.applyRemesh(meshOld,meshNew,remeshInterp);
         }, "apply remesh to toolbox and regenerate the necessary data structure",py::arg("oldMesh"),py::arg("newMesh"))
         
         .def(
@@ -151,4 +151,3 @@ PYBIND11_MODULE(_fluid, m )
     defFM<3,3,2,1>(m);
 
 }
-

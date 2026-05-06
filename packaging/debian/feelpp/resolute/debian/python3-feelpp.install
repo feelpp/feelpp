@@ -1,0 +1,3 @@
+usr/lib/python3*/*-packages/feelpp/core/*.py
+usr/lib/python3*/*-packages/feelpp/core/*.so
+usr/lib/python3*/*-packages/pyfeelpp/*.py

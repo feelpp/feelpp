@@ -59,6 +59,7 @@ createMesh( double hsize )
     //std::cout << "hsize = " << meshSize << std::endl;
 
     Gmsh __gmsh;
+    __gmsh.setNumberOfPartitions( 1 );
     std::string fname;
     std::ostringstream ostr;
     std::ostringstream nameStr;

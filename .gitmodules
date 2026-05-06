@@ -24,7 +24,7 @@
 	url = https://github.com/feelpp/viewer.git
 [submodule "benchmarks/benchmark"]
 	path = benchmarks/benchmark
-	url = https://github.com/feelpp/benchmark
+	url = https://github.com/google/benchmark.git
 [submodule "feelpp/contrib/fmilib"]
 	path = feelpp/contrib/fmilib
 	url = https://github.com/feelpp/fmi-library.git
@@ -34,9 +34,11 @@
 [submodule "feelpp/contrib/parmmg"]
 	path = feelpp/contrib/parmmg
 	url = https://github.com/feelpp/ParMmg
+	branch = fix-cmake-zlib
 [submodule "feelpp/contrib/mmg"]
 	path = feelpp/contrib/mmg
 	url = https://github.com/feelpp/mmg
+	branch = fix-cmake-zlib
 [submodule "feelpp/contrib/indicators"]
 	path = feelpp/contrib/indicators
 	url = https://github.com/feelpp/indicators.git
@@ -68,6 +70,7 @@
 [submodule "fmi4cpp"]
 	path = feelpp/contrib/fmi4cpp
 	url = https://github.com/feelpp/FMI4cpp.git
+	branch = fix-cmake-pugixml
 [submodule "pythonfmu"]
 	path = feelpp/contrib/pythonfmu
 	url = https://github.com/feelpp/PythonFMU.git

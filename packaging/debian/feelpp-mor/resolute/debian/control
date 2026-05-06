@@ -1,0 +1,48 @@
+Source: feelpp-mor
+Section: science
+Priority: extra
+Maintainer: Debian Science Maintainers <debian-science-maintainers@lists.alioth.debian.org>
+Uploaders: Christophe Prud'homme <prudhomm@debian.org>
+Build-Depends: quilt, debhelper (>= 10), cmake, ninja-build, rsync, dh-python, python3, python3-dev, libfeelpp-toolboxes1-all-dev, libzip-dev
+Standards-Version: 3.9.4
+X-Python-Version: current
+Homepage: http://www.feelpp.org
+Vcs-Svn: svn://svn.debian.org/svn/debian-science/packages/feel++/trunk
+Vcs-Browser: http://svn.debian.org/wsvn/debian-science/packages/feel++/trunk
+
+Package: libfeelpp-mor1
+Section: libs
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: ${shlibs:Depends}, ${misc:Depends}, libfeelpp1 (= ${binary:Version})
+Description: Feel++ MOR libraries
+ Provides Feel++ model order reduction libraries
+
+Package: libfeelpp-mor-dev
+Section: libdevel
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: libfeelpp-toolboxes1-all-dev (= ${binary:Version}), libfeelpp-mor1 (= ${binary:Version}), libzip-dev
+Description: Development files for Feel++ mor 
+ Provides the header files and static libraries.
+
+Package: feelpp-mor
+Section: science
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: ${shlibs:Depends}, ${misc:Depends}, libfeelpp-mor1 (= ${binary:Version})
+Description: Feel++ MOR tools
+ Provides Feel++ model order reduction tools such as 
+ - MOR online run
+ - Feel++ toolbox heat MOR offline 
+
+Package: feelpp-mor-casestudies
+Section: science
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: ${shlibs:Depends}, ${misc:Depends}, libfeelpp-mor1 (= ${binary:Version})
+Description: Feel++ MOR case studies
+ Provides Feel++ model order reduction case studies
+
+Package: python3-feelpp-mor
+Section: python
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends}, libfeelpp-mor1 (= ${binary:Version}), python3-feelpp-toolboxes
+Description: Feel++ MOR Python bindings
+ Provides the Feel++ MOR Python bindings under the feelpp.mor namespace.

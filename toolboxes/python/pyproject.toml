@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "feelpp-toolboxes"
-version = "0.111.0-preview.12"
+version = "0.111.0-preview.13"
 description = "Feel++ toolboxes Python bindings"
 dependencies = ["feelpp-core"]
 

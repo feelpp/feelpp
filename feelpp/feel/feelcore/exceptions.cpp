@@ -25,7 +25,9 @@
 #include <fmt/core.h>
 #include <fmt/color.h>
 #include <feel/feelcore/environment.hpp>
+#if defined(FEELPP_HAS_PYTHON)
 #include <feel/feelpython/pybind11/pybind11.h>
+#endif
 
 namespace Feel
 {
@@ -90,10 +92,12 @@ void handleExceptions()
                                         boost::core::demangle(e.source_type().name()),
                                         boost::core::demangle(e.target_type().name())), e );
     }
+#if defined(FEELPP_HAS_PYTHON)
     catch ( const pybind11::error_already_set& e )
     {
         print_and_trace( fmt::format( "[feelpp.pybind11.error_already_set] python interpreter failed : {}\n", e.what() ), e );
     }
+#endif
     catch(const fs::filesystem_error& e)
     {
         if ( e.code() == std::errc::permission_denied )

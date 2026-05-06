@@ -1,0 +1,12 @@
+#!/bin/sh
+
+set -eu
+
+# Prefer freshly built Feel++ packages from the job-local file:// repository
+# over apt.feelpp.org during chained builds. Keep the remote repo as a
+# fallback by lowering, not disabling, its priority for Feel++ package names.
+cat >/etc/apt/preferences.d/feelpp-local-repo <<'EOF'
+Package: feelpp-* libfeelpp* python3-feelpp*
+Pin: origin apt.feelpp.org
+Pin-Priority: 100
+EOF

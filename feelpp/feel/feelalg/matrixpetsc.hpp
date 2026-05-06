@@ -314,6 +314,11 @@ public:
     void close () const override;
 
     /**
+     * Close the matrix only if at least one rank still has pending assembly.
+     */
+    void closeIfNeeded() const override;
+
+    /**
      * see if Petsc matrix has been closed
      * and fully assembled yet
      */

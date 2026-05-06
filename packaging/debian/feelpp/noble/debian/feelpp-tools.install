@@ -1,0 +1,17 @@
+usr/bin/feelpp_mesh*
+usr/bin/feelpp_remote*
+usr/bin/feelpp_screen*
+usr/bin/feelpp_fm*
+usr/bin/feelpp_plot
+usr/bin/feelpp_dock*
+usr/bin/feelpp_build*
+usr/bin/feelpp_parmmg*
+usr/bin/feelpp_pkg*
+usr/bin/feelpp_sync*
+usr/share/man/man1/feelpp_mesh*
+usr/share/man/man1/feelpp_remote*
+usr/share/man/man1/feelpp_fm*
+usr/share/man/man1/feelpp_do*
+usr/share/man/man1/feelpp_sync*
+usr/share/doc/feelpp/mesh
+usr/share/doc/feelpp/Feelpp

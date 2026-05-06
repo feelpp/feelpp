@@ -17,6 +17,19 @@ FUNCTION(feelpp_expand OUTPUT INPUT)
   SET("${OUTPUT}" "${INPUT}" PARENT_SCOPE)
 ENDFUNCTION()
 
+function(feelpp_append_solver_runtime_env TEST_NAME)
+  set(_feelpp_solver_runtime_env)
+  if(PETSC_DIR)
+    list(APPEND _feelpp_solver_runtime_env "PETSC_DIR=${PETSC_DIR}")
+  endif()
+  if(SLEPC_DIR)
+    list(APPEND _feelpp_solver_runtime_env "SLEPC_DIR=${SLEPC_DIR}")
+  endif()
+  if(_feelpp_solver_runtime_env)
+    set_property(TEST ${TEST_NAME} APPEND PROPERTY ENVIRONMENT "${_feelpp_solver_runtime_env}")
+  endif()
+endfunction()
+
 # list the subdicrectories of directory 'curdir'
 macro(feelpp_list_subdirs result curdir)
   FILE(GLOB children RELATIVE ${curdir} ${curdir}/*)
@@ -153,15 +166,6 @@ macro(feelpp_add_application)
       target_link_libraries( ${execname} Feelpp::feelpp ${FEELPP_APP_LINK_LIBRARIES} )
   endif()
 
-  # Use feel++ lib precompiled headers.
-  #if( FEELPP_ENABLE_PCH )
-  #    add_precompiled_header( feelpp )
-  #endif()
-  # Create application precompiled headers.
-  if( FEELPP_ENABLE_PCH_APPLICATIONS )
-    add_precompiled_header( ${execname} )
-  endif()
-
   # install rule if INSTALL if target is marked to be installed
   if ( FEELPP_APP_INSTALL )
     install(TARGETS ${execname} RUNTIME DESTINATION bin COMPONENT Bin)
@@ -226,6 +230,7 @@ macro(feelpp_add_application)
   foreach(APP_TEST ${APP_TESTS})
     # disable leak detection for now
     set_tests_properties(${APP_TEST} PROPERTIES ENVIRONMENT "ASAN_OPTIONS=detect_leaks=0;LSAN_OPTIONS=suppressions=${CMAKE_SOURCE_DIR}/feelpp/tools/lsan/suppressions.txt")
+    feelpp_append_solver_runtime_env(${APP_TEST})
   endforeach()
 
   #add_dependencies(crb ${execname})
@@ -352,6 +357,11 @@ macro(feelpp_add_test)
 
   CAR(FEELPP_TEST_NAME ${FEELPP_TEST_DEFAULT_ARGS})
   get_directory_property( FEELPP_TEST_LABEL_DIRECTORY LABEL )
+  if ( DEFINED FEELPP_TEST_AGGREGATE_TARGET AND NOT FEELPP_TEST_AGGREGATE_TARGET STREQUAL "" )
+    set(FEELPP_TEST_TARGET_AGGREGATE ${FEELPP_TEST_AGGREGATE_TARGET})
+  else()
+    set(FEELPP_TEST_TARGET_AGGREGATE testsuite)
+  endif()
 
   if ( NOT FEELPP_TEST_SRCS )
     set(_SRCS_FILE test_${FEELPP_TEST_NAME}.cpp)
@@ -371,7 +381,13 @@ macro(feelpp_add_test)
   set_property(TARGET ${targetname} PROPERTY LABELS ${FEELPP_TEST_LABEL} ${FEELPP_TEST_LABEL_DIRECTORY})
   if ( TARGET  ${FEELPP_TEST_LABEL_DIRECTORY})
     add_dependencies(  ${FEELPP_TEST_LABEL_DIRECTORY} ${targetname} )
-    add_dependencies( testsuite  ${FEELPP_TEST_LABEL_DIRECTORY} )
+    if ( TARGET ${FEELPP_TEST_TARGET_AGGREGATE} )
+      add_dependencies( ${FEELPP_TEST_TARGET_AGGREGATE} ${FEELPP_TEST_LABEL_DIRECTORY} )
+    elseif( TARGET testsuite )
+      add_dependencies( testsuite ${FEELPP_TEST_LABEL_DIRECTORY} )
+    endif()
+  elseif( TARGET ${FEELPP_TEST_TARGET_AGGREGATE} )
+    add_dependencies(${FEELPP_TEST_TARGET_AGGREGATE} ${targetname})
   elseif( TARGET testsuite )
     add_dependencies(testsuite ${targetname})
   endif()
@@ -403,6 +419,7 @@ macro(feelpp_add_test)
         if(CMAKE_BUILD_TYPE MATCHES Debug)
           set_tests_properties(${FEELPP_TEST_EXEC}-np-${NProcs2} PROPERTIES ENVIRONMENT "ASAN_OPTIONS=detect_leaks=0;LSAN_OPTIONS=suppressions=${PROJECT_SOURCE_DIR}/../feelpp/tools/lsan/suppressions.txt")
         endif()
+        feelpp_append_solver_runtime_env(${FEELPP_TEST_EXEC}-np-${NProcs2})
       ENDIF()
       if ( FEELPP_TEST_SKIP_TEST OR FEELPP_TEST_SKIP_SEQ_TEST )
          add_test(NAME ${FEELPP_TEST_EXEC}-np-1 COMMAND /bin/sh -c "exit 77")
@@ -414,6 +431,7 @@ macro(feelpp_add_test)
       if(CMAKE_BUILD_TYPE MATCHES Debug)
         set_tests_properties(${FEELPP_TEST_EXEC}-np-1 PROPERTIES ENVIRONMENT "ASAN_OPTIONS=detect_leaks=0;LSAN_OPTIONS=suppressions=${PROJECT_SOURCE_DIR}/../feelpp/tools/lsan/suppressions.txt")
       endif()
+      feelpp_append_solver_runtime_env(${FEELPP_TEST_EXEC}-np-1)
     endif()
 
 
@@ -659,20 +677,21 @@ macro (feelpp_add_man NAME MAN SECT)
     message(STATUS "building manual page ${NAME}.${SECT}")
 
     if ( FEELPP_HAS_ASCIIDOCTOR_MANPAGE )
-      add_custom_target(${NAME}.${SECT})
-
-      add_custom_command (
-        TARGET ${NAME}.${SECT}
-        #OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}
-        COMMAND ${FEELPP_A2M} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT} ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc
-        MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc
-        )
-      #add_custom_target(${NAME}.${SECT} DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT})
+      set(_feelpp_man_source ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc)
+      set(_feelpp_man_output ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT})
+      set(_feelpp_man_target ${NAME}.${SECT}_man)
+      add_custom_command(
+        OUTPUT ${_feelpp_man_output}
+        COMMAND ${FEELPP_A2M} -o ${_feelpp_man_output} ${_feelpp_man_source}
+        DEPENDS ${_feelpp_man_source}
+        VERBATIM
+      )
+      add_custom_target(${_feelpp_man_target} DEPENDS ${_feelpp_man_output})
       if (TARGET man)
-        add_dependencies(man ${NAME}.${SECT})
+        add_dependencies(man ${_feelpp_man_target})
       endif()
       if ( TARGET ${NAME} )
-        add_dependencies(${NAME} ${NAME}.${SECT})
+        add_dependencies(${NAME} ${_feelpp_man_target})
       endif()
       install(CODE "execute_process(COMMAND \"bash\" \"-c\" \"${FEELPP_A2M_STR} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT} ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc\")" COMPONENT Bin)
 
@@ -684,20 +703,21 @@ macro (feelpp_add_man NAME MAN SECT)
         )
     endif()
     if ( FEELPP_HAS_ASCIIDOCTOR_HTML5 )
-      add_custom_target(${NAME}.${SECT}.html)
-      add_custom_command (
-        TARGET ${NAME}.${SECT}.html
-        #OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html
-        COMMAND ${FEELPP_A2H} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc
-        DEPENDS ${FEELPP_STYLESHEET}
-        MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc
-        )
-      #add_custom_target(${NAME}.${SECT}.html DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html)
+      set(_feelpp_html_source ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc)
+      set(_feelpp_html_output ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html)
+      set(_feelpp_html_target ${NAME}.${SECT}.html_target)
+      add_custom_command(
+        OUTPUT ${_feelpp_html_output}
+        COMMAND ${FEELPP_A2H} -o ${_feelpp_html_output} ${_feelpp_html_source}
+        DEPENDS ${_feelpp_html_source} ${FEELPP_STYLESHEET}
+        VERBATIM
+      )
+      add_custom_target(${_feelpp_html_target} DEPENDS ${_feelpp_html_output})
       if (TARGET html)
-        add_dependencies(html ${NAME}.${SECT}.html)
+        add_dependencies(html ${_feelpp_html_target})
       endif()
       if ( TARGET ${NAME} )
-        add_dependencies(${NAME} ${NAME}.${SECT}.html)
+        add_dependencies(${NAME} ${_feelpp_html_target})
 
       endif()
       install(CODE "execute_process(COMMAND bash \"-c\"  \"${FEELPP_A2H_STR} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc\" )" COMPONENT Bin)
@@ -711,19 +731,21 @@ macro (feelpp_add_man NAME MAN SECT)
 
       if ( FEELPP_HAS_ASCIIDOCTOR_PDF )
         message(STATUS "${ASCIIDOCTOR_PDF_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.pdf ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc" )
-        add_custom_target(${NAME}.pdf)
-        add_custom_command (
-          TARGET ${NAME}.pdf
-          COMMAND ${ASCIIDOCTOR_PDF_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.pdf ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc
-          DEPENDS ${FEELPP_STYLESHEET}
-          MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc
-          )
-        #add_custom_target(${NAME}.${SECT}.html DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html)
+        set(_feelpp_pdf_source ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc)
+        set(_feelpp_pdf_output ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.pdf)
+        set(_feelpp_pdf_target ${NAME}.pdf_target)
+        add_custom_command(
+          OUTPUT ${_feelpp_pdf_output}
+          COMMAND ${ASCIIDOCTOR_PDF_EXECUTABLE} -o ${_feelpp_pdf_output} ${_feelpp_pdf_source}
+          DEPENDS ${_feelpp_pdf_source} ${FEELPP_STYLESHEET}
+          VERBATIM
+        )
+        add_custom_target(${_feelpp_pdf_target} DEPENDS ${_feelpp_pdf_output})
         if (TARGET pdf)
-          add_dependencies(pdf ${NAME}.pdf)
+          add_dependencies(pdf ${_feelpp_pdf_target})
         endif()
         if ( TARGET ${NAME} )
-          add_dependencies(${NAME} ${NAME}.pdf)
+          add_dependencies(${NAME} ${_feelpp_pdf_target})
           
         endif()
         install(CODE "execute_process(COMMAND bash \"-c\"  \"${ASCIIDOCTOR_PDF_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.pdf ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc\" )" COMPONENT Bin)
@@ -766,6 +788,7 @@ macro ( feelpp_add_fmu )
     add_custom_target( feelpp_add_fmu_${OMWRAPPER_NAME}  ALL COMMENT "Generate FMU for model ${OMWRAPPER_NAME}"  )
 
     add_custom_command(TARGET feelpp_add_fmu_${OMWRAPPER_NAME}
+      POST_BUILD
       COMMAND ${CMAKE_COMMAND} -DOMC_COMPILER=${OMC_COMPILER} -DFMU_SCRIPT_NAME=${FMU_SCRIPT_NAME} -DOMWRAPPER_LIBDIR=${OMWRAPPER_LIBDIR} -DOMWRAPPER_NAME=${OMWRAPPER_NAME} -P "${OMWRAPPER_MACRO_DIR}/feelpp.macros.om.cmake" )
 
     if ( OM_MODEL_CATEGORY )
@@ -798,6 +821,7 @@ macro( feelpp_add_omc )
       PRE_BUILD
       COMMAND ${CMAKE_COMMAND} -E make_directory ${TMP_DIR} )
     add_custom_command( TARGET feelpp_add_omc_${OMC_NAME}
+      POST_BUILD
       COMMAND ${OMC_COMPILER} -s -q ${OMC_SRCS_FULLPATH}
       COMMAND make -f ${OMC_CLASS}.makefile CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER}
       WORKING_DIRECTORY ${TMP_DIR}
@@ -984,10 +1008,12 @@ function(feelpp_set_options varTarget project )
   foreach( opts IN LISTS CD )
     string( REGEX MATCH "FEELPP_HAS_[a-zA-Z0-9_]+$" OPT ${opts} )
     if ( OPT )
-      if ( NOT project STREQUAL "" )
-        message( STATUS "[${project}] Enabled option: ${OPT}" )
-      else()
-        message( STATUS "Enabled option: ${OPT}" )
+      if ( FEELPP_ENABLE_VERBOSE_CMAKE )
+        if ( NOT project STREQUAL "" )
+          message( STATUS "[${project}] Enabled option: ${OPT}" )
+        else()
+          message( STATUS "Enabled option: ${OPT}" )
+        endif()
       endif()
       set(${OPT} 1 PARENT_SCOPE)
     endif()

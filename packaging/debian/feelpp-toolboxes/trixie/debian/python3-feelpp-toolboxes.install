@@ -1,0 +1,3 @@
+usr/lib/python3*/*-packages/feelpp/toolboxes/__init__.py
+usr/lib/python3*/*-packages/pyfeelpp_toolboxes/*.py
+usr/lib/python3*/*-packages/pyfeelpptoolboxes/*.py

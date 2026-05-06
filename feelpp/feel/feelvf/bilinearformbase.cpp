@@ -44,6 +44,8 @@ BilinearFormBase<T>::BilinearFormBase( BilinearFormBase const& __vf )
     M_do_build( __vf.M_do_build ),
     M_do_threshold( __vf.M_do_threshold ),
     M_threshold( __vf.M_threshold ),
+    M_dirichletState( __vf.M_dirichletState ? std::make_shared<deferred_dirichlet_state_type>( *__vf.M_dirichletState )
+                                            : std::make_shared<deferred_dirichlet_state_type>() ),
     b_mutex()
 {
     auto dmTest = M_matrix->mapRowPtr();
@@ -67,6 +69,9 @@ BilinearFormBase<T>::operator=( BilinearFormBase const& form )
         M_row_startInMatrix = form.M_row_startInMatrix;
         M_col_startInMatrix = form.M_col_startInMatrix;
         M_lb = form.M_lb;
+        if ( !M_dirichletState )
+            M_dirichletState = std::make_shared<deferred_dirichlet_state_type>();
+        *M_dirichletState = form.M_dirichletState ? *form.M_dirichletState : deferred_dirichlet_state_type{};
         auto dmTest = M_matrix->mapRowPtr();
         auto dmTrial = M_matrix->mapColPtr();
         this->setDofIdToContainerIdTest( dmTest->dofIdToContainerId( M_row_startInMatrix ) );
@@ -83,6 +88,7 @@ BilinearFormBase<T>::addMatrix( int* rows, int nrows,
                                 size_type K,
                                 size_type K2)
 {
+    this->invalidateMaterializedDeferredDirichlet();
     std::lock_guard<std::mutex> guard(b_mutex);
     //std::cout << "add matrix\n";
     M_matrix->addMatrix( rows, nrows, cols, ncols, data, K, K2 );
@@ -96,6 +102,7 @@ BilinearFormBase<T>::zeroRows( std::vector<int> const& __dofs,
                                Feel::Context const& on_context,
                                double value_on_diagonal )
 {
+    this->invalidateMaterializedDeferredDirichlet();
     M_matrix->zeroRows( __dofs, __values, rhs, on_context, value_on_diagonal );
 }
 

@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required(VERSION 3.7.2)
+cmake_minimum_required(VERSION 3.21)
 
 project(quickstart)
 set(PROJECT_SHORTNAME "qs")

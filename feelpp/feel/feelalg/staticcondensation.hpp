@@ -1023,8 +1023,7 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
         M_AinvB[K] = std::move( AinvB );
         M_AinvF[K] = std::move( AinvF );
 
-        auto dofsSizeType = eu.functionSpace()->dof()->getIndicesOnGlobalCluster( K );
-        std::vector<int> dofs( dofsSizeType.begin(), dofsSizeType.end() );
+        std::vector<int> dofs = eu.dofs( std::vector<size_type>{ K }, S.matrixPtr()->mapRow(), 0 );
 
         S( 0_c, 0_c ).addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(),
                                  DK.data(), invalid_v<size_type>, invalid_v<size_type> );

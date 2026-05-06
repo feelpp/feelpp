@@ -132,11 +132,22 @@
 #    endif()
 #endmacro()
 
-include(cotire)
+set(_feelpp_pch_requested OFF)
+foreach(_feelpp_pch_option
+        FEELPP_ENABLE_PCH
+        FEELPP_ENABLE_PCH_APPLICATIONS
+        FEELPP_ENABLE_PCH_MODELS
+        FEELPP_ENABLE_PCH_FOR_APPLICATIONS)
+    if(${_feelpp_pch_option})
+        set(_feelpp_pch_requested ON)
+    endif()
+endforeach()
 
-# Based on cotire
-set( COTIRE_MINIMUM_NUMBER_OF_TARGET_SOURCES 1 )
+if(_feelpp_pch_requested)
+    message(WARNING
+        "Feel++ precompiled header support based on cotire has been retired. "
+        "FEELPP_ENABLE_PCH* options are ignored.")
+endif()
 
 macro(add_precompiled_header target)
-    cotire(${target})
 endmacro()

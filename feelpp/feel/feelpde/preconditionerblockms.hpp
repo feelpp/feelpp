@@ -180,6 +180,7 @@ private:
     potential_space_ptrtype M_Vh;
     lagrange_space_ptrtype M_Qh;
     std::vector<size_type> M_Vh_indices;
+    std::vector<size_type> M_Vh_col_indices;
     std::vector<size_type> M_Qh_indices;
 
     // The two blocks: rhs and unknowns
@@ -191,7 +192,6 @@ private:
     mutable element_type U;
 
     sparse_matrix_ptrtype M_11;
-    sparse_matrix_ptrtype M_mass;
     sparse_matrix_ptrtype M_L;
 
     /// Warning: at this point the permittivity is set to one for the domain
@@ -238,13 +238,13 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
         M_Vh( Xh->template functionSpace<0>() ), // Potential
         M_Qh( Xh->template functionSpace<1>() ), // Lagrange
         M_Vh_indices( AA->mapRow().dofIdToContainerId( 0 ) ),
+        M_Vh_col_indices( AA->mapCol().dofIdToContainerId( 0 ) ),
         M_Qh_indices( AA->mapRow().dofIdToContainerId( 1 ) ),
         M_uin( M_backend->newVector( M_Vh )  ),
         M_uout( M_backend->newVector( M_Vh )  ),
         M_pin( M_backend->newVector( M_Qh )  ),
         M_pout( M_backend->newVector( M_Qh )  ),
         U( M_Xh, "U" ),
-        M_mass(M_backend->newMatrix(_test=M_Vh,_trial=M_Vh)),
         M_L(M_backend->newMatrix(_test=M_Qh,_trial=M_Qh)),
         M_er( 1. ),
         M_bc( bc ),
@@ -274,7 +274,7 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
     this->setMatrix( AA );
     this->setName(M_prefix);
 
-    M_11 = AA->createSubMatrix( M_Vh_indices, M_Vh_indices, true, true);
+    M_11 = AA->createSubMatrix( M_Vh_indices, M_Vh_col_indices, false, true);
 
     /* Boundary conditions */
 
@@ -283,17 +283,6 @@ PreconditionerBlockMS<space_type>::PreconditionerBlockMS(space_ptrtype Xh,      
 
     //map_vector_field<FEELPP_DIM,1,2> m_weak_u { M_bc.getVectorFields<FEELPP_DIM> ( "u", "Weakdir" ) };
     map_scalar_field<2> m_weak_p { M_bc.getScalarFields<2> ( "phi", "Weakdir" ) };
-
-    /* Compute the mass matrix (needed in first block, constant) */
-    auto f2A = form2(_test=M_Vh, _trial=M_Vh, _matrix=M_mass);
-    auto f1A = form1(_test=M_Vh);
-    f2A = integrate(_range=elements(M_Vh->mesh()), _expr=inner(idt(u),id(u))); // M
-    // the BC are applied during the init() function
-    //for(auto const & it : m_dirichlet_u )
-    //{
-    //    LOG(INFO) << "Applying " << it.second << " on " << it.first << " for "<<M_prefix_11<<"\n";
-    //    f2A += on(_range=markedfaces(M_Vh->mesh(),it.first), _expr=it.second,_rhs=f1A, _element=u, _type="elimination_symmetric");
-    //}
 
     /* Compute the L (= er * grad grad) matrix (the second block) */
     auto f2L = form2(_test=M_Qh,_trial=M_Qh, _matrix=M_L);
@@ -349,10 +338,10 @@ PreconditionerBlockMS<space_type>::init( void )
      */
     // Is the zero() necessary ?
     M_11->zero();
-    this->matrix()->updateSubMatrix(M_11, M_Vh_indices, M_Vh_indices, false); // M_11 = A-k^2 M
+    this->matrix()->updateSubMatrix(M_11, M_Vh_indices, M_Vh_col_indices, false); // M_11 = A-k^2 M
     LOG(INFO) << "Use relax = " << M_relax << std::endl;
-    M_11->addMatrix(M_relax,M_mass);                            // A-k^2 M + M_relax*M = A+(M_relax-k^2) M
     auto f2A = form2(_test=M_Vh, _trial=M_Vh,_matrix=M_11);
+    f2A += integrate(_range=elements(M_Vh->mesh()), _expr=M_relax*inner(idt(u),id(u))); // A-k^2 M + M_relax*M = A+(M_relax-k^2) M
     auto f1A = form1(_test=M_Vh);
     for(auto const & it : m_weak_u )
     {

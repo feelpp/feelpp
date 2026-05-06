@@ -1,0 +1,5 @@
+version=3
+opts=\
+downloadurlmangle=s#^.*name=(feel%2B%2B-[\d.]+\.tar\.gz).*$#http://feelpp.googlecode.com/files/$1#,\
+filenamemangle=s#^.*name=feel%2B%2B-([\d.]+\.tar\.gz).*$#feel++-$1# \
+http://code.google.com/p/feelpp/downloads/list ^detail\?name=feel%2B%2B-([\d.]+)\.tar\.gz.*

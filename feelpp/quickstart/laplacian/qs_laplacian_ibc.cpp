@@ -175,6 +175,7 @@ cg_laplacian_ibc()
 
     auto rhs = blockform1( Xh, solve::strategy::monolithic, backend() );
     auto a = blockform2( Xh, solve::strategy::monolithic, backend() );
+    a.deferDirichlet();
 
     a( 0_c, 0_c ) = integrate( _range = elements( mesh ),
                                _expr = cst( sigma ) * inner( gradt( u ), grad( v ) ) );
@@ -192,8 +193,6 @@ cg_laplacian_ibc()
 
     auto U = Xh.element();
     auto uh = U( 0_c );
-    rhs.close();
-    a.close();
     a.row( 0_c ) += on( _range = markedfaces( mesh, dirichletMarker ),
                         _rhs = rhs( 0_c ),
                         _element = uh,

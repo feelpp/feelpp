@@ -50,17 +50,91 @@ SET(CPACK_PACKAGE_NAME "feelpp-toolboxes")
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Feel++ Toolboxes")
 SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${FEELPP_VERSION_MAJOR}.${FEELPP_VERSION_MINOR}.${FEELPP_VERSION_MICRO}${FEELPP_VERSION_PRERELEASE}${FEELPP_VERSION_METADATA}")
 
+if (NOT GIT_FOUND)
+  find_package(Git QUIET)
+endif()
+
+function(feelpp_source_regex_literal INPUT OUTPUT)
+  set(_value "${INPUT}")
+  string(REPLACE "[" "[[]" _value "${_value}")
+  string(REPLACE "]" "[]]" _value "${_value}")
+  string(REPLACE "." "[.]" _value "${_value}")
+  string(REPLACE "+" "[+]" _value "${_value}")
+  string(REPLACE "*" "[*]" _value "${_value}")
+  string(REPLACE "?" "[?]" _value "${_value}")
+  string(REPLACE "$" "[$]" _value "${_value}")
+  string(REPLACE "(" "[(]" _value "${_value}")
+  string(REPLACE ")" "[)]" _value "${_value}")
+  string(REPLACE "{" "[{]" _value "${_value}")
+  string(REPLACE "}" "[}]" _value "${_value}")
+  string(REPLACE "|" "[|]" _value "${_value}")
+  set("${OUTPUT}" "${_value}" PARENT_SCOPE)
+endfunction()
+
+function(feelpp_append_git_untracked_source_ignores VARIABLE)
+  set(_patterns ${${VARIABLE}})
+
+  if (NOT GIT_FOUND)
+    set("${VARIABLE}" "${_patterns}" PARENT_SCOPE)
+    return()
+  endif()
+
+  execute_process(
+    COMMAND "${GIT_EXECUTABLE}" -C "${CMAKE_SOURCE_DIR}" ls-files --others --exclude-standard --directory --no-empty-directory
+    OUTPUT_VARIABLE _git_untracked
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+    RESULT_VARIABLE _git_untracked_result
+  )
+
+  if (NOT _git_untracked_result EQUAL 0 OR "${_git_untracked}" STREQUAL "")
+    set("${VARIABLE}" "${_patterns}" PARENT_SCOPE)
+    return()
+  endif()
+
+  string(REPLACE "\n" ";" _git_untracked_list "${_git_untracked}")
+  foreach(_git_untracked_path IN LISTS _git_untracked_list)
+    if (_git_untracked_path STREQUAL "")
+      continue()
+    endif()
+
+    feelpp_source_regex_literal("${_git_untracked_path}" _git_untracked_regex)
+    if (_git_untracked_path MATCHES "/$")
+      list(APPEND _patterns "/${_git_untracked_regex}")
+    else()
+      list(APPEND _patterns "/${_git_untracked_regex}$")
+    endif()
+  endforeach()
+
+  list(LENGTH _git_untracked_list _git_untracked_count)
+  message(STATUS "[cpack] excluding ${_git_untracked_count} git-untracked path(s) from the source archive")
+  set("${VARIABLE}" "${_patterns}" PARENT_SCOPE)
+endfunction()
 
 SET(CPACK_SOURCE_STRIP_FILES "")
-# The following components are regex's to match anywhere (unless anchored)
-# in absolute path + filename to find files or directories to be excluded
-# from source tarball.
+SET(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR};/")
 set(CPACK_SOURCE_IGNORE_FILES
-  "/\\\\.git/;\\\\.gitignore;/\\\\.svn;"
-  "/.git;"
-  "/admin/;/Templates/;"
-  "/auto/;/ltxpng/;"
-  "/TAGS;/#.*;/.*~$;/*.log$;/.cvsignore;/.bzrignore;/work/;/autom4te.cache/"
-  )
+  "/[.]git/"
+  "/[.]svn/"
+  "/[.]venv[^/]*/"
+  "/[.]pytest_cache/"
+  "/[.]mypy_cache/"
+  "/[.]cache/"
+  "/[.]idea/"
+  "/[.]vscode/"
+  "/__pycache__/"
+  "/build/"
+  "/build[-_.][^/]*/"
+  "/install/"
+  "/install[-_.][^/]*/"
+  "/_dist/"
+  "/packaging/"
+  "/doc/analysis/"
+  "/feelpp_pkg[.]egg-info/"
+  "CMakeLists[.]txt[.]user$"
+  "gmsh-(config[.]err|info[.]log)$"
+  "[.](tar[.](gz|bz2|xz)|deb|dsc|changes|build|buildinfo)$"
+)
+feelpp_append_git_untracked_source_ignores(CPACK_SOURCE_IGNORE_FILES)
 
 include( CPack )

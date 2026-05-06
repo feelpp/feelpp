@@ -23,6 +23,7 @@
 //!
 #include <boost/algorithm/string.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include <stdexcept>
 #include <feel/feelcore/checker.hpp>
 #include <feel/feelcore/logger.hpp>
 #include <feel/feelmath/polyfit.hpp>
@@ -205,6 +206,9 @@ Checker::setScript( std::string const& s, variables_t const& in, std::map<std::s
 Checker::variables_t
 Checker::runScript()
 {
+#if !defined(FEELPP_HAS_PYTHON)
+    throw std::runtime_error( "Checker script support requires a Feel++ build with Python support enabled." );
+#else
     variables_t locals{ M_script_in };
     locals[M_solution_key]=M_solution;
     if ( M_gradient )
@@ -218,6 +222,7 @@ Checker::runScript()
     M_solution=locals[M_solution_key];
     M_gradient=locals[M_gradient_key];
     return locals;
+#endif
 }
 
 }

@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required (VERSION 3.13.0)
+cmake_minimum_required (VERSION 3.21)
 
 if(FEELPP_COMPONENT STREQUAL "toolboxes" OR
   FEELPP_COMPONENT STREQUAL "mor" OR
@@ -162,12 +162,12 @@ if (FEELPP_ENABLE_FEELPP_PYTHON)
   endif()
 endif()
 
-# enable PCH only for GCC as for now
-if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	OPTION(FEELPP_ENABLE_PCH_FOR_APPLICATIONS "enable Pre-Compiled Headers (PCH) for Feel++ applications" OFF)
-else()
-	set(FEELPP_ENABLE_PCH_FOR_APPLICATIONS OFF)
+if(DEFINED FEELPP_ENABLE_PCH_FOR_APPLICATIONS AND FEELPP_ENABLE_PCH_FOR_APPLICATIONS)
+  message(WARNING
+    "FEELPP_ENABLE_PCH_FOR_APPLICATIONS is retired and ignored.")
 endif()
+set(FEELPP_ENABLE_PCH_FOR_APPLICATIONS OFF CACHE INTERNAL
+  "Retired precompiled header option." FORCE)
 OPTION(FEELPP_ENABLE_RESEARCH "enable Feel++ research" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ${FEELPP_DEFAULT})
 # default TimeOut for Feel++ testsuite 
@@ -284,12 +284,6 @@ endif()
 if ( FEELPP_ENABLE_TESTS )
   if (TARGET testsuite-feelpp)
     add_dependencies(testsuite testsuite-feelpp)
-  endif()
-  if (TARGET testsuite-toolboxes)
-    add_dependencies(testsuite testsuite-toolboxes)
-  endif()
-  if (TARGET testsuite-mor)
-    add_dependencies(testsuite testsuite-mor)
   endif()
 endif()
 

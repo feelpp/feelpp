@@ -71,6 +71,7 @@ BOOST_AUTO_TEST_CASE( test1 )
                           _expr=-laplacian_g*id(v));
 
             auto a = form2( _trial=Vh, _test=Vh);
+            a.immediateDirichlet();
             a = integrate(_range=elements(mesh),
                           _expr=gradt(u)*trans(grad(v)) );
             a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u, _expr= g );
@@ -101,4 +102,3 @@ BOOST_AUTO_TEST_CASE( test1 )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-

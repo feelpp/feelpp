@@ -223,7 +223,7 @@ PBDWOnline::outputs(matrixN_type const& yobs, std::vector<int> const& sensors, b
     else
         ids = sensors;
     matrixN_type coeffs = this->online(yobs, ids, false);
-    matrixN_type vn = M_F(Eigen::all, ids)*coeffs;
+    matrixN_type vn = M_F(Eigen::indexing::all, ids)*coeffs;
     return vn;
 }
 

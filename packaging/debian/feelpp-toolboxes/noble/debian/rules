@@ -1,0 +1,103 @@
+#!/usr/bin/make -f
+
+DEB_AUTO_CLEANUP_RCS   := yes
+DEB_COMPRESS_EXCLUDE   := .pdf
+
+DEB_BUILD_ARCH := $(shell dpkg-architecture -qDEB_BUILD_ARCH)
+DEB_BUILD_ARCH_OS := $(shell dpkg-architecture -qDEB_BUILD_ARCH_OS)
+DEB_BUILD_GNU_SYSTEM ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_SYSTEM)
+DEB_HOST_MULTIARCH := $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
+PRESET := toolboxes
+
+export DEB_CXXFLAGS_SET=-DNDEBUG -O2
+export DEB_CXXFLAGS_MAINT_SET=-DNDEBUG -O2
+export DEB_CFLAGS_SET=-DNDEBUG -O2
+
+#  # -Wno-undefined-var-template to reduce number of warnings from ginac
+#  # -Wno-inconsistent-missing-override to reduce number of warning due to Paraview and C++11
+# eventually add -O3 -march=native -mtune=native
+# # eventually add -pedantic
+# export DEB_CFLAGS_MAINT_APPEND  = -Wall 
+# export DEB_CXXFLAGS_MAINT_APPEND  = -Wall -Wno-inconsistent-missing-override -Wno-undefined-var-template
+export DEB_CXXFLAGS_MAINT_APPEND  = -Wno-inconsistent-missing-override -Wno-undefined-var-template
+# export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
+#
+PY3VER := $(shell py3versions -d | sed 's/^python//')
+PYTHON3 := /usr/bin/python$(PY3VER)
+NUMJOBS := $(patsubst parallel=%,%,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
+ifneq ($(NUMJOBS),)
+  CMAKE_BUILD_PARALLEL := --parallel $(NUMJOBS)
+else
+  CMAKE_BUILD_PARALLEL := --parallel
+endif
+
+%:
+	dh $@ --without=build-stamp --buildsystem=cmake --parallel --include-removal --with python3
+
+override_dh_auto_configure: cmake-configure
+
+cmake-configure:
+	cmake --preset $(PRESET) \
+		-DCMAKE_INSTALL_PREFIX=/usr/ \
+		-DCMAKE_C_COMPILER=/usr/bin/clang \
+		-DCMAKE_CXX_COMPILER=/usr/bin/clang++\
+		-DCMAKE_C_FLAGS:STRING="-DNDEBUG -O2 -Wdate-time " \
+		-DCMAKE_C_FLAGS_DEBUG:STRING="" \
+		-DCMAKE_C_FLAGS_RELEASE:STRING="-DNDEBUG -O3" \
+		-DCMAKE_CXX_FLAGS:STRING="-DNDEBUG -O2 -Wdate-time " \
+		-DCMAKE_CXX_FLAGS_DEBUG:STRING="" \
+		-DCMAKE_CXX_FLAGS_RELEASE:STRING="-DNDEBUG -O3" \
+		-DCMAKE_INTERPROCEDURAL_OPTIMIZATION:BOOL=FALSE \
+		-DCMAKE_VERBOSE_MAKEFILE=OFF \
+		-DFEELPP_ENABLE_DOCUMENTATION=OFF \
+		-DFEELPP_ENABLE_DOXYGEN=OFF \
+		-DFEELPP_ENABLE_ASCIIDOCTOR=OFF \
+		-DFEELPP_TOOLBOXES_ENABLE_MESHALE=ON \
+		-DFEELPP_TOOLBOXES_ENABLE_HEAT=ON \
+		-DFEELPP_TOOLBOXES_ENABLE_ELECTRIC=ON \
+		-DFEELPP_TOOLBOXES_ENABLE_THERMOELECTRIC=ON \
+		-DFEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS=ON \
+		-DFEELPP_TOOLBOXES_ENABLE_SOLIDMECHANICS=ON \
+		-DFEELPP_TOOLBOXES_ENABLE_FSI=OFF \
+		-DFEELPP_TOOLBOXES_ENABLE_ADVECTION=OFF \
+		-DFEELPP_TOOLBOXES_ENABLE_LEVELSET=OFF \
+		-DFEELPP_TOOLBOXES_ENABLE_MULTIFLUID=OFF \
+		-DFEELPP_TOOLBOXES_ENABLE_HDG=OFF \
+		-DFEELPP_TOOLBOXES_ENABLE_MAXWELL=OFF \
+		-DFEELPP_TOOLBOXES_ENABLE_PYTHON=ON \
+		-DPython3_EXECUTABLE:FILEPATH=$(PYTHON3) \
+		-DFEELPP_ENABLE_PYFEELPP_TOOLBOXES=ON \
+		-DCMAKE_EXE_LINKER_FLAGS:STRING="-Wl,--no-as-needed -lm -lrt"
+
+override_dh_auto_build: cmake-build
+
+cmake-build:
+	DESTDIR=$(CURDIR)/debian/tmp cmake --build --preset $(PRESET) $(CMAKE_BUILD_PARALLEL) --target all
+
+override_dh_auto_install: cmake-install
+
+cmake-install:
+	DESTDIR=$(CURDIR)/debian/tmp cmake --build --preset $(PRESET) $(CMAKE_BUILD_PARALLEL) --target install
+
+override_dh_auto_clean:
+	dh_auto_clean
+	rm -rf build/$(PRESET)
+
+override_dh_auto_test:
+	echo "no testsuite"
+
+override_dh_shlibdeps:
+	dh_shlibdeps --dpkg-shlibdeps-params=--ignore-missing-info -l$(shell pwd)/lib/$(shell uname -m)
+
+override_dh_makeshlibs:
+	dh_makeshlibs -Xpyshared
+
+override_dh_strip:
+	dh_strip
+
+override_dh_python3:
+	dh_python3 -ppython3-feelpp-toolboxes -ppython3-feelpp-toolboxes-core -ppython3-feelpp-toolboxes-coefficientformpdes -ppython3-feelpp-toolboxes-heat -ppython3-feelpp-toolboxes-electric -ppython3-feelpp-toolboxes-fluid -ppython3-feelpp-toolboxes-solid -ppython3-feelpp-toolboxes-heatfluid -ppython3-feelpp-toolboxes-thermoelectric
+
+
+get-orig-source:
+	uscan --force-download

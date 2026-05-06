@@ -31,7 +31,8 @@ echo "Building $FLAVOR/$DIST packages for channel $CHANNEL Feel++ component $COM
 
 #PBUILDER_RESULTS=/var/lib/buildkite-agent/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}
 # local debug build
-PBUILDER_RESULTS=$HOME/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}/${CHANNEL}/
+prepare_feelpp_pkg_job_workspace
+PBUILDER_RESULTS=${PBUILDER_RESULTS:-${FEELPP_PKG_RESULTS_DIR}/${COMPONENT}}
 #if [ ! -f $HOME/pbuilder/${DIST}_base.tgz ]; then
 #    echo "--- creating distribution $DIST results: ${PBUILDER_RESULTS}"
 #    pbuilder-dist $DIST create
@@ -47,10 +48,11 @@ then
 else
     echo "no files in ${PBUILDER_RESULTS}/";
 fi
-feelpp-pbuilder-dist $DIST login --save-after-login << EOF
-echo "--- apt update"
-apt-get update
-EOF
+if [ "${FEELPP_PKG_SKIP_PBUILDER_PREPARE:-0}" = "1" ]; then
+    echo "--- skipping pbuilder base prepare (handled by caller)"
+else
+    prepare_feelpp_pbuilder_base "$DIST"
+fi
 
 set -x
 echo "--- setting directory build-$DIST to build source tarball"
@@ -58,17 +60,7 @@ echo "--- setting directory build-$DIST to build source tarball"
 FEELPP_COMPONENT=$(echo $COMPONENT| sed -e s/^feelpp\-//) 
 cmake --preset $FEELPP_COMPONENT -DFEELPP_ENABLE_GIT=OFF -DLIBBSON_DIR=/usr -DLIBMONGOC_DIR=/usr
 cmake --build --preset $FEELPP_COMPONENT -t dist
-echo "--- cloning feelpp.pkg: ${BRANCH}"
-if test ! -d feelpp.pkg; then
-if  test -z "$BRANCH"; then
-    git clone  -q https://github.com/feelpp/feelpp.pkg.git
-else 
-#    git clone -b $BRANCH -q https://github.com/feelpp/feelpp.pkg.git
-    git clone -b develop -q https://github.com/feelpp/feelpp.pkg.git
-fi
-else
-    (cd feelpp.pkg && git pull)
-fi
+prepare_feelpp_packaging_tree
 # local debug build
 #ln -s ../../Debian/feelpp.pkg
 
@@ -85,8 +77,8 @@ else
     version=$(echo build/$FEELPP_COMPONENT/${COMPONENT}-*.tar.gz | sed  "s/build\/$FEELPP_COMPONENT\/${COMPONENT}-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\1~\2/g" )
 fi
 echo "--- building archive $rename_archive for debian"
-cp build/$FEELPP_COMPONENT//${COMPONENT}-*.tar.gz feelpp.pkg/${COMPONENT}/$rename_archive
-cd feelpp.pkg/${COMPONENT}/$DIST && tar xzf ../$rename_archive --strip 1
+cp build/$FEELPP_COMPONENT//${COMPONENT}-*.tar.gz ${FEELPP_PKG_COMPONENT_DIR}/$rename_archive
+cd ${FEELPP_PKG_DIST_DIR} && tar xzf ../$rename_archive --strip 1
 
 echo "--- update changelog ${COMPONENT}  $version-1"
 export DEBEMAIL="christophe.prudhomme@cemosis.fr" 
@@ -97,10 +89,5 @@ echo "--- add source ${COMPONENT}  $version-1"
 dpkg-source -b .
 
 echo "--- building ${COMPONENT} debian version $version-1"
-feelpp-pbuilder-dist $DIST build --buildresult ${PBUILDER_RESULTS}  --buildplace $HOME/pbuilder/cache ../${COMPONENT}_${version}-1.dsc
-
-echo "+++ uploading ${PBUILDER_RESULTS} to bintray $COMPONENT $FLAVOR/$DIST"
-ls  -1 ${PBUILDER_RESULTS}
-
-echo "upload to local repo: aptly repo add -force-replace feelpp-$DIST-$CHANNEL ${PBUILDER_RESULTS}..."
-aptly repo add -force-replace feelpp-$DIST-$CHANNEL ${PBUILDER_RESULTS}
+PBUILDER_BUILDPLACE=${PBUILDER_BUILDPLACE:-$(feelpp_pbuilder_root)/build}
+feelpp-pbuilder-dist $DIST build --buildresult ${PBUILDER_RESULTS} --buildplace ${PBUILDER_BUILDPLACE} ../${COMPONENT}_${version}-1.dsc

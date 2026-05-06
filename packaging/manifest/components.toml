@@ -1,0 +1,33 @@
+version = 1
+default_components = ["feelpp", "feelpp-toolboxes", "feelpp-mor"]
+
+[components.feelpp]
+distros = ["noble", "resolute", "trixie"]
+dependencies = []
+python_packages = ["python3-feelpp"]
+publish = true
+package_revision = "1"
+
+[components."feelpp-toolboxes"]
+distros = ["noble", "resolute", "trixie"]
+dependencies = ["feelpp"]
+python_packages = [
+    "python3-feelpp-toolboxes",
+    "python3-feelpp-toolboxes-core",
+    "python3-feelpp-toolboxes-coefficientformpdes",
+    "python3-feelpp-toolboxes-heat",
+    "python3-feelpp-toolboxes-electric",
+    "python3-feelpp-toolboxes-fluid",
+    "python3-feelpp-toolboxes-solid",
+    "python3-feelpp-toolboxes-heatfluid",
+    "python3-feelpp-toolboxes-thermoelectric",
+]
+publish = true
+package_revision = "1"
+
+[components."feelpp-mor"]
+distros = ["noble", "resolute", "trixie"]
+dependencies = ["feelpp-toolboxes"]
+python_packages = ["python3-feelpp-mor"]
+publish = true
+package_revision = "1"

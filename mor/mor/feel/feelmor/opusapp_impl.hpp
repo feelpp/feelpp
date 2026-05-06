@@ -650,7 +650,6 @@ OpusApp<ModelType,RM,Model>::run()
                     boost::mpi::timer ti;
 
                     LOG(INFO) << "solve crb\n";
-                    //google::FlushLogFiles(google::GLOG_INFO);
 
                     //dimension of the RB (not necessarily the max)
 
