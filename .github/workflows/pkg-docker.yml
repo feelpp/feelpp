@@ -19,6 +19,7 @@ on:
           default: 'noble'
           type: choice
           options:
+          - 'resolute'
           - 'trixie'
           - 'noble'
           - 'bullseye'
@@ -44,6 +45,13 @@ on:
           default: ""
           type: string
     workflow_call:
+        outputs:
+            image:
+                description: 'Base feelpp image repository'
+                value: ${{ jobs.docker.outputs.image }}
+            image-dev:
+                description: 'Base feelpp dev image repository'
+                value: ${{ jobs.docker.outputs.image-dev }}
         inputs:
             flavor:
                 description: 'Flavor of the distribution'
@@ -59,6 +67,11 @@ on:
                 description: 'Version of Feel++ packages'
                 required: true
                 type: string
+            docker:
+                description: 'Build docker image'
+                required: false
+                type: string
+                default: "true"
             parallel:
                 description: 'Number of parallel jobs'
                 required: false
@@ -100,14 +113,14 @@ jobs:
               flavor: "${{ inputs.flavor }}",
               dist: "${{ inputs.dist }}",
               version: "${{ inputs.version || needs.version.outputs.version }}",
-              tag: "v${{ inputs.version || needs.version.outputs.version  }}-${{ inputs.dist }}",
+              tag: "${{ inputs.dist }}-v${{ inputs.version || needs.version.outputs.version  }}",
               dir: "feelpp/tools/scripts/pkg/",
               dockerfile: "Dockerfile",
             }
     name: Build and Push feelpp/${{ matrix.service }}:${{ matrix.tag }}
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
 #        lfs: true
         token: ${{ secrets.CR_PAT }}

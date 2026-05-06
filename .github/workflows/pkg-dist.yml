@@ -73,87 +73,216 @@ jobs:
             DIST: ${{ inputs.dist }}
             FLAVOR: ${{ inputs.flavor }}
             DEB_BUILD_OPTIONS: "parallel=${{ inputs.parallel }}"
+            FEELPP_PKG_JOB_ID: ${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}-${{ inputs.flavor }}-${{ inputs.dist }}
         steps:
         - name: Checkout code
-          uses: actions/checkout@v4
+          uses: actions/checkout@v5
           with: 
             submodules: true
-        - name: Build Feelpp package
-          if: ${{ !contains( github.event.head_commit.message, 'skip feelpp' ) && !contains( inputs.skip, 'skip feelpp' ) }}
+        - uses: actions/setup-python@v6
+          with:
+            python-version: '3.11'
+        - uses: astral-sh/setup-uv@v8.0.0
+          with:
+            enable-cache: true
+            cache-dependency-glob: ops/pyproject.toml
+        - name: Resolve package workspace
+          id: pkg_workspace
+          shell: bash
           run: |
-            feelpp/tools/scripts/pkg/feelpp_pkg.sh
+            runner_temp="${RUNNER_TEMP:-${TMPDIR:-/tmp}}"
+            job_root="${runner_temp}/feelpp-pkg/${FEELPP_PKG_JOB_ID}"
+            {
+              echo "job_root=${job_root}"
+              echo "local_repo_dir=${job_root}/local-repo"
+              echo "artifacts_dir=${job_root}/artifacts"
+              echo "results_dir=${job_root}/results"
+            } >> "${GITHUB_OUTPUT}"
+            {
+              echo "FEELPP_PKG_JOB_ROOT=${job_root}"
+              echo "FEELPP_PKG_LOCAL_REPO_DIR=${job_root}/local-repo"
+              echo "FEELPP_PKG_ARTIFACTS_DIR=${job_root}/artifacts"
+              echo "FEELPP_PKG_RESULTS_DIR=${job_root}/results"
+            } >> "${GITHUB_ENV}"
+        - name: Resolve docker state root
+          shell: bash
           env:
-            COMPONENT: feelpp
+            FEELPP_PKG_DOCKER_STATE_ROOT_BASE: ${{ vars.FEELPP_PKG_DOCKER_STATE_ROOT_BASE }}
+          run: |
+            if [ -n "${FEELPP_PKG_DOCKER_STATE_ROOT_BASE}" ]; then
+              state_root_base="${FEELPP_PKG_DOCKER_STATE_ROOT_BASE}"
+            elif [ -d "/nvme0/cemosis" ] && [ -w "/nvme0/cemosis" ]; then
+              state_root_base="/nvme0/cemosis/.cache/feelpp-pkg/docker"
+            elif [ -n "${XDG_CACHE_HOME:-}" ]; then
+              state_root_base="${XDG_CACHE_HOME}/feelpp-pkg/docker"
+            elif [ -n "${HOME:-}" ]; then
+              state_root_base="${HOME}/.cache/feelpp-pkg/docker"
+            else
+              state_root_base="${RUNNER_TOOL_CACHE}/feelpp-pkg/docker"
+            fi
+            state_root="${state_root_base}/${FLAVOR}/${DIST}"
+            if ! mkdir -p "${state_root}" 2>/dev/null; then
+              state_root="${RUNNER_TOOL_CACHE}/feelpp-pkg/docker/${FLAVOR}/${DIST}"
+              mkdir -p "${state_root}"
+            fi
+            echo "FEELPP_PKG_DOCKER_STATE_ROOT=${state_root}" >> "${GITHUB_ENV}"
+        - name: Resolve pbuilder root
+          shell: bash
+          env:
+            FEELPP_PBUILDER_ROOT: ${{ vars.FEELPP_PBUILDER_ROOT }}
+          run: |
+            if [ -n "${FEELPP_PBUILDER_ROOT}" ]; then
+              pbuilder_root="${FEELPP_PBUILDER_ROOT}"
+            elif [ -d "/nvme0/prudhomm/pbuilder" ] && [ -w "/nvme0/prudhomm/pbuilder" ]; then
+              pbuilder_root="/nvme0/prudhomm/pbuilder"
+            elif [ -n "${HOME:-}" ]; then
+              pbuilder_root="${HOME}/pbuilder"
+            else
+              pbuilder_root="${RUNNER_TOOL_CACHE}/pbuilder"
+            fi
+            mkdir -p "${pbuilder_root}"
+            echo "FEELPP_PBUILDER_ROOT=${pbuilder_root}" >> "${GITHUB_ENV}"
+        - name: Install feelpp-pkg
+          shell: bash
+          run: |
+            uv pip install --system -e ./ops
+        - name: Verify feelpp-pkg CLI
+          shell: bash
+          run: |
+            command -v fpp-pkg
+            command -v feelpp-pkg
+            fpp-pkg --help >/dev/null
+        - name: Prepare local package workspace
+          run: |
+            rm -rf "${FEELPP_PKG_JOB_ROOT}"
+            feelpp-pkg job init --dist "${DIST}" --flavor "${FLAVOR}"
+          env:
+            DIST: ${{ inputs.dist }}
+            FLAVOR: ${{ inputs.flavor }}
+        - name: Build package chain
+          run: |
+            feelpp-pkg build chain --dist "${DIST}" --flavor "${FLAVOR}" --skip-text "${SKIP_TEXT}"
+          env:
+            SKIP_TEXT: ${{ format( '{0} {1}', github.event.head_commit.message, inputs.skip ) }}
 
-        - name: Publish Feelpp package
-          if: ${{ !contains( github.event.head_commit.message, 'skip feelpp' ) && !contains( inputs.skip, 'skip publish' )}}
-          run: |
-            echo "Publishing Feelpp packages"
-            gpg -K
-            feelpp/tools/scripts/pkg/feelpp_pkg_publish.sh
-          env:
-            COMPONENT: feelpp
-            GPG_KEY: ${{ secrets.GPG_KEY }}
-            GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        - name: Upload package artifacts
+          if: ${{ !contains( format( '{0} {1}', github.event.head_commit.message, inputs.skip ), 'skip publish' ) }}
+          uses: actions/upload-artifact@v4
+          with:
+            name: feelpp-pkg-${{ inputs.flavor }}-${{ inputs.dist }}
+            path: ${{ steps.pkg_workspace.outputs.artifacts_dir }}
+            if-no-files-found: error
+            retention-days: 7
 
-        - name: Build  Feelpp toolboxes package
-          if: ${{ !contains( github.event.head_commit.message, 'skip toolboxes' ) && !contains( inputs.skip, 'skip toolboxes' ) }}
-          run: |
-            feelpp/tools/scripts/pkg/feelpp_pkg.sh
-          env:
-            COMPONENT: feelpp-toolboxes
-
-        - name: Publish Feelpp toolboxes package
-          if: ${{ !contains( github.event.head_commit.message, 'skip toolboxes' ) && !contains( inputs.skip, 'skip publish' )}}
-          run: |
-            echo "Publishing Feelpp toolboxes packages"
-            feelpp/tools/scripts/pkg/feelpp_pkg_publish.sh
-          env:
-            COMPONENT: feelpp-toolboxes
-            GPG_KEY: ${{ secrets.GPG_KEY }}
-            GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
-        - name: Build Feelpp MOR package
-          if: ${{ !contains( github.event.head_commit.message, 'skip mor' ) && !contains( inputs.skip, 'skip mor' )}}
-          run: |
-            feelpp/tools/scripts/pkg/feelpp_pkg.sh
-          env:
-            COMPONENT: feelpp-mor
-
-        - name: Publish Feelpp MOR package
-          if: ${{ !contains( github.event.head_commit.message, 'skip mor' ) && !contains( inputs.skip, 'skip publish' )}}
-          run: |
-            echo "Publishing Feelpp MOR packages"
-            feelpp/tools/scripts/pkg/feelpp_pkg_publish.sh
-          env:
-            COMPONENT: feelpp-mor
-            GPG_KEY: ${{ secrets.GPG_KEY }}
-            GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
-        - name: Build Feelpp Python package
-          if: ${{ !contains( github.event.head_commit.message, 'skip python' ) && !contains( inputs.skip, 'skip python' ) }}
-          run: |
-            feelpp/tools/scripts/pkg/feelpp_pkg.sh
-          env:
-            COMPONENT: feelpp-python
-
-        - name: Publish Feelpp Python package
-          if: ${{ !contains( github.event.head_commit.message, 'skip python' ) && !contains( inputs.skip, 'skip publish' )  }}
-          run: |
-            echo "Publishing Feelpp Python packages"
-            feelpp/tools/scripts/pkg/feelpp_pkg_publish.sh
-          env:
-            COMPONENT: feelpp-python
-            GPG_KEY: ${{ secrets.GPG_KEY }}
-            GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    publish:
+      if: ${{ inputs.flavor == 'ubuntu' || inputs.flavor == 'debian' }}
+      needs: pkg
+      runs-on: self-pkg
+      continue-on-error: ${{ inputs.continue-on-error == 'true' }}
+      env:
+          DIST: ${{ inputs.dist }}
+          FLAVOR: ${{ inputs.flavor }}
+          FEELPP_PKG_JOB_ID: ${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}-${{ inputs.flavor }}-${{ inputs.dist }}
+          FEELPP_PKG_SNAPSHOT_ID: ${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.flavor }}-${{ inputs.dist }}
+      steps:
+      - name: Checkout code
+        if: ${{ !contains( github.event.head_commit.message, 'skip publish' ) && !contains( inputs.skip, 'skip publish' ) }}
+        uses: actions/checkout@v5
+        with:
+          submodules: true
+      - uses: actions/setup-python@v6
+        if: ${{ !contains( github.event.head_commit.message, 'skip publish' ) && !contains( inputs.skip, 'skip publish' ) }}
+        with:
+          python-version: '3.11'
+      - uses: astral-sh/setup-uv@v8.0.0
+        if: ${{ !contains( github.event.head_commit.message, 'skip publish' ) && !contains( inputs.skip, 'skip publish' ) }}
+        with:
+          enable-cache: true
+          cache-dependency-glob: ops/pyproject.toml
+      - name: Resolve publish workspace
+        if: ${{ !contains( github.event.head_commit.message, 'skip publish' ) && !contains( inputs.skip, 'skip publish' ) }}
+        id: publish_workspace
+        shell: bash
+        run: |
+          runner_temp="${RUNNER_TEMP:-${TMPDIR:-/tmp}}"
+          job_root="${runner_temp}/feelpp-pkg/${FEELPP_PKG_JOB_ID}"
+          {
+            echo "job_root=${job_root}"
+            echo "publish_input_dir=${job_root}/publish-input"
+          } >> "${GITHUB_OUTPUT}"
+          {
+            echo "FEELPP_PKG_JOB_ROOT=${job_root}"
+            echo "FEELPP_PKG_PUBLISH_INPUT_DIR=${job_root}/publish-input"
+          } >> "${GITHUB_ENV}"
+      - name: Resolve docker state root
+        if: ${{ !contains( github.event.head_commit.message, 'skip publish' ) && !contains( inputs.skip, 'skip publish' ) }}
+        shell: bash
+        env:
+          FEELPP_PKG_DOCKER_STATE_ROOT_BASE: ${{ vars.FEELPP_PKG_DOCKER_STATE_ROOT_BASE }}
+        run: |
+          if [ -n "${FEELPP_PKG_DOCKER_STATE_ROOT_BASE}" ]; then
+            state_root_base="${FEELPP_PKG_DOCKER_STATE_ROOT_BASE}"
+          elif [ -d "/nvme0/cemosis" ] && [ -w "/nvme0/cemosis" ]; then
+            state_root_base="/nvme0/cemosis/.cache/feelpp-pkg/docker"
+          elif [ -n "${XDG_CACHE_HOME:-}" ]; then
+            state_root_base="${XDG_CACHE_HOME}/feelpp-pkg/docker"
+          elif [ -n "${HOME:-}" ]; then
+            state_root_base="${HOME}/.cache/feelpp-pkg/docker"
+          else
+            state_root_base="${RUNNER_TOOL_CACHE}/feelpp-pkg/docker"
+          fi
+          state_root="${state_root_base}/${FLAVOR}/${DIST}"
+          if ! mkdir -p "${state_root}" 2>/dev/null; then
+            state_root="${RUNNER_TOOL_CACHE}/feelpp-pkg/docker/${FLAVOR}/${DIST}"
+          fi
+          mkdir -p "${state_root}" "${FEELPP_PKG_PUBLISH_INPUT_DIR}"
+          echo "FEELPP_PKG_DOCKER_STATE_ROOT=${state_root}" >> "${GITHUB_ENV}"
+      - name: Resolve pbuilder root
+        if: ${{ !contains( github.event.head_commit.message, 'skip publish' ) && !contains( inputs.skip, 'skip publish' ) }}
+        shell: bash
+        env:
+          FEELPP_PBUILDER_ROOT: ${{ vars.FEELPP_PBUILDER_ROOT }}
+        run: |
+          if [ -n "${FEELPP_PBUILDER_ROOT}" ]; then
+            pbuilder_root="${FEELPP_PBUILDER_ROOT}"
+          elif [ -d "/nvme0/prudhomm/pbuilder" ] && [ -w "/nvme0/prudhomm/pbuilder" ]; then
+            pbuilder_root="/nvme0/prudhomm/pbuilder"
+          elif [ -n "${HOME:-}" ]; then
+            pbuilder_root="${HOME}/pbuilder"
+          else
+            pbuilder_root="${RUNNER_TOOL_CACHE}/pbuilder"
+          fi
+          mkdir -p "${pbuilder_root}"
+          echo "FEELPP_PBUILDER_ROOT=${pbuilder_root}" >> "${GITHUB_ENV}"
+      - name: Install feelpp-pkg
+        shell: bash
+        if: ${{ !contains( github.event.head_commit.message, 'skip publish' ) && !contains( inputs.skip, 'skip publish' ) }}
+        run: |
+          uv pip install --system -e ./ops
+      - name: Verify feelpp-pkg CLI
+        if: ${{ !contains( github.event.head_commit.message, 'skip publish' ) && !contains( inputs.skip, 'skip publish' ) }}
+        shell: bash
+        run: |
+          command -v fpp-pkg
+          command -v feelpp-pkg
+          fpp-pkg --help >/dev/null
+      - name: Download package artifacts
+        if: ${{ !contains( github.event.head_commit.message, 'skip publish' ) && !contains( inputs.skip, 'skip publish' ) }}
+        uses: actions/download-artifact@v4
+        with:
+          name: feelpp-pkg-${{ inputs.flavor }}-${{ inputs.dist }}
+          path: ${{ steps.publish_workspace.outputs.publish_input_dir }}
+      - name: Publish package repository
+        if: ${{ !contains( github.event.head_commit.message, 'skip publish' ) && !contains( inputs.skip, 'skip publish' ) }}
+        run: |
+          echo "Publishing package repository"
+          gpg -K
+          feelpp-pkg publish snapshot --dist "${DIST}" --flavor "${FLAVOR}" --input-dir "${FEELPP_PKG_PUBLISH_INPUT_DIR}"
+        env:
+          GPG_KEY: ${{ secrets.GPG_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
     pkg-print:
       runs-on: ubuntu-latest
@@ -170,8 +299,8 @@ jobs:
             echo "skip: ${{ format( '{0} {1}', github.event.head_commit.message, inputs.skip ) }}"
 
     pkg-docker:
-      if: ${{ inputs.docker == 'true' }}
-#      needs: pkg
+      if: ${{ (inputs.flavor == 'ubuntu' || inputs.flavor == 'debian') && inputs.docker == 'true' && !contains( format( '{0} {1}', github.event.head_commit.message, inputs.skip ), 'skip publish' ) }}
+      needs: publish
       uses: ./.github/workflows/pkg-docker.yml
       with:
         dist: ${{ inputs.dist }}
@@ -183,7 +312,7 @@ jobs:
       secrets: inherit
 
     pkg-apptainer:
-      if: ${{ inputs.apptainer == 'true' }}
+      if: ${{ (inputs.flavor == 'ubuntu' || inputs.flavor == 'debian') && inputs.apptainer == 'true' && !contains( format( '{0} {1}', github.event.head_commit.message, inputs.skip ), 'skip publish' ) }}
       needs: pkg-docker
       uses: ./.github/workflows/pkg-apptainer.yml
       with:
@@ -196,5 +325,3 @@ jobs:
         version: ${{ inputs.feelpp-version }}
         continue-on-error: ${{ inputs.continue-on-error }}
       secrets: inherit
-
-

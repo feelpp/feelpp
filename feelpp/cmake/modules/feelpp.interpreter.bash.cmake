@@ -74,17 +74,6 @@ file( APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feel++
 "
 )
 
-# Include precompiled headers.
-if( FEELPP_ENABLE_PCH )
-    file( APPEND ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/feel++
-"\
--include-pch ${CMAKE_BINARY_DIR}/feel/cotire/feelpp_CXX_prefix.hxx.pch \\
-"
-#-fsyntax-only \\
-#-femit-all-decls \\
-    )
-endif()
-
 # Include path.
 set( FEELPP_INTERPRETER_INCLUDE_DIRS
     ${FEELPP_INCLUDE_DIR}

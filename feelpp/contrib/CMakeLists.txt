@@ -26,6 +26,10 @@ message(STATUS "Contrib libraries")
 include(FetchContent)
 add_library(feelpp_contrib INTERFACE)
 add_library( Feelpp::feelpp_contrib ALIAS feelpp_contrib)
+if ( ${CMAKE_VERSION} VERSION_GREATER 3.7.2 )
+  target_compile_features(feelpp_contrib INTERFACE cxx_std_${FEELPP_STD_CPP})
+endif()
+set_property(TARGET feelpp_contrib PROPERTY FEELPP_STD_CPP ${FEELPP_STD_CPP})
 
 set( CMAKE_INSTALL_DATADIR "share/feelpp")
 if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
@@ -169,9 +173,15 @@ if(FEELPP_USE_EXTERNAL_CLN)
   if(NOT TARGET cln::cln)
     add_library(cln::cln INTERFACE IMPORTED)
 
+    if(CLN_LINK_LIBRARIES)
+      set(_feelpp_cln_link_libraries "${CLN_LINK_LIBRARIES}")
+    else()
+      set(_feelpp_cln_link_libraries "${CLN_LIBRARIES}")
+    endif()
+
     set_target_properties(cln::cln PROPERTIES
       INTERFACE_INCLUDE_DIRECTORIES "${CLN_INCLUDE_DIRS}"
-      INTERFACE_LINK_LIBRARIES "${CLN_LIBRARIES}"
+      INTERFACE_LINK_LIBRARIES "${_feelpp_cln_link_libraries}"
     )
   endif()
   if (TARGET cln::cln)
@@ -248,18 +258,54 @@ include(FetchContent)
 
 option( FEELPP_USE_EXTERNAL_EIGEN3 "USE_EXTERNAL_EIGEN3" OFF )
 if ( FEELPP_USE_EXTERNAL_EIGEN3 )
-  FIND_PACKAGE(Eigen3 REQUIRED)
-  add_library(Eigen3::Eigen ALIAS eigen)
+  find_package(Eigen3 CONFIG QUIET)
+  if ( NOT TARGET Eigen3::Eigen )
+    find_package(Eigen3 REQUIRED)
+  endif()
+  if ( NOT TARGET Eigen3::Eigen )
+    if ( TARGET eigen )
+      get_target_property(_feelpp_eigen_include_dirs eigen INTERFACE_INCLUDE_DIRECTORIES)
+    elseif ( EIGEN3_INCLUDE_DIRS )
+      set(_feelpp_eigen_include_dirs ${EIGEN3_INCLUDE_DIRS})
+    elseif ( EIGEN3_INCLUDE_DIR )
+      set(_feelpp_eigen_include_dirs ${EIGEN3_INCLUDE_DIR} ${EIGEN3_INCLUDE_DIR}/unsupported)
+    endif()
+    if ( _feelpp_eigen_include_dirs )
+      add_library(Eigen3::Eigen INTERFACE IMPORTED GLOBAL)
+      set_target_properties(Eigen3::Eigen PROPERTIES
+        INTERFACE_INCLUDE_DIRECTORIES "${_feelpp_eigen_include_dirs}")
+    endif()
+  endif()
+  if ( NOT TARGET eigen )
+    add_library(eigen INTERFACE IMPORTED GLOBAL)
+    set_property(TARGET eigen PROPERTY INTERFACE_LINK_LIBRARIES Eigen3::Eigen)
+  endif()
+  if ( EIGEN3_INCLUDE_DIRS )
+    target_include_directories( feelpp_contrib BEFORE
+      INTERFACE
+      ${EIGEN3_INCLUDE_DIRS}
+      )
+  elseif ( EIGEN3_INCLUDE_DIR )
+    target_include_directories( feelpp_contrib BEFORE
+      INTERFACE
+      ${EIGEN3_INCLUDE_DIR}
+      ${EIGEN3_INCLUDE_DIR}/unsupported
+      )
+  endif()
 else()
 
 set(EIGEN_BUILD_DOC OFF)
+set(EIGEN_BUILD_CMAKE_PACKAGE ON)
 set(BUILD_TESTING OFF)
 set(EIGEN_LEAVE_TEST_IN_ALL_TARGET 0)
 set(EIGEN_TEST_NOQT 1)
 set(FETCHCONTENT_SOURCE_DIR_EIGEN ${CMAKE_CURRENT_SOURCE_DIR}/eigen)
-set( EIGEN_INCLUDE_INSTALL_DIR "include/feelpp/eigen" )
+# Eigen 5 reads its install layout from cache variables inside the subproject.
+# Force the vendored install tree to remain under the historical Feel++ prefix
+# so exported Feel++ targets keep referencing an installed path that exists.
+set(INCLUDE_INSTALL_DIR "include/feelpp/eigen" CACHE PATH "Eigen headers install dir" FORCE)
 
-FetchContent_Declare(eigen GIT_REPOSITORY git@gitlab.com:feelpp/eigen.git GIT_TAG 08bd619a45b642d68ccf80c011d7391bb213ecba) # the commit hash for 1.5.0
+FetchContent_Declare(eigen GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git GIT_TAG bc3b39870ecb690a623a3f49149a358b95c5781d) # upstream 5.0.1
 FetchContent_MakeAvailable(eigen)
 target_include_directories( feelpp_contrib BEFORE
       INTERFACE
@@ -440,7 +486,6 @@ if(FEELPP_USE_EXTERNAL_PYBIND11)
   target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_PYBIND11)
   target_link_libraries(feelpp_contrib INTERFACE pybind11::module)
 else()
-  set(PYBIND11_CPP_STANDARD -std=c++${FEELPP_STD_CPP})
   if ( FEELPP_ENABLE_PYBIND11 )
     feelppContribPrepare( pybind11 )
     if ( FEELPP_CONTRIB_PREPARE_SUCCEED )
@@ -552,6 +597,8 @@ if ( FEELPP_ENABLE_FMI4CPP )
     set(FMI4CPP_LOG_LEVEL "OFF" CACHE STRING "FMI4cpp logging level")
   endif()
   set( FMI4CPP_HEADER_INSTALL_DIR "${CMAKE_INSTALL_INCLUDEDIR}/")
+  set( FMI4CPP_INSTALL_BIN_DIR "${CMAKE_INSTALL_BINDIR}")
+  set( FMI4CPP_INSTALL_LIB_DIR "${CMAKE_INSTALL_LIBDIR}")
   set( FMI4CPP_CMAKE_INSTALL_DIR "share/feelpp/fmi4cpp")
   set( FMI4CPP_DOC_INSTALL_DIR "share/doc/feelpp/fmi4cpp")
   set(FETCHCONTENT_SOURCE_DIR_FMI4CPP ${CMAKE_CURRENT_SOURCE_DIR}/fmi4cpp)
@@ -560,7 +607,11 @@ if ( FEELPP_ENABLE_FMI4CPP )
 
   FetchContent_MakeAvailable(fmi4cpp)
   add_library(feelpp_fmi4cpp INTERFACE)
-  set_target_properties(fmi4cpp PROPERTIES OUTPUT_NAME "feelpp_fmi4cpp")
+  set_target_properties(fmi4cpp PROPERTIES
+      OUTPUT_NAME "feelpp_fmi4cpp"
+      VERSION ${FEELPP_SHARED_VERSION}
+      SOVERSION ${FEELPP_SHARED_SOVERSION}
+      )
   if ( "${CMAKE_BUILD_TYPE}" STREQUAL "Release" )
     target_compile_definitions(fmi4cpp PRIVATE LOG_LEVEL_OFF)  #fix bug with macro name (missing M here https://github.com/feelpp/FMI4cpp/blob/master/src/fmi4cpp/mlog.hpp#L13C1-L14C1)
   endif()
@@ -731,6 +782,10 @@ if ( FEELPP_ENABLE_MATPLOT )
     message( STATUS "matplot++ CMAKE_INSTALL_INCLUDE_DIR: ${CMAKE_INSTALL_INCLUDEDIR}")
     set( BUILD_SHARED_LIBS ON )
     set( BUILD_INSTALLER ON )
+    # Vendored matplot pulls bundled CImg code, which may warn on newer distro
+    # toolchains. Keep its own developer-only warnings-as-errors disabled when
+    # embedded in Feel++ so package builds are not blocked by third-party warnings.
+    set( BUILD_WITH_PEDANTIC_WARNINGS OFF CACHE BOOL "" FORCE )
     set(OPTIMIZATION_FLAG_IS_SET ON)
     add_subdirectory( matplot )
     target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_MATPLOT )
@@ -805,9 +860,15 @@ if ( FEELPP_ENABLE_CPR )
   set(FETCHCONTENT_SOURCE_DIR_CPR ${CMAKE_CURRENT_SOURCE_DIR}/cpr)
   # patch includes fix for 18.04 compilation
   FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/feelpp/cpr.git GIT_TAG 1.12.0)
-  set( CPR_USE_SYSTEM_CURL ON )
-  set( CPR_ENABLE_SSL ON)
-  set( CPR_USE_SYSTEM_LIB_PSL ON)
+  if ( NOT DEFINED CPR_USE_SYSTEM_CURL )
+    set( CPR_USE_SYSTEM_CURL ON )
+  endif()
+  if ( NOT DEFINED CPR_ENABLE_SSL )
+    set( CPR_ENABLE_SSL ON )
+  endif()
+  if ( NOT DEFINED CPR_USE_SYSTEM_LIB_PSL )
+    set( CPR_USE_SYSTEM_LIB_PSL ON )
+  endif()
   set( BUILD_CPR_TESTS OFF )
   if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
       set( CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/feelpp")
@@ -883,7 +944,11 @@ if ( FEELPP_ENABLE_SPECX )
   FetchContent_MakeAvailable(specx)
   add_library(feelpp_specx INTERFACE)
 
-  set_target_properties(specx PROPERTIES OUTPUT_NAME "feelpp_specx")
+  set_target_properties(specx PROPERTIES
+      OUTPUT_NAME "feelpp_specx"
+      VERSION ${FEELPP_SHARED_VERSION}
+      SOVERSION ${FEELPP_SHARED_SOVERSION}
+      )
   target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_SPECX)
   target_link_libraries(feelpp_specx INTERFACE specx )
   add_library(Feelpp::feelpp_specx ALIAS feelpp_specx)

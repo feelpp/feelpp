@@ -48,8 +48,8 @@ add_library(feel++_crb_models SHARED
   eadsscmapp.cpp
 )
 target_link_libraries(feel++_crb_models ${FEELPP_LIBRARIES} )
-#set_target_properties( feel++_crb_models PROPERTIES VERSION ${FEELPP_OPUS_SHARED_VERSION} SOVERSION ${FEELPP_OPUS_SHARED_SOVERSION})
-install(TARGETS feel++_crb_models DESTINATION lib COMPONENT Bin)
+set_target_properties( feel++_crb_models PROPERTIES VERSION ${FEELPP_SHARED_VERSION} SOVERSION ${FEELPP_SHARED_SOVERSION})
+install(TARGETS feel++_crb_models DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Bin)
 set_property(TARGET feel++_crb_models PROPERTY LABELS crb)
 add_dependencies(crb feel++_crb_models)
 

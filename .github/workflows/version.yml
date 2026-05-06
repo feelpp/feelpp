@@ -35,7 +35,7 @@ jobs:
             extra_version: ${{ steps.get_version.outputs.extra_version }}
             version: ${{ steps.get_version.outputs.version }}
         steps:
-        - uses: actions/checkout@v4
+        - uses: actions/checkout@v5
           with:
             token: ${{ secrets.CR_PAT }}
             submodules: false
@@ -53,4 +53,3 @@ jobs:
                 echo "main_version=$main_version" >> $GITHUB_OUTPUT
                 echo "extra_version=$extra_version" >> $GITHUB_OUTPUT
                 echo "version=$version" >> $GITHUB_OUTPUT
-

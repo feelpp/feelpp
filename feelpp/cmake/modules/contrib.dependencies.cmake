@@ -1,9 +1,14 @@
 add_library(feelpp_contrib INTERFACE)
+if ( ${CMAKE_VERSION} VERSION_GREATER 3.7.2 )
+  target_compile_features(feelpp_contrib INTERFACE cxx_std_${FEELPP_STD_CPP})
+endif()
+set_property(TARGET feelpp_contrib PROPERTY FEELPP_STD_CPP ${FEELPP_STD_CPP})
 
 
 
-set(FEELPP_HAS_GFLAGS 1)
-set(FEELPP_HAS_GLOG 1)
+# Legacy gflags/glog support is disabled; Feel++ uses spdlog now.
+set(FEELPP_HAS_GFLAGS 0)
+set(FEELPP_HAS_GLOG 0)
 set(FEELPP_HAS_GINAC 1)
 
 if ( FEELPP_HAS_GFLAGS )
@@ -110,17 +115,27 @@ if ( FEELPP_ENABLE_SYSTEM_EIGEN3 )
   MESSAGE(STATUS "Eigen3 system found:")
   MESSAGE("EIGEN_INCLUDE_DIR=${EIGEN_INCLUDE_DIR}")
   MESSAGE("EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR}")
-  MESSAGE(STATUS "Adding unsupported headers to EIGEN3_INCLUDE_DIR:")
-  set( EIGEN3_INCLUDE_DIR ${EIGEN3_INCLUDE_DIR} ${EIGEN3_INCLUDE_DIR}/unsupported)
-  MESSAGE("EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR}")
+  MESSAGE(STATUS "Adding unsupported headers to EIGEN3_INCLUDE_DIRS:")
+  set( EIGEN3_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIR} )
+  if ( EXISTS ${EIGEN3_INCLUDE_DIR}/unsupported )
+    list(APPEND EIGEN3_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIR}/unsupported)
+  endif()
+  MESSAGE("EIGEN3_INCLUDE_DIRS=${EIGEN3_INCLUDE_DIRS}")
 endif()
 if (NOT EIGEN3_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/feelpp/feel AND EXISTS ${CMAKE_SOURCE_DIR}/feelpp/contrib )
   option(EIGEN_BUILD_PKGCONFIG "Build pkg-config .pc file for Eigen" OFF)
   
-  set( EIGEN3_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/feelpp/contrib/eigen ${CMAKE_SOURCE_DIR}/feelpp/contrib/eigen/unsupported )
+  set( EIGEN3_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/feelpp/contrib/eigen )
+  set( EIGEN3_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIR} ${EIGEN3_INCLUDE_DIR}/unsupported )
 
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Eigen3/Contrib" )
 elseif( EIGEN3_FOUND )
+  if ( NOT EIGEN3_INCLUDE_DIRS )
+    set( EIGEN3_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIR} )
+    if ( EXISTS ${EIGEN3_INCLUDE_DIR}/unsupported )
+      list(APPEND EIGEN3_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIR}/unsupported)
+    endif()
+  endif()
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Eigen3/System" )
 else()
   find_path(EIGEN3_INCLUDE_DIR NAMES signature_of_eigen3_matrix_library
@@ -148,7 +163,7 @@ if ( FEELPP_HAS_EIGEN3 )
   unset(CMAKEPACKAGE_INSTALL_DIR CACHE)
   unset(PKGCONFIG_INSTALL_DIR CACHE)
 endif()
-message(STATUS "[feelpp] eigen3 headers: ${EIGEN3_INCLUDE_DIR}" )
+message(STATUS "[feelpp] eigen3 headers: ${EIGEN3_INCLUDE_DIRS}" )
 
 
 #FIND_PACKAGE(Eigen2 REQUIRED)

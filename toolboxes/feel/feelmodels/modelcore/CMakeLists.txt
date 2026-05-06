@@ -37,9 +37,6 @@ target_include_directories(feelpp_modelcore PUBLIC
   $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
   $<INSTALL_INTERFACE:include/feelpp/toolboxes>  )
 set_property(TARGET feelpp_modelcore PROPERTY MACOSX_RPATH ON)
-if( FEELPP_ENABLE_PCH_MODELS )
-  add_precompiled_header( feelpp_modelcore )
-endif()
 include(GNUInstallDirs)
 install(TARGETS feelpp_modelcore EXPORT feelpp-toolboxes-targets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Libs

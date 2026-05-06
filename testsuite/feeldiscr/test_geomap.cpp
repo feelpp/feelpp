@@ -79,6 +79,7 @@ public:
         std::string fname;
         //GmshHypercubeDomain<entity_type::nDim,entity_type::nOrder,Entity> td;
         GmshSimplexDomain td( entity_type::nDim,entity_type::nOrder );
+        td.setNumberOfPartitions( 1 );
         td.setVersion( version );
         td.setCharacteristicLength( hsize );
         fname = td.generate( entity_type::name().c_str() );

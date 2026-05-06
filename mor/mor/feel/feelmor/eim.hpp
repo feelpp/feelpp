@@ -2786,7 +2786,6 @@ public:
         }
 
         DVLOG( 2 )<<" M_B : \n "<<M_B;
-        //google::FlushLogFiles(google::GLOG_INFO);
         saveDB();
 
     }//fillInterpolationMatrix

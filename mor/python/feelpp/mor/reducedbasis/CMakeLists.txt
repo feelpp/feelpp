@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.21)
 project(mor-reducedbasis)
 
 set(PYFILES __init__.py reducedbasis.py reducedbasis_time.py)

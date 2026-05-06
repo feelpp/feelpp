@@ -618,8 +618,7 @@ void MatrixPetsc<T>::zero ()
 {
     CHECK( this->isInitialized() ) << "petsc matrix not properly initialized";
 
-    if ( !this->closed() )
-        this->close();
+    this->closeIfNeeded();
 
     int ierr=0;
     ierr = MatZeroEntries( M_mat );
@@ -757,6 +756,21 @@ void MatrixPetsc<T>::close ()  const
     //const_cast<MatrixPetsc<T>*>( this )->setIsClosed( true );
 }
 
+template <typename T>
+inline
+void MatrixPetsc<T>::closeIfNeeded() const
+{
+    if ( !this->isInitialized() )
+        return;
+
+    int needsClose = super::closed() ? 0 : 1;
+    if ( this->comm().size() > 1 )
+        mpi::all_reduce( this->comm(), mpi::inplace( needsClose ), mpi::maximum<int>() );
+
+    if ( needsClose )
+        this->close();
+}
+
 
 
 template <typename T>
@@ -853,6 +867,7 @@ void MatrixPetsc<T>::set ( const size_type i,
     ierr = MatSetValues( M_mat, 1, &i_val, 1, &j_val,
                          &petsc_value, INSERT_VALUES );
     CHKERRABORT( this->comm(),ierr );
+    this->setIsClosed( false );
 }
 
 
@@ -873,6 +888,7 @@ void MatrixPetsc<T>::add ( const size_type i,
     ierr = MatSetValues( M_mat, 1, &i_val, 1, &j_val,
                          &petsc_value, ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );
+    this->setIsClosed( false );
 }
 /*                                   */
 
@@ -913,6 +929,7 @@ MatrixPetsc<T>::addMatrix( const ublas::matrix<value_type>& dm,
                          ( PetscScalar* ) dm.data().begin(),
                          ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );
+    this->setIsClosed( false );
 }
 template <typename T>
 void
@@ -933,6 +950,7 @@ MatrixPetsc<T>::addMatrix ( int* rows, int nrows,
                          ( PetscScalar* ) data,
                          ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );
+    this->setIsClosed( false );
 }
 
 template <typename T>
@@ -1001,8 +1019,7 @@ MatrixPetsc<T>::multVector( const Vector<T>& arg, Vector<T>& dest, bool transpos
     CHECK( this->isInitialized() ) << "is not initialized";
     CHECK( arg.isInitialized() ) << "is not initialized";
 
-    if ( !this->closed() )
-        this->close();
+    this->closeIfNeeded();
     if ( !arg.closed() )
         const_cast<Vector<T>*>( &arg )->close();
     if ( !dest.isInitialized() )
@@ -1070,12 +1087,9 @@ MatrixPetsc<T>::matMatMult ( MatrixSparse<T> const& matIn, MatrixSparse<T> &matR
     FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not initialized" );
     FEELPP_ASSERT( this->size2() == matIn.size1() )( this->size2() )( matIn.size1() ).error( "incompatible dimension" );
 
-    if ( !this->closed() )
-        this->close();
-    if ( matIn.closed() )
-        matIn.close();
-    if ( !matRes.closed() )
-        matRes.close();
+    this->closeIfNeeded();
+    matIn.closeIfNeeded();
+    matRes.closeIfNeeded();
 
     MatrixPetsc<T> const* matInPetsc = dynamic_cast<MatrixPetsc<T> const*> ( &matIn );
     MatrixPetsc<T>* matResPetsc = dynamic_cast<MatrixPetsc<T>*> ( &matRes );
@@ -1118,12 +1132,9 @@ MatrixPetsc<T>::PtAP( MatrixSparse<value_type> const& matP, MatrixSparse<value_t
     FEELPP_ASSERT( this->size1() == matP.size1() )( this->size1() )( matP.size1() ).error( "incompatible dimension" );
     FEELPP_ASSERT( this->size2() == matP.size1() )( this->size2() )( matP.size1() ).error( "incompatible dimension" );
 
-    if ( !this->closed() )
-        this->close();
-    if ( matP.closed() )
-        matP.close();
-    if ( !matC.closed() )
-        matC.close();
+    this->closeIfNeeded();
+    matP.closeIfNeeded();
+    matC.closeIfNeeded();
 
     MatrixPetsc<T> const* matP_petsc = dynamic_cast<MatrixPetsc<T> const*> ( &matP );
     MatrixPetsc<T>* matC_petsc = dynamic_cast<MatrixPetsc<T>*> ( &matC );
@@ -1170,12 +1181,9 @@ MatrixPetsc<T>::PAPt( MatrixSparse<value_type> const& matP, MatrixSparse<value_t
     FEELPP_ASSERT( this->size1() == matP.size2() )( this->size1() )( matP.size2() ).error( "incompatible dimension" );
     FEELPP_ASSERT( this->size2() == matP.size2() )( this->size2() )( matP.size2() ).error( "incompatible dimension" );
 
-    if ( !this->closed() )
-        this->close();
-    if ( matP.closed() )
-        matP.close();
-    if ( !matC.closed() )
-        matC.close();
+    this->closeIfNeeded();
+    matP.closeIfNeeded();
+    matC.closeIfNeeded();
 
     MatrixPetsc<T> const* matP_petsc = dynamic_cast<MatrixPetsc<T> const*> ( &matP );
     MatrixPetsc<T>* matC_petsc = dynamic_cast<MatrixPetsc<T>*> ( &matC );
@@ -1295,8 +1303,7 @@ MatrixPetsc<T>::printMatlab ( const std::string name ) const
     FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not properly initialized" );
 
     // assert (this->closed());
-    if ( !this->closed() )
-        this->close();
+    this->closeIfNeeded();
     PetscObjectSetName((PetscObject)M_mat,fs::path("var_"+name).stem().string().c_str());
     int ierr=0;
     PetscViewer petsc_viewer;
@@ -1427,8 +1434,7 @@ MatrixPetsc<T>::getSubMatrixPetsc( std::vector<size_type> const& rows,
                                    std::vector<size_type> const& cols,
                                    Mat &submat, bool doClose ) const
 {
-    if ( !this->closed() )
-        this->close();
+    this->closeIfNeeded();
     //if(doClose) // with close(), petsc believe the matrix has changed. That can be confusing
           //    const_cast<MatrixPetsc<T>*>( this )->close();
     int ierr=0;
@@ -1576,10 +1582,8 @@ MatrixPetsc<T>::addMatrix ( const T a_in, MatrixSparse<T> const&X_in, Feel::Matr
     FEELPP_ASSERT( this->size2() == X_in.size2() )( this->size2() )( X_in.size2() ).error( "incompatible dimension" );
 
     // the matrix have to be assembled/closed
-    if ( !this->closed() )
-        this->close();
-    if ( !X_in.closed() )
-        X_in.close();
+    this->closeIfNeeded();
+    X_in.closeIfNeeded();
 
 
     PetscScalar     a = static_cast<PetscScalar>      ( a_in );
@@ -1612,8 +1616,7 @@ template <typename T>
 void
 MatrixPetsc<T>::scale( T const a )
 {
-    if ( !this->closed() )
-        this->close();
+    this->closeIfNeeded();
     int ierr = MatScale( M_mat, a );
     CHKERRABORT( this->comm(),ierr );
 }
@@ -1623,8 +1626,7 @@ typename MatrixPetsc<T>::real_type
 MatrixPetsc<T>::l1Norm() const
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not initialized" );
-    if ( !this->closed() )
-        this->close();
+    this->closeIfNeeded();
 
     int ierr=0;
     double petsc_value;
@@ -1644,8 +1646,7 @@ typename MatrixPetsc<T>::real_type
 MatrixPetsc<T>::linftyNorm() const
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not initialized" );
-    if ( !this->closed() )
-        this->close();
+    this->closeIfNeeded();
 
     int ierr=0;
     double petsc_value;
@@ -1663,10 +1664,8 @@ template <typename T>
 MatrixPetsc<T> &
 MatrixPetsc<T>::operator = ( MatrixSparse<value_type> const& M )
 {
-    if ( !this->closed() )
-        this->close();
-    if ( !M.closed() )
-        M.close();
+    this->closeIfNeeded();
+    M.closeIfNeeded();
 
     MatrixPetsc<T> const* X = dynamic_cast<MatrixPetsc<T> const*> ( &M );
     this->setGraph( M.graph() );
@@ -1708,8 +1707,7 @@ MatrixPetsc<T>::operator () ( const size_type i,
 
 
     // the matrix needs to be closed for this to work
-    if ( !this->closed() )
-        this->close();
+    this->closeIfNeeded();
 
     if ( this->comm().size()>1 )
     {
@@ -1767,12 +1765,9 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows,
                           Context const& on_context,
                           value_type value_on_diagonal )
 {
-    // zeroRows() enters a collective PETSc path when used by blockform + on().
-    // Some preceding matrix updates may have marked the wrapper closed state
-    // only on a subset of ranks, so deciding whether to assemble from local
-    // closed()/MatAssembled() can diverge and deadlock. Finalize assembly
-    // collectively here instead.
-    this->close();
+    // MatZeroRows* preserves the assembled matrix state. Only flush pending
+    // MatSetValues* assembly before entering this collective PETSc path.
+    this->closeIfNeeded();
 
     int ierr = 0;
     if ( !rhs.closed() )
@@ -1797,7 +1792,13 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows,
                 return;
 
             char const* text = nullptr;
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 25, 0 )
+            char const* specific = nullptr;
+#elif PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 19, 0 )
             char* specific = nullptr;
+#else
+            char const* specific = nullptr;
+#endif
             PetscErrorMessage( ierr, &text, &specific );
             CHECK( ierr == 0 ) << call << " failed with ierr=" << ierr
                                << " text=" << ( text ? text : "<null>" )
@@ -1875,6 +1876,7 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows,
                 }
             }
         }
+
     }
 
     if ( !rhs.closed() )
@@ -1885,8 +1887,7 @@ template<typename T>
 void
 MatrixPetsc<T>::diagonal( Vector<value_type>& out ) const
 {
-    if ( !this->closed() )
-        this->close();
+    this->closeIfNeeded();
     if ( !out.isInitialized() )
         out.init( this->mapRowPtr() );
     else if ( !out.closed() )
@@ -1932,10 +1933,8 @@ MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt, size_type options ) con
 {
     Context ctx( options );
     tic();
-    if ( !this->closed() )
-        this->close();
-    if ( !Mt.closed() )
-        Mt.close();
+    this->closeIfNeeded();
+    Mt.closeIfNeeded();
     toc("transpose: close()", Environment::logVerbosityLevel() > 0);
     tic();
     MatrixPetsc<T>* Atrans = dynamic_cast<MatrixPetsc<T>*> ( &Mt );
@@ -2039,8 +2038,7 @@ MatrixPetsc<T>::symmetricPart( MatrixSparse<value_type>& Mt ) const
     return;
 
 #if 0
-    if ( !this->closed() )
-        this->close();
+    this->closeIfNeeded();
     int ierr = 0;
 
     // first check if the matrix is symmetric
@@ -2155,8 +2153,7 @@ MatrixPetsc<T>::energy( Vector<value_type> const& __v,
                         Vector<value_type> const& __u,
                         bool transpose ) const
 {
-    if ( !this->closed() )
-        this->close();
+    this->closeIfNeeded();
     if ( !__v.closed() )
         const_cast<Vector<value_type>*>( &__v )->close();
     if ( !__u.closed() )
@@ -2487,8 +2484,7 @@ template <typename T>
 template<class Archive>
 void MatrixPetsc<T>::serialize(Archive & ar, const unsigned int version )
 {
-    if ( !this->closed() )
-        this->close();
+    this->closeIfNeeded();
 
     CHECK( this->isInitialized() ) << "TODO : matrix not initialized";
     int ierr=0;
@@ -2821,6 +2817,7 @@ void MatrixPetscMPI<T>::set( const size_type i,
                               &petsc_value, INSERT_VALUES );
 
     CHKERRABORT( this->comm(),ierr );
+    this->setIsClosed( false );
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -2841,6 +2838,7 @@ void MatrixPetscMPI<T>::add ( const size_type i,
     ierr = MatSetValuesLocal( this->mat(), 1, &i_val, 1, &j_val,
                               &petsc_value, ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );
+    this->setIsClosed( false );
 }
 
 
@@ -2871,6 +2869,7 @@ MatrixPetscMPI<T>::addMatrix( const ublas::matrix<value_type>& dm,
 
 
     CHKERRABORT( this->comm(),ierr );
+    this->setIsClosed( false );
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -2901,6 +2900,7 @@ MatrixPetscMPI<T>::addMatrix( int* rows, int nrows,
                               ADD_VALUES );
 
     CHKERRABORT( this->comm(),ierr );
+    this->setIsClosed( false );
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -3019,8 +3019,7 @@ MatrixPetscMPI<T>::zero()
 {
     CHECK ( this->isInitialized() ) <<  "petsc matrix not properly initialized";
 
-    if ( !this->closed() )
-        this->close();
+    this->closeIfNeeded();
 
     int ierr=0;
     ierr = MatZeroEntries( this->mat() );
@@ -3240,12 +3239,13 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
                              Context const& on_context,
                              value_type value_on_diagonal )
 {
-
     // specific treatment if not all process going here
     bool hasAllProcess = true;
     if ( hasAllProcess )
     {
-        this->close();
+        // MatZeroRowsLocal keeps the PETSc matrix assembled. Only close when
+        // some rank still has pending MatSetValues* assembly to flush first.
+        this->closeIfNeeded();
         if ( !rhs.closed() )
             rhs.close();
     }
@@ -3320,7 +3320,8 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
         }
 #endif
     }
-    // rsh doesn't be closed because not all processors are present here with composite spaces(this call must be done after)
+    // With composite spaces, not every rank necessarily reaches this path, so
+    // defer rhs.close() unless all processes participate.
     if ( hasAllProcess )
     {
         if ( !rhs.closed() )

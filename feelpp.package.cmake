@@ -60,6 +60,7 @@ SET(CPACK_SYSTEM_NAME "${FEELPP_OS}-${FEELPP_SYSTEM_MACHINE}")
 
 SET(CPACK_SOURCE_GENERATOR "TGZ")
 SET(CPACK_SOURCE_OUTPUT_CONFIG_FILE "CPackSourceConfig.cmake")
+SET(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR};/")
 
 SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${FEELPP_VERSION_MAJOR}.${FEELPP_VERSION_MINOR}.${FEELPP_VERSION_MICRO}${FEELPP_VERSION_PRERELEASE}${FEELPP_VERSION_METADATA}")
 SET(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}${EXTRA_VERSION}-${LSB_RELEASE_ID_SHORT}-${LSB_RELEASE_VERSION_SHORT}")
@@ -67,70 +68,111 @@ SET(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION_MAJOR}.${PROJECT_
 OPTION(FEELPP_ENABLE_CPACK_OPUS "Enable OPUS packaging (if available) in CPack along with Feel++" ON )
 
 
+if (NOT GIT_FOUND)
+  find_package(Git QUIET)
+endif()
+
+function(feelpp_source_regex_literal INPUT OUTPUT)
+  set(_value "${INPUT}")
+  string(REPLACE "[" "[[]" _value "${_value}")
+  string(REPLACE "]" "[]]" _value "${_value}")
+  string(REPLACE "." "[.]" _value "${_value}")
+  string(REPLACE "+" "[+]" _value "${_value}")
+  string(REPLACE "*" "[*]" _value "${_value}")
+  string(REPLACE "?" "[?]" _value "${_value}")
+  string(REPLACE "$" "[$]" _value "${_value}")
+  string(REPLACE "(" "[(]" _value "${_value}")
+  string(REPLACE ")" "[)]" _value "${_value}")
+  string(REPLACE "{" "[{]" _value "${_value}")
+  string(REPLACE "}" "[}]" _value "${_value}")
+  string(REPLACE "|" "[|]" _value "${_value}")
+  set("${OUTPUT}" "${_value}" PARENT_SCOPE)
+endfunction()
+
+function(feelpp_append_git_untracked_source_ignores VARIABLE)
+  set(_patterns ${${VARIABLE}})
+
+  if (NOT GIT_FOUND)
+    set("${VARIABLE}" "${_patterns}" PARENT_SCOPE)
+    return()
+  endif()
+
+  execute_process(
+    COMMAND "${GIT_EXECUTABLE}" -C "${CMAKE_SOURCE_DIR}" ls-files --others --exclude-standard --directory --no-empty-directory
+    OUTPUT_VARIABLE _git_untracked
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+    RESULT_VARIABLE _git_untracked_result
+  )
+
+  if (NOT _git_untracked_result EQUAL 0 OR "${_git_untracked}" STREQUAL "")
+    set("${VARIABLE}" "${_patterns}" PARENT_SCOPE)
+    return()
+  endif()
+
+  string(REPLACE "\n" ";" _git_untracked_list "${_git_untracked}")
+  foreach(_git_untracked_path IN LISTS _git_untracked_list)
+    if (_git_untracked_path STREQUAL "")
+      continue()
+    endif()
+
+    feelpp_source_regex_literal("${_git_untracked_path}" _git_untracked_regex)
+    if (_git_untracked_path MATCHES "/$")
+      list(APPEND _patterns "/${_git_untracked_regex}")
+    else()
+      list(APPEND _patterns "/${_git_untracked_regex}$")
+    endif()
+  endforeach()
+
+  list(LENGTH _git_untracked_list _git_untracked_count)
+  message(STATUS "[cpack] excluding ${_git_untracked_count} git-untracked path(s) from the source archive")
+  set("${VARIABLE}" "${_patterns}" PARENT_SCOPE)
+endfunction()
+
 SET(CPACK_SOURCE_STRIP_FILES "")
 # The following components are regex's to match anywhere (unless anchored)
 # in absolute path + filename to find files or directories to be excluded
 # from source tarball.
 set(CPACK_SOURCE_IGNORE_FILES
-  "/\\\\.git/;\\\\.gitignore;/\\\\.svn;"
-  "/.git;"
-  "/admin/;/Templates/;"
-  "/auto/;/ltxpng/;/ci_tests/"
-  "/TAGS;/#.*;/.*~$;/*.log$;/.cvsignore;/.bzrignore;/work/;/autom4te.cache/"
-  #  "${PROJECT_SOURCE_DIR}/contrib/eigen"
-  "${PROJECT_SOURCE_DIR}/build-*"
-  "${PROJECT_SOURCE_DIR}/CMakeLists.txt.user"
-  "${PROJECT_SOURCE_DIR}/CMakeLists.txt.doc"
-  "${PROJECT_SOURCE_DIR}/contrib/cln"
-#  "${PROJECT_SOURCE_DIR}/contrib/boost"
-# "${PROJECT_SOURCE_DIR}/contrib/gmsh"
-  "${PROJECT_SOURCE_DIR}/contrib/nt2"
-  "${PROJECT_SOURCE_DIR}/contrib/ipopt"
-  "${PROJECT_SOURCE_DIR}/contrib/cereal"
-  "${PROJECT_SOURCE_DIR}/contrib/exodus-5.24"
-  "${PROJECT_SOURCE_DIR}/ports"
-  "${PROJECT_SOURCE_DIR}/projects"
-  "${PROJECT_SOURCE_DIR}/data/medit"
-  "${PROJECT_SOURCE_DIR}/data/gmsh/aneurism"
-  "${PROJECT_SOURCE_DIR}/data/gmsh/aorta"
-  "${PROJECT_SOURCE_DIR}/data/ensoght"
-  "${PROJECT_SOURCE_DIR}/data/gmsh/pelvis"
-  #"${PROJECT_SOURCE_DIR}/mor"
-  "${PROJECT_SOURCE_DIR}/applications/check"
-  "${PROJECT_SOURCE_DIR}/applications/polyvis"
-  "${PROJECT_SOURCE_DIR}/testsuite"
-  "${PROJECT_SOURCE_DIR}/benchmarks/"
-  "${PROJECT_SOURCE_DIR}/benchmarks/navierstokes/"
-  "${PROJECT_SOURCE_DIR}/benchmarks/stokes/"
-  "${PROJECT_SOURCE_DIR}/benchmarks/ethiersteinman/"
-  "${PROJECT_SOURCE_DIR}/benchmarks/kovasznay/"
-  "${PROJECT_SOURCE_DIR}/doc/poster/"
-  "${PROJECT_SOURCE_DIR}/doc/api/"
-  "${PROJECT_SOURCE_DIR}/doc/manual/pdfs/"
-  "${PROJECT_SOURCE_DIR}/doc/manual/pngs/"
-  "${PROJECT_SOURCE_DIR}/doc/manual/feel-manual.pdf"
-  "${PROJECT_SOURCE_DIR}/doc/manual/manual/feel-manual.pdf"
-  "${PROJECT_SOURCE_DIR}/doc/figures/backgrounds/"
-  "${PROJECT_SOURCE_DIR}/doc/figures/logos/"
-  "${PROJECT_SOURCE_DIR}/doc/manual/feelpp-manual*"
-  "${PROJECT_SOURCE_DIR}/doc/manual/*.tex"
-  "${PROJECT_SOURCE_DIR}/doc/manual/laplacian/*.msh"
-  "${PROJECT_SOURCE_DIR}/doc/manual/heatns/cabin/Mesh/Mesh_NonUniform/*.m*"
-  "${PROJECT_SOURCE_DIR}/doc/manual/heatns/cabin/Mesh/Mesh_uniform/*.m*"
-  "${PROJECT_SOURCE_DIR}/examples/fluid/"
-  "${PROJECT_SOURCE_DIR}/examples/levelset/"
-  "${PROJECT_SOURCE_DIR}/examples/pbeq/"
-  "${PROJECT_SOURCE_DIR}/research/"
-  "/*.tar.gz;*.tar.bz2;*.deb;obj-x86_64-linux-gnu/;__pycache__;pyfeelpp-env/;eigen-eigen*;build*/"
-  "*.eps;*.tag;"
-  "*.aux;*.log;*.bbl;*.idx;*.ist;*.out;*.blg;OpusManualBenchmarkEADSUJF.pdf"
-  "${PROJECT_SOURCE_DIR}/applications/opus.old"
-  "${PROJECT_SOURCE_DIR}/applications/opus/"
-   "${PROJECT_SOURCE_DIR}/applications/opus/debian/opus/"
-  "${PROJECT_SOURCE_DIR}/applications/opus/debian/source/"
-  "${PROJECT_SOURCE_DIR}/applications/opus/doc/"
-  "${PROJECT_SOURCE_DIR}/applications/opus/scripts"
+  "/[.]git/"
+  "/[.]svn/"
+  "/[.]github/"
+  "/[.]venv[^/]*/"
+  "/[.]pytest_cache/"
+  "/[.]mypy_cache/"
+  "/[.]cache/"
+  "/[.]idea/"
+  "/[.]vscode/"
+  "/__pycache__/"
+  "/build/"
+  "/build[-_.][^/]*/"
+  "/install/"
+  "/install[-_.][^/]*/"
+  "/_dist/"
+  "/packaging/"
+  "/doc/analysis/"
+  "/python/notebooks/"
+  "/benchmarks/ATTIC/"
+  "/feelpp/contrib/matplot/examples/"
+  "/feelpp/contrib/indicators/img/"
+  "/feelpp/contrib/mmg/libexamples/"
+  "/feelpp_pkg[.]egg-info/"
+  "CMakeLists[.]txt[.]user$"
+  "gmsh-(config[.]err|info[.]log)$"
+  "[.](tar[.](gz|bz2|xz)|deb|dsc|changes|build|buildinfo)$"
+)
+
+if (FEELPP_COMPONENT STREQUAL "feelpp")
+  list(APPEND CPACK_SOURCE_IGNORE_FILES
+    "/benchmarks/"
+    "/mor/"
+    "/research/"
+    "/testsuite/"
+    "/toolboxes/"
   )
+endif()
+
+feelpp_append_git_untracked_source_ignores(CPACK_SOURCE_IGNORE_FILES)
 
 #if ( NOT EXISTS ${FEELPP_SOURCE_DIR}/applications/opus/ )
 if ( EXISTS ${FEELPP_SOURCE_DIR}/applications/opus/ AND NOT FEELPP_ENABLE_CPACK_OPUS )
@@ -148,7 +190,6 @@ else()
 endif()
 
 include( CPack )
-# make dist equivalent to make package_source
 add_custom_target(dist
   COMMAND "${CMAKE_COMMAND}" --build "${PROJECT_BINARY_DIR}" --target package_source
   VERBATIM

@@ -1,0 +1,91 @@
+# =============================================================================
+# Feel++ Toolboxes - Multistage Dockerfile
+# =============================================================================
+
+ARG FROM_IMAGE=ghcr.io/feelpp/feelpp:ubuntu-24.04
+ARG DESCRIPTION="Feel++ Toolboxes"
+
+FROM ${FROM_IMAGE} AS builder
+USER root
+
+ARG DESCRIPTION
+LABEL maintainer="Feel++ Support <support@feelpp.org>"
+LABEL org.opencontainers.image.description="${DESCRIPTION}"
+
+ARG BRANCH=develop
+ARG BUILD_JOBS=20
+ARG CMAKE_PRESET=toolboxes
+ARG CMAKE_FLAGS=""
+ARG RUN_CTEST=0
+ARG CXX=clang++
+ARG CC=clang
+ARG FEELPP_GIRDER_API_KEY=""
+ARG FEELPP_GITHUB_TOKEN=""
+ARG FEELPP_CKAN_API_KEY=""
+ARG FEELPP_CKAN_URL=""
+ARG FEELPP_CKAN_ORGANIZATION=""
+
+ENV OMPI_ALLOW_RUN_AS_ROOT=1
+ENV OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+
+ENV FEELPP_GIRDER_API_KEY=${FEELPP_GIRDER_API_KEY}
+ENV FEELPP_GITHUB_TOKEN=${FEELPP_GITHUB_TOKEN}
+ENV FEELPP_CKAN_API_KEY=${FEELPP_CKAN_API_KEY}
+ENV FEELPP_CKAN_URL=${FEELPP_CKAN_URL}
+ENV FEELPP_CKAN_ORGANIZATION=${FEELPP_CKAN_ORGANIZATION}
+
+SHELL ["/bin/bash", "-lc"]
+
+WORKDIR /src
+COPY --from=feelpp_source / /src/feelpp
+RUN git config --global user.name "Docker Robot" \
+    && git config --global user.email "docker@feelpp.org" \
+    && git config --global --add safe.directory /src/feelpp
+
+WORKDIR /src/feelpp
+RUN cmake --preset ${CMAKE_PRESET} \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr/local \
+        -DCMAKE_CXX_COMPILER=${CXX} \
+        -DCMAKE_C_COMPILER=${CC} \
+        ${CMAKE_FLAGS} \
+    && cmake --build --preset ${CMAKE_PRESET} -j ${BUILD_JOBS} \
+    && cmake --build --preset ${CMAKE_PRESET} -t install -j ${BUILD_JOBS} \
+    && ldconfig \
+    && if [ "${RUN_CTEST}" = "1" ]; then ctest --preset ${CMAKE_PRESET}; fi \
+    && rm -rf build/${CMAKE_PRESET} /root/feelppdb /root/.cache /feel
+
+ARG FROM_IMAGE
+ARG DESCRIPTION
+FROM ${FROM_IMAGE} AS runtime
+ARG DESCRIPTION
+LABEL maintainer="Feel++ Support <support@feelpp.org>"
+LABEL org.opencontainers.image.description="${DESCRIPTION} (runtime)"
+
+USER root
+
+COPY --from=build_output /usr/local/lib/libfeelpp_model* /usr/local/lib/
+COPY --from=build_output /usr/local/include/feelpp/toolboxes /usr/local/include/feelpp/toolboxes
+COPY --from=build_output /usr/local/share/feelpp/toolboxes /usr/local/share/feelpp/toolboxes
+
+RUN --mount=from=build_output,source=/usr/local,target=/mnt/builder \
+    cp /mnt/builder/bin/feelpp_toolbox* /usr/local/bin/ 2>/dev/null || true \
+    && cp /mnt/builder/lib/libfeelpp_toolbox* /usr/local/lib/ 2>/dev/null || true
+
+RUN --mount=from=build_output,source=/usr/local,target=/mnt/builder \
+    for d in /mnt/builder/lib/python3*/dist-packages /mnt/builder/local/lib/python3*/dist-packages; do \
+        if [ -d "$d" ] && ls "$d"/feelpp* >/dev/null 2>&1; then \
+            pyver=$(echo "$d" | grep -oP 'python3[^/]*') && \
+            mkdir -p "/usr/local/lib/$pyver/dist-packages" && \
+            cp -r "$d"/feelpp* "/usr/local/lib/$pyver/dist-packages/"; \
+        fi; \
+    done
+
+RUN ldconfig
+
+USER feelpp
+ENV HOME=/home/feelpp
+ENV FEELPP_REPOSITORY=/feel
+ENV PYTHONPATH=/usr/local/lib/python3/dist-packages:${PYTHONPATH}
+WORKDIR ${HOME}
+CMD ["/bin/bash"]

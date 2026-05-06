@@ -1,7 +1,10 @@
+/.cache/
 *.ts/
 *.exports/
 downloads/
 build*/
+!.github/actions/build-publish-generated-image/
+!.github/actions/build-publish-generated-image/action.yml
 *.bak
 *.aux
 *.cppbck
@@ -58,6 +61,8 @@ __pycache__
 /testsuite/feeldiscr/#test_mortar.cpp#
 /testsuite/feeldiscr/.#test_mortar.cpp
 /contrib/eigen-eigen*
+/.pytest_cache/
+*.egg-info
 *.sw?
 \#*
 \.\#*
@@ -194,5 +199,16 @@ conftest.o
 python/notebooks/feelpp-python/
 install/
 .venv*/
+/ops/.pytest_cache/
+/ops/src/*.egg-info
+/ops/tests/**/__pycache__/
+/packaging/.pytest_cache/
+/packaging/src/*.egg-info
 # CMake Preset backup files
 CMakePresets.json.backup
+!/ops/src/feelpp/pkg/build/
+!/ops/src/feelpp/pkg/build/**
+/ops/src/feelpp/pkg/build/__pycache__/
+doc/analysis/
+mor/examples/grepldeim/grepldeimapp.cpp
+.spack-env/

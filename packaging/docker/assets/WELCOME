@@ -1,0 +1,5 @@
+= Feel++ development environment image
+
+This image provides a development environment for building Feel++ from source.
+It is intended for CI and for developers who want a ready-to-build base image.
+

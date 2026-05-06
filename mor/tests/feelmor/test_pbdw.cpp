@@ -239,7 +239,7 @@ BOOST_AUTO_TEST_CASE( test_pbdw_online )
             outputs(i,k) = inner_product(*Fs[i], phi);
         k++;
     }
-    auto outs3 = pbdwOnline.outputs(sensorsData({0,1,2,5,6,7,8,10,11,13},Eigen::all),
+    auto outs3 = pbdwOnline.outputs(sensorsData({0,1,2,5,6,7,8,10,11,13},Eigen::indexing::all),
                                     {0,1,2,5,6,7,8,10,11,13});
     for( int j = 0; j < k; ++j )
     {
