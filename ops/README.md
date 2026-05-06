@@ -94,8 +94,28 @@ The `feelpp.ops.common` namespace is the shared home for cross-tool support
 code such as naming, future logging helpers, and execution/runtime helpers.
 
 The `fpp-spack` alias is the first backend-specific convenience entry point. In
-Phase 0 it exposes the repository-owned Spack environment scaffolding under
-`packaging/spack/` and the initial `spack env` inspection commands.
+Phase 0 it exposed the repository-owned Spack environment scaffolding under
+`packaging/spack/` and the initial `spack env` inspection commands. It now also
+has a small local workflow surface:
+
+```bash
+fpp-spack doctor
+fpp-spack doctor --json
+fpp-spack init
+fpp-spack list
+eval "$(fpp-spack activate openmpi)"
+eval "$(fpp-spack activate cpu/openmpi)"
+```
+
+`doctor` checks the local Spack executable, config/cache paths, shared manifests,
+and optional selected environment. It prints human-readable output by default;
+use `--json` for the machine-readable payload. `init` creates local Spack
+config/cache paths and writes a shell setup helper; it only clones Spack or
+`spack/spack-packages` when `--install-spack` or `--install-spack-packages` is
+passed. `list` reports repository-owned environments and their configured views.
+`activate` is a `fpp-spack` command that selects a Feel++ Spack environment such
+as `openmpi` or `cpu/openmpi`; it prints shell code because a child process
+cannot directly modify the parent shell.
 
 `fpp-dev` owns generated developer-environment files. Dev Container profiles are
 derived from the `images` profile in [`.github/plan-ci.json`](../.github/plan-ci.json)

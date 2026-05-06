@@ -38,6 +38,25 @@ class CliTests(unittest.TestCase):
         self.assertEqual(args.spack_command, "env")
         self.assertEqual(args.spack_env_command, "list")
 
+    def test_spack_local_commands_are_available(self) -> None:
+        parser = build_parser()
+
+        doctor_args = parser.parse_args(["spack", "doctor", "--env", "openmpi"])
+        self.assertEqual(doctor_args.command, "spack")
+        self.assertEqual(doctor_args.spack_command, "doctor")
+        self.assertEqual(doctor_args.env, "openmpi")
+
+        init_args = parser.parse_args(["spack", "init", "--dry-run"])
+        self.assertEqual(init_args.spack_command, "init")
+        self.assertTrue(init_args.dry_run)
+
+        list_args = parser.parse_args(["spack", "list"])
+        self.assertEqual(list_args.spack_command, "list")
+
+        activate_args = parser.parse_args(["spack", "activate", "openmpi"])
+        self.assertEqual(activate_args.spack_command, "activate")
+        self.assertEqual(activate_args.name, "openmpi")
+
     def test_spack_image_targets_command_is_available(self) -> None:
         parser = build_parser()
         args = parser.parse_args(["spack", "image", "targets"])
@@ -175,6 +194,250 @@ class CliTests(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertIn('"name": "cpu/openmpi"', stdout.getvalue())
         self.assertIn('"status": "supported"', stdout.getvalue())
+
+    def test_spack_list_reports_environment_views_and_aliases(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo_root = Path(tmpdir)
+            manifest = repo_root / "packaging" / "spack" / "environments" / "cpu" / "openmpi" / "spack.yaml"
+            manifest.parent.mkdir(parents=True)
+            manifest.write_text(
+                "spack:\n  specs: []\n  view: $user_cache_path/views/feelpp/cpu-openmpi\n",
+                encoding="utf-8",
+            )
+            cache_root = repo_root / "spack-cache"
+
+            stdout = io.StringIO()
+            with mock.patch("sys.stdout", stdout):
+                rc = main(
+                    [
+                        "spack",
+                        "list",
+                        "--repo-root",
+                        tmpdir,
+                        "--user-cache-path",
+                        str(cache_root),
+                    ]
+                )
+
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(rc, 0)
+        self.assertEqual(payload["spack_metadata_root"], str(Path(tmpdir) / "packaging" / "spack"))
+        self.assertEqual(payload["environments"][0]["name"], "cpu/openmpi")
+        self.assertIn("openmpi", payload["environments"][0]["aliases"])
+        self.assertEqual(
+            payload["environments"][0]["views"][0]["path"],
+            str(cache_root / "views" / "feelpp" / "cpu-openmpi"),
+        )
+
+    def test_spack_activate_resolves_short_environment_name(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo_root = Path(tmpdir)
+            manifest = repo_root / "packaging" / "spack" / "environments" / "cpu" / "openmpi" / "spack.yaml"
+            manifest.parent.mkdir(parents=True)
+            manifest.write_text("spack:\n  specs: []\n", encoding="utf-8")
+            spack_root = repo_root / "spack"
+            config_root = repo_root / "spack-config"
+            cache_root = repo_root / "spack-cache"
+
+            stdout = io.StringIO()
+            with mock.patch("sys.stdout", stdout):
+                rc = main(
+                    [
+                        "spack",
+                        "activate",
+                        "--repo-root",
+                        tmpdir,
+                        "--spack-root",
+                        str(spack_root),
+                        "--user-config-path",
+                        str(config_root),
+                        "--user-cache-path",
+                        str(cache_root),
+                        "openmpi",
+                    ]
+                )
+
+        script = stdout.getvalue()
+        self.assertEqual(rc, 0)
+        self.assertIn(f"export SPACK_ROOT={spack_root}", script)
+        self.assertIn(f"export SPACK_USER_CONFIG_PATH={config_root}", script)
+        self.assertIn(f"spack env activate --sh {manifest.parent}", script)
+
+    def test_fpp_spack_activate_alias_resolves_environment_name(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo_root = Path(tmpdir)
+            manifest = repo_root / "packaging" / "spack" / "environments" / "cpu" / "openmpi" / "spack.yaml"
+            manifest.parent.mkdir(parents=True)
+            manifest.write_text("spack:\n  specs: []\n", encoding="utf-8")
+
+            stdout = io.StringIO()
+            with mock.patch("sys.argv", ["fpp-spack", "activate", "cpu/openmpi", "--repo-root", tmpdir]):
+                with mock.patch("sys.stdout", stdout):
+                    rc = main()
+
+        self.assertEqual(rc, 0)
+        self.assertIn(f"spack env activate --sh {manifest.parent}", stdout.getvalue())
+
+    def test_spack_init_writes_local_config_and_setup_script(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo_root = Path(tmpdir)
+            (repo_root / "packaging" / "spack" / "environments").mkdir(parents=True)
+            spack_root = repo_root / "spack"
+            config_root = repo_root / "spack-config"
+            cache_root = repo_root / "spack-cache"
+
+            stdout = io.StringIO()
+            with mock.patch("sys.stdout", stdout):
+                rc = main(
+                    [
+                        "spack",
+                        "init",
+                        "--repo-root",
+                        tmpdir,
+                        "--spack-root",
+                        str(spack_root),
+                        "--user-config-path",
+                        str(config_root),
+                        "--user-cache-path",
+                        str(cache_root),
+                    ]
+                )
+
+            payload = json.loads(stdout.getvalue())
+            config_payload = yaml.safe_load((config_root / "config.yaml").read_text(encoding="utf-8"))
+            setup_script = (config_root / "feelpp-spack-setup.sh").read_text(encoding="utf-8")
+
+        self.assertEqual(rc, 0)
+        self.assertEqual(payload["spack_user_config_path"], str(config_root))
+        self.assertEqual(config_payload["config"]["build_jobs"], 16)
+        self.assertEqual(config_payload["config"]["install_tree"]["root"], str(cache_root / "install"))
+        self.assertIn(f"export SPACK_ROOT={spack_root}", setup_script)
+
+    def test_spack_init_dry_run_reports_clone_commands_as_json(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo_root = Path(tmpdir)
+            (repo_root / "packaging" / "spack" / "environments").mkdir(parents=True)
+            spack_root = repo_root / "spack"
+            config_root = repo_root / "spack-config"
+            cache_root = repo_root / "spack-cache"
+
+            stdout = io.StringIO()
+            with mock.patch("sys.stdout", stdout):
+                rc = main(
+                    [
+                        "spack",
+                        "init",
+                        "--repo-root",
+                        tmpdir,
+                        "--spack-root",
+                        str(spack_root),
+                        "--user-config-path",
+                        str(config_root),
+                        "--user-cache-path",
+                        str(cache_root),
+                        "--install-spack",
+                        "--dry-run",
+                    ]
+                )
+
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(rc, 0)
+        self.assertEqual(payload["files"]["config"]["status"], "would_write")
+        self.assertEqual(
+            payload["git_commands"],
+            [f"git clone --depth 1 https://github.com/spack/spack.git {spack_root}"],
+        )
+
+    def test_spack_doctor_validates_local_spack_setup(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo_root = Path(tmpdir)
+            manifest = repo_root / "packaging" / "spack" / "environments" / "cpu" / "openmpi" / "spack.yaml"
+            manifest.parent.mkdir(parents=True)
+            manifest.write_text("spack:\n  specs: []\n", encoding="utf-8")
+            overlay_repo = repo_root / "packaging" / "spack" / "repo" / "spack_repo" / "feelpp" / "repo.yaml"
+            overlay_repo.parent.mkdir(parents=True)
+            overlay_repo.write_text("repo:\n  namespace: feelpp\n", encoding="utf-8")
+            spack_root = repo_root / "spack"
+            spack_bin = spack_root / "bin" / "spack"
+            spack_bin.parent.mkdir(parents=True)
+            spack_bin.write_text("#!/bin/sh\necho 1.0.0\n", encoding="utf-8")
+            spack_bin.chmod(0o755)
+            config_root = repo_root / "spack-config"
+            cache_root = repo_root / "spack-cache"
+            config_root.mkdir()
+            cache_root.mkdir()
+
+            stdout = io.StringIO()
+            with mock.patch("sys.stdout", stdout):
+                rc = main(
+                    [
+                        "spack",
+                        "doctor",
+                        "--repo-root",
+                        tmpdir,
+                        "--spack-root",
+                        str(spack_root),
+                        "--user-config-path",
+                        str(config_root),
+                        "--user-cache-path",
+                        str(cache_root),
+                        "--env",
+                        "openmpi",
+                        "--json",
+                    ]
+                )
+
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(rc, 0)
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["summary"]["errors"], 0)
+        self.assertEqual(payload["environment"]["name"], "cpu/openmpi")
+
+    def test_spack_doctor_defaults_to_human_output(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo_root = Path(tmpdir)
+            manifest = repo_root / "packaging" / "spack" / "environments" / "cpu" / "openmpi" / "spack.yaml"
+            manifest.parent.mkdir(parents=True)
+            manifest.write_text("spack:\n  specs: []\n", encoding="utf-8")
+            overlay_repo = repo_root / "packaging" / "spack" / "repo" / "spack_repo" / "feelpp" / "repo.yaml"
+            overlay_repo.parent.mkdir(parents=True)
+            overlay_repo.write_text("repo:\n  namespace: feelpp\n", encoding="utf-8")
+            spack_root = repo_root / "spack"
+            spack_bin = spack_root / "bin" / "spack"
+            spack_bin.parent.mkdir(parents=True)
+            spack_bin.write_text("#!/bin/sh\necho 1.0.0\n", encoding="utf-8")
+            spack_bin.chmod(0o755)
+            config_root = repo_root / "spack-config"
+            cache_root = repo_root / "spack-cache"
+            config_root.mkdir()
+            cache_root.mkdir()
+
+            stdout = io.StringIO()
+            with mock.patch("sys.stdout", stdout):
+                rc = main(
+                    [
+                        "spack",
+                        "doctor",
+                        "--repo-root",
+                        tmpdir,
+                        "--spack-root",
+                        str(spack_root),
+                        "--user-config-path",
+                        str(config_root),
+                        "--user-cache-path",
+                        str(cache_root),
+                        "--env",
+                        "cpu/openmpi",
+                    ]
+                )
+
+        output = stdout.getvalue()
+        self.assertEqual(rc, 0)
+        self.assertIn("Feel++ Spack doctor: ok", output)
+        self.assertIn("[OK] metadata_root:", output)
+        self.assertIn("Environment:", output)
+        self.assertIn("name: cpu/openmpi", output)
+        self.assertIn("Summary: 0 error(s), 0 warning(s), strict=False", output)
 
     def test_spack_image_targets_reflect_plan_ci_catalog(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
