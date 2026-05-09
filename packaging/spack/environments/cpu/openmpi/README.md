@@ -64,6 +64,8 @@ Notes:
   environments
 - the shared manifest also forces `mesa~llvm`; this avoids the current Mesa
   `llvm-config` tool mismatch in the GLX path pulled by `opencascade`
+- the shared manifest includes `mesa-glu` explicitly so OpenGL-enabled
+  Feel++ binaries can resolve `libGLU.so.1` during full-image CTest/runtime
 - the shared manifest includes `pugixml` explicitly so the FMI/XML-related
   CMake checks resolve the same way they do in the apt-based environments
 - the shared manifest includes `rsync` explicitly because the shared Feel++
