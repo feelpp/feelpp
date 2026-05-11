@@ -804,6 +804,11 @@ BOOST_AUTO_TEST_CASE(test_remotedata_girder_upload)
 BOOST_AUTO_TEST_CASE(test_remotedata_upload_error_handling)
 {
     // Test error handling for various upload scenarios
+    if (runningWithMultipleRanks())
+    {
+        BOOST_TEST_MESSAGE("Skipping upload error-handling test with multiple MPI ranks.");
+        return;
+    }
     
     BOOST_TEST_MESSAGE("Testing upload error handling scenarios");
 

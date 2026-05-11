@@ -33,13 +33,20 @@ spack:
   - "cln"
   - "ginac"
   - "eigen"
-  # OpenGL-enabled Feel++ binaries need libGLU.so.1 at runtime during CTest,
-  # even when the Gmsh FLTK GUI is disabled.
-  - "mesa-glu"
+  # Keep optional Feel++ libraries inside the Spack view so CMake does not
+  # fall back to host /usr candidates for enabled features.
+  - "ann"
+  - "arpack-ng+mpi+shared"
+  - "fftw+mpi precision=float,double,long_double"
+  - "gl2ps"
+  - "glpk+gmp"
+  - "gsl"
   # Feel++ needs the Gmsh library and CLI, not the FLTK GUI. Keep the
   # environment headless to avoid the extra GUI/OpenGL stack in Docker/CI.
   # Pin 4.13.1 for now: the bundled Spack v1.0.0 builtin package selects
-  # newer 4.15.x, which is not yet validated in this shared environment.
+  # newer 4.15.x, which is not yet validated in this shared environment. The
+  # repository-owned Gmsh overlay declares the GLU/X11 runtime libraries that
+  # gmsh@4.13.1~fltk still links.
   - "gmsh@4.13.1 +opencascade+mmg~fltk"
   - "py-gmsh@4.13.1"
   - "py-pybind11"
