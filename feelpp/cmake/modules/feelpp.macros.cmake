@@ -194,18 +194,20 @@ macro(feelpp_add_application)
           if ( ${TEST_NAME} MATCHES "#.*" )
             continue()
           endif()
+          string(REGEX REPLACE "[^A-Za-z0-9_.-]" "_" FEELPP_APP_TEST_EXPR_SUBDIR "${TEST_NAME}")
           if ( FEELPP_ENABLE_VERBOSE_CMAKE )
             message(STATUS "[feelpp] ${execname} adding test ${TEST_NAME} : ${TEST}")
           endif()
 
           # user name of the test in the app test name
           IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
-            add_test(NAME ${execname}-${TEST_NAME}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${TEST} ${MPIEXEC_POSTFLAGS} )
+            add_test(NAME ${execname}-${TEST_NAME}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${TEST} --repository.case=${execname}/${FEELPP_APP_TEST_EXPR_SUBDIR}/np_${NProcs2} ${MPIEXEC_POSTFLAGS} )
+            set_property(TEST ${execname}-${TEST_NAME}-np-${NProcs2} PROPERTY PROCESSORS ${NProcs2})
             list(APPEND APP_TESTS ${execname}-${TEST_NAME}-np-${NProcs2})
           endif()
 
           IF(NOT FEELPP_APP_NO_SEQ_TEST)
-            add_test(NAME ${execname}-${TEST_NAME}-np-1 COMMAND ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${TEST})
+            add_test(NAME ${execname}-${TEST_NAME}-np-1 COMMAND ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${TEST} --repository.case=${execname}/${FEELPP_APP_TEST_EXPR_SUBDIR}/np_1)
             list(APPEND APP_TESTS ${execname}-${TEST_NAME}-np-1)
           endif()
 

@@ -64,8 +64,16 @@ Notes:
   environments
 - the shared manifest also forces `mesa~llvm`; this avoids the current Mesa
   `llvm-config` tool mismatch in the GLX path pulled by `opencascade`
-- the shared manifest includes `mesa-glu` explicitly so OpenGL-enabled
-  Feel++ binaries can resolve `libGLU.so.1` during full-image CTest/runtime
+- the repository-owned Gmsh overlay declares `mesa-glu`, `libxcursor`,
+  `libxinerama`, and `libxft` for `gmsh@4.13.1~fltk` because the installed
+  `libgmsh.so` still links those runtime libraries with the bundled Spack
+  recipe
+- the shared manifest includes `ann`, `arpack-ng+mpi`, `fftw+mpi`, `gl2ps`,
+  `glpk+gmp`, and `gsl` explicitly so enabled optional Feel++ features resolve
+  from the Spack view instead of host `/usr` libraries
+- the Spack CMake preset disables OpenModelica because this Spack environment
+  does not currently provide an OpenModelica package; this avoids accidental
+  linkage to host `/usr` OpenModelica libraries on developer machines
 - the shared manifest includes `pugixml` explicitly so the FMI/XML-related
   CMake checks resolve the same way they do in the apt-based environments
 - the shared manifest includes `rsync` explicitly because the shared Feel++
