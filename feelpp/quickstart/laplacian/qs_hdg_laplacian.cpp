@@ -230,11 +230,11 @@ int hdg_laplacian()
     else
         a(0_c,0_c) += integrate(_range=elements(mesh),_expr=mass(u,v) );
 
-    toc("a(0,0)",FLAGS_v>0);
+    toc("a(0,0)",Environment::logVerbosityLevel()>0);
 
     tic();
     a(0_c,1_c) += integrate(_range=elements(mesh),_expr=-(idt(p)*div(v)));
-    toc("a(0,1)",FLAGS_v>0);
+    toc("a(0,1)",Environment::logVerbosityLevel()>0);
 
     tic();
     a(0_c,2_c) += integrate(_range=internalfaces(mesh),
@@ -242,14 +242,14 @@ int hdg_laplacian()
                                                rightface(normal(v)))) );
     a(0_c,2_c) += integrate(_range=boundaryfaces(mesh),
                             _expr=idt(phat)*(normal(v)));
-    toc("a(0,2)",FLAGS_v>0);
+    toc("a(0,2)",Environment::logVerbosityLevel()>0);
 
     //
     // Second row a(1_c,:)
     //
     tic();
     a(1_c,0_c) += integrate(_range=elements(mesh),_expr=(id(w)*divt(u)));
-    toc("a(1,0)",FLAGS_v>0);
+    toc("a(1,0)",Environment::logVerbosityLevel()>0);
 
     tic();
     a(1_c,1_c) += integrate(_range=internalfaces(mesh),
@@ -258,7 +258,7 @@ int hdg_laplacian()
                               rightfacet( idt(p))*rightface(id(w) )));
     a(1_c,1_c) += integrate(_range=boundaryfaces(mesh),
                             _expr=(tau_constant * id(w)*idt(p)));
-    toc("a(1,1)",FLAGS_v>0);
+    toc("a(1,1)",Environment::logVerbosityLevel()>0);
 
     tic();
     a(1_c,2_c) += integrate(_range=internalfaces(mesh),
@@ -267,7 +267,7 @@ int hdg_laplacian()
                               rightface( id(w) )));
     a(1_c,2_c) += integrate(_range=boundaryfaces(mesh),
                             _expr=-tau_constant * idt(phat) * id(w) );
-    toc("a(1,2)",FLAGS_v>0);
+    toc("a(1,2)",Environment::logVerbosityLevel()>0);
 
     //
     // Third row a(2_c,:)
@@ -278,13 +278,13 @@ int hdg_laplacian()
                             _expr=( id(l)*(leftfacet(normalt(u))+rightfacet(normalt(u))))
                             //_expr=( cst(2.)*(leftfacet(trans(idt(u))*N())+rightfacet(trans(idt(u))*N())) ),
                             );
-    toc("a(2,0).1",FLAGS_v>0);
+    toc("a(2,0).1",Environment::logVerbosityLevel()>0);
 
     tic();
     // BC
     a(2_c,0_c) += integrate(_range=markedfaces(mesh,"Neumann"),
                             _expr=( id(l)*(normalt(u))));
-    toc("a(2,0).3",FLAGS_v>0);
+    toc("a(2,0).3",Environment::logVerbosityLevel()>0);
 
     tic();
     a(2_c,1_c) += integrate(_range=internalfaces(mesh),
@@ -293,7 +293,7 @@ int hdg_laplacian()
 
     a(2_c,1_c) += integrate(_range=markedfaces(mesh,"Neumann"),
                             _expr=tau_constant * id(l) * ( idt(p) ) );
-    toc("a(2,1)",FLAGS_v>0);
+    toc("a(2,1)",Environment::logVerbosityLevel()>0);
 
     tic();
     a(2_c,2_c) += integrate(_range=internalfaces(mesh),
@@ -312,7 +312,7 @@ int hdg_laplacian()
     a( 2_c, 2_c ) += integrate(_range=markedfaces(mesh,"Robin"),
                                _expr=-r_1*idt(phat) * id(l) );
 
-    toc("a(2,2)",FLAGS_v>0);
+    toc("a(2,2)",Environment::logVerbosityLevel()>0);
 
 
     toc("matrices",true);
@@ -335,31 +335,31 @@ int hdg_laplacian()
     auto pps = product( Whp );
     auto PP = pps.element();
     auto ppp = PP(0_c);
-    toc("postproceSsing.space",FLAGS_v>0);
+    toc("postproceSsing.space",Environment::logVerbosityLevel()>0);
     tic();
     tic();
     auto b = blockform2( pps, solve::strategy::local, backend() );
     b( 0_c, 0_c ) = integrate( _range=elements(mesh), _expr=inner(gradt(ppp),grad(ppp)));
-    toc("postprocessing.assembly.a",FLAGS_v>0);
+    toc("postprocessing.assembly.a",Environment::logVerbosityLevel()>0);
     tic();
     auto ell = blockform1( pps, solve::strategy::local, backend() );
     ell(0_c) = integrate( _range=elements(mesh), _expr=-lambda*grad(ppp)*idv(up));
-    toc("postprocessing.assembly.l",FLAGS_v>0);
-    toc("postprocessing.assembly",FLAGS_v>0);
+    toc("postprocessing.assembly.l",Environment::logVerbosityLevel()>0);
+    toc("postprocessing.assembly",Environment::logVerbosityLevel()>0);
 
     tic();
     tic();
     b.solve( _solution=PP, _rhs=ell, _name="sc.post", _local=true);
-    toc("postprocessing.solve.local",FLAGS_v>0);
+    toc("postprocessing.solve.local",Environment::logVerbosityLevel()>0);
     ppp=PP(0_c);
     tic();
     tic();
     ppp -= ppp.ewiseMean(P0dh);
-    toc("postprocessing.solve.correction.ppp",FLAGS_v>0);
+    toc("postprocessing.solve.correction.ppp",Environment::logVerbosityLevel()>0);
     tic();
     ppp += pp.ewiseMean(P0dh);
-    toc("postprocessing.solve.correction.pp",FLAGS_v>0);
-    toc("postprocessing.solve.correction",FLAGS_v>0);
+    toc("postprocessing.solve.correction.pp",Environment::logVerbosityLevel()>0);
+    toc("postprocessing.solve.correction",Environment::logVerbosityLevel()>0);
     toc("postprocessing.solve");
     toc("postprocessing");
 

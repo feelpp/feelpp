@@ -787,7 +787,7 @@ PointSetQuadrature<Convex,T, IndexT>::constructQROnEdge( Elem const& ref_convex,
                 DVLOG(2) << "[quadpt] ref_convex_edge "  << __f << "=" << ref_convex_edge.points() << "\n";
                 //toPython( ref_convex_edge );
 
-                auto ctx = __gm->context<(vm::JACOBIAN|vm::POINT|vm::KB)>( __gm->edgeMap(), ref_convex_edge, __geopc );
+                auto ctx = __gm->template context<(vm::JACOBIAN|vm::POINT|vm::KB)>( __gm->edgeMap(), ref_convex_edge, __geopc );
                 ctx.template update<vm::JACOBIAN|vm::POINT|vm::KB>( ref_convex_edge );
                 DVLOG(2) << "[quadpt] ref_convex_edge "  << __f << " xref" << ctx.xRefs() << "\n";
                 DVLOG(2) << "[quadpt] ref_convex_edge "  << __f << " xreal" << ctx.xReal() << "\n";

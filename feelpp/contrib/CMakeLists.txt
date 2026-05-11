@@ -26,6 +26,10 @@ message(STATUS "Contrib libraries")
 include(FetchContent)
 add_library(feelpp_contrib INTERFACE)
 add_library( Feelpp::feelpp_contrib ALIAS feelpp_contrib)
+if ( ${CMAKE_VERSION} VERSION_GREATER 3.7.2 )
+  target_compile_features(feelpp_contrib INTERFACE cxx_std_${FEELPP_STD_CPP})
+endif()
+set_property(TARGET feelpp_contrib PROPERTY FEELPP_STD_CPP ${FEELPP_STD_CPP})
 
 set( CMAKE_INSTALL_DATADIR "share/feelpp")
 if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
@@ -79,7 +83,7 @@ if ( FEELPP_USE_EXTERNAL_FMT )
   target_link_libraries( feelpp_contrib INTERFACE fmt::fmt )
 else()
 set(FETCHCONTENT_SOURCE_DIR_FMT ${CMAKE_CURRENT_SOURCE_DIR}/fmt)
-FetchContent_Declare(fmt GIT_REPOSITORY https://github.com/feelpp/fmt.git GIT_TAG b6f4ceaed0a0a24ccf575fab6c56dd50ccf6f1a9)
+FetchContent_Declare(fmt GIT_REPOSITORY https://github.com/fmtlib/fmt.git GIT_TAG 12.1.0)
 
 set(FMT_INSTALL ON)
 set(FMT_CMAKE_DIR "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
@@ -100,58 +104,66 @@ endif()
 
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring GFlags")
-set( FEELPP_HAS_GFLAGS 1 )
-set( FEELPP_HAS_GFLAGS 1 PARENT_SCOPE )
-set( GFLAGS_IS_SUBPROJECT TRUE )
-add_subdirectory(gflags)
-if ( FEELPP_HAS_GFLAGS )
-  set(GFLAGS_IS_SUBPROJECT TRUE)
-  set(GFLAGS_NAMESPACE "google;gflags")
-  #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/gflags)
-  list(INSERT FEELPP_LIBRARIES 0 feelpp_gflags)
-
-  #add_dependencies(contrib feelpp_gflags feelpp_gflags_shared feelpp_gflags_nothreads_shared)
-  #target_include_directories(feelpp_gflags_nothreads_shared BEFORE PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/gflags/include ${CMAKE_CURRENT_BINARY_DIR}/gflags/include/gflags)
-
-  target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_GFLAGS )
-  target_include_directories(feelpp_contrib
-    INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/feelpp/contrib/gflags/include>
-    $<INSTALL_INTERFACE:include/feelpp>
-    )
-  target_link_libraries(feelpp_contrib INTERFACE feelpp_gflags)
-
-  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} GFlags/Contrib")
-
-  # for GLog
-  set(gflags_LIBRARIES feelpp_gflags)
-  set(gflags_FOUND 1)
-endif()
+# GFlags disabled - migrated to spdlog
+set( FEELPP_HAS_GFLAGS 0 )
+set( FEELPP_HAS_GFLAGS 0 PARENT_SCOPE )
 
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring GLog")
-set( FEELPP_HAS_GLOG 1 )
-set( FEELPP_HAS_GLOG 1 PARENT_SCOPE )
-add_subdirectory(glog)
-if ( FEELPP_HAS_GLOG )
-  target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_GLOG )
-  target_include_directories(feelpp_contrib INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/feelpp/contrib/glog/>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/feelpp/contrib/glog/src>
-    $<INSTALL_INTERFACE:include/feelpp>
-    )
-  target_link_libraries(feelpp_contrib INTERFACE feelpp_glog)
-    #     INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR}/glog/ ${CMAKE_CURRENT_SOURCE_DIR}/glog/src)
-  #add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/glog)
-  list(INSERT FEELPP_LIBRARIES 0 feelpp_glog)
-  #add_dependencies(contrib feelpp_glog)
-  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} GLog/Contrib")
+# GLog disabled - migrated to spdlog
+set( FEELPP_HAS_GLOG 0 )
+set( FEELPP_HAS_GLOG 0 PARENT_SCOPE )
+
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring spdlog")
+option(FEELPP_ENABLE_SPDLOG "Enable spdlog" ON)
+if(FEELPP_ENABLE_SPDLOG)
+  set(SPDLOG_FMT_EXTERNAL ON  CACHE BOOL "" FORCE)
+  set(SPDLOG_USE_STD_FORMAT OFF CACHE BOOL "" FORCE)
+  set(SPDLOG_INSTALL OFF CACHE BOOL "" FORCE)  # Don't install spdlog targets to avoid export conflicts
+  set(FETCHCONTENT_SOURCE_DIR_SPDLOG ${CMAKE_CURRENT_SOURCE_DIR}/spdlog)
+  FetchContent_Declare(spdlog
+    GIT_REPOSITORY https://github.com/gabime/spdlog.git
+    GIT_TAG v1.16.0)
+  FetchContent_MakeAvailable(spdlog)
+  
+  # Ensure fmt::fmt alias exists for spdlog
+  if(TARGET fmt AND NOT TARGET fmt::fmt)
+    add_library(fmt::fmt ALIAS fmt)
+  endif()
+  
+  # Create a header-only interface that doesn't export spdlog targets
+  add_library(feelpp_spdlog INTERFACE)
+  # Don't link to spdlog targets - just provide include paths and definitions
+  target_include_directories(feelpp_spdlog INTERFACE
+    $<BUILD_INTERFACE:${spdlog_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include/feelpp/spdlog>)
+  target_compile_definitions(feelpp_spdlog INTERFACE 
+    SPDLOG_FMT_EXTERNAL
+    SPDLOG_ACTIVE_LEVEL=$<IF:$<CONFIG:Debug>,SPDLOG_LEVEL_TRACE,SPDLOG_LEVEL_INFO>)
+  # Note: SPDLOG_HEADER_ONLY is defined automatically by spdlog when SPDLOG_COMPILED_LIB is not set
+  
+  # Link to fmt which is already in the export set
+  target_link_libraries(feelpp_spdlog INTERFACE fmt)
+  
+  # Install spdlog headers manually
+  # CMAKE_INSTALL_INCLUDEDIR is already set to include/feelpp, so install directly there
+  install(DIRECTORY ${spdlog_SOURCE_DIR}/include/spdlog
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    FILES_MATCHING PATTERN "*.h")
+  
+  target_link_libraries(feelpp_contrib INTERFACE feelpp_spdlog)
+  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_SPDLOG)
+  
+  install(TARGETS feelpp_spdlog EXPORT feelpp-contrib-export-targets)
+  
+  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} spdlog/Contrib")
 endif()
 
 # # cln
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring CLN")
-option(FEELPP_USE_EXTERNAL_CLN "USE_EXTERNAL_CLN" OFF)
+option(FEELPP_USE_EXTERNAL_CLN "USE_EXTERNAL_CLN" ON)
 
 if(FEELPP_USE_EXTERNAL_CLN)
   pkg_search_module(CLN REQUIRED IMPORTED_TARGET "cln>=1.3.6")
@@ -171,6 +183,8 @@ if(FEELPP_USE_EXTERNAL_CLN)
   endif()
   target_link_libraries(feelpp_contrib INTERFACE cln::cln)
 else()
+  set(CLN_BUILD_EXAMPLES OFF)
+	set(CLN_INSTALL_EXAMPLES OFF)
   set(FETCHCONTENT_SOURCE_DIR_CLN ${CMAKE_CURRENT_SOURCE_DIR}/cln)
   message(STATUS)
   FetchContent_Declare(cln GIT_REPOSITORY https://github.com/feelpp/cln.git GIT_TAG 41756c0ba619bf412de7558f493e827a07c2a6e3)
@@ -243,13 +257,17 @@ if ( FEELPP_USE_EXTERNAL_EIGEN3 )
 else()
 
 set(EIGEN_BUILD_DOC OFF)
+set(EIGEN_BUILD_CMAKE_PACKAGE ON)
 set(BUILD_TESTING OFF)
 set(EIGEN_LEAVE_TEST_IN_ALL_TARGET 0)
 set(EIGEN_TEST_NOQT 1)
 set(FETCHCONTENT_SOURCE_DIR_EIGEN ${CMAKE_CURRENT_SOURCE_DIR}/eigen)
-set( EIGEN_INCLUDE_INSTALL_DIR "include/feelpp/eigen" )
+# Eigen 5 reads its install layout from cache variables inside the subproject.
+# Force the vendored install tree to remain under the historical Feel++ prefix
+# so exported Feel++ targets keep referencing an installed path that exists.
+set(INCLUDE_INSTALL_DIR "include/feelpp/eigen" CACHE PATH "Eigen headers install dir" FORCE)
 
-FetchContent_Declare(eigen GIT_REPOSITORY git@gitlab.com:feelpp/eigen.git GIT_TAG 08bd619a45b642d68ccf80c011d7391bb213ecba) # the commit hash for 1.5.0
+FetchContent_Declare(eigen GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git GIT_TAG bc3b39870ecb690a623a3f49149a358b95c5781d) # upstream 5.0.1
 FetchContent_MakeAvailable(eigen)
 target_include_directories( feelpp_contrib BEFORE
       INTERFACE
@@ -409,10 +427,27 @@ option(FEELPP_USE_EXTERNAL_PYBIND11 "USE_EXTERNAL_PYBIND11" OFF)
 
 if(FEELPP_USE_EXTERNAL_PYBIND11)
   find_package(pybind11 CONFIG REQUIRED)
+  # Some system pybind11 package versions/export names differ between
+  # distributions (pybind11::module, pybind11::pybind11, pybind11::headers).
+  # Ensure the historically-expected imported target `pybind11::headers`
+  # exists so downstream helper code (pybind11NewTools.cmake /
+  # pybind11_add_module) can link against it. Create a safe alias to
+  # an available target when necessary.
+  if(NOT TARGET pybind11::headers)
+    if(TARGET pybind11::pybind11_headers)
+      add_library(pybind11::headers ALIAS pybind11::pybind11_headers)
+    elseif(TARGET pybind11::module)
+      add_library(pybind11::headers ALIAS pybind11::module)
+    elseif(TARGET pybind11::pybind11)
+      add_library(pybind11::headers ALIAS pybind11::pybind11)
+    elseif(TARGET pybind11)
+      add_library(pybind11::headers ALIAS pybind11)
+    endif()
+  endif()
+
   target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_PYBIND11)
   target_link_libraries(feelpp_contrib INTERFACE pybind11::module)
 else()
-  set(PYBIND11_CPP_STANDARD -std=c++${FEELPP_STD_CPP})
   if ( FEELPP_ENABLE_PYBIND11 )
     feelppContribPrepare( pybind11 )
     if ( FEELPP_CONTRIB_PREPARE_SUCCEED )
@@ -524,6 +559,8 @@ if ( FEELPP_ENABLE_FMI4CPP )
     set(FMI4CPP_LOG_LEVEL "OFF" CACHE STRING "FMI4cpp logging level")
   endif()
   set( FMI4CPP_HEADER_INSTALL_DIR "${CMAKE_INSTALL_INCLUDEDIR}/")
+  set( FMI4CPP_INSTALL_BIN_DIR "${CMAKE_INSTALL_BINDIR}")
+  set( FMI4CPP_INSTALL_LIB_DIR "${CMAKE_INSTALL_LIBDIR}")
   set( FMI4CPP_CMAKE_INSTALL_DIR "share/feelpp/fmi4cpp")
   set( FMI4CPP_DOC_INSTALL_DIR "share/doc/feelpp/fmi4cpp")
   set(FETCHCONTENT_SOURCE_DIR_FMI4CPP ${CMAKE_CURRENT_SOURCE_DIR}/fmi4cpp)
@@ -532,7 +569,11 @@ if ( FEELPP_ENABLE_FMI4CPP )
 
   FetchContent_MakeAvailable(fmi4cpp)
   add_library(feelpp_fmi4cpp INTERFACE)
-  set_target_properties(fmi4cpp PROPERTIES OUTPUT_NAME "feelpp_fmi4cpp")
+  set_target_properties(fmi4cpp PROPERTIES
+      OUTPUT_NAME "feelpp_fmi4cpp"
+      VERSION ${FEELPP_SHARED_VERSION}
+      SOVERSION ${FEELPP_SHARED_SOVERSION}
+      )
   if ( "${CMAKE_BUILD_TYPE}" STREQUAL "Release" )
     target_compile_definitions(fmi4cpp PRIVATE LOG_LEVEL_OFF)  #fix bug with macro name (missing M here https://github.com/feelpp/FMI4cpp/blob/master/src/fmi4cpp/mlog.hpp#L13C1-L14C1)
   endif()
@@ -703,6 +744,10 @@ if ( FEELPP_ENABLE_MATPLOT )
     message( STATUS "matplot++ CMAKE_INSTALL_INCLUDE_DIR: ${CMAKE_INSTALL_INCLUDEDIR}")
     set( BUILD_SHARED_LIBS ON )
     set( BUILD_INSTALLER ON )
+    # Vendored matplot pulls bundled CImg code, which may warn on newer distro
+    # toolchains. Keep its own developer-only warnings-as-errors disabled when
+    # embedded in Feel++ so package builds are not blocked by third-party warnings.
+    set( BUILD_WITH_PEDANTIC_WARNINGS OFF CACHE BOOL "" FORCE )
     set(OPTIMIZATION_FLAG_IS_SET ON)
     add_subdirectory( matplot )
     target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_MATPLOT )
@@ -776,8 +821,10 @@ if ( FEELPP_ENABLE_CPR )
   message(STATUS "Configuring CPR")
   set(FETCHCONTENT_SOURCE_DIR_CPR ${CMAKE_CURRENT_SOURCE_DIR}/cpr)
   # patch includes fix for 18.04 compilation
-  FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/feelpp/cpr.git GIT_TAG e554da6bde33edc35f1c28bd8197ae50bdf4a4d4)
-  set( USE_SYSTEM_CURL ON )
+  FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/feelpp/cpr.git GIT_TAG 1.12.0)
+  set( CPR_USE_SYSTEM_CURL ON )
+  set( CPR_ENABLE_SSL ON)
+  set( CPR_USE_SYSTEM_LIB_PSL ON)
   set( BUILD_CPR_TESTS OFF )
   if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
       set( CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/feelpp")
@@ -803,8 +850,8 @@ endif()
 
 # ----------------------------------------------------------
 # # A fast and simple to use logging library.
-# option( FEELPP_ENABLE_SPDLOG "Enable SPDLOG" ON )
-# if ( FEELPP_ENABLE_SPDLOG )
+#option( FEELPP_ENABLE_SPDLOG "Enable SPDLOG" ON )
+#if ( FEELPP_ENABLE_SPDLOG )
 #   message(STATUS "------------------------------------------------------------")
 #   message(STATUS "Configuring SPDLOG")
 #   set(FETCHCONTENT_SOURCE_DIR_SPDLOG ${CMAKE_CURRENT_SOURCE_DIR}/spdlog)
@@ -813,8 +860,8 @@ endif()
 #   set(export_dest_dir "${CMAKE_INSTALL_DATADIR}/feel/cmake/modules")
 #   FetchContent_Declare(
 #       spdlog
-#       GIT_REPOSITORY https://github.com/feelpp/spdlog.git
-#       GIT_TAG        8a74f3b3df73f73ad883640ec27027c4309bf570)
+#       GIT_REPOSITORY https://github.com/gabime/spdlog.git
+#       GIT_TAG        486b55554f11c9cccc913e11a87085b2a91f706f)
 #   FetchContent_MakeAvailable(spdlog)
 #   add_library(feelpp_spdlog INTERFACE)
 #   set_target_properties(spdlog PROPERTIES OUTPUT_NAME "feelpp_spdlog")
@@ -853,7 +900,11 @@ if ( FEELPP_ENABLE_SPECX )
   FetchContent_MakeAvailable(specx)
   add_library(feelpp_specx INTERFACE)
 
-  set_target_properties(specx PROPERTIES OUTPUT_NAME "feelpp_specx")
+  set_target_properties(specx PROPERTIES
+      OUTPUT_NAME "feelpp_specx"
+      VERSION ${FEELPP_SHARED_VERSION}
+      SOVERSION ${FEELPP_SHARED_SOVERSION}
+      )
   target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_SPECX)
   target_link_libraries(feelpp_specx INTERFACE specx )
   add_library(Feelpp::feelpp_specx ALIAS feelpp_specx)
@@ -883,6 +934,8 @@ if(FEELPP_ENABLE_EIGENRAND)
   # set(FETCHCONTENT_SOURCE_DIR_EIGENRAND ${CMAKE_CURRENT_SOURCE_DIR}/EIGENRAND)
   # patch includes fix for 18.04 compilation
   set(EIGENRAND_BUILD_TEST OFF)
+  set(EIGENRAND_BUILD_EXAMPLES OFF)
+  set(EIGENRAND_BUILD_BENCHMARK OFF)
   set(FETCHCONTENT_SOURCE_DIR_EIGENRAND ${CMAKE_CURRENT_SOURCE_DIR}/eigenrand)
   FetchContent_Declare(EIGENRAND GIT_REPOSITORY https://github.com/feelpp/EigenRand.git GIT_TAG 0f25f9ef26d48ec09510d2e8ff07cb12e8f3fa81)
 

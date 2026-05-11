@@ -342,7 +342,7 @@ PreconditionerBlockNS( std::string t,
     initialize();
 
     this->setType ( t );
-    toc( "[PreconditionerBlockNS] setup done ", FLAGS_v > 0 );
+    toc( "[PreconditionerBlockNS] setup done ", Environment::logVerbosityLevel() > 0 );
 }
 
 template < typename SpaceType, typename PropertiesSpaceType >
@@ -396,7 +396,7 @@ PreconditionerBlockNS( std::string t,
     initialize();
 
     this->setType ( t );
-    toc( "[PreconditionerBlockNS] setup done ", FLAGS_v > 0 );
+    toc( "[PreconditionerBlockNS] setup done ", Environment::logVerbosityLevel() > 0 );
 }
 
 template < typename SpaceType, typename PropertiesSpaceType >
@@ -422,11 +422,11 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::createSubMatrices()
         //M_B = this->matrix()->createSubMatrix( M_Qh_indices, M_Vh_indices );
         tic();
         M_Bt = this->matrix()->createSubMatrix( M_Vh_indices, M_Qh_indices );
-        toc("submatrix B^T",FLAGS_v>0);
+        toc("submatrix B^T",Environment::logVerbosityLevel()>0);
         helmOp = op( M_F, "Fu" );
         helmOp->setCloseMatrixRhs( false );
         divOp = op( M_Bt, "Bt");
-        toc("create submatrix", FLAGS_v>0);
+        toc("create submatrix", Environment::logVerbosityLevel()>0);
     }
     else
     {
@@ -435,10 +435,10 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::createSubMatrices()
         //this->matrix()->updateSubMatrix( M_B, M_Qh_indices, M_Vh_indices );
         tic();
         this->matrix()->updateSubMatrix( M_Bt, M_Vh_indices, M_Qh_indices );
-        toc("update submatrix B^T",FLAGS_v>0);
-        toc("update submatrix",FLAGS_v>0);
+        toc("update submatrix B^T",Environment::logVerbosityLevel()>0);
+        toc("update submatrix",Environment::logVerbosityLevel()>0);
     }
-    toc( "PreconditionerBlockNS::createSubMatrix(Fu,B^T)", FLAGS_v > 0 );
+    toc( "PreconditionerBlockNS::createSubMatrix(Fu,B^T)", Environment::logVerbosityLevel() > 0 );
 }
 
 template < typename SpaceType, typename PropertiesSpaceType >
@@ -471,7 +471,7 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::setType( std::string t )
         pcdOp->setBt( M_Bt );
         this->setSide( super::RIGHT );
 
-        toc( "Preconditioner::setType " + typeStr(), FLAGS_v > 0 );
+        toc( "Preconditioner::setType " + typeStr(), Environment::logVerbosityLevel() > 0 );
 
         break;
     case PMM:
@@ -488,7 +488,7 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::setType( std::string t )
             pm = op( M_mass, "Mp" );
         }
         this->setSide( super::RIGHT );
-        toc( "Preconditioner::setType PMM", FLAGS_v > 0 );
+        toc( "Preconditioner::setType PMM", Environment::logVerbosityLevel() > 0 );
     }
     break;
     case SIMPLE:
@@ -521,15 +521,15 @@ update( sparse_matrix_ptrtype A, Expr_convection const& expr_b,
         tic();
         bool hasAlpha = ( M_alpha->linftyNorm() > 1e-15 );
         pcdOp->update( idv(M_rho), idv(M_mu), expr_b, g, idv(M_alpha), hasConvection, hasAlpha, tn, tn1 );
-        toc( "Preconditioner::update "+ typeStr(), FLAGS_v > 0 );
+        toc( "Preconditioner::update "+ typeStr(), Environment::logVerbosityLevel() > 0 );
     }
     if ( type() == PMM && M_updatePMM )
     {
         tic();
         updatePMM();
-        toc( "Preconditioner::update "+ typeStr(), FLAGS_v > 0 );
+        toc( "Preconditioner::update "+ typeStr(), Environment::logVerbosityLevel() > 0 );
     }
-    toc( "Preconditioner::update", FLAGS_v > 0 );
+    toc( "Preconditioner::update", Environment::logVerbosityLevel() > 0 );
 }
 
 template < typename SpaceType, typename PropertiesSpaceType >
@@ -550,16 +550,16 @@ update( sparse_matrix_ptrtype A,
         tic();
         bool hasAlpha = ( M_alpha->linftyNorm() > 1e-15 );
         pcdOp->update( idv(M_rho), idv(M_mu), expr_b, g, idv(M_alpha), hasConvection, hasAlpha, tn, tn1 );
-        toc( "Preconditioner::update "+ typeStr(), FLAGS_v > 0 );
+        toc( "Preconditioner::update "+ typeStr(), Environment::logVerbosityLevel() > 0 );
     }
     if ( type() == PMM && M_updatePMM )
     {
         tic();
         updatePMM();
-        toc( "Preconditioner::update "+ typeStr(), FLAGS_v > 0 );
+        toc( "Preconditioner::update "+ typeStr(), Environment::logVerbosityLevel() > 0 );
     }
 
-    toc( "Preconditioner::update", FLAGS_v > 0 );
+    toc( "Preconditioner::update", Environment::logVerbosityLevel() > 0 );
 }
 template < typename SpaceType, typename PropertiesSpaceType >
 template< typename Expr_convection >
@@ -606,7 +606,7 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::applyInverse ( const vecto
         pm->applyInverse( *M_pin, *M_pout );
         M_pout->scale(-1);
         M_pout->close();
-        toc("PreconditionerBlockNS::applyInverse PMM::Q^-1",FLAGS_v>0);
+        toc("PreconditionerBlockNS::applyInverse PMM::Q^-1",Environment::logVerbosityLevel()>0);
         LOG(INFO) << "Applying PMM done";
     }
     if ( this->type() == PCD || this->type() == PCD_ACCELERATION )
@@ -621,7 +621,7 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::applyInverse ( const vecto
             pcdOp->applyInverse( *M_pin, *M_pout );
             M_pout->scale(-1);
             M_pout->close();
-            toc("PreconditionerBlockNS::applyInverse PCD::S^-1",FLAGS_v>0);
+            toc("PreconditionerBlockNS::applyInverse PCD::S^-1",Environment::logVerbosityLevel()>0);
 
             LOG(INFO) << "pressure blockns: Solve for the pressure convection diffusion done\n";
         }
@@ -638,7 +638,7 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::applyInverse ( const vecto
 
     M_aux->add( -1.0, *M_vout );
     M_aux->close();
-    toc("PreconditionerBlockNS::applyInverse apply B^T",FLAGS_v>0);
+    toc("PreconditionerBlockNS::applyInverse apply B^T",Environment::logVerbosityLevel()>0);
 
     if ( boption("blockns.cd") )
     {
@@ -646,7 +646,7 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::applyInverse ( const vecto
         LOG(INFO) << "velocity blockns : apply inverse convection diffusion...\n";
         tic();
         helmOp->applyInverse(*M_aux, *M_vout);
-        toc("PreconditionerBlockNS::applyInverse Fu^-1",FLAGS_v>0);
+        toc("PreconditionerBlockNS::applyInverse Fu^-1",Environment::logVerbosityLevel()>0);
     }
     else
     {
@@ -662,8 +662,8 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::applyInverse ( const vecto
     U.close();
     Y=U;
     Y.close();
-    toc("PreconditionerBlockNS::applyInverse update solution",FLAGS_v>0);
-    toc("PreconditionerBlockNS::applyInverse", FLAGS_v > 0 );
+    toc("PreconditionerBlockNS::applyInverse update solution",Environment::logVerbosityLevel()>0);
+    toc("PreconditionerBlockNS::applyInverse", Environment::logVerbosityLevel() > 0 );
     return 0;
 #else
     tic();
@@ -688,7 +688,7 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::applyInverse ( const vecto
         tic();
         pm->applyInverse( *pin, *pout );
         pout->scale(-1);
-        toc("PreconditionerBlockNS::applyInverse PMM::Q^-1",FLAGS_v>0);
+        toc("PreconditionerBlockNS::applyInverse PMM::Q^-1",Environment::logVerbosityLevel()>0);
         LOG(INFO) << "Applying PMM done";
     }
     if ( this->type() == PCD || this->type() == PCD_ACCELERATION )
@@ -702,7 +702,7 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::applyInverse ( const vecto
             tic();
             pcdOp->applyInverse( *pin, *pout );
             pout->scale(-1);
-            toc("PreconditionerBlockNS::applyInverse PCD::S^-1",FLAGS_v>0);
+            toc("PreconditionerBlockNS::applyInverse PCD::S^-1",Environment::logVerbosityLevel()>0);
 
             LOG(INFO) << "pressure blockns: Solve for the pressure convection diffusion done\n";
         }
@@ -717,7 +717,7 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::applyInverse ( const vecto
 
 
     M_aux->add( -1.0, *vout );
-    toc("PreconditionerBlockNS::applyInverse apply B^T",FLAGS_v>0);
+    toc("PreconditionerBlockNS::applyInverse apply B^T",Environment::logVerbosityLevel()>0);
 
     if ( boption("blockns.cd") )
     {
@@ -725,14 +725,14 @@ PreconditionerBlockNS<SpaceType,PropertiesSpaceType>::applyInverse ( const vecto
         LOG(INFO) << "velocity blockns : apply inverse convection diffusion...\n";
         tic();
         helmOp->applyInverse(*M_aux, *vout);
-        toc("PreconditionerBlockNS::applyInverse Fu^-1",FLAGS_v>0);
+        toc("PreconditionerBlockNS::applyInverse Fu^-1",Environment::logVerbosityLevel()>0);
     }
     else
     {
         *vout = *vin;
     }
 
-    toc("PreconditionerBlockNS::applyInverse", FLAGS_v > 0 );
+    toc("PreconditionerBlockNS::applyInverse", Environment::logVerbosityLevel() > 0 );
     return 0;
 #endif
 }

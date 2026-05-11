@@ -32,6 +32,12 @@
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelts/newmark.hpp>
 #endif
+#include <indicators/progress_spinner.hpp>
+#include <iomanip>
+#include <limits>
+#include <memory>
+#include <sstream>
+#include <stdexcept>
 
 inline
 Feel::po::options_description
@@ -39,6 +45,8 @@ makeOptions()
 {
     Feel::po::options_description stvenantkirchhoffoptions( "StVenantKirchhoff problem options" );
     stvenantkirchhoffoptions.add_options()
+    ( "shape", Feel::po::value<std::string>()->default_value( "simplex" ), "mesh element shape (simplex or hypercube)" )
+    ( "fe-order", Feel::po::value<int>()->default_value( 1 ), "finite element polynomial order (1,2,3)" )
     ( "young-modulus", Feel::po::value<double>()->default_value( 1.4e6 ), "young-modulus" )
     ( "poisson-coeff", Feel::po::value<double>()->default_value( 0.4 ), "poisson-coeff" )
     ( "rho", Feel::po::value<double>()->default_value( 1000 ), "density [kg/m^3]" )
@@ -47,16 +55,14 @@ makeOptions()
     return stvenantkirchhoffoptions;
 }
 
+template<int Order, typename ConvexType>
 int
-main( int argc, char** argv )
+runStVenantKirchhoff()
 {
-
     using namespace Feel;
-	Environment env( _argc=argc, _argv=argv,
-                     _desc=makeOptions(),
-                     _about=about(_name="stvenant_kirchhoff2",
-                                  _author="Vincent Chabannes",
-                                  _email="vincent.chabannes@feelpp.org"));
+    static const uint16_type nDim = ConvexType::nRealDim;
+    static_assert( ConvexType::nDim == 2 && ConvexType::nRealDim == 2, "stvenant_kirchhoff2 supports 2D convexes only" );
+    static_assert( Order >= 1 && Order <= 3, "stvenant_kirchhoff2 supports FE order in {1,2,3}" );
 
     double meshSize = doption(_name="gmsh.hsize");
     double youngmodulus= doption(_name="young-modulus");
@@ -66,7 +72,7 @@ main( int argc, char** argv )
     double rho= doption(_name="rho");
     double gravityCst=doption(_name="gravity-cst");
 
-    typedef Mesh<Simplex<2,1,2> > mesh_type;
+    typedef Mesh<ConvexType> mesh_type;
     GeoTool::Node x1( (0.4+math::sqrt(0.0096))/2.,0.19 );
     GeoTool::Node x2( 0.6,0.21 );
     GeoTool::Rectangle R( meshSize,"OMEGA",x1,x2 );
@@ -76,7 +82,7 @@ main( int argc, char** argv )
     auto mesh = R.createMesh(_mesh=new mesh_type,
                              _name="domainRectangle" );
 
-    auto Vh = Pchv<1>( mesh );
+    auto Vh = Pchv<Order>( mesh );
     auto u = Vh->element();
     auto v = Vh->element();
 
@@ -86,9 +92,20 @@ main( int argc, char** argv )
     auto e = exporter( _mesh=mesh );
 
     auto ts = newmark( _space=Vh, _name="structure",_rank_proc_in_files_name=true );
-    static const uint16_type nDim=2;
     auto Id = eye<nDim,nDim>();
     auto gravityForce = -rho*gravityCst*oneY();
+    std::unique_ptr<indicators::ProgressSpinner> progress;
+    if ( Environment::isMasterRank() )
+    {
+        progress = std::make_unique<indicators::ProgressSpinner>(
+            indicators::option::PrefixText{ "time " },
+            indicators::option::ShowSpinner{ true },
+            indicators::option::ShowElapsedTime{ true },
+            indicators::option::ShowRemainingTime{ false },
+            indicators::option::ShowPercentage{ false },
+            indicators::option::MaxProgress{ std::numeric_limits<std::size_t>::max() }
+        );
+    }
 
     // start or restart
     if ( !ts->isRestart() )
@@ -104,10 +121,12 @@ main( int argc, char** argv )
 
     for ( ; !ts->isFinished(); ts->next(u) )
     {
-        if ( Environment::isMasterRank() )
+        if ( progress )
         {
-            std::cout << "============================================================\n";
-            std::cout << "time : " << ts->time() << "s\n";
+            std::ostringstream oss;
+            oss << "t=" << std::fixed << std::setprecision(4) << ts->time() << "s";
+            progress->set_option( indicators::option::PostfixText{ oss.str() } );
+            progress->tick();
         }
 
         auto Jacobian = [=](const vector_ptrtype& X, sparse_matrix_ptrtype& J)
@@ -168,6 +187,54 @@ main( int argc, char** argv )
         e->step(ts->time())->add( "acceleration", ts->currentAcceleration() );
         e->save();
     }
+    if ( progress )
+        progress->mark_as_completed();
 
+    return 0;
+}
 
+int
+main( int argc, char** argv )
+{
+    using namespace Feel;
+    try
+    {
+        Environment env( _argc=argc, _argv=argv,
+                         _desc=makeOptions(),
+                         _about=about(_name="stvenant_kirchhoff2",
+                                      _author="Vincent Chabannes",
+                                      _email="vincent.chabannes@feelpp.org"));
+
+        std::string shape = soption(_name="shape");
+        int order = ioption(_name="fe-order");
+        if ( shape == "simplex" || shape == "Simplex" )
+        {
+            switch ( order )
+            {
+            case 1: return runStVenantKirchhoff<1,Simplex<2,1,2>>();
+            case 2: return runStVenantKirchhoff<2,Simplex<2,1,2>>();
+            case 3: return runStVenantKirchhoff<3,Simplex<2,1,2>>();
+            default:
+                throw std::invalid_argument( "Unsupported fe-order '" + std::to_string(order) + "' (expected 1, 2, or 3)" );
+            }
+        }
+        if ( shape == "hypercube" || shape == "Hypercube" )
+        {
+            switch ( order )
+            {
+            case 1: return runStVenantKirchhoff<1,Hypercube<2,1,2>>();
+            case 2: return runStVenantKirchhoff<2,Hypercube<2,1,2>>();
+            case 3: return runStVenantKirchhoff<3,Hypercube<2,1,2>>();
+            default:
+                throw std::invalid_argument( "Unsupported fe-order '" + std::to_string(order) + "' (expected 1, 2, or 3)" );
+            }
+        }
+
+        throw std::invalid_argument( "Unsupported shape '" + shape + "' (expected simplex or hypercube)" );
+    }
+    catch(...)
+    {
+        handleExceptions();
+    }
+    return 1;
 }

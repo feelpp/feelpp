@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-set_directory_properties(PROPERTIES LABEL testts )
+set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testts")
 feelpp_add_test( bdf )
 feelpp_add_test( bdf2 CFG test_bdf2.cfg INCLUDES ${CMAKE_SOURCE_DIR} )
 feelpp_add_test( bdf3 CFG test_bdf3.cfg NO_MPI_TEST SKIP_TEST )

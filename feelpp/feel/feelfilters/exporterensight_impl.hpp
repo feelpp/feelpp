@@ -119,19 +119,19 @@ ExporterEnsight<MeshType,N>::save( steps_write_on_disk_type const& stepsToWriteO
 
     tic();
     _F_writeSoSFile();
-    toc("ExporterEnsight::save sos",FLAGS_v>1);
+    toc("ExporterEnsight::save sos",Environment::logVerbosityLevel()>1);
 
     tic();
     _F_writeCaseFile();
-    toc("ExporterEnsight::save case",FLAGS_v>1);
+    toc("ExporterEnsight::save case",Environment::logVerbosityLevel()>1);
 
     tic();
     _F_writeGeoFiles();
-    toc("ExporterEnsight::save geo",FLAGS_v>1);
+    toc("ExporterEnsight::save geo",Environment::logVerbosityLevel()>1);
 
     tic();
     _F_writeVariableFiles();
-    toc("ExporterEnsight::save variable",FLAGS_v>1);
+    toc("ExporterEnsight::save variable",Environment::logVerbosityLevel()>1);
 }
 
 template<typename MeshType, int N>

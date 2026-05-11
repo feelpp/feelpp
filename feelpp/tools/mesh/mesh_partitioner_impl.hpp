@@ -77,7 +77,8 @@ void partition( nl::json const& partconfig )
 
         tic();
         size_type update_ = MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES|MESH_GEOMAP_NOT_CACHED;
-        if ( !partconfig.is_null() && !partconfig.empty() && partconfig["partitioner"].contains( "aggregates" ) ) //boption( "sc.ibc_partitioning" ) )
+        if ( !partconfig.is_null() && !partconfig.empty() &&
+             ( partconfig["partitioner"].contains( "aggregates" ) || partconfig["partitioner"].contains( "constraints" ) ) ) //boption( "sc.ibc_partitioning" ) )
             update_ |= MESH_UPDATE_FACES_MINIMAL;
         auto mesh = loadMesh(_mesh=new mesh_type(Environment::worldCommSeqPtr()), _savehdf5=0,
                              _filename=inputPathMesh.string(),
@@ -85,7 +86,7 @@ void partition( nl::json const& partconfig )
                              _straighten=false );
         //_update=size_type(MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES));
         //_update=size_type(MESH_UPDATE_FACES|MESH_UPDATE_EDGES));
-        toc("loading mesh done",FLAGS_v>0);
+        toc("loading mesh done",Environment::logVerbosityLevel()>0);
 
 #if 0
         if constexpr ( is_simplex_v<ShapeType> && ShapeType::nDim > 1 )
@@ -206,7 +207,7 @@ void partition( nl::json const& partconfig )
             using io_t = PartitionIO<mesh_t<decltype(mesh)>>;
             io_t io( outputPathMesh );
             io.write( partitionMesh( mesh, nPartition, partitionByRange, partconfig ) );
-            toc("paritioning and save on disk done",FLAGS_v>0);
+            toc("paritioning and save on disk done",Environment::logVerbosityLevel()>0);
 
             if ( exporter )
             {

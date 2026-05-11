@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required(VERSION 3.13.0)
+cmake_minimum_required(VERSION 3.21)
 project(testsuite)
 set(PROJECT_SHORTNAME "test")
 
@@ -43,9 +43,21 @@ else()
 endif()
 
 enable_testing()
+include(CTest)
+
+# Label all tests in this directory tree so they can be run via component targets
+set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp")
+
+if ( NOT TARGET testsuite-feelpp )
+  add_custom_target(testsuite-feelpp
+    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -L testsuite-feelpp --test-dir ${CMAKE_BINARY_DIR}
+    USES_TERMINAL
+  )
+endif()
 
 if ( NOT TARGET testsuite )
-  add_custom_target( testsuite )
+  add_custom_target(testsuite)
+  add_dependencies(testsuite testsuite-feelpp)
 endif()
 
 include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/..)

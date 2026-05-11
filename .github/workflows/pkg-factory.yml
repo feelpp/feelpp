@@ -11,7 +11,7 @@ on:
         enable-debian:
             description: 'Enable debian distros'
             required: false
-            default: 'all'
+            default: 'none'
             type: choice
             options:
             - 'all'
@@ -23,13 +23,12 @@ on:
         enable-ubuntu:
             description: 'Enable ubuntu distros'
             required: false
-            default: 'all'
+            default: 'noble'
             type: choice
             options:
             - 'all'
+            - 'resolute'
             - 'noble'
-            - 'jammy'
-            - 'focal'
             - 'none'
         enable-spack:
             description: 'Enable spack distros'
@@ -83,12 +82,12 @@ on:
             enable-debian:
                 description: 'Enable debian distros'
                 required: false
-                default: 'all'
+                default: 'none'
                 type: string
             enable-ubuntu:
                 description: 'Enable ubuntu distros'
                 required: false
-                default: 'all'
+                default: 'noble'
                 type: string
             enable-spack:
                 description: 'Enable spack distros'
@@ -142,7 +141,7 @@ jobs:
             function checkEnable(distro, dist) {
               const enabledMap = {
                 'debian': ['all', 'debian', 'bookworm', 'trixie', 'testing', 'sid'],
-                'ubuntu': ['all', 'ubuntu', 'noble', 'jammy', 'focal'],
+                'ubuntu': ['all', 'ubuntu', 'noble', 'resolute'],
                 'spack': ['all', 'spack', 'mpich', 'openmpi'],
                 'docker': ['all', 'docker'],
                 'apptainer': ['all', 'apptainer']
@@ -154,13 +153,13 @@ jobs:
               return res;
             }
 
-            const skips = ['all', 'debian', 'bookworm', 'trixie', 'testing', 'sid', 'ubuntu', 'noble', 'jammy', 'focal', 'docker', 'apptainer', 'spack', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
+            const skips = ['all', 'debian', 'bookworm', 'trixie', 'testing', 'sid', 'ubuntu', 'noble', 'resolute', 'docker', 'apptainer', 'spack', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
               console.log("skip:", item, ${{ toJson(github.event.head_commit.message || '') }}, ${{ toJson( inputs.skip || '' ) }});
               acc[item] = ${{ toJson(github.event.head_commit.message || '') }}.includes(`skip ${item}`) || ${{ toJson( inputs.skip || '' ) }}.includes(item);
               return acc;
             }, {});
 
-            const enables = ['debian-bookworm', 'debian-trixie', 'debian-testing', 'debian-sid', 'ubuntu-noble', 'ubuntu-jammy', 'ubuntu-focal', 'docker-docker', 'apptainer-apptainer', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
+            const enables = ['debian-bookworm', 'debian-trixie', 'debian-testing', 'debian-sid', 'ubuntu-noble', 'ubuntu-resolute', 'docker-docker', 'apptainer-apptainer', 'spack-openmpi', 'spack-mpich'].reduce((acc, item) => {
               acc[item] = ${{ toJson(github.event.head_commit.message || '') }}.includes(`enable ${item}`)||
                           checkEnable(item.split('-')[0], item.split('-')[1]);
               return acc;
@@ -231,30 +230,19 @@ jobs:
                 'continue-on-error': 'false'
               });
             }
-            console.log("ubuntu jammy:",enables['ubuntu-jammy'], enables['ubuntu-all'], skips.all, skips.ubuntu, skips.jammy);
-            if ((!skips.all && !skips.ubuntu && !skips.jammy) && (enables['ubuntu-jammy'])) {
+            console.log("ubuntu resolute:",enables['ubuntu-resolute'], enables['ubuntu-all'], skips.all, skips.ubuntu, skips.resolute);
+            if ((!skips.all && !skips.ubuntu && !skips.resolute) && (enables['ubuntu-resolute'] )) {
               includes.push({
-                'distro': 'ubuntu/jammy',
+                'distro': 'ubuntu/resolute',
                 'flavor': 'ubuntu',
-                'dist': 'jammy',
-                'version': '22.04',
+                'dist': 'resolute',
+                'version': '26.04',
                 'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
                 'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
                 'continue-on-error': 'false'
               });
             }
-            console.log("ubuntu focal:",enables['ubuntu-focal'], enables['ubuntu-all'], skips.all, skips.ubuntu, skips.focal);
-            if ((!skips.all && !skips.ubuntu && !skips.focal) && (enables['ubuntu-focal'] )) {
-              includes.push({
-                'distro': 'ubuntu/focal',
-                'flavor': 'ubuntu',
-                'dist': 'focal',
-                'version': '20.04',
-                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
-                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
-                'continue-on-error': 'false'
-              });
-            }
+
             console.log("spack mpich:",enables['spack-mpich'], enables['spack-all'], skips.all, skips.spack, skips['spack-mpich']);
             if ((!skips.all && !skips.spack && !skips['spack-mpich']) && (enables['spack-mpich'])) {
               includes.push({
@@ -262,8 +250,8 @@ jobs:
                 'flavor': 'spack',
                 'dist': 'mpich',
                 'version': 'latest',
-                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
-                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
+                'docker': 'false',
+                'apptainer': 'false',
                 'continue-on-error': 'true'
               });
             }
@@ -274,8 +262,8 @@ jobs:
                 'flavor': 'spack',
                 'dist': 'openmpi',
                 'version': 'latest',
-                'docker': (skips.docker && !enables.docker) ? 'false' : 'true',
-                'apptainer': (skips.apptainer && !enables.apptainer) ? 'false' : 'true',
+                'docker': 'false',
+                'apptainer': 'false',
                 'continue-on-error': 'true'
               });
             }

@@ -22,6 +22,6 @@
 #
 #
 
-set_directory_properties(PROPERTIES LABEL testmodels )
+set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testmodels")
 
 feelpp_add_test( modelproperties CFG modelproperties.cfg GEO feelpp.json )

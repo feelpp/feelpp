@@ -22,16 +22,18 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required(VERSION 3.13.0)
+cmake_minimum_required(VERSION 3.21)
 if(DEFINED PROJECT_NAME)
   set( PYTHON_SUBPROJECT ON )
 endif()
 
 project(feelpp-python)
+message(WARNING "[python] legacy monolithic Python entry point kept for compatibility; prefer feelpp/python, toolboxes/python, and mor/python")
   
 set(FEELPP_PYTHON_SOURCE_DIR ${PROJECT_SOURCE_DIR})
 set(FEELPP_PYTHON_BINARY_DIR ${PROJECT_BINARY_DIR})
 SET( CMAKE_MODULE_PATH  ${CMAKE_CURRENT_SOURCE_DIR}/cmake )
+get_filename_component(FEELPP_ROOT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/.." ABSOLUTE)
 
 # with this it is possible to compile applications/MOR from an installed
 # version of feel++. This is useful also for staged compilation for docker
@@ -78,9 +80,31 @@ message(STATUS "[feelpp/python] Python3_EXECUTABLE: ${Python3_EXECUTABLE}")
 message(STATUS "[feelpp/python] Python3_INCLUDE_DIRS: ${Python3_INCLUDE_DIRS}")
 message(STATUS "[feelpp/python] Python3_LIBRARIES: ${Python3_LIBRARIES}")
 message(STATUS "[feelpp/python] Python3_VERSION: ${Python3_VERSION}")
+include(FeelppPythonNormalize)
+
+# If the project is configured to use an external pybind11, make sure the
+# expected imported targets exist before any pybind11_add_module() calls.
+if(DEFINED FEELPP_USE_EXTERNAL_PYBIND11 AND FEELPP_USE_EXTERNAL_PYBIND11)
+  find_package(pybind11 CONFIG REQUIRED)
+  if(NOT TARGET pybind11::headers)
+    if(TARGET pybind11::pybind11_headers)
+      add_library(pybind11::headers ALIAS pybind11::pybind11_headers)
+    elseif(TARGET pybind11::module)
+      add_library(pybind11::headers ALIAS pybind11::module)
+    elseif(TARGET pybind11::pybind11)
+      add_library(pybind11::headers ALIAS pybind11::pybind11)
+    elseif(TARGET pybind11)
+      add_library(pybind11::headers ALIAS pybind11)
+    endif()
+  endif()
+endif()
+
+
+feelpp_python_normalize_module_path()
+
 
 if ( FEELPP_HAS_PYTHON )
-  message(STATUS "[feelpp-python] python module path:${FEELPP_PYTHON_MODULE_PATH}")
+    message(STATUS "[feelpp-python] python module path:${FEELPP_PYTHON_MODULE_PATH}")
   find_package(MPI4PY REQUIRED)
   if ( MPI4PY_FOUND )
     message(STATUS "[feelpp-python] mpi4py header ${MPI4PY_INCLUDE_DIR}")
@@ -95,30 +119,7 @@ if ( FEELPP_HAS_PYTHON )
   endif()
 endif()
 
-#
-# add a pybind11 feelpp module
-# FEELPP_PYTHON_MODULE_PATH must be defined !
-#
-macro(feelpp_add_pymodule)
- PARSE_ARGUMENTS(FEELPP_PYMODULE
-    "NAME;SRCS;DESTINATION;LINK_LIBRARIES;INCLUDES"
-    ""
-    ${ARGN}
-    )
-  CAR(FEELPP_PYMODULE_NAME ${FEELPP_PYMODULE_DEFAULT_ARGS})
-  message(STATUS "[pyfeelpp] add pymodule ${FEELPP_PYMODULE_NAME}")
-  pybind11_add_module(_${FEELPP_PYMODULE_NAME}  ${FEELPP_PYMODULE_SRCS}  )
-  target_include_directories(_${FEELPP_PYMODULE_NAME} PRIVATE ${PYTHON_INCLUDE_DIRS} ${MPI4PY_INCLUDE_DIR} ${PETSC4PY_INCLUDE_DIR} ${SLEPC4PY_INCLUDE_DIR})
-  target_link_libraries( _${FEELPP_PYMODULE_NAME} PUBLIC Feelpp::feelpp ${FEELPP_PYMODULE_LINK_LIBRARIES} )
-  install(TARGETS _${FEELPP_PYMODULE_NAME} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/${FEELPP_PYMODULE_DESTINATION})
-  if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py )
-    add_custom_command(
-           TARGET _${FEELPP_PYMODULE_NAME} POST_BUILD
-           COMMAND ${CMAKE_COMMAND} -E copy
-                   ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
-                   ${CMAKE_CURRENT_BINARY_DIR}/__init__.py)
-  endif()
-endmacro(feelpp_add_pymodule)
+include("${FEELPP_ROOT_SOURCE_DIR}/feelpp/cmake/modules/FeelppPythonSupport.cmake")
 
 option(FEELPP_ENABLE_PYTHON3_VENV ON)
 if (FEELPP_ENABLE_PYTHON3_VENV)
@@ -140,15 +141,15 @@ endif(FEELPP_ENABLE_PYTHON3_VENV)
 
 #include(feelpp.module.pyfeelpp)
 if ( FEELPP_FOUND )
-add_subdirectory(pyfeelpp)
+add_subdirectory("${FEELPP_ROOT_SOURCE_DIR}/feelpp/python" "${CMAKE_BINARY_DIR}/feelpp/python")
 add_subdirectory(notebooks)
 endif()
 
 # TOOLBOXES needs to be defined for pyfeelpp-toolboxes 
 if (FEELPP_TOOLBOXES_FOUND )
-add_subdirectory( pyfeelpp-toolboxes )
+add_subdirectory("${FEELPP_ROOT_SOURCE_DIR}/toolboxes/python" "${CMAKE_BINARY_DIR}/toolboxes/python")
 endif()
 
 if ( FEELPP_MOR_FOUND ) 
-add_subdirectory(pyfeelpp-mor)
+add_subdirectory("${FEELPP_ROOT_SOURCE_DIR}/mor/python" "${CMAKE_BINARY_DIR}/mor/python")
 endif()

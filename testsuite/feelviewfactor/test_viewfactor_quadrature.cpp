@@ -51,7 +51,7 @@ double view_factor_parallel_walls_exact(double length, double width,double separ
     double c=separation;
     double X = a/c;
     double Y = b/c;
-    view_factor_bottom_to_top_wall = log(sqrt((1+X*X)*(1+Y*Y)/(1+X*X+Y*Y)));
+    view_factor_bottom_to_top_wall = std::log(sqrt((1+X*X)*(1+Y*Y)/(1+X*X+Y*Y)));
     view_factor_bottom_to_top_wall += X*sqrt(1+Y*Y)*atan(X/sqrt(1+Y*Y));
     view_factor_bottom_to_top_wall += Y*sqrt(1+X*X)*atan(Y/sqrt(1+X*X));
     view_factor_bottom_to_top_wall += -X*atan(X)-Y*atan(Y);
@@ -73,7 +73,7 @@ double view_factor_perp_walls_exact(double length, double width,double separatio
     double fact1 = (1+h*h)*(1+w*w)/(1+h*h+w*w);
     double fact2 = w*w*(1+h*h+w*w)/(((1+w*w))*(h*h+w*w));
     double fact3 = h*h*(1+h*h+w*w)/(((1+h*h))*(h*h+w*w));
-    view_factor_bottom_to_side_wall +=0.25*log(fact1*pow(fact2,w*w)*pow(fact3,h*h));    
+    view_factor_bottom_to_side_wall +=0.25*std::log(fact1*pow(fact2,w*w)*pow(fact3,h*h));    
     view_factor_bottom_to_side_wall *= 1/(M_PI*w);
 
     return view_factor_bottom_to_side_wall;
@@ -125,7 +125,7 @@ void checkViewFactorEnclosure(std::string const& prefix)
     upvf.compute();
     BOOST_TEST_MESSAGE( fmt::format("Max dev reciprocity {}", upvf.maxDevReciprocity()));
     
-    BOOST_TEST_MESSAGE( fmt::format("{}", upvf.viewFactors() ) );
+    BOOST_TEST_MESSAGE( fmt::format("{}", fmt::streamed(upvf.viewFactors()) ) );
     auto row_sum_vf = upvf.viewFactors().rowwise().sum();
     auto exact_vf = eigen_vector_x_col_type<double>::Ones(upvf.viewFactors().rows()) ;
     auto difference_infNorm = (exact_vf-row_sum_vf).template lpNorm<Eigen::Infinity>();

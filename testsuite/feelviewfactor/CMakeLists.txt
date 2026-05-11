@@ -21,11 +21,11 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-set_directory_properties(PROPERTIES LABEL testviewfactor)
+set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testviewfactor")
 feelpp_add_test(viewfactor_quadrature NO_MPI_TEST CFG cases/viewfactor.cfg )
 feelpp_add_testcase(cases PREFIX testviewfactors)
 add_dependencies(feelpp_test_viewfactor_quadrature testviewfactors_add_testcase_cases )
 
-set_directory_properties(PROPERTIES LABEL testviewfactor)
+set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testviewfactor")
 feelpp_add_test(viewfactor_raytracing NO_MPI_TEST CFG cases/viewfactor.cfg )
 add_dependencies(feelpp_test_viewfactor_raytracing testviewfactors_add_testcase_cases )

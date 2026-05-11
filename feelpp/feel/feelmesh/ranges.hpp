@@ -138,7 +138,7 @@ public:
     {
         if ( m )
         {
-            this->setWorldCommPtr( m->worldCommPtr() );
+            this->setWorldComm( m->worldCommPtr() );
             M_mesh_base = m.get();
         }
     }
@@ -245,7 +245,7 @@ class FEELPP_EXPORT Range
     static constexpr bool isOnPoints() { return mesh_entities == MESH_POINTS;  }
 
     // Constructors handling both MeshType and MeshType const
-    Range(mesh_non_const_t const& m) : Range(shared_from_this(m)), mesh_(&m)
+    Range(mesh_non_const_t const& m) : super_range(shared_from_this(m)), mesh_(&m), cont_(std::make_shared<container_t>())
     {}
 
     Range(mesh_ptr_non_const_t const& m) : super_range(m), mesh_(m.get()), cont_(std::make_shared<container_t>())
@@ -277,7 +277,7 @@ class FEELPP_EXPORT Range
         : super_range( m ), mesh_(m.get()), cont_( er.template get<3>() )
     {}
     Range( mesh_non_const_t const& m, iterator_t beg, iterator_t end )
-        : Range(shared_from_this(m)), mesh_(&m), cont_(std::make_shared<container_t>(beg,end))
+        : super_range(shared_from_this(m)), mesh_(&m), cont_(std::make_shared<container_t>(beg,end))
     {}
     Range(mesh_ptr_non_const_t const& m, iterator_t beg, iterator_t end) : super_range(m), mesh_(m.get()), cont_(std::make_shared<container_t>(beg,end))
     {}

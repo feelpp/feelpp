@@ -28,7 +28,8 @@ namespace Feel
 /**
  * compute h measure statistics over a range of elements or facets
  */
-template<typename RangeType, typename = std::enable_if_t<is_range_v<RangeType>>>
+template<typename RangeType>
+    requires is_range_v<RangeType>
 std::tuple<value_t<RangeType>, value_t<RangeType>, value_t<RangeType>>
 hMeasures( RangeType && r, size_t nEntityInRange )
 {
@@ -55,7 +56,8 @@ hMeasures( RangeType && r, size_t nEntityInRange )
     return std::tuple{ h_avg, h_min, h_max };
 }
 
-template<typename RangeType, typename = std::enable_if_t<is_range_v<RangeType>>>
+template<typename RangeType>
+    requires is_range_v<RangeType>
 std::tuple<value_t<RangeType>, value_t<RangeType>, value_t<RangeType>>
 hMeasures( RangeType && r )
 {
@@ -65,7 +67,8 @@ hMeasures( RangeType && r )
 /**
  * compute h measures statistics over all elements of a mesh
  */
-template<typename MeshType, typename = std::enable_if_t<is_mesh_v<MeshType>>>
+template<typename MeshType>
+    requires is_mesh_v<MeshType>
 auto
 hMeasures( MeshType&& m )
 {
@@ -74,12 +77,13 @@ hMeasures( MeshType&& m )
 
 /**
  * @brief compute h measures statistics over all elements of a shared_ptr<mesh>
- * 
+ *
  * @tparam MeshType type of the mesh
  * @param m shared_ptr<mesh>
- * @return auto 
+ * @return auto
  */
-template<typename MeshType, typename = std::enable_if_t<is_mesh_v<MeshType>>>
+template<typename MeshType>
+    requires is_mesh_v<MeshType>
 auto
 hMeasures( std::shared_ptr<MeshType> const& m )
 {

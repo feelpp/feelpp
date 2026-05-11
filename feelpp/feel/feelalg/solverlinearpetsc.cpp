@@ -48,7 +48,7 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include <feel/feelcore/feel.hpp>
-#include <fmt/chrono.h>
+#include <feel/feelcore/timeutils.hpp>
 #ifdef FEELPP_HAS_PETSC_H
 
 #include <feel/feelalg/solverlinearpetsc.hpp>
@@ -70,7 +70,7 @@ extern "C"
         SolverLinear<double> *s  = static_cast<SolverLinear<double>*>( ctx );
         if ( !s ) return 1;
         if ( s->worldComm().isMasterRank() )
-            std::cout << fmt::format( "[{:%Y-%m-%d %H:%M:%S} - [{}] ] #{} KSP Residual norm {:.4e}", fmt::localtime( std::time(nullptr) ), s->prefix(), it, rnorm ) << std::endl;
+            std::cout << fmt::format( "[{:%Y-%m-%d %H:%M:%S} - [{}] ] #{} KSP Residual norm {:.4e}", Feel::gmtimeNow(), s->prefix(), it, rnorm ) << std::endl;
 //        if ( s->worldComm().isMasterRank() )
 //            std::cout << " " << it  << " " << s->prefix() << " KSP Residual norm " << std::scientific << rnorm << "\n";
         return 0;
@@ -635,7 +635,6 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
     if ( this->M_kspView ) //boption( _prefix=this->prefix(), _name="ksp-view" ) )
         check( KSPView( M_ksp, PETSC_VIEWER_STDOUT_WORLD ) );
 
-    LOG(INFO) << "[solverlinearpetsc] reason = " << reason ;
     if ( reason==KSP_DIVERGED_INDEFINITE_PC )
     {
         LOG(INFO) << "[solverlinearpetsc] Divergence because of indefinite preconditioner;\n";

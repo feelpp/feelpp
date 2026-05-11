@@ -40,11 +40,11 @@ enum class solution_t {
  * the check is triggerred only if @p thechecker @c check() member function returns true
  * @param thechecker is a data structure that holds information about the exact solution and its gradient
  * @param u is the function to be checked, it can be scalar or vectorial
- * 
+ *
  * @return 0 if ok, 1 otherwise
  */
-template<typename CheckerT, typename ElementT, 
-         typename = std::enable_if_t<is_scalar_field_v<ElementT> || is_vector_field_v<ElementT> || is_matrix_field_v<ElementT> >>
+template<typename CheckerT, typename ElementT>
+    requires is_scalar_field_v<ElementT> || is_vector_field_v<ElementT> || is_matrix_field_v<ElementT>
 int check( CheckerT&& thechecker, ElementT const& u, solution_t s = solution_t::unique )
 {
     int status = 0;

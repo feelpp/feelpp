@@ -1,0 +1,4 @@
+busbar_2d --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/busbar/2d.cfg --directory=toolboxes/testsuite/electric/busbar/2d
+busbar_3d --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/busbar/3d.cfg --directory=toolboxes/testsuite/electric/busbar/3d
+quarter-turn_2d --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/quarter-turn/2d.cfg --directory=toolboxes/testsuite/electric/quarter-turn/2d
+quarter-turn_3d --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/quarter-turn/3d.cfg --directory=toolboxes/testsuite/electric/quarter-turn/3d

@@ -13,6 +13,10 @@ template class ALE< Simplex<2,1>, 1 >;
 template class ALE_IMPL::ALE< Simplex<2,1>, 1 >;
 template class MeshALE< Simplex<2,1> >;
 template class MetricMeshAdaptation<Simplex<2,1> >;
+template class ALE< Hypercube<2,1>, 1 >;
+template class ALE_IMPL::ALE< Hypercube<2,1>, 1 >;
+template class MeshALE< Hypercube<2,1> >;
+template class MetricMeshAdaptation<Hypercube<2,1> >;
 #if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 2 )
 template class ALE< Simplex<2,1>, 2 >;
 template class ALE_IMPL::ALE< Simplex<2,1>, 2 >;

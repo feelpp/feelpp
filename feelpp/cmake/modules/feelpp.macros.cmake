@@ -153,15 +153,6 @@ macro(feelpp_add_application)
       target_link_libraries( ${execname} Feelpp::feelpp ${FEELPP_APP_LINK_LIBRARIES} )
   endif()
 
-  # Use feel++ lib precompiled headers.
-  #if( FEELPP_ENABLE_PCH )
-  #    add_precompiled_header( feelpp )
-  #endif()
-  # Create application precompiled headers.
-  if( FEELPP_ENABLE_PCH_APPLICATIONS )
-    add_precompiled_header( ${execname} )
-  endif()
-
   # install rule if INSTALL if target is marked to be installed
   if ( FEELPP_APP_INSTALL )
     install(TARGETS ${execname} RUNTIME DESTINATION bin COMPONENT Bin)
@@ -394,9 +385,12 @@ macro(feelpp_add_test)
            add_test(NAME ${FEELPP_TEST_EXEC}-np-${NProcs2} COMMAND /bin/sh -c "exit 77")
            set_tests_properties( ${FEELPP_TEST_EXEC}-np-${NProcs2} PROPERTIES SKIP_RETURN_CODE 77 )
         else()
-          add_test(NAME ${FEELPP_TEST_EXEC}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=test_suite ${BOOST_TEST_SEPARATOR} ${MPIEXEC_POSTFLAGS} ${FEELPP_TEST_CFG_CLI} ${FEELPP_TEST_CLI} --directory=testsuite/test_${FEELPP_TEST_NAME} --rm )
+          add_test(NAME ${FEELPP_TEST_EXEC}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=all ${BOOST_TEST_SEPARATOR} ${MPIEXEC_POSTFLAGS} ${FEELPP_TEST_CFG_CLI} ${FEELPP_TEST_CLI} --directory=testsuite/test_${FEELPP_TEST_NAME} --rm )
         endif()
         set_property(TEST ${FEELPP_TEST_EXEC}-np-${NProcs2}  PROPERTY LABELS ${FEELPP_TEST_LABEL}  ${FEELPP_TEST_LABEL_DIRECTORY} )
+        # Set PROCESSORS property so ctest knows this test uses NProcs2 slots
+        # This prevents resource contention when running tests in parallel with ctest -j
+        set_property(TEST ${FEELPP_TEST_EXEC}-np-${NProcs2}  PROPERTY PROCESSORS ${NProcs2})
         if(CMAKE_BUILD_TYPE MATCHES Debug)
           set_tests_properties(${FEELPP_TEST_EXEC}-np-${NProcs2} PROPERTIES ENVIRONMENT "ASAN_OPTIONS=detect_leaks=0;LSAN_OPTIONS=suppressions=${PROJECT_SOURCE_DIR}/../feelpp/tools/lsan/suppressions.txt")
         endif()
@@ -405,7 +399,7 @@ macro(feelpp_add_test)
          add_test(NAME ${FEELPP_TEST_EXEC}-np-1 COMMAND /bin/sh -c "exit 77")
          set_tests_properties( ${FEELPP_TEST_EXEC}-np-1 PROPERTIES SKIP_RETURN_CODE 77 )
       else()
-         add_test(NAME ${FEELPP_TEST_EXEC}-np-1 COMMAND ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=test_suite ${BOOST_TEST_SEPARATOR} ${FEELPP_TEST_CFG_CLI} ${FEELPP_TEST_CLI} --directory=testsuite/test_${FEELPP_TEST_NAME}  --rm )
+         add_test(NAME ${FEELPP_TEST_EXEC}-np-1 COMMAND ${CMAKE_CURRENT_BINARY_DIR}/${targetname} --log_level=all ${BOOST_TEST_SEPARATOR} ${FEELPP_TEST_CFG_CLI} ${FEELPP_TEST_CLI} --directory=testsuite/test_${FEELPP_TEST_NAME}  --rm )
       endif()
       set_property(TEST ${FEELPP_TEST_EXEC}-np-1  PROPERTY LABELS ${FEELPP_TEST_LABEL} ${FEELPP_TEST_LABEL_DIRECTORY} )
       if(CMAKE_BUILD_TYPE MATCHES Debug)
@@ -656,20 +650,21 @@ macro (feelpp_add_man NAME MAN SECT)
     message(STATUS "building manual page ${NAME}.${SECT}")
 
     if ( FEELPP_HAS_ASCIIDOCTOR_MANPAGE )
-      add_custom_target(${NAME}.${SECT})
-
-      add_custom_command (
-        TARGET ${NAME}.${SECT}
-        #OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}
-        COMMAND ${FEELPP_A2M} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT} ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc
-        MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc
-        )
-      #add_custom_target(${NAME}.${SECT} DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT})
+      set(_feelpp_man_source ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc)
+      set(_feelpp_man_output ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT})
+      set(_feelpp_man_target ${NAME}.${SECT}_man)
+      add_custom_command(
+        OUTPUT ${_feelpp_man_output}
+        COMMAND ${FEELPP_A2M} -o ${_feelpp_man_output} ${_feelpp_man_source}
+        DEPENDS ${_feelpp_man_source}
+        VERBATIM
+      )
+      add_custom_target(${_feelpp_man_target} DEPENDS ${_feelpp_man_output})
       if (TARGET man)
-        add_dependencies(man ${NAME}.${SECT})
+        add_dependencies(man ${_feelpp_man_target})
       endif()
       if ( TARGET ${NAME} )
-        add_dependencies(${NAME} ${NAME}.${SECT})
+        add_dependencies(${NAME} ${_feelpp_man_target})
       endif()
       install(CODE "execute_process(COMMAND \"bash\" \"-c\" \"${FEELPP_A2M_STR} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT} ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc\")" COMPONENT Bin)
 
@@ -681,20 +676,21 @@ macro (feelpp_add_man NAME MAN SECT)
         )
     endif()
     if ( FEELPP_HAS_ASCIIDOCTOR_HTML5 )
-      add_custom_target(${NAME}.${SECT}.html)
-      add_custom_command (
-        TARGET ${NAME}.${SECT}.html
-        #OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html
-        COMMAND ${FEELPP_A2H} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc
-        DEPENDS ${FEELPP_STYLESHEET}
-        MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc
-        )
-      #add_custom_target(${NAME}.${SECT}.html DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html)
+      set(_feelpp_html_source ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc)
+      set(_feelpp_html_output ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html)
+      set(_feelpp_html_target ${NAME}.${SECT}.html_target)
+      add_custom_command(
+        OUTPUT ${_feelpp_html_output}
+        COMMAND ${FEELPP_A2H} -o ${_feelpp_html_output} ${_feelpp_html_source}
+        DEPENDS ${_feelpp_html_source} ${FEELPP_STYLESHEET}
+        VERBATIM
+      )
+      add_custom_target(${_feelpp_html_target} DEPENDS ${_feelpp_html_output})
       if (TARGET html)
-        add_dependencies(html ${NAME}.${SECT}.html)
+        add_dependencies(html ${_feelpp_html_target})
       endif()
       if ( TARGET ${NAME} )
-        add_dependencies(${NAME} ${NAME}.${SECT}.html)
+        add_dependencies(${NAME} ${_feelpp_html_target})
 
       endif()
       install(CODE "execute_process(COMMAND bash \"-c\"  \"${FEELPP_A2H_STR} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc\" )" COMPONENT Bin)
@@ -708,19 +704,21 @@ macro (feelpp_add_man NAME MAN SECT)
 
       if ( FEELPP_HAS_ASCIIDOCTOR_PDF )
         message(STATUS "${ASCIIDOCTOR_PDF_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.pdf ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc" )
-        add_custom_target(${NAME}.pdf)
-        add_custom_command (
-          TARGET ${NAME}.pdf
-          COMMAND ${ASCIIDOCTOR_PDF_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.pdf ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc
-          DEPENDS ${FEELPP_STYLESHEET}
-          MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc
-          )
-        #add_custom_target(${NAME}.${SECT}.html DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html)
+        set(_feelpp_pdf_source ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc)
+        set(_feelpp_pdf_output ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.pdf)
+        set(_feelpp_pdf_target ${NAME}.pdf_target)
+        add_custom_command(
+          OUTPUT ${_feelpp_pdf_output}
+          COMMAND ${ASCIIDOCTOR_PDF_EXECUTABLE} -o ${_feelpp_pdf_output} ${_feelpp_pdf_source}
+          DEPENDS ${_feelpp_pdf_source} ${FEELPP_STYLESHEET}
+          VERBATIM
+        )
+        add_custom_target(${_feelpp_pdf_target} DEPENDS ${_feelpp_pdf_output})
         if (TARGET pdf)
-          add_dependencies(pdf ${NAME}.pdf)
+          add_dependencies(pdf ${_feelpp_pdf_target})
         endif()
         if ( TARGET ${NAME} )
-          add_dependencies(${NAME} ${NAME}.pdf)
+          add_dependencies(${NAME} ${_feelpp_pdf_target})
           
         endif()
         install(CODE "execute_process(COMMAND bash \"-c\"  \"${ASCIIDOCTOR_PDF_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.pdf ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc\" )" COMPONENT Bin)
@@ -763,6 +761,7 @@ macro ( feelpp_add_fmu )
     add_custom_target( feelpp_add_fmu_${OMWRAPPER_NAME}  ALL COMMENT "Generate FMU for model ${OMWRAPPER_NAME}"  )
 
     add_custom_command(TARGET feelpp_add_fmu_${OMWRAPPER_NAME}
+      POST_BUILD
       COMMAND ${CMAKE_COMMAND} -DOMC_COMPILER=${OMC_COMPILER} -DFMU_SCRIPT_NAME=${FMU_SCRIPT_NAME} -DOMWRAPPER_LIBDIR=${OMWRAPPER_LIBDIR} -DOMWRAPPER_NAME=${OMWRAPPER_NAME} -P "${OMWRAPPER_MACRO_DIR}/feelpp.macros.om.cmake" )
 
     if ( OM_MODEL_CATEGORY )
@@ -795,6 +794,7 @@ macro( feelpp_add_omc )
       PRE_BUILD
       COMMAND ${CMAKE_COMMAND} -E make_directory ${TMP_DIR} )
     add_custom_command( TARGET feelpp_add_omc_${OMC_NAME}
+      POST_BUILD
       COMMAND ${OMC_COMPILER} -s -q ${OMC_SRCS_FULLPATH}
       COMMAND make -f ${OMC_CLASS}.makefile CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER}
       WORKING_DIRECTORY ${TMP_DIR}
@@ -981,10 +981,12 @@ function(feelpp_set_options varTarget project )
   foreach( opts IN LISTS CD )
     string( REGEX MATCH "FEELPP_HAS_[a-zA-Z0-9_]+$" OPT ${opts} )
     if ( OPT )
-      if ( NOT project STREQUAL "" )
-        message( STATUS "[${project}] Enabled option: ${OPT}" )
-      else()
-        message( STATUS "Enabled option: ${OPT}" )
+      if ( FEELPP_ENABLE_VERBOSE_CMAKE )
+        if ( NOT project STREQUAL "" )
+          message( STATUS "[${project}] Enabled option: ${OPT}" )
+        else()
+          message( STATUS "Enabled option: ${OPT}" )
+        endif()
       endif()
       set(${OPT} 1 PARENT_SCOPE)
     endif()
@@ -1010,23 +1012,4 @@ endmacro()
 # add a pybind11 feelpp module
 # FEELPP_PYTHON_MODULE_PATH must be defined !
 #
-macro(feelpp_add_pymodule)
- PARSE_ARGUMENTS(FEELPP_PYMODULE
-    "NAME;SRCS;DESTINATION;LINK_LIBRARIES"
-    ""
-    ${ARGN}
-    )
-  CAR(FEELPP_PYMODULE_NAME ${FEELPP_PYMODULE_DEFAULT_ARGS})
-  message(STATUS "[pyfeelpp] add pymodule ${FEELPP_PYMODULE_NAME}")
-  pybind11_add_module(_${FEELPP_PYMODULE_NAME}  ${FEELPP_PYMODULE_SRCS}  )
-  target_include_directories(_${FEELPP_PYMODULE_NAME} PRIVATE ${PYTHON_INCLUDE_DIRS} ${MPI4PY_INCLUDE_DIR} ${PETSC4PY_INCLUDE_DIR})
-  target_link_libraries( _${FEELPP_PYMODULE_NAME} PUBLIC Feelpp::feelpp ${FEELPP_PYMODULE_LINK_LIBRARIES} )
-  install(TARGETS _${FEELPP_PYMODULE_NAME} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/${FEELPP_PYMODULE_DESTINATION})
-  if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py )
-    add_custom_command(
-           TARGET _${FEELPP_PYMODULE_NAME} POST_BUILD
-           COMMAND ${CMAKE_COMMAND} -E copy
-                   ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
-                   ${CMAKE_CURRENT_BINARY_DIR}/__init__.py)
-  endif()
-endmacro(feelpp_add_pymodule)
+include("${CMAKE_CURRENT_LIST_DIR}/FeelppPythonSupport.cmake")

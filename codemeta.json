@@ -1,0 +1,115 @@
+{
+  "@context": [
+    "https://w3id.org/codemeta/3.0",
+    {
+      "numpex-catalog": "https://numpex.github.io/sw-catalog/terms-1.0/index.jsonld#",
+      "Role": "https://schema.org/Role",
+      "roleName": "https://schema.org/roleName",
+      "url": "https://schema.org/url"
+    }
+  ],
+  "@type": "SoftwareSourceCode",
+  "name": "Feel++",
+  "description": "Feel++ is an open-source C++ framework for continuous and discontinuous Galerkin methods (FEM/SEM/DG/HDG) and reduced basis methods for parallel PDE simulation in 1D-3D. It includes toolboxes for multiphysics applications (CFD, CSM, heat transfer, FSI, thermo-electric, Maxwell) and model order reduction components.",
+  "url": "https://docs.feelpp.org",
+  "identifier": "https://doi.org/10.5281/zenodo.591797",
+  "keywords": [
+    "finite element",
+    "spectral element",
+    "domain decomposition",
+    "solvers",
+    "DSEL",
+    "mono and multiphysics toolboxes",
+    "model order reduction",
+    "python bindings",
+    "HPC",
+    "HPDA",
+    "MPI",
+    "MT"
+  ],
+  "codeRepository": "https://github.com/feelpp/feelpp",
+  "issueTracker": "https://github.com/feelpp/feelpp/issues",
+  "downloadUrl": "https://github.com/feelpp/feelpp/releases",
+  "funding": [
+    "ANR-22-EXNU-0002 Exa-MA",
+    "ANR-25-CE46-1157 JNL-G - Jumeau Numerique du Laboratoire National des Champs Magnetiques Intenses-Grenoble",
+    "ANR-10-IDEX-0002 IdEx Unistra / ITI IRMIA++",
+    "ANR-20-SFRI-0012 SFRI-STRAT'US / ITI IRMIA++",
+    "101093457 HiDALGO2"
+  ],
+  "license": [
+    "https://spdx.org/licenses/LGPL-3.0-only.html",
+    "https://spdx.org/licenses/GPL-3.0-only.html"
+  ],
+  "version": "v0.111.0-preview.13",
+  "programmingLanguage": [
+    {
+      "@type": "ComputerLanguage",
+      "name": "C++"
+    },
+    {
+      "@type": "ComputerLanguage",
+      "name": "Python"
+    }
+  ],
+  "author": [
+    {
+      "@type": "Person",
+      "givenName": "Christophe",
+      "familyName": "Prud'homme"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Vincent",
+      "familyName": "Chabannes"
+    }
+  ],
+  "contributor": [
+    {
+      "@type": "Person",
+      "givenName": "Thomas",
+      "familyName": "Saigre"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Philippe",
+      "familyName": "Pincon"
+    }
+  ],
+  "copyrightHolder": [
+    {
+      "@type": "Organization",
+      "name": "UNISTRA"
+    },
+    {
+      "@type": "Organization",
+      "name": "CNRS"
+    },
+    {
+      "@type": "Organization",
+      "name": "INRIA"
+    }
+  ],
+  "numpex-catalog:annotatedLink": [
+    {
+      "@type": "Role",
+      "roleName": "numpex-catalog:documentation",
+      "url": "https://docs.feelpp.org"
+    },
+    {
+      "@type": "Role",
+      "roleName": "numpex-catalog:discussion",
+      "url": "https://github.com/feelpp/discussions"
+    },
+    {
+      "@type": "Role",
+      "roleName": "numpex-catalog:spack_package",
+      "url": "https://github.com/numpex/spack.numpex/blob/main/packages/feelpp/package.py"
+    },
+    {
+      "@type": "Role",
+      "roleName": "numpex-catalog:guix_package",
+      "url": "https://gitlab.inria.fr/numpex-pc5/wp3/guix-hpc/-/blob/feelpp/guix-hpc/packages/math.scm?ref_type=heads"
+    }
+  ]
+}

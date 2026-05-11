@@ -1,3 +1,4 @@
+/.cache/
 *.ts/
 *.exports/
 downloads/
@@ -58,6 +59,8 @@ __pycache__
 /testsuite/feeldiscr/#test_mortar.cpp#
 /testsuite/feeldiscr/.#test_mortar.cpp
 /contrib/eigen-eigen*
+/.pytest_cache/
+*.egg-info
 *.sw?
 \#*
 \.\#*
@@ -177,7 +180,7 @@ mor/heat1d/heat1dapp.cpp
 mor/unsteady_heat1d/unsteadyHeat1dapp.cpp
 
 gmsh-config.err
-python/pyfeelpp/feelpp/__init__.py
+python/pyfeelpp/feelpp/core/__init__.py
 *.msh
 **/.ipynb_checkpoints/**
 mor/examples/linearelasticity3d/linearelasticity3dapp.cpp
@@ -194,3 +197,15 @@ conftest.o
 python/notebooks/feelpp-python/
 install/
 .venv*/
+/ops/.pytest_cache/
+/ops/src/*.egg-info
+/ops/tests/**/__pycache__/
+/packaging/.pytest_cache/
+/packaging/src/*.egg-info
+# CMake Preset backup files
+CMakePresets.json.backup
+!/ops/src/feelpp/pkg/build/
+!/ops/src/feelpp/pkg/build/**
+/ops/src/feelpp/pkg/build/__pycache__/
+doc/analysis/
+mor/examples/grepldeim/grepldeimapp.cpp

@@ -25,7 +25,9 @@
 #include <fmt/core.h>
 #include <fmt/color.h>
 #include <feel/feelcore/environment.hpp>
+#if defined(FEELPP_HAS_PYTHON)
 #include <feel/feelpython/pybind11/pybind11.h>
+#endif
 
 namespace Feel
 {
@@ -38,14 +40,14 @@ printGitReport()
         {
             std::cerr << fmt::format( "WARN: there were uncommitted changes at build-time." ) << std::endl;
         }
-        const char* str = R"({:*^30}
+        constexpr auto str = FMT_STRING(R"({:*^30}
  - commit {} (HEAD)
  - describe {}
  - Author: {} <{}>
  - Date: {}
  - Subject: {}
  - Body: {}
-{:*^30})";
+{:*^30})");
         std::cout << fmt::format( str, " Git Report ",
                                   GitMetadata::commitSHA1(),
                                   GitMetadata::describe(),
@@ -74,7 +76,7 @@ print_and_trace( std::string const& s, E const& e )
         fmt::print( "{:*^30}\n", " Stack Trace " );
     }
     printGitReport();
-    fmt::print( fmt::emphasis::bold | fg( fmt::color::red ), s );
+    fmt::print( fmt::emphasis::bold | fg( fmt::color::red ), "{}", s );
 }
 void handleExceptions()
 {
@@ -90,10 +92,12 @@ void handleExceptions()
                                         boost::core::demangle(e.source_type().name()),
                                         boost::core::demangle(e.target_type().name())), e );
     }
+#if defined(FEELPP_HAS_PYTHON)
     catch ( const pybind11::error_already_set& e )
     {
         print_and_trace( fmt::format( "[feelpp.pybind11.error_already_set] python interpreter failed : {}\n", e.what() ), e );
     }
+#endif
     catch(const fs::filesystem_error& e)
     {
         if ( e.code() == std::errc::permission_denied )

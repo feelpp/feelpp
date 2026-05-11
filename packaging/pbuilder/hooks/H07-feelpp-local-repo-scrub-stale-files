@@ -1,0 +1,23 @@
+#!/bin/sh
+
+set -eu
+
+# Some pbuilder bases can retain stale unowned Feel++ paths from older local or
+# manually provisioned installs even when dpkg reports no Feel++ package as
+# installed. Remove the full Feel++ include tree and exported package-module
+# tree before satisfydepends so the freshly staged local repo is the only
+# provider of Feel++ headers and CMake package files.
+rm -rf \
+    /usr/include/feelpp \
+    /usr/share/feelpp/feel/cmake/modules \
+    /usr/include/feelpp/gflags \
+    /usr/include/feelpp/glog \
+    /usr/include/feelpp/pybind11 \
+    /usr/share/feelpp/feelpp_gflags \
+    /usr/share/feelpp/gflags \
+    /usr/share/feelpp/glog \
+    /usr/share/feelpp/pybind11
+
+rm -f \
+    /usr/share/feelpp/feel/cmake/modules/pybind11*.cmake \
+    /usr/share/feelpp/feel/cmake/modules/Findpybind11*.cmake

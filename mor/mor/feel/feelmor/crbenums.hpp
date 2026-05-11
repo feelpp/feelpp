@@ -30,6 +30,8 @@
 #define FEELPP_MOR_CRBENUMS_HPP 1
 
 #include <fmt/core.h>
+#include <fmt/ostream.h>
+
 namespace Feel {
 
 namespace crb {
@@ -58,7 +60,7 @@ inline std::string stageToString( stage s )
     case stage::online:
         return "online";
     }
-    LOG( WARNING ) << fmt::format( "unknown stage {} return offline", s );
+    LOG( WARNING ) << fmt::format( "unknown stage {} return offline", static_cast<int>(s) );
     return "offline";
 }
 

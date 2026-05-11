@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 namespace Feel
 {
     bool extractZipFile( const std::string& zipFilePath, const std::string& extractionDir );

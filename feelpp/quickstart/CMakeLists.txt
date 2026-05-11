@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required(VERSION 3.7.2)
+cmake_minimum_required(VERSION 3.21)
 
 project(quickstart)
 set(PROJECT_SHORTNAME "qs")
@@ -34,6 +34,9 @@ if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
 endif()
 
 enable_testing()
+
+# Set quickstart label for all tests in this directory tree
+set_directory_properties(PROPERTIES LABELS "quickstart")
 
 if ( NOT TARGET check )
   add_custom_target(check)

@@ -68,8 +68,8 @@ public :
 
     static const size_type Shape = Convex::Shape;
 
-    static const bool is_simplex = Convex::is_simplex;
-    static const bool is_hypercube = Convex::is_hypercube;
+    static inline const bool is_simplex = Convex::is_simplex;
+    static inline const bool is_hypercube = Convex::is_hypercube;
 
     typedef typename super::return_type return_type;
 

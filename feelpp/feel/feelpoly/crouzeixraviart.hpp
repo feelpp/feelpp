@@ -32,11 +32,15 @@
 
 #include <boost/ptr_container/ptr_vector.hpp>
 
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/io.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/numeric/ublas/lu.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/traits.hpp>
@@ -78,7 +82,7 @@ public:
     static inline const uint16_type nDim = super::nDim;
     static inline const uint16_type nOrder = super::nOrder;
     static inline const uint16_type nComponents = super::nComponents;
-    static const bool is_product = true;
+    static inline const bool is_product = true;
 
     RannacherTurekPolynomialSet()
         :
@@ -286,8 +290,8 @@ public:
 
     static inline const uint16_type nDim = N;
     static inline const uint16_type nOrder =  super::nOrder;
-    static const bool isTransformationEquivalent = true;
-    static const bool isContinuous = true;
+    static inline const bool isTransformationEquivalent = true;
+    static inline const bool isContinuous = true;
 
     typedef typename super::value_type value_type;
     typedef typename super::primal_space_type primal_space_type;
@@ -299,12 +303,12 @@ public:
      * Polynomial Set type: scalar or vectorial
      */
     typedef typename super::polyset_type polyset_type;
-    static const bool is_vectorial = polyset_type::is_vectorial;
-    static const bool is_scalar = polyset_type::is_scalar;
+    static inline const bool is_vectorial = polyset_type::is_vectorial;
+    static inline const bool is_scalar = polyset_type::is_scalar;
     static inline const uint16_type nComponents = polyset_type::nComponents;
     static inline const uint16_type nComponents1 = polyset_type::nComponents1;
     static inline const uint16_type nComponents2 = polyset_type::nComponents2;
-    static const bool is_product = true;
+    static inline const bool is_product = true;
 
     typedef CrouzeixRaviart<N, RealDim, Scalar, T, Convex> component_basis_type;
 

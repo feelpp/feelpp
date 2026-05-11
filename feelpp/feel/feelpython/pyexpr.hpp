@@ -24,10 +24,14 @@
 #ifndef FEELPP_PYEXPR_HPP
 #define FEELPP_PYEXPR_HPP 1
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#include <feel/feelconfig.h>
+
+#if defined(FEELPP_HAS_PYTHON)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <pybind11/embed.h>
-#pragma clang diagnostic pop
+#pragma GCC diagnostic pop
+#endif
 #include <iostream>
 #include <map>
 #include <vector>
@@ -35,9 +39,10 @@
 
 namespace Feel {
 
-
+#if defined(FEELPP_HAS_PYTHON)
 namespace py = pybind11;
 using namespace py::literals;
+#endif
 
 //!
 //! evaluate python code \p pycode and retrieve dictionary of Feel++ expressions

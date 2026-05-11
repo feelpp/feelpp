@@ -39,23 +39,23 @@ class Pow
 public:
 
     static const size_type context = ExprT1::context|ExprT2::context;
-    static const bool is_terminal = false;
+    static inline const bool is_terminal = false;
 
     template<typename Func>
     struct HasTestFunction
     {
-        static const bool result = false;
+        static inline const bool result = false;
     };
 
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = false;
+        static inline const bool result = false;
     };
     template<typename Func>
-    static const bool has_test_basis = false;
+    static inline const bool has_test_basis = false;
     template<typename Func>
-    static const bool has_trial_basis = false;
+    static inline const bool has_trial_basis = false;
     using test_basis = std::nullptr_t;
     using trial_basis = std::nullptr_t;
 
@@ -186,7 +186,7 @@ public:
 
         struct is_zero
         {
-            static const bool value = l_type::is_zero::value;
+            static inline const bool value = l_type::is_zero::value;
         };
 
         tensor( expression_type const& expr, Geo_t const& geom,
@@ -344,7 +344,7 @@ protected:
    \endcode
  */
 template<typename ExprT1,  typename ExprT2>
-inline
+[[nodiscard]] inline
 auto
 pow( ExprT1 && __e1, ExprT2 && __e2 )
 {
@@ -367,12 +367,13 @@ pow( ExprT1 && __e1, ExprT2 && __e2 )
  * provide pow expression e1^e2
  * @ingroup DSEL-Variational-Formulation
  */
-template<typename ExprT1, typename ExprT2,typename = typename std::enable_if_t< is_vf_expr_v<ExprT1> || is_vf_expr_v<ExprT2> > >
+template<typename ExprT1, typename ExprT2>
+    requires VfExpr<ExprT1> || VfExpr<ExprT2>
 inline
 auto
 operator^( ExprT1 && __e1, ExprT2 && __e2 )
 {
-    return pow( std::forward<ExprT1>( __e1 ), std::forward<ExprT1>( __e2 ) );
+    return pow( std::forward<ExprT1>( __e1 ), std::forward<ExprT2>( __e2 ) );
 }
 } // vf
 } //Feel

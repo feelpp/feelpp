@@ -52,9 +52,9 @@ public:
      */
     //@{
 
-    static const bool is_continuous = false;
-    static const bool is_discontinuous_locally = true;
-    static const bool is_discontinuous_totally = false;
+    static inline const bool is_continuous = false;
+    static inline const bool is_discontinuous_locally = true;
+    static inline const bool is_discontinuous_totally = false;
 
     static inline const uint16_type n_discontinuities = fusion::result_of::size<A0>::type::value;
 

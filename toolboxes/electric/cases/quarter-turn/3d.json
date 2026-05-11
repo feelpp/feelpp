@@ -5,7 +5,8 @@
     "Parameters":
     {
         "v_expr":"2*0.25/Pi*atan2(x,y):x:y",
-        "c_expr":"{-2*0.25/Pi*y/(x*x+y*y),2*0.25/Pi*x/(x*x+y*y),0}:x:y:z"
+        "c_expr":"{-2*0.25/Pi*y/(x*x+y*y),2*0.25/Pi*x/(x*x+y*y),0}:x:y:z",
+        "grad_v_expr":"{0.5/Pi*y/(x*x+y*y),-0.5/Pi*x/(x*x+y*y),0}:x:y"
     },
     "Meshes":
     {
@@ -49,6 +50,35 @@
             "Exports":
             {
                 "fields":["electric-potential","electric-field","pid"]
+            },
+            "Measures":
+            {
+                "Norm":
+                {
+                    "error-evaluated":
+                    {
+                        "field":"electric-potential",
+                        "type":["L2-error","H1-error"],
+                        "solution":"v_expr:v_expr",
+                        "grad_solution":"{0.5/Pi*y/(x*x+y*y),-0.5/Pi*x/(x*x+y*y),0}:x:y"
+                    }
+                }
+            },
+            "Checkers":
+            {
+                "Measures":
+                {
+                    "Norm_error-evaluated_L2-error":
+                    {
+                        "value":0,
+                        "tolerance":1e-1
+                    },
+                    "Norm_error-evaluated_H1-error":
+                    {
+                        "value":0,
+                        "tolerance":2
+                    }
+                }
             }
         }
     }

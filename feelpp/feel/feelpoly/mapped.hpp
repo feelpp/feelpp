@@ -31,8 +31,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include <stdexcept>
 
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/matrix_sparse.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 
 #include <feel/feelcore/feel.hpp>
@@ -70,7 +74,7 @@ public :
     static const uint32_type Dim = Convex::nDim;
     static const uint32_type convexOrder = Convex::nOrder;
 
-    static const bool is_simplex = Convex::is_simplex;
+    static inline const bool is_simplex = Convex::is_simplex;
 
     typedef typename pointset_type::nodes_type nodes_type;
     typedef typename matrix_node<value_type>::type points_type;

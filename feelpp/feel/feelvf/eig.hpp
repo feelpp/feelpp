@@ -44,24 +44,24 @@ class Eig : public ExprDynamicBase
   public:
     using super = ExprDynamicBase;
     static const size_type context = ExprT::context;
-    static const bool is_terminal = false;
+    static inline const bool is_terminal = false;
 
     template <typename Func>
     struct HasTestFunction
     {
-        static const bool result = ExprT::template HasTestFunction<Func>::result;
+        static inline const bool result = ExprT::template HasTestFunction<Func>::result;
     };
 
     template <typename Func>
     struct HasTrialFunction
     {
-        static const bool result = ExprT::template HasTrialFunction<Func>::result;
+        static inline const bool result = ExprT::template HasTrialFunction<Func>::result;
     };
 
     template <typename Func>
-    static const bool has_test_basis = ExprT::template has_test_basis<Func>;
+    static inline const bool has_test_basis = ExprT::template has_test_basis<Func>;
     template <typename Func>
-    static const bool has_trial_basis = ExprT::template has_trial_basis<Func>;
+    static inline const bool has_trial_basis = ExprT::template has_trial_basis<Func>;
     using test_basis = std::nullptr_t;
     using trial_basis = std::nullptr_t;
 
@@ -163,7 +163,7 @@ class Eig : public ExprDynamicBase
 
         struct is_zero
         {
-            static const bool value = tensor_expr_type::is_zero::value;
+            static inline const bool value = tensor_expr_type::is_zero::value;
         };
 
         tensor( this_type const& expr,
@@ -268,9 +268,9 @@ class Eig : public ExprDynamicBase
 /**
  * \brief eig of the expression tensor (expression is supposed to be self adjoint)
  */
-template <typename ExprT>
-inline Expr<Eig<ExprT>>
-eig( ExprT v, std::enable_if_t<std::is_base_of_v<ExprBase,ExprT>>* = nullptr )
+template <VfExpr ExprT>
+[[nodiscard]] inline Expr<Eig<ExprT>>
+eig( ExprT v )
 {
     typedef Eig<ExprT> eig_t;
     return Expr<eig_t>( eig_t( v ) );

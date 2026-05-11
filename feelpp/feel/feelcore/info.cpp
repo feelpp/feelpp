@@ -132,6 +132,10 @@ Info::relativeCasesdir()
 fs::path
 Info::datadir()
 {
+    // Prefer build data directory if it exists (for testing without install)
+    fs::path buildDataDir = fs::path{ stringize( FEELPP_BUILD_DIR ) } / "share/feelpp/data";
+    if ( fs::exists( buildDataDir ) )
+        return buildDataDir;
     return fs::path{ stringize( FEELPP_DATADIR ) };
 }
 

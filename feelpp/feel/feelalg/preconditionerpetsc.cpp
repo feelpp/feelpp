@@ -26,7 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-01-16
  */
-#include <fmt/chrono.h>
+#include <feel/feelcore/timeutils.hpp>
 
 #include <feel/feelalg/preconditionerpetsc.hpp>
 #include <feel/feelalg/functionspetsc.hpp>
@@ -65,7 +65,7 @@ PetscErrorCode __feel_destroy_petsc_prec_ksp_monitor(void** ctx)
     if ( solver )
     {
         if ( solver->worldCommPtr()->isMasterRank() )
-            std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] ] KSP delete context", fmt::localtime( std::time(nullptr) ), solver->prefix(), 0.0 ) << std::endl;
+            std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] ] KSP delete context", Feel::gmtimeNow(), solver->prefix(), 0.0 ) << std::endl;
         delete solver;
     }
     ctx = nullptr;
@@ -100,7 +100,7 @@ PetscErrorCode __feel_petsc_prec_ksp_monitor(KSP ksp,PetscInt it,PetscReal rnorm
     Feel::ConfigureKSP* solver = static_cast<Feel::ConfigureKSP*>( ctx );
     if ( !solver ) return 0;
     if ( solver->worldCommPtr()->isMasterRank() )
-        std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] ] #{} KSP Residual norm {:.4e}", fmt::localtime( std::time(nullptr) ), solver->prefix(), it, rnorm ) << std::endl;
+        std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] ] #{} KSP Residual norm {:.4e}", Feel::gmtimeNow(), solver->prefix(), it, rnorm ) << std::endl;
 #endif
     return 0;
 }
@@ -652,11 +652,35 @@ ConfigurePC::run( PC& pc )
 {
     VLOG(2) << "configuring PC... (sub: " << this->sub() << ")";
     //PCSetOptionsPrefix( pc, (this->prefix()+"_").c_str());
+#if !defined(FEELPP_HAS_SPDLOG)
+    #if !defined(FEELPP_HAS_SPDLOG)
+
     google::FlushLogFiles(google::INFO);
+
+    #else
+
+    Logger::flushOn(0);
+
+    #endif
+#else
+    Logger::flushOn(0);
+#endif
     const char* pctype;
     this->check( PCGetType ( pc, &pctype ) );
     VLOG(2) << "configuring PC (" << this->prefix() << "." << this->sub() << ")" << pctype <<  "\n";
+#if !defined(FEELPP_HAS_SPDLOG)
+    #if !defined(FEELPP_HAS_SPDLOG)
+
     google::FlushLogFiles(google::INFO);
+
+    #else
+
+    Logger::flushOn(0);
+
+    #endif
+#else
+    Logger::flushOn(0);
+#endif
 
     bool pcSetupNotCalled = !pc->setupcalled;
     // init with petsc option if given and not interfaced
@@ -769,7 +793,15 @@ ConfigurePC::run( PC& pc )
     }
 
     VLOG(2) << "configuring PC " << pctype << " done\n";
+    #if !defined(FEELPP_HAS_SPDLOG)
+
     google::FlushLogFiles(google::INFO);
+
+    #else
+
+    Logger::flushOn(0);
+
+    #endif
 }
 
 
@@ -1562,7 +1594,15 @@ ConfigurePCLU::ConfigurePCLU( PC& pc, PreconditionerPetsc<double> * precFeel, wo
     VLOG(2) << "ConfigurePC : LU\n"
             << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
             << "  |->matSolverPackage : " << M_matSolverPackage << "\n";
+    #if !defined(FEELPP_HAS_SPDLOG)
+
     google::FlushLogFiles(google::INFO);
+
+    #else
+
+    Logger::flushOn(0);
+
+    #endif
     run( pc );
 }
 void
@@ -1617,7 +1657,15 @@ ConfigurePCILU::ConfigurePCILU( PC& pc, PreconditionerPetsc<double> * precFeel, 
             << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
             << "  |->levels : " << M_levels << "\n"
             << "  |->fill : " << M_fill << "\n";
+    #if !defined(FEELPP_HAS_SPDLOG)
+
     google::FlushLogFiles(google::INFO);
+
+    #else
+
+    Logger::flushOn(0);
+
+    #endif
     run( pc );
 }
 void
@@ -1662,7 +1710,15 @@ ConfigurePCHYPRE_BOOMERAMG::ConfigurePCHYPRE_BOOMERAMG( PC& pc, PreconditionerPe
     VLOG(2) << "  |->relax_type_all : " << M_relax_type_all << "\n";
     VLOG(2) << "  |->interp_type : " << M_interp_type << "\n";
 #endif
+    #if !defined(FEELPP_HAS_SPDLOG)
+
     google::FlushLogFiles(google::INFO);
+
+    #else
+
+    Logger::flushOn(0);
+
+    #endif
     run( pc );
 }
 void
@@ -1784,7 +1840,15 @@ ConfigurePCHYPRE_AMS::ConfigurePCHYPRE_AMS( PC& pc, PreconditionerPetsc<double> 
     << "  |-> amg-beta-theta         : " << M_amg_beta_theta << "\n";
     << "  |-> amg-beta-options       : " << M_amg_beta_options << "\n";
     #endif
+    #if !defined(FEELPP_HAS_SPDLOG)
+
     google::FlushLogFiles(google::INFO);
+
+    #else
+
+    Logger::flushOn(0);
+
+    #endif
     run( pc );
 }
 void
@@ -1958,7 +2022,15 @@ ConfigurePCSOR::ConfigurePCSOR( PC& pc, PreconditionerPetsc<double> * precFeel, 
     VLOG(2) << "ConfigurePC : ILU\n"
             << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
             << "  |->omega : " << M_omega << "\n";
+    #if !defined(FEELPP_HAS_SPDLOG)
+
     google::FlushLogFiles(google::INFO);
+
+    #else
+
+    Logger::flushOn(0);
+
+    #endif
     run( pc );
 }
 void
@@ -1995,7 +2067,15 @@ ConfigurePCGASM::ConfigurePCGASM( PC& pc, PreconditionerPetsc<double> * precFeel
             << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
             << "  |->type : " << M_type  << "\n"
             << "  |->overlap : " << M_overlap << "\n";
+    #if !defined(FEELPP_HAS_SPDLOG)
+
     google::FlushLogFiles(google::INFO);
+
+    #else
+
+    Logger::flushOn(0);
+
+    #endif
     run( pc );
 }
 void
@@ -2026,7 +2106,15 @@ ConfigurePCASM::ConfigurePCASM( PC& pc, PreconditionerPetsc<double> * precFeel, 
             << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
             << "  |->type : " << M_type  << "\n"
             << "  |->overlap : " << M_overlap << "\n";
+    #if !defined(FEELPP_HAS_SPDLOG)
+
     google::FlushLogFiles(google::INFO);
+
+    #else
+
+    Logger::flushOn(0);
+
+    #endif
     run( pc );
 }
 void
@@ -2079,7 +2167,15 @@ ConfigureSubPC::ConfigureSubPC( PC& pc, PreconditionerPetsc<double> * precFeel, 
             << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
             << "  |->nBlock    : " << M_nBlock << "\n"
             << "  |->subPCtype : " << M_subPCtype  << "\n";
+    #if !defined(FEELPP_HAS_SPDLOG)
+
     google::FlushLogFiles(google::INFO);
+
+    #else
+
+    Logger::flushOn(0);
+
+    #endif
 
     ConfigureKSP kspConf( this->precFeel(),this->worldCommPtr(), "sub", this->prefix(), this->prefixOverwrite() );
 
@@ -2135,7 +2231,15 @@ ConfigurePCML::ConfigurePCML( PC& pc, PreconditionerPetsc<double> * precFeel,
             << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
             << "  |->mgType : " << M_mgType << "\n"
             << "  |->maxLevels : " << M_nLevels << "\n";
+    #if !defined(FEELPP_HAS_SPDLOG)
+
     google::FlushLogFiles(google::INFO);
+
+    #else
+
+    Logger::flushOn(0);
+
+    #endif
     run( pc );
 }
 void
@@ -2245,7 +2349,15 @@ ConfigurePCGAMG::ConfigurePCGAMG( PC& pc, PreconditionerPetsc<double> * precFeel
             << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
             << "  |->mgType : " << M_mgType << "\n"
             << "  |->maxLevels : " << M_nLevels << "\n";
+    #if !defined(FEELPP_HAS_SPDLOG)
+
     google::FlushLogFiles(google::INFO);
+
+    #else
+
+    Logger::flushOn(0);
+
+    #endif
     run( pc );
 }
 
@@ -2860,7 +2972,15 @@ ConfigurePCFieldSplit::ConfigureSubKSP::ConfigureSubKSP( KSP ** subksps/*PC& pc*
     for ( int splitId=0; splitId<M_nSplit; ++splitId )
     {
         VLOG(2) << "configure split " << splitId << " with prefix "<< M_prefixSplit[splitId] << "\n";
+        #if !defined(FEELPP_HAS_SPDLOG)
+
         google::FlushLogFiles(google::INFO);
+
+        #else
+
+        Logger::flushOn(0);
+
+        #endif
 
         run( (*subksps)[splitId], splitId );
     }
@@ -3014,7 +3134,15 @@ ConfigurePCLSC::ConfigurePCLSC( PC& pc, PreconditionerPetsc<double> * precFeel, 
             << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
             << "  |->prefixLSC : " << M_prefixLSC  << "\n"
             << "  |->subPCtype : " << M_subPCtype << "\n";
+    #if !defined(FEELPP_HAS_SPDLOG)
+
     google::FlushLogFiles(google::INFO);
+
+    #else
+
+    Logger::flushOn(0);
+
+    #endif
     run( pc );
 }
 void
@@ -3077,7 +3205,15 @@ ConfigurePCPMM::ConfigurePCPMM( PC& pc, PreconditionerPetsc<double> * precFeel, 
             << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
             << "  |->prefixPMM : " << M_prefixPMM  << "\n"
             << "  |->subPCtype : " << M_subPCtype << "\n";
+    #if !defined(FEELPP_HAS_SPDLOG)
+
     google::FlushLogFiles(google::INFO);
+
+    #else
+
+    Logger::flushOn(0);
+
+    #endif
     run( pc );
 
     CHECK( this->precFeel()->hasOperatorPMM( "pmm" ) ) << "operator pmm is not given";
@@ -3089,7 +3225,15 @@ ConfigurePCPMM::ConfigurePCPMM( PC& pc, PreconditionerPetsc<double> * precFeel, 
             << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
             << "  |->prefixPMM : " << M_prefixPMM  << "\n"
             << "  |->subPCtype : " << M_subPCtype << "\n";
-    google::FlushLogFiles( google::INFO );
+    #if !defined(FEELPP_HAS_SPDLOG)
+
+    google::FlushLogFiles(google::INFO);
+
+    #else
+
+    Logger::flushOn(0);
+
+    #endif
     run( pc );
 }
 
@@ -3171,7 +3315,15 @@ ConfigurePCPCD::ConfigurePCPCD( PC& pc, PreconditionerPetsc<double> * precFeel, 
             << "  |->subPCtype_Ap : " << M_subPCtype_Ap << "\n"
             << "  |->prefixPCD_Mp : " << M_prefixPCD_Mp  << "\n"
             << "  |->subPCtype_Mp : " << M_subPCtype_Mp << "\n";
+    #if !defined(FEELPP_HAS_SPDLOG)
+
     google::FlushLogFiles(google::INFO);
+
+    #else
+
+    Logger::flushOn(0);
+
+    #endif
     run( pc );
 }
 
@@ -3241,7 +3393,15 @@ ConfigurePCRedundant::ConfigurePCRedundant( PreconditionerPetsc<double> * precFe
             << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
             << "  |->innerPCtype : " << M_innerPCtype << "\n"
             << "  |->innerPCMatSolverPackage : " << M_innerPCMatSolverPackage << "\n";
+    #if !defined(FEELPP_HAS_SPDLOG)
+
     google::FlushLogFiles(google::INFO);
+
+    #else
+
+    Logger::flushOn(0);
+
+    #endif
 }
 void
 ConfigurePCRedundant::run( PC& pc )

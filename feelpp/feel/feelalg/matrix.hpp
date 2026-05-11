@@ -29,9 +29,13 @@
 #if !defined(FEELPP_MATRIX_HPP)
 #define FEELPP_MATRIX_HPP 1
 
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/matrix_expression.hpp>
 #include <boost/numeric/ublas/detail/matrix_assign.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 namespace boost
 {

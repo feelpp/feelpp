@@ -112,7 +112,7 @@ loadGMSHMeshImpl( std::shared_ptr<MeshType> mesh, std::string const& filename, s
             import.setDeleteGModelAfterUse( true );
             import.setInMemory( true );
             using namespace std::string_literals;
-            toc("loadGMSHMesh.reader"s+p_fname.extension().string(), FLAGS_v>0);
+            toc("loadGMSHMesh.reader"s+p_fname.extension().string(), Environment::logVerbosityLevel()>0);
         }
 #endif // FEELPP_HAS_GMSH_H
 
@@ -147,13 +147,13 @@ loadGMSHMeshImpl( std::shared_ptr<MeshType> mesh, std::string const& filename, s
             tic();
             import.setScaling( scale );
             _mesh->accept( import );
-            toc("loadGMSHMesh.readmesh", FLAGS_v>0);
+            toc("loadGMSHMesh.readmesh", Environment::logVerbosityLevel()>0);
 
             tic();
             _mesh->components().reset();
             _mesh->components().set( update );
             _mesh->updateForUse();
-            toc("loadGMSHMesh.update", FLAGS_v>0);
+            toc("loadGMSHMesh.update", Environment::logVerbosityLevel()>0);
         }
     }
 #if defined(FEELPP_HAS_HDF5)

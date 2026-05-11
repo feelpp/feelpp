@@ -110,7 +110,7 @@ public:
     //@{
 
     static const Feel::size_type context = Expr::context|vm::JACOBIAN;
-    static const bool is_terminal = false;
+    static inline const bool is_terminal = false;
 
     //static const uint16_type imorder = 0;
     //static const bool imIsPoly = true;
@@ -118,18 +118,18 @@ public:
     template<typename Func>
     struct HasTestFunction
     {
-        static const bool result = Expr::template HasTestFunction<Func>::result;
+        static inline const bool result = Expr::template HasTestFunction<Func>::result;
     };
 
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = Expr::template HasTrialFunction<Func>::result;
+        static inline const bool result = Expr::template HasTrialFunction<Func>::result;
     };
     template<typename Func>
-    static const bool has_test_basis = Expr::template has_test_basis<Func>;
+    static inline const bool has_test_basis = Expr::template has_test_basis<Func>;
     template<typename Func>
-    static const bool has_trial_basis = Expr::template has_trial_basis<Func>;
+    static inline const bool has_trial_basis = Expr::template has_trial_basis<Func>;
     using test_basis = typename Expr::test_basis;
     using trial_basis = typename Expr::trial_basis;
 
@@ -164,7 +164,7 @@ public:
         typedef std::shared_ptr<gm_type> gm_ptrtype;
         typedef typename the_element_type::gm1_type gm1_type;
         typedef std::shared_ptr<gm1_type> gm1_ptrtype;
-        static const size_type gmc_context_v = expression_type::context|vm::JACOBIAN;
+        static const Feel::size_type gmc_context_v = expression_type::context|vm::JACOBIAN;
         typedef typename gm_type::template Context< the_element_type> gmc_type;
         typedef std::shared_ptr<gmc_type> gmc_ptrtype;
         typedef typename gm1_type::template Context<the_element_type> gmc1_type;
@@ -850,11 +850,14 @@ private:
     template<typename P0hType>
     typename P0hType::element_type  broken( std::shared_ptr<P0hType>& P0h, mpl::int_<MESH_FACES> ) const;
 
-    template <int iDimDummy=iDim,std::enable_if_t< iDimDummy == MESH_ELEMENTS , bool> = true>
+    template <int iDimDummy=iDim>
+        requires (iDimDummy == MESH_ELEMENTS)
     typename eval::matrix_type evaluateImpl() const;
-    template <int iDimDummy=iDim,std::enable_if_t< iDimDummy == MESH_FACES /*|| ( iDimDummy == MESH_EDGES && eval::gm_type::nDim == 2)*/ , bool> = true>
+    template <int iDimDummy=iDim>
+        requires (iDimDummy == MESH_FACES) /*|| ( iDimDummy == MESH_EDGES && eval::gm_type::nDim == 2)*/
     typename eval::matrix_type evaluateImpl() const;
-    template <int iDimDummy=iDim,std::enable_if_t< iDimDummy == MESH_POINTS , bool> = true>
+    template <int iDimDummy=iDim>
+        requires (iDimDummy == MESH_POINTS)
     typename eval::matrix_type evaluateImpl() const;
 
 private:
@@ -1011,8 +1014,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
             using focb1_ptrtype = std::shared_ptr<fcb1_type>;
 
             // mortar context
-            static const bool has_mortar_test = FormType::test_space_type::is_mortar;
-            static const bool has_mortar_trial = FormType::trial_space_type::is_mortar;
+            constexpr bool has_mortar_test = FormType::test_space_type::is_mortar;
+            constexpr bool has_mortar_trial = FormType::trial_space_type::is_mortar;
             static const int mortarTag = (has_mortar_test && has_mortar_trial)? 3 : ( (has_mortar_test)? 1 : ( (has_mortar_trial)? 2 : 0 ) );
 
             typedef typename FormType::template Context<map_gmc_type, expression_type, im_type,map_gmc_type,map_gmc_type,mortarTag> form_mortar_context_type;
@@ -1210,7 +1213,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 } // end loop on elements
             } // end loop on list of elements
 
-            toc("Integrator::assemble form MESH_ELEMENTS", FLAGS_v>1);
+            toc("Integrator::assemble form MESH_ELEMENTS", Environment::logVerbosityLevel()>1);
         }
 
 #if defined( FEELPP_HAS_TBB )
@@ -2323,8 +2326,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 
 
     // mortar context
-    static const bool has_mortar_test = FormType::test_space_type::is_mortar;
-    static const bool has_mortar_trial = FormType::trial_space_type::is_mortar;
+    constexpr bool has_mortar_test = FormType::test_space_type::is_mortar;
+    constexpr bool has_mortar_trial = FormType::trial_space_type::is_mortar;
     static const int mortarTag = (has_mortar_test && has_mortar_trial)? 3 : ( (has_mortar_test)? 1 : ( (has_mortar_trial)? 2 : 0 ) );
     BOOST_MPL_ASSERT_MSG( mortarTag < 3,TODO_CASE3, (mpl::int_<mortarTag>) );
 
@@ -2720,8 +2723,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTrial_ptrtype> > map_gmc_formTrial_type;
 
     // mortar context
-    static const bool has_mortar_test = FormType::test_space_type::is_mortar;
-    static const bool has_mortar_trial = FormType::trial_space_type::is_mortar;
+    constexpr bool has_mortar_test = FormType::test_space_type::is_mortar;
+    constexpr bool has_mortar_trial = FormType::trial_space_type::is_mortar;
     static const int mortarTag = (has_mortar_test && has_mortar_trial)? 3 : ( (has_mortar_test)? 1 : ( (has_mortar_trial)? 2 : 0 ) );
     BOOST_MPL_ASSERT_MSG( mortarTag < 3,TODO_CASE3, (mpl::int_<mortarTag>) );
 
@@ -3446,7 +3449,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     DLOG(INFO) << "[faces] Overall local assembly time : " << t2 << "\n";
     DLOG(INFO) << "[faces] Overall global assembly time : " << t3 << "\n";
 #endif
-    toc("integrating over faces", FLAGS_v>1);
+    toc("integrating over faces", Environment::logVerbosityLevel()>1);
 }
 
 template<typename Elements, typename Im, typename Expr, typename Im2>
@@ -3556,8 +3559,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 
     //-----------------------------------------------------//
     // mortar context
-    static const bool has_mortar_test = FormType::test_space_type::is_mortar;
-    static const bool has_mortar_trial = FormType::trial_space_type::is_mortar;
+    constexpr bool has_mortar_test = FormType::test_space_type::is_mortar;
+    constexpr bool has_mortar_trial = FormType::trial_space_type::is_mortar;
     static const int mortarTag = (has_mortar_test && has_mortar_trial)? 3 : ( (has_mortar_test)? 1 : ( (has_mortar_trial)? 2 : 0 ) );
     BOOST_MPL_ASSERT_MSG( mortarTag < 3,TODO_CASE3, (mpl::int_<mortarTag>) );
 
@@ -3773,7 +3776,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 
     //-----------------------------------------------------//
     // mortar context
-    static const bool has_mortar_test = FormType::test_space_type::is_mortar;
+    constexpr bool has_mortar_test = FormType::test_space_type::is_mortar;
     static const int mortarTag = (has_mortar_test)? 1 : 0;
 
     // typedef on formcontext
@@ -4173,8 +4176,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     typedef typename im_range_type::face_quadrature_type face_im_type;
 
     // mortar context
-    static const bool has_mortar_test = FormType::test_space_type::is_mortar;
-    static const bool has_mortar_trial = FormType::trial_space_type::is_mortar;
+    constexpr bool has_mortar_test = FormType::test_space_type::is_mortar;
+    constexpr bool has_mortar_trial = FormType::trial_space_type::is_mortar;
     static const int mortarTag = (has_mortar_test && has_mortar_trial)? 3 : ( (has_mortar_test)? 1 : ( (has_mortar_trial)? 2 : 0 ) );
     BOOST_MPL_ASSERT_MSG( mortarTag < 3,TODO_CASE_TEST_TRIAL_MORTAR, (mpl::int_<mortarTag>) );
 
@@ -4436,7 +4439,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
     // typedef on formcontext
     typedef typename im_range_type::face_quadrature_type face_im_type;
 
-    static const bool has_mortar_test = FormType::test_space_type::is_mortar;
+    constexpr bool has_mortar_test = FormType::test_space_type::is_mortar;
     static const int mortarTag = (has_mortar_test)? 1 : 0;
 
     typedef typename FormType::template Context<map_gmc_form_type, expression_type, face_im_type,map_gmc_expr_type> form_context_type;
@@ -4811,7 +4814,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
 
 
 template<typename Elements, typename Im, typename Expr, typename Im2>
-template <int iDimDummy,std::enable_if_t< iDimDummy == MESH_ELEMENTS , bool> >
+template <int iDimDummy>
+    requires (iDimDummy == MESH_ELEMENTS)
 typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
 Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
 {
@@ -5106,7 +5110,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                       << perf_mng.getValueInSeconds("init2.2.2") << " "
                       << perf_mng.getValueInSeconds("init2.2.3") << std::endl;
 
-            toc("integrating over elements", FLAGS_v>1);
+            toc("integrating over elements", Environment::logVerbosityLevel()>1);
             return res;
         }
         else
@@ -5303,7 +5307,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                           << ", " << perf_mng.getValueInSeconds("comp") << ")" << std::endl;
 #endif
 
-                toc("integrating over elements", FLAGS_v>1);
+                toc("integrating over elements", Environment::logVerbosityLevel()>1);
                 return res;
             }
             else
@@ -5462,12 +5466,13 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                     std::cout << Environment::worldComm().rank() <<  " Total: " << perf_mng.getValueInSeconds("total") << std::endl;
 #endif
 
-                    toc("integrating over elements", FLAGS_v>1);
+                    toc("integrating over elements", Environment::logVerbosityLevel()>1);
                     return res;
                 }
 }
 template<typename Elements, typename Im, typename Expr, typename Im2>
-template <int iDimDummy,std::enable_if_t< iDimDummy == MESH_FACES /*|| ( iDimDummy == MESH_EDGES && Integrator<Elements, Im, Expr, Im2>::eval::gm_type::nDim == 2)*/ , bool> >
+template <int iDimDummy>
+    requires (iDimDummy == MESH_FACES) /*|| ( iDimDummy == MESH_EDGES && Integrator<Elements, Im, Expr, Im2>::eval::gm_type::nDim == 2)*/
 typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
 Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
 {
@@ -5662,12 +5667,13 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
     }
     //std::cout << "res=" << res << "\n";
     //std::cout << "res1=" << res1 << "\n";
-    toc("integrating over faces", FLAGS_v>1);
+    toc("integrating over faces", Environment::logVerbosityLevel()>1);
     return res;
 }
 
  template<typename Elements, typename Im, typename Expr, typename Im2>
- template <int iDimDummy,std::enable_if_t< iDimDummy == MESH_POINTS , bool> >
+ template <int iDimDummy>
+     requires (iDimDummy == MESH_POINTS)
  typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
  Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
  {
@@ -5757,7 +5763,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
              }
          }
      }
-     toc("integrating [broken] over elements", FLAGS_v>1);
+     toc("integrating [broken] over elements", Environment::logVerbosityLevel()>1);
 
      return p0;
  }
@@ -5962,7 +5968,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
      }
      //std::cout << "res=" << res << "\n";
      //std::cout << "res1=" << res1 << "\n";
-     toc("integrating [broken] over faces", FLAGS_v>1);
+     toc("integrating [broken] over faces", Environment::logVerbosityLevel()>1);
      return p0;
  }
  /// \endcond
@@ -6014,9 +6020,10 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                                            mpl::identity<im_type>, mpl::identity<std::remove_const_t<__quad1_type>> >::type::type;
 
      template <typename QuadType,typename Quad1Type>
+         requires std::is_integral_v<QuadType> && std::is_integral_v<Quad1Type>
      static
      std::pair<_quad_type,_quad1_type>
-     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr, std::enable_if_t< std::is_integral<QuadType>::value && std::is_integral<Quad1Type>::value >* = nullptr )
+     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr )
          {
              quad_order_type exprOrder = expr_order_t::value( expr );
              quad_order_type exprOrder_1 = expr_order_t::value_1( expr );
@@ -6030,9 +6037,10 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                  return std::make_pair( Feel::im<_quad_type>( thequad ), Feel::im<_quad1_type>( thequad1 ) );
          }
      template <typename QuadType,typename Quad1Type>
+         requires std::is_integral_v<QuadType> && (!std::is_integral_v<Quad1Type>)
      static
      std::pair<_quad_type,_quad1_type>
-     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr, std::enable_if_t< std::is_integral<QuadType>::value && !std::is_integral<Quad1Type>::value >* = nullptr )
+     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr )
          {
              quad_order_type exprOrder = expr_order_t::value( expr );
              if ( thequad == quad_order_from_expression )
@@ -6041,9 +6049,10 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                  return std::make_pair( Feel::im<_quad_type>( thequad ), Feel::im<_quad1_type>( thequad1 ) );
          }
      template <typename QuadType,typename Quad1Type>
+         requires (!std::is_integral_v<QuadType>) && std::is_integral_v<Quad1Type>
      static
      std::pair<_quad_type,_quad1_type>
-     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr, std::enable_if_t< !std::is_integral<QuadType>::value && std::is_integral<Quad1Type>::value >* = nullptr )
+     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr )
          {
              if ( thequad1 == quad_order_from_expression )
                  return std::make_pair( Feel::im<_quad_type>( thequad ), Feel::im<_quad1_type>( thequad ) );
@@ -6052,9 +6061,10 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
          }
 
      template <typename QuadType,typename Quad1Type>
+         requires (!std::is_integral_v<QuadType>) && (!std::is_integral_v<Quad1Type>)
      static
      std::pair<_quad_type,_quad1_type>
-     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr, std::enable_if_t< !std::is_integral<QuadType>::value && !std::is_integral<Quad1Type>::value >* = nullptr )
+     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr )
          {
              return std::make_pair( Feel::im<_quad_type>( thequad ), Feel::im<_quad1_type>( thequad1 ) );
          }

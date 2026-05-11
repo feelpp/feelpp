@@ -27,6 +27,8 @@
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/json.hpp>
+#include <chrono>
+#include <functional>
 
 namespace Feel
 {
@@ -36,6 +38,55 @@ using namespace Feel;
 std::string preprocessCustomFormat(const std::string& input);
 // parse JSON-like input
 nl::json parseCustomFormat(const std::string& customInput);
+
+/**
+ * @brief Progress utility class for remote data operations
+ */
+class RemoteDataProgress
+{
+public:
+    enum class Operation { UPLOAD, DOWNLOAD };
+    enum class Level { QUIET, NORMAL, VERBOSE, DEBUG };
+    
+    RemoteDataProgress(Operation op, Level level = Level::NORMAL) 
+        : M_operation(op), M_level(level), M_hasErrors(false), M_successCount(0), M_totalCount(0), 
+          M_lastTransferred(0), M_lastUpdateTime(std::chrono::steady_clock::now()) {}
+    
+    void setLevel(Level level) { M_level = level; }
+    
+    // Check verbosity levels
+    bool isQuiet() const { return M_level == Level::QUIET; }
+    bool isNormal() const { return M_level >= Level::NORMAL; }
+    bool isVerbose() const { return M_level >= Level::VERBOSE; }
+    bool isDebug() const { return M_level >= Level::DEBUG; }
+    bool showDebugOutput() const { return M_level >= Level::DEBUG; }
+    
+    // Format file size in human readable format
+    std::string formatSize(std::streamsize bytes) const;
+    
+    // Progress messages
+    void startOperation(const std::string& platform, const std::string& target) const;
+    void startOperation(const std::string& description) const;
+    void startFile(const std::string& filename, std::streamsize size, int fileNum = 0, int totalFiles = 0) const;
+    void updateProgress(std::streamsize transferred, std::streamsize total) const;
+    void showProgressBar(const std::string& filename, std::streamsize transferred, std::streamsize total) const;
+    void completeFile(const std::string& filename, const std::string& id = "") const;
+    void completeFile(const std::string& filename, std::streamsize size, bool skipped = false) const;
+    void completeOperation() const;
+    void error(const std::string& message) const;
+    void debug(const std::string& message) const;
+    
+private:
+    Operation M_operation;
+    Level M_level;
+    mutable bool M_hasErrors;
+    mutable int M_successCount;
+    mutable int M_totalCount;
+    mutable std::streamsize M_lastTransferred;  // For progress bar updates
+    mutable std::chrono::steady_clock::time_point M_lastUpdateTime;  // For throttling updates
+    
+    std::string operationName() const { return M_operation == Operation::UPLOAD ? "UPLOAD" : "DOWNLOAD"; }
+};
 
 class StatusRequestHTTP : public std::tuple<bool, uint16_type, std::string>
 {
@@ -67,6 +118,14 @@ StatusRequestHTTP requestHTTPPOST( const std::string& url, const std::vector<std
                                    int timeout = 5000, int max_retries = 3, int backoff_delay = 1000 );
 StatusRequestHTTP requestHTTPCUSTOM( const std::string& customRequest, const std::string& url, const std::vector<std::string>& headers, std::ostream& ofile, int timeout = 5000, int max_retries = 3, int backoff_delay = 1000 );
 StatusRequestHTTP requestDownloadURL( const std::string& url, std::ostream& ofile, int timeout = 5000, int max_retries = 3, int backoff_delay = 1000 );
+
+// Progress callback type for HTTP downloads
+using ProgressCallback = std::function<void(std::string filename, std::streamsize transferred, std::streamsize total)>;
+
+// HTTP GET with progress callback
+StatusRequestHTTP requestHTTPGETWithProgress( const std::string& url, const std::vector<std::string>& headers, std::ostream& ofile, 
+                                            const std::string& filename, const ProgressCallback& progressCallback,
+                                            int timeout = 5000, int max_retries = 3, int backoff_delay = 1000 );
 
 std::pair<bool, nl::json> convertDescToJson( std::string const& desc );
 /**
@@ -103,6 +162,13 @@ struct RemoteData
     //! @return : the path of the downloaded file
     std::vector<std::string> download( std::string const& dir = Environment::downloadsRepository(), std::string const& filename = "" ) const;
 
+    //! Download the file with timeout
+    //! @param dir : the directory where the file is downloaded
+    //! @param filename : the filename of the downloaded file
+    //! @param timeout : timeout in milliseconds for HTTP requests (default: 30000)
+    //! @return : the path of the downloaded file
+    std::vector<std::string> download( std::string const& dir, std::string const& filename, int timeout ) const;
+
     //! Upload data on a remote storage
     //! @param dataPath : a path of a file or a folder
     //! @param parentId : id where folder is created, empty means to use folder id in the desc
@@ -110,6 +176,15 @@ struct RemoteData
     //! @return : vector of paths of the uploaded files or folders
     std::vector<std::string>
     upload( std::string const& dataPath, std::string const& parentId = "", bool sync = true ) const;
+
+    //! Upload data on a remote storage with timeout
+    //! @param dataPath : a path of a file or a folder
+    //! @param parentId : id where folder is created, empty means to use folder id in the desc
+    //! @param sync : apply MPI synchronization with returned infos (else only master rank has these infos)
+    //! @param timeout : timeout in milliseconds for HTTP requests (default: 30000)
+    //! @return : vector of paths of the uploaded files or folders
+    std::vector<std::string>
+    upload( std::string const& dataPath, std::string const& parentId, bool sync, int timeout ) const;
 
     //! Upload data on Girder
     //! @param dataToUpload : vector of (paths of a file or a folder, ids where folder is created, empty means to use folder id in the desc)
@@ -175,6 +250,15 @@ struct RemoteData
     //! Get contents of remote data (folder, item, file)
     //! @return : (Folders info, Items info, Files info)
     ContentsInfo contents() const;
+    
+    //! Get contents of remote data (folder, item, file) with progress reporting
+    //! @param progress : progress reporter for debug output
+    //! @return : (Folders info, Items info, Files info)
+    ContentsInfo contents( RemoteDataProgress& progress ) const;
+
+    //! List organizations available on the remote data platform (CKAN only)
+    //! @return : vector of organization names
+    std::vector<std::string> listOrganizations() const;
 
     class URL
     {
@@ -210,6 +294,12 @@ struct RemoteData
         //! Return true if the GitHub is initialized from a desc
         bool isInit() const;
 
+        //! Return true if enough information is available to download a file
+        bool canDownload() const { return isInit(); }
+
+        //! Return true if enough information is available to upload data (GitHub uploads not supported)
+        bool canUpload() const { return false; }
+
         //! Download file/folder from the GitHub desc
         //! @param dir : the directory where the file is downloaded
         //! @return : vector of paths of the downloaded files or the path of downloaded folder
@@ -217,7 +307,7 @@ struct RemoteData
 
       private:
         std::vector<std::string> downloadImpl( std::string const& dir ) const;
-        std::tuple<bool, std::string> downloadFolderRecursively( nl::json const& jsonResponse, std::string const& dir ) const;
+        std::tuple<bool, std::string> downloadFolderRecursively( nl::json const& jsonResponse, std::string const& dir, const RemoteDataProgress& progress ) const;
 
         static std::string errorMessage( nl::json const& jsonResponse, std::string const& defaultMsg = "", uint16_type statusCode = invalid_uint16_type_value );
 
@@ -253,11 +343,24 @@ struct RemoteData
         //! @return : vector of paths of the downloaded files or the path of downloaded folder
         std::vector<std::string> download( std::string const& dir = Environment::downloadsRepository() ) const;
 
+        //! Download file/folder from the Girder desc with timeout
+        //! @param dir : the directory where the file is downloaded
+        //! @param timeout : timeout in milliseconds for HTTP requests
+        //! @return : vector of paths of the downloaded files or the path of downloaded folder
+        std::vector<std::string> download( std::string const& dir, int timeout ) const;
+
         //! Download file/folder/item from the Girder desc
         //! @param dir : the directory where the file is downloaded
         //! @param path : the path of the file/folder/item
         //! @return : vector of paths of the downloaded files or the path of downloaded folder
         std::vector<std::string> download( const std::string& dir, const std::string& path ) const;
+
+        //! Download file/folder/item from the Girder desc with timeout
+        //! @param dir : the directory where the file is downloaded
+        //! @param path : the path of the file/folder/item
+        //! @param timeout : timeout in milliseconds for HTTP requests
+        //! @return : vector of paths of the downloaded files or the path of downloaded folder
+        std::vector<std::string> download( const std::string& dir, const std::string& path, int timeout ) const;
 
         //! Upload data on Girder
         //! @param dataPath : a path of a file or a folder
@@ -266,6 +369,15 @@ struct RemoteData
         //! @return : vector of file ids uploaded
         std::vector<std::string>
         upload( std::string const& dataPath, std::string const& parentId = "", bool sync = true ) const;
+
+        //! Upload data on Girder with timeout
+        //! @param dataPath : a path of a file or a folder
+        //! @param parentId : id where folder is created, empty means to use folder id in the desc
+        //! @param sync : apply MPI synchronization with returned infos (else only master rank has these infos)
+        //! @param timeout : timeout in milliseconds for HTTP requests
+        //! @return : vector of file ids uploaded
+        std::vector<std::string>
+        upload( std::string const& dataPath, std::string const& parentId, bool sync, int timeout ) const;
 
         //! Upload data on Girder
         //! @param dataToUpload : vector of (paths of a file or a folder, ids where folder is created, empty means to use folder id in the desc)
@@ -303,12 +415,26 @@ struct RemoteData
         //! @return : (Folders info, Items info, Files info)
         std::tuple<std::vector<std::shared_ptr<FolderInfo>>, std::vector<std::shared_ptr<ItemInfo>>, std::vector<std::shared_ptr<FileInfo>>>
         contents() const;
+        
+        //! Get contents of remote data (folder, item, file) with progress reporting
+        //! @param progress : progress reporter for debug output
+        //! @return : (Folders info, Items info, Files info)
+        std::tuple<std::vector<std::shared_ptr<FolderInfo>>, std::vector<std::shared_ptr<ItemInfo>>, std::vector<std::shared_ptr<FileInfo>>>
+        contents( RemoteDataProgress& progress ) const;
 
         //! Lookup a resource by path
+        //! Lookup a resource by path with progress reporting
         //! @param path : the path to the resource in Girder
         //! @param token : authentication token
         //! @return : JSON object containing resource information
         nl::json resourceLookup( const std::string& path, const std::string& token = "" ) const;
+
+        //! Lookup a resource by path with progress reporting
+        //! @param path : the path to the resource in Girder
+        //! @param token : authentication token
+        //! @param progress : progress reporter for debug/verbose output
+        //! @return : JSON object containing resource information
+        nl::json resourceLookup( const std::string& path, const std::string& token, const RemoteDataProgress& progress ) const;
 
         //! Delete a resource by id
         //! @param resourceId : the id of the resource in Girder
@@ -320,19 +446,26 @@ struct RemoteData
         std::string downloadFile( std::string const& fileId, std::string const& dir, std::string const& token ) const;
         std::string downloadFolder( std::string const& folderId, std::string const& dir, std::string const& token ) const;
         std::string downloadItem( std::string const& folderId, std::string const& dir, std::string const& token ) const;
+        std::string downloadFileWithProgress( std::string const& fileId, std::string const& dir, std::string const& token, const RemoteDataProgress& progress ) const;
+        std::string downloadFolderWithProgress( std::string const& folderId, std::string const& dir, std::string const& token, const RemoteDataProgress& progress ) const;
+        std::string downloadItemWithProgress( std::string const& folderId, std::string const& dir, std::string const& token, const RemoteDataProgress& progress ) const;
+        std::vector<std::string> extractZipWithProgress( const std::string& zipFilePath, const std::string& extractDir, const RemoteDataProgress& progress ) const;
         std::vector<std::string> uploadRecursively( std::string const& dataPath, std::string const& parentId, std::string const& token ) const;
         //std::string uploadFileImpl( std::string const& filePath, std::string const& parentId, std::string const& token ) const;
         std::string uploadFileImpl(const std::string& filepath, const std::string& parentId, const std::string& token, const std::string& parentType) const;
-        nl::json getResourceInfoById(const std::string& resourceId, const std::string& token) const;
+        std::string uploadFileImplWithProgress(const std::string& filepath, const std::string& parentId, const std::string& token, const std::string& parentType, const RemoteDataProgress& progress) const;
+        nl::json getResourceInfoById(const std::string& resourceId, const std::string& token, const RemoteDataProgress& progress) const;
 
         void uploadDirectoryToFolder(const std::string& localDir, const std::string& parentFolderId, const std::string& token, std::vector<std::string>& uploadedResources) const;
+        void uploadDirectoryToFolderWithProgress(const std::string& localDir, const std::string& parentFolderId, const std::string& token, std::vector<std::string>& uploadedResources, const RemoteDataProgress& progress, int itemNum, int totalItems) const;
         void uploadFilesToItem(const std::string& localPath, const std::string& itemId, const std::string& token, std::vector<std::string>& uploadedResources) const;
+        void uploadFilesToItemWithProgress(const std::string& localPath, const std::string& itemId, const std::string& token, std::vector<std::string>& uploadedResources, const RemoteDataProgress& progress, int itemNum, int totalItems) const;
         void replaceFileImpl( std::string const& filePath, std::string const& fileId, std::string const& token ) const;
         //std::string createFolderImpl( std::string const& folderName, std::string const& parentId, std::string const& token ) const;
         std::string createToken( int duration = 1 ) const;
-        bool validateToken(const std::string& token) const;
+        bool validateToken(const std::string& token, const RemoteDataProgress& progress) const;
         void removeToken( std::string const& token ) const;
-        std::string createItemImpl(const std::string& itemName, const std::string& parentFolderId, const std::string& token) const;
+        std::string createItemImpl(const std::string& itemName, const std::string& parentFolderId, const std::string& token, const RemoteDataProgress& progress) const;
         std::string createFolderImpl(const std::string& folderName, const std::string& parentId, const std::string& token, const std::string& parentType = "folder") const;
         std::string initializeUpload(const std::string& filename, std::streamsize fileSize, const std::string& parentId, const std::string& parentType, const std::string& token) const;
         std::string uploadChunk(const std::string& uploadId, std::streamsize offset, const char* data, std::streamsize size, const std::string& token, bool isFinalChunk = false) const;
@@ -377,8 +510,18 @@ struct RemoteData
         //! Download data from CKAN
         std::vector<std::string> download( std::string const& dir = Environment::downloadsRepository() ) const;
 
+        //! Download data from CKAN with timeout
+        std::vector<std::string> download( std::string const& dir, int timeout ) const;
+
+        //! Get contents of a CKAN dataset
+        std::tuple<std::vector<std::shared_ptr<FolderInfo>>, std::vector<std::shared_ptr<ItemInfo>>, std::vector<std::shared_ptr<FileInfo>>>
+        contents() const;
+
         //! Upload data to CKAN
         std::vector<std::string> upload( std::string const& dataPath, std::string const& parentId = "" ) const;
+
+        //! Upload data to CKAN with timeout
+        std::vector<std::string> upload( std::string const& dataPath, std::string const& parentId, int timeout ) const;
 
         //! Replace a resource
         void replaceResource( std::string const& resourcePath, std::string const& resourceId ) const;
@@ -391,6 +534,9 @@ struct RemoteData
 
         //! Delete a resource by ID
         bool deleteResource( const std::string& resourceId ) const;
+
+        //! List all organizations available on the CKAN instance
+        std::vector<std::string> listOrganizations() const;
 
         std::vector<std::string> upload(const std::string& dataPath, const std::string& datasetId, bool sync) const;
         std::string createDataset(const std::string& name, const std::string& organization, const std::string& description) const;
@@ -409,6 +555,9 @@ struct RemoteData
 
         //! Upload a file to CKAN
         std::string uploadFile( const std::string& filePath, const std::string& resourceId ) const;
+
+        //! Upload a file with progress reporting
+        void uploadFileWithProgress(const std::string& filePath, const std::string& datasetId, std::vector<std::string>& uploadedResources, const RemoteDataProgress& progress, int fileNum, int totalFiles, int timeout) const;
 
         //! Parse resource metadata from JSON
         nl::json parseResourceMetadata( const std::string& metadata ) const;

@@ -98,7 +98,8 @@ straightenMesh<Mesh<Simplex<3,4>>>( std::shared_ptr<Mesh<Simplex<3,4>>>,
 #endif
 }
 
-
-#include <feel/feelfilters/straightenmesh_impl.hpp>
+// Note: Implementation is in straightenmesh_impl.hpp
+// Only include it in .cpp files that instantiate the template
+// #include <feel/feelfilters/straightenmesh_impl.hpp>
 
 #endif /* FEELPP_STRAIGHTENMESH_HPP */

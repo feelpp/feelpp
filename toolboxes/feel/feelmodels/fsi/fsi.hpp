@@ -337,6 +337,11 @@ public :
          std::string const& keyword = "fsi",
          worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
          ModelBaseRepository const& modelRep = ModelBaseRepository() );
+    FSI( std::string const& prefix,
+         std::string const& keyword,
+         worldcomm_ptr_t const& _worldComm,
+         std::string const& subPrefix,
+         ModelBaseRepository const& modelRep = ModelBaseRepository() );
     FSI( self_type const & M ) = default;
 
     std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }

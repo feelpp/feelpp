@@ -33,7 +33,11 @@
 #include <boost/shared_array.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/utility.hpp>
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/vector.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/glas.hpp>

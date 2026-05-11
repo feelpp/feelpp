@@ -414,7 +414,7 @@ public :
                                  //_update=size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES));
                                  //_update=size_type(MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES));
                                  //_update=size_type(MESH_UPDATE_FACES|MESH_UPDATE_EDGES));
-            toc("ReducedBasisSpace::setup : load mesh",FLAGS_v>0);
+            toc("ReducedBasisSpace::setup : load mesh",ioption(_name="v")>0);
             tic();
             auto spaceMeshSupport = typename functionspace_type::mesh_support_vector_type();
             auto feSpace = functionspace_type::New( _mesh=mesh,
@@ -422,7 +422,7 @@ public :
                                                     _range=spaceMeshSupport
                                                     );
             this->setFunctionSpace( feSpace );
-            toc("ReducedBasisSpace::setup : init spaces",FLAGS_v>0);
+            toc("ReducedBasisSpace::setup : init spaces",ioption(_name="v")>0);
         }
 
 
@@ -732,7 +732,7 @@ public :
 #if defined(FEELPP_HAS_HDF5)
             tic();
             M_mesh->saveHDF5( meshFilename );
-            toc("ReducedBasisSpace::saveMesh",FLAGS_v>0);
+            toc("ReducedBasisSpace::saveMesh",ioption(_name="v")>0);
 #endif
         }
 

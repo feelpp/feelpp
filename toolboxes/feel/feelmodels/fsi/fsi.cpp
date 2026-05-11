@@ -40,9 +40,19 @@ FSI<FluidType,SolidType>::FSI( std::string const& prefix,
                                worldcomm_ptr_t const& worldComm,
                                ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, keyword, worldComm, "", modelRep ),
+    FSI( prefix, keyword, worldComm, "", modelRep )
+{}
+
+template< class FluidType, class SolidType >
+FSI<FluidType,SolidType>::FSI( std::string const& prefix,
+                               std::string const& keyword,
+                               worldcomm_ptr_t const& worldComm,
+                               std::string const& subPrefix,
+                               ModelBaseRepository const& modelRep )
+    :
+    super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
     ModelPhysics<mesh_fluid_type::nRealDim>( "fsi" ),
-    ModelBase( prefix, keyword, worldComm, "", modelRep ),
+    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep ),
     M_meshSize( doption(_name="hsize",_prefix=this->prefix()) ),
     M_tagFileNameMeshGenerated( soption(_name="mesh-save.tag",_prefix=this->prefix()) ),
     M_fsiCouplingType( soption(_name="coupling-type",_prefix=this->prefix()) ),

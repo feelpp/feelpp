@@ -1,3 +1,5 @@
+#include <optional>
+#include <unordered_map>
 #include <fmt/ostream.h>
 
 #include "rht_readers.hpp"
@@ -5,7 +7,20 @@
 namespace Feel
 {
 
-// Build the time-invariant part of the heat equation
+/// @brief Initialize the time-invariant part of the heat equation
+/// 
+/// Assembles bilinear and linear forms for the transient heat equation:
+///   ρ C ∂T/∂t - ∇·(k∇T) = q_rad + q_flux
+/// 
+/// This method constructs:
+/// - Bilinear form: thermal conductivity and capacitance terms
+/// - Linear form: radiative boundary conditions (blackbody emission)
+/// 
+/// Boundary conditions handled:
+/// - Radiative blackbody heat flux: σ ε T_ref⁴ (without view factors)
+/// 
+/// @note This is called once during initialization; time-dependent and
+///       nonlinear terms are added later in solveHeatEquationNonLinear()
     template<int Dim, int Order>
     void RHT<Dim,Order>::initHeatEquation()
     {
@@ -59,30 +74,24 @@ namespace Feel
                 // Recover the emissivity epsilon of the coating material associated to the emitting face
                 for ( std::string mark :  value.at("markers") )
                 {
-                    auto done = 0;
-                    for ( auto& [key, coat] : specs["/Coating"_json_pointer].items() )
-                    {
-                        for ( auto markcoat : coat.at("markers") )
-                        {
-                            if ( mark == markcoat )
-                            {
-                                std::cout << mark << " "<<markcoat <<std::endl;
-                                auto epsilon = coat["epsilon"].get<std::string>();
+                    if (auto epsilon_opt = getCoatingEpsilon(mark)) {
+                        auto epsilon = *epsilon_opt;
+                        LOG(DEBUG) << fmt::format("Matched marker '{}' with coating emissivity", mark);
 
-                                l += integrate( _range = markedfaces( M_mesh, mark ),
-                                        _expr =  sigma * expr( epsilon ) * Tref4 * id( v ) );
-                                done = 1;
-                                break;
-                            }
-                        }
-                        if ( done ){ break; }
+                        l += integrate( _range = markedfaces( M_mesh, mark ),
+                                _expr =  sigma * expr( epsilon ) * Tref4 * id( v ) );
+                    } else {
+                        LOG(WARNING) << fmt::format("No coating found for marker: {}", mark);
                     }
                 }
             }
         }
     } // end RHT<Dim,Order>::initHeatEquation
 
-// Export the temperature and the radiative flux
+/// @brief Export current temperature field for visualization
+/// 
+/// Writes the temperature solution to the exporter for post-processing
+/// in visualization tools (ParaView, etc.)
     template<int Dim, int Order>
     void RHT<Dim,Order>::exportHeat()
     {
@@ -90,7 +99,44 @@ namespace Feel
         M_e->save();
     } // end RHT<Dim,Order>::exportHeat()
 
-// Initialization function: charging mesh, defining fem spaces, view factors computation
+/// @brief Retrieve coating emissivity for a boundary marker
+/// 
+/// Searches the JSON specifications for a coating material associated
+/// with the given boundary marker and returns its emissivity value.
+/// 
+/// @param marker Boundary marker name to look up
+/// @return Emissivity expression string if found, std::nullopt otherwise
+/// 
+/// @note This helper eliminates O(n³) nested loops that were previously
+///       used for coating lookup in multiple locations
+    template<int Dim, int Order>
+    std::optional<std::string> RHT<Dim,Order>::getCoatingEpsilon(const std::string& marker) const
+    {
+        for (const auto& [key, coat] : specs["/Coating"_json_pointer].items()) {
+            auto markers_it = coat.find("markers");
+            if (markers_it != coat.end()) {
+                auto markers = markers_it->get<std::vector<std::string>>();
+                if (std::find(markers.begin(), markers.end(), marker) != markers.end()) {
+                    return coat["epsilon"].get<std::string>();
+                }
+            }
+        }
+        return std::nullopt;
+    }
+
+/// @brief Initialize mesh, finite element spaces, and view factor matrices
+/// 
+/// Performs complete problem setup:
+/// 1. Load mesh from JSON specifications
+/// 2. Create continuous (M_Xh) and discontinuous (M_Xhd0) finite element spaces
+/// 3. Compute or load view factor matrices for radiative enclosures
+/// 4. Initialize BDF (Backward Differentiation Formula) time-stepping
+/// 5. Set initial temperature field from JSON specifications
+/// 
+/// View factors F_ij represent the fraction of radiation leaving surface i
+/// that is intercepted by surface j, accounting for geometry and occlusion.
+/// 
+/// @note View factor computation can be expensive; results are cached to file
     template<int Dim, int Order>
     void RHT<Dim,Order>::init()
     {
@@ -147,8 +193,25 @@ namespace Feel
 
     }  // end RHT<Dim,Order>::init
 
-
-    // Solve non linear Heat equation with radiative BC
+/// @brief Solve nonlinear heat equation with radiative boundary conditions
+/// 
+/// Solves the coupled conduction-radiation problem using Newton-Raphson iteration:
+///   ρ C ∂T/∂t - ∇·(k∇T) = q_rad(T⁴)
+/// 
+/// Physics:
+/// - Stefan-Boltzmann radiation: q = ε σ T⁴
+/// - Net radiosity in enclosure: q_i = ε σ T_i⁴ - ε Σ_j F_ij σ T_j⁴ - Σ_j (1/ε_j - 1) F_ij q_j
+/// - Linearization: ∂(T⁴)/∂T ≈ 4T³ (tangent at current iterate)
+/// 
+/// @param T Initial temperature guess (from BDF time-stepping or previous iterate)
+/// 
+/// The method constructs Jacobian and residual lambdas that:
+/// - Handle view factor integration over cavity surfaces
+/// - Apply correct linearization for Newton convergence
+/// - Impose Dirichlet boundary conditions
+/// 
+/// @note This is called at each time step; the nonlinear solver iterates
+///       until ||residual|| < tolerance
     template<int Dim, int Order>
     void RHT<Dim,Order>::solveHeatEquationNonLinear(element_ptr_t T )
     {
@@ -189,51 +252,41 @@ namespace Feel
                                     // Recover the emissivity epsilon of the coating material associated to the marked face
                                     for ( std::string mark :  M_markers_map[bc] )
                                     {
-                                        auto done = 0;
-                                        for ( auto& [key, coat] : specs["/Coating"_json_pointer].items() )
-                                        {
-                                            for ( auto markcoat : coat.at("markers") )
-                                            {
-                                                if ( mark == markcoat )
-                                                {
-                                                    auto epsilon = coat["epsilon"].get<std::string>();
-                                                    auto idvu3 = idv( u ) * idv( u ) * idv( u );
-                                                    // Term 4 sigma * epsilon * T^3 * increment
-                                                    at += integrate( _range = markedfaces( M_mesh, mark ),
-                                                            _expr = cst(4) *  sigma * expr( epsilon ) * idvu3 * idt( u ) * id( v ));
-                                                    // Term - 4 sigma * epsilon \int T^3 dFij * increment
+                                        if (auto epsilon_opt = getCoatingEpsilon(mark)) {
+                                            auto epsilon = *epsilon_opt;
+                                            auto idvu3 = idv( u ) * idv( u ) * idv( u );
+                                            // Term 4 sigma * epsilon * T^3 * increment (linearization of d(T⁴)/dT = 4T³)
+                                            at += integrate( _range = markedfaces( M_mesh, mark ),
+                                                    _expr = cst(STEFAN_BOLTZMANN_DERIVATIVE_COEFF) * sigma * expr( epsilon ) * idvu3 * idt( u ) * id( v ));
+                                            // Term - 4 sigma * epsilon \int T^3 dFij * increment
 
-                                                    // auto cavity_markers = M_markers_map[bc];
+                                            // auto cavity_markers = M_markers_map[bc];
 
-                                                    // int i_marker_to_bb=0;
+                                            // int i_marker_to_bb=0;
 
-                                                    // // If the cavity is open, and it is assumed that a black body of fixed temperature
-                                                    // // T_ref exchances heat with the cavity, and additional term is added:
-                                                    // // - the view factor is computed using the reciprocity formula FijAi = FjiAj
-                                                    // // - the contribution is of the form \sigma T^4 * Fij
-                                                    // if(value["enclosure"]=="open")
-                                                    // {
-                                                    //     //std::cout << "Open enclosure " << bc << std::endl;
-                                                    //     double vf_marker_to_bb = 1 - M_matrix_vf_map[bc].row(i_marker_to_bb).sum(); //Fij
-                                                    //     double vf_bb_to_marker = 1 - M_matrix_vf_map[bc].col(i_marker_to_bb).sum(); //Fji
-                                                    //     auto measure_mark1 = integrate( _range=markedfaces(M_mesh,mark),_expr= cst(1.) ).evaluate()(0,0); //Ai
-                                                    //     double area_bb = measure_mark1 * vf_marker_to_bb / vf_bb_to_marker;
-                                                    //     auto T_bb = value["Tref"].get<double>();
-                                                    //     auto T_bb3 = cst(T_bb)*cst(T_bb)*cst(T_bb);
+                                            // // If the cavity is open, and it is assumed that a black body of fixed temperature
+                                            // // T_ref exchances heat with the cavity, and additional term is added:
+                                            // // - the view factor is computed using the reciprocity formula FijAi = FjiAj
+                                            // // - the contribution is of the form \sigma T^4 * Fij
+                                            // if(value["enclosure"]=="open")
+                                            // {
+                                            //     //std::cout << "Open enclosure " << bc << std::endl;
+                                            //     double vf_marker_to_bb = 1 - M_matrix_vf_map[bc].row(i_marker_to_bb).sum(); //Fij
+                                            //     double vf_bb_to_marker = 1 - M_matrix_vf_map[bc].col(i_marker_to_bb).sum(); //Fji
+                                            //     auto measure_mark1 = integrate( _range=markedfaces(M_mesh,mark),_expr= cst(1.) ).evaluate()(0,0); //Ai
+                                            //     double area_bb = measure_mark1 * vf_marker_to_bb / vf_bb_to_marker;
+                                            //     auto T_bb = value["Tref"].get<double>();
+                                            //     auto T_bb3 = cst(T_bb)*cst(T_bb)*cst(T_bb);
 
 
-                                                    //     at += integrate( _range = markedfaces( M_mesh, mark ),
-                                                    //         _expr = cst(4) *  sigma * expr( epsilon ) * T_bb3 * cst(vf_bb_to_marker) * idt( u ) * id( v ));
+                                            //     at += integrate( _range = markedfaces( M_mesh, mark ),
+                                            //         _expr = cst(4) *  sigma * expr( epsilon ) * T_bb3 * cst(vf_bb_to_marker) * idt( u ) * id( v ));
 
-                                                    // }
+                                            // }
 
-                                                    // i_marker_to_bb++;
-
-                                                    done = 1;
-                                                    break;
-                                                }
-                                            }
-                                            if ( done ){ break; }
+                                            // i_marker_to_bb++;
+                                        } else {
+                                            LOG(WARNING) << fmt::format("No coating found for marker: {}", mark);
                                         }
                                     }
                                 }
@@ -306,33 +359,28 @@ namespace Feel
                                         // Recover the emissivity epsilon of the coating material associated to the marked face
                                         for ( std::string mark :  M_markers_map[bc] )
                                         {
-                                            auto done = 0;
-                                            for ( auto& [key, coat] : specs["/Coating"_json_pointer].items() )
-                                            {
-                                                for ( auto markcoat : coat.at("markers") )
-                                                {
-                                                    if ( mark == markcoat )
-                                                    {
-                                                        auto epsilon = coat["epsilon"].get<std::string>();
-                                                        auto idvu4 = idv( u ) * idv( u ) * idv( u )* idv( u ) ;
-                                                        // Term sigma * epsilon * T^4
-                                                        lt += integrate( _range = markedfaces( M_mesh, mark ),
+                                            if (auto epsilon_opt = getCoatingEpsilon(mark)) {
+                                                auto epsilon = *epsilon_opt;
+                                                auto idvu4 = idv( u ) * idv( u ) * idv( u )* idv( u ) ;
+                                                // Term sigma * epsilon * T^4
+                                                lt += integrate( _range = markedfaces( M_mesh, mark ),
                                                                 _expr = sigma * expr( epsilon ) * idvu4 *id( v ));
 
                                                         auto cavity_markers = M_markers_map[bc];
 
-                                                        int i_marker_to_bb=0;
-                                                        int i_mark=0;
-                                                        int j_mark=0;
+                                                        // Build marker index map once for O(1) lookups
+                                                        std::unordered_map<std::string, size_t> marker_to_index;
+                                                        for (size_t idx = 0; idx < cavity_markers.size(); ++idx) {
+                                                            marker_to_index[cavity_markers[idx]] = idx;
+                                                        }
+
+                                                        int i_marker_to_bb = 0;
+                                                        size_t i_mark = marker_to_index[mark];
                                                         auto vf_field = M_Xhd0_map[bc]->element();
+                                                        
                                                         for ( std::string mark2 : cavity_markers ) // Loop on index j
                                                         {
-                                                            // Compute the index relative to marker mark
-                                                            auto it = std::find(cavity_markers.begin(),cavity_markers.end(),mark);
-                                                            i_mark = it - cavity_markers.begin();
-                                                            // Compute the index relative to marker mark2
-                                                            auto jt = std::find(cavity_markers.begin(),cavity_markers.end(),mark2);
-                                                            j_mark = jt - cavity_markers.begin();
+                                                            size_t j_mark = marker_to_index[mark2];
 
                                                             vf_field.zero();
 
@@ -342,69 +390,51 @@ namespace Feel
 
                                                             auto measure_mark1 = integrate( _range=markedfaces(M_mesh,mark),_expr= cst(1.) ).evaluate()(0,0);
 
-                                                            // Term - sigma * epsilon \int T^4 dFij
+                                                            // Term - sigma * epsilon \int T^4 dFij (negative for outgoing radiation)
 
                                                             lt += integrate( _range=markedfaces(M_mesh,mark),
-                                                                            _expr= cst(-1)*cst(T4residual_scal_vf)/cst(measure_mark1) *id(v) );
+                                                                            _expr= cst(-1.0) * cst(T4residual_scal_vf) / cst(measure_mark1) * id(v) );
 
-                                                            auto done2=0;
-                                                            for ( auto& [key2, coat2] : specs["/Coating"_json_pointer].items() )
-                                                            {
-                                                                for ( auto markcoat2 : coat2.at("markers") )
-                                                                {
-                                                                    if ( mark2 == markcoat2 )
-                                                                    {
-                                                                        auto epsilon_mark2 = coat2["epsilon"].get<std::string>();
+                                                            if (auto epsilon_mark2_opt = getCoatingEpsilon(mark2)) {
+                                                                auto epsilon_mark2 = *epsilon_mark2_opt;
 
-                                                                        auto flux_other_surface = integrate(_range=markedfaces(M_mesh,mark2), _expr= idv(M_conductivity) * gradv(u) * idv(vf_field) * N() ).evaluate()(0,0);
+                                                                auto flux_other_surface = integrate(_range=markedfaces(M_mesh,mark2), _expr= idv(M_conductivity) * gradv(u) * idv(vf_field) * N() ).evaluate()(0,0);
 
-                                                                        // Term - \int sigma * (1/epsilon-1) * q dFij
+                                                                // Term - \int sigma * (1/epsilon-1) * q dFij (reflection term for non-black surfaces)
 
-                                                                        lt += integrate( _range=markedfaces(M_mesh,mark),
-                                                                                        _expr = cst(-1)*expr(epsilon)* (cst(1. ) /expr(epsilon_mark2)-cst(1.))/cst(measure_mark1) * cst(flux_other_surface) * id(v) );
-
-                                                                        done2 = 1;
-                                                                        break;
-                                                                    }
-                                                                }
-                                                                if ( done ){ break; }
+                                                                lt += integrate( _range=markedfaces(M_mesh,mark),
+                                                                                _expr = cst(-1.0) * expr(epsilon) * (cst(1.0) / expr(epsilon_mark2) - cst(1.0)) / cst(measure_mark1) * cst(flux_other_surface) * id(v) );
+                                                            } else {
+                                                                LOG(WARNING) << fmt::format("No coating found for marker: {}", mark2);
                                                             }
 
                                                         }
 
                                                         // If the cavity is open, and it is assumed that a black body of fixed temperature
-                                                        // T_ref exchances heat with the cavity, and additional term is added:
+                                                        // T_ref exchanges heat with the cavity, an additional term is added:
                                                         // - the view factor is computed using the reciprocity formula FijAi = FjiAj
                                                         // - the contribution is of the form \sigma T^4 * Fij
                                                         if(value["enclosure"]=="open")
                                                         {
-                                                            //std::cout << "Open enclosure " << bc << std::endl;
-                                                            double vf_marker_to_bb = 1 - M_matrix_vf_map[bc].row(i_marker_to_bb).sum(); //Fij
-                                                            double vf_bb_to_marker = 1 - M_matrix_vf_map[bc].col(i_marker_to_bb).sum(); //Fji
-                                                            auto measure_mark1 = integrate( _range=markedfaces(M_mesh,mark),_expr= cst(1.) ).evaluate()(0,0); //Ai
+                                                            double vf_marker_to_bb = 1.0 - M_matrix_vf_map[bc].row(i_marker_to_bb).sum(); //Fij
+                                                            double vf_bb_to_marker = 1.0 - M_matrix_vf_map[bc].col(i_marker_to_bb).sum(); //Fji
+                                                            auto measure_mark1 = integrate( _range=markedfaces(M_mesh,mark),_expr= cst(1.0) ).evaluate()(0,0); //Ai
                                                             double area_bb = measure_mark1 * vf_marker_to_bb / vf_bb_to_marker;
                                                             auto T_bb = value["Tref"].get<double>();
-                                                            auto T_bb4 = cst(T_bb)*cst(T_bb)*cst(T_bb)*cst(T_bb);
+                                                            auto T_bb4 = cst(T_bb) * cst(T_bb) * cst(T_bb) * cst(T_bb);
 
-
+                                                            // Negative sign for incoming radiation from black body
                                                             lt += integrate( _range = markedfaces( M_mesh, mark ),
-                                                                _expr = cst(-1) * sigma * expr( epsilon ) * T_bb4 * cst(vf_bb_to_marker)/cst(measure_mark1) * id( v ));
-
+                                                                _expr = cst(-1.0) * sigma * expr( epsilon ) * T_bb4 * cst(vf_bb_to_marker) / cst(measure_mark1) * id( v ));
                                                         }
 
                                                         i_marker_to_bb++;
-
-                                                        done = 1;
-                                                        break;
+                                                    } else {
+                                                        LOG(WARNING) << fmt::format("No coating found for marker: {}", mark);
                                                     }
-                                                }
-                                                if ( done ){ break; }
-                                            }
-                                        }
-                                    }
-                                }
-
-                            lt_vec->close();
+                                                } // end for mark
+                                            } // end for bc radiative_enclosure_heat_flux
+                                        } // end if radiative_enclosure_heat_flux
 
                             auto temp = M_Xh->element();
                             temp = *lt_vec;
@@ -441,8 +471,17 @@ namespace Feel
 
     } // end RHT<Dim,Order>::solveHeatEquationNonLinear()
 
-
-    // Routine solving the heat transfer problem
+/// @brief Execute time-dependent radiative heat transfer simulation
+/// 
+/// Main driver routine that:
+/// 1. Initializes mesh, spaces, and view factors via init()
+/// 2. Assembles time-invariant forms via initHeatEquation()
+/// 3. Time-steps using BDF (Backward Differentiation Formula)
+/// 4. Solves nonlinear problem at each time step
+/// 5. Exports results for visualization
+/// 
+/// Time-stepping loop continues until BDF indicates completion
+/// (steady-state or final time reached).
     template<int Dim, int Order>
     void RHT<Dim,Order>::executeNonLinear()
     {
@@ -455,7 +494,7 @@ namespace Feel
         // Solve the time dependent heat transfer problem
         for( ;!M_bdf->isFinished(); )
         {
-            std::cout << fmt::format("It's time {} of the resolution of the heat equation",M_bdf->time()) <<std::endl;
+            LOG(INFO) << fmt::format("Solving heat equation at time t = {:.6e}", M_bdf->time());
 
             // Solve the heat transfer problem at each time instant by solving a Picard loop to ensure convergence
             // of temperature and fluxes
@@ -468,13 +507,26 @@ namespace Feel
         }
     } // end RHT<Dim,Order>::executeNonLinear()
 
-    // Routine comparing the results with literature
+/// @brief Validate simulation results against reference values
+/// 
+/// Compares computed quantities with expected values from literature
+/// or analytical solutions specified in JSON configuration.
+/// 
+/// Supported checks:
+/// - Average temperature over specified boundary markers
+/// - Average heat flux computed from temperature gradient
+/// 
+/// Uses Boost.Test CHECK() macro to report pass/fail with relative
+/// tolerance defined in JSON specifications.
+/// 
+/// @note This is the test validation step; failures indicate either
+///       numerical issues or incorrect problem setup
     template<int Dim, int Order>
     void RHT<Dim,Order>::checkResults()
     {
         for(auto [key,struc] : specs["/Checker"_json_pointer].items())
         {
-            std::cout << "key" << key << std::endl;
+            LOG(INFO) << fmt::format("Checker key: {}", key);
             if(struc["type"].get<std::string>()=="average")
             {
                 auto markers = struc["markers"].get<std::vector<std::string>>();
@@ -492,18 +544,19 @@ namespace Feel
 
                     CHECK( math::abs(rel_difference) < tol );
 
-                    std::cout << "average_T" << average_T << std::endl;
-                    std::cout << "markers" << markers << std::endl;
-                    std::cout << "value" << value << std::endl;
-                    std::cout << "tol" << tol << std::endl;
-                    std::cout << "rel_difference" << rel_difference << std::endl;
+                    LOG(INFO) << fmt::format("Average temperature: {:.6e}", average_T);
+                    LOG(INFO) << fmt::format("Markers: [{}]", fmt::join(markers, ", "));
+                    LOG(INFO) << fmt::format("Expected value: {:.6e}", value);
+                    LOG(INFO) << fmt::format("Tolerance: {:.6e}", tol);
+                    LOG(INFO) << fmt::format("Relative difference: {:.6e}", rel_difference);
 
                 }
                 else if (struc["quantity"]=="flux-from-temperature")
                 {
                     auto T_val = idv(M_currentTemp.T());
                     auto T4 = T_val * T_val * T_val * T_val;
-                    auto average_q = integrate(_range=markedfaces(M_mesh,markers),_expr=  cst(-1) * idv(M_conductivity) * gradv(M_currentTemp.T()) * N() ).evaluate()(0,0);
+                    // Negative sign: heat flux convention (outward normal)
+                    auto average_q = integrate(_range=markedfaces(M_mesh,markers),_expr= cst(-1.0) * idv(M_conductivity) * gradv(M_currentTemp.T()) * N() ).evaluate()(0,0);
                     auto measure_markers = integrate(_range=markedfaces(M_mesh,markers),_expr=cst(1.)).evaluate()(0,0);
                     average_q /=measure_markers;
 
@@ -511,20 +564,20 @@ namespace Feel
 
                     CHECK( math::abs(rel_difference) < tol );
 
-                    std::cout << "average_q" << average_q << std::endl;
-                    std::cout << "markers" << markers << std::endl;
-                    std::cout << "value" << value << std::endl;
-                    std::cout << "tol" << tol << std::endl;
-                    std::cout << "rel_difference" << rel_difference << std::endl;
+                    LOG(INFO) << fmt::format("Average flux: {:.6e}", average_q);
+                    LOG(INFO) << fmt::format("Markers: [{}]", fmt::join(markers, ", "));
+                    LOG(INFO) << fmt::format("Expected value: {:.6e}", value);
+                    LOG(INFO) << fmt::format("Tolerance: {:.6e}", tol);
+                    LOG(INFO) << fmt::format("Relative difference: {:.6e}", rel_difference);
                 }
                 else
                 {
-                    std::cout << fmt::format("Quantity average checker not supported ");
+                    LOG(WARNING) << fmt::format("Quantity '{}' not supported for average checker", struc["quantity"].get<std::string>());
                 }
             }
             else
             {
-                std::cout << fmt::format("Non average checker not supported ");
+                LOG(WARNING) << fmt::format("Checker type '{}' not supported (only 'average' is implemented)", struc["type"].get<std::string>());
             }
         }
 

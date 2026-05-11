@@ -29,6 +29,7 @@
 #pragma once
 
 #include <string>
+#include <stdexcept>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/json.hpp>
 
@@ -43,14 +44,16 @@ enum class Location {
     global=10, ///! global repository
     relative, ///! relative to current directory
     absolute, ///! absolute directory given 
-    git ///! relative to git repository
+    git, ///! relative to git repository
+    custom ///! custom location determined by a callback function
 };
 // map TaskState values to JSON as strings
 NLOHMANN_JSON_SERIALIZE_ENUM( Location, { { Location::unknown, nullptr },
                                           { Location::global, "global" },
                                           { Location::relative, "relative" },
                                           { Location::absolute, "absolute" },
-                                          { Location::git, "git" } } )
+                                          { Location::git, "git" },
+                                          { Location::custom, "custom" } } )
 /**
  * @brief get the location strings assocation to enum Location
  * 
@@ -64,6 +67,7 @@ inline const std::map<Location, std::string> &location_strings()
         {Location::relative, "relative"},
         {Location::absolute, "absolute"},
         {Location::git, "git"},
+        {Location::custom, "custom"},
     };
     return location_strings;
 }
@@ -97,6 +101,7 @@ inline Location location(const std::string &location_string) noexcept
     if ( location_string  == "relative" ) return Location::relative;
     if ( location_string  == "absolute" ) return Location::absolute;
     if ( location_string  == "git" ) return Location::git;
+    if ( location_string  == "custom" ) return Location::custom;
     return Location::unknown;
 };
 struct GithubUser
@@ -140,6 +145,15 @@ public:
         Config( nl::json && j );
         Config( fs::path d, Location l);
         Config( fs::path d, Location l, nl::json const& dat );
+        
+        /**
+         * @brief Construct a Config with a custom location callback
+         * 
+         * @param d directory path (used as fallback or within callback)
+         * @param callback function to compute the repository root after options are processed
+         */
+        Config( fs::path d, std::function<fs::path()> callback );
+        
         Owner owner;
         Dist dist;
         fs::path feelppdb = "feelppdb";
@@ -151,6 +165,10 @@ public:
         fs::path geos = "geo";
         bool append_date = false;
         bool append_np = true;
+        
+        /// @brief Custom callback to determine repository location (used when location == Location::custom)
+        std::function<fs::path()> custom_location_callback;
+        
         NLOHMANN_DEFINE_TYPE_INTRUSIVE( Config, owner, dist, feelppdb, location, global_root, directory, exprs, logs, geos, append_date, append_np )
     };
 
@@ -191,12 +209,17 @@ public:
      * 
      * @param d directory path
      */
-    Repository& configure( fs::path const& d ) { config_.directory = d; return configure(); }
+    Repository& configure( fs::path const& d ) { config_.directory = d; configured_ = true; return configure(); }
 
     /**
      * @return get the root of the repository where the results will be stored
      */
-    fs::path const& root()  const { return root_; }
+    fs::path const& root()  const
+    {
+        if ( !configured_ )
+            throw std::logic_error("Repository::root() called before configure()");
+        return root_;
+    }
 
     /**
      * @return get the global root repository associated to the global location
@@ -209,7 +232,12 @@ public:
      *
      * @return get the geo directory of the repository
      */
-    fs::path const& geo()  const { return geo_; }
+    fs::path const& geo()  const
+    {
+        if ( !configured_ )
+            throw std::logic_error("Repository::geo() called before configure()");
+        return geo_;
+    }
 
     /**
      * @brief get the expressions directory
@@ -217,7 +245,12 @@ public:
      *
      * @return get the exprs directory of the repository
      */
-    fs::path const& exprs()  const { return exprs_; }
+    fs::path const& exprs()  const
+    {
+        if ( !configured_ )
+            throw std::logic_error("Repository::exprs() called before configure()");
+        return exprs_;
+    }
 
     /**
      * @brief get the logs directory
@@ -225,7 +258,12 @@ public:
      *
      * @return get the logs directory of the repository
      */
-    fs::path const& logs() const { return logs_; }
+    fs::path const& logs() const
+    {
+        if ( !configured_ )
+            throw std::logic_error("Repository::logs() called before configure()");
+        return logs_;
+    }
 
     /**
      * @brief the result repository absolute directory 
@@ -247,6 +285,13 @@ public:
      * @return fs::path 
      */
     fs::path relativeDirectory() const;
+
+    /**
+     * @brief check if the repository is configured
+     *
+     * @return true if repository is configured, false otherwise
+     */
+    bool isConfigured() const noexcept { return configured_; }
 
     /**
      *
@@ -277,6 +322,12 @@ public:
      * @return true if repository is relative to a git repository, false otherwise
      */
     bool isGit() const { return config_.location == Location::git; }
+
+    /**
+     * 
+     * @return true if repository uses a custom location callback, false otherwise
+     */
+    bool isCustom() const { return config_.location == Location::custom; }
 
     /**
      * @brief the user name
@@ -313,7 +364,20 @@ public:
      */
     Repository& cd();
 
+    /**
+     * @brief Verify that all repository directories exist
+     * 
+     * This function checks that root, geo, logs, results, and exprs directories
+     * have been created. It's useful for debugging to find where directory access
+     * happens before creation.
+     * 
+     * @param caller_info Optional string describing where this check is called from
+     * @return true if all directories exist, false otherwise
+     */
+    bool verifyDirectoriesExist(std::string const& caller_info = "") const;
+
 private:
+    bool configured_ = false;
     Config config_;
     fs::path root_;
     fs::path geo_;
@@ -332,5 +396,46 @@ inline Repository::Config localRepository( std::string reldir, nl::json d = {} )
 inline Repository::Config unknownRepository()
 {
     return Repository::Config({}, Location::unknown, {} );
+}
+/**
+ * @brief Create a Repository Config with custom location callback
+ * 
+ * The callback will be invoked during Repository::configure() after options are processed.
+ * This allows for dynamic repository location based on runtime configuration.
+ * 
+ * @param reldir fallback directory (can be used within callback)
+ * @param callback function that returns the computed repository path
+ * @return Repository::Config configured with custom location
+ */
+inline Repository::Config customRepository( std::string reldir, std::function<fs::path()> callback )
+{
+    return Repository::Config(fs::path(reldir), callback);
+}
+
+/**
+ * @brief Create repository config for git location
+ * 
+ * Tells Feel++ to detect the nearest .git directory and use <git-root>/feelppdb
+ * 
+ * @param start_path starting path for .git search (default: current directory)
+ * @return Repository::Config configured with git location
+ */
+inline Repository::Config gitRepository( fs::path start_path = "." )
+{
+    return Repository::Config(start_path, Location::git);
+}
+
+/**
+ * @brief Create repository config for absolute path location
+ * 
+ * Use a fixed absolute path for the repository root.
+ * Useful for temporary directories or per-run storage.
+ * 
+ * @param abs_path absolute path to use as repository root
+ * @return Repository::Config configured with absolute location
+ */
+inline Repository::Config absoluteRepository( fs::path abs_path )
+{
+    return Repository::Config(abs_path, Location::absolute);
 }
 } // namespace Feel

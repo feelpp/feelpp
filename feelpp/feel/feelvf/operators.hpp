@@ -293,9 +293,9 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             static inline const uint16_type rank = fe_type::rank;              \
             static inline const uint16_type nComponents1 = fe_type::nComponents1; \
             static inline const uint16_type nComponents2 = fe_type::nComponents2; \
-            static const bool is_terminal = VF_OPERATOR_TERMINAL(O);    \
-            static const bool is_hdiv_conforming = Feel::is_hdiv_conforming_v<fe_type>; \
-            static const bool is_hcurl_conforming = Feel::is_hcurl_conforming_v<fe_type>; \
+            static inline const bool is_terminal = VF_OPERATOR_TERMINAL(O);    \
+            static inline const bool is_hdiv_conforming = Feel::is_hdiv_conforming_v<fe_type>; \
+            static inline const bool is_hcurl_conforming = Feel::is_hcurl_conforming_v<fe_type>; \
             inline static const size_type context = (is_hdiv_conforming_v<fe_type>?(VF_OPERATOR_CONTEXT( O )|vm::JACOBIAN|vm::KB)\
                                                      :(is_hcurl_conforming_v<fe_type>?(VF_OPERATOR_CONTEXT( O )|vm::KB):VF_OPERATOR_CONTEXT( O )))|(VF_OP_TYPE_IS_VALUE( T )?vm::INTERPOLANT:vm::BASIS_FUNCTION); \
                                                                         \
@@ -303,21 +303,21 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             template<typename Func>                                     \
                 struct HasTestFunction                                  \
             {                                                           \
-                static const bool result = VF_OP_SWITCH( BOOST_PP_OR( VF_OP_TYPE_IS_TRIAL( T ), VF_OP_TYPE_IS_VALUE( T ) ), false , \
+                static inline const bool result = VF_OP_SWITCH( BOOST_PP_OR( VF_OP_TYPE_IS_TRIAL( T ), VF_OP_TYPE_IS_VALUE( T ) ), false , \
                                                          (boost::is_same<Func,fe_type>::value||(element_type::is_mortar&&boost::is_same<Func,mortar_fe_type>::value)) ); \
             };                                                          \
                                                                         \
             template<typename Func>                                     \
                 struct HasTrialFunction                                 \
             {                                                           \
-                static const bool result = VF_OP_SWITCH( VF_OP_TYPE_IS_TRIAL( T ), \
+                static inline const bool result = VF_OP_SWITCH( VF_OP_TYPE_IS_TRIAL( T ), \
                                                          (boost::is_same<Func,fe_type>::value||(element_type::is_mortar&&boost::is_same<Func,mortar_fe_type>::value)), false ); \
             };                                                          \
             template<typename Func>                                     \
-                static const bool has_test_basis = VF_OP_SWITCH( BOOST_PP_OR( VF_OP_TYPE_IS_TRIAL( T ), VF_OP_TYPE_IS_VALUE( T ) ), false , \
+                static inline const bool has_test_basis = VF_OP_SWITCH( BOOST_PP_OR( VF_OP_TYPE_IS_TRIAL( T ), VF_OP_TYPE_IS_VALUE( T ) ), false , \
                                                                  (boost::is_same<Func,fe_type>::value||(element_type::is_mortar&&boost::is_same<Func,mortar_fe_type>::value)) ); \
             template<typename Func>                                     \
-                static const bool has_trial_basis = VF_OP_SWITCH( VF_OP_TYPE_IS_TRIAL( T ), \
+                static inline const bool has_trial_basis = VF_OP_SWITCH( VF_OP_TYPE_IS_TRIAL( T ), \
                                                                   (boost::is_same<Func,fe_type>::value||(element_type::is_mortar&&boost::is_same<Func,mortar_fe_type>::value)), false ); \
             using basis_t = typename mpl::if_<mpl::bool_<element_type::is_mortar>,mortar_fe_type,fe_type>::type; \
             using test_basis = VF_OP_SWITCH( BOOST_PP_OR( VF_OP_TYPE_IS_TRIAL( T ), VF_OP_TYPE_IS_VALUE( T ) ), std::nullptr_t, basis_t); \
@@ -371,9 +371,9 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                                                         \
             template <typename TheFeType = fe_type>                     \
             evaluate_type evaluate(bool p,                              \
-                                   typename std::enable_if_t< isP0Continuous<TheFeType>::result && \
-                                   std::is_same_v< this_type, OpId<element_type, VF_OP_TYPE_OBJECT(T)> > && \
-                                   VF_OP_TYPE_IS_VALUE( T ) >* = nullptr ) const \
+                                   typename std::enable_if_t< isP0Continuous<TheFeType>::result &&   \
+                                                                std::is_same_v< this_type, OpId<element_type, VF_OP_TYPE_OBJECT(T)> > && \
+                                                                VF_OP_TYPE_IS_VALUE( T ) >* = nullptr ) const \
             {                                                           \
                 evaluate_type res = evaluate_type::Constant( 0. );      \
                 if ( this->e().functionSpace()->nLocalDofWithGhost() ) \
@@ -506,10 +506,10 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                                                       >::type >::type::value; \
                 struct is_zero {                                        \
                     /*static const bool value = !(dim_ok && fe_ok);*/   \
-                    static const bool value = false;                    \
+                    static inline const bool value = false;                    \
                 };                                                      \
                                                                         \
-                static const bool isSameGeo = std::is_same_v<typename gmc_type::element_type,geoelement_type>; \
+                static inline const bool isSameGeo = std::is_same_v<typename gmc_type::element_type,geoelement_type>; \
                                                                         \
                                                                         \
                 tensor( this_type const& expr,                          \
@@ -603,7 +603,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     void updateContext( CTX const& ... ctx )            \
                 {                                                       \
                     typedef typename boost::remove_reference<typename boost::remove_const< decltype(*M_expr.e().selectContext( ctx...) ) >::type >::type ctxspace_type; \
-                    static const bool ctxspace_is_geometricspace = boost::is_base_of<ContextGeometricBase/*GeometricSpaceBase*/,ctxspace_type>::type::value; \
+                    constexpr bool ctxspace_is_geometricspace = boost::is_base_of<ContextGeometricBase/*GeometricSpaceBase*/,ctxspace_type>::type::value; \
                                                                         \
                     std::fill( M_loc.data(), M_loc.data()+M_loc.num_elements(), M_mzero.constant(0.) ); \
                     /*M_expr.e().VF_OPERATOR_SYMBOL( O )( *ctx, M_loc );*/ \
@@ -799,9 +799,10 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
         };                                                              \
     template <class ELEM                                                \
               BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ),  BOOST_PP_COMMA, BOOST_PP_EMPTY )() \
-        BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ),  BOOST_PP_IDENTITY( VF_OP_TYPE_TYPE( T ) sw ), BOOST_PP_EMPTY )() > \
+        BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ),  BOOST_PP_IDENTITY( VF_OP_TYPE_TYPE( T ) sw ), BOOST_PP_EMPTY )(),  \
+              std::enable_if_t<std::is_base_of<FunctionSpaceBase::ElementBase,ELEM>::value>* = nullptr > \
     inline Expr< VF_OPERATOR_NAME( O )< ELEM, VF_OP_TYPE_OBJECT(T)> >   \
-    BOOST_PP_CAT( VF_OPERATOR_SYMBOL(O), VF_OP_TYPE_SUFFIX(T) )( ELEM const& expr,bool useInterpWithConfLoc=false, std::enable_if_t<std::is_base_of<FunctionSpaceBase::ElementBase,ELEM>::value>* = nullptr ) \
+    BOOST_PP_CAT( VF_OPERATOR_SYMBOL(O), VF_OP_TYPE_SUFFIX(T) )( ELEM const& expr,bool useInterpWithConfLoc=false ) \
         {                                                               \
             typedef VF_OPERATOR_NAME( O )< ELEM, VF_OP_TYPE_OBJECT(T)> expr_t; \
             return Expr< expr_t >(  expr_t(expr,useInterpWithConfLoc) ); \
@@ -809,9 +810,10 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                                                         \
     template <class ELEM                                                \
               BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ),  BOOST_PP_COMMA, BOOST_PP_EMPTY )() \
-        BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ),  BOOST_PP_IDENTITY( VF_OP_TYPE_TYPE( T ) sw ), BOOST_PP_EMPTY )() > \
+        BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ),  BOOST_PP_IDENTITY( VF_OP_TYPE_TYPE( T ) sw ), BOOST_PP_EMPTY )(),  \
+              std::enable_if_t<std::is_base_of<FunctionSpaceBase::ElementBase,ELEM>::value>* = nullptr > \
     inline Expr< VF_OPERATOR_NAME( O )< ELEM, VF_OP_TYPE_OBJECT(T)> >   \
-    BOOST_PP_CAT( VF_OPERATOR_SYMBOL(O), VF_OP_TYPE_SUFFIX(T) )( std::shared_ptr<ELEM> expr,bool useInterpWithConfLoc=false, std::enable_if_t<std::is_base_of<FunctionSpaceBase::ElementBase,ELEM>::value>* = nullptr ) \
+    BOOST_PP_CAT( VF_OPERATOR_SYMBOL(O), VF_OP_TYPE_SUFFIX(T) )( std::shared_ptr<ELEM> expr,bool useInterpWithConfLoc=false ) \
         {                                                               \
             typedef VF_OPERATOR_NAME( O )< ELEM, VF_OP_TYPE_OBJECT(T)> expr_t; \
             return Expr< expr_t >(  expr_t(*expr,useInterpWithConfLoc) ); \

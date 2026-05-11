@@ -93,7 +93,7 @@ public:
      */
     typedef typename primal_space_type::polyset_type polyset_type;
 
-    static const bool is_modal = false;
+    static inline const bool is_modal = false;
 
     typedef PDual<P, Pts> dual_space_type;
 

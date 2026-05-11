@@ -65,22 +65,22 @@ public:
     static const uint16_type nDim = Dim;
     static const uint16_type nOrder = Order;
     static const uint16_type nRealDim = RealDim;
-    static const bool isTransformationEquivalent = true;
+    static inline const bool isTransformationEquivalent = true;
     typedef OrthonormalPolynomialSet<Dim, Order,RealDim, PolySetType, T, TheTAG, Simplex> self_type;
     typedef self_type component_basis_type;
 
     typedef typename super::polyset_type polyset_type;
-    static const bool is_tensor2 = polyset_type::is_tensor2;
-    static const bool is_tensor2symm = polyset_type::is_tensor2 && is_symm_v<polyset_type>;
-    static const bool is_vectorial = polyset_type::is_vectorial;
-    static const bool is_scalar = polyset_type::is_scalar;
-    static const bool is_continuous = false;
-    static const bool is_modal = true;
+    static inline const bool is_tensor2 = polyset_type::is_tensor2;
+    static inline const bool is_tensor2symm = polyset_type::is_tensor2 && is_symm_v<polyset_type>;
+    static inline const bool is_vectorial = polyset_type::is_vectorial;
+    static inline const bool is_scalar = polyset_type::is_scalar;
+    static inline const bool is_continuous = false;
+    static inline const bool is_modal = true;
     static const uint16_type nComponents = polyset_type::nComponents;
     static const uint16_type nComponents1 = polyset_type::nComponents1;
     static const uint16_type nComponents2 = polyset_type::nComponents2;
-    static const bool is_product = true;
-    static const bool isContinuous = false;
+    static inline const bool is_product = true;
+    static inline const bool isContinuous = false;
     typedef Discontinuous continuity_type;
 
     typedef typename super::component_type component_type;
@@ -256,21 +256,21 @@ public:
     static const uint16_type nDim = Dim;
     static const uint16_type nOrder = Order;
     static const uint16_type nRealDim = RealDim;
-    static const bool isTransformationEquivalent = true;
+    static inline const bool isTransformationEquivalent = true;
 
     typedef OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType, T, TheTAG, Hypercube> self_type;
     typedef self_type component_basis_type;
 
     typedef typename super::polyset_type polyset_type;
-    static const bool is_tensor2 = polyset_type::is_tensor2;
-    static const bool is_tensor2symm = polyset_type::is_tensor2 && is_symm_v<polyset_type>;
-    static const bool is_vectorial = polyset_type::is_vectorial;
-    static const bool is_scalar = polyset_type::is_scalar;
-    static const bool is_continuous = false;
-    static const bool is_modal = true;
+    static inline const bool is_tensor2 = polyset_type::is_tensor2;
+    static inline const bool is_tensor2symm = polyset_type::is_tensor2 && is_symm_v<polyset_type>;
+    static inline const bool is_vectorial = polyset_type::is_vectorial;
+    static inline const bool is_scalar = polyset_type::is_scalar;
+    static inline const bool is_continuous = false;
+    static inline const bool is_modal = true;
     static const uint16_type nComponents = polyset_type::nComponents;
-    static const bool is_product = true;
-    static const bool isContinuous = false;
+    static inline const bool is_product = true;
+    static inline const bool isContinuous = false;
     typedef Discontinuous continuity_type;
 
     typedef typename super::component_type component_type;

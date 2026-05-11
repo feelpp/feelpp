@@ -198,7 +198,7 @@ public :
                     using the_expr_expand_type = std::decay_t<decltype(evec.front().expr().applySymbolsExpr( M_se ))>;
                     //using tensor_from_expr_type = tensorFromExpr<Geo_t,Basis_i_t,Basis_j_t,the_expr_type,the_expr_expand_type>;
 
-                    static const bool is_same_expr = std::is_same_v<the_expr_type,the_expr_expand_type>;
+                    constexpr bool is_same_expr = std::is_same_v<the_expr_type,the_expr_expand_type>;
                     using choice = typename std::conditional< is_same_expr, DeferToExpandIsSameType<tensorFromExprClassic>, DeferToExpandIsNotSameType<tensorFromExpr>  >::type;
                     using tensor_from_expr_type = runRRR< choice, Geo_t/*,Basis_i_t,Basis_j_t*/,the_expr_type,the_expr_expand_type >;
 
@@ -632,7 +632,8 @@ struct SymbolsExpr : public SymbolsExprBase
 
         TensorContext() = default;
 
-        template <typename TheMetType, std::enable_if_t<std::is_same_v<std::decay_t<TheMetType>, map_expr_tensor_type>,bool> = true >
+        template <typename TheMetType>
+            requires std::is_same_v<std::decay_t<TheMetType>, map_expr_tensor_type>
         TensorContext( std::shared_ptr<symbols_expr_type> const& se, TheMetType && met )
             :
             M_se( se ),
@@ -770,7 +771,7 @@ constexpr bool is_symbols_expression_tensor_context_v = is_symbols_expression_te
 template<typename T1,typename... ExprT>
 struct SymbolsExprTraits
 {
-    static constexpr auto callApply = [](const auto& ...exprs) { return Feel::detail::AdvancedConcatOfTupleContainerType<SymbolsExprTag,SymbolExprTag>::template apply( exprs... ); };
+    static constexpr auto callApply = [](const auto& ...exprs) { return Feel::detail::AdvancedConcatOfTupleContainerType<SymbolsExprTag,SymbolExprTag>::apply( exprs... ); };
     using tuple_type = std::decay_t<decltype( hana::unpack( hana::tuple<T1,ExprT...>{},  callApply ) )>;
     using type = SymbolsExpr<tuple_type>;
 };
@@ -814,11 +815,12 @@ template<typename... ExprT>
 symbols_expression_t<ExprT...>
 symbolsExpr( const ExprT&... exprs )
 {
-    return symbols_expression_t<ExprT...>(Feel::detail::AdvancedConcatOfTupleContainerType<SymbolsExprTag,SymbolExprTag>::template apply( exprs... ) );
+    return symbols_expression_t<ExprT...>(Feel::detail::AdvancedConcatOfTupleContainerType<SymbolsExprTag,SymbolExprTag>::apply( exprs... ) );
 }
 template<typename T>
+    requires (is_symbols_expression_v<T> || is_symbols_expression_tensor_context_v<T>)
 symbols_expression_t<T> const&
-symbolsExpr( T const& se, std::enable_if_t< (is_symbols_expression_v<T> || is_symbols_expression_tensor_context_v<T>) >* = nullptr )
+symbolsExpr( T const& se )
 {
     return se;
 }

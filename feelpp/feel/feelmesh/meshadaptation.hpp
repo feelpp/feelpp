@@ -83,7 +83,7 @@ namespace Feel
     class MeshAdaptation
     {
     public:
-        static const bool isP1 = (Order == 1);
+        static inline const bool isP1 = (Order == 1);
 
         //typedef double value_type;
         typedef Eigen::Matrix<double, Dim, 1> vectorN_type;

@@ -34,7 +34,11 @@
 #error feel/feelcore/ublas_traits.hpp must not be used directly, use feel/feelcore/traits.hpp instead
 #endif
 
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/traits.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 namespace boost
 {

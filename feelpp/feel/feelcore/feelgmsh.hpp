@@ -49,6 +49,8 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmacro-redefined"
 #endif
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #if defined(HAVE_DLOPEN)
 #define HAVE_DLOPEN_WAS_DEFINED 1
 #undef HAVE_DLOPEN
@@ -61,6 +63,8 @@
 #undef HAVE_DLOPEN_WAS_DEFINED
 #endif
 #endif
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 #if defined(__clang__)
 #pragma clang diagnostic pop
 #endif

@@ -73,17 +73,17 @@ public:
     static inline const uint16_type nComponents2 = fe_type::nComponents2;
 
 
-    static const bool is_continuous = fe_type::isContinuous;
-    static const bool is_discontinuous_locally = fe_type::continuity_type::is_discontinuous_locally;
-    static const bool is_discontinuous_totally = fe_type::continuity_type::is_discontinuous_totally;
+    static inline const bool is_continuous = fe_type::isContinuous;
+    static inline const bool is_discontinuous_locally = fe_type::continuity_type::is_discontinuous_locally;
+    static inline const bool is_discontinuous_totally = fe_type::continuity_type::is_discontinuous_totally;
 
-    static const bool is_scalar = fe_type::is_scalar;
-    static const bool is_vectorial = fe_type::is_vectorial;
-    static const bool is_tensor2 = fe_type::is_tensor2;
-    static const bool is_modal = fe_type::is_modal;
-    static const bool is_product = fe_type::is_product;
+    static inline const bool is_scalar = fe_type::is_scalar;
+    static inline const bool is_vectorial = fe_type::is_vectorial;
+    static inline const bool is_tensor2 = fe_type::is_tensor2;
+    static inline const bool is_modal = fe_type::is_modal;
+    static inline const bool is_product = fe_type::is_product;
 
-    static const bool is_p0_continuous = ( ( nOrder == 0 ) && is_continuous );
+    static inline const bool is_p0_continuous = ( ( nOrder == 0 ) && is_continuous );
 
     static inline const uint16_type nDofPerElement = mpl::if_<mpl::bool_<is_product>, mpl::int_<fe_type::nLocalDof*nComponents>, mpl::int_<fe_type::nLocalDof> >::type::value;
 
@@ -290,7 +290,7 @@ private:
 
     void addEdgeBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc )
     {
-        static const bool cond = fe_type::nDofPerEdge*face_type::numEdges > 0;
+        constexpr bool cond = fe_type::nDofPerEdge*face_type::numEdges > 0;
         addEdgeBoundaryDof( face, useConnection0, lc, mpl::bool_<cond>(), mpl::int_<nDim>() );
     }
 

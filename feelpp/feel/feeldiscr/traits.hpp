@@ -50,7 +50,8 @@ using is_mesh = typename std::is_base_of<MeshBase<>,decay_type<MeshType>>::type;
  * if \p MeshType is a shared_ptr of a Mesh then provides the mesh type
  * \note it checks that the \p Mesh is indeed a mesh type and return void if it is not the case.
  */
-template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
+template<typename MeshType>
+    requires std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>
 using mesh_t = decay_type<MeshType>;
 
 
@@ -63,7 +64,8 @@ constexpr bool is_mesh_v = is_mesh<MeshType>::value;
 //!
 //! @return the topogical dimension of the mesh \p m
 //!
-template <typename MeshType, typename = std::enable_if_t<is_mesh_v<MeshType>>>
+template <typename MeshType>
+    requires is_mesh_v<MeshType>
 inline constexpr int topodim( std::shared_ptr<MeshType> const& m )
 {
     return MeshType::nDim;
@@ -71,7 +73,8 @@ inline constexpr int topodim( std::shared_ptr<MeshType> const& m )
 //!
 //! @return the real dimension in which the mesh is defined
 //!
-template <typename MeshType, typename = std::enable_if_t<is_mesh_v<MeshType>>>
+template <typename MeshType>
+    requires is_mesh_v<MeshType>
 inline constexpr int realdim( std::shared_ptr<MeshType> const& m )
 {
     return MeshType::nRealDim;

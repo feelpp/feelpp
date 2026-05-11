@@ -925,7 +925,7 @@ public:
         M_worldComm = _worldComm;
     }
 
-    void updateOrderedElement()
+    void updateOrderedElements()
         {
             if ( !M_needToOrderElements )
                 return;

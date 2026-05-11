@@ -10,20 +10,14 @@ on:
         type: choice
         options:
         - 'ubuntu'
-        - 'debian'
       dist:
         description: 'Distribution to build'
         required: true
-        default: 'jammy'
+        default: 'noble'
         type: choice
         options:
-        - 'jammy'
-        - 'focal'
+        - 'resolute'
         - 'noble'
-        - 'bookworm'
-        - 'trixie'
-        - 'testing'
-        - 'sid'
       parallel:
         description: 'Number of parallel jobs'
         required: false
@@ -42,12 +36,41 @@ env:
   CC: clang
 
 jobs:
+  version:
+    uses: ./.github/workflows/version.yml
+    with:
+        continue-on-error: "false"
+    secrets: inherit
+
+  dist-meta:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Resolve distribution metadata
+        id: version
+        run: |
+          case "${{ inputs.dist }}" in
+            resolute) echo "version=26.04" >> "$GITHUB_OUTPUT" ;;
+            noble) echo "version=24.04" >> "$GITHUB_OUTPUT" ;;
+            *)
+              echo "Unsupported distribution: ${{ inputs.dist }}" >&2
+              exit 1
+              ;;
+          esac
+
   build:
+    needs: [version, dist-meta]
     uses: ./.github/workflows/pkg-dist.yml
     with:
         dist: ${{ inputs.dist }}
         flavor: ${{ inputs.flavor }}
+        version: ${{ needs.dist-meta.outputs.version }}
         parallel: ${{ inputs.parallel }}
         skip: ${{ inputs.skip }}
+        docker: "false"
+        apptainer: "false"
+        feelpp-version: ${{ needs.version.outputs.version }}
+        feelpp-main-version: ${{ needs.version.outputs.main_version }}
+        feelpp-extra-version: ${{ needs.version.outputs.extra_version }}
     secrets: inherit
-

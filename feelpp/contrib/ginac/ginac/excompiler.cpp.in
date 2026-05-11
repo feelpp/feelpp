@@ -50,10 +50,115 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <functional>
+#include <chrono>
+#include <thread>
+#include <random>
+#include <unistd.h>
+#include <sys/file.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <cerrno>
+#include <cstring>
 
 namespace GiNaC {
 
 #ifdef HAVE_LIBDL
+
+/**
+ * RAII class for file locking to prevent concurrent compilation.
+ * Uses flock() for advisory locking across processes.
+ */
+class FileLock
+{
+public:
+	explicit FileLock(const std::string& lockfile, int timeout_ms = 30000)
+		: fd_(-1), locked_(false), lockfile_(lockfile)
+	{
+		fd_ = open(lockfile.c_str(), O_CREAT | O_RDWR, 0666);
+		if (fd_ == -1) {
+			return; // Could not create lock file, proceed without lock
+		}
+
+		// Try to acquire lock with timeout
+		auto start = std::chrono::steady_clock::now();
+		std::random_device rd;
+		std::mt19937 gen(rd());
+		std::uniform_int_distribution<> dist(10, 100);
+
+		while (true) {
+			if (flock(fd_, LOCK_EX | LOCK_NB) == 0) {
+				locked_ = true;
+				return;
+			}
+
+			auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+				std::chrono::steady_clock::now() - start).count();
+			if (elapsed >= timeout_ms) {
+				// Timeout - close fd and proceed without lock
+				close(fd_);
+				fd_ = -1;
+				return;
+			}
+
+			// Sleep with jitter to avoid thundering herd
+			std::this_thread::sleep_for(std::chrono::milliseconds(dist(gen)));
+		}
+	}
+
+	~FileLock()
+	{
+		if (fd_ != -1) {
+			if (locked_) {
+				flock(fd_, LOCK_UN);
+			}
+			close(fd_);
+		}
+	}
+
+	bool is_locked() const { return locked_; }
+
+	// Non-copyable
+	FileLock(const FileLock&) = delete;
+	FileLock& operator=(const FileLock&) = delete;
+
+private:
+	int fd_;
+	bool locked_;
+	std::string lockfile_;
+};
+
+/**
+ * Check if a .so file exists and is valid (non-empty, readable).
+ */
+inline bool so_file_ready(const std::string& filename)
+{
+	namespace fs = boost::filesystem;
+	fs::path so_path(filename + ".so");
+
+	if (!fs::exists(so_path)) {
+		return false;
+	}
+
+	// Check file is non-empty and at least a few seconds old
+	// (to avoid reading a partially written file)
+	try {
+		auto size = fs::file_size(so_path);
+		if (size == 0) {
+			return false;
+		}
+
+		auto mtime = fs::last_write_time(so_path);
+		auto now = std::time(nullptr);
+		// If file is very recent (< 1 second), wait a bit
+		if (now - mtime < 1) {
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		}
+		return true;
+	} catch (...) {
+		return false;
+	}
+}
 
 /**
  * Small class that manages modules opened by libdl. It is used by compile_ex
@@ -136,39 +241,38 @@ public:
 	/**
 	 * Creates a new C source file and adds a standard header. If filename is
 	 * empty, a unique random name is produced and used.
+	 *
+	 * For user-provided filenames, use as-is to enable caching of compiled
+	 * expressions. Rank 0 compiles and broadcasts the filename to other ranks.
+	 * Race conditions are handled by file locking in compile_src_file().
 	 */
 	void create_src_file(std::string& filename, std::ofstream& ofs)
 		{
 			if (filename.empty()) {
-				// fill filename with unique random word
-				const char* filename_pattern = "./GiNaCXXXXXX";
-				char* new_filename = new char[strlen(filename_pattern)+1];
-				strcpy(new_filename, filename_pattern);
-				if (!mkstemp(new_filename)) {
+				// Generate unique temporary filename
+				char* new_filename = new char[17];
+				strcpy(new_filename, "./GiNaCXXXXXX");
+				int fd = mkstemp(new_filename);
+				if (fd == -1) {
 					delete[] new_filename;
-					throw std::runtime_error("mktemp failed");
+					throw std::runtime_error("mkstemp failed: " + std::string(strerror(errno)));
 				}
+				close(fd); // Close the fd, we'll reopen with ofstream
 
 				filename = std::string(new_filename);
-				ofs.open(filename.c_str(), std::ios::out);
+				ofs.open(filename.c_str(), std::ios::out | std::ios::trunc);
 				delete[] new_filename;
 			} else {
-				//filename = filename + pid;
-				// use parameter as filename
-				ofs.open(filename.c_str(), std::ios::out);
+				// User-provided filename: use as-is for caching
+				// Rank 0 compiles and broadcasts filename to other ranks
+				// File locking in compile_src_file() handles race conditions
+				ofs.open(filename.c_str(), std::ios::out | std::ios::trunc);
 			}
 			if (!ofs) {
                 using namespace std::string_literals;
 				throw std::runtime_error("could not create source code file "s + filename+" for compilation");
 			}
 
-			/*****
-			      ofs << "#include <stddef.h> " << std::endl;
-			      ofs << "#include <stdlib.h> " << std::endl;
-			      ofs << "#include <math.h> " << std::endl;
-			      ofs << "#define Pi M_PI" << std::endl;
-			      ofs << "#define pi M_PI" << std::endl;
-			*****/
 			ofs << "#include <ginac-extern-math.h> " << std::endl;
 			ofs << "#if !defined( pi )\n"
 			    << "#define pi " << std::setprecision(std::numeric_limits<long double>::digits10 + 1) << M_PI << std::endl
@@ -176,7 +280,6 @@ public:
 			ofs << "#if !defined( Pi )\n"
 			    << "#define Pi " << M_PI << std::endl
 			    << "#endif // Pi\n";
-			//ofs << "#include <ginac/constant.h> " << std::endl;
 			ofs << std::endl;
 		}
 	void remove_src_file( std::string filename, bool clean_up )
@@ -196,17 +299,32 @@ public:
 	 * Calls the shell script 'ginac-excompiler' to compile the produced C
 	 * source file into an linkable so-file.  On demand the C source file is
 	 * deleted.
+	 *
+	 * Uses file locking to prevent concurrent compilation of the same file
+	 * by different processes.
 	 */
 	void compile_src_file(const std::string filename, bool clean_up)
 		{
-
-			//std::string strcompile = "ginac-excompiler " + filename + " > /dev/null 2>&1";
-			//int status = system(strcompile.c_str());
-			//if (status )
-			//{
-			//std::cout << "ginac::compile_src_file fails (" << WEXITSTATUS(status) << ")\n";
-			// try the compiler in Feel++ source
 			namespace fs = boost::filesystem;
+			std::string so_filename = filename + ".so";
+			std::string lock_filename = filename + ".lock";
+
+			// Acquire exclusive lock before compilation
+			FileLock lock(lock_filename);
+
+			// Check if .so file already exists and is valid (another process compiled it)
+			if (so_file_ready(filename)) {
+				// Another process already compiled this file
+				remove_src_file(filename, clean_up);
+				// Clean up lock file
+				if (clean_up) {
+					boost::mpi::communicator world;
+					if (world.rank() == 0) {
+						remove(lock_filename.c_str());
+					}
+				}
+				return;
+			}
 
             std::string firstPathToTry = "@FEELPP_BUILD_DIR@/feelpp/contrib/ginac/tools/ginac-excompiler";
 
@@ -226,6 +344,13 @@ public:
 					throw std::runtime_error(ostr.str());
 				}
 				remove_src_file( filename, clean_up );
+				// Clean up lock file
+				if (clean_up) {
+					boost::mpi::communicator world;
+					if (world.rank() == 0) {
+						remove(lock_filename.c_str());
+					}
+				}
 				return;
 			}
 			else
@@ -249,6 +374,13 @@ public:
                                 throw std::runtime_error(ostr.str());
                             }
                             remove_src_file( filename, clean_up );
+                            // Clean up lock file
+                            if (clean_up) {
+                                boost::mpi::communicator world;
+                                if (world.rank() == 0) {
+                                    remove(lock_filename.c_str());
+                                }
+                            }
                             return;
                         }
                     }
@@ -260,14 +392,53 @@ public:
 		}
 	/**
 	 * Links a so-file whose filename is given.
+	 * Includes retry logic with exponential backoff to handle race conditions
+	 * where another process may still be compiling the .so file.
 	 */
 	void* link_so_file(const std::string filename, bool clean_up)
 	{
 		void* module = nullptr;
-		module = dlopen(filename.c_str(), RTLD_NOW);
-		if (module == nullptr)	{
-            using namespace std::string_literals;
-			throw std::runtime_error("excompiler::link_so_file: could not open compiled module "s + filename);
+		const int max_retries = 10;
+		int retry_delay_ms = 50;
+		std::string last_error;
+
+		for (int attempt = 0; attempt < max_retries; ++attempt) {
+			// Clear any previous error
+			dlerror();
+
+			module = dlopen(filename.c_str(), RTLD_NOW);
+			if (module != nullptr) {
+				break;
+			}
+
+			// Capture error message
+			char* err = dlerror();
+			if (err) {
+				last_error = err;
+			} else {
+				last_error = "unknown error";
+			}
+
+			// Check if file exists - if not, no point retrying
+			namespace fs = boost::filesystem;
+			if (!fs::exists(fs::path(filename))) {
+				break;
+			}
+
+			// Wait with exponential backoff + jitter before retry
+			std::random_device rd;
+			std::mt19937 gen(rd());
+			std::uniform_int_distribution<> jitter(0, retry_delay_ms / 2);
+			std::this_thread::sleep_for(
+				std::chrono::milliseconds(retry_delay_ms + jitter(gen)));
+			retry_delay_ms = std::min(retry_delay_ms * 2, 2000);
+		}
+
+		if (module == nullptr) {
+			using namespace std::string_literals;
+			throw std::runtime_error("excompiler::link_so_file: could not open compiled module "s
+				+ filename + " after " + std::to_string(max_retries)
+				+ " attempts. Last error: " + last_error);
 		}
 
 		add_opened_module(module, filename, clean_up);

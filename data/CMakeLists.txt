@@ -71,6 +71,15 @@ geo/cube_twoMaterials.geo
 geo/cube_cubeHole.geo
 )
 
+# Copy mesh files to build directory for testing (avoid dependency on install)
+set(FEELPP_BUILD_DATADIR ${CMAKE_BINARY_DIR}/share/feelpp/data)
+file(MAKE_DIRECTORY ${FEELPP_BUILD_DATADIR}/geo)
+foreach(mesh_file ${MESHES})
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${mesh_file} 
+                 ${FEELPP_BUILD_DATADIR}/${mesh_file} 
+                 COPYONLY)
+endforeach()
+
 install( FILES ${MESHES} DESTINATION share/feelpp/data/geo )
 
 if (EXISTS $ENV{HOME})
@@ -105,5 +114,22 @@ set( ONE_ELT_3D_MESHES
   geo/one-elt-meshes-3d/one-elt-real-rotz.msh
   geo/one-elt-meshes-3d/one-elt-ref-3d.msh
   )
+
+# Copy one-element meshes to build directory for testing
+file(MAKE_DIRECTORY ${FEELPP_BUILD_DATADIR}/geo/one-elt-meshes-2d)
+file(MAKE_DIRECTORY ${FEELPP_BUILD_DATADIR}/geo/one-elt-meshes-3d)
+foreach(mesh_file ${ONE_ELT_2D_MESHES})
+  get_filename_component(mesh_name ${mesh_file} NAME)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${mesh_file} 
+                 ${FEELPP_BUILD_DATADIR}/geo/one-elt-meshes-2d/${mesh_name} 
+                 COPYONLY)
+endforeach()
+foreach(mesh_file ${ONE_ELT_3D_MESHES})
+  get_filename_component(mesh_name ${mesh_file} NAME)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${mesh_file} 
+                 ${FEELPP_BUILD_DATADIR}/geo/one-elt-meshes-3d/${mesh_name} 
+                 COPYONLY)
+endforeach()
+
 install( FILES ${ONE_ELT_2D_MESHES} DESTINATION share/feelpp/data/geo/one-elt-meshes-2d/ )
 install( FILES ${ONE_ELT_3D_MESHES} DESTINATION share/feelpp/data/geo/one-elt-meshes-3d/ )

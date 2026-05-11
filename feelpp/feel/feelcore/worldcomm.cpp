@@ -219,8 +219,6 @@ WorldComm::WorldComm( communicator_type const& _globalComm, int _color, bool _is
                      M_isActive );
 
 
-    this->upMasterRank();
-
     this->initSubWorldCommSeq();
 
 }
@@ -256,7 +254,6 @@ WorldComm::WorldComm( communicator_type const& _globalComm, int _color, bool _is
                          ( int )_isActive,
                          M_isActive );
 
-        this->upMasterRank();
     }
 
     this->initSubWorldCommSeq();
@@ -292,8 +289,6 @@ WorldComm::WorldComm( communicator_type const& _globalComm,
                      M_mapGlobalRankToGodRank );
 
 
-    this->upMasterRank();
-
     this->initSubWorldCommSeq();
 }
 
@@ -328,8 +323,6 @@ WorldComm::WorldComm( communicator_type const& _globalComm,
         M_mapColorWorld[p] = dataRecvToGather[p].get<0>();
         M_mapGlobalRankToGodRank[p] = dataRecvToGather[p].get<1>();
     }
-
-    this->upMasterRank();
 
     if ( this->M_isActive[this->godRank()] && this->globalSize() == 1 && this->localSize() == 1 &&
          std::accumulate( this->M_isActive.begin(),this->M_isActive.end(), 0, std::plus<int>() ) == 1 )
@@ -621,7 +614,6 @@ WorldComm::operator+( WorldComm const & _worldComm ) const
         newIsActive[godRankActivefusion[k]]=true;
     }
     res->setIsActive(newIsActive);
-    res->upMasterRank();
 
     return res;
 
@@ -654,32 +646,27 @@ WorldComm::localColorToGlobalRank( int _color,int _localRank ) const
 }
 
 //-------------------------------------------------------------------------------
-
-void
-WorldComm::upMasterRank()
+rank_type 
+WorldComm::computeMasterRank() const
 {
-    // choice : the smallest rank
-    M_masterRank = INT_MAX;
-    for ( int p=0; p<this->globalSize(); ++p )
-        {
-            if  (this->isActive() )
-                {
-                    if ( M_isActive[this->mapGlobalRankToGodRank()[p]] )
-                        {
-                            if ( M_masterRank>p ) M_masterRank=p;
-                        }
-                }
+    const bool targetActive = this->isActive();
+    const auto &g2g = this->mapGlobalRankToGodRank();
 
-            else
-                {
-                    if ( !M_isActive[this->mapGlobalRankToGodRank()[p]] )
-                        {
-                            if ( M_masterRank>p ) M_masterRank=p;
-                        }
+    int best = std::numeric_limits<int>::max();
+    const int gs = this->globalSize();
+    const int isActiveSize = static_cast<int>(M_isActive.size());
 
-                }
-        }
-
+    for (int p = 0; p < gs; ++p)
+    {
+        const int godRank = g2g[p];
+        const bool valid = (godRank >= 0 && godRank < isActiveSize);
+        const bool activeOnP = valid ? (M_isActive[godRank] != 0) : false;
+        if (activeOnP == targetActive && p < best)
+            best = p;
+    }
+    if (best == std::numeric_limits<int>::max())
+        best = 0;
+    return best;
 }
 
 //-------------------------------------------------------------------------------
@@ -894,7 +881,11 @@ void WorldComm::print( std::string const& text, bool sync, bool print_to_cout, b
     std::string str = fmt::format( "[rank {}] {}",this->localRank(), text );
     LOG(INFO) << str; 
     if ( flush )
+#if defined(FEELPP_HAS_SPDLOG)
+        Logger::flushOn(0);
+#else
         google::FlushLogFiles(google::INFO);
+#endif
     if ( print_to_cout )
     {
         if ( sync )

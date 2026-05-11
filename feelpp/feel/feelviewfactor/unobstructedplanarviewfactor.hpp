@@ -12,6 +12,8 @@
 
 #pragma once
 
+#include <format>
+
 #include <feel/feelcore/enumerate.hpp>
 #include <feel/feelpoly/im.hpp>
 #include <feel/feeldiscr/context.hpp>
@@ -31,7 +33,7 @@ namespace Feel {
  * vf.compute();
  * @endcode
  */
-template<typename MeshType>
+template<ViewFactorMesh MeshType>
 class UnobstructedPlanarViewFactor : public ViewFactorBase<MeshType>
 {
 public:
@@ -55,7 +57,7 @@ public:
     void compute(bool elementwise=false);
 };
 
-template<typename MeshType>
+template<ViewFactorMesh MeshType>
 void 
 UnobstructedPlanarViewFactor<MeshType>::compute(bool elementwise /*false by default*/)
 {
@@ -69,7 +71,7 @@ UnobstructedPlanarViewFactor<MeshType>::compute(bool elementwise /*false by defa
     {
         if ( !this->mesh_->hasMarker( current_side ) )
         {
-            throw std::logic_error( "boundary marker " + current_side + " does not exist in mesh" );
+            throw std::logic_error(std::format("boundary marker '{}' does not exist in mesh", current_side));
         }
         auto current_range = markedfaces( this->mesh_, current_side );
         if ( begin(current_range) != end(current_range) )
@@ -80,7 +82,7 @@ UnobstructedPlanarViewFactor<MeshType>::compute(bool elementwise /*false by defa
             {
                 if ( !this->mesh_->hasMarker( remote_side ) )
                 {
-                    throw std::logic_error( "remote boundary marker " + remote_side + " does not exist in mesh" );
+                    throw std::logic_error(std::format("remote boundary marker '{}' does not exist in mesh", remote_side));
                 }
 
                 // planar surface don't see themselves, hence the view factor is 0
@@ -160,7 +162,9 @@ UnobstructedPlanarViewFactor<MeshType>::compute(bool elementwise /*false by defa
                                     } 
                                     else 
                                     {
-                                        throw std::logic_error( "Integration method not specified. Choose one between the available ones." );
+                                        throw std::logic_error(std::format(
+                                            "Integration method '{}' not supported. Choose 'DoubleAreaIntegration' or 'SingleAreaIntegration'",
+                                            this->j_["viewfactor"]["algorithm"].template get<std::string>()));
                                     }                                  
                                 }
                             }

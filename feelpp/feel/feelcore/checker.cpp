@@ -23,12 +23,16 @@
 //!
 #include <boost/algorithm/string.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include <stdexcept>
 #include <feel/feelcore/checker.hpp>
+#include <feel/feelcore/logger.hpp>
 #include <feel/feelmath/polyfit.hpp>
 #include <feel/feelmath/vector.hpp>
 #include <feel/feelpython/pyexpr.hpp>
 #include <fmt/core.h>
 #include <fmt/format.h>
+#include <fmt/ranges.h>
+#include <fmt/std.h>
 #include <fmt/ostream.h>
 
 namespace Feel {
@@ -92,7 +96,7 @@ hp::hp( double h, int p )
                 {
                     for( auto const& error: M_data[fn.first][order].errors )
                     {
-                        auto c = polyfit( log(M_data[fn.first][order].hs), log(error.second.values), 1 );
+                        auto c = polyfit( math::log(M_data[fn.first][order].hs), math::log(error.second.values), 1 );
                         LOG(INFO) << "order = " << error.second.order << " c[1]=" << c[1] << std::endl;
                         if ( c[1] >= error.second.order-1e-1 )
                             LOG(INFO) << "db for " << error.first << " error norm is consistent";
@@ -132,7 +136,7 @@ hp::operator()( std::string const& sol, std::pair<std::string,double> const& r, 
             {
                 d.hs.push_back(M_h);
                 d.errors.at(r.first).values.push_back(r.second);
-                auto c = polyfit( log(d.hs), log(d.errors.at(r.first).values), 1 );
+                auto c = polyfit( math::log(d.hs), math::log(d.errors.at(r.first).values), 1 );
                 LOG(INFO) << "order = " << d.errors.at(r.first).order << " c[1]=" << c[1] << std::endl;
                 //std::cout << "order = " << d.errors.at(r.first).order << " c[1]=" << c[1] << std::endl;
                 if (  c[1]>=d.errors.at(r.first).order - otol )
@@ -195,13 +199,16 @@ Checker::setScript( std::string const& s, variables_t const& in, std::map<std::s
     M_use_script = u;
     M_script_in = in;
     M_script = s;
-    std::cout << fmt::format( "script: {}", s ) << std::endl;
+    Logger::console()->info( "script: {}", s );
     M_param_values= p;
-    std::cout << fmt::format( "param_values: {}", M_param_values ) << std::endl;
+    Logger::console()->info( "param_values: {}", M_param_values );
 }
 Checker::variables_t
 Checker::runScript()
 {
+#if !defined(FEELPP_HAS_PYTHON)
+    throw std::runtime_error( "Checker script support requires a Feel++ build with Python support enabled." );
+#else
     variables_t locals{ M_script_in };
     locals[M_solution_key]=M_solution;
     if ( M_gradient )
@@ -215,6 +222,7 @@ Checker::runScript()
     M_solution=locals[M_solution_key];
     M_gradient=locals[M_gradient_key];
     return locals;
+#endif
 }
 
 }

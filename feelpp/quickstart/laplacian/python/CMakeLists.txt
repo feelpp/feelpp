@@ -21,4 +21,8 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+
+# Set quickstart label for all tests
+set_directory_properties(PROPERTIES LABELS "quickstart")
+
 install(PROGRAMS  ${CMAKE_CURRENT_SOURCE_DIR}/laplacian.py   DESTINATION share/feelpp/data/testcases/python  )

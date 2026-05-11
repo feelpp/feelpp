@@ -22,11 +22,14 @@
 
 #include <cassert>
 
+// clang-format off
+#include <feel/feelcore/warnoff.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
-
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
+#include <feel/feelcore/warnon.hpp>
+// clang-format on
 
 
 namespace ublas = boost::numeric::ublas;

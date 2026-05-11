@@ -47,24 +47,24 @@ class Sym
 public:
 
     static const size_type context = ExprT::context;
-    static const bool is_symetric = Part;
-    static const bool is_terminal = false;
+    static inline const bool is_symetric = Part;
+    static inline const bool is_terminal = false;
 
     template<typename Func>
     struct HasTestFunction
     {
-        static const bool result = ExprT::template HasTestFunction<Func>::result;
+        static inline const bool result = ExprT::template HasTestFunction<Func>::result;
     };
 
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = ExprT::template HasTrialFunction<Func>::result;
+        static inline const bool result = ExprT::template HasTrialFunction<Func>::result;
     };
     template<typename Func>
-    static const bool has_test_basis = ExprT::template has_test_basis<Func>;
+    static inline const bool has_test_basis = ExprT::template has_test_basis<Func>;
     template<typename Func>
-    static const bool has_trial_basis = ExprT::template has_trial_basis<Func>;
+    static inline const bool has_trial_basis = ExprT::template has_trial_basis<Func>;
     using test_basis = typename ExprT::test_basis;
     using trial_basis = typename ExprT::trial_basis;
 
@@ -201,7 +201,7 @@ public:
 
         struct is_zero
         {
-            static const bool value = tensor_expr_type::is_zero::value;
+            static inline const bool value = tensor_expr_type::is_zero::value;
         };
 
         tensor( this_type const& expr,
@@ -308,7 +308,7 @@ private:
  * \brief symetric part of a matricial expression
  */
 template<typename ExprT>
-inline
+[[nodiscard]] inline
 Expr< Sym<ExprT,1> >
 sym( ExprT v )
 {
@@ -320,7 +320,7 @@ sym( ExprT v )
  * \brief symetric part of a matricial expression
  */
 template<typename ExprT>
-inline
+[[nodiscard]] inline
 Expr< Sym<ExprT,0> >
 antisym( ExprT v )
 {

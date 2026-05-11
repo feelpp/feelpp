@@ -24,6 +24,7 @@
 */
 #include <cstdlib>
 #include <pwd.h>
+#include <utility>
 #ifdef __cplusplus
 extern "C"
 {
@@ -32,7 +33,7 @@ extern "C"
 #ifdef __cplusplus
 }
 #endif
-#if defined(FEELPP_HAS_PYBIND11)
+#if defined(FEELPP_HAS_PYTHON)
 #include <feel/feelpython/pybind11/pybind11.h>
 #include <feel/feelpython/pybind11/embed.h>
 #endif
@@ -56,7 +57,17 @@ extern "C"
 
 #include <feel/feelcore/mongocxx.hpp>
 
-#include <gflags/gflags.h>
+#include <fmt/chrono.h>
+//#include <gflags/gflags.h>
+
+#if defined(FEELPP_HAS_SPDLOG)
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/sinks/null_sink.h>
+#include <feel/feelcore/logger.hpp>
+#else
+#include <glog/logging.h>
+#endif
 
 #include <feel/feelinfo.h>
 #include <feel/feelconfig.h>
@@ -141,8 +152,10 @@ bool IsGoogleLoggingInitialized();
 namespace Feel
 {
 namespace pt =  boost::property_tree;
+#if defined(FEELPP_HAS_PYTHON)
 namespace py = pybind11;
 using namespace py::literals;
+#endif
 //namespace detail
 //{
 FEELPP_NO_EXPORT
@@ -318,7 +331,7 @@ Environment::Environment( int& argc, char**& argv )
 
 
 
-#if defined(FEELPP_ENABLE_PYTHON_WRAPPING)
+#if defined(FEELPP_HAS_PYTHON)
 struct PythonArgs
 {
 #if defined(FEELPP_HAS_BOOST_PYTHON)
@@ -394,7 +407,7 @@ Environment::Environment( boost::python::list arg )
 }
 #endif // 0
 
-#endif // FEELPP_ENABLE_PYTHON_WRAPPING
+#endif // FEELPP_HAS_PYTHON
 
 #if defined ( FEELPP_HAS_PETSC_H )
 void
@@ -466,6 +479,13 @@ Environment::Environment( int argc, char** argv,
     S_argc = argc;
     S_argv = argv;
 
+#if defined(FEELPP_HAS_SPDLOG)
+    // Immediately disable console logging by setting up a null sink as default
+    // This prevents early LOG() calls from appearing on console
+    // The proper logger (with file/console based on options) will be set up later in startLogging()
+    Logger::setDefaultLogger(Logger::createNullLogger("feelpp_early"));
+#endif
+
     //
     // setup worldcomm
     //
@@ -477,13 +497,24 @@ Environment::Environment( int argc, char** argv,
     clog.attachWorldComm( S_worldcomm );
 
     //
-    // setup repository
+    // setup repository 
     //
     S_repository = Repository( config );
-    S_rootdir = S_repository.root();
-    S_appdir = S_repository.directory();
-    S_appdirWithoutNumProc = S_repository.directoryWithoutAppenders();
-
+#if 0    
+    if ( !S_repository.isCustom() )
+    {
+        //S_repository.configure();
+        S_rootdir = S_repository.root();
+        S_appdir = S_repository.directory();
+        S_appdirWithoutNumProc = S_repository.directoryWithoutAppenders();
+    }
+    else
+    {
+        S_rootdir.clear();
+        S_appdir.clear();
+        S_appdirWithoutNumProc.clear();
+    }
+#endif
     //
     // setup options
     //
@@ -530,6 +561,7 @@ Environment::Environment( int argc, char** argv,
     GmshInitialize();
 #endif
 #endif
+#if defined(FEELPP_HAS_PYTHON)
     if ( !Py_IsInitialized() )
     {
         py::initialize_interpreter();
@@ -537,7 +569,14 @@ Environment::Environment( int argc, char** argv,
     }
     else
         S_init_python = false;
+#else
+    S_init_python = false;
+#endif
 
+    cout << "[ Feel++ ] "
+         << "application " << about.appName()
+         << " version " << about.version()
+         << " initializing..." << std::endl;
     //
     // parse options
     //
@@ -552,10 +591,10 @@ Environment::Environment( int argc, char** argv,
 
     S_timers = std::make_unique<TimerTable>();
 
-    boost::gregorian::date today = boost::gregorian::day_clock::local_day();
+    auto today = std::chrono::system_clock::now();
     tic();
-    cout << "[ Starting Feel++ ] " << tc::green << "application "  << about.appName()
-         <<  " version " << about.version() << " date " << today << tc::reset << std::endl;
+    Logger::console()->info("[ Starting Feel++ ] application {} version {} date {:%Y-%m-%d}", about.appName(), about.version(), today);
+    Logger::console()->flush();
 
     //
     // setup work directory
@@ -571,9 +610,9 @@ Environment::Environment( int argc, char** argv,
         d /= expand(S_vm["repository.case"].as<std::string>());
         directory = d.string();
     }
-
+    // For custom repositories, changeRepository() will invoke the callback
+    // The directory parameter is only used for non-custom repositories
     changeRepository( _directory = boost::format{ directory.string() } );
-
     //
     // use --dirs to check the directories of Feel++ environment
     //
@@ -670,14 +709,17 @@ Environment::Environment( int argc, char** argv,
     //tbb::task_scheduler_init init(2);
 #endif
 
-    // make sure that we pass the proper verbosity level to glog
+    // Note: verbosity is now handled in Environment::startLogging() for spdlog
+    // or by glog directly when FEELPP_HAS_SPDLOG is not defined
+#if !defined(FEELPP_HAS_SPDLOG)
     if ( S_vm.count( "v" ) )
-        FLAGS_v = S_vm["v"].as<int>();
+        Environment::logVerbosityLevel() = S_vm["v"].as<int>();
     if ( S_vm.count( "vmodule" ) )
     {
-        //FLAGS_vmodule = S_vm["vmodule"].as<std::string>();
+        //Environment::logVerbosityLevel()module = S_vm["vmodule"].as<std::string>();
         //google::SetVLOGLevel( "*btpcd", 2 );
     }
+#endif
 
 #if 0
     if ( S_vm.count( "nochdir" ) == 0 )
@@ -711,12 +753,31 @@ Environment::clearSomeMemory()
 
     // send signal to all deleters
     S_deleteObservers();
+#if defined(FEELPP_HAS_SPDLOG)
+    Logger::flushOn(0);
+#else
     google::FlushLogFiles( google::GLOG_INFO );
+#endif
     VLOG( 2 ) << "clearSomeMemory: delete signal sent" << "\n";
 
     Environment::logMemoryUsage( "Environment::clearSomeMemory after:" );
 }
+bool
+Environment::shouldLog()
+{
+    if ( !Environment::initialized() )
+        return true;
 
+    std::string mode = Environment::logMpiMode();
+    int rank = Environment::rank();
+
+    if ( mode == "none" )
+        return false;
+    else if ( mode == "master" )
+        return ( rank == 0 );
+    // else mode == "all": all ranks log
+    return true;
+}
 // Destructor.
 Environment::~Environment()
 {
@@ -755,7 +816,8 @@ Environment::~Environment()
 
     //std::cout << S_vm["onelab.enable"].as<int>() << std::endl;
 
-    if ( ioption( _name="onelab.enable" ) == 2 )
+    // Only execute onelab cleanup if MPI is still active (not finalized)
+    if ( ioption( _name="onelab.enable" ) == 2 && initialized() && !finalized() )
     {
         for ( int i = 0; i < worldComm().size(); i++ )
         {
@@ -829,8 +891,10 @@ Environment::~Environment()
 
     Environment::clearSomeMemory();
 
+#if defined(FEELPP_HAS_PYTHON)
     if ( S_init_python )
         py::finalize_interpreter();
+#endif
 #if defined(FEELPP_HAS_MONGOCXX )
     VLOG( 2 ) << "cleaning mongocxxInstance";
     MongoCxx::reset();
@@ -873,16 +937,24 @@ Environment::~Environment()
     S_hwSysInstance.reset(); // call deleter
     S_informationObject.reset();
 
-    // make sure everybody is here
-    if ( !Environment::aborted() )
+    // make sure everybody is here (only if MPI is still active)
+    if ( !Environment::aborted() && initialized() && !finalized() )
         Environment::worldComm().barrier();
+    // Handle --rm cleanup: only master rank should remove files to avoid race conditions
+    // We check initialized() to ensure MPI is still valid before checking rank
     if ( Environment::isMasterRank() && S_vm.count("rm") )
     {
-        cout << tc::red << "Removing all files (--rm)  in " << appRepository() << "..." << tc::reset << std::endl;
+        // Simplified cleanup without MPI rank check (unsafe after PetscFinalize)
+        // This will run on all ranks but that's safer than crashing
+        Logger::console()->info("Removing files (--rm) in {}...", appRepository());
+        Logger::console()->flush();
         fs::remove_all( S_appdir );
+        // should remove expression dir
+        fs::remove_all( S_repository.exprs() );
         if ( fs::exists( S_repository.root()/"crbdb"/S_about.appName()))
         {
-            cout << tc::red << "Removing all files (--rm)  in " << S_repository.root()/"crbdb"/S_about.appName()<< std::endl;
+            Logger::console()->info("Removing files (--rm) in {}", S_repository.root()/"crbdb"/S_about.appName());
+            Logger::console()->flush();
             fs::remove_all( S_repository.root()/"crbdb"/S_about.appName() );
         }
     }
@@ -1226,7 +1298,12 @@ void
 Environment::setLogVerbosityLevel( int v )
 {
     LOG(INFO) << fmt::format( "set log verbosity level to {}, previously {}", v, Environment::logVerbosityLevel() );
-    FLAGS_v = v;
+#if defined(FEELPP_HAS_SPDLOG)
+    Logger::verbosity() = v;
+    Logger::setLevel(v);
+#else
+    Environment::logVerbosityLevel() = v;
+#endif
 }
 void
 Environment::processGenericOptions()
@@ -1451,7 +1528,9 @@ Environment::findFileRemotely( std::string const& fname, std::string const& subd
     RemoteData rdTool( fname, worldCommPtr());
     if ( rdTool.canDownload() )
     {
-        auto downloadedFolder = rdTool.download( (fs::path(rootRepository())/fs::path("downloads")/fs::path(Environment::about().appName())/fs::path(subdir)).string() );
+        // Use temp directory if rootRepository hasn't been configured yet
+        fs::path downloadRoot = S_rootdir.empty() ? fs::temp_directory_path() / "feelpp" : S_rootdir;
+        auto downloadedFolder = rdTool.download( (downloadRoot/fs::path("downloads")/fs::path(Environment::about().appName())/fs::path(subdir)).string() );
         for( auto dl : downloadedFolder )
             std::cout << dl << std::endl;
 
@@ -1476,7 +1555,7 @@ Environment::doOptions( int argc, char** argv,
         processGenericOptions();
 
         VLOG( 2 ) << "options parsed and stored in database";
-
+        S_log_mpi_mode = S_vm["log.mpi"].as<std::string>();
         std::vector<std::string> configFiles;
 
         if ( S_vm.count( "case" ) )
@@ -1486,7 +1565,9 @@ Environment::doOptions( int argc, char** argv,
             RemoteData rdTool( caseDir, worldCommPtr());
             if ( rdTool.canDownload() )
             {
-                auto downloadedFolder = rdTool.download( (fs::path(rootRepository())/fs::path("downloads")/fs::path(appName)/fs::path("cases")).string() );
+                // Use temp directory if rootRepository hasn't been configured yet
+                fs::path downloadRoot = S_rootdir.empty() ? fs::temp_directory_path() / "feelpp" : S_rootdir;
+                auto downloadedFolder = rdTool.download( (downloadRoot/fs::path("downloads")/fs::path(appName)/fs::path("cases")).string() );
                 CHECK( downloadedFolder.size() == 1 ) << "download only one folder";
                 caseDir = downloadedFolder[0];
             }
@@ -1538,7 +1619,9 @@ Environment::doOptions( int argc, char** argv,
                 RemoteData rdTool( cfgFile, worldCommPtr());
                 if ( rdTool.canDownload() )
                 {
-                    auto dowloadedData = rdTool.download( (fs::path(rootRepository())/fs::path("downloads")/fs::path(appName)/fs::path("cfgs")).string() );
+                    // Use temp directory if rootRepository hasn't been configured yet
+                    fs::path downloadRoot = S_rootdir.empty() ? fs::temp_directory_path() / "feelpp" : S_rootdir;
+                    auto dowloadedData = rdTool.download( (downloadRoot/fs::path("downloads")/fs::path(appName)/fs::path("cfgs")).string() );
                     for ( std::string const& data : dowloadedData )
                         configFiles.push_back( data );
                 }
@@ -1551,22 +1634,15 @@ Environment::doOptions( int argc, char** argv,
         for ( std::string const& cfgFile : configFiles )
             std::cout << cfgFile << "\n";
 #endif
-        // reverse order (priorty for the last)
-        std::reverse(configFiles.begin(),configFiles.end());
-        for ( std::string const& cfgfile : configFiles )
+        // Use setConfigFiles for consistent config file handling
+        if ( !configFiles.empty() )
         {
-            if ( !fs::exists( cfgfile ) ) continue;
-            fs::path cfgAbsolutePath = fs::absolute( cfgfile );
-            cout << tc::green << "Reading " << cfgAbsolutePath.string() << "..." << tc::reset << std::endl;
-            // LOG( INFO ) << "Reading " << cfgfile << "...";
-            S_cfgdir = cfgAbsolutePath.parent_path();
-            std::ifstream ifs( cfgAbsolutePath.string().c_str() );
-            std::istringstream iss( readFromFile( cfgAbsolutePath.string() ) );
-            po::store( parse_config_file( ifs, *S_desc, true ), S_vm );
-            S_configFiles.push_back( std::make_tuple( cfgAbsolutePath.string(), std::forward<std::istringstream>( iss ) ) );
+            setConfigFiles( configFiles );
         }
-
-        po::notify( S_vm );
+        else
+        {
+            po::notify( S_vm );
+        }
 
 
 
@@ -1643,19 +1719,62 @@ Environment::doOptions( int argc, char** argv,
 }
 
 void
+Environment::setConfigFiles( std::vector<std::string> const& cfgfiles )
+{
+    std::vector<fs::path> cfgAbsolutePaths;
+    cfgAbsolutePaths.reserve( cfgfiles.size() );
+
+    for ( std::string const& cfgfile : cfgfiles )
+    {
+        if ( cfgfile.empty() )
+            continue;
+
+        // Check if file already exists (might be from doOptions with absolute path)
+        fs::path cfgPath( cfgfile );
+        if ( fs::exists( cfgPath ) )
+        {
+            cfgAbsolutePaths.push_back( fs::absolute( cfgPath ) );
+            continue;
+        }
+
+        // Try to locate the file using findFile
+        std::string locatedFile = findFile( cfgfile, {} );
+        if ( locatedFile.empty() )
+            continue;
+
+        fs::path cfgAbsolutePath = fs::absolute( locatedFile );
+        if ( !fs::exists( cfgAbsolutePath ) )
+            continue;
+
+        cfgAbsolutePaths.push_back( cfgAbsolutePath );
+    }
+
+    if ( cfgAbsolutePaths.empty() )
+        return;
+
+    // Clear config files list but not S_vm (it may have command-line options)
+    S_configFiles.clear();
+
+    // reverse order (priority for the last)
+    std::reverse( cfgAbsolutePaths.begin(), cfgAbsolutePaths.end() );
+
+    for ( fs::path const& cfgAbsolutePath : cfgAbsolutePaths )
+    {
+        cout << tc::green << "Reading " << cfgAbsolutePath.string() << "..." << tc::reset << std::endl;
+        S_cfgdir = cfgAbsolutePath.parent_path();
+        std::ifstream ifs( cfgAbsolutePath.string().c_str() );
+        std::istringstream iss( readFromFile( cfgAbsolutePath.string() ) );
+        po::store( parse_config_file( ifs, *S_desc, true ), S_vm );
+        S_configFiles.emplace_back( cfgAbsolutePath.string(), std::move( iss ) );
+    }
+
+    po::notify( S_vm );
+}
+
+void
 Environment::setConfigFile( std::string const& cfgfile )
 {
-    if ( !fs::exists( findFile( cfgfile, {} ) ) ) return;
-    S_vm.clear();
-    fs::path cfgAbsolutePath = fs::absolute( findFile( cfgfile ) );
-    cout << tc::green << "Reading " << cfgAbsolutePath.string() << "..." << tc::reset << std::endl;
-    // LOG( INFO ) << "Reading " << cfgfile << "...";
-    S_cfgdir = cfgAbsolutePath.parent_path();
-    std::ifstream ifs( cfgAbsolutePath.string().c_str() );
-    std::istringstream iss( readFromFile( cfgAbsolutePath.string() ) );
-    po::store( parse_config_file( ifs, *S_desc, true ), S_vm );
-    S_configFiles.push_back( std::make_tuple( cfgAbsolutePath.string(), std::forward<std::istringstream>( iss ) ) );
-    po::notify( S_vm );
+    setConfigFiles( std::vector<std::string>{ cfgfile } );
 }
 bool
 Environment::initialized()
@@ -1690,9 +1809,53 @@ Environment::abort( int error_code )
     return mpi::environment::abort( error_code );
 }
 
+/**
+ * @brief Create a bootstrap directory path with MPI synchronization
+ * 
+ * Helper function to avoid code duplication. Creates a directory on rank 0
+ * and synchronizes all ranks before returning the path.
+ * 
+ * @param subpath Path relative to scratchdir/bootstrap/appName
+ * @return fs::path The full bootstrap path
+ */
+fs::path
+Environment::createBootstrapPath( fs::path const& subpath )
+{
+    static std::map<std::string, fs::path> bootstrap_cache;
+    
+    std::string key = subpath.string();
+    auto it = bootstrap_cache.find( key );
+    if ( it != bootstrap_cache.end() )
+        return it->second;
+    
+    fs::path bootstrap_path = scratchdir() / "bootstrap" / S_about.appName() / subpath;
+    
+    // Only use MPI if it's initialized and not yet finalized
+    if ( initialized() && !finalized() )
+    {
+        if ( isMasterRank() && !fs::exists( bootstrap_path ) )
+            fs::create_directories( bootstrap_path );
+        worldComm().barrier();
+    }
+    else
+    {
+        // Before MPI init or after MPI finalize, just create the directories without synchronization
+        if ( !fs::exists( bootstrap_path ) )
+            fs::create_directories( bootstrap_path );
+    }
+    
+    bootstrap_cache[key] = bootstrap_path;
+    return bootstrap_path;
+}
+
 fs::path const&
 Environment::rootRepository()
 {
+    if ( !repositoryConfigured() )
+    {
+        static fs::path bootstrap_root = createBootstrapPath( "" );
+        return bootstrap_root;
+    }
     return S_rootdir;
 }
 
@@ -1757,6 +1920,34 @@ Environment::findFile( std::string const& filename, std::vector<std::string> pat
          fs::path( filename ).extension() == ".mesh" ||
          fs::path( filename ).extension() == ".med" )
     {
+        auto filename_only = fs::path( filename ).filename();
+        
+        // Helper lambda to recursively search for a file in a directory
+        auto search_recursive = []( fs::path const& root, fs::path const& target_filename ) -> std::string
+        {
+            if ( !fs::exists( root ) || !fs::is_directory( root ) )
+                return std::string();
+            
+            try
+            {
+                for ( auto const& entry : fs::recursive_directory_iterator( root, fs::directory_options::follow_directory_symlink ) )
+                {
+                    if ( fs::is_regular_file( entry ) && entry.path().filename() == target_filename )
+                    {
+                        LOG( INFO ) << "File " << entry.path() << " found recursively";
+                        return entry.path().string();
+                    }
+                }
+            }
+            catch ( fs::filesystem_error const& e )
+            {
+                LOG( WARNING ) << "Error during recursive search in " << root << ": " << e.what();
+            }
+            
+            return std::string();
+        };
+        
+        // First try exact path
         if ( fs::exists( fs::path( Environment::localGeoRepository() ) / filename ) )
         {
             LOG( INFO ) << "File " << ( fs::path( Environment::localGeoRepository() ) / filename ) << " found";
@@ -1766,8 +1957,27 @@ Environment::findFile( std::string const& filename, std::vector<std::string> pat
         if ( Environment::systemGeoRepository().get<1>()  &&
                 fs::exists( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ) )
         {
-            LOG( INFO ) << "File" << ( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ) << " found";
+            LOG( INFO ) << "File " << ( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ) << " found";
             return ( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ).string();
+        }
+        
+        // If not found, try recursive search with just the filename
+        if ( filename != filename_only.string() )
+        {
+            // Already tried with a relative path, skip recursive search
+        }
+        else
+        {
+            // Search recursively in localGeoRepository
+            if ( auto found = search_recursive( fs::path( Environment::localGeoRepository() ), filename_only ); !found.empty() )
+                return found;
+            
+            // Search recursively in systemGeoRepository
+            if ( Environment::systemGeoRepository().get<1>() )
+            {
+                if ( auto found = search_recursive( fs::path( Environment::systemGeoRepository().get<0>() ), filename_only ); !found.empty() )
+                    return found;
+            }
         }
     }
 
@@ -1840,22 +2050,42 @@ Environment::systemConfigRepository()
 std::string
 Environment::appRepository()
 {
+    if ( !repositoryConfigured() )
+    {
+        static fs::path bootstrap_app = createBootstrapPath( "app" );
+        return bootstrap_app.string();
+    }
     return S_appdir.string();
 }
 std::string
 Environment::appRepositoryWithoutNumProc()
 {
+    if ( !repositoryConfigured() )
+    {
+        static fs::path bootstrap_app = createBootstrapPath( "app" );
+        return bootstrap_app.string();
+    }
     return S_appdirWithoutNumProc.string();
 }
 std::string
 Environment::exprRepository()
 {
+    if ( !repositoryConfigured() )
+    {
+        static fs::path bootstrap_exprs = createBootstrapPath( "app/exprs" );
+        return bootstrap_exprs.string();
+    }
     return S_repository.exprs().string();
 }
 
 std::string
 Environment::logsRepository()
 {
+    if ( !repositoryConfigured() )
+    {
+        static fs::path bootstrap_logs = createBootstrapPath( "app/logs" );
+        return bootstrap_logs.string();
+    }
     return (S_appdir / "logs").string();
 }
 
@@ -1868,6 +2098,14 @@ Environment::exportsRepository()
 std::string
 Environment::downloadsRepository()
 {
+    if ( !repositoryConfigured() )
+    {
+        static fs::path bootstrap_downloads = scratchdir() / "downloads" / S_about.appName();
+        if ( isMasterRank() && !fs::exists( bootstrap_downloads ) )
+            fs::create_directories( bootstrap_downloads );
+        worldComm().barrier();
+        return bootstrap_downloads.string();
+    }
     return (S_appdirWithoutNumProc / "downloads").string();
 }
 
@@ -1900,14 +2138,20 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
     S_paths.push_back( S_appdir );
     std::string directory = fmt.str();
 
+    // Update repository configuration from options (if available)
     if ( Environment::vm().count( "repository.append.np" ) )
         S_repository.config().append_np = boption( "repository.append.np" );
     if ( Environment::vm().count( "repository.append.date" ) )
         S_repository.config().append_date = boption( "repository.append.date" );
+    
     // if we are in relative mode then first go back to the initial current path
     if ( location == Location::relative )
         ::chdir( S_paths.front().string().c_str() );
-    if ( !directory.empty() )
+    
+    // Configure repository
+    // For custom locations: callback determines the path (directory parameter is ignored)
+    // For other locations: use directory parameter if provided
+    if ( !directory.empty() && !S_repository.isCustom() )
     {
         S_repository.configure( directory, location );
     }
@@ -1922,10 +2166,10 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
     S_appdirWithoutNumProc = S_repository.directoryWithoutAppenders();
 
     startLogging( Environment::about().appName() );
-    cout << tc::red
-         << " . " << Environment::about().appName() << " files are stored in " << tc::red << Environment::appRepository()
-         << tc::reset << std::endl;
-    cout << " .. logfiles :" << Environment::logsRepository() << std::endl;
+
+    Logger::console()->info("[feelpp::{}] files are stored in {}", Environment::about().appName(), Environment::appRepository());
+    Logger::console()->info("[feelpp::{}] logs are stored in {}", Environment::about().appName(), Environment::logsRepository());
+    Logger::console()->flush();
 
     // eventually cleanup
     if ( remove )
@@ -2028,6 +2272,110 @@ Environment::setLogs( std::string const& prefix )
 void
 Environment::startLogging( std::string decorate )
 {
+#if defined(FEELPP_HAS_SPDLOG)
+    // Determine MPI logging mode from options
+    std::string log_mpi_mode = "master"; // default
+    if (S_vm.count("log.mpi"))
+        log_mpi_mode = S_vm["log.mpi"].as<std::string>();
+    
+    // Check if this rank should log based on log.mpi setting
+    bool should_log = true;
+    int rank = S_worldcomm->rank();
+    
+    if (log_mpi_mode == "none")
+    {
+        should_log = false;
+    }
+    else if (log_mpi_mode == "master")
+    {
+        should_log = (rank == 0);
+    }
+    else if (log_mpi_mode == "all")
+    {
+        should_log = true;
+    }
+    else
+    {
+        // Invalid value, warn and default to master
+        if (rank == 0)
+            std::cerr << "Warning: Invalid log.mpi value '" << log_mpi_mode 
+                      << "'. Using 'master' mode. Valid values: none, master, all\n";
+        should_log = (rank == 0);
+    }
+    
+    // Use spdlog for logging
+    fs::path dir = logsRepository();
+    const int Nproc = 200;
+
+    if ( S_worldcomm->size() > Nproc )
+    {
+        std::string smin = boost::lexical_cast<std::string>( Nproc*std::floor( S_worldcomm->rank()/Nproc ) );
+        std::string smax = boost::lexical_cast<std::string>( Nproc*std::ceil( double( S_worldcomm->rank()+1 )/Nproc )-1 );
+        std::string replog = smin + "-" + smax;
+        dir /= replog;
+    }
+
+    // only one processor every Nproc creates the corresponding log directory
+    if ( S_worldcomm->rank() % Nproc == 0 )
+    {
+        if ( !fs::exists( dir ) )
+            fs::create_directories( dir );
+    }
+
+    // Wait for directory creation - ALL ranks must reach this barrier
+    worldComm().barrier();
+
+    // Now handle logging setup based on should_log
+    if (!should_log)
+    {
+        // This rank should not log - set up null sink
+        Logger::setDefaultLogger(Logger::createNullLogger("feelpp"));
+        Logger::disable();
+        Logger::verbosity() = 0;
+        return;
+    }
+
+    // Build per-rank log filename
+    auto file = (dir / fmt::format("rank-{:06d}.log", S_worldcomm->rank())).string();
+
+    // Ensure the directory exists before creating file sink (safety check for NFS delays)
+    if (!fs::exists(dir))
+    {
+        try {
+            fs::create_directories(dir);
+        } catch (const fs::filesystem_error& e) {
+            // Directory might have been created by another rank between the check and creation
+            // This is safe to ignore if the directory now exists
+            if (!fs::exists(dir)) {
+                std::cerr << fmt::format("[feelpp] Failed to create log directory {}: {}\n", 
+                                        dir.string(), e.what());
+                throw;
+            }
+        }
+    }
+
+    // Create file sink
+    bool log_to_console = false;
+    if (S_vm.count("log.console"))
+        log_to_console = S_vm["log.console"].as<bool>();
+    
+    // Create logger with file sink, optionally add stderr sink
+    if (log_to_console)
+    {
+        Logger::setDefaultLogger(Logger::createMultiLogger("feelpp", file, false));
+    }
+    else
+    {
+        Logger::setDefaultLogger(Logger::createFileLogger("feelpp", file, false));
+    }
+    Logger::setPattern("%Y-%m-%d %H:%M:%S.%e [%l] %n %P:%t %v");
+
+    // Map Environment::logVerbosityLevel() to spdlog level and VLOG verbosity
+    int v = Environment::logVerbosityLevel();
+    Logger::verbosity() = v;
+    Logger::setLevel(v);
+#else
+    // Use glog for logging
     fs::path a0 = logsRepository();
     const int Nproc = 200;
 
@@ -2055,17 +2403,6 @@ Environment::startLogging( std::string decorate )
     int envargc = S_argc;
     google::ParseCommandLineFlags( &envargc, &envargv/*S_argv*/, false );
     freeargv( envargv );
-    //std::cout << "FLAGS_vmodule: " << FLAGS_vmodule << "\n";
-#if 0
-    std::cout << "argc=" << S_argc << "\n";
-
-    for ( int i = 0; i < S_argc; ++i )
-    {
-        std::cout << "argv[" << i << "]=" << S_argv[i] << "\n";
-    }
-
-#endif
-
 
     // Initialize Google's logging library.
     if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
@@ -2078,21 +2415,75 @@ Environment::startLogging( std::string decorate )
         google::InitGoogleLogging( S_argv[0] );
     }
     google::InstallFailureSignalHandler();
+#endif
 }
 
 void
 Environment::stopLogging( bool remove )
 {
+#if defined(FEELPP_HAS_SPDLOG)
+    // Shutdown spdlog
+    Logger::shutdown();
+    
+    // Only attempt cleanup if MPI is still active and we can safely check rank
+    // After PetscFinalize/SlepcFinalize, MPI may be finalized making isMasterRank() unsafe
+    bool can_check_rank = initialized() && !finalized() && S_worldcomm;
+    bool is_master = can_check_rank ? S_worldcomm->isMasterRank() : true;
+    
+    // Determine who should perform cleanup based on log.mpi mode
+    bool should_cleanup = false;
+    if (remove || Environment::vm().count( "rmlogs" ))
+    {
+        std::string log_mpi_mode = "master"; // default
+        if (S_vm.count("log.mpi"))
+            log_mpi_mode = S_vm["log.mpi"].as<std::string>();
+        
+        if (log_mpi_mode == "none")
+        {
+            // If no rank was logging, only master cleans up (to be safe)
+            should_cleanup = is_master;
+        }
+        else if (log_mpi_mode == "master")
+        {
+            // Only master was logging, only master cleans up
+            should_cleanup = is_master;
+        }
+        else if (log_mpi_mode == "all")
+        {
+            // All ranks were logging, each rank cleans up its own logs
+            // But to avoid race conditions on shared directories, only master removes the whole tree
+            should_cleanup = is_master;
+        }
+        else
+        {
+            // Default to master cleanup
+            should_cleanup = is_master;
+        }
+    }
+    
+    if ( should_cleanup )
+    {
+        std::cout << tc::red << "Removing log files (--rmlogs) in " << Environment::logsRepository() << tc::reset << std::endl;
+        fs::remove_all( Environment::logsRepository() );
+    }
+#else
+    // Use glog shutdown
     if ( google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
     {
         google::ShutdownGoogleLogging();
-        if ( (remove || Environment::vm().count( "rmlogs" ))  &&
-             S_worldcomm->isMasterRank() )
+        
+        // Only attempt cleanup if MPI is still active and we can safely check rank
+        // After PetscFinalize/SlepcFinalize, MPI may be finalized making isMasterRank() unsafe
+        bool can_check_rank = initialized() && !finalized() && S_worldcomm;
+        bool is_master = can_check_rank ? S_worldcomm->isMasterRank() : true;
+        
+        if ( (remove || Environment::vm().count( "rmlogs" )) && is_master )
         {
             std::cout  << tc::red << "Removing log files (--rmlogs) in " << Environment::logsRepository() << tc::reset << std::endl;
             fs::remove_all( Environment::logsRepository() );
         }
     }
+#endif
 }
 
 worldscomm_ptr_t &
@@ -2439,7 +2830,12 @@ Environment::expand( std::string const& expr )
     std::string topBuildDir = BOOST_PP_STRINGIZE( FEELPP_BUILD_DIR );
     std::string cfgDir = S_cfgdir.string();
     std::string homeDir = ::getenv( "HOME" );
-    std::string dataDir = BOOST_PP_STRINGIZE( FEELPP_DATADIR );
+    
+    // Prefer build data directory if it exists (for testing without install)
+    std::string buildDataDir = topBuildDir + "/share/feelpp/data";
+    std::string installDataDir = BOOST_PP_STRINGIZE( FEELPP_DATADIR );
+    std::string dataDir = fs::exists(fs::path(buildDataDir)) ? buildDataDir : installDataDir;
+    
     std::string exprdbDir = ( fs::path( Environment::rootRepository() )/fs::path( "exprDB" ) ).string();
 
     VLOG( 2 ) << "topSrcDir " << topSrcDir << "\n"
@@ -2561,6 +2957,7 @@ std::vector<std::string> Environment::S_to_pass_further;
 
 boost::signals2::signal<void()> Environment::S_deleteObservers;
 
+std::string Environment::S_log_mpi_mode = "master";
 std::shared_ptr<WorldComm> Environment::S_worldcomm;
 std::shared_ptr<WorldComm> Environment::S_worldcommSeq;
 boost::uuids::random_generator Environment::S_generator;

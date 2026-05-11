@@ -19,6 +19,6 @@
 #  Copyright (C) 2014-2017 Feel++ Consortium
 #
 
-set_directory_properties(PROPERTIES LABEL testevents )
+set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testevents")
 
 feelpp_add_test( events )

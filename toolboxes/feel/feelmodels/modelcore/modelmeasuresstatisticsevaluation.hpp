@@ -193,13 +193,21 @@ measureStatisticsEvaluation( std::shared_ptr<MeshType> const& mesh, RangeType co
     {
         std::string firstMarker = *meshMarkers.begin();
         if ( mesh->hasElementMarker( firstMarker ) )
+        {
             measureStatisticsEvaluation(  markedelements( mesh,ppStat.markers() ),ppStat,res,symbolsExpr,fieldTuple... );
+        }
         else if ( mesh->hasFaceMarker( firstMarker ) )
+        {
             measureStatisticsEvaluation(  markedfaces( mesh,ppStat.markers() ),ppStat,res,symbolsExpr,fieldTuple... );
+        }
         else if ( mesh->hasEdgeMarker( firstMarker ) || mesh->hasPointMarker( firstMarker ) )
+        {
             CHECK( false ) << "not implemented for edges/points";
+        }
         else if ( !mesh->hasMarker( firstMarker ) )
+        {
             CHECK( false ) << "marker " << firstMarker << " not present in mesh";
+        }
     }
 }
 

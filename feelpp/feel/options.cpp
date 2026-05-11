@@ -86,6 +86,8 @@ generic_options()
         ( "feelinfo", "prints feel libraries information" )
         ( "nochdir", "Don't change repository directory even though it is called" )
         ( "rmlogs", "remove logs after execution" )
+        ( "log.mpi", po::value<std::string>()->default_value("master"), "MPI logging mode: none (no ranks log), master (only rank 0 logs), all (all ranks log)" )
+        ( "log.console", po::value<bool>()->default_value(false), "Log to console (stderr) in addition to log files" )
         ( "rm", "remove application repository after execution" )
         ( "dirs", "list standard feelpp directories" )
         ( "directory", po::value<std::string>(), "change directory to specified one" )
@@ -220,7 +222,7 @@ mesh_options( std::string const& prefix )
         ( prefixvm( prefix,"mesh.partition.size").c_str(), po::value<int>()->default_value(1), "number of partitions" )
         ( prefixvm( prefix,"mesh.partition.type").c_str(), po::value<std::string>()->default_value("metis"), "mesh partitioner: metis, (more to come)" )
         ( prefixvm( prefix,"mesh.save.enable" ).c_str(), Feel::po::value<bool>()->default_value( false ), "enable saving mesh to disk" )
-        ( prefixvm( prefix,"mesh.save.formats" ).c_str(), Feel::po::value<std::vector<std::string>>()->default_value( {"json+h5","msh"} ), "format of the mesh: json+h5, msh" )
+        ( prefixvm( prefix,"mesh.save.formats" ).c_str(), Feel::po::value<std::vector<std::string>>()->multitoken(), "format of the mesh: json+h5, msh (default: json+h5 msh)" )
         ( prefixvm( prefix,"mesh.load.enable" ).c_str(), Feel::po::value<bool>()->default_value( false ), "enable loading mesh from disk, overriding file name extension" )
         ( prefixvm( prefix,"mesh.load.format" ).c_str(), Feel::po::value<std::string>()->default_value( "json+h5" ), "file format to load: msh, json" )
         ( prefixvm( prefix,"mesh.scale" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "scale the mesh after loading" );
@@ -974,7 +976,7 @@ exporter_options( std::string const& prefix )
 
 
         //  geometry
-        ( prefixvm( prefix,"exporter.geometry" ).c_str(), Feel::po::value<std::string>()->default_value( "change_coords_only" ), "Mesh change type, this option tells the exporter whether the mesh does not change(static), changes only the coordinates of the vertices (change_coords_only) or changes entirely (change). Choices: change_coords_only, change, static" )
+        ( prefixvm( prefix,"exporter.geometry" ).c_str(), Feel::po::value<std::string>()->default_value( "static" ), "Mesh change type, this option tells the exporter whether the mesh does not change(static), changes only the coordinates of the vertices (change_coords_only) or changes entirely (change). Choices: change_coords_only, change, static" )
 
         // prefix options
         ( prefixvm( prefix,"exporter.prefix" ).c_str(), Feel::po::value<std::string>()->default_value( prefix ), "prefix for exported files" )

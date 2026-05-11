@@ -868,10 +868,10 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 template<typename ContextType,typename EType>
+    requires EType::is_vectorial
 void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::symmetricGradient( ContextType const & context,
-                                                                       grad_array_type& v,
-                                                                       std::enable_if_t<EType::is_vectorial>* ) const
+                                                                       grad_array_type& v ) const
 {
     index_type elt_id = context.eId();
     if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
@@ -2249,8 +2249,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     gm1_context_ptrtype __c1 = this->mesh()->gm1()->template context<context>( initElt,__geopc1, ex.dynamicContext() );
 
     typedef typename t_expr_type::shape shape;
-    static const bool is_rank_ok = ( shape::M == nComponents1 &&
-                                     shape::N == nComponents2 );
+    constexpr bool is_rank_ok = ( shape::M == nComponents1 &&
+                                  shape::N == nComponents2 );
 
     BOOST_MPL_ASSERT_MSG( is_rank_ok,//mpl::bool_<is_rank_ok>::value,
                           INVALID_TENSOR_RANK,
@@ -2841,10 +2841,13 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
                                                             bool verbose,
                                                             mpl::int_<MESH_POINTS> )
 {
-    LOG(INFO) << "onImpl on Mesh Points";google::FlushLogFiles(google::GLOG_INFO);
+    LOG(INFO) << "onImpl on Mesh Points";
+    Logger::flush();
     // TODO : check that we do not use hdiv hcurl or other type of elements
     const size_type context = ExprType::context|vm::POINT;
-    DVLOG(3)  << "assembling Dirichlet conditions\n";google::FlushLogFiles(google::GLOG_INFO);
+    DVLOG(3)  << "assembling Dirichlet conditions\n";
+    Logger::flush();
+
     auto mesh = this->functionSpace()->mesh().get();
     auto const* __dof = this->functionSpace()->dof().get();
     auto const* __fe = this->functionSpace()->fe().get();
@@ -2858,7 +2861,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     auto gm = mesh->gm();
     auto const& firstPt = boost::unwrap_ref( *pt_it );
     DVLOG(3) << "point " << firstPt.id() << " with hasMarker " << firstPt.hasMarker() << " nb: " << std::distance(pt_it,pt_en);
+    #if !defined(FEELPP_HAS_SPDLOG)
+
     google::FlushLogFiles(google::GLOG_INFO);
+
+    #else
+
+    Logger::flush();
+
+    #endif
 
     index_type eid = firstPt.elements().begin()->first;
     uint16_type ptid_in_element = firstPt.elements().begin()->second;
