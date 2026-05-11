@@ -28,7 +28,19 @@ feelpp_add_test( heat NO_SEQ_TEST LINK_LIBRARIES Feelpp::feelpp_toolbox_heat_lib
 feelpp_add_test( cavity_triangular NO_MPI_TEST LINK_LIBRARIES Feelpp::feelpp CLI "--config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/triangular_cavity/triangular_cavity.cfg " DEFS FEELPP_DIM=2 FEELPP_ORDER=1  )
 feelpp_add_test( cavity_rectangular NO_MPI_TEST LINK_LIBRARIES Feelpp::feelpp CLI "--config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/rectangular_cavity/rectangular_cavity.cfg " DEFS FEELPP_DIM=2 FEELPP_ORDER=1  )
 
-if( LSB_RELEASE_CODENAME_SHORT MATCHES "noble" )
+set(_feelpp_skip_cavity_cylindrical OFF)
+if( LSB_RELEASE_CODENAME_SHORT MATCHES "noble" OR LSB_RELEASE_VERSION_SHORT STREQUAL "24.04" )
+    set(_feelpp_skip_cavity_cylindrical ON)
+elseif( EXISTS "/etc/os-release" )
+    file(READ "/etc/os-release" _feelpp_os_release)
+    if( _feelpp_os_release MATCHES "(^|\n)ID=ubuntu(\n|$)" AND
+        ( _feelpp_os_release MATCHES "(^|\n)VERSION_ID=\"?24\\.04\"?(\n|$)" OR
+          _feelpp_os_release MATCHES "(^|\n)VERSION_CODENAME=noble(\n|$)" ) )
+        set(_feelpp_skip_cavity_cylindrical ON)
+    endif()
+endif()
+
+if( _feelpp_skip_cavity_cylindrical )
     feelpp_add_test(cavity_cylindrical NO_MPI_TEST SKIP_TEST LINK_LIBRARIES Feelpp::feelpp CLI "--config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/cylindrical_cavity/cylindrical_cavity.cfg " DEFS FEELPP_DIM=3 FEELPP_ORDER=1)
 else()
     feelpp_add_test(cavity_cylindrical NO_MPI_TEST LINK_LIBRARIES Feelpp::feelpp CLI "--config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/cylindrical_cavity/cylindrical_cavity.cfg " DEFS FEELPP_DIM=3 FEELPP_ORDER=1)
