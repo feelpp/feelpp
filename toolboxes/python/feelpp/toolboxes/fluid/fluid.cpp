@@ -30,8 +30,19 @@
 #include <feel/feelcore/pybind11_json.hpp>
 #include "contactforce.hpp"
 
+#include <stdexcept>
+
 namespace py = pybind11;
 using namespace Feel;
+
+namespace
+{
+void
+ensureMultibodyModuleRegistered()
+{
+    py::module::import( "feelpp.toolboxes.multibody" );
+}
+}
 
 template<typename MeshT>
 std::shared_ptr<MeshT>
@@ -81,6 +92,52 @@ void defFM(py::module &m)
             }, "set the pressure field", py::arg("field"))
         .def("spacePressure",&fm_t::functionSpacePressure, "get the pressure function space")
         .def("fieldPressure",static_cast<typename fm_t::element_pressure_ptrtype const& (fm_t::*)() const>(&fm_t::fieldPressurePtr), "get the pressure field")
+
+        // multibody model and body inspection
+        .def( "multibody",
+              []( fm_t const& self ) -> py::object
+              {
+                  auto mb = self.multibody();
+                  if ( !mb )
+                      return py::none();
+                  ensureMultibodyModuleRegistered();
+                  return py::cast( mb );
+              },
+              "get the multibody submodel, or None" )
+        .def( "bodyNames",
+              []( fm_t const& self )
+              {
+                  std::vector<std::string> names;
+                  auto mb = self.multibody();
+                  if ( !mb )
+                      return names;
+                  names.reserve( mb->bodies().size() );
+                  for ( auto const& [name, body] : mb->bodies() )
+                      names.push_back( name );
+                  return names;
+              },
+              "get registered multibody body names" )
+        .def( "hasBody",
+              []( fm_t const& self, std::string const& name )
+              {
+                  auto mb = self.multibody();
+                  return mb && mb->hasBody( name );
+              },
+              "return true when a multibody body name is registered",
+              py::arg( "name" ) )
+        .def( "body",
+              []( fm_t& self, std::string const& name ) -> py::object
+              {
+                  auto mb = self.multibody();
+                  if ( !mb )
+                      throw std::runtime_error( "fluid multibody submodel is not initialized" );
+                  if ( !mb->hasBody( name ) )
+                      throw std::out_of_range( "unknown fluid multibody body: " + name );
+                  ensureMultibodyModuleRegistered();
+                  return py::cast( std::addressof( mb->body( name ) ), py::return_value_policy::reference );
+              },
+              "get a registered multibody body by name",
+              py::arg( "name" ) )
 
         // time stepping
         .def("timeStepBase",static_cast<std::shared_ptr<TSBase> (fm_t::*)() const>(&fm_t::timeStepBase), "get time stepping base")
@@ -151,4 +208,3 @@ PYBIND11_MODULE(_fluid, m )
     defFM<3,3,2,1>(m);
 
 }
-

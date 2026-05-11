@@ -17,7 +17,8 @@ template< typename ConvexType>
 class Multibody : public ModelNumerical,
                   public ModelPhysics<ConvexType::nDim>
 {
-    using super_numerical_type = ModelNumerical;
+    using super_type = ModelNumerical;
+    using super_numerical_type = super_type;
     using super_physics_type = ModelPhysics<ConvexType::nDim>;
 public:
 
@@ -67,7 +68,7 @@ public:
 
     // bodies
     std::map<std::string, std::unique_ptr<body_type>> const& bodies() const noexcept { return M_bodies; }
-    bool hasBody( std::string const& name ) const { return M_bodies.find( name ) == M_bodies.end(); }
+    bool hasBody( std::string const& name ) const { return M_bodies.find( name ) != M_bodies.end(); }
     body_type const& body( std::string const& name ) const { return *M_bodies.at( name ); }
     body_type & body( std::string const& name ) { return *M_bodies.at( name ); }
 

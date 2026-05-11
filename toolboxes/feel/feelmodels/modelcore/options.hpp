@@ -48,6 +48,7 @@ Feel::po::options_description levelset_options(std::string const& prefix);
 Feel::po::options_description coefficientformpde_options(std::string const& prefix);
 Feel::po::options_description coefficientformpdes_options(std::string const& prefix);
 Feel::po::options_description mixedpoisson_options(std::string const& prefix);
+Feel::po::options_description multibody_options(std::string const& prefix);
 
 Feel::po::options_description toolboxes_options(std::string const& type, std::string const& prefix);
 inline

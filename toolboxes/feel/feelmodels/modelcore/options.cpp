@@ -734,6 +734,13 @@ mixedpoisson_options( std::string const& prefix )
 }
 
 Feel::po::options_description
+multibody_options( std::string const& prefix )
+{
+    Feel::po::options_description desc_options( "multibody options" );
+    return desc_options.add( modelnumerical_options( prefix ) );
+}
+
+Feel::po::options_description
 toolboxes_options( std::string const& type, std::string const& prefix )
 {
     Feel::po::options_description toolboxesOptions("toolboxes options");
@@ -767,8 +774,10 @@ toolboxes_options( std::string const& type, std::string const& prefix )
         toolboxesOptions.add(coefficientformpdes_options(prefix));
     else if (type == "mixedpoisson")
         toolboxesOptions.add(mixedpoisson_options(prefix));
+    else if (type == "multibody")
+        toolboxesOptions.add(multibody_options(prefix));
     else
-        CHECK( false ) << "invalid type : " << type << " -> must be : fluid, solid, heat, fsi, advection, levelset, multifluid, thermo-electric, heat-fluid, heat-fluid, coefficient-form-pdes, mixedpoisson";
+        CHECK( false ) << "invalid type : " << type << " -> must be : fluid, solid, heat, fsi, advection, levelset, multifluid, thermo-electric, heat-fluid, heat-fluid, coefficient-form-pdes, mixedpoisson, multibody";
 
     return toolboxesOptions;
 }
