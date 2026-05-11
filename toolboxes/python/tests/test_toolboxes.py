@@ -18,6 +18,11 @@ def test_init_fluid():
 
     f = fluid(dim=2)
 
+def test_init_fsi():
+    from feelpp.toolboxes.fsi import fsi
+
+    f = fsi(dim=2)
+
 def test_init_electric():
     from feelpp.toolboxes.electric import electric
 

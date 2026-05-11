@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 
 
 import feelpp.core as fppc
@@ -19,7 +20,7 @@ sys.argv = ['magneto']
 e = fppc.Environment(sys.argv, opts=tb.toolboxes_options("fsi"),
                     config=fppc.globalRepository("magneto"))
 
-fppc.Environment.setConfigFile('magneto.cfg')
+fppc.Environment.setConfigFile(str(Path(__file__).resolve().parent / "cases/magneto/magneto.cfg"))
 
 #============== Control parameters =======================#
 freq = 0.9

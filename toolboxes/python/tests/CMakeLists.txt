@@ -90,6 +90,9 @@ endif()
 if(FEELPP_TOOLBOXES_ENABLE_SOLIDMECHANICS AND EXISTS "${CMAKE_BINARY_DIR}/toolboxes/feel/feelmodels/solid")
   list(APPEND _feelpp_ld_library_path_entries "${CMAKE_BINARY_DIR}/toolboxes/feel/feelmodels/solid")
 endif()
+if(FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS AND EXISTS "${CMAKE_BINARY_DIR}/toolboxes/feel/feelmodels/multibody")
+  list(APPEND _feelpp_ld_library_path_entries "${CMAKE_BINARY_DIR}/toolboxes/feel/feelmodels/multibody")
+endif()
 if(FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS AND EXISTS "${CMAKE_BINARY_DIR}/toolboxes/feel/feelmodels/fluid")
   list(APPEND _feelpp_ld_library_path_entries "${CMAKE_BINARY_DIR}/toolboxes/feel/feelmodels/fluid")
 endif()
@@ -102,12 +105,16 @@ endif()
 if(FEELPP_TOOLBOXES_ENABLE_HEAT AND FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS AND EXISTS "${CMAKE_BINARY_DIR}/toolboxes/feel/feelmodels/heatfluid")
   list(APPEND _feelpp_ld_library_path_entries "${CMAKE_BINARY_DIR}/toolboxes/feel/feelmodels/heatfluid")
 endif()
+if(FEELPP_TOOLBOXES_ENABLE_FSI AND EXISTS "${CMAKE_BINARY_DIR}/toolboxes/feel/feelmodels/fsi")
+  list(APPEND _feelpp_ld_library_path_entries "${CMAKE_BINARY_DIR}/toolboxes/feel/feelmodels/fsi")
+endif()
 list(REMOVE_DUPLICATES _feelpp_ld_library_path_entries)
 
 set(PYFILES
   _cfpdes_test_utils.py
   _cfpdes_case_runner.py
   _case_paths.py
+  _fsi_test_utils.py
   _heat_test_utils.py
   _solid_test_utils.py
   conftest.py
@@ -121,12 +128,14 @@ set(PYFILES
   test_collision.py
   test_electric.py
   test_fluid.py
+  test_fsi.py
   test_hdg.py
   test_heat.py
   test_heat_thermo2d.py
   test_heat_time_stepping.py
   test_heatfluid.py
   test_interpolation.py
+  test_multibody.py
   test_multitoolboxes.py
   test_solid.py
   test_solid_nafems_le1.py
@@ -145,6 +154,7 @@ endforeach()
 set(_enabled_toolboxes "")
 if(FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS)
   list(APPEND _enabled_toolboxes fluid)
+  list(APPEND _enabled_toolboxes multibody)
 endif()
 if(FEELPP_TOOLBOXES_ENABLE_CFPDE)
   list(APPEND _enabled_toolboxes cfpdes)
@@ -166,6 +176,9 @@ if(FEELPP_TOOLBOXES_ENABLE_THERMOELECTRIC)
 endif()
 if(FEELPP_TOOLBOXES_ENABLE_HEAT AND FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS)
   list(APPEND _enabled_toolboxes heatfluid)
+endif()
+if(FEELPP_TOOLBOXES_ENABLE_CFPDE AND FEELPP_TOOLBOXES_ENABLE_FSI)
+  list(APPEND _enabled_toolboxes fsi)
 endif()
 if(FEELPP_TOOLBOXES_ENABLE_HEAT)
   list(APPEND _enabled_toolboxes interpolation)

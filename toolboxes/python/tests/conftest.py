@@ -28,9 +28,11 @@ class InitFeelpp:
             self.e = fppc.Environment(
                 sys.argv, opts= fppc.backend_options("Iv")
                                 .add(tb.toolboxes_options("electric"))
-                                .add(tb.toolboxes_options("fluid"))
                                 .add(tb.toolboxes_options("heat"))
-                                .add(tb.toolboxes_options("solid"))
+                                # FSI registers the fluid and solid subtoolbox
+                                # options with their standard prefixes.
+                                .add(tb.toolboxes_options("fsi"))
+                                .add(tb.toolboxes_options("multibody"))
                                 .add(tb.toolboxes_options("heat-fluid"))
                                 .add(tb.toolboxes_options("mixedpoisson", "hdg.poisson"))
                                 .add(tb.toolboxes_options("thermo-electric"))

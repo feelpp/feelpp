@@ -99,7 +99,20 @@ void defToolbox(py::module &m)
         //.def( "mesh", &toolbox_t::mesh, "get the mesh" ) //TODO
         //.def( "setMesh", &toolbox_t::setMesh, "set the mesh", py::arg( "mesh" ) ) //TODO
         .def( "updateParameterValues", &toolbox_t::updateParameterValues, "update parameter values" )
+        .def( "setParameterValues", &toolbox_t::setParameterValues, "set parameter values", py::arg( "paramValues" ) )
+        .def( "meshSize", &toolbox_t::meshSize, "get the FSI mesh size" )
         //.def( "rangeMeshElements", &toolbox_t::rangeMeshElements, "get the range of mesh elements" )
+
+        // FSI coupling state
+        .def( "fsiCouplingType", &toolbox_t::fsiCouplingType, "get the FSI coupling type" )
+        .def( "fsiCouplingBoundaryCondition", &toolbox_t::fsiCouplingBoundaryCondition, "get the FSI coupling boundary condition" )
+        .def( "useFSISemiImplicitScheme", &toolbox_t::useFSISemiImplicitScheme, "return true if FSI uses a semi-implicit scheme" )
+        .def( "interfaceFSIisConforme", &toolbox_t::interfaceFSIisConforme, "return true if the FSI interface is conforming" )
+        .def( "fixPointTolerance", &toolbox_t::fixPointTolerance, "get the FSI fix-point tolerance" )
+        .def( "fixPointInitialTheta", &toolbox_t::fixPointInitialTheta, "get the FSI fix-point initial theta" )
+        .def( "fixPointMinTheta", &toolbox_t::fixPointMinTheta, "get the FSI fix-point minimum theta" )
+        .def( "fixPointMaxIt", &toolbox_t::fixPointMaxIt, "get the FSI fix-point maximum iterations" )
+        .def( "fixPointMinItConvergence", &toolbox_t::fixPointMinItConvergence, "get the FSI fix-point minimum convergence iterations" )
 
         // temperature space and field
         .def( "modelSolid", []( toolbox_ptr_t& t ) { return t->solidModel(); } , "get the solid model" )
@@ -121,6 +134,9 @@ void defToolbox(py::module &m)
 
         //time
         .def("timeStepBase",static_cast<std::shared_ptr<TSBase> (toolbox_t::*)() const>(&toolbox_t::timeStepBase), "get time stepping base")
+        .def("fluidTimeStepBase",static_cast<std::shared_ptr<TSBase> (toolbox_t::*)() const>(&toolbox_t::fluidTimeStepBase), "get fluid time stepping base")
+        .def("solidTimeStepBase",static_cast<std::shared_ptr<TSBase> (toolbox_t::*)() const>(&toolbox_t::solidTimeStepBase), "get solid time stepping base")
+        .def("updateTime",static_cast<void (toolbox_t::*)( double )>(&toolbox_t::updateTime), "update FSI, fluid, and solid model time", py::arg("time"))
         //.def("startTimeStep",static_cast<void (toolbox_t::*)( bool )>(&toolbox_t::startTimeStep), "start time stepping", py::arg("preprocess")=true )
         .def("startTimeStep", &toolbox_t::startTimeStep, "start time stepping")
         .def("updateTimeStep",&toolbox_t::updateTimeStep, "update time stepping")

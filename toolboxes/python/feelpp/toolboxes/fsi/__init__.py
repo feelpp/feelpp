@@ -1,9 +1,14 @@
 import feelpp.core as fppc
+import importlib
 from feelpp.toolboxes.core import *
 
 has_fsi = False
 _fsis = None
 try:
+    # Register the submodel pybind11 types returned by modelFluid/modelSolid.
+    importlib.import_module("feelpp.toolboxes.fluid")
+    importlib.import_module("feelpp.toolboxes.solid")
+
     from ._fsi import *
 
     _fsis = {
