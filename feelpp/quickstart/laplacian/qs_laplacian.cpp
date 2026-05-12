@@ -148,32 +148,35 @@ int cg_laplacian_app()
                               _solve=!boption( "no-solve" ),
                               _weak_dirichlet=boption( "weakbc" ) );
 
-    // tag::export[]
-    tic();
-    auto e = exporter( _mesh = mesh );
-    e->addRegions();
-    if ( opt_u )
+    if ( !boption( "no-export" ) )
     {
-        e->add( "p", *opt_u );
-        e->add( "u", -k*gradv(*opt_u), "element" );
+        // tag::export[]
+        tic();
+        auto e = exporter( _mesh = mesh );
+        e->addRegions();
+        if ( opt_u )
+        {
+            e->add( "p", *opt_u );
+            e->add( "u", -k*gradv(*opt_u), "element" );
+        }
+        e->add( "k", k );
+        e->add( "f", f );
+        e->add( "g", g );
+        if ( support( Vh )->hasAnyMarker( {"Robin"} ) )
+        {
+            auto rangeFacesRobin = markedfaces( support( Vh ), "Robin" );
+            e->add( "r_1", r_1, rangeFacesRobin );
+            e->add( "r_2", r_2, rangeFacesRobin );
+        }
+        if ( thechecker.check() )
+        {
+            e->add( "solution", p_exact );
+            e->add( "flux", u_exact );
+        }
+        e->save();
+        toc( "Exporter" );
+        // end::export[]
     }
-    e->add( "k", k );
-    e->add( "f", f );
-    e->add( "g", g );
-    if ( support( Vh )->hasAnyMarker( {"Robin"} ) )
-    {
-        auto rangeFacesRobin = markedfaces( support( Vh ), "Robin" );
-        e->add( "r_1", r_1, rangeFacesRobin );
-        e->add( "r_2", r_2, rangeFacesRobin );
-    }
-    if ( thechecker.check() )
-    {
-        e->add( "solution", p_exact );
-        e->add( "flux", u_exact );
-    }
-    e->save();
-    toc( "Exporter" );
-    // end::export[]
 
     if ( opt_u )
         return check( thechecker, *opt_u );
@@ -192,6 +195,7 @@ int main( int argc, char** argv )
 
         laplacianoptions.add_options()
             ( "no-solve", po::value<bool>()->default_value( false ), "No solve" )
+            ( "no-export", po::value<bool>()->default_value( false )->implicit_value( true ), "No export" )
             ( "weakbc", po::value<bool>()->default_value( false ), "Weak Dirichlet conditions" )
             ( "k", po::value<std::string>()->default_value( "1" ), "diffusion coefficient" )
             ( "f", po::value<std::string>()->default_value( "" ), "right hand side" )

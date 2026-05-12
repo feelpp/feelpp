@@ -161,7 +161,7 @@ public:
     /*
      * setter and getter for gradient expression
      */
-    bool hasGradient() const { return M_gradient.has_value(); }
+    bool hasGradient() const { return M_gradient.has_value() && !M_gradient->empty(); }
     std::optional<std::string> const& gradient() const { return M_gradient; }
     void setGradientKey( std::string const& key ) { M_gradient_key = key; }
     std::string const& gradientKey() const { return M_gradient_key; } 

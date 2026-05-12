@@ -17,6 +17,9 @@ Environment status:
 - `cpu/openmpi-petsc-322/`
   - supported CPU/OpenMPI validation environment
   - mirrors `cpu/openmpi/` while pinning the PETSc/SLEPc stack to 3.22
+- `cpu/openmpi-macosx/`
+  - supported macOS CPU/OpenMPI environment
+  - avoids UCX/CMA and uses OpenBLAS for BLAS/LAPACK
 - `openmpi4/`
   - legacy imported bootstrap manifest from the old hidden `.spack/` path
   - visible for comparison and migration

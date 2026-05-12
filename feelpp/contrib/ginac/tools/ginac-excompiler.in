@@ -1,19 +1,44 @@
 #!/bin/bash
 #set -x
-soname=`dirname $1`/`basename $1 .cpp`.so
+
+select_std_flag() {
+    local compiler="$1"
+    local std_flag="-std=c++@FEELPP_STD_CPP@"
+
+    if [[ "@FEELPP_STD_CPP@" == "23" ]]; then
+        if ! printf 'int main(){return 0;}\n' | "$compiler" "$std_flag" -x c++ -fsyntax-only - >/dev/null 2>&1; then
+            std_flag="-std=c++2b"
+        fi
+    fi
+
+    echo "$std_flag"
+}
+
+compile_src() {
+    local compiler="$1"
+    local soname_flag="$2"
+    local src="$3"
+    local std_flag
+    std_flag="$(select_std_flag "$compiler")"
+
+    "$compiler" "$std_flag" @_USE_STANDARD_C_HEADERS_@ -I@FEELPP_SOURCE_DIR@/feelpp/contrib/ginac/tools/ -I@CMAKE_INSTALL_PREFIX@/include/feelpp/excompiler -O3 -x c++ -fPIC -shared "$soname_flag" -o "$soname" "$src"
+}
+
+soname=`dirname "$1"`/`basename "$1" .cpp`.so
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    if [ -x /usr/bin/c++ ]; then
-        /usr/bin/c++ -std=c++@FEELPP_STD_CPP@ @_USE_STANDARD_C_HEADERS_@ -I@FEELPP_SOURCE_DIR@/feelpp/contrib/ginac/tools/ -I@CMAKE_INSTALL_PREFIX@/include/feelpp/excompiler -O3 -x c++ -fPIC -shared -Wl,-install_name,$soname -o $soname $1
+    if [ -x @CMAKE_CXX_COMPILER@ ]; then
+        compile_src @CMAKE_CXX_COMPILER@ "-Wl,-install_name,$soname" "$1"
+    elif [ -x /usr/bin/c++ ]; then
+        compile_src /usr/bin/c++ "-Wl,-install_name,$soname" "$1"
     else
-        @CMAKE_CXX_COMPILER@ -std=c++@FEELPP_STD_CPP@ @_USE_STANDARD_C_HEADERS_@ -I@FEELPP_SOURCE_DIR@/feelpp/contrib/ginac/tools/ -I@CMAKE_INSTALL_PREFIX@/include/feelpp/excompiler -O3 -x c++ -fPIC -shared -Wl,-install_name,$soname -o $soname $1
+        echo "@CMAKE_CXX_COMPILER@ and /usr/bin/c++ not found."
     fi
 else
     if [ -x @CMAKE_CXX_COMPILER@ ]; then
-        @CMAKE_CXX_COMPILER@ -std=c++@FEELPP_STD_CPP@ @_USE_STANDARD_C_HEADERS_@ -I@FEELPP_SOURCE_DIR@/feelpp/contrib/ginac/tools/ -I@CMAKE_INSTALL_PREFIX@/include/feelpp/excompiler -O3 -x c++ -fPIC -shared -Wl,-soname,$soname -o $soname $1
+        compile_src @CMAKE_CXX_COMPILER@ "-Wl,-soname,$soname" "$1"
     elif [ -x /usr/bin/g++ ]; then
-        /usr/bin/g++ -std=c++@FEELPP_STD_CPP@ @_USE_STANDARD_C_HEADERS_@ -I@FEELPP_SOURCE_DIR@/feelpp/contrib/ginac/tools/ -I@CMAKE_INSTALL_PREFIX@/include/feelpp/excompiler -O3 -x c++ -fPIC -shared -Wl,-soname,$soname -o $soname $1
+        compile_src /usr/bin/g++ "-Wl,-soname,$soname" "$1"
     else
         echo "@CMAKE_CXX_COMPILER@ and /usr/bin/g++ not found."
     fi
 fi
-

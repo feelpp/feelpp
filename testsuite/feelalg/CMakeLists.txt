@@ -9,6 +9,7 @@ if(FEELPP_HAS_PETSC)
   feelpp_add_test( topetsc  NO_MPI_TEST )
   feelpp_add_test( hpddm NO_MPI_TEST CLI "--test-hpddm-pc-hpddm-coarse-correction=balanced --test-hpddm-pc-hpddm-share-sub-ksp=true --test-hpddm-pc-hpddm-has-neumann=true --test-hpddm-pc-hpddm-define-subdomains=true --test-hpddm-pc-hpddm-levels-1-eps-nev=1" )
   feelpp_add_test( hpddm_laplacian CLI "--gmsh.hsize=0.2 --test-hpddm-laplacian-pc-type=hpddm --test-hpddm-laplacian-pc-hpddm-has-neumann=true --test-hpddm-laplacian-pc-hpddm-define-subdomains=true --test-hpddm-laplacian-pc-hpddm-levels-1-eps-nev=1" )
+  feelpp_add_test( mumps )
 
   foreach(TEST vector matrix)
     feelpp_add_test( ${TEST} )
