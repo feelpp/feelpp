@@ -48,4 +48,4 @@ spack:
     unify: when_possible
 
   repos:
-    feelpp: $env/../../../repo/spack_repo/feelpp
+    feelpp: ${FEELPP_REPO_ROOT}/packaging/spack/repo/spack_repo/feelpp

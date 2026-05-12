@@ -5,7 +5,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2010-02-10
 #
-#  Copyright (C) 2010 Université Joseph Fourier
+#  Copyright (C) 2010 UniversitÃ© Joseph Fourier
 #
 #  This library is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -29,13 +29,53 @@
 INCLUDE(CheckIncludeFileCXX)
 CHECK_INCLUDE_FILE_CXX(glpk.h FEELPP_HAS_GLPK_H)
 
+if(DEFINED ENV{SPACK_ENV} AND NOT "$ENV{SPACK_ENV}" STREQUAL "")
+  list(APPEND _GLPK_PREFIX_HINTS ${CMAKE_PREFIX_PATH})
+  if(DEFINED ENV{CMAKE_PREFIX_PATH} AND NOT "$ENV{CMAKE_PREFIX_PATH}" STREQUAL "")
+    set(_GLPK_ENV_PREFIX_HINTS "$ENV{CMAKE_PREFIX_PATH}")
+    if(NOT WIN32)
+      string(REPLACE ":" ";" _GLPK_ENV_PREFIX_HINTS "${_GLPK_ENV_PREFIX_HINTS}")
+    endif()
+    list(APPEND _GLPK_PREFIX_HINTS ${_GLPK_ENV_PREFIX_HINTS})
+  endif()
+  list(FILTER _GLPK_PREFIX_HINTS EXCLUDE REGEX "^$")
+  list(REMOVE_DUPLICATES _GLPK_PREFIX_HINTS)
 
-FIND_LIBRARY( GLPK_LIB glpk PATHS /usr/lib $ENV{GLPK_DIR}/lib)
+  set(_GLPK_REAL_PREFIX_HINTS)
+  foreach(_GLPK_PREFIX_HINT IN LISTS _GLPK_PREFIX_HINTS)
+    if(EXISTS "${_GLPK_PREFIX_HINT}")
+      get_filename_component(_GLPK_REAL_PREFIX_HINT "${_GLPK_PREFIX_HINT}" REALPATH)
+      list(APPEND _GLPK_REAL_PREFIX_HINTS "${_GLPK_REAL_PREFIX_HINT}")
+    endif()
+  endforeach()
+
+  foreach(_GLPK_CACHE_VAR GLPK_LIB GLPK_INCLUDE_DIR)
+    if(DEFINED ${_GLPK_CACHE_VAR} AND NOT "${${_GLPK_CACHE_VAR}}" MATCHES "-NOTFOUND$")
+      get_filename_component(_GLPK_REAL_CACHE_VALUE "${${_GLPK_CACHE_VAR}}" REALPATH)
+      set(_GLPK_CACHE_IN_ACTIVE_PREFIX FALSE)
+      foreach(_GLPK_REAL_PREFIX_HINT IN LISTS _GLPK_REAL_PREFIX_HINTS)
+        if(_GLPK_REAL_CACHE_VALUE MATCHES "^${_GLPK_REAL_PREFIX_HINT}(/|$)")
+          set(_GLPK_CACHE_IN_ACTIVE_PREFIX TRUE)
+        endif()
+      endforeach()
+      if(NOT _GLPK_CACHE_IN_ACTIVE_PREFIX)
+        message(STATUS "[glpk] ignoring cached ${_GLPK_CACHE_VAR}='${${_GLPK_CACHE_VAR}}' outside active Spack prefixes")
+        unset(${_GLPK_CACHE_VAR} CACHE)
+        unset(${_GLPK_CACHE_VAR})
+      endif()
+    endif()
+  endforeach()
+endif()
+
+FIND_LIBRARY( GLPK_LIB glpk
+  PATHS ${_GLPK_PREFIX_HINTS} $ENV{GLPK_DIR} /usr
+  PATH_SUFFIXES lib lib64)
 SET(GLPK_LIBRARIES ${GLPK_LIB} )
 
 FIND_PATH(GLPK_INCLUDE_DIR
   glpk.h
-  PATHS /usr/include/ /usr/include/glpk $ENV{GLPK_DIR}/include
+  PATHS ${_GLPK_PREFIX_HINTS} $ENV{GLPK_DIR} /usr
+  PATH_SUFFIXES include include/glpk
   DOC "Directory where GLPK header files are stored" )
 
 include(FindPackageHandleStandardArgs)

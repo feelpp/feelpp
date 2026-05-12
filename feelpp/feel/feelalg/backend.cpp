@@ -970,7 +970,11 @@ po::options_description backend_options( std::string const& prefix )
 #if defined(FEELPP_HAS_PETSC)
 #if defined(PETSC_HAVE_MUMPS)
         ( prefixvm( prefix,"pc-factor-mat-solver-package-type" ).c_str(),
+#if defined( MACOSX )        
+          Feel::po::value<std::string>()->default_value( "superlu-dist" ),
+#else          
           Feel::po::value<std::string>()->default_value( "mumps" ),
+#endif
           "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
 #else
         ( prefixvm( prefix,"pc-factor-mat-solver-package-type" ).c_str(),

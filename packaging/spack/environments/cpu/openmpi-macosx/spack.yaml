@@ -1,9 +1,8 @@
-# Supported shared Feel++ CPU/OpenMPI environment.
+# Supported Feel++ CPU/OpenMPI environment for macOS.
 #
-# This manifest is the baseline package derived from the legacy
-# `openmpi4/` bootstrap environment. It focuses on the 
-# PETSc/HPDDM-enabled workflow and intentionally avoids embedding site-local
-# compiler externals, local mirrors, or unrelated optional packages.
+# This environment mirrors the main CPU/OpenMPI development stack where it is
+# practical on macOS, but avoids Linux-only OpenMPI fabrics and packages that
+# are currently brittle with the Apple toolchain.
 spack:
   config:
     installer: new
@@ -37,13 +36,26 @@ spack:
             cxx: /usr/bin/clang++
     mpi:
       require:
-      - openmpi@:4.1 fabrics=cma,ucx
+      - openmpi@:4.1 fabrics=none
+    blas:
+      require:
+      - openblas
+    lapack:
+      require:
+      - openblas
+    openblas:
+      externals:
+      - spec: openblas@0.3.32+fortran+shared threads=openmp
+        prefix: /opt/homebrew/opt/openblas
+      buildable: false
+      require:
+      - +fortran+shared threads=openmp
     mesa:
       require:
       - ~llvm
 
   specs:
-  - openmpi fabrics=cma,ucx ^ucx~rocm+cma+thread_multiple
+  - openmpi@:4.1 fabrics=none
   - cmake
   - ninja
   - bison
@@ -55,28 +67,22 @@ spack:
   - libzip
   - pugixml
   - hwloc
+  - openblas@0.3.32+fortran+shared threads=openmp
   - cln
-  - ginac
   - eigen
-  # Feel++ needs the Gmsh library and CLI, not the FLTK GUI. Keep the
-  # environment headless to avoid the extra GUI/OpenGL stack in Docker/CI.
-  # Pin 4.13.1 for now: the bundled Spack v1.0.0 builtin package selects
-  # newer 4.15.x, which is not yet validated in this shared environment.
-  - gmsh@4.13.1 +opencascade+mmg~fltk
-  - py-gmsh@4.13.1
+  - fftw precision=float,double,long_double +mpi
+  - glpk
+  - gmsh@4.13.1 +opencascade+mmg~fltk~cgns~med
   - py-pybind11
   - py-mpi4py
   - py-petsc4py@3.25.0
   - py-slepc4py@3.25.0
   - py-sympy
   - py-pytest
-  - petsc+hpddm+mumps+hwloc+ptscotch+suite-sparse+hdf5+hypre
+  - petsc+hpddm+mumps+superlu-dist+hwloc+ptscotch+suite-sparse+hdf5+hypre
   - slepc+hpddm
 
-  # Keep the generated view outside the repository checkout so activated CMake
-  # builds do not export include directories that are prefixed by the source
-  # tree. Set SPACK_USER_CACHE_PATH to place this on fast local storage.
-  view: $user_cache_path/views/feelpp/cpu-openmpi
+  view: $user_cache_path/views/feelpp/cpu-openmpi-macosx
 
   concretizer:
     unify: when_possible
