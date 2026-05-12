@@ -151,7 +151,8 @@ local spackPreset = {
     PYBIND11_FINDPYTHON: 'ON',
     CPR_USE_SYSTEM_CURL: 'ON',
     CPR_USE_SYSTEM_LIB_PSL: 'OFF',
-    CURL_NO_CURL_CMAKE: 'ON'
+    CURL_NO_CURL_CMAKE: 'ON',
+    FEELPP_ENABLE_OMC: 'OFF',
   },
   environment: {
     VERBOSE: '1',

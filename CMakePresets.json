@@ -439,6 +439,7 @@
             "CPR_USE_SYSTEM_LIB_PSL": "OFF",
             "CURL_NO_CURL_CMAKE": "ON",
             "FEELPP_ALLOW_AMBIENT_PYTHON": "ON",
+            "FEELPP_ENABLE_OMC": "OFF",
             "FEELPP_ENABLE_OPENTURNS": "OFF",
             "FEELPP_ENABLE_VTK": "OFF",
             "FEELPP_USE_EXTERNAL_CLN": "ON",
