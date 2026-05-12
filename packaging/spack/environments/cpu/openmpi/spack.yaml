@@ -43,35 +43,45 @@ spack:
       - ~llvm
 
   specs:
-  - openmpi fabrics=cma,ucx ^ucx~rocm+cma+thread_multiple
-  - cmake
-  - ninja
-  - bison
-  - flex
-  - rsync
-  - boost+regex+date_time+filesystem+iostreams+mpi+multithreaded+program_options+serialization+shared+system+test
-  - fmt+shared cxxstd=20
-  - curl
-  - libzip
-  - pugixml
-  - hwloc
-  - cln
-  - ginac
-  - eigen
+  - "openmpi fabrics=cma,ucx ^ucx~rocm+cma+thread_multiple"
+  - "cmake"
+  - "ninja"
+  - "bison"
+  - "flex"
+  - "rsync"
+  - "boost+regex+date_time+filesystem+iostreams+mpi+multithreaded+program_options+serialization+shared+system+test"
+  - "fmt+shared cxxstd=20"
+  - "curl"
+  - "libzip"
+  - "pugixml"
+  - "hwloc"
+  - "cln"
+  - "ginac"
+  - "eigen"
+  # Keep optional Feel++ libraries inside the Spack view so CMake does not
+  # fall back to host /usr candidates for enabled features.
+  - "ann"
+  - "arpack-ng+mpi+shared"
+  - "fftw+mpi precision=float,double,long_double"
+  - "gl2ps"
+  - "glpk+gmp"
+  - "gsl"
   # Feel++ needs the Gmsh library and CLI, not the FLTK GUI. Keep the
   # environment headless to avoid the extra GUI/OpenGL stack in Docker/CI.
   # Pin 4.13.1 for now: the bundled Spack v1.0.0 builtin package selects
-  # newer 4.15.x, which is not yet validated in this shared environment.
-  - gmsh@4.13.1 +opencascade+mmg~fltk
-  - py-gmsh@4.13.1
-  - py-pybind11
-  - py-mpi4py
-  - py-petsc4py@3.25.0
-  - py-slepc4py@3.25.0
-  - py-sympy
-  - py-pytest
-  - petsc+hpddm+mumps+hwloc+ptscotch+suite-sparse+hdf5+hypre
-  - slepc+hpddm
+  # newer 4.15.x, which is not yet validated in this shared environment. The
+  # repository-owned Gmsh overlay declares the GLU/X11 runtime libraries that
+  # gmsh@4.13.1~fltk still links.
+  - "gmsh@4.13.1 +opencascade+mmg~fltk"
+  - "py-gmsh@4.13.1"
+  - "py-pybind11"
+  - "py-mpi4py"
+  - "py-petsc4py@3.25.0"
+  - "py-slepc4py@3.25.0"
+  - "py-sympy"
+  - "py-pytest"
+  - "petsc+hpddm+mumps+hwloc+ptscotch+suite-sparse+hdf5+hypre"
+  - "slepc+hpddm"
 
   # Keep the generated view outside the repository checkout so activated CMake
   # builds do not export include directories that are prefixed by the source

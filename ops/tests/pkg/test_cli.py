@@ -503,13 +503,39 @@ class CliTests(unittest.TestCase):
         manifest_path = self.repo_root() / "packaging" / "spack" / "environments" / "cpu" / "openmpi" / "spack.yaml"
         payload = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
         specs = payload["spack"]["specs"]
+        self.assertIn("ann", specs)
+        self.assertIn("arpack-ng+mpi+shared", specs)
+        self.assertIn("fftw+mpi precision=float,double,long_double", specs)
+        self.assertIn("gl2ps", specs)
+        self.assertIn("glpk+gmp", specs)
         self.assertIn("gmsh@4.13.1 +opencascade+mmg~fltk", specs)
+        self.assertIn("gsl", specs)
         self.assertIn("pugixml", specs)
         self.assertIn("rsync", specs)
         repos = payload["spack"]["repos"]
         self.assertEqual(list(repos.keys()), ["feelpp"])
         mesa_requirements = payload["spack"]["packages"]["mesa"]["require"]
         self.assertEqual(mesa_requirements, ["~llvm"])
+        presets_path = self.repo_root() / "CMakePresets.json"
+        presets_payload = json.loads(presets_path.read_text(encoding="utf-8"))
+        spack_preset = next(p for p in presets_payload["configurePresets"] if p["name"] == "spack")
+        self.assertEqual(spack_preset["cacheVariables"]["FEELPP_ENABLE_OMC"], "OFF")
+        gmsh_overlay = (
+            self.repo_root()
+            / "packaging"
+            / "spack"
+            / "repo"
+            / "spack_repo"
+            / "feelpp"
+            / "packages"
+            / "gmsh"
+            / "package.py"
+        )
+        gmsh_overlay_contents = gmsh_overlay.read_text(encoding="utf-8")
+        self.assertIn('depends_on("mesa-glu"', gmsh_overlay_contents)
+        self.assertIn('depends_on("libxcursor"', gmsh_overlay_contents)
+        self.assertIn('depends_on("libxinerama"', gmsh_overlay_contents)
+        self.assertIn('depends_on("libxft"', gmsh_overlay_contents)
 
     def test_spack_image_bake_writes_bake_ready_context(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
