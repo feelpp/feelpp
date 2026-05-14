@@ -34,6 +34,10 @@ Current overlays:
     is enabled
   - ensures `libhpddm_petsc` is installed so `PCHPDDM` works at runtime in the
     shared Feel++ environment
+- `opencascade`
+  - keeps the builtin OpenCASCADE recipe
+  - passes Tcl's library directory explicitly on Darwin so OCCT can configure
+    against Spack-built Tcl
 
 Layout:
 

@@ -10,12 +10,37 @@ spack:
     build_jobs: 16
     concurrent_packages: 2
   packages:
+    gcc:
+      externals:
+      - spec: gcc@15.2.0 languages:='c,c++,fortran'
+        prefix: /opt/homebrew
+        extra_attributes:
+          compilers:
+            c: /opt/homebrew/bin/gcc-15
+            cxx: /opt/homebrew/bin/g++-15
+            fortran: /opt/homebrew/bin/gfortran
+    llvm:
+      externals:
+      - spec: llvm@22.1.0+clang~flang~lld+lldb
+        prefix: /opt/homebrew/opt/llvm@19
+        extra_attributes:
+          compilers:
+            c: /opt/homebrew/opt/llvm@19/bin/clang
+            cxx: /opt/homebrew/opt/llvm@19/bin/clang++
+    apple-clang:
+      externals:
+      - spec: apple-clang@15.0.0
+        prefix: /usr
+        extra_attributes:
+          compilers:
+            c: /usr/bin/clang
+            cxx: /usr/bin/clang++
     mpi:
       require:
-      - "openmpi@:4.1 fabrics=cma,ucx"
+      - openmpi@:4.1 fabrics=cma,ucx
     mesa:
       require:
-      - "~llvm"
+      - ~llvm
 
   specs:
   - "openmpi fabrics=cma,ucx ^ucx~rocm+cma+thread_multiple"
@@ -68,4 +93,4 @@ spack:
 
   repos:
     # Repository-owned local overrides to unblock shared environment installs.
-    feelpp: $env/../../../repo/spack_repo/feelpp
+    feelpp: ${FEELPP_REPO_ROOT}/packaging/spack/repo/spack_repo/feelpp

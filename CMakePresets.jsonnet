@@ -1,6 +1,6 @@
 // CMakePresets.jsonnet - Template for generating CMakePresets.json
 // Generate with: ./scripts/generate-presets.sh
-// Or manually: jsonnet CMakePresets.jsonnet | python3 -m json.tool --indent 4 > CMakePresets.json
+// Or manually: jsonnet CMakePresets.jsonnet | python3 -m json.tool --indent 3 --no-ensure-ascii > CMakePresets.json
 
 local compilers = ['gcc', 'clang'];
 local cppStds = ['20', '23'];
@@ -50,6 +50,7 @@ local defaultPreset = {
     FEELPP_USE_EXTERNAL_EIGEN3: 'OFF',
     FEELPP_USE_EXTERNAL_PYBIND11: 'ON',
     CMAKE_EXPORT_COMPILE_COMMANDS: 'TRUE',
+    CMAKE_POLICY_VERSION_MINIMUM: '3.5',
     // Enable the maintained toolbox set in the main build.
     FEELPP_TOOLBOXES_ENABLE_HEAT: 'ON',
     FEELPP_TOOLBOXES_ENABLE_CFPDE: 'ON',
@@ -95,6 +96,19 @@ local usrlocalPreset = {
   description: 'Install in /usr/local',
   cacheVariables: {
     CMAKE_INSTALL_PREFIX: '/usr/local',
+  },
+};
+
+local macosxPreset = {
+  name: 'macosx',
+  hidden: true,
+  description: 'macOS build settings',
+  environment: {
+    LDFLAGS: '',
+  },
+  cacheVariables: {
+    FEELPP_ENABLE_FFTW: 'ON',
+    FEELPP_ENABLE_GLPK: 'ON',
   },
 };
 
@@ -302,6 +316,16 @@ local buildTypeCompilerSpackPreset(buildType, compiler) = {
   name: buildType + '-' + compiler + '-spack',
   displayName: capitalize(buildType) + ' | ' + compiler + ' | spack package manager',
   inherits: ['spack', compiler, buildType + '-cmake'],
+};
+
+// Build-type + compiler + spack + macOS
+local buildTypeCompilerSpackMacosxPreset(buildType, compiler) = {
+  name: buildType + '-' + compiler + '-spack-macosx',
+  displayName: capitalize(buildType) + ' | ' + compiler + ' | spack package manager | macOS',
+  inherits: ['macosx', 'spack', compiler, buildType + '-cmake'],
+  environment: {
+    LDFLAGS: '',
+  },
 };
 
 // Build-type + compiler + cpp-std + spack
@@ -601,6 +625,7 @@ local configurePresets =
     defaultPreset,
     warningsPreset,
     usrlocalPreset,
+    macosxPreset,
   ] +
   // C++ standard presets
   [cppStdPreset(std) for std in cppStds] +
@@ -632,6 +657,9 @@ local configurePresets =
   ]) +
   // Build type + compiler + spack
   [buildTypeCompilerSpackPreset('release', 'clang')] +
+  [buildTypeCompilerSpackMacosxPreset('release', 'clang')] +
+  [buildTypeCompilerSpackPreset('debug', 'clang')] +
+  [buildTypeCompilerSpackMacosxPreset('debug', 'clang')] +
   // Build type + compiler + cpp-std + spack
   [buildTypeCompilerCppStdSpackPreset('release', 'clang', '20')] +
   // Component presets
@@ -682,6 +710,9 @@ std.flattenArrays([
 ]) +
 // Build type + compiler + spack
 [buildPreset('release-clang-spack')] +
+[buildPreset('release-clang-spack-macosx')] +
+[buildPreset('debug-clang-spack')] +
+[buildPreset('debug-clang-spack-macosx')] +
 [buildPreset('release-clang-cpp20-spack')] +
 // Component presets
 [buildPreset(comp) for comp in components] +
@@ -836,6 +867,9 @@ std.flattenArrays([
 ]) +
 // Spack presets
 [testPreset('release-clang-spack', { inherits: 'default' })] +
+[testPreset('release-clang-spack-macosx', { inherits: 'default' })] +
+[testPreset('debug-clang-spack', { inherits: 'default' })] +
+[testPreset('debug-clang-spack-macosx', { inherits: 'default' })] +
 [testPreset('release-clang-cpp20-spack', { inherits: 'default' })] +
 // Component presets (inherit from default, use 4 jobs, retry failed tests 3 times)
 [
