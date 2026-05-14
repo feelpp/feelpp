@@ -997,6 +997,14 @@ spack:
                 bake_payload["target"]["toolboxes"]["args"]["CMAKE_PRESET"],
                 "toolboxes",
             )
+            self.assertEqual(
+                bake_payload["target"]["toolboxes"]["args"]["RUN_CTEST"],
+                "1",
+            )
+            self.assertEqual(
+                bake_payload["target"]["toolboxes-runtime"]["args"]["RUN_CTEST"],
+                "1",
+            )
             self.assertIn('"selected_component": "toolboxes"', stdout.getvalue())
 
     def test_top_level_image_build_dry_run_uses_load_for_local_builds(self) -> None:
