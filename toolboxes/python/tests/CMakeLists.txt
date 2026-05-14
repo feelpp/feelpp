@@ -199,6 +199,7 @@ foreach(toolbox IN LISTS _enabled_toolboxes)
         LD_LIBRARY_PATH_ENTRIES ${_feelpp_ld_library_path_entries}
         TEST_ARGS ${_cfpdes_test_args}
       )
+      set_property(TEST feelpp_toolbox_python-tests-${_cfpdes_test_name_suffix} PROPERTY RESOURCE_LOCK feelpp_python_cfpdes)
       feelpp_add_python_script_test(
         NAME feelpp_toolbox_python-tests-mpi-${_cfpdes_test_name_suffix}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
@@ -208,6 +209,7 @@ foreach(toolbox IN LISTS _enabled_toolboxes)
         LD_LIBRARY_PATH_ENTRIES ${_feelpp_ld_library_path_entries}
         TEST_ARGS ${_cfpdes_test_args}
       )
+      set_property(TEST feelpp_toolbox_python-tests-mpi-${_cfpdes_test_name_suffix} PROPERTY RESOURCE_LOCK feelpp_python_cfpdes)
     endforeach()
     continue()
   endif()

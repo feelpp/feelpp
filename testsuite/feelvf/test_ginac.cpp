@@ -33,6 +33,8 @@
 #include <iostream>
 #include <string>
 #include <list>
+#include <algorithm>
+#include <limits>
 
 #include <boost/algorithm/string/split.hpp>
 
@@ -127,46 +129,23 @@ void runTest0()
     ex exact_parsed;
     std::vector<symbol> vars, parameters;
     std::vector<std::string> lst_params;
-    std::string exact;
-    std::string params;
-    int dim = 0;
-
-    if ( boption(_name="ginac.strict-parser") )
-        std::cout << "Strict Ginac Parser enabled\n";
-    if ( !ioption(_name="dim") )
-        {
-            std::cout << "dim=" << std::flush;
-            std::cin >> dim;
-            std::cout << std::flush;
-        }
-        else
-            dim = ioption(_name="dim");
+    std::string exact = soption(_name="exact");
+    std::string params = soption(_name="params");
+    int dim = ioption(_name="dim");
 
     // Load param list
-    if ( !soption(_name="params").empty() )
+    if ( !params.empty() )
         {
             boost::split(lst_params, params, boost::is_any_of(";"));
+            lst_params.erase( std::remove_if( lst_params.begin(), lst_params.end(),
+                                              []( std::string const& p ) { return p.empty(); } ),
+                              lst_params.end() );
             parameters = symbols(lst_params);
         }
 
     // load exact
-    if ( soption(_name="exact").empty() )
-        {
-            // Load param list
-            std::cout << "params (eg params=\"a;b\")=" << std::flush; std::cin >> params;  std::cout << std::flush;
-            if ( !params.empty() )
-                {
-                    boost::split(lst_params, params, boost::is_any_of(";"));
-                    parameters = symbols(lst_params);
-                }
-            std::cout << parameters.size() << " params read\n";
-
-            std::cout << "exact=" << std::flush;
-            std::cin >> exact;
-            std::cout << std::flush;
-        }
-    else
-        exact = soption(_name="exact");
+    if ( exact.empty() )
+        exact = "a*x+b";
 
     switch (dim) {
     case(1) : {
@@ -213,63 +192,52 @@ void runTest0()
 #endif
 
     // Retrieve each symbols using visitor
-    std::cout << "Loading symbols from : " << exact_parsed << " (visitor)" << std::endl << std::flush;
     MyVisitor v;
     exact_parsed.traverse(v);
     std::list<std::string> symbols = v.symbol_names();
-    boost::for_each(symbols, [](std::string const& s) {std::cout << "Found Symbol :" << s << std::endl;});
+    BOOST_CHECK( !symbols.empty() );
 
     // Substitute expressions
-    std::cout << "Replace vars\n";
     boost::for_each(vars, [&exact_parsed](symbol const& sym)
                     {
                         ex f = exact_parsed;
-                        std::cout << "Replace " << sym.get_name() << " in " << f << " :";
-                        std::cout << substitute(f, sym, 1.0) << std::endl;
+                        if ( f.has( sym ) )
+                            BOOST_CHECK( !substitute(f, sym, 1.0).has( sym ) );
                     });
 
-    std::cout << "Replace params\n";
     boost::for_each(parameters, [&exact_parsed](symbol const& sym)
                     {
                         ex f = exact_parsed;
                         if (f.has(sym))
-                            {
-                                std::cout << "Replace " << sym.get_name() << " in " << f << " :";
-                                std::cout << substitute(f, sym, 1.0) << std::endl;
-                            }
+                            BOOST_CHECK( !substitute(f, sym, 1.0).has( sym ) );
                     });
 
-    std::cout << "Replace params using strings\n";
     boost::for_each(lst_params, [&exact_parsed](std::string const& s)
                     {
+                        if ( s.empty() )
+                            return;
                         ex f = exact_parsed;
                         symbol sym;
                         //use MyVisitor class to find if symbol is present in f
                         MyVisitor f_v;
                         f.traverse(f_v);
                         if ( f_v.hassymbol(s, sym) )
-                            {
-                                std::cout << "Replace " << s << " in " << f << " :";
-                                std::cout << substitute(f, sym, 1.0) << std::endl;
-                            }
+                            BOOST_CHECK( !substitute(f, sym, 1.0).has( sym ) );
                     });
 
-    std::cout << "Replace params using strings by function g()\n";
-    boost::for_each(lst_params, [&exact_parsed, &exact, &vars, &parameters](std::string const& s)
+    boost::for_each(lst_params, [&exact_parsed, &vars, &parameters](std::string const& s)
                     {
+                        if ( s.empty() )
+                            return;
                         ex f = exact_parsed;
-                        ex f1;
                         symbol sym;
                         //use MyVisitor class to find if symbol is present in f
                         MyVisitor f_v;
                         f.traverse(f_v);
                         if ( f_v.hassymbol(s, sym) )
                             {
-                                std::cout << "Replace " << s << " in " << f << " by :";
-                                std::cin >> exact;
-                                ex f1 = parse(exact, vars, parameters);
-                                std::cout << std::flush;
-                                std::cout << substitute(f, sym, f1) << std::endl;
+                                ex f1 = parse("1", vars, parameters);
+                                BOOST_CHECK( !substitute(f, sym, f1).has( sym ) );
                             }
                     });
 
@@ -278,19 +246,47 @@ void runTest0()
 }
 
 template <typename ElementType>
-void checkEqualElements( std::string const& info, ElementType const& u1, ElementType const& u2, double tol = 1e-10  )
+bool checkEqualElements( std::string const& info, ElementType const& u1, ElementType const& u2, double tol = 1e-10  )
 {
-    BOOST_TEST_MESSAGE( "checkEqualElements start  : "<< info );
     auto Xh = u1.functionSpace();
+    bool hasMismatch = false;
+    size_type worstDof = 0;
+    double worstU1 = 0;
+    double worstU2 = 0;
+    double maxAbsDiff = 0;
+    double maxRelDiffPercent = 0;
     for ( size_type k=0;k<Xh->nLocalDof();++k )
     {
-#if defined(USE_BOOST_TEST)
-        BOOST_CHECK_CLOSE( u1(k), u2(k), tol );
-#endif
-        if ( std::abs(u1(k)-u2(k) ) > tol )
-            break;
+        double const u1Value = u1(k);
+        double const u2Value = u2(k);
+        double const absDiff = std::abs( u1Value - u2Value );
+        double const scale = std::min( std::abs( u1Value ), std::abs( u2Value ) );
+        double const relDiffPercent = scale > std::numeric_limits<double>::epsilon()
+                                      ? 100. * absDiff / scale
+                                      : absDiff;
+        bool const isClose = scale > std::numeric_limits<double>::epsilon()
+                             ? relDiffPercent <= tol
+                             : absDiff <= tol;
+        if ( absDiff > maxAbsDiff || relDiffPercent > maxRelDiffPercent )
+        {
+            maxAbsDiff = std::max( maxAbsDiff, absDiff );
+            maxRelDiffPercent = std::max( maxRelDiffPercent, relDiffPercent );
+            worstDof = k;
+            worstU1 = u1Value;
+            worstU2 = u2Value;
+        }
+        if ( !isClose )
+            hasMismatch = true;
     }
-    BOOST_TEST_MESSAGE( "checkEqualElements finish : "<< info );
+    if ( hasMismatch )
+        BOOST_ERROR( "checkEqualElements failed for " << info
+                     << " at dof " << worstDof
+                     << ": u1=" << worstU1
+                     << ", u2=" << worstU2
+                     << ", max_abs_diff=" << maxAbsDiff
+                     << ", max_rel_diff_percent=" << maxRelDiffPercent
+                     << ", tolerance_percent=" << tol );
+    return !hasMismatch;
 }
 void runTest1()
 {
@@ -298,6 +294,11 @@ void runTest1()
     auto XhScalar = Pch<3>( mesh );
     auto XhVectorial = Pchv<3>( mesh );
     auto XhTensor2 = Pchm<3>( mesh );
+    bool allComparisonsPassed = true;
+    auto checkEqual = [&allComparisonsPassed]( auto const&... args )
+        {
+            allComparisonsPassed = checkEqualElements( args... ) && allComparisonsPassed;
+        };
 
     double a=2, b=4.5;
     std::map<std::string,double> params = { { "a", a }, { "b",b } };
@@ -320,35 +321,35 @@ void runTest1()
                         auto exprScalarFeel = a*Px()*Px()*cos(M_PI*Py()) + b*2*Py()*sin(Px())*exp(Px()*Px());
                         auto uFeel = XhScalar->element( exprScalarFeel );
                         auto uGinac = XhScalar->element( exprScalarGinac );
-                        checkEqualElements( testTag + " id", uFeel, uGinac );
+                        checkEqual( testTag + " id", uFeel, uGinac );
                         // grad scalar
                         auto exprScalarFeelGrad = vec( 2*a*Px()*cos(M_PI*Py()) + 4*b*Px()*Py()*exp(Px()*Px())*sin(Px()) + 2*b*Py()*exp(Px()*Px())*cos(Px()),
                                                        -M_PI*a*Px()*Px()*sin(M_PI*Py()) + 2*b*exp(Px()*Px())*sin(Px()) );
                         auto exprScalarGinacGrad = trans( grad<2>( exprScalarGinac/*, "scalarExprGrad"*/ ) );
                         auto uFeelGrad = XhVectorial->element( exprScalarFeelGrad );
                         auto uGinacGrad = XhVectorial->element( exprScalarGinacGrad );
-                        checkEqualElements( testTag + " grad", uFeelGrad, uGinacGrad );
+                        checkEqual( testTag + " grad", uFeelGrad, uGinacGrad );
                         // laplacian scalar
                         auto exprScalarFeelLaplacian = 2*(a*cos(M_PI*Py())+4*b*Px()*Px()*Py()*exp(Px()*Px())*sin(Px()) + 4*b*Px()*Py()*exp(Px()*Px())*cos(Px()) + b*Py()*exp(Px()*Px())*sin(Px()))  - M_PI*M_PI*a*Px()*Px()*cos(M_PI*Py());
                         auto exprScalarGinacLaplacian = laplacian( exprScalarGinac/*, "scalarExprLaplacian"*/ );
                         auto uFeelLaplacian = XhScalar->element( exprScalarFeelLaplacian );
                         auto uGinacLaplacian = XhScalar->element( exprScalarGinacLaplacian );
-                        checkEqualElements( testTag + " laplacian", uFeelLaplacian, uGinacLaplacian );
+                        checkEqual( testTag + " laplacian", uFeelLaplacian, uGinacLaplacian );
                         // diff scalar
                         auto exprScalarFeelDiff = vec( Px()*Px()*cos(M_PI*Py()), 2*Py()*exp(Px()*Px())*sin(Px()) );
                         auto exprScalarGinacDiffA = diff( exprScalarGinac, "a" );
                         auto exprScalarGinacDiffB = diff( exprScalarGinac, "b" );
                         auto uFeelDiff = XhVectorial->element( exprScalarFeelDiff );
                         auto uGinacDiff = XhVectorial->element( vec( exprScalarGinacDiffA, exprScalarGinacDiffB ) );
-                        checkEqualElements( testTag + " diff", uFeelDiff, uGinacDiff );
+                        checkEqual( testTag + " diff", uFeelDiff, uGinacDiff );
                         auto exprScalarGinacDiffX = diff( exprScalarGinac, "x" );
                         auto exprScalarGinacDiffY = diff( exprScalarGinac, "y" );
                         auto uGinacDiffX_Y = XhVectorial->element( vec( exprScalarGinacDiffX, exprScalarGinacDiffY ) );
-                        checkEqualElements( testTag + " diff (grad)", uFeelGrad, uGinacDiffX_Y );
+                        checkEqual( testTag + " diff (grad)", uFeelGrad, uGinacDiffX_Y );
                         auto exprScalarGinacDiffXX = diff( exprScalarGinac, "x", 2 );
                         auto exprScalarGinacDiffYY = diff( exprScalarGinac, "y", 2 );
                         auto uGinacDiffXX_YY = XhScalar->element( exprScalarGinacDiffXX + exprScalarGinacDiffYY );
-                        checkEqualElements( testTag + " diff (laplacian)", uFeelLaplacian, uGinacDiffXX_YY );
+                        checkEqual( testTag + " diff (laplacian)", uFeelLaplacian, uGinacDiffXX_YY );
                     });
 
 
@@ -371,27 +372,27 @@ void runTest1()
                                                       b*2*Py()*sin(Px())*exp(Px()*Px()) );
                         auto uVectorialFeel = XhVectorial->element( exprVectorialFeel );
                         auto uVectorialGinac = XhVectorial->element( exprVectorialGinac );
-                        checkEqualElements( testTag+" id", uVectorialFeel, uVectorialGinac );
+                        checkEqual( testTag+" id", uVectorialFeel, uVectorialGinac );
                         // div vectorial
                         auto exprVectorialFeelDiv = 2*a*Px()*cos(M_PI*Py()) + 2*b*sin(Px())*exp(Px()*Px());
                         auto exprVectorialGinacDiv = div/*<2>*/( exprVectorialGinac/*, "vectorialExprDiv"*/ );
                         auto uVectorialFeelDiv = XhScalar->element( exprVectorialFeelDiv );
                         auto uVectorialGinacDiv = XhScalar->element( exprVectorialGinacDiv );
-                        checkEqualElements( testTag+" div", uVectorialFeelDiv, uVectorialGinacDiv );
+                        checkEqual( testTag+" div", uVectorialFeelDiv, uVectorialGinacDiv );
                         // grad vectorial
                         auto exprVectorialFeelGrad = mat<2,2>( 2*a*Px()*cos(M_PI*Py()), -M_PI*a*Px()*Px()*sin(M_PI*Py()),
                                                                4*b*Px()*Py()*exp(Px()*Px())*sin(Px()) + 2*b*Py()*exp(Px()*Px())*cos(Px()), 2*b*sin(Px())*exp(Px()*Px()) );
                         auto exprVectorialGinacGrad = grad<2>( exprVectorialGinac );
                         auto uVectorialFeelGrad = XhTensor2->element( exprVectorialFeelGrad );
                         auto uVectorialGinacGrad = XhTensor2->element( exprVectorialGinacGrad );
-                        checkEqualElements( testTag+" grad", uVectorialFeelGrad, uVectorialGinacGrad );
+                        checkEqual( testTag+" grad", uVectorialFeelGrad, uVectorialGinacGrad );
                         // laplacian vectorial
                         auto exprVectorialFeelLaplacian = vec( -M_PI*M_PI*a*Px()*Px()*cos(M_PI*Py()) + 2*a*cos(M_PI*Py()),
                                                                2*b*Py()*(4*Px()*Px()*sin(Px())+4*Px()*cos(Px())+sin(Px()))*exp(Px()*Px()) );
                         auto exprVectorialGinacLaplacian = laplacian( exprVectorialGinac/*, "toto"*/ );
                         auto uVectorialFeelLaplacian = XhVectorial->element( exprVectorialFeelLaplacian );
                         auto uVectorialGinacLaplacian = XhVectorial->element( exprVectorialGinacLaplacian );
-                        checkEqualElements( testTag+" laplacian", uVectorialFeelLaplacian, uVectorialGinacLaplacian, 1e-8 );
+                        checkEqual( testTag+" laplacian", uVectorialFeelLaplacian, uVectorialGinacLaplacian, 1e-8 );
                         // diff vectorial
                         auto exprVectorialFeelDiffA = vec(Px()*Px()*cos(M_PI*Py()),cst(0.) );
                         auto exprVectorialFeelDiffB = vec(cst(0.),2*Py()*sin(Px())*exp(Px()*Px()) );
@@ -401,8 +402,8 @@ void runTest1()
                         auto uVectorialGinacDiffA = XhVectorial->element( exprVectorialGinacDiffA );
                         auto uVectorialFeelDiffB = XhVectorial->element( exprVectorialFeelDiffB );
                         auto uVectorialGinacDiffB = XhVectorial->element( exprVectorialGinacDiffB );
-                        checkEqualElements( testTag+" diff a", uVectorialFeelDiffA, uVectorialGinacDiffA, 1e-8 );
-                        checkEqualElements( testTag+" diff b", uVectorialFeelDiffB, uVectorialGinacDiffB, 1e-8 );
+                        checkEqual( testTag+" diff a", uVectorialFeelDiffA, uVectorialGinacDiffA, 1e-8 );
+                        checkEqual( testTag+" diff b", uVectorialFeelDiffB, uVectorialGinacDiffB, 1e-8 );
                     });
 
     // id vf
@@ -413,20 +414,21 @@ void runTest1()
     exprScalarGinacVF.setParameterValues( params );
     auto uScalarFeelVF = XhScalar->element( exprScalarFeelVF );
     auto uScalarFeelGinacVF = XhScalar->element( exprScalarGinacVF );
-    checkEqualElements( "id vf", uScalarFeelVF, uScalarFeelGinacVF );
+    checkEqual( "id vf", uScalarFeelVF, uScalarFeelGinacVF );
     // diff vf
     auto exprScalarFeelVFDiff = a*2*Px()*sin(Py()*b)*2*idv(scalarField)*exp(pow(idv(scalarField),2));
     auto exprScalarGinacVFDiffStr = diff( "a*2*x*sin(y*b)*exp(u^2):x:y:a:b:u", "u", "u", idv(scalarField) );
     exprScalarGinacVFDiffStr.setParameterValues( params );
     auto uScalarFeelVFDiff = XhScalar->element( exprScalarFeelVFDiff );
     auto uScalarGinacVFDiffStr = XhScalar->element( exprScalarGinacVFDiffStr );
-    checkEqualElements( "diff vf str", uScalarFeelVFDiff, uScalarGinacVFDiffStr );
+    checkEqual( "diff vf str", uScalarFeelVFDiff, uScalarGinacVFDiffStr );
 #if 1
     // diff vf str
     auto exprScalarGinacVFDiff = diff( exprScalarGinacVF , "u" );
     auto uScalarGinacVFDiff = XhScalar->element( exprScalarGinacVFDiff );
-    checkEqualElements( "diff vf", uScalarFeelVFDiff, uScalarGinacVFDiff );
+    checkEqual( "diff vf", uScalarFeelVFDiff, uScalarGinacVFDiff );
 #endif
+    BOOST_CHECK( allComparisonsPassed );
 }
 
 void runTest2()
