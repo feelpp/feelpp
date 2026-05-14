@@ -91,6 +91,21 @@
          "name": "release-clang-spack"
       },
       {
+         "configurePreset": "release-clang-spack-macosx",
+         "jobs": 25,
+         "name": "release-clang-spack-macosx"
+      },
+      {
+         "configurePreset": "debug-clang-spack",
+         "jobs": 25,
+         "name": "debug-clang-spack"
+      },
+      {
+         "configurePreset": "debug-clang-spack-macosx",
+         "jobs": 25,
+         "name": "debug-clang-spack-macosx"
+      },
+      {
          "configurePreset": "release-clang-cpp20-spack",
          "jobs": 25,
          "name": "release-clang-cpp20-spack"
@@ -209,6 +224,7 @@
             "CMAKE_C_COMPILER": "clang",
             "CMAKE_EXPORT_COMPILE_COMMANDS": "TRUE",
             "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/${presetName}$env{DISTRIBUTION}$env{ARCH}",
+            "CMAKE_POLICY_VERSION_MINIMUM": "3.5",
             "FEELPP_ENABLE_BENCHMARKS": "ON",
             "FEELPP_ENABLE_FEELPP_PYTHON": "ON",
             "FEELPP_ENABLE_FMILIB": "OFF",
@@ -260,6 +276,18 @@
          "description": "Install in /usr/local",
          "hidden": true,
          "name": "usrlocal"
+      },
+      {
+         "cacheVariables": {
+            "FEELPP_ENABLE_FFTW": "ON",
+            "FEELPP_ENABLE_GLPK": "ON"
+         },
+         "description": "macOS build settings",
+         "environment": {
+            "LDFLAGS": ""
+         },
+         "hidden": true,
+         "name": "macosx"
       },
       {
          "cacheVariables": {
@@ -553,6 +581,41 @@
             "release-cmake"
          ],
          "name": "release-clang-spack"
+      },
+      {
+         "displayName": "Release | clang | spack package manager | macOS",
+         "environment": {
+            "LDFLAGS": ""
+         },
+         "inherits": [
+            "macosx",
+            "spack",
+            "clang",
+            "release-cmake"
+         ],
+         "name": "release-clang-spack-macosx"
+      },
+      {
+         "displayName": "Debug | clang | spack package manager",
+         "inherits": [
+            "spack",
+            "clang",
+            "debug-cmake"
+         ],
+         "name": "debug-clang-spack"
+      },
+      {
+         "displayName": "Debug | clang | spack package manager | macOS",
+         "environment": {
+            "LDFLAGS": ""
+         },
+         "inherits": [
+            "macosx",
+            "spack",
+            "clang",
+            "debug-cmake"
+         ],
+         "name": "debug-clang-spack-macosx"
       },
       {
          "displayName": "Release | clang | C++20 | spack package manager",
@@ -1085,6 +1148,30 @@
          "configurePreset": "release-clang-spack",
          "inherits": "default",
          "name": "release-clang-spack",
+         "output": {
+            "outputOnFailure": true
+         }
+      },
+      {
+         "configurePreset": "release-clang-spack-macosx",
+         "inherits": "default",
+         "name": "release-clang-spack-macosx",
+         "output": {
+            "outputOnFailure": true
+         }
+      },
+      {
+         "configurePreset": "debug-clang-spack",
+         "inherits": "default",
+         "name": "debug-clang-spack",
+         "output": {
+            "outputOnFailure": true
+         }
+      },
+      {
+         "configurePreset": "debug-clang-spack-macosx",
+         "inherits": "default",
+         "name": "debug-clang-spack-macosx",
          "output": {
             "outputOnFailure": true
          }

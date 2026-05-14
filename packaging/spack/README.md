@@ -59,6 +59,9 @@ Current environment roles:
 - `environments/cpu/openmpi/`
   - the first supported shared environment
   - focused on the immediate CPU/OpenMPI PETSc/HPDDM workflow
+- `environments/cpu/openmpi-macosx/`
+  - macOS CPU/OpenMPI environment without UCX/CMA
+  - uses OpenBLAS for BLAS/LAPACK to avoid the macOS Accelerate/MUMPS crash path
 - `environments/openmpi4/`
   - imported from the old hidden path during Phase 0
   - retained as legacy bootstrap material
