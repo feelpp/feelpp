@@ -4194,7 +4194,7 @@ public:
                 std::string const& prefix = args.get_else(_prefix,"");
                 GeomapStrategyType geomap = args.get_else(_geomap,GeomapStrategyType::GEOMAP_OPT);
                 bool accumulate = args.get_else(_accumulate,false);
-                bool close = args.get_else(_close,false);
+                bool close = args.get_else(_close,true);
                 bool verbose = args.get_else_invocable(_verbose,[&prefix](){ return boption(_prefix=prefix,_name="on.verbose"); } );
 
                 onImpl( range, expr, prefix, Feel::detail::geomapStrategy(range,geomap), accumulate, verbose );
