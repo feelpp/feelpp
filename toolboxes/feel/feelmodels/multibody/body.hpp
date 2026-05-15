@@ -49,6 +49,10 @@ auto toExpr( eigen_matrix_type<RowDim, RowCol> const& em )
 namespace Feel::FeelModels
 {
 
+// // forward declaration
+// template< typename ConvexType>
+// class Multibody;
+
 /**
  * @brief Body class
  * @ingroup Multibody
@@ -61,7 +65,7 @@ public :
     using self_type = Body<ConvexType>;
 
     // mesh
-    typedef ConvexType convex_type;
+    using convex_type = ConvexType;
     static inline const uint16_type nDim = convex_type::nDim;
     static inline const uint16_type nOrderGeo = convex_type::nOrder;
     static inline const uint16_type nRealDim = convex_type::nRealDim;
@@ -70,9 +74,9 @@ public :
 
     using mesh_range_element_type = Range<mesh_type,MESH_ELEMENTS>;
 
-    // meshale
-    using mesh_ale_type = MeshALE<convex_type>;
-    using mesh_ale_ptrtype = std::shared_ptr<mesh_ale_type>;
+    // mesh motion
+    using mesh_motion_type = MeshALE<convex_type>;
+    using mesh_motion_ptrtype = std::shared_ptr<mesh_motion_type>;
 
     // materials properties
     using materialsproperties_type = MaterialsProperties<nRealDim>;
@@ -85,7 +89,7 @@ public :
     using rotation_angles_type = eigen_matrix_type<nDimRotation, 1>;
     using angular_velocity_type = rotation_angles_type;
 
-    using space_displacement_type = typename mesh_ale_type::ale_map_functionspace_type;
+    using space_displacement_type = typename mesh_motion_type::ale_map_functionspace_type;
     using space_displacement_ptrtype = std::shared_ptr<space_displacement_type>;
     using element_displacement_type = typename space_displacement_type::element_type;
     using element_displacement_ptrtype = std::shared_ptr<element_displacement_type>;
@@ -101,7 +105,7 @@ public :
     Body( Body const& ) = default;
     Body( Body && ) = default;
 
-    void setup( materialsproperties_ptrtype materialsProperties, mesh_ptrtype mesh );
+    void setup( materialsproperties_ptrtype materialsProperties, mesh_ptrtype mesh, mesh_motion_ptrtype meshMotion );
     void applyRemesh( mesh_ptrtype oldMesh, mesh_ptrtype newMesh, std::shared_ptr<RemeshInterpolation> remeshInterp = std::make_shared<RemeshInterpolation>() );
     void updateForUse();
 
@@ -203,18 +207,6 @@ public :
     rotation_angles_type const& rigidRotationAnglesAtPreviousTime() const { return M_rigidRotationAnglesAtPreviousTime; }
 
 
-#if 0
-    void updateDisplacementFromRigidVelocity( translational_velocity_type const& translationVelocity,
-                                              angular_velocity_type const& angularVelocity,
-                                              double dt )
-        {
-            // get translation disp and angles from Euler time scheme
-            eigen_vector_type<nRealDim> rigidTranslationDisplacement = dt*translationVelocity + M_rigidTranslationDisplacementAtPreviousTime;
-            rotation_angles_type rigidRotationAngles = dt*angularVelocity + M_rigidRotationAnglesAtPreviousTime;
-            this->updateDisplacementFromRigidDisplacement( rigidTranslationDisplacement,rigidRotationAngles );
-        }
-#endif
-
     void updateDisplacementFromRigidDisplacement( eigen_vector_type<nRealDim> const& rigidTranslation, rotation_angles_type const& rigidRotationAngles );
 
 
@@ -226,19 +218,25 @@ public :
             M_fieldDisplacement->add( 1.0, *M_fieldElasticDisplacement );
         }
 
-    void addRigidTranslationToCurrentDisplacement( eigen_vector_type<nRealDim> const& rigidTranslation )
-        {
-            auto tmp = M_spaceDisplacement->element();
-            tmp = this->fieldDisplacement();
-            this->updateDisplacement( elements(support(M_spaceDisplacement)), idv( tmp ) + Feel::vf::toExpr(rigidTranslation) );
-        }
+    // void addRigidTranslationToCurrentDisplacement( eigen_vector_type<nRealDim> const& rigidTranslation )
+    //     {
+    //         auto tmp = M_spaceDisplacement->element();
+    //         tmp = this->fieldDisplacement();
+    //         this->updateDisplacement( elements(support(M_spaceDisplacement)), idv( tmp ) + Feel::vf::toExpr(rigidTranslation) );
+    //     }
 
     template <typename ExpRotationMatrixType,typename ExprMassCenterType>
     void applyRotationToCurrentDisplacement( Expr<ExpRotationMatrixType> const& R, Expr<ExprMassCenterType> const& massCenter )
         {
             auto tmp = M_spaceDisplacement->element();
             tmp = this->fieldDisplacement();
-            this->updateDisplacement( elements(support(M_spaceDisplacement)), R*(P()+idv(tmp)-massCenter) + massCenter - P() );
+            if ( M_meshMotionTool && !M_meshMotionTool->isMappedOntoTheInitialMesh() )
+            {
+                auto relativeDisp = idv(tmp) - ( P() - idv(M_meshMotionTool->fieldInitialIdentity()) );
+                this->updateDisplacement( elements(support(M_spaceDisplacement)), R*(P()+relativeDisp-massCenter) + massCenter - idv(M_meshMotionTool->fieldInitialIdentity()) );
+            }
+            else
+                this->updateDisplacement( elements(support(M_spaceDisplacement)), R*(P()+idv(tmp)-massCenter) + massCenter - P() );
         }
 
 
@@ -323,7 +321,8 @@ public :
     template <typename ExprType>
     double evaluateMassFromDensity( Expr<ExprType> const& densityExpr ) const;
 
-    //! compute mass center of the body with a displacement apply to the current mesh (on moving or reference state)
+    //! compute mass center of the body with a displacement (given as displacement of initial domain)
+    //! Computation are done directly onto the current mesh (can be moving or reference or initial state)
     template <typename DispElementType>
     std::tuple<double,eigen_vector_type<nRealDim> >
     computeMassAndMassCenterFromDisplacementField( DispElementType const& d ) const;
@@ -360,10 +359,16 @@ public :
         }
 
 private:
+    template <typename DispElementType>
+    std::tuple<double,eigen_vector_type<nRealDim> >
+    computeMassAndMassCenterFromDisplacementFieldImpl( DispElementType const& d ) const;
+
+private:
     physic_body_type const* M_physicBody = nullptr;
     mesh_ptrtype M_mesh;
     materialsproperties_ptrtype M_materialsProperties;
     mesh_range_element_type M_rangeMeshElements;
+    mesh_motion_ptrtype M_meshMotionTool;
 
     eigen_vector_type<nRealDim> M_massCenter;//, M_massCenterRef;
     double M_mass = 0;
@@ -410,6 +415,22 @@ Body<ConvexType>::computeMassAndMassCenterFromDisplacementField( DispElementType
 {
     CHECK( M_materialsProperties ) << "no materialsProperties defined";
 
+    if ( M_meshMotionTool && !M_meshMotionTool->isMappedOntoTheInitialMesh() )
+    {
+        auto u = M_spaceDisplacement->element();
+        auto dispApplyOnMesh = idv(d) - ( P() - idv(M_meshMotionTool->fieldInitialIdentity()) );
+        u.on(_range=M_rangeMeshElements, _expr=dispApplyOnMesh);
+        return computeMassAndMassCenterFromDisplacementFieldImpl( u );
+    }
+    else
+        return computeMassAndMassCenterFromDisplacementFieldImpl( d );
+}
+
+template<typename ConvexType>
+template <typename DispElementType>
+std::tuple<double,eigen_vector_type<Body<ConvexType>::nRealDim> >
+Body<ConvexType>::computeMassAndMassCenterFromDisplacementFieldImpl( DispElementType const& d ) const
+{
     auto const Id = eye<nDim,nDim>();
     // deformation tensor
     auto F = Id+gradv(d);

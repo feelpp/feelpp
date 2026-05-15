@@ -44,7 +44,7 @@ MeshALE<Convex>::MeshALE(mesh_ptrtype mesh_moving,
     super_type( prefixvm(prefix,"alemesh"),keyword,worldcomm,"",modelRep ),
     M_referenceMesh( mesh_moving->createP1mesh() ),
     M_movingMesh(mesh_moving),
-    M_isOnReferenceMesh( true ), M_isOnMovingMesh( true ),
+    M_isOnReferenceMesh( true ), M_isOnMovingMesh( true ), M_isMappedOntoTheInitialMesh( true ),
     M_isARestart(boption(_name="ts.restart")),
     M_restartPath(soption(_name="ts.restart.path"))
     //M_doExport(option(_name="export",_prefix=prefixvm(prefix,"alemesh")).template as<bool>())
@@ -127,6 +127,7 @@ MeshALE<Convex>::init()
         M_bdf_ale_identity->updateDerivative( *M_meshVelocity );
         M_isOnReferenceMesh = true;
         M_isOnMovingMesh = false;
+        M_isMappedOntoTheInitialMesh = false; // TODO : check if this is true in case of remesh with a new mesh not mapped onto the initial mesh
     }
 
     this->log(prefixvm(this->prefix(),"MeshALE"),"init", "finish");
@@ -156,6 +157,7 @@ MeshALE<Convex>::applyRemesh( mesh_ptrtype const& newMesh, std::vector<std::tupl
     M_bdf_ale_identity->applyRemesh( M_Xhmove, matrixInterpolation_move );
     M_isOnReferenceMesh = true;
     M_isOnMovingMesh = true;
+    M_isMappedOntoTheInitialMesh = false;
 
     M_dofsMultiProcessOnMovingBoundary_HO.clear();
 
@@ -364,7 +366,7 @@ void
 MeshALE<Convex>::updateIdentityMap()
 {
     M_identity_ale->on(_range=elements( M_identity_ale->mesh() ),
-                       _expr=vf::P() );
+                       _expr=vf::P(), _close=true );
 }
 
 //------------------------------------------------------------------------------------------------//
@@ -373,35 +375,52 @@ template< class Convex >
 void
 MeshALE<Convex>::revertReferenceMesh( bool updateMeshMeasures )
 {
-    for ( auto & [name,dioidoe] : M_displacementImposedOnInitialDomainOverElements )
-    {
-        if ( !dioidoe.isOnInitialDomain() )
-            continue;
-        if ( this->isOnReferenceMesh() )
-            dioidoe.revertReferenceDomain();
-        else
-            CHECK( false ) << "TODO dioidoe.revertMovingMesh";
-    }
-    for ( auto & [name,dioidof] : M_displacementImposedOnInitialDomainOverFaces )
-    {
-        if ( !dioidof.isOnInitialDomain() )
-            continue;
-        if ( this->isOnReferenceMesh() )
-            dioidof.revertReferenceDomain();
-        else
-            CHECK( false ) << "TODO dioidof.revertMovingMesh";
-    }
+    // for ( auto & [name,dioidoe] : M_displacementImposedOnInitialDomainOverElements )
+    // {
+    //     if ( !dioidoe.isOnInitialDomain() )
+    //         continue;
+    //     if ( this->isOnReferenceMesh() )
+    //         dioidoe.revertReferenceDomain();
+    //     else
+    //         CHECK( false ) << "TODO dioidoe.revertMovingMesh";
+    // }
+    // for ( auto & [name,dioidof] : M_displacementImposedOnInitialDomainOverFaces )
+    // {
+    //     if ( !dioidof.isOnInitialDomain() )
+    //         continue;
+    //     if ( this->isOnReferenceMesh() )
+    //         dioidof.revertReferenceDomain();
+    //     else
+    //         CHECK( false ) << "TODO dioidof.revertMovingMesh";
+    // }
 
-    if ( !this->isOnReferenceMesh() )
+    if ( this->isOnReferenceMesh() )
+        return;
+
+    if ( this->isOnMovingMesh() )
     {
         *M_fieldTmp =  *M_displacement;
         M_fieldTmp->scale(-1.);
         M_mesh_mover.setUpdateMeshMeasures( updateMeshMeasures );
         M_mesh_mover.apply(M_movingMesh, *M_fieldTmp );
         M_mesh_mover.setUpdateMeshMeasures( true );
-        M_isOnReferenceMesh = true;
-        M_isOnMovingMesh = false;
     }
+    else if ( this->isMappedOntoTheInitialMesh() )
+    {
+        for ( auto & [name,dioidoe] : M_displacementImposedOnInitialDomainOverElements )
+        {
+            if ( dioidoe.isOnInitialDomain() )
+                dioidoe.revertReferenceDomain();
+        }
+        for ( auto & [name,dioidof] : M_displacementImposedOnInitialDomainOverFaces )
+        {
+            if ( dioidof.isOnInitialDomain() )
+                dioidof.revertReferenceDomain();
+        }
+    }
+    M_isOnReferenceMesh = true;
+    M_isOnMovingMesh = false;
+    M_isMappedOntoTheInitialMesh = false; // TODO : check if this is true in case of remesh with a new mesh not mapped onto the initial mesh
 }
 
 //------------------------------------------------------------------------------------------------//
@@ -410,20 +429,26 @@ template< class Convex >
 void
 MeshALE<Convex>::revertMovingMesh( bool updateMeshMeasures )
 {
-    if ( !this->isOnMovingMesh() )
-    {
-        M_mesh_mover.setUpdateMeshMeasures( updateMeshMeasures );
-        M_mesh_mover.apply(M_movingMesh, *M_displacement );
-        M_mesh_mover.setUpdateMeshMeasures( true );
-        M_isOnReferenceMesh = false;
-        M_isOnMovingMesh = true;
-    }
+    if ( this->isOnMovingMesh() )
+        return;
+    if ( !this->isOnReferenceMesh() )
+        this->revertReferenceMesh( false );
+
+    M_mesh_mover.setUpdateMeshMeasures( updateMeshMeasures );
+    M_mesh_mover.apply(M_movingMesh, *M_displacement );
+    M_mesh_mover.setUpdateMeshMeasures( true );
+    M_isOnReferenceMesh = false;
+    M_isOnMovingMesh = true;
+    M_isMappedOntoTheInitialMesh = false;
 }
 
 template< class Convex >
 void
 MeshALE<Convex>::revertInitialDomain( bool updateMeshMeasures )
 {
+    if ( this->isMappedOntoTheInitialMesh() )
+        return;
+
     for ( auto & [name,dioidoe] : M_displacementImposedOnInitialDomainOverElements )
     {
         if ( dioidoe.isOnInitialDomain() )
@@ -436,6 +461,9 @@ MeshALE<Convex>::revertInitialDomain( bool updateMeshMeasures )
             continue;
         dioidof.revertInitialDomain();
     }
+    M_isOnReferenceMesh = false;
+    M_isOnMovingMesh = false;
+    M_isMappedOntoTheInitialMesh = true;
 }
 
 
@@ -553,6 +581,7 @@ MeshALE<Convex>::updateImpl()
     }
     M_isOnReferenceMesh = false;
     M_isOnMovingMesh = true;
+    M_isMappedOntoTheInitialMesh = false;
 
     // up identity
     this->updateIdentityMap();
@@ -762,6 +791,7 @@ MeshALE<Convex>::DisplacementImposedOnInitialDomainOverElements::revertInitialDo
     }
     else if ( M_meshALE->isOnMovingMesh() )
     {
+        throw std::runtime_error( "[MeshALE<Convex>::DisplacementImposedOnInitialDomainOverElements::revertInitialDomain()] case not implemented : only isOnReferenceMesh" );
         CHECK( false ) << "TODO";
     }
 

@@ -351,9 +351,6 @@ public:
         datamap_ptr_t<> dataMapLagrangeMultiplierTranslationalVelocity() const { return M_dataMapLagrangeMultiplierTranslationalVelocity; }
         vector_ptrtype vectorLagrangeMultiplierTranslationalVelocity() const { return M_vectorLagrangeMultiplierTranslationalVelocity; }
 
-        //double relativeTranslation() const { return M_relativeTranslation; }
-        eigen_vector_type<nRealDim> relativeTranslationVector( eigen_vector_type<nRealDim> const& mc1, eigen_vector_type<nRealDim> const& mc2 ) const { return M_relativeTranslation*this->unitDirBetweenMassCenters(mc1,mc2); }
-
         //! return the name this articulation
         std::string name() const;
 
@@ -387,20 +384,6 @@ public:
 
         void updateTimeStep()
             {
-                M_relativeTranslationAtPreviousTime = M_relativeTranslation;
-            }
-
-        template <typename SymbolsExprType>
-        void updateDisplacement( double dt, SymbolsExprType const& se )
-            {
-#if 0
-                auto translationalVelocity1 = idv(bbc.fieldTranslationalVelocityPtr()).evaluate();
-                auto translationalVelocity2 = idv(bbcMaster.fieldTranslationalVelocityPtr()).evaluate();
-                eigen_vector_type<nRealDim> relativeTranslationalVelocity = translationalVelocity2 - translationalVelocity1;
-                M_relativeTranslation = dt*relativeTranslationalVelocity + M_relativeTranslationAtPreviousTime;
-#endif
-                double relativeTranslationalVelocity = expr( M_exprTranslationalVelocity.template expr<1,1>(), se ).evaluate(false)(0,0);
-                M_relativeTranslation = dt*relativeTranslationalVelocity + M_relativeTranslationAtPreviousTime;
             }
 
     private:
@@ -418,8 +401,6 @@ public:
         ModelExpression M_exprTranslationalVelocity;
         datamap_ptr_t<> M_dataMapLagrangeMultiplierTranslationalVelocity;
         vector_ptrtype M_vectorLagrangeMultiplierTranslationalVelocity;
-
-        double M_relativeTranslation = 0, M_relativeTranslationAtPreviousTime = 0;
     };
 
     class NBodyArticulated
@@ -566,19 +547,35 @@ public:
             }
 
 
-        //! update displacement (only angles)
+        //! update displacement (only nbody rotation)
         template <typename SymbolsExprType>
         void updateDisplacement( double dt, SymbolsExprType const& se )
             {
                 typename multibody_type::body_type::angular_velocity_type angularVelocity = idv(M_fieldAngularVelocity).evaluate();
-                M_rigidRotationAngles = dt*angularVelocity + M_rigidRotationAnglesAtPreviousTime;
-                for ( BodyArticulation & ba : M_articulations )
-                    ba.updateDisplacement( dt,se );
+                if ( false ) // Euler time scheme
+                {
+                    M_rigidRotationAngles = dt*angularVelocity + M_rigidRotationAnglesAtPreviousTime;
+                }
+                else // trapezoidal time scheme (Crank-Nicolson)
+                {
+                    typename multibody_type::body_type::angular_velocity_type angularVelocityAtPreviousTime = idv(M_bdfAngularVelocity->unknown(0)).evaluate();
+                    M_rigidRotationAngles = M_rigidRotationAnglesAtPreviousTime + 0.5*dt*( angularVelocity + angularVelocityAtPreviousTime );
+                }
+
+                auto relativeAngle = M_rigidRotationAngles - M_rigidRotationAnglesAtPreviousTime;
+                auto R = Feel::vf::toExpr( multibody_type::body_type::rigidRotationMatrix( relativeAngle ) );
+                auto [mass,massCenter] = this->computeMassAndMassCenterFromDisplacementFieldOfBodies();
+                for ( auto & bbcPtr : this->bodyList() )
+                    const_cast<BodyBoundaryCondition&>(*bbcPtr).body().applyRotationToCurrentDisplacement( R, Feel::vf::toExpr(massCenter) );
             }
 
-        //! return the relative rigid translation (computed from translational velocity fields)
-        eigen_vector_type<nRealDim> evaluateRelativeRigidTranslation( BodyBoundaryCondition const& bbc, BodyBoundaryCondition const& bbcMaster ) const;
-
+        auto modelMeasuresQuantities( std::string const& prefix ) const
+            {
+                return Feel::FeelModels::modelMeasuresQuantities( modelMeasuresQuantity( prefix, "mass_center", M_massCenter ),
+                                                                  modelMeasuresQuantity( prefix, "rigid_rotation_angles", M_rigidRotationAngles )
+                                                                  );
+            }
+    private:
         std::tuple<double,eigen_vector_type<nRealDim> >
         computeMassAndMassCenterFromDisplacementFieldOfBodies()
             {
@@ -594,12 +591,6 @@ public:
                 return std::make_tuple( newMass, std::move( newMassCenter ) );
             }
 
-        auto modelMeasuresQuantities( std::string const& prefix ) const
-            {
-                return Feel::FeelModels::modelMeasuresQuantities( modelMeasuresQuantity( prefix, "mass_center", M_massCenter ),
-                                                                  modelMeasuresQuantity( prefix, "rigid_rotation_angles", M_rigidRotationAngles )
-                                                                  );
-            }
 
     private :
         range_faces_type M_rangeMarkedFacesOnFluid;
@@ -1194,40 +1185,16 @@ public:
             {
                 for ( auto & [bpname,bbc] : *this )
                 {
-                    if ( !bbc.isInNBodyArticulated() || ( bbc.getNBodyArticulated().masterBodyBC().name() == bbc.name() ) )
-                        bbc.updateRigidDisplacement( dt );
+                    // if ( !bbc.isInNBodyArticulated() || ( bbc.getNBodyArticulated().masterBodyBC().name() == bbc.name() ) )
+                    bbc.updateRigidDisplacement( dt );
                 }
 
                 for ( auto & nba : this->nbodyArticulated() )
                 {
-                    nba.updateDisplacement( dt,se ); // get rotation matrix
-                    auto const& bbcMaster = nba.masterBodyBC();
-                    auto rigidTranslationOfMaster = bbcMaster.body().rigidTranslation();
-                    for ( auto & [bpname,bbc] : *this )
-                    {
-                        if ( !nba.has( bbc ) || (bbcMaster.name() == bbc.name()) )
-                            continue;
-                        // start by imposed the same translation for all body on this nbodyArticulated
-                        bbc.body().updateDisplacementFromRigidDisplacement( rigidTranslationOfMaster, multibody_type::body_type::rotation_angles_type::Zero() );
-                        // compute the relative rigid translation with bbcMaster (by using mass centers as axis)
-                        auto relativeTranslation = nba.evaluateRelativeRigidTranslation( bbc,bbcMaster );
-                        // add s relative translation to disp of body
-                        bbc.body().addRigidTranslationToCurrentDisplacement( relativeTranslation );
-                    }
+                    // update rotation of each body of the nBodyArticulated
+                    nba.updateDisplacement( dt,se );
                 }
 
-                for ( auto & nba : this->nbodyArticulated() )
-                {
-                    //nba.updateDisplacement( dt ); // get rotation matrix
-                    auto R = nba.rigidRotationMatrixExpr();
-                    auto [mass,massCenter] = nba.computeMassAndMassCenterFromDisplacementFieldOfBodies();
-                    for ( auto & [bpname,bbc] : *this )
-                    {
-                        if ( !nba.has( bbc ) )
-                            continue;
-                        bbc.body().applyRotationToCurrentDisplacement( R, Feel::vf::toExpr(massCenter) );
-                    }
-                }
 
             }
     private:
@@ -1424,10 +1391,6 @@ public :
 
      // mesh motion
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-    // mesh_ale_ptrtype meshALE() { return M_meshALE; }
-    // mesh_ale_ptrtype const& meshALE() const { return M_meshALE; }
-    // element_meshvelocity_type & meshVelocity() { return *M_meshALE->velocity(); }
-    // element_meshvelocity_type const & meshVelocity() const { return *M_meshALE->velocity(); }
     bool hasMeshMotion() const { return super_type::super_model_meshes_type::hasMeshMotion( this->keyword() ); }
     mesh_ale_ptrtype meshMotionTool() const { return super_type::super_model_meshes_type::meshMotionTool<mesh_type>( this->keyword() ); }
 #endif

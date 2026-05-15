@@ -2839,21 +2839,28 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateRigidDisplaceme
         //angularVelocity = idv(M_bdfAngularVelocity->poly()).evaluate();
     }
 
-    //this->body().updateDisplacementFromRigidVelocity( translationalVelocity,angularVelocity,dt );
-#if 0
-    // get translation disp and angles from Euler time scheme
-    eigen_vector_type<nRealDim> rigidTranslationDisplacement = dt*translationVelocity + M_rigidTranslationDisplacementAtPreviousTime;
-    rotation_angles_type rigidRotationAngles = dt*angularVelocity + M_rigidRotationAnglesAtPreviousTime;
-    this->body().updateDisplacementFromRigidDisplacement( rigidTranslationDisplacement,rigidRotationAngles );
-#else
-    // Method des trapèzes (Crank-Nicolson)
-    typename multibody_type::body_type::translational_velocity_type translationalVelocityAtPreviousTime = idv(M_bdfTranslationalVelocity->unknown(0)).evaluate();
-    typename multibody_type::body_type::angular_velocity_type angularVelocityAtPreviousTime = idv(M_bdfAngularVelocity->unknown(0)).evaluate();
-    eigen_vector_type<nRealDim> rigidTranslationDisplacement = this->body().rigidTranslationDisplacementAtPreviousTime() + 0.5*dt*(translationalVelocity + translationalVelocityAtPreviousTime );
-    typename multibody_type::body_type::rotation_angles_type rigidRotationAngles = this->body().rigidRotationAnglesAtPreviousTime() + 0.5*dt*(angularVelocity + angularVelocityAtPreviousTime );
-    this->body().updateDisplacementFromRigidDisplacement( rigidTranslationDisplacement,rigidRotationAngles );
-#endif
+    typename multibody_type::body_type::rotation_angles_type rigidRotationAngles = multibody_type::body_type::rotation_angles_type::Zero();
+    if ( false )
+    {
+        // get translation disp and angles from Euler time scheme
+        eigen_vector_type<nRealDim> rigidTranslationDisplacement = dt*translationalVelocity + this->body().rigidTranslationDisplacementAtPreviousTime();//M_rigidTranslationDisplacementAtPreviousTime;
+        if ( !this->isInNBodyArticulated() )
+            rigidRotationAngles = dt*angularVelocity + this->body().rigidRotationAnglesAtPreviousTime();//M_rigidRotationAnglesAtPreviousTime;
+        this->body().updateDisplacementFromRigidDisplacement( rigidTranslationDisplacement,rigidRotationAngles );
+    }
+    else
+    {
+        // Method des trapèzes (Crank-Nicolson)
+        typename multibody_type::body_type::translational_velocity_type translationalVelocityAtPreviousTime = idv(M_bdfTranslationalVelocity->unknown(0)).evaluate();
+        eigen_vector_type<nRealDim> rigidTranslationDisplacement = this->body().rigidTranslationDisplacementAtPreviousTime() + 0.5*dt*(translationalVelocity + translationalVelocityAtPreviousTime );
 
+        if ( !this->isInNBodyArticulated() )
+        {
+            typename multibody_type::body_type::angular_velocity_type angularVelocityAtPreviousTime = idv(M_bdfAngularVelocity->unknown(0)).evaluate();
+            rigidRotationAngles = this->body().rigidRotationAnglesAtPreviousTime() + 0.5*dt*(angularVelocity + angularVelocityAtPreviousTime );
+        }
+        this->body().updateDisplacementFromRigidDisplacement( rigidTranslationDisplacement,rigidRotationAngles );
+    }
 }
 
 
@@ -3198,39 +3205,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::NBodyArticulated::updateForUse()
     for ( auto const& bbc : allbbc )
         bbc->body().computeMomentOfInertia_bodyFrame( this->massCenterExpr(), this->rigidRotationMatrix(), M_momentOfInertia_bodyFrame, true );
 }
-
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-eigen_vector_type<FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nRealDim>
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::NBodyArticulated::evaluateRelativeRigidTranslation( BodyBoundaryCondition const& bbc, BodyBoundaryCondition const& bbcMaster ) const
-{
-    bool findBA = false;
-    double coeff = 1;
-    for ( BodyArticulation const& ba : this->articulations() )
-    {
-        if ( ba.body1().name() == bbc.name() && ba.body2().name() == bbcMaster.name() )
-        {
-            coeff = 1;
-            findBA = true;
-        }
-        else if ( ba.body2().name() == bbc.name() && ba.body1().name() == bbcMaster.name() )
-        {
-            coeff = -1;
-            findBA = true;
-        }
-
-        if ( !findBA )
-            continue;
-
-        auto [newMass1,newMassCenter1] = ba.body1().body().computeMassAndMassCenterFromDisplacementField( ba.body1().body().fieldDisplacement() );
-        auto [newMass2,newMassCenter2] = ba.body2().body().computeMassAndMassCenterFromDisplacementField( ba.body2().body().fieldDisplacement() );
-
-        return coeff*ba.relativeTranslationVector(newMassCenter1,newMassCenter2);
-    }
-
-    CHECK( false ) << "not found BodyArticulation related";
-    return eigen_vector_type<nRealDim>::Zero();
-}
-
 
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS

@@ -296,6 +296,12 @@ public :
      * \return true is on moving mesh, else false
      */
     bool isOnMovingMesh() const { return M_isOnMovingMesh; }
+
+    /**
+     * \return true if the mesh is mapped onto the initial mesh, else false
+     */
+    bool isMappedOntoTheInitialMesh() const { return M_isMappedOntoTheInitialMesh; }
+
     /**
      * \return the functionspace
      */
@@ -426,7 +432,7 @@ private :
     mesh_ref_ptrtype M_referenceMesh;
     mesh_ptrtype M_movingMesh;
 
-    bool M_isOnReferenceMesh, M_isOnMovingMesh;
+    bool M_isOnReferenceMesh, M_isOnMovingMesh, M_isMappedOntoTheInitialMesh;
 
     ale_map_functionspace_ptrtype M_Xhmove;
     ale_map_element_ptrtype M_identity_ale;

@@ -65,6 +65,18 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateElasticBod
     if ( M_bodySetBC.empty() )
         return;
 
+    bool hasElasticBehaviorFromExpr = false;
+    for ( auto & [bpname,bbc] : M_bodySetBC )
+    {
+        if ( bbc.hasElasticBehaviorFromExpr() )
+        {
+            hasElasticBehaviorFromExpr = true;
+            break;
+        }
+    }
+    if ( !hasElasticBehaviorFromExpr )
+        return;
+
     // Warning : evaluate expression on reference mesh (maybe it will better to change the API in order to avoid these meshmoves)
     auto mmt = this->meshMotionTool();
     bool meshIsOnRefAtBegin = mmt->isOnReferenceMesh();

@@ -8,11 +8,11 @@ namespace Feel::FeelModels {
 
 template<typename ConvexType>
 void
-Body<ConvexType>::setup( materialsproperties_ptrtype materialsProperties, mesh_ptrtype mesh )
+Body<ConvexType>::setup( materialsproperties_ptrtype materialsProperties, mesh_ptrtype mesh, mesh_motion_ptrtype meshMotionTool )
 {
     M_mesh = mesh;
     M_materialsProperties = materialsProperties;
-
+    M_meshMotionTool = meshMotionTool;
 
     std::set<std::string> markers;
     for ( std::string const& matName : M_physicBody->materialNames() )
@@ -186,7 +186,7 @@ Body<ConvexType>::updateDisplacementFromRigidDisplacement( eigen_vector_type<nRe
     auto M = this->massCenterExpr();
 
     auto tmp = M_spaceDisplacement->element();
-    tmp = this->fieldDisplacement();
+    tmp = this->fieldDisplacement(); // TODO VINCENT : maybe previous time ? check also with elastic behavior
 
     this->updateDisplacement( elements(support(M_spaceDisplacement)), idv(tmp) + R*( P() - M ) + M + T - P() );
 }

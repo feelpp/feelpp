@@ -33,6 +33,10 @@ public:
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
+    // mesh motion
+    using mesh_ale_type = MeshALE<convex_type>;
+    using mesh_ale_ptrtype = std::shared_ptr<mesh_ale_type>;
+
     // materials properties
     typedef MaterialsProperties<nRealDim> materialsproperties_type;
     typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
@@ -58,16 +62,19 @@ public:
 
     // materials properties
     materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
-    //materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
     void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
 
     // mesh
     mesh_ptrtype mesh() const { return super_numerical_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
     void setMesh( mesh_ptrtype const& mesh ) { super_numerical_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
 
+    // mesh motion
+    bool hasMeshMotion() const { return super_numerical_type::super_model_meshes_type::hasMeshMotion( this->keyword() ); }
+    mesh_ale_ptrtype meshMotionTool() const { return super_numerical_type::super_model_meshes_type::meshMotionTool<mesh_type>( this->keyword() ); }
+
     // bodies
     std::map<std::string, std::unique_ptr<body_type>> const& bodies() const noexcept { return M_bodies; }
-    bool hasBody( std::string const& name ) const { return M_bodies.find( name ) == M_bodies.end(); }
+    bool hasBody( std::string const& name ) const { return M_bodies.find( name ) != M_bodies.end(); }
     body_type const& body( std::string const& name ) const { return *M_bodies.at( name ); }
     body_type & body( std::string const& name ) { return *M_bodies.at( name ); }
 

@@ -39,6 +39,9 @@ Multibody<ConvexType>::init()
 
     this->materialsProperties()->addMesh( this->mesh() );
 
+    mesh_ale_ptrtype meshMotionTool;
+    if ( this->hasMeshMotion() )
+        meshMotionTool = this->meshMotionTool();
 
     for ( auto & [physicId,physicObj] : this->physicsFromCurrentType() )
     {
@@ -46,7 +49,7 @@ Multibody<ConvexType>::init()
         for ( auto const& [bodyName,bodyPhysic] : physicMultibody->bodies() )
         {
             auto body = std::make_unique<body_type>( &bodyPhysic );
-            body->setup( M_materialsProperties, this->mesh() );
+            body->setup( M_materialsProperties, this->mesh(), meshMotionTool );
             M_bodies.emplace( bodyName, std::move(body) );
         }
     }
