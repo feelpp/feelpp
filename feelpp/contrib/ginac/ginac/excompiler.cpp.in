@@ -46,12 +46,15 @@
 #endif // def HAVE_LIBDL
 #include <fstream>
 #include <ios>
+#include <limits>
+#include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
 #include <functional>
 #include <chrono>
+#include <cstdint>
 #include <thread>
 #include <random>
 #include <unistd.h>
@@ -157,6 +160,91 @@ inline bool so_file_ready(const std::string& filename)
 		return true;
 	} catch (...) {
 		return false;
+	}
+}
+
+inline std::uint64_t fnv1a_hash_file(const std::string& filename)
+{
+	std::ifstream ifs(filename.c_str(), std::ios::binary);
+	if (!ifs) {
+		throw std::runtime_error("could not open source code file " + filename + " for hashing");
+	}
+
+	std::uint64_t hash = 14695981039346656037ULL;
+	char buffer[4096];
+	while (ifs) {
+		ifs.read(buffer, sizeof(buffer));
+		std::streamsize count = ifs.gcount();
+		for (std::streamsize i = 0; i < count; ++i) {
+			hash ^= static_cast<unsigned char>(buffer[i]);
+			hash *= 1099511628211ULL;
+		}
+	}
+	return hash;
+}
+
+inline std::string source_hash(const std::string& filename)
+{
+	std::ostringstream ostr;
+	ostr << std::hex << fnv1a_hash_file(filename);
+	return ostr.str();
+}
+
+inline std::string source_hash_filename(const std::string& filename)
+{
+	return filename + ".hash";
+}
+
+inline std::string hashed_source_filename(const std::string& filename, const std::string& hash)
+{
+	return filename + "." + hash;
+}
+
+inline void copy_source_file(const std::string& source_filename, const std::string& target_filename)
+{
+	std::ifstream ifs(source_filename.c_str(), std::ios::binary);
+	if (!ifs) {
+		throw std::runtime_error("could not open source code file " + source_filename + " for copying");
+	}
+	std::ofstream ofs(target_filename.c_str(), std::ios::binary | std::ios::trunc);
+	if (!ofs) {
+		throw std::runtime_error("could not create source code file " + target_filename + " for compilation");
+	}
+	ofs << ifs.rdbuf();
+}
+
+inline void write_source_hash_file(const std::string& filename, const std::string& hash)
+{
+	std::string hash_filename = source_hash_filename(filename);
+	std::string tmp_hash_filename = hash_filename + ".tmp." + std::to_string(getpid());
+	std::ofstream ofs(tmp_hash_filename.c_str(), std::ios::out | std::ios::trunc);
+	if (!ofs) {
+		throw std::runtime_error("could not create source hash file " + tmp_hash_filename);
+	}
+	ofs << hash << std::endl;
+	ofs.close();
+	if (rename(tmp_hash_filename.c_str(), hash_filename.c_str()) == -1) {
+		throw std::runtime_error("could not update source hash file " + hash_filename + ": " + std::string(strerror(errno)));
+	}
+}
+
+inline void update_latest_module_link(const std::string& filename, const std::string& compiled_filename)
+{
+	if (filename == compiled_filename) {
+		return;
+	}
+
+	std::string latest_module = filename + ".so";
+	std::string compiled_module = compiled_filename + ".so";
+	std::string tmp_link = latest_module + ".tmp." + std::to_string(getpid());
+
+	remove(tmp_link.c_str());
+	if (symlink(compiled_module.c_str(), tmp_link.c_str()) == -1) {
+		throw std::runtime_error("could not create module link " + tmp_link + ": " + std::string(strerror(errno)));
+	}
+	if (rename(tmp_link.c_str(), latest_module.c_str()) == -1) {
+		remove(tmp_link.c_str());
+		throw std::runtime_error("could not update module link " + latest_module + ": " + std::string(strerror(errno)));
 	}
 }
 
@@ -303,28 +391,57 @@ public:
 	 * Uses file locking to prevent concurrent compilation of the same file
 	 * by different processes.
 	 */
-	void compile_src_file(const std::string filename, bool clean_up)
+	std::string compile_src_file(const std::string filename, bool clean_up, bool lock_file = true)
 		{
 			namespace fs = boost::filesystem;
-			std::string so_filename = filename + ".so";
 			std::string lock_filename = filename + ".lock";
+			std::unique_ptr<FileLock> lock;
 
 			// Acquire exclusive lock before compilation
-			FileLock lock(lock_filename);
+			if (lock_file) {
+				lock.reset(new FileLock(lock_filename));
+			}
 
-			// Check if .so file already exists and is valid (another process compiled it)
-			if (so_file_ready(filename)) {
-				// Another process already compiled this file
-				remove_src_file(filename, clean_up);
-				// Clean up lock file
-				if (clean_up) {
+			std::string compile_filename = filename;
+			std::string hash;
+			if (!clean_up) {
+				hash = source_hash(filename);
+				compile_filename = hashed_source_filename(filename, hash);
+				if (so_file_ready(compile_filename)) {
+					write_source_hash_file(filename, hash);
+					update_latest_module_link(filename, compile_filename);
+					return compile_filename;
+				}
+				copy_source_file(filename, compile_filename);
+			}
+
+			auto remove_lock_file = [&lock_filename, clean_up, lock_file]() {
+				if (clean_up && lock_file) {
 					boost::mpi::communicator world;
 					if (world.rank() == 0) {
 						remove(lock_filename.c_str());
 					}
 				}
-				return;
-			}
+			};
+			auto compile_with = [this, &filename, &compile_filename, &hash, clean_up, &remove_lock_file](const std::string& excompiler_path) {
+				std::string strcompile = excompiler_path + " " + compile_filename;
+				int status = system(strcompile.c_str());
+				if (status)
+				{
+					std::ostringstream ostr;
+					ostr << "feelpp/contrib/ginac::compile_src_file " << compile_filename << " fails (" << WEXITSTATUS(status) << ")\n";
+					throw std::runtime_error(ostr.str());
+				}
+				if (!clean_up) {
+					write_source_hash_file(filename, hash);
+					update_latest_module_link(filename, compile_filename);
+					remove(compile_filename.c_str());
+				}
+				else {
+					remove_src_file(filename, clean_up);
+				}
+				remove_lock_file();
+			};
 
             std::string firstPathToTry = "@FEELPP_BUILD_DIR@/feelpp/contrib/ginac/tools/ginac-excompiler";
 
@@ -334,24 +451,8 @@ public:
 
 			if ( fs::exists( fs::path( firstPathToTry ) ) )
 			{
-				std::string strcompile = firstPathToTry + " " + filename;
-
-				int status = system(strcompile.c_str());
-				if (status)
-				{
-					std::ostringstream ostr;
-					ostr << "feelpp/contrib/ginac::compile_src_file " << filename << " fails (" << WEXITSTATUS(status) << ")\n";
-					throw std::runtime_error(ostr.str());
-				}
-				remove_src_file( filename, clean_up );
-				// Clean up lock file
-				if (clean_up) {
-					boost::mpi::communicator world;
-					if (world.rank() == 0) {
-						remove(lock_filename.c_str());
-					}
-				}
-				return;
+				compile_with(firstPathToTry);
+				return compile_filename;
 			}
 			else
 			{
@@ -365,23 +466,8 @@ public:
                         fs::path exc = fs::path(p) / fs::path(n);
                         if ( fs::exists( exc ) )
                         {
-                            std::string strcompile = exc.string() + " " + filename;
-                            int status = system(strcompile.c_str());
-                            if (status)
-                            {
-                                std::ostringstream ostr;
-                                ostr << "ginac::compile_src_file " << filename << " fails (" << WEXITSTATUS(status) << ")\n";
-                                throw std::runtime_error(ostr.str());
-                            }
-                            remove_src_file( filename, clean_up );
-                            // Clean up lock file
-                            if (clean_up) {
-                                boost::mpi::communicator world;
-                                if (world.rank() == 0) {
-                                    remove(lock_filename.c_str());
-                                }
-                            }
-                            return;
+                            compile_with(exc.string());
+                            return compile_filename;
                         }
                     }
                 }
@@ -482,26 +568,30 @@ void compile_ex(const ex& expr, const symbol& sym, FUNCP_1P& fp, const std::stri
 	std::ofstream ofs;
 	std::string unique_filename = filename;
 
-    boost::mpi::communicator world;
+	boost::mpi::communicator world;
 
-    if( world.rank() == 0 )
-    {
-        global_excompiler.create_src_file(unique_filename, ofs);
+	if( world.rank() == 0 )
+	{
+		std::unique_ptr<FileLock> source_lock;
+		if (!filename.empty()) {
+			source_lock.reset(new FileLock(unique_filename + ".lock"));
+		}
+		global_excompiler.create_src_file(unique_filename, ofs);
 
-        ofs << "double compiled_ex(double x)" << std::endl;
-        ofs << "{" << std::endl;
-        ofs << "double res = ";
-        expr_with_x.print(GiNaC::print_csrc_double(ofs));
-        ofs << ";" << std::endl;
-        ofs << "return(res); " << std::endl;
-        ofs << "}" << std::endl;
+		ofs << "double compiled_ex(double x)" << std::endl;
+		ofs << "{" << std::endl;
+		ofs << "double res = ";
+		expr_with_x.print(GiNaC::print_csrc_double(ofs));
+		ofs << ";" << std::endl;
+		ofs << "return(res); " << std::endl;
+		ofs << "}" << std::endl;
 
-        ofs.close();
+		ofs.close();
 
-        global_excompiler.compile_src_file(unique_filename, filename.empty());
-    }
-    world.barrier(); // Waiting for proc 0 to ensure the compilation step is OK
-    boost::mpi::broadcast( world, unique_filename, 0);
+		unique_filename = global_excompiler.compile_src_file(unique_filename, filename.empty(), filename.empty());
+	}
+	world.barrier(); // Waiting for proc 0 to ensure the compilation step is OK
+	boost::mpi::broadcast( world, unique_filename, 0);
 
 	// This is not standard compliant! ... no conversion between
 	// pointer-to-functions and pointer-to-objects ...
@@ -516,26 +606,30 @@ void compile_ex(const ex& expr, const symbol& sym1, const symbol& sym2, FUNCP_2P
 	std::ofstream ofs;
 	std::string unique_filename = filename;
 
-    boost::mpi::communicator world;
+	boost::mpi::communicator world;
 
-    if( world.rank() == 0 )
-    {
-        global_excompiler.create_src_file(unique_filename, ofs);
+	if( world.rank() == 0 )
+	{
+		std::unique_ptr<FileLock> source_lock;
+		if (!filename.empty()) {
+			source_lock.reset(new FileLock(unique_filename + ".lock"));
+		}
+		global_excompiler.create_src_file(unique_filename, ofs);
 
-        ofs << "double compiled_ex(double x, double y)" << std::endl;
-        ofs << "{" << std::endl;
-        ofs << "double res = ";
-        expr_with_xy.print(GiNaC::print_csrc_double(ofs));
-        ofs << ";" << std::endl;
-        ofs << "return(res); " << std::endl;
-        ofs << "}" << std::endl;
+		ofs << "double compiled_ex(double x, double y)" << std::endl;
+		ofs << "{" << std::endl;
+		ofs << "double res = ";
+		expr_with_xy.print(GiNaC::print_csrc_double(ofs));
+		ofs << ";" << std::endl;
+		ofs << "return(res); " << std::endl;
+		ofs << "}" << std::endl;
 
-        ofs.close();
+		ofs.close();
 
-        global_excompiler.compile_src_file(unique_filename, filename.empty());
-    }
-    world.barrier(); // Waiting for proc 0 to ensure the compilation step is OK
-    boost::mpi::broadcast( world, unique_filename, 0);
+		unique_filename = global_excompiler.compile_src_file(unique_filename, filename.empty(), filename.empty());
+	}
+	world.barrier(); // Waiting for proc 0 to ensure the compilation step is OK
+	boost::mpi::broadcast( world, unique_filename, 0);
 
 	// This is not standard compliant! ... no conversion between
 	// pointer-to-functions and pointer-to-objects ...
@@ -560,37 +654,41 @@ void compile_ex(const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::st
 	std::ofstream ofs;
 	std::string unique_filename = filename;
 
-    bool doCompile=true;
-    if ( filename.empty() )
-    {
-        boost::mpi::communicator world;
-        if( world.rank() != 0 ) doCompile=false;
-    }
+	bool doCompile=true;
+	if ( filename.empty() )
+	{
+		boost::mpi::communicator world;
+		if( world.rank() != 0 ) doCompile=false;
+	}
 
-    if ( doCompile )
-    {
-        global_excompiler.create_src_file(unique_filename, ofs);
+	if ( doCompile )
+	{
+		std::unique_ptr<FileLock> source_lock;
+		if (!filename.empty()) {
+			source_lock.reset(new FileLock(unique_filename + ".lock"));
+		}
+		global_excompiler.create_src_file(unique_filename, ofs);
 
-        ofs << "extern \"C\" void compiled_ex(const int* an, const double a[], const int* fn, double f[])" << std::endl;
-        ofs << "{" << std::endl;
-        for (std::size_t count=0; count<exprs.nops(); ++count) {
-            ofs << "f[" << count << "] = ";
-            expr_with_cname[count].print(GiNaC::print_csrc_double(ofs));
-            ofs << ";" << std::endl;
-        }
-        ofs << "}" << std::endl;
+		ofs << "extern \"C\" void compiled_ex(const int* an, const double a[], const int* fn, double f[])" << std::endl;
+		ofs << "{" << std::endl;
+		for (std::size_t count=0; count<exprs.nops(); ++count) {
+			ofs << "f[" << count << "] = ";
+			expr_with_cname[count].print(GiNaC::print_csrc_double(ofs));
+			ofs << ";" << std::endl;
+		}
+		ofs << "}" << std::endl;
 
-        ofs.close();
+		ofs.close();
 
-        global_excompiler.compile_src_file(unique_filename, filename.empty());
-    }
+		unique_filename = global_excompiler.compile_src_file(unique_filename, filename.empty(), filename.empty());
+	}
 
-    if ( filename.empty() )
-    {
-        boost::mpi::communicator world;
-        world.barrier(); // Waiting for proc 0 to ensure the compilation step is OK
-        boost::mpi::broadcast( world, unique_filename, 0);
-    }
+	if ( filename.empty() )
+	{
+		boost::mpi::communicator world;
+		world.barrier(); // Waiting for proc 0 to ensure the compilation step is OK
+		boost::mpi::broadcast( world, unique_filename, 0);
+	}
 
 	// This is not standard compliant! ... no conversion between
 	// pointer-to-functions and pointer-to-objects ...
