@@ -3,6 +3,7 @@ set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testvf")
 feelpp_add_test( expr CFG test_expr.cfg PYTHON test_expr.py )
 
 feelpp_add_test( ginac )
+feelpp_add_test( ginac_jit_cache NO_MPI_TEST TIMEOUT 180 )
 feelpp_add_test( inner CFG test_inner.cfg )
 feelpp_add_test( vf_operators )
 feelpp_add_test( laplacianv CFG test_laplacianv.cfg )

@@ -154,6 +154,14 @@ namespace Feel
         {
             for(const auto& [cavity_name,markers]: M_markers_map)
             {
+                for ( auto const& marker : markers )
+                {
+                    auto marker_measure = integrate( _range=markedfaces( M_mesh, marker ), _expr=cst(1.) ).evaluate()(0,0);
+                    BOOST_REQUIRE_MESSAGE(
+                        marker_measure > 0,
+                        fmt::format("Radiative enclosure '{}' marker '{}' has zero surface measure", cavity_name, marker) );
+                }
+
                 auto cavity_submesh = createSubmesh(_mesh=M_mesh,_range=markedfaces(M_mesh,markers),_update=0);
 
                 // Create a discontinuous space, linear per face, over the view-factor markers
@@ -517,7 +525,7 @@ namespace Feel
 /// - Average temperature over specified boundary markers
 /// - Average heat flux computed from temperature gradient
 /// 
-/// Uses Boost.Test CHECK() macro to report pass/fail with relative
+/// Uses Boost.Test non-fatal checks to report pass/fail with relative
 /// tolerance defined in JSON specifications.
 /// 
 /// @note This is the test validation step; failures indicate either
@@ -533,22 +541,33 @@ namespace Feel
                 auto markers = struc["markers"].get<std::vector<std::string>>();
                 auto value = struc["exact_value"].get<double>();
                 auto tol = struc["rel_tolerance"].get<double>();
+                auto abs_tol = struc.contains("abs_tolerance") ? struc["abs_tolerance"].get<double>() : tol * math::abs(value);
 
                 if (struc["quantity"]=="temperature")
                 {
                     // average temperature on surface
                     auto average_T = integrate(_range=markedfaces(M_mesh,markers),_expr=idv(M_currentTemp.T())).evaluate()(0,0);
                     auto measure_markers = integrate(_range=markedfaces(M_mesh,markers),_expr=cst(1.)).evaluate()(0,0);
+                    BOOST_REQUIRE_MESSAGE(
+                        measure_markers > 0,
+                        fmt::format("Average temperature check has zero measure for markers [{}]", fmt::join(markers, ", ")) );
                     average_T /=measure_markers;
 
-                    auto rel_difference = (average_T-value)/value;
+                    auto difference = average_T - value;
+                    auto rel_difference = math::abs(value) > 1e-14 ? difference/value : 0;
+                    auto check_passed = math::abs(value) > 1e-14 ? math::abs(rel_difference) < tol : math::abs(difference) < abs_tol;
 
-                    CHECK( math::abs(rel_difference) < tol );
+                    BOOST_CHECK_MESSAGE(
+                        check_passed,
+                        fmt::format("Average temperature check for markers [{}]: value={:.6e}, expected={:.6e}, rel_tolerance={:.6e}, abs_tolerance={:.6e}, difference={:.6e}, relative_difference={:.6e}",
+                                    fmt::join(markers, ", "), average_T, value, tol, abs_tol, difference, rel_difference) );
 
                     LOG(INFO) << fmt::format("Average temperature: {:.6e}", average_T);
                     LOG(INFO) << fmt::format("Markers: [{}]", fmt::join(markers, ", "));
                     LOG(INFO) << fmt::format("Expected value: {:.6e}", value);
-                    LOG(INFO) << fmt::format("Tolerance: {:.6e}", tol);
+                    LOG(INFO) << fmt::format("Relative tolerance: {:.6e}", tol);
+                    LOG(INFO) << fmt::format("Absolute tolerance: {:.6e}", abs_tol);
+                    LOG(INFO) << fmt::format("Difference: {:.6e}", difference);
                     LOG(INFO) << fmt::format("Relative difference: {:.6e}", rel_difference);
 
                 }
@@ -559,16 +578,26 @@ namespace Feel
                     // Negative sign: heat flux convention (outward normal)
                     auto average_q = integrate(_range=markedfaces(M_mesh,markers),_expr= cst(-1.0) * idv(M_conductivity) * gradv(M_currentTemp.T()) * N() ).evaluate()(0,0);
                     auto measure_markers = integrate(_range=markedfaces(M_mesh,markers),_expr=cst(1.)).evaluate()(0,0);
+                    BOOST_REQUIRE_MESSAGE(
+                        measure_markers > 0,
+                        fmt::format("Average flux check has zero measure for markers [{}]", fmt::join(markers, ", ")) );
                     average_q /=measure_markers;
 
-                    auto rel_difference = (average_q-value)/value;
+                    auto difference = average_q - value;
+                    auto rel_difference = math::abs(value) > 1e-14 ? difference/value : 0;
+                    auto check_passed = math::abs(value) > 1e-14 ? math::abs(rel_difference) < tol : math::abs(difference) < abs_tol;
 
-                    CHECK( math::abs(rel_difference) < tol );
+                    BOOST_CHECK_MESSAGE(
+                        check_passed,
+                        fmt::format("Average flux check for markers [{}]: value={:.6e}, expected={:.6e}, rel_tolerance={:.6e}, abs_tolerance={:.6e}, difference={:.6e}, relative_difference={:.6e}",
+                                    fmt::join(markers, ", "), average_q, value, tol, abs_tol, difference, rel_difference) );
 
                     LOG(INFO) << fmt::format("Average flux: {:.6e}", average_q);
                     LOG(INFO) << fmt::format("Markers: [{}]", fmt::join(markers, ", "));
                     LOG(INFO) << fmt::format("Expected value: {:.6e}", value);
-                    LOG(INFO) << fmt::format("Tolerance: {:.6e}", tol);
+                    LOG(INFO) << fmt::format("Relative tolerance: {:.6e}", tol);
+                    LOG(INFO) << fmt::format("Absolute tolerance: {:.6e}", abs_tol);
+                    LOG(INFO) << fmt::format("Difference: {:.6e}", difference);
                     LOG(INFO) << fmt::format("Relative difference: {:.6e}", rel_difference);
                 }
                 else
