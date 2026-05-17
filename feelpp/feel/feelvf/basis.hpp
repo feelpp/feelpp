@@ -325,6 +325,54 @@ curlz( ProxyType const& proxy )
         return curlz( proxy.element() );
 }
 
+template <detail::FunctionSpaceElement ElementType>
+[[nodiscard]] inline auto
+omega( ElementType const& element )
+{
+    return 0.5*curl( element );
+}
+
+template <detail::FunctionSpaceElement ElementType>
+[[nodiscard]] inline auto
+omegat( ElementType const& element )
+{
+    return 0.5*curlt( element );
+}
+
+template <detail::BasisProxyType ProxyType>
+[[nodiscard]] inline auto
+omega( ProxyType const& proxy )
+{
+    if constexpr ( detail::basis_proxy_type_t<ProxyType>::role == __TRIAL )
+        return omegat( proxy.element() );
+    else
+        return omega( proxy.element() );
+}
+
+template <detail::FunctionSpaceElement ElementType>
+[[nodiscard]] inline auto
+omegaz( ElementType const& element )
+{
+    return 0.5*curlz( element );
+}
+
+template <detail::FunctionSpaceElement ElementType>
+[[nodiscard]] inline auto
+omegazt( ElementType const& element )
+{
+    return 0.5*curlzt( element );
+}
+
+template <detail::BasisProxyType ProxyType>
+[[nodiscard]] inline auto
+omegaz( ProxyType const& proxy )
+{
+    if constexpr ( detail::basis_proxy_type_t<ProxyType>::role == __TRIAL )
+        return omegazt( proxy.element() );
+    else
+        return omegaz( proxy.element() );
+}
+
 template <detail::BasisProxyType ProxyType>
 [[nodiscard]] inline auto
 hess( ProxyType const& proxy )

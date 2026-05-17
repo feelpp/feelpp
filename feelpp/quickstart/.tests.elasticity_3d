@@ -1,0 +1,2 @@
+cantilever-point-load-3d --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/cantilever-point-load-3d/cantilever_point_load_3d.cfg --gmsh.hsize=0.25
+cantilever-point-moment-3d --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/cantilever-point-moment-3d/cantilever_point_moment_3d.cfg --gmsh.hsize=0.25
