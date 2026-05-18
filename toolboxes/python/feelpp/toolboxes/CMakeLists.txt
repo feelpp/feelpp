@@ -28,6 +28,17 @@ if ( TARGET pyfeelpp )
   add_dependencies(pyfeelpptoolboxes pyfeelpp)
 endif()
 
+set(PYFILES __init__.py)
+feelpp_stage_python_files(
+  TARGET pyfeelpptoolboxes_package_pyfiles
+  DESTINATION feelpp/toolboxes
+  FILES ${PYFILES}
+)
+add_dependencies(pyfeelpptoolboxes pyfeelpptoolboxes_package_pyfiles)
+install(FILES ${PYFILES}
+        DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes
+        COMPONENT ${FEELPP_PYTHON_INSTALL_COMPONENT})
+
 add_subdirectory( core )
 
 

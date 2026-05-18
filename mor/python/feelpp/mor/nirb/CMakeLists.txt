@@ -22,11 +22,11 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.21)
 
 message(STATUS "[pyfeelpp-mor] add pymodule nirb")
 
-set(PYFILES nirb.py utils.py nirb_perf.py postProcess.py nirbOffline.py nirbOnline.py run_nirb_perf.py)
+set(PYFILES __init__.py nirb.py utils.py nirb_perf.py postProcess.py nirbOffline.py nirbOnline.py run_nirb_perf.py)
 feelpp_stage_python_files(
   TARGET pyfeelppmor_nirb_pyfiles
   DESTINATION feelpp/mor/nirb

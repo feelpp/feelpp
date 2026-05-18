@@ -1,0 +1,30 @@
+feelpp-toolboxes (0.111.0~preview.14-1) unstable; urgency=medium
+
+  * New upstream release
+
+ -- Christophe Prud'homme <christophe.prudhomme@cemosis.fr>  Wed, 15 Apr 2026 08:23:58 +0200
+
+feelpp-toolboxes (0.111.0~preview.13-2) unstable; urgency=medium
+
+  * Packaging revision update
+
+ -- Christophe Prud'homme <christophe.prudhomme@cemosis.fr>  Mon, 13 Apr 2026 14:40:05 +0200
+
+feelpp-toolboxes (0.111.0~preview.13-1) unstable; urgency=medium
+
+  * Packaging metadata sync
+
+ -- Christophe Prud'homme <christophe.prudhomme@cemosis.fr>  Mon, 13 Apr 2026 06:53:16 +0200
+
+feelpp-toolboxes (0.109.0~alpha.1-1) unstable; urgency=medium
+
+  * New upstream commits
+
+ -- Christophe Prud'homme <christophe.prudhomme@feelpp.org>  Mon, 27 Jan 2020 00:06:30 +0100
+
+feelpp-toolboxes (0.107.0~alpha.1+gita75a0ef12-5) unstable; urgency=medium
+
+  * libfeelpp1,libfeelpp-dev: really fix kwsys shared lib versioning
+
+ -- Christophe Prud'homme <christophe.prudhomme@feelpp.org>  Mon, 28 Oct 2019 19:18:04 +0100
+

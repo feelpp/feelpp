@@ -8,7 +8,7 @@
 # define the feel++ c++ standard level, it used to be hardcoded, this way we can
 # have builds to test the different standard flavors
 if (NOT DEFINED FEELPP_STD_CPP )
-  set(FEELPP_STD_CPP "17") # DOC STRING "define feel++ standard c++ (default c++11), values can be : 11, 14, 17, 2a")
+  set(FEELPP_STD_CPP "23") # DOC STRING "define feel++ standard c++ (default c++11), values can be : 11, 14, 17, 2a")
 endif()
 if (NOT DEFINED FEELPP_STDLIB_CPP AND NOT APPLE)
   set(FEELPP_STDLIB_CPP "stdc++") # DOC STRING "define feel++ standard c++ library (default libstdc++), values can be : libc++ libstdc++")
@@ -141,19 +141,16 @@ else()
   set( FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION ON)
 endif()
 
-function(get_linux_lsb_release_information)
-    find_program(LSB_RELEASE_EXEC lsb_release)
-    if(NOT LSB_RELEASE_EXEC)
-        message(WARNING "Could not detect lsb_release executable, can not gather required information")
-    else()
-      execute_process(COMMAND "${LSB_RELEASE_EXEC}" --short --id OUTPUT_VARIABLE LSB_RELEASE_ID_SHORT OUTPUT_STRIP_TRAILING_WHITESPACE)
-      execute_process(COMMAND "${LSB_RELEASE_EXEC}" --short --release OUTPUT_VARIABLE LSB_RELEASE_VERSION_SHORT OUTPUT_STRIP_TRAILING_WHITESPACE)
-      execute_process(COMMAND "${LSB_RELEASE_EXEC}" --short --codename OUTPUT_VARIABLE LSB_RELEASE_CODENAME_SHORT OUTPUT_STRIP_TRAILING_WHITESPACE)
+include(feelpp.host)
 
-      set(LSB_RELEASE_ID_SHORT "${LSB_RELEASE_ID_SHORT}" PARENT_SCOPE)
-      set(LSB_RELEASE_VERSION_SHORT "${LSB_RELEASE_VERSION_SHORT}" PARENT_SCOPE)
-      set(LSB_RELEASE_CODENAME_SHORT "${LSB_RELEASE_CODENAME_SHORT}" PARENT_SCOPE)
+function(get_linux_lsb_release_information)
+    feelpp_detect_linux_lsb_release_information(LSB_RELEASE_ID_SHORT LSB_RELEASE_VERSION_SHORT LSB_RELEASE_CODENAME_SHORT)
+    if(NOT LSB_RELEASE_ID_SHORT AND NOT LSB_RELEASE_VERSION_SHORT AND NOT LSB_RELEASE_CODENAME_SHORT)
+      message(WARNING "Could not detect Linux release information from lsb_release or /etc/os-release")
     endif()
+    set(LSB_RELEASE_ID_SHORT "${LSB_RELEASE_ID_SHORT}" PARENT_SCOPE)
+    set(LSB_RELEASE_VERSION_SHORT "${LSB_RELEASE_VERSION_SHORT}" PARENT_SCOPE)
+    set(LSB_RELEASE_CODENAME_SHORT "${LSB_RELEASE_CODENAME_SHORT}" PARENT_SCOPE)
 endfunction()
 
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
@@ -231,8 +228,10 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     endif()
 endif()
 
-# Disable searching for MPI-2 C++ bindings
-set(MPI_CXX_SKIP_MPICXX TRUE)
+# Disable searching for deprecated MPI-2 C++ bindings.
+# On newer Debian/OpenMPI toolchains, libmpi_cxx.so is no longer shipped.
+# Force the cache entry so CMake's FindMPI does not recreate it with FALSE.
+set(MPI_CXX_SKIP_MPICXX TRUE CACHE BOOL "Disable deprecated MPI C++ bindings" FORCE)
 FIND_PACKAGE(MPI REQUIRED)
 IF ( MPI_FOUND )
   #SET(CMAKE_REQUIRED_INCLUDES "${MPI_INCLUDE_PATH};${CMAKE_REQUIRED_INCLUDES}")
@@ -550,10 +549,19 @@ endif()
 
 # Python libs
 option( FEELPP_ENABLE_PYTHON "Enable Python Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+option( FEELPP_ALLOW_AMBIENT_CONDA_PYTHON "Allow auto-detected Conda/Miniconda Python installations" OFF )
 if(FEELPP_ENABLE_PYTHON)
   #
   # Python
   #
+  if(NOT FEELPP_ALLOW_AMBIENT_CONDA_PYTHON AND EXISTS "/usr/bin/python3")
+    if(DEFINED Python3_EXECUTABLE AND NOT "${Python3_EXECUTABLE}" STREQUAL "" AND NOT "${Python3_EXECUTABLE}" STREQUAL "/usr/bin/python3")
+      message(STATUS "[feelpp] Ignoring ambient Python ${Python3_EXECUTABLE}; using /usr/bin/python3")
+    else()
+      message(STATUS "[feelpp] Using system Python /usr/bin/python3")
+    endif()
+    set(Python3_EXECUTABLE "/usr/bin/python3" CACHE FILEPATH "Python3 executable" FORCE)
+  endif()
   FIND_PACKAGE(Python3 COMPONENTS Interpreter Development Development.Module)
   if(Python3_FOUND)
     set(Python3_EXECUTABLE "${Python3_EXECUTABLE}" CACHE FILEPATH "Python3 executable")
@@ -625,35 +633,52 @@ if(FEELPP_ENABLE_PYTHON)
   else ()
     execute_process(
       COMMAND ${Python3_EXECUTABLE} -c "
-import sys, sysconfig, site, os
-base = '${CMAKE_INSTALL_PREFIX}'
+import os, site, sys, sysconfig
+base = os.path.normpath('${CMAKE_INSTALL_PREFIX}')
+pyver = str(sys.version_info.major) + '.' + str(sys.version_info.minor)
+platlib = sysconfig.get_path('platlib', vars={'base': base, 'platbase': base})
 cands = []
+if platlib:
+    cands.append(platlib)
 try:
     cands += site.getsitepackages()
 except Exception:
     pass
-cands.append(sysconfig.get_path('platlib', vars={'base': base, 'platbase': base}))
-# Prefer Debian-style paths under current base, then generic ABI paths.
-pyver = str(sys.version_info.major) + '.' + str(sys.version_info.minor)
-preferred = [
-    base + '/lib/python3/dist-packages',
-    base + '/lib/python' + pyver + '/dist-packages',
-    base + '/lib/python' + pyver + '/site-packages',
-    base + '/local/lib/python3/dist-packages',
-    base + '/local/lib/python' + pyver + '/dist-packages',
-    base + '/local/lib/python' + pyver + '/site-packages',
-]
-choice = None
+seen = set()
+norm_cands = []
 for p in cands:
-    if not p: continue
-    if any(p.startswith(pr) for pr in preferred):
-        choice = p; break
-# Next, prefer any path rooted in the current install prefix.
+    if not p:
+        continue
+    p = os.path.normpath(p)
+    if p in seen:
+        continue
+    seen.add(p)
+    norm_cands.append(p)
+cands = norm_cands
+preferred = [
+    os.path.normpath(base + '/lib/python3/dist-packages'),
+    os.path.normpath(base + '/lib/python' + pyver + '/dist-packages'),
+    os.path.normpath(base + '/lib/python' + pyver + '/site-packages'),
+]
+local_base = os.path.normpath(base + '/local')
+choice = None
+for pref in preferred:
+    for p in cands:
+        if p == pref or p.startswith(pref + os.sep):
+            choice = p
+            break
+    if choice:
+        break
 if choice is None:
     for p in cands:
-        if p and p.startswith(base + os.sep):
-            choice = p; break
-# Fallback to first candidate
+        if not (p == base or p.startswith(base + os.sep)):
+            continue
+        if p == local_base or p.startswith(local_base + os.sep):
+            continue
+        choice = p
+        break
+if choice is None and platlib:
+    choice = os.path.normpath(platlib)
 if choice is None and cands:
     choice = cands[0]
 if choice:
@@ -678,7 +703,11 @@ else:
   message(STATUS "[feelpp] python module path: ${FEELPP_PYTHON_MODULE_PATH}")
 endif(FEELPP_ENABLE_PYTHON)
 
-option(FEELPP_ENABLE_PYTHON_WRAPPING "Enable Python wrapping implementation" ON)
+option(FEELPP_ENABLE_PYTHON_WRAPPING "Enable Python wrapping implementation" ${FEELPP_ENABLE_PYTHON})
+if(NOT FEELPP_HAS_PYTHON AND FEELPP_ENABLE_PYTHON_WRAPPING)
+  message(STATUS "[feelpp] disabling Python wrapping because Python support is unavailable")
+  set(FEELPP_ENABLE_PYTHON_WRAPPING OFF CACHE BOOL "Enable Python wrapping implementation" FORCE)
+endif()
 
 # Boost
 SET(BOOST_MIN_VERSION "1.65.0")
@@ -704,9 +733,19 @@ if ( NOT Boost_ARCHITECTURE )
   set(Boost_ARCHITECTURE "-x64")
 endif()
 set(Boost_ADDITIONAL_VERSIONS "1.61" "1.62" "1.63" "1.64" "1.65" "1.66" "1.67" "1.68" "1.69" "1.70" "1.71")
-set(BOOST_COMPONENTS_REQUIRED date_time filesystem system program_options unit_test_framework ${FEELPP_BOOST_MPI} regex serialization iostreams )
-FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} REQUIRED COMPONENTS ${BOOST_COMPONENTS_REQUIRED})
+set(BOOST_COMPONENTS_REQUIRED date_time filesystem program_options unit_test_framework ${FEELPP_BOOST_MPI} regex serialization iostreams )
+set(BOOST_COMPONENTS_OPTIONAL system)
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 NEW)
+endif()
+FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} REQUIRED COMPONENTS ${BOOST_COMPONENTS_REQUIRED} OPTIONAL_COMPONENTS ${BOOST_COMPONENTS_OPTIONAL})
 if(Boost_FOUND)
+  if(Boost_VERSION_STRING VERSION_GREATER_EQUAL 1.69 AND NOT TARGET Boost::system)
+    set(FEELPP_BOOST_SYSTEM_HEADER_ONLY 1)
+    message(STATUS "[feelpp] Boost.System is header-only; no Boost::system target to link")
+  else()
+    unset(FEELPP_BOOST_SYSTEM_HEADER_ONLY)
+  endif()
   IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "51")
     #add_definitions(-DBOOST_RESULT_OF_USE_TR1)
     #message(STATUS "[feelpp] added -DBOOST_RESULT_OF_USE_TR1" )
@@ -1465,16 +1504,13 @@ if ( FEELPP_ENABLE_ASCIIDOCTOR )
   include( feelpp.adoc )
 endif()
 
-# Enable precompiled headers (PCH)
-option( FEELPP_ENABLE_PCH "Enable precompiled headers (pch)" OFF )
-option( FEELPP_ENABLE_PCH_APPLICATIONS "Enable precompiled headers (pch) for applications" OFF )
-
-if( FEELPP_ENABLE_PCH )
-    set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PCH" )
-endif()
-if( FEELPP_ENABLE_PCH_APPLICATIONS )
-    set(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} PCH_Apps" )
-endif()
+foreach(_feelpp_retired_pch_option FEELPP_ENABLE_PCH FEELPP_ENABLE_PCH_APPLICATIONS)
+  if(DEFINED ${_feelpp_retired_pch_option} AND ${_feelpp_retired_pch_option})
+    message(WARNING "${_feelpp_retired_pch_option} is retired and ignored.")
+  endif()
+  set(${_feelpp_retired_pch_option} OFF CACHE INTERNAL
+    "Retired precompiled header option." FORCE)
+endforeach()
 
 # Enable Feel++ interpreter using cling.
 option( FEELPP_ENABLE_CLING_INTERPRETER "Enable feel++ interpreter [ EXPERIMENTAL ]" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )

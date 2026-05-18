@@ -140,7 +140,9 @@ macro(feelpp_stage_python_files)
   get_filename_component(_FEELPP_STAGE_DEST_DIR "${_FEELPP_STAGE_BUILD_DIR}/${FEELPP_STAGE_DESTINATION}" ABSOLUTE)
   file(MAKE_DIRECTORY "${_FEELPP_STAGE_DEST_DIR}")
 
-  add_custom_target(${FEELPP_STAGE_TARGET})
+  # Stage pure Python package files as part of the default build so clean-tree
+  # ctest runs do not depend on explicitly building an auxiliary staging target.
+  add_custom_target(${FEELPP_STAGE_TARGET} ALL)
   foreach(_FEELPP_STAGE_FILE IN LISTS FEELPP_STAGE_FILES)
     if(IS_ABSOLUTE "${_FEELPP_STAGE_FILE}")
       set(_FEELPP_STAGE_SRC "${_FEELPP_STAGE_FILE}")

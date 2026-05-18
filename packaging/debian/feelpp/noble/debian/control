@@ -1,0 +1,349 @@
+Source: feelpp
+Section: science
+Priority: extra
+Maintainer: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+Uploaders: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+Build-Depends: quilt, debhelper (>= 10),
+           cmake (>=3.28.0), ninja-build, rsync,
+           clang, llvm-18-linker-tools,
+           pkg-config,
+           dh-python, 
+           python3, python3-dev, pybind11-dev, python3-setuptools, python3-sympy,python3-mpi4py,python3-h5py,python3-tqdm,
+	       chrpath,
+         libcurl4-openssl-dev,
+	       libboost-all-dev, 
+           libcln-dev,
+           libeigen3-dev,
+           petsc-dev,libtrilinos-ml-dev,
+           slepc-dev,
+           python3-petsc4py-real,python3-slepc4py-real,python3-petsc4py-real,python3-slepc4py-real,python3-petsc4py, python3-slepc4py,
+           libhdf5-openmpi-dev,
+           libnlopt-dev,
+           libgsl-dev,
+           libnetcdf-dev, libgl2ps-dev, libglu1-mesa-dev, libsm-dev, libxt-dev,
+           libfftw3-mpi-dev,
+           libmetis-dev,libscotch-dev,
+	       libxml2-dev,libpugixml-dev,
+	       libgmsh-dev, gmsh,
+	       bison,flex,
+	       libtbb-dev[amd64 i386],
+	       libann-dev, libglpk-dev,
+           libbz2-dev,libzip-dev,
+           libbson-dev,
+           libmongoc-dev,
+           libmongoclient-dev,           
+           python3-pymongo,
+           ruby-progressbar,
+           ruby-tilt,
+           asciidoctor,
+           libglew-dev,
+	   gnuplot-nox, libglfw3-dev
+# for linking with paraview: libglew-dev
+# libpng-dev, libtiff-dev, libjsoncpp-dev, libtheora-dev, libfreetype6-dev, libnetcdf-cxx-legacy-dev ?
+Standards-Version: 3.9.4
+X-Python-Version: current
+Homepage: http://www.feelpp.org
+Vcs-Svn: svn://svn.debian.org/svn/debian-science/packages/feel++/trunk
+Vcs-Browser: http://svn.debian.org/wsvn/debian-science/packages/feel++/trunk
+
+
+Package: libfeelpp1
+Section: libs
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends},  g++, python3-sympy
+Description: A library for the finite element method
+ Provides the dynamic Feel++ libraries.
+ .
+ Feel++ is a versatile finite element library to solve partial
+ differential equations.
+ .
+ Support 1D, 2D, 3D
+ .
+ Support the following basic entities: simplices (segment, triangle,
+ tetrahedron) and product of simplices (quadrangle, hexahedron)
+ .
+ Support various point sets on these basic entities: equispaced
+ points, quadrature points, interpolation points (Gauss-Lobatto,
+ Fekete, WarpBlend?)
+ .
+ Support continuous and discontinuous Galerkin methods
+ .
+ Support various polynomial sets:
+ .
+  * Lagrange(continuous,discontinuous,all dimensions,all interpolation
+ point sets)
+ .
+  * Dubiner(discontinuous), boundary adapted(continuous)
+ .
+  * Legendre(discontinuous), boundary adapted(continuous)
+ .
+ Provide mathematical concept for higher order abstraction (Function
+ spaces and associated elements, forms and operators)
+ .
+ Provide a language embedded in C++ for variational formulations,
+ projection and numerical integration
+
+
+Package: libfeelpp-dev
+Section: libdevel
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: ${shlibs:Depends}, ${misc:Depends}, mpi-default-dev, libfeelpp1 (= ${binary:Version}),	feelpp-tools (= ${binary:Version}), clang,g++,cmake, pkg-config, cppcheck, libcurl4-openssl-dev, libgsl-dev, python3, python3-dev, python3-sympy, libboost-all-dev,libcln-dev,petsc-dev, slepc-dev,  libhdf5-openmpi-dev, libnlopt-dev, libgsl-dev, libnetcdf-dev,libgl2ps-dev,libglu1-mesa-dev, libsm-dev, libxt-dev,libfftw3-mpi-dev, libxml2-dev, libpugixml-dev, libgmsh-dev,libtbb-dev, libann-dev,libglpk-dev,libbz2-dev,libzip-dev,libbson-dev,libmongoc-dev,libmongoclient-dev, libglew-dev, libmetis-dev, libscotch-dev, libtrilinos-ml-dev
+Suggests: feelpp-doc, libfeelpp-dbg, doxygen, cmake-curses-gui
+Description: A library for the finite element method
+ Provides the header files and static libraries.
+ .
+ Feel++ is a versatile finite element library to solve partial
+ differential equations.
+ .
+ Support 1D, 2D, 3D
+ .
+ Support the following basic entities: simplices (segment, triangle,
+ tetrahedron) and product of simplices (quadrangle, hexahedron)
+ .
+ Support various point sets on these basic entities: equispaced
+ points, quadrature points, interpolation points (Gauss-Lobatto,
+ Fekete, WarpBlend?)
+ .
+ Support continuous and discontinuous Galerkin methods
+ .
+ Support various polynomial sets:
+ .
+  * Lagrange(continuous,discontinuous,all dimensions,all interpolation
+ point sets)
+ .
+  * Dubiner(discontinuous), boundary adapted(continuous)
+ .
+  * Legendre(discontinuous), boundary adapted(continuous)
+ .
+ Provide mathematical concept for higher order abstraction (Function
+ spaces and associated elements, forms and operators)
+ .
+ Provide a language embedded in C++ for variational formulations,
+ projection and numerical integration
+
+Package: libfeelpp-dbg
+Section: debug
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: ${shlibs:Depends}, ${misc:Depends}, mpi-default-dev, libfeelpp-dev, libtbb2-dbg [amd64 i386]
+Description: A library for the finite element method
+ Feel++ is a versatile finite element library to solve partial
+ differential equations
+ .
+ Support 1D, 2D, 3D
+ .
+ Support the following basic entities: simplices (segment, triangle,
+ tetrahedron) and product of simplices (quadrangle, hexahedron)
+ .
+ Support various point sets on these basic entities: equispaced
+ points, quadrature points, interpolation points (Gauss-Lobatto,
+ Fekete, WarpBlend?)
+ .
+ Support continuous and discontinuous Galerkin methods
+ .
+ Support various polynomial sets:
+ .
+  * Lagrange(continuous,discontinuous,all dimensions,all interpolation
+ point sets)
+ .
+  * Dubiner(discontinuous), boundary adapted(continuous)
+ .
+  * Legendre(discontinuous), boundary adapted(continuous)
+ .
+ Provide mathematical concept for higher order abstraction (Function
+ spaces and associated elements, forms and operators)
+ .
+ Provide a language embedded in C++ for variational formulations,
+ projection and numerical integration
+
+Package: feelpp-tools
+Section: science
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: ${shlibs:Depends}, ${misc:Depends}, libfeelpp1 (= ${binary:Version}), gmsh, asciidoctor
+Description: A library for the finite element method
+ Provides some applications codes(source and executables) such
+ as laplacian with cG and dG methods, stokes, heat transfer, solid
+ mechanics(static and dynamic).
+ .
+ Feel++ is a versatile finite element library to solve partial
+ differential equations
+ .
+ Support 1D, 2D, 3D
+ .
+ Support the following basic entities: simplices (segment, triangle,
+ tetrahedron) and product of simplices (quadrangle, hexahedron)
+ .
+ Support various point sets on these basic entities: equispaced
+ points, quadrature points, interpolation points (Gauss-Lobatto,
+ Fekete, WarpBlend?)
+ .
+ Support continuous and discontinuous Galerkin methods
+ .
+ Support various polynomial sets:
+ .
+  * Lagrange(continuous,discontinuous,all dimensions,all interpolation
+ point sets)
+ .
+  * Dubiner(discontinuous), boundary adapted(continuous)
+ .
+  * Legendre(discontinuous), boundary adapted(continuous)
+ .
+ Provide mathematical concept for higher order abstraction (Function
+ spaces and associated elements, forms and operators)
+ .
+ Provide a language embedded in C++ for variational formulations,
+ projection and numerical integration
+
+Package: feelpp-quickstart
+Section: science
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: ${shlibs:Depends}, ${misc:Depends}, libfeelpp1 (= ${binary:Version}), feelpp-data 
+Recommends: feelpp-tools, feelpp-data
+Description: A library for the finite element method
+ Provides some applications codes(source and executables) such
+ as laplacian with cG and dG methods, stokes, heat transfer, solid
+ mechanics(static and dynamic).
+ .
+ Feel++ is a versatile finite element library to solve partial
+ differential equations
+ .
+ Support 1D, 2D, 3D
+ .
+ Support the following basic entities: simplices (segment, triangle,
+ tetrahedron) and product of simplices (quadrangle, hexahedron)
+ .
+ Support various point sets on these basic entities: equispaced
+ points, quadrature points, interpolation points (Gauss-Lobatto,
+ Fekete, WarpBlend?)
+ .
+ Support continuous and discontinuous Galerkin methods
+ .
+ Support various polynomial sets:
+ .
+  * Lagrange(continuous,discontinuous,all dimensions,all interpolation
+ point sets)
+ .
+  * Dubiner(discontinuous), boundary adapted(continuous)
+ .
+  * Legendre(discontinuous), boundary adapted(continuous)
+ .
+ Provide mathematical concept for higher order abstraction (Function
+ spaces and associated elements, forms and operators)
+ .
+ Provide a language embedded in C++ for variational formulations,
+ projection and numerical integration
+
+Package: feelpp-data
+Section: doc
+Architecture: all
+Depends: ${misc:Depends}
+Description: Data files for the library Feel++ 
+ Provides data files for the Feel++ library
+ .
+  * testcases for quickstart
+ .
+  * geometry and mesh files
+
+Package: python3-feelpp
+Section: python
+Architecture: amd64 i386 ia64 powerpc sparc
+Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}, libfeelpp1 (= ${binary:Version}), python3-sympy, python3-mpi4py, python3-h5py, python3-tqdm, python3-petsc4py, python3-slepc4py
+Description: Feel++ core Python bindings
+ Provides the Feel++ core Python bindings under the feelpp.core namespace.
+
+ 
+# # Available: feel++ models: fluid, solid, fsi, thermodynamics
+
+# Package: feelpp-toolbox
+# Section: science
+# Architecture: amd64 i386 ia64 powerpc sparc
+# Depends: ${shlibs:Depends}, ${misc:Depends}, libfeelpp1 (= ${binary:Version}), libfeelpp1 (= ${binary:Version}), gmsh-tetgen
+# Replaces: life-apps
+# Description: Base feel++ toolbox tools
+#  Provides feel++ toolbox base tools
+
+# Package: feelpp-toolbox-dev
+# Section: libdevel
+# Architecture: amd64 i386 ia64 powerpc sparc
+# Depends: ${shlibs:Depends}, ${misc:Depends}, libfeelpp1 (= ${binary:Version}), libfeelpp-dev (= ${binary:Version}), feelpp-toolbox (= ${binary:Version}), gmsh-tetgen
+# Replaces: life-apps
+# Description: Base feel++ toolbox tools
+#  Provides feel++ toolbox base tools
+
+# Package: feelpp-toolbox-fluid
+# Section: science
+# Architecture: amd64 i386 ia64 powerpc sparc
+# Depends: ${shlibs:Depends}, ${misc:Depends}, libfeelpp1 (= ${binary:Version}), feelpp-toolbox-dev (= ${binary:Version}), gmsh-tetgen
+# Replaces: life-apps
+# Description: A feel++ toolbox for CFD
+#  Provides feel++ toolbox for fluid
+
+# Package: feelpp-toolbox-solid
+# Section: science
+# Architecture: amd64 i386 ia64 powerpc sparc
+# Depends: ${shlibs:Depends}, ${misc:Depends}, libfeelpp1 (= ${binary:Version}), feelpp-toolbox-dev (= ${binary:Version}), gmsh-tetgen
+# Replaces: life-apps
+# Description: A feel++ toolbox for Solid Mechanics
+#  Provides feel++ toolbox for Computational Solid Mechanics
+
+# Package: feelpp-toolbox-fsi
+# Section: science
+# Architecture: amd64 i386 ia64 powerpc sparc
+# Depends: ${shlibs:Depends}, ${misc:Depends}, libfeelpp1 (= ${binary:Version}), feelpp-toolbox-dev (= ${binary:Version}), gmsh-tetgen
+# Replaces: life-apps
+# Description: A feel++ toolbox for FSI 
+#  Provides feel++ toolbox for Fluid/Structure Interaction
+
+# Package: feelpp-toolbox-thermodyn
+# Section: science
+# Architecture: amd64 i386 ia64 powerpc sparc
+# Depends: ${shlibs:Depends}, ${misc:Depends}, libfeelpp1 (= ${binary:Version}), feelpp-toolbox-dev (= ${binary:Version}), gmsh-tetgen
+# Replaces: life-apps
+# Description: A feel++ toolbox for ThermoDynamics
+#  Provides feel++ toolbox for ThermoDynamics
+
+# Package: feelpp-toolbox-thermoelectric
+# Section: science
+# Architecture: amd64 i386 ia64 powerpc sparc
+# Depends: ${shlibs:Depends}, ${misc:Depends}, libfeelpp1 (= ${binary:Version}), feelpp-toolbox-dev (= ${binary:Version}), gmsh-tetgen
+# Replaces: life-apps
+# Description: A feel++ toolbox for ThermoElectric
+#  Provides feel++ toolbox for ThermoElectric
+
+# # Package: feelpp-doc
+# # Section: doc
+# # Architecture: all
+# # Depends: ${misc:Depends}
+# # Replaces: life-doc
+# # Description: A library for the finite element method
+# #  Provides the documentation for the Feel++ library : a user
+# #  guide including a tutorial and the api documentation generated by
+# #  doxygen.
+# #  .
+# #  Feel++ is a versatile finite element library to solve partial
+# #  differential equations.
+# #  .
+# #  Support 1D, 2D, 3D
+# #  .
+# #  Support the following basic entities: simplices (segment, triangle,
+# #  tetrahedron) and product of simplices (quadrangle, hexahedron)
+# #  .
+# #  Support various point sets on these basic entities: equispaced
+# #  points, quadrature points, interpolation points (Gauss-Lobatto,
+# #  Fekete, WarpBlend?)
+# #  .
+# #  Support continuous and discontinuous Galerkin methods
+# #  .
+# #  Support various polynomial sets:
+# #  .
+# #   * Lagrange(continuous,discontinuous,all dimensions,all interpolation
+# #  point sets)
+# #  .
+# #   * Dubiner(discontinuous), boundary adapted(continuous)
+# #  .
+# #   * Legendre(discontinuous), boundary adapted(continuous)
+# #  .
+# #  Provide mathematical concept for higher order abstraction (Function
+# #  spaces and associated elements, forms and operators)
+# #  .
+# #  Provide a language embedded in C++ for variational formulations,
+# #  projection and numerical integration

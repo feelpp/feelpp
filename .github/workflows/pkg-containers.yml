@@ -18,7 +18,8 @@ on:
         default: 'noble'
         type: choice
         options:
-        - 'noble'
+        - 'resolute'
+        - 'trixie'
         - 'noble'
         - 'bullseye'
         - 'bookworm'

@@ -1,0 +1,64 @@
+#!/bin/sh
+
+set -eu
+
+local_repo=/tmp/feelpp-pkg-job/local-repo
+local_repo_list=/etc/apt/sources.list.d/feelpp-local-repo.list
+public_repo_list=/etc/apt/sources.list.d/feelpp-public.list
+distribution=${DISTRIBUTION:-noble}
+flavor=${FLAVOR:-ubuntu}
+channel=${CHANNEL:-latest}
+allow_public_fallback=${FEELPP_PBUILDER_ALLOW_PUBLIC_FEELPP_FALLBACK:-false}
+public_repo_url=http://apt.feelpp.org/${flavor}/${distribution}
+
+# pbuilder can restore stale file:// or public Feel++ source entries from a
+# previous base or from an earlier invocation. Drop any lingering references
+# before deciding which Feel++ repo, if any, should be active for this run.
+for source in /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+    [ -f "${source}" ] || continue
+    if ! grep -Fq "${local_repo}" "${source}" && ! grep -Fq "${public_repo_url}" "${source}"; then
+        continue
+    fi
+
+    case "${source}" in
+        *.sources)
+            rm -f "${source}"
+            ;;
+        *)
+            tmp=$(mktemp)
+            grep -Fv "${local_repo}" "${source}" | grep -Fv "${public_repo_url}" >"${tmp}" || true
+            if [ -s "${tmp}" ]; then
+                cat "${tmp}" >"${source}"
+            else
+                rm -f "${source}"
+            fi
+            rm -f "${tmp}"
+            ;;
+    esac
+done
+
+# The file:// repo is bind-mounted into the chroot after pbuilder assembles its
+# default apt sources. Inject it explicitly here so satisfydepends cannot fall
+# back to stale public Feel++ packages when chained builds stage newer artifacts.
+if [ -f "${local_repo}/Packages" ] || [ -f "${local_repo}/Packages.gz" ]; then
+    printf 'deb [trusted=yes] file://%s ./\n' "${local_repo}" >"${local_repo_list}"
+    rm -f "${public_repo_list}"
+elif [ "${allow_public_fallback}" = "1" ] || [ "${allow_public_fallback}" = "true" ] || [ "${allow_public_fallback}" = "yes" ] || [ "${allow_public_fallback}" = "on" ]; then
+    printf 'deb http://apt.feelpp.org/%s/%s %s %s\n' \
+        "${flavor}" \
+        "${distribution}" \
+        "${distribution}" \
+        "${channel}" \
+        >"${public_repo_list}"
+else
+    rm -f "${local_repo_list}"
+    rm -f "${public_repo_list}"
+fi
+
+# The file:// job-local repo changes across chained builds while the pbuilder
+# base tarball can retain stale apt lists from an earlier run. Drop list state
+# and refresh apt metadata after the local repo is mounted so satisfydepends
+# resolves the newly staged preview/build artifacts instead of a previous index.
+rm -rf /var/lib/apt/lists/*
+mkdir -p /var/lib/apt/lists/partial
+apt-get update
