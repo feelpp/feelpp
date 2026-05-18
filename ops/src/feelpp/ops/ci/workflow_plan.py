@@ -8,7 +8,7 @@ import sys
 from .planner_directives import write_github_output
 
 
-COMPONENT_JOBS = ("feelpp", "testsuite", "toolboxes", "mor")
+COMPONENT_JOBS = ("feelpp", "testsuite", "quickstart", "toolboxes", "mor")
 
 
 def _load_json_value(raw: str, *, default: object) -> object:
@@ -153,6 +153,7 @@ def compute_workflow_plan(
 
     run_feelpp = component_targets_present and "feelpp" in requested_component_jobs
     run_testsuite = component_targets_present and "testsuite" in requested_component_jobs
+    run_quickstart = component_targets_present and "quickstart" in requested_component_jobs
     run_toolboxes = component_targets_present and "toolboxes" in requested_component_jobs
     run_mor = component_targets_present and "mor" in requested_component_jobs
     run_full = full_targets_present and (requested_full or bool(rerouted_full_targets))
@@ -171,6 +172,7 @@ def compute_workflow_plan(
         "rerouted_full_targets_json": json.dumps(rerouted_full_targets),
         "run_feelpp": str(run_feelpp).lower(),
         "run_testsuite": str(run_testsuite).lower(),
+        "run_quickstart": str(run_quickstart).lower(),
         "run_toolboxes": str(run_toolboxes).lower(),
         "run_mor": str(run_mor).lower(),
         "run_full": str(run_full).lower(),

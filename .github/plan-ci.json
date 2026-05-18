@@ -1,9 +1,9 @@
 {
-  "jobs": ["feelpp", "testsuite", "toolboxes", "mor"],
+  "jobs": ["feelpp", "testsuite", "quickstart", "toolboxes", "mor"],
   "targets": ["ubuntu:noble", "debian:trixie", "ubuntu:resolute"],
   "defaults": {
     "mode": "components",
-    "jobs": ["feelpp", "testsuite", "toolboxes", "mor"],
+    "jobs": ["feelpp", "testsuite", "quickstart", "toolboxes", "mor"],
     "targets": ["ubuntu:noble"]
   },
   "fullBuild": {
@@ -12,12 +12,12 @@
   },
   "profiles": {
     "ci": {
-      "jobs": ["feelpp", "testsuite", "toolboxes", "mor"],
+      "jobs": ["feelpp", "testsuite", "quickstart", "toolboxes", "mor"],
       "targets": ["ubuntu:noble", "debian:trixie", "ubuntu:resolute"],
       "matrixCatalogProfile": "images",
       "defaults": {
         "mode": "components",
-        "jobs": ["feelpp", "testsuite", "toolboxes", "mor"],
+        "jobs": ["feelpp", "testsuite", "quickstart", "toolboxes", "mor"],
         "targets": ["ubuntu:noble"]
       },
       "fullBuild": {

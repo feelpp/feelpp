@@ -26,6 +26,7 @@ cmake_minimum_required (VERSION 3.21)
 if(FEELPP_COMPONENT STREQUAL "toolboxes" OR
   FEELPP_COMPONENT STREQUAL "mor" OR
   FEELPP_COMPONENT STREQUAL "testsuite" OR
+  FEELPP_COMPONENT STREQUAL "quickstart" OR
   FEELPP_COMPONENT STREQUAL "benchmarks" OR
   FEELPP_COMPONENT STREQUAL "python" OR
   FEELPP_COMPONENT STREQUAL "mor;python"
@@ -48,7 +49,11 @@ if(FEELPP_COMPONENT STREQUAL "toolboxes" OR
       message(STATUS "[component] PYTHON_COMPONENT: ${PYTHON_COMPONENT}")
       foreach(component IN LISTS FEELPP_COMPONENT)
         message(STATUS "[component] ${component}")
-        add_subdirectory(${component})
+        if(component STREQUAL "quickstart")
+          add_subdirectory(feelpp/quickstart quickstart)
+        else()
+          add_subdirectory(${component})
+        endif()
       endforeach()
       if ( NOT FEELPP_VERSION_MAJOR )
         include(${CMAKE_SOURCE_DIR}/feelpp.version.cmake)

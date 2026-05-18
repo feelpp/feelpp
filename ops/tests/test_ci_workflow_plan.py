@@ -23,13 +23,14 @@ class WorkflowPlanTests(unittest.TestCase):
             config=self.config,
             mode="components",
             targets=["debian:trixie", "spack:openmpi"],
-            enabled_jobs=["feelpp", "testsuite", "toolboxes", "mor"],
+            enabled_jobs=["feelpp", "testsuite", "quickstart", "toolboxes", "mor"],
         )
 
         self.assertEqual(json.loads(outputs["component_targets_json"]), ["debian:trixie"])
         self.assertEqual(json.loads(outputs["full_targets_json"]), ["spack:openmpi"])
         self.assertEqual(outputs["run_feelpp"], "true")
         self.assertEqual(outputs["run_testsuite"], "true")
+        self.assertEqual(outputs["run_quickstart"], "true")
         self.assertEqual(outputs["run_toolboxes"], "true")
         self.assertEqual(outputs["run_mor"], "true")
         self.assertEqual(outputs["run_full"], "true")
@@ -45,6 +46,7 @@ class WorkflowPlanTests(unittest.TestCase):
         self.assertEqual(json.loads(outputs["component_targets_json"]), [])
         self.assertEqual(json.loads(outputs["full_targets_json"]), ["spack:openmpi"])
         self.assertEqual(outputs["run_feelpp"], "false")
+        self.assertEqual(outputs["run_quickstart"], "false")
         self.assertEqual(outputs["run_toolboxes"], "false")
         self.assertEqual(outputs["run_full"], "true")
         warnings = json.loads(outputs["warnings_json"])
@@ -61,6 +63,7 @@ class WorkflowPlanTests(unittest.TestCase):
 
         self.assertEqual(outputs["run_feelpp"], "false")
         self.assertEqual(outputs["run_testsuite"], "false")
+        self.assertEqual(outputs["run_quickstart"], "false")
         self.assertEqual(outputs["run_toolboxes"], "true")
         self.assertEqual(outputs["run_mor"], "false")
         self.assertEqual(outputs["run_full"], "false")
@@ -75,6 +78,37 @@ class WorkflowPlanTests(unittest.TestCase):
 
         self.assertEqual(outputs["run_feelpp"], "false")
         self.assertEqual(outputs["run_testsuite"], "true")
+        self.assertEqual(outputs["run_quickstart"], "false")
+        self.assertEqual(outputs["run_toolboxes"], "false")
+        self.assertEqual(outputs["run_mor"], "false")
+        self.assertEqual(outputs["run_full"], "false")
+
+    def test_only_quickstart_runs_quickstart_without_testsuite(self) -> None:
+        outputs = compute_workflow_plan(
+            config=self.config,
+            mode="components",
+            targets=["ubuntu:noble"],
+            enabled_jobs=["quickstart"],
+        )
+
+        self.assertEqual(outputs["run_feelpp"], "false")
+        self.assertEqual(outputs["run_testsuite"], "false")
+        self.assertEqual(outputs["run_quickstart"], "true")
+        self.assertEqual(outputs["run_toolboxes"], "false")
+        self.assertEqual(outputs["run_mor"], "false")
+        self.assertEqual(outputs["run_full"], "false")
+
+    def test_only_feelpp_quickstart_runs_without_testsuite(self) -> None:
+        outputs = compute_workflow_plan(
+            config=self.config,
+            mode="components",
+            targets=["ubuntu:noble"],
+            enabled_jobs=["feelpp", "quickstart"],
+        )
+
+        self.assertEqual(outputs["run_feelpp"], "true")
+        self.assertEqual(outputs["run_testsuite"], "false")
+        self.assertEqual(outputs["run_quickstart"], "true")
         self.assertEqual(outputs["run_toolboxes"], "false")
         self.assertEqual(outputs["run_mor"], "false")
         self.assertEqual(outputs["run_full"], "false")
@@ -88,6 +122,7 @@ class WorkflowPlanTests(unittest.TestCase):
         )
 
         self.assertEqual(outputs["run_feelpp"], "false")
+        self.assertEqual(outputs["run_quickstart"], "false")
         self.assertEqual(outputs["run_toolboxes"], "false")
         self.assertEqual(outputs["run_mor"], "true")
 
@@ -103,7 +138,7 @@ class WorkflowPlanTests(unittest.TestCase):
                     "--targets-json",
                     '["debian:trixie","spack:openmpi"]',
                     "--enabled-jobs-json",
-                    '["feelpp","testsuite","toolboxes","mor"]',
+                    '["feelpp","testsuite","quickstart","toolboxes","mor"]',
                     "--github-output",
                     output_path,
                 ]

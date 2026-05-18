@@ -9,7 +9,7 @@ local buildTypes = {
   debug: 'Debug',
   relwithdebinfo: 'RelWithDebInfo',
 };
-local components = ['feelpp', 'testsuite', 'toolboxes', 'mor', 'python'];
+local components = ['feelpp', 'testsuite', 'quickstart', 'toolboxes', 'mor', 'python'];
 local packageManagers = ['cmake', 'spack', 'conan', 'vcpkg'];
 
 // ============================================================================
@@ -22,6 +22,7 @@ local capitalize(str) =
 local componentDisplayName(comp) = {
   feelpp: 'Feel++ Library',
   testsuite: 'Test Suite',
+  quickstart: 'Quickstart',
   toolboxes: 'Toolboxes',
   mor: 'MOR (Model Order Reduction)',
   python: 'Python Bindings',
@@ -384,6 +385,9 @@ local componentCacheVars = {
   },
   testsuite: {
     FEELPP_COMPONENT: 'testsuite',
+  },
+  quickstart: {
+    FEELPP_COMPONENT: 'quickstart',
   },
 };
 
@@ -832,7 +836,7 @@ local dockerWorkflow(name) = {
 };
 
 local workflowPresets =
-  // Component workflows (feelpp, toolboxes, mor, python, testsuite)
+  // Component workflows (feelpp, testsuite, quickstart, toolboxes, mor, python)
   [simpleWorkflow(comp) for comp in components] +
   // Docker workflows for CI
   [dockerWorkflow(comp) for comp in components] +

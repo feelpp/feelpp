@@ -45,6 +45,12 @@ class PlannerDirectiveTests(unittest.TestCase):
             "targets=ubuntu:noble\nonly=feelpp,testsuite\nskip=mor\nmode=components",
         )
 
+    def test_build_message_allows_quickstart_only_filter(self) -> None:
+        self.assertEqual(
+            build_planner_message(targets="ubuntu:noble", only="feelpp,quickstart"),
+            "targets=ubuntu:noble\nonly=feelpp,quickstart",
+        )
+
     def test_build_message_rejects_component_jobs_for_spack_target(self) -> None:
         with self.assertRaisesRegex(PlannerDirectiveError, "feelpp-full"):
             build_planner_message(targets="spack:openmpi", only="feelpp")
