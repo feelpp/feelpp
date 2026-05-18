@@ -970,11 +970,7 @@ po::options_description backend_options( std::string const& prefix )
 #if defined(FEELPP_HAS_PETSC)
 #if defined(PETSC_HAVE_MUMPS)
         ( prefixvm( prefix,"pc-factor-mat-solver-package-type" ).c_str(),
-#if defined( MACOSX )        
-          Feel::po::value<std::string>()->default_value( "superlu-dist" ),
-#else          
           Feel::po::value<std::string>()->default_value( "mumps" ),
-#endif
           "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
 #else
         ( prefixvm( prefix,"pc-factor-mat-solver-package-type" ).c_str(),
@@ -992,6 +988,24 @@ po::options_description backend_options( std::string const& prefix )
           "fields definition (ex: --fieldsplit-fields=0->(0,2),1->(1)" )
         ( prefixvm( prefix,"fieldsplit-use-components" ).c_str(), Feel::po::value<bool>()->default_value( false ),"split also with components" )
         ;
+#if defined(FEELPP_HAS_PETSC) && defined(PETSC_HAVE_MUMPS)
+    for ( int icntl = 1; icntl <= 33; ++icntl )
+    {
+        std::string mumpsOption = ( boost::format( "pc-factor-mumps.icntl-%1%" ) % icntl ).str();
+#if defined( MACOSX ) || defined( __APPLE__ )
+        if ( icntl == 20 )
+            _options.add_options()
+                ( prefixvm( prefix,mumpsOption ).c_str(),
+                  Feel::po::value<int>()->default_value( 0 ),
+                  "configure mumps factorisation : use centralized dense right-hand sides on macOS (safer on Apple Silicon; may use more memory on root)" );
+        else
+#endif
+            _options.add_options()
+                ( prefixvm( prefix,mumpsOption ).c_str(),
+                  Feel::po::value<int>(),
+                  "configure mumps factorisation (see mumps ICNTL documentation)" );
+    }
+#endif
 #endif
 
 

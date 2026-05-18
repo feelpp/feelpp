@@ -14,7 +14,10 @@ It differs from `cpu/openmpi/` in a few deliberate ways:
   Homebrew OpenBLAS is OpenMP-enabled; use `OMP_NUM_THREADS=1` for MPI test
   runs unless you intentionally want nested threading.
 - PETSc is built with both MUMPS and SuperLU_DIST. MUMPS remains the default
-  direct solver in Feel++, while SuperLU_DIST provides a second distributed LU
+  direct solver in Feel++. On macOS, Feel++ defaults MUMPS `ICNTL(20)` to `0`
+  so MUMPS uses centralized dense right-hand sides; this avoids the Apple
+  Silicon parallel distributed-RHS crash at the cost of more root memory for
+  large or many RHS solves. SuperLU_DIST provides a second distributed LU
   implementation for macOS diagnostics and fallback runs:
   `--pc-factor-mat-solver-package-type=superlu-dist`.
 - Gmsh remains `+opencascade`; the repository overlay passes Tcl's library

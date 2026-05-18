@@ -111,6 +111,12 @@ BOOST_AUTO_TEST_CASE( distributed_lu_mumps_solve )
     requirePetscSuccess( PetscOptionsHasName( nullptr, nullptr, "-mat_mumps_icntl_21", &hasMumpsIcntl21 ), "PetscOptionsHasName(-mat_mumps_icntl_21)" );
     if ( !hasMumpsIcntl21 )
         requirePetscSuccess( PetscOptionsSetValue( nullptr, "-mat_mumps_icntl_21", "0" ), "PetscOptionsSetValue(-mat_mumps_icntl_21)" );
+#if defined( MACOSX ) || defined( __APPLE__ )
+    PetscBool hasMumpsIcntl20 = PETSC_FALSE;
+    requirePetscSuccess( PetscOptionsHasName( nullptr, nullptr, "-mat_mumps_icntl_20", &hasMumpsIcntl20 ), "PetscOptionsHasName(-mat_mumps_icntl_20)" );
+    if ( !hasMumpsIcntl20 )
+        requirePetscSuccess( PetscOptionsSetValue( nullptr, "-mat_mumps_icntl_20", "0" ), "PetscOptionsSetValue(-mat_mumps_icntl_20)" );
+#endif
     requirePetscSuccess( KSPSetFromOptions( ksp ), "KSPSetFromOptions" );
 
     BOOST_TEST_CHECKPOINT( "setting up MUMPS LU factorization" );
