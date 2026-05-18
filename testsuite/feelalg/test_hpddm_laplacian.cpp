@@ -4,12 +4,12 @@
 
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/enums.hpp>
+#include <feel/feelalg/petschpddm.hpp>
 #include <feel/feelalg/preconditionerpetsc.hpp>
 #include <feel/feelalg/topetsc.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelvf/vf.hpp>
-#include <dlfcn.h>
 
 using namespace Feel;
 using namespace Feel::vf;
@@ -39,45 +39,13 @@ inline AboutData makeAbout()
     return about;
 }
 
-template <typename Signature>
-Signature
-lookupHpddmSymbol( char const* name )
-{
-    return reinterpret_cast<Signature>( dlsym( RTLD_DEFAULT, name ) );
-}
-
-bool petscHasHpddmRuntime()
-{
-    if ( !lookupHpddmSymbol<void(*)()>( "PCCreate_HPDDM" ) ||
-         !lookupHpddmSymbol<void(*)()>( "PCHPDDMSetAuxiliaryMat" ) )
-        return false;
-
-    PC pc = nullptr;
-    int ierr = PCCreate( Environment::worldComm().globalComm(), &pc );
-    if ( ierr != 0 || pc == nullptr )
-        return false;
-
-    ierr = PetscPushErrorHandler( PetscReturnErrorHandler, nullptr );
-    if ( ierr != 0 )
-    {
-        PETSc::PCDestroy( pc );
-        return false;
-    }
-
-    ierr = PCSetType( pc, PCHPDDM );
-    PetscPopErrorHandler();
-    PETSc::PCDestroy( pc );
-
-    return ierr == 0;
-}
-
 } // namespace
 
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
 
 BOOST_AUTO_TEST_CASE( test_hpddm_laplacian_form_solve )
 {
-    if ( !petscHasHpddmRuntime() )
+    if ( !petscHasHpddmRuntime( Environment::worldComm().globalComm() ) )
     {
         BOOST_TEST_MESSAGE( "Skipping HPDDM form solve smoke test: PETSc runtime does not provide HPDDM support" );
         BOOST_CHECK( true );

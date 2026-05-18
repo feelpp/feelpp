@@ -4,12 +4,12 @@
 
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/enums.hpp>
+#include <feel/feelalg/petschpddm.hpp>
 #include <feel/feelalg/preconditionerpetsc.hpp>
 #include <feel/feelalg/topetsc.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feelvf/vf.hpp>
-#include <dlfcn.h>
 #include <sstream>
 
 using namespace Feel;
@@ -57,13 +57,6 @@ std::string petscErrorSummary( int ierr )
     return os.str();
 }
 
-template <typename Signature>
-Signature
-lookupHpddmSymbol( char const* name )
-{
-    return reinterpret_cast<Signature>( dlsym( RTLD_DEFAULT, name ) );
-}
-
 } // namespace
 
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
@@ -77,7 +70,7 @@ BOOST_AUTO_TEST_CASE( test_hpddm_string_conversion )
 
 BOOST_AUTO_TEST_CASE( test_hpddm_petsc_pc_type )
 {
-    if ( !lookupHpddmSymbol<void(*)()>( "PCCreate_HPDDM" ) )
+    if ( !petscHasHpddmSymbol( "PCCreate_HPDDM" ) )
     {
         BOOST_TEST_MESSAGE( "Skipping HPDDM PETSc runtime test: PETSc runtime does not export PCCreate_HPDDM" );
         BOOST_CHECK( true );
@@ -140,7 +133,7 @@ BOOST_AUTO_TEST_CASE( test_hpddm_petsc_pc_type )
     CHKERRABORT( Environment::worldComm().globalComm(), ierr );
 
     using hpddm_set_auxiliary_mat_t = PetscErrorCode (*)( PC, IS, Mat, PetscErrorCode (*)(Mat, PetscReal, Vec, Vec, PetscReal, IS, void *), void * );
-    BOOST_REQUIRE_MESSAGE( lookupHpddmSymbol<hpddm_set_auxiliary_mat_t>( "PCHPDDMSetAuxiliaryMat" ),
+    BOOST_REQUIRE_MESSAGE( petscHpddmSymbol<hpddm_set_auxiliary_mat_t>( "PCHPDDMSetAuxiliaryMat" ),
                            "PETSc exports PCCreate_HPDDM but does not export PCHPDDMSetAuxiliaryMat" );
 
     PetscInt auxiliaryIsRefBeforeInit = 0;
