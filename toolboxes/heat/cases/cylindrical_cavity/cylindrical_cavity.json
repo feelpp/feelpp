@@ -1,11 +1,11 @@
 {
-    "Name": "Cylindrical cavity 3D RHT",
+    "Name": "Simple cylindrical cavity 3D RHT",
     "ShortName": "cylinder3d",
     "Models": {
         "heat": {
                 "name": "heat",
                 "materials": [
-                    "LateralVolume","MaterialTop","MaterialBottom","InsulationBottom","InsulationTop","InsulationL1","InsulationL2"
+                    "LateralVolume","MaterialTop","MaterialBottom"
                 ]
             }
     },
@@ -35,26 +35,6 @@
             "k": "1400", // W/(m⋅K)
             "Cp": "0", // J/(kg⋅K)
             "rho": "8700" // kg/m3
-        },
-        "InsulationBottom": {
-            "k": "0.001", // W/(m⋅K)
-            "Cp": "0", // J/(kg⋅K)
-            "rho": "8700" // kg/m3
-        },
-        "InsulationTop": {
-            "k": "0.001", // W/(m⋅K)
-            "Cp": "0", // J/(kg⋅K)
-            "rho": "8700" // kg/m3
-        },
-        "InsulationL2": {
-            "k": "0.001", // W/(m⋅K)
-            "Cp": "0", // J/(kg⋅K)
-            "rho": "8700" // kg/m3
-        },
-        "InsulationL1": {
-            "k": "0.001", // W/(m⋅K)
-            "Cp": "0", // J/(kg⋅K)
-            "rho": "8700" // kg/m3
         }
     },
     "Coating":{
@@ -76,7 +56,7 @@
             "temperature": {
                 "Expression": {
                     "Tini": {
-                        "markers":["MaterialTop","LateralVolume","MaterialBottom","InsulationBottom","InsulationTop","InsulationL1","InsulationL2"],
+                        "markers":["MaterialTop","LateralVolume","MaterialBottom"],
                         "expr":"Tinit_C:Tinit_C"
                     }
                 }
@@ -118,8 +98,9 @@
             "type":"average",
             "markers": ["CavityTop","CavitySide","CavityBottom"],            
             "quantity":"flux-from-temperature",
-            "exact_value":88.5937, // 1/40 * sigma * Tini^4
-            "rel_tolerance":0.1
+            "exact_value":0,
+            "rel_tolerance":0.1,
+            "abs_tolerance":5
         }
     }
 }
