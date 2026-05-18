@@ -121,6 +121,11 @@
          "name": "testsuite"
       },
       {
+         "configurePreset": "quickstart",
+         "jobs": 25,
+         "name": "quickstart"
+      },
+      {
          "configurePreset": "toolboxes",
          "jobs": 25,
          "name": "toolboxes"
@@ -659,6 +664,18 @@
             "release-cmake"
          ],
          "name": "testsuite"
+      },
+      {
+         "cacheVariables": {
+            "FEELPP_COMPONENT": "quickstart"
+         },
+         "description": "Build only the Quickstart component",
+         "displayName": "quickstart | clang | release | cmake package manager",
+         "inherits": [
+            "clang",
+            "release-cmake"
+         ],
+         "name": "quickstart"
       },
       {
          "cacheVariables": {
@@ -1215,6 +1232,21 @@
          }
       },
       {
+         "configurePreset": "quickstart",
+         "execution": {
+            "jobs": 4,
+            "repeat": {
+               "count": 3,
+               "mode": "until-pass"
+            }
+         },
+         "inherits": "default",
+         "name": "quickstart",
+         "output": {
+            "outputOnFailure": true
+         }
+      },
+      {
          "configurePreset": "toolboxes",
          "execution": {
             "jobs": 4,
@@ -1453,6 +1485,25 @@
          ]
       },
       {
+         "description": "Configure, build, and test quickstart",
+         "displayName": "Workflow: quickstart",
+         "name": "quickstart",
+         "steps": [
+            {
+               "name": "quickstart",
+               "type": "configure"
+            },
+            {
+               "name": "quickstart",
+               "type": "build"
+            },
+            {
+               "name": "quickstart",
+               "type": "test"
+            }
+         ]
+      },
+      {
          "description": "Configure, build, and test toolboxes",
          "displayName": "Workflow: toolboxes",
          "name": "toolboxes",
@@ -1543,6 +1594,25 @@
             },
             {
                "name": "testsuite",
+               "type": "test"
+            }
+         ]
+      },
+      {
+         "description": "Configure, build, and test quickstart (for Docker builds)",
+         "displayName": "Docker: quickstart",
+         "name": "quickstart-docker",
+         "steps": [
+            {
+               "name": "quickstart",
+               "type": "configure"
+            },
+            {
+               "name": "quickstart",
+               "type": "build"
+            },
+            {
+               "name": "quickstart",
                "type": "test"
             }
          ]

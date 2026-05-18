@@ -77,6 +77,7 @@ defaults:
 # CI consumes the published environment images and turns them into pushed
 # component/full OCI images for the current revision:
 #   feelpp-env -> feelpp -> testsuite
+#   feelpp-env -> feelpp -> quickstart
 #   feelpp-env -> feelpp -> toolboxes -> mor
 #   feelpp-env -> feelpp-full
 
@@ -97,6 +98,7 @@ jobs:
       rerouted_full_targets_json: ${{ steps.schedule.outputs.rerouted_full_targets_json }}
       run_feelpp: ${{ steps.schedule.outputs.run_feelpp }}
       run_testsuite: ${{ steps.schedule.outputs.run_testsuite }}
+      run_quickstart: ${{ steps.schedule.outputs.run_quickstart }}
       run_toolboxes: ${{ steps.schedule.outputs.run_toolboxes }}
       run_mor: ${{ steps.schedule.outputs.run_mor }}
       run_full: ${{ steps.schedule.outputs.run_full }}
@@ -146,6 +148,7 @@ jobs:
           echo "rerouted_full_targets_json: ${{ steps.schedule.outputs.rerouted_full_targets_json }}"
           echo "run_feelpp: ${{ steps.schedule.outputs.run_feelpp }}"
           echo "run_testsuite: ${{ steps.schedule.outputs.run_testsuite }}"
+          echo "run_quickstart: ${{ steps.schedule.outputs.run_quickstart }}"
           echo "run_toolboxes: ${{ steps.schedule.outputs.run_toolboxes }}"
           echo "run_mor: ${{ steps.schedule.outputs.run_mor }}"
           echo "run_full: ${{ steps.schedule.outputs.run_full }}"
@@ -303,6 +306,102 @@ jobs:
               cmake --preset testsuite
               cmake --build --preset testsuite -j20
               ctest --preset testsuite -j4
+            '
+
+  quickstart:
+    name: Build/Test Quickstart (${{ matrix.target }})
+    needs: [plan_ci, feelpp, testsuite]
+    runs-on: self-docker
+    if: ${{ always() && needs.plan_ci.outputs.run_quickstart == 'true' && (needs.plan_ci.outputs.run_feelpp != 'true' || needs.feelpp.result == 'success') }}
+    continue-on-error: ${{ matrix['continue-on-error'] == 'true' }}
+    timeout-minutes: 600
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan_ci.outputs.component_matrix_json) }}
+    env:
+      CHECKOUT_DIR: src-${{ github.run_id }}-quickstart-${{ matrix.oci_dist }}
+      CI_ACTIONS_DIR: .ci-actions-quickstart
+      DOCKER_CONFIG: /nvme0/prudhomm/.docker/actions/${{ github.run_id }}-quickstart-${{ matrix.oci_dist }}
+      JOB_ROOT: /nvme0/prudhomm/.cache/feelpp-actions/${{ github.run_id }}-${{ github.run_attempt }}/ci/quickstart/${{ matrix.oci_dist }}
+      BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+    steps:
+      - name: Clean local actions checkout
+        run: rm -rf "${CI_ACTIONS_DIR}"
+
+      - name: Bootstrap local actions
+        uses: actions/checkout@v5
+        with:
+          path: ${{ env.CI_ACTIONS_DIR }}
+          clean: false
+          fetch-depth: 1
+          sparse-checkout: |
+            .github/actions
+
+      - id: setup
+        uses: ./.ci-actions-quickstart/.github/actions/setup-oci-job
+        with:
+          checkout-dir: ${{ env.CHECKOUT_DIR }}
+          docker-config: ${{ env.DOCKER_CONFIG }}
+          setup-buildx: "false"
+          registry-username: ${{ secrets.CR_LOGIN }}
+          registry-password: ${{ secrets.CR_PAT }}
+
+      - id: refs
+        uses: ./.ci-actions-quickstart/.github/actions/generate-image-bake
+        with:
+          repo-root: ${{ steps.setup.outputs.repo_root }}
+          job-root: ${{ env.JOB_ROOT }}
+          branch: ${{ env.BRANCH_NAME }}
+          target: ${{ matrix.target }}
+          component: feelpp
+          from-image: ghcr.io/feelpp/feelpp-env:${{ matrix.oci_dist }}
+          platforms: ${{ env.CI_BUILD_PLATFORMS }}
+
+      - name: Resolve Feel++ dev image reference
+        id: image_ref
+        env:
+          IMAGE_REFS_JSON: ${{ steps.refs.outputs.image_refs_json }}
+        run: |
+          IMAGE_REFS_JSON="${IMAGE_REFS_JSON}" python - <<'PY'
+          import json
+          import os
+          image_refs = json.loads(os.environ["IMAGE_REFS_JSON"])
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+              fh.write(f"feelpp_dev_ref={image_refs['feelpp-dev']}\n")
+          PY
+
+      - name: Pull Feel++ dev image
+        run: docker pull "${{ steps.image_ref.outputs.feelpp_dev_ref }}"
+
+      - name: Configure, build, and test quickstart
+        env:
+          REPO_ROOT: ${{ steps.setup.outputs.repo_root }}
+          FEELPP_DEV_REF: ${{ steps.image_ref.outputs.feelpp_dev_ref }}
+        run: |
+          # quickstart is currently under feelpp/quickstart, but it is scheduled
+          # as a first-class component. Keep all build artifacts inside the
+          # container so the self-hosted runner workspace stays read-only here.
+          docker run --rm \
+            -e FEELPP_GITHUB_TOKEN \
+            -e FEELPP_GIRDER_API_KEY \
+            -e FEELPP_CKAN_API_KEY \
+            -e FEELPP_CKAN_URL \
+            -e FEELPP_CKAN_ORGANIZATION \
+            -e OMPI_ALLOW_RUN_AS_ROOT=1 \
+            -e OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1 \
+            -e HOME=/tmp/feelpp-home \
+            --mount "type=bind,src=${REPO_ROOT},dst=/workspace/feelpp,readonly" \
+            -w /tmp \
+            "${FEELPP_DEV_REF}" \
+            bash --login -lc '
+              set -euo pipefail
+              mkdir -p "${HOME}" /tmp/feelpp-src
+              cp -a /workspace/feelpp/. /tmp/feelpp-src/
+              cd /tmp/feelpp-src
+              git config --global --add safe.directory /tmp/feelpp-src
+              cmake --preset quickstart
+              cmake --build --preset quickstart -j20
+              ctest --preset quickstart -j4
             '
 
   toolboxes:
