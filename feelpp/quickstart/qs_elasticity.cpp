@@ -6,9 +6,15 @@
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/check.hpp>
 #include <feel/feeldiscr/pchv.hpp>
+#include <feel/feelalg/petschpddm.hpp>
 #include <feel/feelvf/vf.hpp>
+#include <iostream>
 #include "nullspace-rigidbody.hpp"
 
+namespace
+{
+constexpr int ctestSkipReturnCode = 77;
+}
 
 int main(int argc, char**argv )
 {
@@ -30,6 +36,14 @@ int main(int argc, char**argv )
                     _about=about(_name="qs_elasticity",
                                     _author="Feel++ Consortium",
                                     _email="feelpp-devel@feelpp.org"));
+
+        bool const useHpddm = soption(_name="pc-type") == "hpddm";
+        if ( useHpddm && !boption( "no-solve" ) && !petscHasHpddmRuntime( Environment::worldComm().globalComm() ) )
+        {
+            if ( Environment::isMasterRank() )
+                std::cout << "Skipping HPDDM elasticity quickstart: PETSc runtime does not provide HPDDM support\n";
+            return ctestSkipReturnCode;
+        }
 
         tic();
         auto mesh = loadMesh(_mesh=new Mesh<Simplex<FEELPP_DIM,1>>);
@@ -108,7 +122,6 @@ int main(int argc, char**argv )
         if ( !boption( "no-solve" ) )
         {
             tic();
-            bool const useHpddm = soption(_name="pc-type") == "hpddm";
             std::shared_ptr<NullSpace<double> > myNullSpace( new NullSpace<double>(backend(),qsNullSpace(Vh,mpl::int_<FEELPP_DIM>())) );
             if ( !useHpddm )
                 backend()->attachNearNullSpace( myNullSpace );

@@ -33,9 +33,9 @@
 #include <feel/feelalg/matrixpetsc.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
 #include <feel/feelalg/solverlinearpetsc.hpp>
+#include <feel/feelalg/petschpddm.hpp>
 #include <feel/feelpde/operatorpcdbase.hpp>
 #include <feel/feelpde/operatorpmmbase.hpp>
-#include <dlfcn.h>
 //#include <petscsystypes.h>
 
 extern "C" {
@@ -129,13 +129,6 @@ namespace Feel
 namespace
 {
 #if defined(PCHPDDM)
-template <typename Signature>
-Signature
-lookupHpddmSymbol( char const* name )
-{
-    return reinterpret_cast<Signature>( dlsym( RTLD_DEFAULT, name ) );
-}
-
 using hpddm_has_neumann_mat_t = PetscErrorCode (*)( PC, PetscBool );
 using hpddm_set_auxiliary_mat_t = PetscErrorCode (*)( PC, IS, Mat, PetscErrorCode (*)(Mat, PetscReal, Vec, Vec, PetscReal, IS, void *), void * );
 using hpddm_set_coarse_correction_type_t = PetscErrorCode (*)( PC, PCHPDDMCoarseCorrectionType );
@@ -144,28 +137,28 @@ using hpddm_set_st_share_sub_ksp_t = PetscErrorCode (*)( PC, PetscBool );
 hpddm_set_auxiliary_mat_t
 hpddmSetAuxiliaryMatFn()
 {
-    static hpddm_set_auxiliary_mat_t fn = lookupHpddmSymbol<hpddm_set_auxiliary_mat_t>( "PCHPDDMSetAuxiliaryMat" );
+    static hpddm_set_auxiliary_mat_t fn = petscHpddmSymbol<hpddm_set_auxiliary_mat_t>( "PCHPDDMSetAuxiliaryMat" );
     return fn;
 }
 
 hpddm_has_neumann_mat_t
 hpddmHasNeumannMatFn()
 {
-    static hpddm_has_neumann_mat_t fn = lookupHpddmSymbol<hpddm_has_neumann_mat_t>( "PCHPDDMHasNeumannMat" );
+    static hpddm_has_neumann_mat_t fn = petscHpddmSymbol<hpddm_has_neumann_mat_t>( "PCHPDDMHasNeumannMat" );
     return fn;
 }
 
 hpddm_set_coarse_correction_type_t
 hpddmSetCoarseCorrectionTypeFn()
 {
-    static hpddm_set_coarse_correction_type_t fn = lookupHpddmSymbol<hpddm_set_coarse_correction_type_t>( "PCHPDDMSetCoarseCorrectionType" );
+    static hpddm_set_coarse_correction_type_t fn = petscHpddmSymbol<hpddm_set_coarse_correction_type_t>( "PCHPDDMSetCoarseCorrectionType" );
     return fn;
 }
 
 hpddm_set_st_share_sub_ksp_t
 hpddmSetSTShareSubKSPFn()
 {
-    static hpddm_set_st_share_sub_ksp_t fn = lookupHpddmSymbol<hpddm_set_st_share_sub_ksp_t>( "PCHPDDMSetSTShareSubKSP" );
+    static hpddm_set_st_share_sub_ksp_t fn = petscHpddmSymbol<hpddm_set_st_share_sub_ksp_t>( "PCHPDDMSetSTShareSubKSP" );
     return fn;
 }
 #endif
