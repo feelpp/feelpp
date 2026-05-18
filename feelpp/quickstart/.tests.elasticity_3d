@@ -1,2 +1,4 @@
 cantilever-point-load-3d --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/cantilever-point-load-3d/cantilever_point_load_3d.cfg --gmsh.hsize=0.25
 cantilever-point-moment-3d --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/cantilever-point-moment-3d/cantilever_point_moment_3d.cfg --gmsh.hsize=0.25
+tetrahedron-checker-rotation --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/tetrahedron/tetrahedron.cfg --directory=qs_elasticity/tetrahedron-checker-rotation --checker.check=true --checker.tolerance.exact=1e-11 --gmsh.hsize=0.4 --checker.solution=Array([y,-x,0])
+tetrahedron-checker-rotation-xyz --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/tetrahedron/tetrahedron.cfg --directory=qs_elasticity/tetrahedron-checker-rotation-xyz --checker.check=true --checker.tolerance.exact=1e-11 --gmsh.hsize=0.4 --checker.solution=Array([2*z-3*y,3*x-z,y-2*x])
