@@ -35,7 +35,7 @@ print("displ=",displ)
 
 if exact:
     # gradient
-    grad_displ=grad(displ,s)
+    grad_displ=transpose(grad(displ,s))
     print("grad(displ)=",grad_displ)
     
     # strain
@@ -59,5 +59,4 @@ else:
 
 print("stressn=",stressn)
 print("f=",f)
-
 
