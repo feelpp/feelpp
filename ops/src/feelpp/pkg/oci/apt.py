@@ -365,20 +365,34 @@ def generate_apt_bake(
             contexts[previous_context_alias] = f"target:{previous_runtime_target}"
         runtime_contexts = dict(contexts)
         runtime_contexts["build_output"] = f"target:{component_spec.bake_target}"
+        builder_args = {
+            "FROM_IMAGE": from_image_arg,
+            "DESCRIPTION": f"{component_spec.description} (dev)",
+            "BRANCH": workspace.branch,
+            "CMAKE_PRESET": resolve_cmake_preset(target, component=component_spec.bake_target),
+            "CXX": cxx,
+            "CC": cc,
+            "CMAKE_FLAGS": cmake_flags,
+        }
+        runtime_args = {
+            "FROM_IMAGE": from_image_arg,
+            "DESCRIPTION": component_spec.description,
+            "BRANCH": workspace.branch,
+            "CMAKE_PRESET": resolve_cmake_preset(target, component=component_spec.bake_target),
+            "CXX": cxx,
+            "CC": cc,
+            "CMAKE_FLAGS": cmake_flags,
+        }
+        if component_spec.bake_target == "toolboxes":
+            builder_args["RUN_CTEST"] = "1"
+            runtime_args["RUN_CTEST"] = "1"
+
         targets[component_spec.bake_target] = {
             "context": context_dir_name,
             "dockerfile": "Dockerfile.multistage",
             "target": "builder",
             "contexts": contexts,
-            "args": {
-                "FROM_IMAGE": from_image_arg,
-                "DESCRIPTION": f"{component_spec.description} (dev)",
-                "BRANCH": workspace.branch,
-                "CMAKE_PRESET": resolve_cmake_preset(target, component=component_spec.bake_target),
-                "CXX": cxx,
-                "CC": cc,
-                "CMAKE_FLAGS": cmake_flags,
-            },
+            "args": builder_args,
             "tags": [builder_ref],
             "platforms": resolved_platforms,
         }
@@ -387,15 +401,7 @@ def generate_apt_bake(
             "dockerfile": "Dockerfile.multistage",
             "target": "runtime",
             "contexts": runtime_contexts,
-            "args": {
-                "FROM_IMAGE": from_image_arg,
-                "DESCRIPTION": component_spec.description,
-                "BRANCH": workspace.branch,
-                "CMAKE_PRESET": resolve_cmake_preset(target, component=component_spec.bake_target),
-                "CXX": cxx,
-                "CC": cc,
-                "CMAKE_FLAGS": cmake_flags,
-            },
+            "args": runtime_args,
             "tags": [runtime_ref],
             "platforms": resolved_platforms,
         }

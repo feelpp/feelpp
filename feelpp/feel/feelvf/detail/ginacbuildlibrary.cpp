@@ -60,84 +60,44 @@ void ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::st
     {
         fs::path filename_p = fs::path( filename );
         fs::path filename_parent_p = filename_p.parent_path();
+        std::string filenameForCompile = filename;
         std::string filenameDescExpr = filename + ".desc";
         std::string filenameWithSuffix =  filename + ".so";
-        if ( !fs::path(filename).is_absolute() && ( filename_parent_p != Environment::exprRepository() ) )
+        if ( !filename.empty() && !fs::path(filename).is_absolute() && ( filename_parent_p != Environment::exprRepository() ) )
         {
+            filenameForCompile = (fs::path(Environment::exprRepository()) / filename_p).string();
             filenameDescExpr = (fs::path(Environment::exprRepository()) / fs::path( filename + ".desc" )).string();
             filenameWithSuffix =  (fs::path(Environment::exprRepository()) / fs::path(filename + ".so")).string();
         }
         DVLOG(2) << "filename: " << filename << std::endl;
         DVLOG(2) << "filenameWithSuffix: " << filenameWithSuffix << std::endl;
-        bool doRebuildGinacLib = true;
-        // load .desc file and compare if both expr are identical
-        if ( world.isMasterRank() && !filename.empty() && fs::exists( filenameDescExpr ) && fs::exists( filenameWithSuffix ) )
+
+        if ( !filenameForCompile.empty() )
         {
-            std::string exprInFile;
-            std::ifstream file( filenameDescExpr, std::ios::in );
-            std::getline( file, exprInFile );
-            file.close();
-            // if equal else not rebuild ginac
-            if ( exprInFile == exprDesc )
-                doRebuildGinacLib = false;
+            fs::path filenameForCompileParent = fs::path( filenameForCompile ).parent_path();
+            if ( !filenameForCompileParent.empty() && !fs::exists( filenameForCompileParent ) )
+                fs::create_directories( filenameForCompileParent );
+            if ( !filenameForCompileParent.empty() && !fs::exists( filenameForCompileParent ) )
+            {
+                using namespace std::string_literals;
+                throw std::logic_error( "directories "s + filenameForCompileParent.string() + " not created");
+            }
         }
 
-        // master rank check if the lib exist and compile this one if not done
-        if ( ( world.isMasterRank() && doRebuildGinacLib ) || filename.empty() )
-        {
-            if ( !filename.empty() && fs::path( filename ).is_absolute() )
-            {
-                if ( !fs::exists( filename_parent_p ) )
-                    fs::create_directories( filename_parent_p );
-                if ( !fs::exists( filename_parent_p ) )
-                {
-                    using namespace std::string_literals;
-                    throw std::logic_error( "directories "s + filename + " not created");
-                }
-                DVLOG( 2 ) << "GiNaC::compile_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
-                GiNaC::compile_ex( exprs, syml, *cfun, filename );
-            }
-            else if ( !filename.empty() )
-            {
-                DVLOG( 2 ) << "GiNaC::compile_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
-                DVLOG( 2 ) << "GiNaC::compile_ex with parent_path " << filename_parent_p << "\n";
-                if ( !fs::exists( filename_parent_p ) )
-                    fs::create_directories( filename_parent_p );
-                if ( filename_parent_p == Environment::exprRepository() )
-                    GiNaC::compile_ex( exprs, syml, *cfun, filename );
-                else
-                    GiNaC::compile_ex( exprs, syml, *cfun, (fs::path(Environment::exprRepository()) / filename_p).string() );
-            }
-            else
-            {
-                DVLOG( 2 ) << "GiNaC::compile_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
-                GiNaC::compile_ex( exprs, syml, *cfun, filename );
-            }
-                     
+        DVLOG( 2 ) << "GiNaC::compile_ex with filename " << filenameForCompile << "\n";
+        GiNaC::compile_ex( exprs, syml, *cfun, filenameForCompile );
 
-            hasLinked = true;
-            if ( !filename.empty() )
-            {
-                GinacExprManager::instance().operator[]( keyExprManager /*exprDesc*/ /*filename*/ ) = cfun;
-
-                if ( !exprDesc.empty() )
-                {
-                    std::ofstream file( filenameDescExpr, std::ios::out | std::ios::trunc );
-                    file << exprDesc;
-                    file.close();
-                }
-            }
-        }
-        // wait the lib compilation
+        hasLinked = true;
         if ( !filename.empty() )
-            world.barrier();
-        // link with other process
-        if ( !hasLinked )
         {
-            DVLOG( 2 ) << "GiNaC::link_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
-            GiNaC::link_ex( filenameWithSuffix, *cfun );
-            if ( !filename.empty() )
-                GinacExprManager::instance().operator[]( keyExprManager /*exprDesc*/ /*filename*/ ) = cfun;
+            GinacExprManager::instance().operator[]( keyExprManager /*exprDesc*/ /*filename*/ ) = cfun;
+
+            if ( world.isMasterRank() && !exprDesc.empty() )
+            {
+                std::ofstream file( filenameDescExpr, std::ios::out | std::ios::trunc );
+                file << exprDesc;
+                file.close();
+            }
         }
     }
 }
