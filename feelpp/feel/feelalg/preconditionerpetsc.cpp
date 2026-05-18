@@ -1018,6 +1018,12 @@ updateOptionsDescLU( po::options_description & _options, std::string const& pref
             _options.add_options()
                 ( prefixvm( prefix,pcctx+mumpsOption ).c_str(),
                   Feel::po::value<int>()->default_value( 1 ),"configure mumps factorisation : controls the detection of “null pivot rows (see mumps ICNTL documentation)" );
+#if defined( MACOSX ) || defined( __APPLE__ )
+        else if ( icntl == 20 )
+            _options.add_options()
+                ( prefixvm( prefix,pcctx+mumpsOption ).c_str(),
+                  Feel::po::value<int>()->default_value( 0 ),"configure mumps factorisation : use centralized dense right-hand sides on macOS (safer on Apple Silicon; may use more memory on root)" );
+#endif
         else
             _options.add_options()
                 ( prefixvm( prefix,pcctx+mumpsOption ).c_str(),
