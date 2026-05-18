@@ -290,12 +290,16 @@ jobs:
             -e FEELPP_CKAN_ORGANIZATION \
             -e OMPI_ALLOW_RUN_AS_ROOT=1 \
             -e OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1 \
-            -v "${REPO_ROOT}:/src/feelpp" \
-            -w /src/feelpp \
+            -e HOME=/tmp/feelpp-home \
+            --mount "type=bind,src=${REPO_ROOT},dst=/workspace/feelpp,readonly" \
+            -w /tmp \
             "${FEELPP_DEV_REF}" \
             bash --login -lc '
               set -euo pipefail
-              git config --global --add safe.directory /src/feelpp
+              mkdir -p "${HOME}" /tmp/feelpp-src
+              cp -a /workspace/feelpp/. /tmp/feelpp-src/
+              cd /tmp/feelpp-src
+              git config --global --add safe.directory /tmp/feelpp-src
               cmake --preset testsuite
               cmake --build --preset testsuite -j20
               ctest --preset testsuite -j4
