@@ -8,7 +8,9 @@
 
 #include "qs_elasticity_checks.hpp"
 
+#include <algorithm>
 #include <array>
+#include <cctype>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -23,6 +25,45 @@
 namespace Feel::Quickstart::ElasticityCase
 {
 namespace qsec = Feel::Quickstart::ElasticityChecks;
+
+enum class FormulationKind
+{
+    Standard,
+    Tensor,
+    Mandel,
+    Voigt
+};
+
+inline FormulationKind
+formulationKind( std::string name )
+{
+    std::transform( name.begin(), name.end(), name.begin(),
+                    []( unsigned char c ) { return static_cast<char>( std::tolower( c ) ); } );
+
+    if ( name == "standard" || name == "classic" || name == "tensor-stress" )
+        return FormulationKind::Standard;
+    if ( name == "tensor" )
+        return FormulationKind::Tensor;
+    if ( name == "mandel" )
+        return FormulationKind::Mandel;
+    if ( name == "voigt" )
+        return FormulationKind::Voigt;
+
+    throw std::invalid_argument( "unknown elasticity formulation '" + name + "'" );
+}
+
+inline std::string
+formulationName( FormulationKind kind )
+{
+    switch ( kind )
+    {
+    case FormulationKind::Standard: return "standard";
+    case FormulationKind::Tensor: return "tensor";
+    case FormulationKind::Mandel: return "mandel";
+    case FormulationKind::Voigt: return "voigt";
+    }
+    return "unknown";
+}
 
 struct MarkerExpression
 {
@@ -64,6 +105,7 @@ struct Config
 {
     double E = 1.0e6;
     double nu = 0.3;
+    FormulationKind formulation = FormulationKind::Standard;
     std::string meshFilename;
     std::optional<size_type> expectedElements;
     std::string bodyForceExpression;
@@ -114,6 +156,7 @@ addOptions( po::options_description& options,
     options.add_options()
         ( "E", po::value<double>()->default_value( 1.0e6 ), "Young modulus" )
         ( "nu", po::value<double>()->default_value( 0.3 ), "Poisson ratio" )
+        ( "elasticity.formulation", po::value<std::string>()->default_value( "standard" ), "elasticity formulation: standard, tensor, mandel, or voigt" )
         ( "elasticity.case", po::value<std::string>()->default_value( "" ), "single JSON elasticity case file" )
         ( "checks.target", po::value<std::string>()->default_value( "" ), "reference target used by JSON checks" )
         ( "mesh.expected-elements", po::value<int>()->default_value( -1 ), "fail if the loaded mesh does not have this global number of elements" )
@@ -315,6 +358,11 @@ applyJson( Config& cfg,
     auto const caseDirectory = resolvedPath.parent_path();
     cfg.referenceChecks = qsec::jsonConfig<FEELPP_DIM>( specs );
 
+    if ( specs.contains( "formulation" ) )
+        cfg.formulation = formulationKind( specs.at( "formulation" ).get<std::string>() );
+    if ( specs.contains( "elasticity" ) && specs.at( "elasticity" ).contains( "formulation" ) )
+        cfg.formulation = formulationKind( specs.at( "elasticity" ).at( "formulation" ).get<std::string>() );
+
     if ( specs.contains( "material" ) )
     {
         auto const& material = jsonObject( specs, "material" );
@@ -459,6 +507,8 @@ applyEnvironmentOverrides( Config& cfg )
         cfg.E = doption( "E" );
     if ( optionExplicitlySet( "nu" ) )
         cfg.nu = doption( "nu" );
+    if ( optionExplicitlySet( "elasticity.formulation" ) )
+        cfg.formulation = formulationKind( soption( "elasticity.formulation" ) );
     if ( optionExplicitlySet( "gmsh.filename" ) )
         cfg.meshFilename = soption( "gmsh.filename" );
     if ( optionExplicitlySet( "mesh.expected-elements" ) && ioption( "mesh.expected-elements" ) >= 0 )
