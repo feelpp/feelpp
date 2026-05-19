@@ -1,0 +1,43 @@
+{
+  "name": "validation-point-moment-z",
+  "description": "Point moment smoke case: clamp ZMoins and apply a unit point moment around z on P8 through the marked-point DSEL.",
+  "gmsh": {
+    "filename": "validation_point_moment_z.geo"
+  },
+  "material": {
+    "E": 10.0,
+    "nu": 0.0
+  },
+  "boundaryConditions": {
+    "clampMarkers": [
+      "ZMoins"
+    ]
+  },
+  "loads": {
+    "bodyForce": "{0,0,0}",
+    "pointMoments": [
+      {
+        "marker": "P8",
+        "value": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "quantity": "total"
+      }
+    ]
+  },
+  "probe": {
+    "point": [
+      1.0,
+      1.0,
+      0.5
+    ],
+    "direction": [
+      1.0,
+      0.0,
+      0.0
+    ],
+    "label": "diagnostic x displacement"
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "name": "validation-moment-z",
+  "description": "Moment case from validation.pdf page 11: clamp ZMoins and apply a unit resultant moment on ZPlus through an equivalent tangential traction field.",
+  "gmsh": {
+    "filename": "validation_moment_z.geo"
+  },
+  "material": {
+    "E": 10.0,
+    "nu": 0.0
+  },
+  "boundaryConditions": {
+    "clampMarkers": [
+      "ZMoins"
+    ]
+  },
+  "loads": {
+    "bodyForce": "{0,0,0}",
+    "tractions": [
+      {
+        "marker": "ZPlus",
+        "expr": "{-6*(y-0.5),6*(x-0.5),0}:x:y:z"
+      }
+    ]
+  },
+  "probe": {
+    "point": [
+      1.0,
+      1.0,
+      0.5
+    ],
+    "direction": [
+      1.0,
+      0.0,
+      0.0
+    ],
+    "label": "diagnostic x displacement"
+  },
+  "checks": {
+    "target": "hexa8",
+    "items": [
+      {
+        "type": "elasticity-point-fields",
+        "name": "validation-pdf-page-11-center",
+        "point": [
+          0.5,
+          0.5,
+          0.0
+        ],
+        "references": {
+          "hexa8": {
+            "epsilon": [
+              3.65e-18,
+              2.082e-17,
+              1.388e-17,
+              -6.94e-18,
+              -1.388e-17,
+              6.939e-17
+            ],
+            "sigma": [
+              3.65e-17,
+              2.082e-16,
+              1.388e-16,
+              -3.47e-17,
+              -6.94e-17,
+              3.469e-16
+            ]
+          },
+          "sb9g25": {
+            "epsilon": [
+              1.31e-18,
+              1.388e-17,
+              2.776e-17,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sigma": [
+              1.31e-17,
+              1.388e-16,
+              2.776e-16,
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "description": "PDF Epsilon/Sigma values are displayed with MATLAB scale factors; component order xx,yy,zz,xy,xz,yz.",
+        "tolerance": {
+          "absolute": 5e-13
+        }
+      }
+    ]
+  }
+}

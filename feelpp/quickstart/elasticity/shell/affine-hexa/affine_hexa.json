@@ -1,0 +1,28 @@
+{
+  "name": "affine-hexa",
+  "description": "Affine manufactured displacement on a first-order hexahedral elasticity mesh.",
+  "gmsh": {
+    "filename": "affine_hexa.geo"
+  },
+  "material": {
+    "E": 1000000.0,
+    "nu": 0.3
+  },
+  "boundaryConditions": {
+    "dirichlet": {
+      "markers": [ "Dirichlet" ],
+      "value": [ "2*x+3*y+5*z", "-x+4*y+z", "3*x-2*y+z" ]
+    }
+  },
+  "loads": {
+    "bodyForce": [ 0.0, 0.0, 0.0 ]
+  },
+  "checker": {
+    "check": true,
+    "exact": true,
+    "solution": [ "2*x+3*y+5*z", "-x+4*y+z", "3*x-2*y+z" ],
+    "tolerance": {
+      "exact": 1.0e-11
+    }
+  }
+}

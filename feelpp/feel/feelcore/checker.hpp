@@ -154,8 +154,12 @@ public:
 
     bool check() const { return M_check; }
     void setCheck( bool c ) { M_check = c; }
+    bool exact() const { return M_exact; }
+    void setExact( bool e ) { M_exact = e; }
     bool verbose() const { return M_verbose; }
     void setVerbose( bool v ) { M_verbose = v; }
+    void setExactTolerance( double t ) { M_etol = t; }
+    void setOrderTolerance( double t ) { M_otol = t; }
 
 
     /*
@@ -209,6 +213,7 @@ private:
     };
 
     bool M_check;
+    bool M_exact;
     bool M_verbose;
     std::string M_solution;
     std::optional<std::string> M_gradient;
@@ -249,7 +254,18 @@ Checker::runOnce( ErrorFn fn, ErrorRate rate, std::string metric )
         //cout << "||u-u_h||_" << e.first << "=" << e.second  << std::endl;
         try
         {
-            Checks c = rate(M_solution, e, M_otol, M_etol);
+            Checks c = Checks::NONE;
+            if ( M_exact )
+            {
+                if ( e.second < M_etol )
+                    c = Checks::EXACT;
+                else
+                    throw CheckerExactFailed( e.second, M_etol );
+            }
+            else
+            {
+                c = rate(M_solution, e, M_otol, M_etol);
+            }
             
             switch( c ) 
             {

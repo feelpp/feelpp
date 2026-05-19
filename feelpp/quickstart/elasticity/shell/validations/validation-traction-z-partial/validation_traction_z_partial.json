@@ -1,0 +1,158 @@
+{
+  "name": "validation-traction-z-partial",
+  "description": "Pure traction case from validation.pdf page 8: impose the visible PDF MATLAB matrix on P1,P2,P4,P3 and apply a total 1 N load on ZPlus.",
+  "gmsh": {
+    "filename": "validation_traction_z_partial.geo"
+  },
+  "material": {
+    "E": 1.0,
+    "nu": 0.45
+  },
+  "boundaryConditions": {
+    "clampMarkers": [],
+    "pointConstraints": [
+      {
+        "marker": "P1",
+        "components": [
+          true,
+          true,
+          true
+        ],
+        "value": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "marker": "P2",
+        "components": [
+          false,
+          true,
+          true
+        ],
+        "value": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "marker": "P4",
+        "components": [
+          false,
+          false,
+          true
+        ],
+        "value": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "marker": "P3",
+        "components": [
+          true,
+          false,
+          true
+        ],
+        "value": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    ]
+  },
+  "loads": {
+    "bodyForce": "{0,0,0}",
+    "totalForces": [
+      {
+        "marker": "ZPlus",
+        "value": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      }
+    ]
+  },
+  "checks": {
+    "target": "hexa8",
+    "items": [
+      {
+        "type": "probe",
+        "name": "tip z displacement",
+        "point": [
+          0.5,
+          0.5,
+          0.5
+        ],
+        "direction": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "reference": 1.0,
+        "tolerance": {
+          "absolute": 1e-12,
+          "relative": 1e-12
+        },
+        "description": "Exact axial elongation FL/(EA) from validation.pdf setup with partial PDF node constraints"
+      },
+      {
+        "type": "elasticity-point-fields",
+        "name": "validation-pdf-page-8-center",
+        "point": [
+          0.5,
+          0.5,
+          0.0
+        ],
+        "references": {
+          "hexa8": {
+            "epsilon": [
+              -0.45,
+              -0.45,
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sigma": [
+              0.0,
+              0.0,
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "sb9g25": {
+            "epsilon": [
+              -0.45,
+              -0.45,
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sigma": [
+              0.0,
+              0.0,
+              1.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "description": "PDF Epsilon/Sigma at element center; component order xx,yy,zz,xy,xz,yz.",
+        "tolerance": {
+          "absolute": 0.0005,
+          "relative": 0.005
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "name": "validation-traction-z-nu0",
+  "description": "One-element hexa traction validation: clamp ZMoins, apply total unit force on ZPlus, nu=0.",
+  "gmsh": {
+    "filename": "unit_hexa.geo"
+  },
+  "material": {
+    "E": 1.0,
+    "nu": 0.0
+  },
+  "boundaryConditions": {
+    "clampMarkers": [ "ZMoins" ]
+  },
+  "loads": {
+    "bodyForce": [ 0.0, 0.0, 0.0 ],
+    "totalForces": [
+      {
+        "marker": "ZPlus",
+        "value": [ 0.0, 0.0, 1.0 ]
+      }
+    ]
+  },
+  "checker": {
+    "check": true,
+    "exact": true,
+    "solution": [ "0", "0", "z" ],
+    "tolerance": {
+      "exact": 1.0e-11
+    }
+  },
+  "checks": {
+    "target": "hexa8",
+    "items": [
+      {
+        "type": "elasticity-point-fields",
+        "name": "unit hexa z traction center fields",
+        "point": [ 0.5, 0.5, 0.5 ],
+        "references": {
+          "hexa8": {
+            "epsilon": [ 0.0, 0.0, 1.0, 0.0, 0.0, 0.0 ],
+            "sigma": [ 0.0, 0.0, 1.0, 0.0, 0.0, 0.0 ]
+          },
+          "hexa27": {
+            "epsilon": [ 0.0, 0.0, 1.0, 0.0, 0.0, 0.0 ],
+            "sigma": [ 0.0, 0.0, 1.0, 0.0, 0.0, 0.0 ]
+          }
+        },
+        "tolerance": {
+          "absolute": 1.0e-11,
+          "relative": 1.0e-11
+        }
+      }
+    ]
+  }
+}

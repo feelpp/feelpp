@@ -186,6 +186,7 @@ Checker::Checker( std::string const& name )
     :
     super( "Checker", name ),
     M_check( boption(_name="checker.check") ),
+    M_exact( boption(_name="checker.exact") ),
     M_verbose( boption(_name="checker.verbose" ) ),
     M_solution( soption(_name="checker.solution" ) ),
     M_etol( doption(_name="checker.tolerance.exact" ) ),
