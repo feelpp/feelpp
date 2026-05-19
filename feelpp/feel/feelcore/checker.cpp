@@ -225,4 +225,56 @@ Checker::runScript()
 #endif
 }
 
+int
+Checker::run()
+{
+    int status = 0;
+    for ( auto const& task : M_tasks )
+    {
+        if ( !task.enabled )
+            continue;
+
+        try
+        {
+            int taskStatus = task.run();
+            if ( taskStatus )
+            {
+                cout << tc::red
+                     << "[Checker] " << this->journalWatcherInstanceName()
+                     << " check '" << task.name << "' failed with status " << taskStatus
+                     << tc::reset << std::endl;
+                status = 1;
+            }
+        }
+        catch( CheckerConvergenceFailed const& ex )
+        {
+            cout << tc::red
+                 << "[Checker] " << this->journalWatcherInstanceName()
+                 << " convergence order verification failed for check '" << task.name << "'" << std::endl
+                 << " Computed order " << ex.computedOrder() << std::endl
+                 << " Expected order " << ex.expectedOrder() << std::endl
+                 << " Tolerance " << ex.tolerance() << tc::reset << std::endl;
+            status = 1;
+        }
+        catch( CheckerExactFailed const& ex )
+        {
+            cout << tc::red
+                 << "[Checker] " << this->journalWatcherInstanceName()
+                 << " exact verification failed for check '" << task.name << "'" << std::endl
+                 << " Computed error " << ex.computedError() << std::endl
+                 << " Tolerance " << ex.tolerance() << tc::reset << std::endl;
+            status = 1;
+        }
+        catch( std::exception const& ex )
+        {
+            cout << tc::red
+                 << "[Checker] " << this->journalWatcherInstanceName()
+                 << " caught exception in check '" << task.name << "': " << ex.what()
+                 << tc::reset << std::endl;
+            status = 1;
+        }
+    }
+    return status;
+}
+
 }

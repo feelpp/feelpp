@@ -70,6 +70,10 @@ int main(int argc, char**argv )
         auto E = doption(_name="E");
         auto lambda = E*nu/( (1+nu)*(1-2*nu) );
         auto mu = E/(2*(1+nu));
+
+        // Linear isotropic elasticity: sigma(u) = lambda tr(epsilon(u)) I + 2 mu epsilon(u).
+        // sigmat carries the trial-field stress for the stiffness term, sigma the test-field stress
+        // used below in the symmetric weak Dirichlet contribution.
         auto deft = sym(gradt(u));
         auto def = sym(grad(u));
         auto Id = eye<FEELPP_DIM,FEELPP_DIM>();
@@ -93,10 +97,12 @@ int main(int argc, char**argv )
                                    _gradient_key="grad_displ",
                                    _inputs=checkerInputs );
         auto locals = thechecker.check()? thechecker.runScript() : Checker::variables_t{};
-        int status = 0;
+        Checker checks( "qs_elasticity" );
 
         tic();
         auto l = form1( _test=Vh );
+        // Right-hand side: body force. In checker mode the manufactured script provides
+        // the strong-form residual with the opposite sign convention.
         if ( thechecker.check() )
         {
             auto f = expr<FEELPP_DIM,1>( locals.at( "f" ), "f" );
@@ -137,6 +143,7 @@ int main(int argc, char**argv )
             auto pointForceRange = markedpoints( mesh, pointForceMarkers );
             auto pointForceExpr = expr<FEELPP_DIM,1>( soption(_name="point-force.expr"), "point_force" );
             double pointForceScale = pointLoadScale( pointForceRange, soption(_name="point-force.quantity"), "point-force" );
+            // Concentrated force virtual work: F . v evaluated at the selected physical points.
             l += integrate( _range=pointForceRange,
                             _expr=pointForceScale*inner( pointForceExpr, id(v) ) );
         }
@@ -148,10 +155,12 @@ int main(int argc, char**argv )
             double pointMomentScale = pointLoadScale( pointMomentRange, soption(_name="point-moment.quantity"), "point-moment" );
 #if FEELPP_DIM == 2
             auto pointMomentExpr = expr( soption(_name="point-moment.expr"), "point_moment" );
+            // Concentrated moment virtual work in 2D: M_z omega_z(v).
             l += integrate( _range=pointMomentRange,
                             _expr=pointMomentScale*pointMomentExpr*omegaz( v ) );
 #else
             auto pointMomentExpr = expr<FEELPP_DIM,1>( soption(_name="point-moment.expr"), "point_moment" );
+            // Concentrated moment virtual work in 3D: M . omega(v).
             l += integrate( _range=pointMomentRange,
                             _expr=pointMomentScale*inner( pointMomentExpr, omega( v ) ) );
 #endif
@@ -160,12 +169,15 @@ int main(int argc, char**argv )
 
         tic();
         auto a = form2( _trial=Vh, _test=Vh);
+        // Internal virtual work: integral_Omega sigma(u) : grad(v).
         a = integrate(_range=elements(mesh),
                     _expr=inner( sigmat, grad(v) ) );
 
         if ( boption(_name="weakdir") )
         {
             double penaldir = doption(_name="gamma");
+            // Symmetric Nitsche Dirichlet condition on marked faces:
+            // consistency, adjoint-consistency, and penalty terms.
             a += integrate(_range=markedfaces(mesh,"Dirichlet"),
                         _expr=-inner(sigmat*N(),id(u)) + inner(-sigma*N()+std::max(2*mu,lambda)*penaldir*id(u)/hFace(),idt(u)) );
 
@@ -191,8 +203,11 @@ int main(int argc, char**argv )
             toc("a.solve");
         }
 
-        if ( boption(_name="cantilever.check") && !boption( "no-solve" ) )
-        {
+        checks.add( "manufactured displacement", thechecker.check(), [&]() {
+            return check( thechecker, u );
+        } );
+
+        checks.add( "Euler-Bernoulli cantilever", boption(_name="cantilever.check") && !boption( "no-solve" ), [&]() {
             int component = ioption(_name="cantilever.component");
             if ( component < 0 || component >= FEELPP_DIM )
                 throw std::invalid_argument( "cantilever.component must be in [0," + std::to_string( FEELPP_DIM-1 ) + "]" );
@@ -250,23 +265,10 @@ int main(int argc, char**argv )
                           << "  tolerance: " << tolerance << std::endl;
             }
 
-            auto cantileverChecker = checker( _name="Euler-Bernoulli cantilever reference",
-                                              _solution="tip displacement" );
-            cantileverChecker.setCheck( true );
-            auto cantileverError = [computed, expected]( std::string const& )
-            {
-                return std::map<std::string,double>{
-                    { "tip-displacement", std::abs( computed - expected ) }
-                };
-            };
-            auto cantileverTolerance = [tolerance]( std::string const&, std::pair<std::string,double> const& r, double, double )
-            {
-                if ( r.second <= tolerance )
-                    return Checks::EXACT;
-                throw CheckerExactFailed( r.second, tolerance );
-            };
-            status = !cantileverChecker.runOnce( cantileverError, cantileverTolerance, "Euler-Bernoulli " );
-        }
+            if ( error > tolerance )
+                throw CheckerExactFailed( error, tolerance );
+            return 0;
+        } );
 
         tic();
         auto e = exporter( _mesh=mesh );
@@ -276,8 +278,7 @@ int main(int argc, char**argv )
             e->add( "u_exact", expr<FEELPP_DIM,1>( thechecker.solution() ) );
         e->save();
         toc("Exporter");
-        int checkerStatus = check( thechecker, u );
-        return status || checkerStatus;
+        return checks.run();
     }
     catch(...)
     {
