@@ -1,0 +1,2 @@
+mirrors:
+  example-buildcache: oci://ghcr.io/example/spack-buildcache

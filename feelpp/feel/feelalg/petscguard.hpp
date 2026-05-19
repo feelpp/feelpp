@@ -45,20 +45,45 @@ class PetscReadArrayGuard
 {
 public:
     [[nodiscard]] explicit PetscReadArrayGuard( Vec v )
-        : M_vec( v )
+        : M_parentVec( v ), M_arrayVec( v )
     {
         if ( !v )
             throw std::invalid_argument( "PetscReadArrayGuard: null Vec pointer" );
-            
-        PetscErrorCode ierr = VecGetArrayRead( M_vec, &M_ptr );
+
+        PetscErrorCode ierr = VecGhostGetLocalForm( M_parentVec, &M_localVec );
         if ( ierr != 0 ) {
-            CHKERRABORT( vecComm( M_vec ), ierr );
+            CHKERRABORT( vecComm( M_parentVec ), ierr );
         }
-        
-        ierr = VecGetOwnershipRange( M_vec, &M_lo, &M_hi );
-        if ( ierr != 0 ) {
-            VecRestoreArrayRead( M_vec, &M_ptr ); // cleanup on error
-            CHKERRABORT( vecComm( M_vec ), ierr );
+
+        if ( M_localVec )
+        {
+            M_arrayVec = M_localVec;
+            ierr = VecGetArrayRead( M_arrayVec, &M_ptr );
+            if ( ierr != 0 ) {
+                VecGhostRestoreLocalForm( M_parentVec, &M_localVec );
+                CHKERRABORT( vecComm( M_parentVec ), ierr );
+            }
+
+            ierr = VecGetLocalSize( M_arrayVec, &M_hi );
+            if ( ierr != 0 ) {
+                VecRestoreArrayRead( M_arrayVec, &M_ptr );
+                VecGhostRestoreLocalForm( M_parentVec, &M_localVec );
+                CHKERRABORT( vecComm( M_parentVec ), ierr );
+            }
+            M_lo = 0;
+        }
+        else
+        {
+            ierr = VecGetArrayRead( M_arrayVec, &M_ptr );
+            if ( ierr != 0 ) {
+                CHKERRABORT( vecComm( M_parentVec ), ierr );
+            }
+
+            ierr = VecGetOwnershipRange( M_arrayVec, &M_lo, &M_hi );
+            if ( ierr != 0 ) {
+                VecRestoreArrayRead( M_arrayVec, &M_ptr ); // cleanup on error
+                CHKERRABORT( vecComm( M_parentVec ), ierr );
+            }
         }
     }
 
@@ -68,9 +93,16 @@ public:
 
     // Moveable
     PetscReadArrayGuard( PetscReadArrayGuard&& other ) noexcept
-        : M_vec( other.M_vec ), M_ptr( other.M_ptr ), M_lo( other.M_lo ), M_hi( other.M_hi )
+        : M_parentVec( other.M_parentVec ),
+          M_arrayVec( other.M_arrayVec ),
+          M_localVec( other.M_localVec ),
+          M_ptr( other.M_ptr ),
+          M_lo( other.M_lo ),
+          M_hi( other.M_hi )
     {
-        other.M_vec = nullptr; 
+        other.M_parentVec = nullptr;
+        other.M_arrayVec = nullptr;
+        other.M_localVec = nullptr;
         other.M_ptr = nullptr; 
         other.M_lo = 0; 
         other.M_hi = 0;
@@ -84,13 +116,17 @@ public:
             cleanup();
             
             // Move from other
-            M_vec = other.M_vec; 
+            M_parentVec = other.M_parentVec;
+            M_arrayVec = other.M_arrayVec;
+            M_localVec = other.M_localVec;
             M_ptr = other.M_ptr; 
             M_lo = other.M_lo; 
             M_hi = other.M_hi;
             
             // Reset other
-            other.M_vec = nullptr; 
+            other.M_parentVec = nullptr;
+            other.M_arrayVec = nullptr;
+            other.M_localVec = nullptr;
             other.M_ptr = nullptr; 
             other.M_lo = 0; 
             other.M_hi = 0;
@@ -107,24 +143,35 @@ public:
     [[nodiscard]] PetscInt firstLocal() const noexcept { return M_lo; }
     [[nodiscard]] PetscInt lastLocal() const noexcept { return M_hi; } // exclusive
     [[nodiscard]] PetscInt localSize() const noexcept { return M_hi - M_lo; }
-    [[nodiscard]] bool valid() const noexcept { return M_vec != nullptr && M_ptr != nullptr; }
+    [[nodiscard]] bool valid() const noexcept { return M_arrayVec != nullptr && M_ptr != nullptr; }
 
 private:
     void cleanup() noexcept
     {
-        if ( M_vec && M_ptr )
+        if ( M_arrayVec && M_ptr )
         {
-            PetscErrorCode ierr = VecRestoreArrayRead( M_vec, &M_ptr );
+            PetscErrorCode ierr = VecRestoreArrayRead( M_arrayVec, &M_ptr );
             if ( ierr != 0 ) {
                 // In destructor, we can't throw, so use CHKERRABORT
-                CHKERRABORT( vecComm( M_vec ), ierr );
+                CHKERRABORT( vecComm( M_parentVec ), ierr );
             }
         }
-        M_vec = nullptr;
+        if ( M_parentVec && M_localVec )
+        {
+            PetscErrorCode ierr = VecGhostRestoreLocalForm( M_parentVec, &M_localVec );
+            if ( ierr != 0 ) {
+                CHKERRABORT( vecComm( M_parentVec ), ierr );
+            }
+        }
+        M_parentVec = nullptr;
+        M_arrayVec = nullptr;
+        M_localVec = nullptr;
         M_ptr = nullptr;
     }
 
-    Vec M_vec = nullptr;
+    Vec M_parentVec = nullptr;
+    Vec M_arrayVec = nullptr;
+    Vec M_localVec = nullptr;
     const PetscScalar* M_ptr = nullptr;
     PetscInt M_lo = 0, M_hi = 0;
 };
@@ -144,20 +191,45 @@ class PetscWriteArrayGuard
 {
 public:
     [[nodiscard]] explicit PetscWriteArrayGuard( Vec v, bool auto_assembly = false )
-        : M_vec( v ), M_auto_assembly( auto_assembly )
+        : M_parentVec( v ), M_arrayVec( v ), M_auto_assembly( auto_assembly )
     {
         if ( !v )
             throw std::invalid_argument( "PetscWriteArrayGuard: null Vec pointer" );
-            
-        PetscErrorCode ierr = VecGetArray( M_vec, &M_ptr );
+
+        PetscErrorCode ierr = VecGhostGetLocalForm( M_parentVec, &M_localVec );
         if ( ierr != 0 ) {
-            CHKERRABORT( vecComm( M_vec ), ierr );
+            CHKERRABORT( vecComm( M_parentVec ), ierr );
         }
-        
-        ierr = VecGetOwnershipRange( M_vec, &M_lo, &M_hi );
-        if ( ierr != 0 ) {
-            VecRestoreArray( M_vec, &M_ptr ); // cleanup on error
-            CHKERRABORT( vecComm( M_vec ), ierr );
+
+        if ( M_localVec )
+        {
+            M_arrayVec = M_localVec;
+            ierr = VecGetArray( M_arrayVec, &M_ptr );
+            if ( ierr != 0 ) {
+                VecGhostRestoreLocalForm( M_parentVec, &M_localVec );
+                CHKERRABORT( vecComm( M_parentVec ), ierr );
+            }
+
+            ierr = VecGetLocalSize( M_arrayVec, &M_hi );
+            if ( ierr != 0 ) {
+                VecRestoreArray( M_arrayVec, &M_ptr );
+                VecGhostRestoreLocalForm( M_parentVec, &M_localVec );
+                CHKERRABORT( vecComm( M_parentVec ), ierr );
+            }
+            M_lo = 0;
+        }
+        else
+        {
+            ierr = VecGetArray( M_arrayVec, &M_ptr );
+            if ( ierr != 0 ) {
+                CHKERRABORT( vecComm( M_parentVec ), ierr );
+            }
+
+            ierr = VecGetOwnershipRange( M_arrayVec, &M_lo, &M_hi );
+            if ( ierr != 0 ) {
+                VecRestoreArray( M_arrayVec, &M_ptr ); // cleanup on error
+                CHKERRABORT( vecComm( M_parentVec ), ierr );
+            }
         }
     }
 
@@ -167,10 +239,17 @@ public:
 
     // Moveable
     PetscWriteArrayGuard( PetscWriteArrayGuard&& other ) noexcept
-        : M_vec( other.M_vec ), M_ptr( other.M_ptr ), M_lo( other.M_lo ), M_hi( other.M_hi ),
+        : M_parentVec( other.M_parentVec ),
+          M_arrayVec( other.M_arrayVec ),
+          M_localVec( other.M_localVec ),
+          M_ptr( other.M_ptr ),
+          M_lo( other.M_lo ),
+          M_hi( other.M_hi ),
           M_auto_assembly( other.M_auto_assembly )
     {
-        other.M_vec = nullptr; 
+        other.M_parentVec = nullptr;
+        other.M_arrayVec = nullptr;
+        other.M_localVec = nullptr;
         other.M_ptr = nullptr; 
         other.M_lo = 0; 
         other.M_hi = 0;
@@ -185,14 +264,18 @@ public:
             cleanup();
             
             // Move from other
-            M_vec = other.M_vec; 
+            M_parentVec = other.M_parentVec;
+            M_arrayVec = other.M_arrayVec;
+            M_localVec = other.M_localVec;
             M_ptr = other.M_ptr; 
             M_lo = other.M_lo; 
             M_hi = other.M_hi;
             M_auto_assembly = other.M_auto_assembly;
             
             // Reset other
-            other.M_vec = nullptr; 
+            other.M_parentVec = nullptr;
+            other.M_arrayVec = nullptr;
+            other.M_localVec = nullptr;
             other.M_ptr = nullptr; 
             other.M_lo = 0; 
             other.M_hi = 0;
@@ -210,41 +293,60 @@ public:
     [[nodiscard]] PetscInt firstLocal() const noexcept { return M_lo; }
     [[nodiscard]] PetscInt lastLocal() const noexcept { return M_hi; } // exclusive
     [[nodiscard]] PetscInt localSize() const noexcept { return M_hi - M_lo; }
-    [[nodiscard]] bool valid() const noexcept { return M_vec != nullptr && M_ptr != nullptr; }
+    [[nodiscard]] bool valid() const noexcept { return M_arrayVec != nullptr && M_ptr != nullptr; }
 
     // Manual assembly control
     void assembly()
     {
-        if ( M_vec ) {
-            PetscErrorCode ierr = VecAssemblyBegin( M_vec );
-            CHKERRABORT( vecComm( M_vec ), ierr );
-            ierr = VecAssemblyEnd( M_vec );
-            CHKERRABORT( vecComm( M_vec ), ierr );
+        if ( M_parentVec ) {
+            PetscErrorCode ierr = VecAssemblyBegin( M_parentVec );
+            CHKERRABORT( vecComm( M_parentVec ), ierr );
+            ierr = VecAssemblyEnd( M_parentVec );
+            CHKERRABORT( vecComm( M_parentVec ), ierr );
         }
     }
 
 private:
     void cleanup() noexcept
     {
-        if ( M_vec && M_ptr )
+        if ( M_arrayVec && M_ptr )
         {
-            PetscErrorCode ierr = VecRestoreArray( M_vec, &M_ptr );
+            PetscErrorCode ierr = VecRestoreArray( M_arrayVec, &M_ptr );
             if ( ierr != 0 ) {
-                CHKERRABORT( vecComm( M_vec ), ierr );
+                CHKERRABORT( vecComm( M_parentVec ), ierr );
             }
             
-            if ( M_auto_assembly ) {
-                ierr = VecAssemblyBegin( M_vec );
+            if ( M_parentVec && M_localVec )
+            {
+                ierr = VecGhostRestoreLocalForm( M_parentVec, &M_localVec );
                 if ( ierr == 0 ) {
-                    VecAssemblyEnd( M_vec );
+                    M_localVec = nullptr;
+                }
+            }
+
+            if ( M_auto_assembly && M_parentVec ) {
+                ierr = VecAssemblyBegin( M_parentVec );
+                if ( ierr == 0 ) {
+                    VecAssemblyEnd( M_parentVec );
                 }
             }
         }
-        M_vec = nullptr;
+        else if ( M_parentVec && M_localVec )
+        {
+            PetscErrorCode ierr = VecGhostRestoreLocalForm( M_parentVec, &M_localVec );
+            if ( ierr == 0 ) {
+                M_localVec = nullptr;
+            }
+        }
+        M_parentVec = nullptr;
+        M_arrayVec = nullptr;
+        M_localVec = nullptr;
         M_ptr = nullptr;
     }
 
-    Vec M_vec = nullptr;
+    Vec M_parentVec = nullptr;
+    Vec M_arrayVec = nullptr;
+    Vec M_localVec = nullptr;
     PetscScalar* M_ptr = nullptr;
     PetscInt M_lo = 0, M_hi = 0;
     bool M_auto_assembly = false;

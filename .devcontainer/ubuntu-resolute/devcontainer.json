@@ -1,0 +1,35 @@
+{
+   "name": "Feel++ Ubuntu Resolute (26.04)",
+   "image": "ghcr.io/feelpp/feelpp-env:ubuntu-26.04",
+   "workspaceFolder": "/workspaces/feelpp-7",
+   "remoteUser": "feelpp",
+   "updateRemoteUserUID": true,
+   "init": true,
+   "containerEnv": {
+      "FEELPP_CMAKE_PRESET": "container-ubuntu-resolute",
+      "DISTRIBUTION": "-ubuntu-26.04"
+   },
+   "remoteEnv": {
+      "CMAKE_BUILD_PARALLEL_LEVEL": "25"
+   },
+   "postCreateCommand": "${containerWorkspaceFolder}/.devcontainer/feelppconfig.sh ${containerWorkspaceFolder}",
+   "customizations": {
+      "vscode": {
+         "settings": {
+            "cmake.configurePreset": "container-ubuntu-resolute",
+            "cmake.buildPreset": "container-ubuntu-resolute"
+         },
+         "extensions": [
+            "ms-vscode.cpptools",
+            "ms-vscode.cmake-tools",
+            "josetr.cmake-language-support-vscode",
+            "asciidoctor.asciidoctor-vscode",
+            "ms-python.python",
+            "ms-toolsai.jupyter",
+            "ms-vsliveshare.vsliveshare",
+            "shardulm94.trailing-spaces",
+            "redhat.vscode-yaml"
+         ]
+      }
+   }
+}

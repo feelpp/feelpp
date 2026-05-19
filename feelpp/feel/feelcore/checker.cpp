@@ -221,7 +221,11 @@ Checker::runScript()
     Feel::pyexprFromFile( Environment::expand(M_script), locals );
     LOG(INFO) << fmt::format( "gradient({})={}", M_gradient_key, locals[M_gradient_key] ) << std::endl;
     M_solution=locals[M_solution_key];
-    M_gradient=locals[M_gradient_key];
+    auto const& gradient = locals[M_gradient_key];
+    if ( gradient.empty() )
+        M_gradient.reset();
+    else
+        M_gradient = gradient;
     return locals;
 #endif
 }

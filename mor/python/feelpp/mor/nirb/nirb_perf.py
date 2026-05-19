@@ -1,5 +1,9 @@
 import numpy as np
-from tqdm import tqdm
+try:
+    from tqdm import tqdm
+except ModuleNotFoundError:
+    def tqdm(iterable=None, *args, **kwargs):
+        return iterable if iterable is not None else iter(())
 from petsc4py import PETSc
 
 

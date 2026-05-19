@@ -1156,16 +1156,17 @@ public:
             }
         auto modelFields( self_type const& fluidToolbox, vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
             {
-                using _field_translational_ptrtype = std::decay_t<decltype( this->begin()->second.spaceTranslationalVelocity()->elementPtr( *sol,rowStartInVector ) )>;
-                using _field_angular_ptrtype = std::decay_t<decltype(this->begin()->second.spaceAngularVelocity()->elementPtr( *sol, rowStartInVector ) )>;
+                using _field_translational_ptrtype = std::decay_t<decltype(this->begin()->second.fieldTranslationalVelocityPtr())>;
+                using _field_angular_ptrtype = std::decay_t<decltype(this->begin()->second.fieldAngularVelocityPtr())>;
 
                 std::map<std::string,std::tuple<_field_translational_ptrtype,_field_angular_ptrtype>> registerFields;
+                auto const& solConst = *sol;
                 for ( auto const& [name,bpbc] : *this )
                 {
                     size_type startBlockIndexTranslationalVelocity = fluidToolbox.startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
                     size_type startBlockIndexAngularVelocity = fluidToolbox.startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
-                    registerFields[name] = std::make_tuple( bpbc.spaceTranslationalVelocity()->elementPtr( *sol, rowStartInVector+startBlockIndexTranslationalVelocity ),
-                                                            bpbc.spaceAngularVelocity()->elementPtr( *sol, rowStartInVector+startBlockIndexAngularVelocity ) );
+                    registerFields[name] = std::make_tuple( bpbc.spaceTranslationalVelocity()->elementPtr( solConst, rowStartInVector+startBlockIndexTranslationalVelocity ),
+                                                            bpbc.spaceAngularVelocity()->elementPtr( solConst, rowStartInVector+startBlockIndexAngularVelocity ) );
                 }
                 return this->modelFieldsImpl( fluidToolbox,registerFields,prefix );
             }
@@ -1639,14 +1640,18 @@ public :
             CHECK( itFindSolution != vectorData.end() ) << "require solution data";
             vector_ptrtype sol = std::get<0>( itFindSolution->second );
             size_type rowStartInVector =  std::get<1>( itFindSolution->second );
-            auto field_u = this->fieldVelocity().functionSpace()->elementPtr( *sol, rowStartInVector+this->startSubBlockSpaceIndex("velocity") );
-            auto field_p = this->fieldPressure().functionSpace()->elementPtr( *sol, rowStartInVector+this->startSubBlockSpaceIndex("pressure") );
+            auto const& solConst = *sol;
+            auto field_u = this->fieldVelocity().functionSpace()->elementPtr( solConst, rowStartInVector+this->startSubBlockSpaceIndex("velocity") );
+            auto field_p = this->fieldPressure().functionSpace()->elementPtr( solConst, rowStartInVector+this->startSubBlockSpaceIndex("pressure") );
             auto mfields_body = M_bodySetBC.modelFields( *this, sol, rowStartInVector, prefix );
 
             element_velocity_ptrtype field_beta_u;
             auto itFindVelocityExtrapolated = vectorData.find( "velocity_extrapolated" );
             if ( itFindVelocityExtrapolated != vectorData.end() && std::get<0>( itFindVelocityExtrapolated->second ) )
-                field_beta_u = this->fieldVelocity().functionSpace()->elementPtr( *std::get<0>( itFindVelocityExtrapolated->second ), std::get<1>( itFindVelocityExtrapolated->second ) );
+            {
+                auto const& velocityExtrapolatedConst = *std::get<0>( itFindVelocityExtrapolated->second );
+                field_beta_u = this->fieldVelocity().functionSpace()->elementPtr( velocityExtrapolatedConst, std::get<1>( itFindVelocityExtrapolated->second ) );
+            }
 
             return this->modelFields( field_u, field_p, mfields_body, field_beta_u, prefix );
         }

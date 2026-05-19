@@ -35,7 +35,7 @@
 #include <Eigen/StdVector>
 
 #include <boost/fusion/algorithm.hpp>
-#include <boost/multi_array.hpp>
+#include <feel/feelcore/boostmultiarray.hpp>
 #include <feel/feelvf/block.hpp>
 #include <feel/feelalg/vectorvalue.hpp>
 #include <feel/feelvf/fec.hpp>

@@ -1,0 +1,4 @@
+packages:
+  mpi:
+    require:
+    - "openmpi@:4.1 fabrics=cma,ucx"

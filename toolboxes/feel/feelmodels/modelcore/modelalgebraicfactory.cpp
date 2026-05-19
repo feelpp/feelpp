@@ -832,10 +832,12 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
             M_dofEliminationNonLinearRhsModified->zero();
             if ( !M_applyDofEliminationOnInitialGuess )
             {
+                auto const& dofEliminationValues = static_cast<Vector<value_type> const&>( *M_dofEliminationValues );
+                auto const& solutionValues = static_cast<Vector<value_type> const&>( *XX );
                 for ( size_type k : *dofEliminationIds )
                 {
                     //double vvvv = -M_dofEliminationValues->operator()(k) + currentSolution->operator()(k) ;
-                    double vvvv = -M_dofEliminationValues->operator()(k) + XX->operator()(k) ;
+                    double vvvv = -dofEliminationValues( k ) + solutionValues( k );
                     M_dofEliminationNonLinearStepValues->set( k, vvvv );
                 }
                 M_dofEliminationNonLinearStepValues->close();
@@ -926,10 +928,12 @@ ModelAlgebraicFactory::tabulateInformations( nl::json const& jsonInfo, TabulateI
             }
             else
             {
+                auto const& dofEliminationValues = static_cast<Vector<value_type> const&>( *M_dofEliminationValues );
+                auto const& solutionValues = static_cast<Vector<value_type> const&>( *XX );
                 for ( size_type k : *dofEliminationIds )
                 {
                     //double vvvv =  -M_dofEliminationValues->operator()(k) + currentSolution->operator()(k) ;
-                    double vvvv =  -M_dofEliminationValues->operator()(k) + XX->operator()(k) ;
+                    double vvvv = -dofEliminationValues( k ) + solutionValues( k );
                     RR->set( k, vvvv );
                 }
             }
