@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -eu
+
+# Rebuilt Feel++ packages frequently keep the same Debian version during local
+# iteration. Evict any cached archives with matching package names so
+# satisfydepends cannot silently reuse a stale .deb instead of the freshly
+# staged local-repo package.
+find /var/cache/apt/archives -maxdepth 1 -type f \
+    \( -name 'feelpp*.deb' -o -name 'libfeelpp*.deb' -o -name 'python3-feelpp*.deb' \) \
+    -delete

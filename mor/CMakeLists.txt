@@ -127,7 +127,7 @@ install(EXPORT feelpp-mor-export-targets
 
 if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
   include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp-mor.package.cmake)
-  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp.version.cmake)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/../feelpp.version.cmake)
 endif()
 
 if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research )

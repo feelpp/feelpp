@@ -19,6 +19,7 @@ on:
           default: 'noble'
           type: choice
           options:
+          - 'resolute'
           - 'trixie'
           - 'noble'
           - 'bullseye'
@@ -112,14 +113,14 @@ jobs:
               flavor: "${{ inputs.flavor }}",
               dist: "${{ inputs.dist }}",
               version: "${{ inputs.version || needs.version.outputs.version }}",
-              tag: "v${{ inputs.version || needs.version.outputs.version  }}-${{ inputs.dist }}",
+              tag: "${{ inputs.dist }}-v${{ inputs.version || needs.version.outputs.version  }}",
               dir: "feelpp/tools/scripts/pkg/",
               dockerfile: "Dockerfile",
             }
     name: Build and Push feelpp/${{ matrix.service }}:${{ matrix.tag }}
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
 #        lfs: true
         token: ${{ secrets.CR_PAT }}

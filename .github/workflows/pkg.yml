@@ -1,12 +1,11 @@
 name: Feelpp PKG CI
-run-name: "Feelpp PKG CI | debian: ${{ inputs.enable-debian}} | ubuntu: ${{ inputs.enable-ubuntu}} | skip: ${{ inputs.skip}}"
+run-name: "Feelpp PKG CI | targets: ${{ inputs.pkg-targets || 'auto' }}"
 
 on:
   push:
-    branches:
-     - main
-     - develop
-     - 2442-refactor-feel-debianubuntu-packaging-for-reproducible-builds-and-snapshot-based-publication
+    branches: ['*']
+  pull_request:
+    branches: ['*']
   workflow_dispatch:
     inputs:
       parallel:
@@ -15,112 +14,119 @@ on:
         default: "20"
         type: string
       skip:
-        description: 'Skip build'
+        description: 'Skip build components'
         required: false
         default: ""
         type: string
-      enable-debian:
-        description: 'Enable debian distros'
+      pkg-targets:
+        description: 'Packaging targets or groups: default, noble, trixie, spack, all, none'
         required: false
-        default: 'none'
-        type: choice
-        options:
-        - 'all'
-        - 'trixie'
-        - 'bookworm'
-        - 'testing'
-        - 'sid'
-        - 'none'
-      enable-ubuntu:
-        description: 'Enable ubuntu distros'
+        default: 'default'
+        type: string
+      pkg-include:
+        description: 'Additional packaging targets or groups to include'
         required: false
-        default: 'noble'
-        type: choice
-        options:
-        - 'all'
-        - 'noble'
-        - 'none'
-      enable-spack:
-        description: 'Enable spack distros'
+        default: ''
+        type: string
+      pkg-exclude:
+        description: 'Packaging targets or groups to exclude'
         required: false
-        default: 'none'
-        type: choice
-        options:
-        - 'all'
-        - 'mpich'
-        - 'openmpi'
-        - 'none'
-      enable-apptainer:
-        description: 'Enable apptainer distros'
-        required: false
-        default: 'apptainer'
-        type: choice
-        options:
-        - 'apptainer'
-        - 'none'
-      enable-docker:
-        description: 'Enable docker distros'
-        required: false
-        default: 'docker'
-        type: choice
-        options:
-        - 'docker'
-        - 'none'
+        default: ''
+        type: string
 
 jobs:
+  plan_pkg:
+    name: Plan packaging matrix
+    runs-on: ubuntu-latest
+    outputs:
+      pkg_enabled: ${{ steps.plan.outputs.pkg_enabled }}
+      pkg_targets_json: ${{ steps.plan.outputs.pkg_targets_json }}
+      pkg_matrix_json: ${{ steps.plan.outputs.pkg_matrix_json }}
+      directive_source: ${{ steps.plan.outputs.directive_source }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build workflow_dispatch planner override
+        id: overrides
+        shell: bash
+        env:
+          PKG_TARGETS: ${{ inputs.pkg-targets || '' }}
+          PKG_INCLUDE: ${{ inputs.pkg-include || '' }}
+          PKG_EXCLUDE: ${{ inputs.pkg-exclude || '' }}
+        run: |
+          set -euo pipefail
+          directives=()
+
+          if [ -n "${PKG_TARGETS}" ]; then
+            directives+=("pkg=${PKG_TARGETS}")
+          fi
+          if [ -n "${PKG_INCLUDE}" ]; then
+            directives+=("pkg-include=${PKG_INCLUDE}")
+          fi
+          if [ -n "${PKG_EXCLUDE}" ]; then
+            directives+=("pkg-exclude=${PKG_EXCLUDE}")
+          fi
+
+          {
+            echo "message_override<<EOF"
+            if [ "${#directives[@]}" -gt 0 ]; then
+              printf '%s\n' "${directives[@]}"
+            fi
+            echo "EOF"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Plan package matrix with ci-matrix-planner
+        id: plan
+        uses: feelpp/ci-matrix-planner@v1.13.0
+        with:
+          config-path: .github/plan-ci.json
+          profile: ci
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          message-override: ${{ steps.overrides.outputs.message_override }}
+
+      - name: Debug planner output
+        run: |
+          echo "pkg_enabled: ${{ steps.plan.outputs.pkg_enabled }}"
+          echo "pkg_targets_json: ${{ steps.plan.outputs.pkg_targets_json }}"
+          echo "pkg_matrix_json: ${{ steps.plan.outputs.pkg_matrix_json }}"
+          echo "directive_source: ${{ steps.plan.outputs.directive_source }}"
+          echo "raw_message: ${{ steps.plan.outputs.raw_message }}"
+
   version:
+    if: |
+      needs.plan_pkg.outputs.pkg_enabled == 'true' &&
+      (
+        github.event_name != 'pull_request' ||
+        github.event.pull_request.head.repo.full_name == github.repository
+      )
+    needs: plan_pkg
     uses: ./.github/workflows/version.yml
     with:
-        continue-on-error: "false"
+      continue-on-error: "false"
     secrets: inherit
-
-  version-print:
-    runs-on: ubuntu-latest
-    needs: version
-    steps:
-      - name: Print outputs from version workflow
-        run: |
-          echo "Feel++ Main Version: ${{ needs.version.outputs.main_version }}"
-          echo "Feel++ Extra Version: ${{ needs.version.outputs.extra_version }}"
-          echo "Feel++ Version: ${{ needs.version.outputs.version }}"
-  pkg-factory:
-    uses: ./.github/workflows/pkg-factory.yml
-    with:
-        parallel: "${{ inputs.parallel || '20' }}"
-        enable-debian: "${{ inputs.enable-debian || 'all' }}"
-        enable-ubuntu: "${{ inputs.enable-ubuntu || 'all' }}"
-        enable-spack: "${{ inputs.enable-spack || 'none' }}"
-        enable-apptainer: "${{ inputs.enable-apptainer || 'apptainer' }}"
-        enable-docker: "${{ inputs.enable-docker || 'docker' }}"
-        skip: "${{ inputs.skip || '' }}"
-    secrets: inherit
-
-  pkg-factory-2:
-    name: Packaging Factory 2
-    runs-on: ubuntu-latest
-    needs: pkg-factory
-    steps:
-    - uses: actions/github-script@v7
-      with:
-        script: |
-          console.log(${{ toJson(needs.pkg-factory.outputs.matrix) }});
 
   build:
-    needs: [pkg-factory,version]
+    if: |
+      needs.plan_pkg.outputs.pkg_enabled == 'true' &&
+      (
+        github.event_name != 'pull_request' ||
+        github.event.pull_request.head.repo.full_name == github.repository
+      )
+    needs: [plan_pkg, version]
     strategy:
       fail-fast: false
-      matrix: ${{fromJSON(needs.pkg-factory.outputs.matrix) }}
+      matrix: ${{ fromJSON(needs.plan_pkg.outputs.pkg_matrix_json) }}
     uses: ./.github/workflows/pkg-dist.yml
     with:
-        dist: "${{ matrix.dist }}"
-        flavor: "${{ matrix.flavor }}"
-        parallel: "${{ inputs.parallel || '20' }}"
-        skip: "${{ inputs.skip || '' }}"
-        docker: "${{ matrix.docker }}"
-        apptainer: "${{ matrix.apptainer }}"
-        continue-on-error: "${{ matrix.continue-on-error }}"
-        version: "${{ matrix.version }}"
-        feelpp-version: "${{ needs.version.outputs.version }}"
-        feelpp-main-version: "${{ needs.version.outputs.main_version }}"
-        feelpp-extra-version: "${{ needs.version.outputs.extra_version }}"
+      dist: "${{ matrix.dist }}"
+      flavor: "${{ matrix.flavor }}"
+      parallel: "${{ inputs.parallel || '20' }}"
+      skip: "${{ inputs.skip || '' }}"
+      docker: "${{ matrix.docker }}"
+      apptainer: "${{ matrix.apptainer }}"
+      continue-on-error: "${{ matrix.continue-on-error }}"
+      version: "${{ matrix.version }}"
+      feelpp-version: "${{ needs.version.outputs.version }}"
+      feelpp-main-version: "${{ needs.version.outputs.main_version }}"
+      feelpp-extra-version: "${{ needs.version.outputs.extra_version }}"
     secrets: inherit

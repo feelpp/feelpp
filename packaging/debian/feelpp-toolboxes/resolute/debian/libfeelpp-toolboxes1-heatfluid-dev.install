@@ -1,0 +1,2 @@
+usr/lib/*/libfeelpp_toolbox_heatfluid*.so
+usr/include/feelpp/toolboxes/feel/feelmodels/heatfluid/*.hpp
