@@ -83,16 +83,15 @@ add_dependencies(hdg_stokes ${QS_HDG_STOKES_2D} ${QS_HDG_STOKES_3D})
 #
 feelpp_add_application( elasticity_2d SRCS qs_elasticity.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_ELASTICITY_2D INSTALL TESTS )
 feelpp_add_application( elasticity_3d SRCS qs_elasticity.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_ELASTICITY_3D INSTALL TESTS )
+feelpp_add_application( elasticity_shell_3d SRCS qs_elasticity.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 FEELPP_HYPERCUBE=1 EXEC QS_ELASTICITY_SHELL_3D INSTALL TESTS NO_MPI_TEST )
+feelpp_add_application( elasticity_shell_q2_3d SRCS qs_elasticity.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 FEELPP_HYPERCUBE=1 FEELPP_ORDER=2 EXEC QS_ELASTICITY_SHELL_Q2_3D INSTALL TESTS NO_MPI_TEST )
 feelpp_add_application( elasticity_pure_traction_2d SRCS qs_elasticity_pure_traction.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_ELASTICITY_PURE_TRACTION_2D INSTALL )
 feelpp_add_application( elasticity_pure_traction_3d SRCS qs_elasticity_pure_traction.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_ELASTICITY_PURE_TRACTION_3D INSTALL  )
-feelpp_add_application( elasticity_qk_benchmark SRCS qs_elasticity_qk_benchmark.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 LINK_LIBRARIES qs_shell_benchmark_framework EXEC QS_ELASTICITY_QK_BENCHMARK INSTALL )
 feelpp_add_application( shell_benchmark_info SRCS qs_shell_benchmark_info.cpp INCLUDE_IN_ALL LINK_LIBRARIES qs_shell_benchmark_framework EXEC QS_SHELL_BENCHMARK_INFO INSTALL )
 
 feelpp_add_testcase( elasticity PREFIX qs CATEGORY quickstart )
-add_dependencies(quickstart ${QS_ELASTICITY_2D} ${QS_ELASTICITY_3D})
-add_dependencies(check ${QS_ELASTICITY_2D} ${QS_ELASTICITY_3D})
-add_dependencies(quickstart ${QS_ELASTICITY_QK_BENCHMARK})
-add_dependencies(check ${QS_ELASTICITY_QK_BENCHMARK})
+add_dependencies(quickstart ${QS_ELASTICITY_2D} ${QS_ELASTICITY_3D} ${QS_ELASTICITY_SHELL_3D} ${QS_ELASTICITY_SHELL_Q2_3D})
+add_dependencies(check ${QS_ELASTICITY_2D} ${QS_ELASTICITY_3D} ${QS_ELASTICITY_SHELL_3D} ${QS_ELASTICITY_SHELL_Q2_3D})
 add_dependencies(quickstart ${QS_SHELL_BENCHMARK_INFO})
 add_dependencies(check ${QS_SHELL_BENCHMARK_INFO})
 
@@ -101,22 +100,6 @@ add_dependencies(check ${QS_SHELL_BENCHMARK_INFO})
 #
 feelpp_add_application( hdg_elasticity_2d SRCS qs_hdg_elasticity.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_HDG_ELASTICITY_2D INSTALL TESTS )
 feelpp_add_application( hdg_elasticity_3d SRCS qs_hdg_elasticity.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_HDG_ELASTICITY_3D INSTALL TESTS )
-feelpp_add_application( sb9_mixed_bending SRCS qs_sb9_mixed_bending.cpp INCLUDE_IN_ALL LINK_LIBRARIES qs_shell_benchmark_framework EXEC QS_SB9_MIXED_BENDING INSTALL )
 
 add_dependencies(quickstart ${QS_HDG_ELASTICITY_2D} ${QS_HDG_ELASTICITY_3D})
 add_dependencies(check ${QS_HDG_ELASTICITY_2D} ${QS_HDG_ELASTICITY_3D})
-add_dependencies(quickstart ${QS_SB9_MIXED_BENDING})
-add_dependencies(check ${QS_SB9_MIXED_BENDING})
-
-install(FILES
-  ${CMAKE_CURRENT_SOURCE_DIR}/qs_elasticity_qk_benchmark.json
-  ${CMAKE_CURRENT_SOURCE_DIR}/qs_elasticity_qk_benchmark.cases.json
-  DESTINATION share/feelpp/data/testcases/quickstart/elasticity)
-
-set(FEELPP_QUICKSTART_ELASTICITY_SHARE_DIR
-  ${CMAKE_BINARY_DIR}/share/feelpp/data/testcases/quickstart/elasticity)
-file(MAKE_DIRECTORY ${FEELPP_QUICKSTART_ELASTICITY_SHARE_DIR})
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/qs_elasticity_qk_benchmark.json
-  ${FEELPP_QUICKSTART_ELASTICITY_SHARE_DIR}/qs_elasticity_qk_benchmark.json COPYONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/qs_elasticity_qk_benchmark.cases.json
-  ${FEELPP_QUICKSTART_ELASTICITY_SHARE_DIR}/qs_elasticity_qk_benchmark.cases.json COPYONLY)

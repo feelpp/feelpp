@@ -2,53 +2,46 @@
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/checker.hpp>
+#include <feel/feelmesh/hypercube.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/check.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feelvf/vf.hpp>
 #include "nullspace-rigidbody.hpp"
+#include "qs_elasticity_case.hpp"
+#include "qs_elasticity_checks.hpp"
 
+#include <algorithm>
 #include <cmath>
+#include <functional>
+#include <iostream>
 #include <map>
-#include <set>
+#include <memory>
 #include <stdexcept>
+#include <string>
+#include <utility>
 #include <vector>
 
+#ifndef FEELPP_ORDER
+#define FEELPP_ORDER 1
+#endif
+
+namespace
+{
+namespace qsec = Feel::Quickstart::ElasticityChecks;
+namespace qsecase = Feel::Quickstart::ElasticityCase;
+
+using PointConstraintConfig = qsecase::PointConstraintConfig;
+} // namespace
 
 int main(int argc, char**argv )
 {
     using namespace Feel;
     try
     {
-        std::string const zeroVectorExpr = FEELPP_DIM == 2 ? "{0,0}" : "{0,0,0}";
-        std::string const zeroMomentExpr = FEELPP_DIM == 2 ? "0" : "{0,0,0}";
-
         po::options_description laplacianoptions( "Elasticity options" );
-        laplacianoptions.add_options()
-            ( "E", po::value<double>()->default_value( 1.0e6 ), "Young modulus" )
-            ( "nu", po::value<double>()->default_value( 0.3 ), "Poisson ratio" )
-            ( "no-solve", po::value<bool>()->default_value( false ), "No solve" )
-            ( "weakdir", po::value<bool>()->default_value( false ), "use weak dirichlet" )
-            ( "gamma", po::value<double>()->default_value( 100 ), "penalisation term" )
-            ( "nullspace", po::value<bool>()->default_value( false ), "add null space" )
-            ( "point-force.markers", po::value<std::vector<std::string>>()->multitoken(), "point markers receiving a point force" )
-            ( "point-force.expr", po::value<std::string>()->default_value( zeroVectorExpr ), "point force vector expression" )
-            ( "point-force.quantity", po::value<std::string>()->default_value( "per-point" ), "point force quantity: per-point or total" )
-            ( "point-moment.markers", po::value<std::vector<std::string>>()->multitoken(), "point markers receiving a point moment" )
-            ( "point-moment.expr", po::value<std::string>()->default_value( zeroMomentExpr ), "point moment expression: scalar in 2D, vector in 3D" )
-            ( "point-moment.quantity", po::value<std::string>()->default_value( "per-point" ), "point moment quantity: per-point or total" )
-            ( "cantilever.check", po::value<bool>()->default_value( false ), "check tip displacement against an Euler-Bernoulli cantilever reference" )
-            ( "cantilever.tip-marker", po::value<std::string>()->default_value( "tip" ), "point marker used for the cantilever tip displacement check" )
-            ( "cantilever.component", po::value<int>()->default_value( FEELPP_DIM-1 ), "displacement component used by the cantilever check" )
-            ( "cantilever.length", po::value<double>()->default_value( 1. ), "cantilever beam length" )
-            ( "cantilever.height", po::value<double>()->default_value( 1. ), "cantilever bending height" )
-            ( "cantilever.thickness", po::value<double>()->default_value( 1. ), "cantilever out-of-plane thickness" )
-            ( "cantilever.tip-force", po::value<double>()->default_value( 0. ), "signed transverse tip force used in the cantilever reference" )
-            ( "cantilever.tip-moment", po::value<double>()->default_value( 0. ), "signed end moment used in the cantilever reference" )
-            ( "cantilever.tolerance.relative", po::value<double>()->default_value( 0.5 ), "relative tolerance for the cantilever check" )
-            ( "cantilever.tolerance.absolute", po::value<double>()->default_value( 1e-12 ), "absolute tolerance for the cantilever check" )
-            ;
+        qsecase::addOptions( laplacianoptions );
 
         Environment env( _argc=argc, _argv=argv,
                     _desc=laplacianoptions,
@@ -56,18 +49,35 @@ int main(int argc, char**argv )
                                     _author="Feel++ Consortium",
                                     _email="feelpp-devel@feelpp.org"));
 
+        auto caseConfig = qsecase::fromEnvironment();
+
         tic();
-        auto mesh = loadMesh(_mesh=new Mesh<Simplex<FEELPP_DIM,1>>);
+#if FEELPP_HYPERCUBE == 1
+        using mesh_type = Mesh<Hypercube<FEELPP_DIM,FEELPP_ORDER>>;
+#else
+        using mesh_type = Mesh<Simplex<FEELPP_DIM,FEELPP_ORDER>>;
+#endif
+        auto mesh = caseConfig.meshFilename.empty()
+            ? loadMesh(_mesh=new mesh_type)
+            : loadMesh(_mesh=new mesh_type, _filename=caseConfig.meshFilename);
+        if ( caseConfig.expectedElements )
+        {
+            auto const nElements = nelements( elements( mesh ), true );
+            if ( nElements != *caseConfig.expectedElements )
+                throw std::runtime_error( "mesh element count check failed: expected " +
+                                          std::to_string( *caseConfig.expectedElements ) +
+                                          ", got " + std::to_string( nElements ) );
+        }
         toc("loadMesh");
 
         tic();
-        auto Vh = Pchv<1>( mesh );
+        auto Vh = Pchv<FEELPP_ORDER>( mesh );
         toc("Vh");
 
         auto u = Vh->element("u");
         auto v = Vh->element("v");
-        auto nu = doption(_name="nu");
-        auto E = doption(_name="E");
+        auto nu = caseConfig.nu;
+        auto E = caseConfig.E;
         auto lambda = E*nu/( (1+nu)*(1-2*nu) );
         auto mu = E/(2*(1+nu));
 
@@ -92,18 +102,34 @@ int main(int argc, char**argv )
             {"c1", ""},
             {"c2", ""}
         };
+        std::string const checkerSolution = caseConfig.checker.solution.value_or( std::string{} );
+        std::string const checkerScript = caseConfig.checker.script.value_or( std::string{} );
         auto thechecker = checker( _name="L2/H1 displacement norms",
                                    _solution_key="displ",
                                    _gradient_key="grad_displ",
+                                   _solution=checkerSolution,
+                                   _script=checkerScript,
+                                   _compute_pde_coefficients=!checkerScript.empty(),
                                    _inputs=checkerInputs );
-        auto locals = thechecker.check()? thechecker.runScript() : Checker::variables_t{};
-        Checker checks( "qs_elasticity" );
+        if ( caseConfig.checker.check )
+            thechecker.setCheck( *caseConfig.checker.check );
+        if ( caseConfig.checker.exact )
+            thechecker.setExact( *caseConfig.checker.exact );
+        if ( caseConfig.checker.exactTolerance )
+            thechecker.setExactTolerance( *caseConfig.checker.exactTolerance );
+        if ( caseConfig.checker.orderTolerance )
+            thechecker.setOrderTolerance( *caseConfig.checker.orderTolerance );
+
+        bool const useManufacturedScript = thechecker.check() && thechecker.useScript() && !checkerScript.empty();
+        auto locals = useManufacturedScript ? thechecker.runScript() : Checker::variables_t{};
+        qsec::ElasticityReferenceChecker<FEELPP_DIM> checks( "qs_elasticity" );
+        checks.setConfig( caseConfig.referenceChecks );
 
         tic();
         auto l = form1( _test=Vh );
-        // Right-hand side: body force. In checker mode the manufactured script provides
+        // Right-hand side: body force. In scripted checker mode the manufactured script provides
         // the strong-form residual with the opposite sign convention.
-        if ( thechecker.check() )
+        if ( useManufacturedScript )
         {
             auto f = expr<FEELPP_DIM,1>( locals.at( "f" ), "f" );
             l = integrate(_range=elements(mesh),
@@ -111,20 +137,39 @@ int main(int argc, char**argv )
         }
         else
         {
-            auto f = expr<FEELPP_DIM,1>( soption(_name="functions.f"), "f" );
+            auto f = expr<FEELPP_DIM,1>( caseConfig.bodyForceExpression, "f" );
             l = integrate(_range=elements(mesh),
                           _expr=inner(f,id(v)));
         }
-        auto markersFromOption = []( std::string const& opt )
+
+        for ( auto const& load : caseConfig.faceTractions )
         {
-            std::set<std::string> markers;
-            if ( Environment::vm().count( opt ) )
-            {
-                auto markerList = Environment::vm()[opt].as<std::vector<std::string>>();
-                markers.insert( markerList.begin(), markerList.end() );
-            }
-            return markers;
-        };
+            auto tractionExpr = expr<FEELPP_DIM,1>( load.expression, "traction" );
+            // Neumann virtual work: prescribed surface traction t . v on marked faces.
+            l += integrate( _range=markedfaces( mesh, load.markers ),
+                            _expr=inner( tractionExpr, id( v ) ) );
+        }
+
+        for ( auto const& load : caseConfig.facePressures )
+        {
+            auto pressureExpr = expr( load.expression, "pressure" );
+            // Signed normal pressure: p n . v on the selected face marker.
+            l += integrate( _range=markedfaces( mesh, load.marker ),
+                            _expr=pressureExpr*inner( N(), id( v ) ) );
+        }
+
+        for ( auto const& load : caseConfig.faceTotalForces )
+        {
+            auto forceRange = markedfaces( mesh, load.markers );
+            double area = integrate( _range=forceRange, _expr=cst( 1. ) ).evaluate()( 0,0 );
+            if ( area <= 0. )
+                throw std::invalid_argument( "face total force selects no marked face" );
+            auto totalForceExpr = expr<FEELPP_DIM,1>( load.expression, "face_total_force" );
+            // Total force distributed uniformly over its marked faces: (F/|Gamma|) . v.
+            l += integrate( _range=forceRange,
+                            _expr=inner( ( 1./area )*totalForceExpr, id( v ) ) );
+        }
+
         auto pointLoadScale = []( auto const& pointRange, std::string const& quantity, std::string const& label )
         {
             if ( quantity == "per-point" || quantity == "per_point" || quantity == "point" )
@@ -137,29 +182,27 @@ int main(int argc, char**argv )
             return 1./nMarkedPoints;
         };
 
-        auto pointForceMarkers = markersFromOption( "point-force.markers" );
-        if ( !pointForceMarkers.empty() )
+        for ( auto const& load : caseConfig.pointForces )
         {
-            auto pointForceRange = markedpoints( mesh, pointForceMarkers );
-            auto pointForceExpr = expr<FEELPP_DIM,1>( soption(_name="point-force.expr"), "point_force" );
-            double pointForceScale = pointLoadScale( pointForceRange, soption(_name="point-force.quantity"), "point-force" );
+            auto pointForceRange = markedpoints( mesh, load.markers );
+            auto pointForceExpr = expr<FEELPP_DIM,1>( load.expression, "point_force" );
+            double pointForceScale = pointLoadScale( pointForceRange, load.quantity, "point-force" );
             // Concentrated force virtual work: F . v evaluated at the selected physical points.
             l += integrate( _range=pointForceRange,
                             _expr=pointForceScale*inner( pointForceExpr, id(v) ) );
         }
 
-        auto pointMomentMarkers = markersFromOption( "point-moment.markers" );
-        if ( !pointMomentMarkers.empty() )
+        for ( auto const& load : caseConfig.pointMoments )
         {
-            auto pointMomentRange = markedpoints( mesh, pointMomentMarkers );
-            double pointMomentScale = pointLoadScale( pointMomentRange, soption(_name="point-moment.quantity"), "point-moment" );
+            auto pointMomentRange = markedpoints( mesh, load.markers );
+            double pointMomentScale = pointLoadScale( pointMomentRange, load.quantity, "point-moment" );
 #if FEELPP_DIM == 2
-            auto pointMomentExpr = expr( soption(_name="point-moment.expr"), "point_moment" );
+            auto pointMomentExpr = expr( load.expression, "point_moment" );
             // Concentrated moment virtual work in 2D: M_z omega_z(v).
             l += integrate( _range=pointMomentRange,
                             _expr=pointMomentScale*pointMomentExpr*omegaz( v ) );
 #else
-            auto pointMomentExpr = expr<FEELPP_DIM,1>( soption(_name="point-moment.expr"), "point_moment" );
+            auto pointMomentExpr = expr<FEELPP_DIM,1>( load.expression, "point_moment" );
             // Concentrated moment virtual work in 3D: M . omega(v).
             l += integrate( _range=pointMomentRange,
                             _expr=pointMomentScale*inner( pointMomentExpr, omega( v ) ) );
@@ -173,20 +216,66 @@ int main(int argc, char**argv )
         a = integrate(_range=elements(mesh),
                     _expr=inner( sigmat, grad(v) ) );
 
-        if ( boption(_name="weakdir") )
+        if ( !caseConfig.dirichletMarkers.empty() && boption(_name="weakdir") )
         {
             double penaldir = doption(_name="gamma");
             // Symmetric Nitsche Dirichlet condition on marked faces:
             // consistency, adjoint-consistency, and penalty terms.
-            a += integrate(_range=markedfaces(mesh,"Dirichlet"),
+            a += integrate(_range=markedfaces(mesh,caseConfig.dirichletMarkers),
                         _expr=-inner(sigmat*N(),id(u)) + inner(-sigma*N()+std::max(2*mu,lambda)*penaldir*id(u)/hFace(),idt(u)) );
 
         }
-        else
+        else if ( !caseConfig.dirichletMarkers.empty() )
         {
-            auto g = expr<FEELPP_DIM,1>( thechecker.check()? thechecker.solution() : soption(_name="functions.g"), "g" );
-            a+=on(_range=markedfaces(mesh,"Dirichlet"), _rhs=l, _element=u, _expr=g );
+            auto g = expr<FEELPP_DIM,1>( thechecker.check()? thechecker.solution() : caseConfig.dirichletExpression, "g" );
+            a+=on(_range=markedfaces(mesh,caseConfig.dirichletMarkers), _rhs=l, _element=u, _expr=g );
         }
+
+        auto applyPointConstraintComponent = [&]( PointConstraintConfig const& constraint, int component )
+        {
+            if ( !constraint.components[component] )
+                return;
+
+            auto pointValue = expr( constraint.values[component], "point_constraint" );
+            // Point displacement constraints prescribe selected scalar components at physical points.
+            switch ( component )
+            {
+            case 0:
+            {
+                auto ux = u[ComponentType::X];
+                a += on( _range=markedpoints( mesh, constraint.marker ),
+                         _rhs=l,
+                         _element=ux,
+                         _expr=pointValue );
+                break;
+            }
+            case 1:
+            {
+                auto uy = u[ComponentType::Y];
+                a += on( _range=markedpoints( mesh, constraint.marker ),
+                         _rhs=l,
+                         _element=uy,
+                         _expr=pointValue );
+                break;
+            }
+            case 2:
+            {
+                if constexpr ( FEELPP_DIM == 3 )
+                {
+                    auto uz = u[ComponentType::Z];
+                    a += on( _range=markedpoints( mesh, constraint.marker ),
+                             _rhs=l,
+                             _element=uz,
+                             _expr=pointValue );
+                }
+                break;
+            }
+            }
+        };
+
+        for ( auto const& constraint : caseConfig.pointConstraints )
+            for ( int component = 0; component < FEELPP_DIM; ++component )
+                applyPointConstraintComponent( constraint, component );
         toc("a");
 
         //! solve the linear system, find u s.t. a(u,v)=l(v) for all v
@@ -207,68 +296,9 @@ int main(int argc, char**argv )
             return check( thechecker, u );
         } );
 
-        checks.add( "Euler-Bernoulli cantilever", boption(_name="cantilever.check") && !boption( "no-solve" ), [&]() {
-            int component = ioption(_name="cantilever.component");
-            if ( component < 0 || component >= FEELPP_DIM )
-                throw std::invalid_argument( "cantilever.component must be in [0," + std::to_string( FEELPP_DIM-1 ) + "]" );
-
-            std::string tipMarker = soption(_name="cantilever.tip-marker");
-            auto tipRange = markedpoints( mesh, tipMarker );
-            size_type nTipPoints = nelements( tipRange, true );
-            if ( nTipPoints == 0 )
-                throw std::invalid_argument( "cantilever tip marker '" + tipMarker + "' selects no point" );
-
-            auto tipComponentDofs = Vh->dofs( tipRange, static_cast<ComponentType>( component ), false );
-            double tipDisplacementSum = 0.;
-            size_type nTipComponentDofs = 0;
-            for ( auto dofId : tipComponentDofs )
-            {
-                if ( Vh->dof()->dofGlobalProcessIsGhost( dofId ) )
-                    continue;
-                tipDisplacementSum += u( dofId );
-                ++nTipComponentDofs;
-            }
-            mpi::all_reduce( Environment::worldComm(), mpi::inplace( tipDisplacementSum ), std::plus<double>() );
-            mpi::all_reduce( Environment::worldComm(), mpi::inplace( nTipComponentDofs ), std::plus<size_type>() );
-            if ( nTipComponentDofs != nTipPoints )
-                throw std::runtime_error( "cantilever tip marker '" + tipMarker + "' resolved to " +
-                                          std::to_string( nTipComponentDofs ) + " active component dofs but " +
-                                          std::to_string( nTipPoints ) + " marked points" );
-            double computed = tipDisplacementSum/nTipComponentDofs;
-
-            double length = doption(_name="cantilever.length");
-            double height = doption(_name="cantilever.height");
-            double thickness = doption(_name="cantilever.thickness");
-            double tipForce = doption(_name="cantilever.tip-force");
-            double tipMoment = doption(_name="cantilever.tip-moment");
-            if ( length <= 0 )
-                throw std::invalid_argument( "cantilever.length must be positive" );
-            if ( height <= 0 )
-                throw std::invalid_argument( "cantilever.height must be positive" );
-            if ( thickness <= 0 )
-                throw std::invalid_argument( "cantilever.thickness must be positive" );
-
-            double inertia = thickness*std::pow( height, 3 )/12.;
-            double expected = tipForce*std::pow( length, 3 )/( 3.*E*inertia )
-                              + tipMoment*std::pow( length, 2 )/( 2.*E*inertia );
-            double error = std::abs( computed - expected );
-            double tolerance = std::max( doption(_name="cantilever.tolerance.absolute"),
-                                         doption(_name="cantilever.tolerance.relative")*std::max( std::abs( expected ), 1e-30 ) );
-
-            if ( Environment::isMasterRank() )
-            {
-                std::cout << "cantilever Euler-Bernoulli reference check\n"
-                          << "  component: " << component << "\n"
-                          << "  computed tip displacement: " << computed << "\n"
-                          << "  reference tip displacement: " << expected << "\n"
-                          << "  absolute error: " << error << "\n"
-                          << "  tolerance: " << tolerance << std::endl;
-            }
-
-            if ( error > tolerance )
-                throw CheckerExactFailed( error, tolerance );
-            return 0;
-        } );
+        checks.addCantileverChecks( mesh, Vh, u, E, !boption( "no-solve" ) )
+              .addDisplacementProbe( Vh, u, !boption( "no-solve" ) )
+              .addSmallStrainStressChecks( mesh, u, lambda, mu, !boption( "no-solve" ) );
 
         tic();
         auto e = exporter( _mesh=mesh );

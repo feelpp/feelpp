@@ -1,0 +1,3 @@
+shell-q2-validation-traction-x-nu0 --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/validation-traction-nu0/validation_traction_x_nu0.cfg --mesh.expected-elements=1 --checks.target=hexa27
+shell-q2-validation-traction-y-nu0 --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/validation-traction-nu0/validation_traction_y_nu0.cfg --mesh.expected-elements=1 --checks.target=hexa27
+shell-q2-validation-traction-z-nu0 --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/validation-traction-nu0/validation_traction_z_nu0.cfg --mesh.expected-elements=1 --checks.target=hexa27

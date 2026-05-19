@@ -1,0 +1,41 @@
+{
+  "name": "bending-patch",
+  "description": "Five-element bending patch inspired case, simplified here as a clamped rectangular patch.",
+  "gmsh": {
+    "filename": "bending_patch.geo"
+  },
+  "material": {
+    "E": 1000000.0,
+    "nu": 0.25
+  },
+  "boundaryConditions": {
+    "clampMarkers": [
+      "XMoins",
+      "XPlus",
+      "YMoins",
+      "YPlus"
+    ]
+  },
+  "loads": {
+    "bodyForce": "{0,0,0}",
+    "pressures": [
+      {
+        "marker": "ZPlus",
+        "value": 1.0
+      }
+    ]
+  },
+  "probe": {
+    "point": [
+      12.0,
+      6.0,
+      0.0
+    ],
+    "direction": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "label": "center z displacement"
+  }
+}
