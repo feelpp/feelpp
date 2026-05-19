@@ -222,9 +222,36 @@ int main(int argc, char**argv )
 
         tic();
         auto a = form2( _trial=Vh, _test=Vh);
-        // Internal virtual work: integral_Omega sigma(u) : grad(v).
-        a = integrate(_range=elements(mesh),
-                    _expr=inner( sigmat, grad(v) ) );
+        // Internal virtual work. The formulations below are algebraically equivalent
+        // representations of sigma(u) : epsilon(v), kept explicit for benchmarking.
+        switch ( caseConfig.formulation )
+        {
+        case qsecase::FormulationKind::Standard:
+            a = integrate( _range=elements( mesh ),
+                           _expr=inner( sigmat, grad( v ) ) );
+            break;
+        case qsecase::FormulationKind::Tensor:
+        {
+            auto C = isotropic_stiffness<FEELPP_DIM>( lambda, mu );
+            a = integrate( _range=elements( mesh ),
+                           _expr=ddot( C, deft, def ) );
+            break;
+        }
+        case qsecase::FormulationKind::Mandel:
+        {
+            auto C = isotropic_stiffness<FEELPP_DIM, SymmetricTensorNotation::Mandel>( lambda, mu );
+            a = integrate( _range=elements( mesh ),
+                           _expr=contract( C, mandel( deft ), mandel( def ) ) );
+            break;
+        }
+        case qsecase::FormulationKind::Voigt:
+        {
+            auto C = isotropic_stiffness<FEELPP_DIM, SymmetricTensorNotation::Voigt>( lambda, mu );
+            a = integrate( _range=elements( mesh ),
+                           _expr=voigt_contract( C, voigt( deft ), voigt( def ) ) );
+            break;
+        }
+        }
 
         if ( !caseConfig.dirichletMarkers.empty() && boption(_name="weakdir") )
         {

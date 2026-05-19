@@ -1,3 +1,6 @@
 shell-q2-validation-traction-x-nu0 --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/validation-traction-nu0/validation_traction_x_nu0.cfg --mesh.expected-elements=1 --checks.target=hexa27
+shell-q2-validation-traction-x-nu0-tensor --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/validation-traction-nu0/validation_traction_x_nu0.cfg --mesh.expected-elements=1 --checks.target=hexa27 --elasticity.formulation=tensor
+shell-q2-validation-traction-x-nu0-mandel --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/validation-traction-nu0/validation_traction_x_nu0.cfg --mesh.expected-elements=1 --checks.target=hexa27 --elasticity.formulation=mandel
+shell-q2-validation-traction-x-nu0-voigt --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/validation-traction-nu0/validation_traction_x_nu0.cfg --mesh.expected-elements=1 --checks.target=hexa27 --elasticity.formulation=voigt
 shell-q2-validation-traction-y-nu0 --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/validation-traction-nu0/validation_traction_y_nu0.cfg --mesh.expected-elements=1 --checks.target=hexa27
 shell-q2-validation-traction-z-nu0 --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/validation-traction-nu0/validation_traction_z_nu0.cfg --mesh.expected-elements=1 --checks.target=hexa27
