@@ -145,8 +145,9 @@ void run( int benchId, bool useVariantIntegrate = false )
     std::list<std::string> listMarkOn = { "Boundary2" };
     if ( benchId == 3 )
         listMarkOn.push_back("Boundary1");
-    form2( _trial=Vh, _test=Vh, _matrix=A)
-        +=on(_range=markedfaces(mesh,listMarkOn), _rhs=F, _element=*u, _expr=h/*cst(0.)*/ );
+    auto dirichletForm = form2( _trial=Vh, _test=Vh, _matrix=A);
+    dirichletForm.immediateDirichlet();
+    dirichletForm += on(_range=markedfaces(mesh,listMarkOn), _rhs=F, _element=*u, _expr=h/*cst(0.)*/ );
 
     backend(_rebuild=true)->solve(_matrix=A,_rhs=F,_solution=U);
 

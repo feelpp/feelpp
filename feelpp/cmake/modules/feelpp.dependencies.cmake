@@ -158,6 +158,66 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
   message(STATUS "Linux ${LSB_RELEASE_ID_SHORT} ${LSB_RELEASE_VERSION_SHORT} ${LSB_RELEASE_CODENAME_SHORT}")
 endif()
 
+if(DEFINED ENV{SPACK_ENV} AND NOT "$ENV{SPACK_ENV}" STREQUAL "")
+  set(_feelpp_spack_prefixes ${CMAKE_PREFIX_PATH})
+  if(DEFINED ENV{CMAKE_PREFIX_PATH} AND NOT "$ENV{CMAKE_PREFIX_PATH}" STREQUAL "")
+    set(_feelpp_spack_env_prefixes "$ENV{CMAKE_PREFIX_PATH}")
+    if(NOT WIN32)
+      string(REPLACE ":" ";" _feelpp_spack_env_prefixes "${_feelpp_spack_env_prefixes}")
+    endif()
+    list(APPEND _feelpp_spack_prefixes ${_feelpp_spack_env_prefixes})
+  endif()
+
+  if(_feelpp_spack_prefixes)
+    list(FILTER _feelpp_spack_prefixes EXCLUDE REGEX "^$")
+    list(REMOVE_DUPLICATES _feelpp_spack_prefixes)
+  endif()
+
+  set(_feelpp_spack_real_prefixes)
+  foreach(_feelpp_spack_prefix IN LISTS _feelpp_spack_prefixes)
+    if(EXISTS "${_feelpp_spack_prefix}")
+      get_filename_component(_feelpp_spack_real_prefix "${_feelpp_spack_prefix}" REALPATH)
+      list(APPEND _feelpp_spack_real_prefixes "${_feelpp_spack_real_prefix}")
+    endif()
+  endforeach()
+  if(_feelpp_spack_real_prefixes)
+    list(REMOVE_DUPLICATES _feelpp_spack_real_prefixes)
+    list(SORT _feelpp_spack_real_prefixes)
+  endif()
+
+  set(_feelpp_spack_prefix_signature
+      "env=$ENV{SPACK_ENV};prefixes=${_feelpp_spack_prefixes};real=${_feelpp_spack_real_prefixes}")
+  if(NOT DEFINED FEELPP_SPACK_PREFIX_SIGNATURE OR
+     NOT "${FEELPP_SPACK_PREFIX_SIGNATURE}" STREQUAL "${_feelpp_spack_prefix_signature}")
+    message(STATUS "[feelpp] Active Spack view changed; clearing stale package cache entries")
+    get_cmake_property(_feelpp_cache_vars CACHE_VARIABLES)
+    foreach(_feelpp_cache_var IN LISTS _feelpp_cache_vars)
+      if(_feelpp_cache_var STREQUAL "FEELPP_SPACK_PREFIX_SIGNATURE")
+        continue()
+      endif()
+      if(_feelpp_cache_var MATCHES "^(CMAKE_|_CMAKE_)")
+        continue()
+      endif()
+
+      set(_feelpp_clear_cache_var FALSE)
+      if(_feelpp_cache_var MATCHES "^(__pkg_config_checked_|__pkg_config_arguments_|pkgcfg_lib_)")
+        set(_feelpp_clear_cache_var TRUE)
+      else()
+        get_property(_feelpp_cache_value CACHE "${_feelpp_cache_var}" PROPERTY VALUE)
+        if(_feelpp_cache_value MATCHES "/\\.spack/views/|/spack-user-cache/views/|/spack-store/")
+          set(_feelpp_clear_cache_var TRUE)
+        endif()
+      endif()
+
+      if(_feelpp_clear_cache_var)
+        unset(${_feelpp_cache_var} CACHE)
+      endif()
+    endforeach()
+    set(FEELPP_SPACK_PREFIX_SIGNATURE "${_feelpp_spack_prefix_signature}" CACHE INTERNAL
+        "Active Spack environment signature used to invalidate stale package cache entries")
+  endif()
+endif()
+
 find_package(PkgConfig REQUIRED)
 
 # enable mpi mode
@@ -549,12 +609,40 @@ endif()
 
 # Python libs
 option( FEELPP_ENABLE_PYTHON "Enable Python Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+option( FEELPP_ALLOW_AMBIENT_PYTHON "Allow auto-detected non-system Python installations (Spack, Conda, virtualenvs)" OFF )
 option( FEELPP_ALLOW_AMBIENT_CONDA_PYTHON "Allow auto-detected Conda/Miniconda Python installations" OFF )
 if(FEELPP_ENABLE_PYTHON)
   #
   # Python
   #
-  if(NOT FEELPP_ALLOW_AMBIENT_CONDA_PYTHON AND EXISTS "/usr/bin/python3")
+  set(_feelpp_active_spack_env FALSE)
+  set(_feelpp_spack_view "")
+  if(DEFINED ENV{SPACK_ENV} AND NOT "$ENV{SPACK_ENV}" STREQUAL "")
+    set(_feelpp_active_spack_env TRUE)
+    set(_feelpp_spack_prefix_hints "$ENV{CMAKE_PREFIX_PATH}")
+    if(_feelpp_spack_prefix_hints)
+      if(UNIX)
+        string(REPLACE ":" ";" _feelpp_spack_prefix_hints "${_feelpp_spack_prefix_hints}")
+      endif()
+      list(GET _feelpp_spack_prefix_hints 0 _feelpp_spack_view)
+    endif()
+    find_program(_feelpp_spack_python
+      NAMES python3 python
+      HINTS "${_feelpp_spack_view}/bin"
+      NO_DEFAULT_PATH
+    )
+    if(_feelpp_spack_python)
+      message(STATUS "[feelpp] Active Spack environment detected; using ${_feelpp_spack_python}")
+      set(Python3_EXECUTABLE "${_feelpp_spack_python}" CACHE FILEPATH "Python3 executable" FORCE)
+    else()
+      message(STATUS "[feelpp] Active Spack environment detected; Python will be resolved from PATH")
+    endif()
+    if(_feelpp_spack_view)
+      set(Python3_ROOT_DIR "${_feelpp_spack_view}" CACHE PATH "Python3 root directory" FORCE)
+    endif()
+  endif()
+
+  if(NOT FEELPP_ALLOW_AMBIENT_PYTHON AND NOT FEELPP_ALLOW_AMBIENT_CONDA_PYTHON AND NOT _feelpp_active_spack_env AND EXISTS "/usr/bin/python3")
     if(DEFINED Python3_EXECUTABLE AND NOT "${Python3_EXECUTABLE}" STREQUAL "" AND NOT "${Python3_EXECUTABLE}" STREQUAL "/usr/bin/python3")
       message(STATUS "[feelpp] Ignoring ambient Python ${Python3_EXECUTABLE}; using /usr/bin/python3")
     else()

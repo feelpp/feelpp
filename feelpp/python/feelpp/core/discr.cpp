@@ -127,10 +127,16 @@ void defDiscr(py::module &m, std::string const& suffix = "")
         .def("mesh",static_cast<mesh_ptr_t const&(space_t::*)() const>(&space_t::mesh), "get the mesh of the function space")
         .def("element",static_cast<element_t (space_t::*)(std::string const&, std::string const&)>(&space_t::element), "get an element of the function space", py::arg("name")="u", py::arg("desc")="u")
         .def("elementFromExpr",static_cast<element_t (space_t::*)(std::string const&, std::string const&, std::string const& )>(&space_t::elementFromExpr), "get an element of the function space interpolating the expression", py::arg("expr"),py::arg("name")="u", py::arg("desc")="u")
-        .def("element", []( std::shared_ptr<space_t> & Xh, Vector<double> const& v, int blockIdStart ) { return Xh->element( v );
-            }, py::arg("vec"), py::arg("start") = 0, "get an element from a vector")
-        .def("element", []( std::shared_ptr<space_t> & Xh, VectorPetsc<double> const& v, int blockIdStart ) { return Xh->element( v, blockIdStart );
-            }, py::arg("vec"), py::arg("start") = 0, "get an element from a vector")
+        .def("element", []( std::shared_ptr<space_t> & Xh, Vector<double> & v, int blockIdStart )
+            {
+                // Keep Python mutable views on PETSc-backed vectors aligned with the
+                // writeable guarded path introduced in FunctionSpace.
+                return *( Xh->elementPtr( v, blockIdStart ) );
+            }, py::arg("vec"), py::arg("start") = 0, "get a mutable element view from a vector")
+        .def("element", []( std::shared_ptr<space_t> & Xh, Vector<double> const& v, int blockIdStart )
+            {
+                return Xh->element( v, blockIdStart );
+            }, py::arg("vec"), py::arg("start") = 0, "get a read-only element view from a vector")
         ;
 
     // Element

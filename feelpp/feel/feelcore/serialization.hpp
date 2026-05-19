@@ -24,7 +24,7 @@
 #ifndef FEELPP_SERIALIZATION_HPP
 #define FEELPP_SERIALIZATION_HPP 1
 
-#include <boost/multi_array.hpp>
+#include <feel/feelcore/boostmultiarray.hpp>
 #include <boost/detail/identifier.hpp>
 #include <boost/serialization/split_free.hpp>
 #include <boost/serialization/shared_ptr.hpp>

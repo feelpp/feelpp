@@ -39,8 +39,10 @@ feelpp_add_testcase( cases PREFIX qs CATEGORY quickstart )
 feelpp_add_application( laplacian_2d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_LAPLACIAN_2D INSTALL TESTS)
 feelpp_add_application( laplacian_2dh SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 FEELPP_HYPERCUBE=1 EXEC QS_LAPLACIAN_2DH INSTALL)
 feelpp_add_application( laplacian_3d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_LAPLACIAN_3D INSTALL TESTS)
-feelpp_add_application( laplacian_ibc_2d SRCS qs_laplacian_ibc.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_LAPLACIAN_IBC_2D INSTALL TESTS)
-feelpp_add_application( laplacian_ibc_3d SRCS qs_laplacian_ibc.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_LAPLACIAN_IBC_3D INSTALL TESTS)
+feelpp_add_application( laplacian_ibc_2d SRCS qs_laplacian_ibc.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_LAPLACIAN_IBC_2D INSTALL TESTS
+  TEST --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/quarter-turn/quarter-turn2D-ibc.cfg )
+feelpp_add_application( laplacian_ibc_3d SRCS qs_laplacian_ibc.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_LAPLACIAN_IBC_3D INSTALL TESTS
+  TEST --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/quarter-turn/quarter-turn3D-ibc.cfg )
 
 
 

@@ -94,6 +94,97 @@ makeAbout()
 }
 
 
+inline void
+fillElasticityPolynomialManufacturedSolution( std::map<std::string,std::string>& locals )
+{
+    auto const dim = locals.at( "dim" );
+    auto const displ = locals.at( "displ" );
+    auto const lam1 = locals.at( "lam1" );
+    auto const lam2 = locals.at( "lam2" );
+    locals["c1"] = dim == "3" ? "0.5" : "0.5";
+    locals["c2"] = dim == "3" ? "-0.10000000000000001" : "-0.125";
+
+    if ( lam1 != "1" || lam2 != "1" )
+    {
+        CHECK( false ) << "SymPy support is not available and no C++ fallback is registered for Lambda="
+                       << lam2 << ", Mu=" << lam1;
+    }
+
+    if ( dim == "2" && displ == "Array([0,0])" )
+    {
+        locals["displ"] = "{0,0}";
+        locals["grad_displ"] = "{0,0,0,0}";
+        locals["strain"] = "{0,0,0,0}";
+        locals["stress"] = "{0,0,0,0}";
+        locals["stressn"] = "{0,0}";
+        locals["f"] = "{0,0}";
+        return;
+    }
+    if ( dim == "2" && displ == "Array([1,1])" )
+    {
+        locals["displ"] = "{1,1}";
+        locals["grad_displ"] = "{0,0,0,0}";
+        locals["strain"] = "{0,0,0,0}";
+        locals["stress"] = "{0,0,0,0}";
+        locals["stressn"] = "{0,0}";
+        locals["f"] = "{0,0}";
+        return;
+    }
+    if ( dim == "2" && displ == "Array([x+y,x+y])" )
+    {
+        locals["displ"] = "{x+y,x+y}:x:y";
+        locals["grad_displ"] = "{1,1,1,1}:x:y";
+        locals["strain"] = "{1.0,1.0,1.0,1.0}";
+        locals["stress"] = "{4.0,2.0,2.0,4.0}";
+        locals["stressn"] = "{4.0*nx + 2.0*ny,2.0*nx + 4.0*ny}:nx:ny";
+        locals["f"] = "{0,0}";
+        return;
+    }
+    if ( dim == "2" && displ == "Array([x*x+y*y,x*x+y*y])" )
+    {
+        locals["displ"] = "{pow(x, 2) + pow(y, 2),pow(x, 2) + pow(y, 2)}:x:y";
+        locals["grad_displ"] = "{2*x,2*x,2*y,2*y}:x:y";
+        locals["strain"] = "{2.0*x,1.0*x + 1.0*y,1.0*x + 1.0*y,2.0*y}:x:y";
+        locals["stress"] = "{6.0*x + 2.0*y,2.0*x + 2.0*y,2.0*x + 2.0*y,2.0*x + 6.0*y}:x:y";
+        locals["stressn"] = "{nx*(6.0*x + 2.0*y) + ny*(2.0*x + 2.0*y),nx*(2.0*x + 2.0*y) + ny*(2.0*x + 6.0*y)}:nx:ny:x:y";
+        locals["f"] = "{8.0,8.0}";
+        return;
+    }
+    if ( dim == "3" && displ == "Array([1,1,1])" )
+    {
+        locals["displ"] = "{1,1,1}";
+        locals["grad_displ"] = "{0,0,0,0,0,0,0,0,0}";
+        locals["strain"] = "{0,0,0,0,0,0,0,0,0}";
+        locals["stress"] = "{0,0,0,0,0,0,0,0,0}";
+        locals["stressn"] = "{0,0,0}";
+        locals["f"] = "{0,0,0}";
+        return;
+    }
+    if ( dim == "3" && displ == "Array([x+y+z,x+y+z,x+y+z])" )
+    {
+        locals["displ"] = "{x+y+z,x+y+z,x+y+z}:x:y:z";
+        locals["grad_displ"] = "{1,1,1,1,1,1,1,1,1}:x:y:z";
+        locals["strain"] = "{1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0}";
+        locals["stress"] = "{5.0,2.0,2.0,2.0,5.0,2.0,2.0,2.0,5.0}";
+        locals["stressn"] = "{5.0*nx + 2.0*ny + 2.0*nz,2.0*nx + 5.0*ny + 2.0*nz,2.0*nx + 2.0*ny + 5.0*nz}:nx:ny:nz";
+        locals["f"] = "{0,0,0}";
+        return;
+    }
+    if ( dim == "3" && displ == "Array([x*x+y*y+z*z,x*x+y*y+z*z,x*x+y*y+z*z])" )
+    {
+        locals["displ"] = "{pow(x, 2) + pow(y, 2) + pow(z, 2),pow(x, 2) + pow(y, 2) + pow(z, 2),pow(x, 2) + pow(y, 2) + pow(z, 2)}:x:y:z";
+        locals["grad_displ"] = "{2*x,2*x,2*x,2*y,2*y,2*y,2*z,2*z,2*z}:x:y:z";
+        locals["strain"] = "{2.0*x,1.0*x + 1.0*y,1.0*x + 1.0*z,1.0*x + 1.0*y,2.0*y,1.0*y + 1.0*z,1.0*x + 1.0*z,1.0*y + 1.0*z,2.0*z}:x:y:z";
+        locals["stress"] = "{6.0*x + 2.0*y + 2.0*z,2.0*x + 2.0*y,2.0*x + 2.0*z,2.0*x + 2.0*y,2.0*x + 6.0*y + 2.0*z,2.0*y + 2.0*z,2.0*x + 2.0*z,2.0*y + 2.0*z,2.0*x + 2.0*y + 6.0*z}:x:y:z";
+        locals["stressn"] = "{nx*(6.0*x + 2.0*y + 2.0*z) + ny*(2.0*x + 2.0*y) + nz*(2.0*x + 2.0*z),nx*(2.0*x + 2.0*y) + ny*(2.0*x + 6.0*y + 2.0*z) + nz*(2.0*y + 2.0*z),nx*(2.0*x + 2.0*z) + ny*(2.0*y + 2.0*z) + nz*(2.0*x + 2.0*y + 6.0*z)}:nx:ny:nz:x:y:z";
+        locals["f"] = "{10.0,10.0,10.0}";
+        return;
+    }
+
+    CHECK( false ) << "SymPy support is not available and no C++ fallback is registered for displacement="
+                   << displ << ", dim=" << dim;
+}
+
 template<int Dim, int OrderP, int OrderG=1>
 int hdg_elasticity( std::map<std::string,std::string>& locals )
 {
@@ -298,7 +389,6 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
     }
 
     auto U = ps.element();
-    auto Ue = ps.element();
     //a.solve( _solution=U, _rhs=rhs, _rebuild=true, _condense=boption("sc.condense"));
     a.solve( _solution=U, _rhs=rhs, _condense=boption("sc.condense"));
     toc("solve",true);
@@ -313,9 +403,6 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
         auto displ_exact = displ;
         auto sigma_exact = locals.at("stress");
         auto grad_displ_exact = locals.at("grad_displ");
-        Ue(0_c).on( _range=elements(mesh), _expr=expr<Dim,Dim>( sigma_exact ) );
-        Ue(1_c).on( _range=elements(mesh), _expr=expr<Dim,1>( displ_exact ) );
-        Ue(2_c).on( _range=faces(mesh), _expr=expr<Dim,1>( displ_exact ) );
 
         auto l2err_sigma = normL2( _range=elements(mesh), _expr=expr<Dim,Dim>(sigma_exact) - idv(sigmap) );
         Feel::cout << "L2 Error sigma: " << l2err_sigma << std::endl;
@@ -409,7 +496,11 @@ int main( int argc, char** argv )
             {"f",soption("f")},
             {"c1",""},
             {"c2",""}};
+#if defined(FEELPP_HAS_SYMPY)
         Feel::pyexprFromFile( Environment::expand(soption("pyexpr.filename")), locals  );
+#else
+        fillElasticityPolynomialManufacturedSolution( locals );
+#endif
 
         for( auto d: locals )
             Feel::cout << d.first << ":" << d.second << std::endl;

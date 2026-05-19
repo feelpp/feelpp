@@ -7,6 +7,7 @@
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/check.hpp>
 #include <feel/feeldiscr/pchv.hpp>
+#include <feel/feelalg/petschpddm.hpp>
 #include <feel/feelvf/vf.hpp>
 #include "nullspace-rigidbody.hpp"
 #include "qs_elasticity_case.hpp"
@@ -33,6 +34,7 @@ namespace qsec = Feel::Quickstart::ElasticityChecks;
 namespace qsecase = Feel::Quickstart::ElasticityCase;
 
 using PointConstraintConfig = qsecase::PointConstraintConfig;
+constexpr int ctestSkipReturnCode = 77;
 } // namespace
 
 int main(int argc, char**argv )
@@ -48,6 +50,14 @@ int main(int argc, char**argv )
                     _about=about(_name="qs_elasticity",
                                     _author="Feel++ Consortium",
                                     _email="feelpp-devel@feelpp.org"));
+
+        bool const useHpddm = soption(_name="pc-type") == "hpddm";
+        if ( useHpddm && !boption( "no-solve" ) && !petscHasHpddmRuntime( Environment::worldComm().globalComm() ) )
+        {
+            if ( Environment::isMasterRank() )
+                std::cout << "Skipping HPDDM elasticity quickstart: PETSc runtime does not provide HPDDM support\n";
+            return ctestSkipReturnCode;
+        }
 
         auto caseConfig = qsecase::fromEnvironment();
 
@@ -284,9 +294,12 @@ int main(int argc, char**argv )
             tic();
             auto b = backend();
             auto rigidBodyModes = std::make_shared<NullSpace<double>>( b, qsNullSpace( Vh ) );
-            b->attachNearNullSpace( rigidBodyModes );
-            if ( boption(_name="nullspace") )
-                b->attachNullSpace( rigidBodyModes );
+            if ( !useHpddm )
+            {
+                b->attachNearNullSpace( rigidBodyModes );
+                if ( boption(_name="nullspace") )
+                    b->attachNullSpace( rigidBodyModes );
+            }
 
             a.solve(_rhs=l,_solution=u);
             toc("a.solve");

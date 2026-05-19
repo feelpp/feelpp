@@ -34,6 +34,51 @@ namespace Feel
 namespace detail
 {
 template<typename T>
+std::shared_ptr<VectorPetsc<T>>
+toOwnedPETScCopy( Vector<T> const& vec )
+{
+    std::shared_ptr<VectorPetsc<T>> vec_petscClone;
+    if ( vec.comm().size() > 1 )
+        vec_petscClone = std::make_shared<VectorPetscMPI<T>>( vec.mapPtr() );
+    else
+        vec_petscClone = std::make_shared<VectorPetsc<T>>( vec.mapPtr() );
+
+    if ( auto const* vec_ublas = dynamic_cast<VectorUblas<T> const*>( &vec ) )
+    {
+        int ierr = 0;
+        if ( vec.comm().size() > 1 )
+        {
+            Vec lx = nullptr;
+            PetscScalar* valuesOut = nullptr;
+            ierr = VecGhostGetLocalForm( vec_petscClone->vec(), &lx );
+            CHKERRABORT( vec.comm(), ierr );
+            ierr = VecGetArray( lx, &valuesOut );
+            CHKERRABORT( vec.comm(), ierr );
+            for ( typename Vector<T>::size_type k = 0; k < vec_ublas->localSize(); ++k )
+                valuesOut[k] = static_cast<PetscScalar>( (*vec_ublas)( k ) );
+            ierr = VecRestoreArray( lx, &valuesOut );
+            CHKERRABORT( vec.comm(), ierr );
+            ierr = VecGhostRestoreLocalForm( vec_petscClone->vec(), &lx );
+            CHKERRABORT( vec.comm(), ierr );
+        }
+        else
+        {
+            PetscScalar* valuesOut = nullptr;
+            ierr = VecGetArray( vec_petscClone->vec(), &valuesOut );
+            CHKERRABORT( vec.comm(), ierr );
+            for ( typename Vector<T>::size_type k = 0; k < vec_ublas->localSize(); ++k )
+                valuesOut[k] = static_cast<PetscScalar>( (*vec_ublas)( k ) );
+            ierr = VecRestoreArray( vec_petscClone->vec(), &valuesOut );
+            CHKERRABORT( vec.comm(), ierr );
+        }
+        return vec_petscClone;
+    }
+
+    *vec_petscClone = vec;
+    return vec_petscClone;
+}
+
+template<typename T>
 std::pair<VectorPetsc<T> *, std::shared_ptr<VectorPetsc<T> > >
 toPETScPairPtr( Vector<T> & vec )
 {
@@ -105,18 +150,14 @@ toPETScPairPtr( Vector<T> const& vec, bool allowCopy )
     const VectorUblas<T> * vec_ublas = dynamic_cast<const VectorUblas<T> *>( &vec );
     if( vec_ublas )
     {
-        vec_petscClone = toPETScPtr( *vec_ublas );
+        vec_petscClone = toOwnedPETScCopy( vec );
         vec_petscUsed = &(*vec_petscClone);
         return std::make_pair( vec_petscUsed, vec_petscClone );
     }
     // create a new vector and copy values
     if ( allowCopy )
     {
-        if ( vec.comm().size() > 1 )
-            vec_petscClone.reset( new VectorPetscMPI<T>( vec.mapPtr() ) );
-        else
-            vec_petscClone.reset( new VectorPetsc<T>( vec.mapPtr() ) );
-        *vec_petscClone = vec;
+        vec_petscClone = toOwnedPETScCopy( vec );
         vec_petscUsed = &(*vec_petscClone);
         return std::make_pair( vec_petscUsed,vec_petscClone );
     }
@@ -131,6 +172,9 @@ toPETScPairPtr( Vector<double> & vec );
 template
 std::pair<const VectorPetsc<double> *, std::shared_ptr<VectorPetsc<double> > >
 toPETScPairPtr( Vector<double> const& vec, bool allowCopy );
+template
+std::shared_ptr<VectorPetsc<double>>
+toOwnedPETScCopy( Vector<double> const& vec );
 
 } // namespace detail
 

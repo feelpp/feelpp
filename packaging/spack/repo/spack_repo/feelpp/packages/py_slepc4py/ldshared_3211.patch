@@ -1,0 +1,13 @@
+diff --git a/conf/confpetsc.py b/conf/confpetsc.py
+--- a/conf/confpetsc.py
++++ b/conf/confpetsc.py
+@@ -329,7 +329,7 @@
+         ld = cc
+         ldshared = getenv('LDSHARED', ldshared)
+         ldflags = getenv('LDFLAGS', cflags + ' ' + (ldflags or ''))
+         ldcmd = split_quoted(ld) + split_quoted(ldflags)
+-        ldshared = [flg for flg in split_quoted(ldshared) if flg not in ldcmd and (flg.find('/lib/spack/env')<0)]
++        ldshared = [flg for flg in split_quoted(ldshared) if flg not in ldcmd and (flg.find('/lib/spack/env')<0) and (flg.find('/libexec/spack')<0)]
+         ldshared = str.join(' ', ldshared)
+         #
+         def get_flags(cmd):

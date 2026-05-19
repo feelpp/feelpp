@@ -38,7 +38,7 @@
 #include <boost/static_assert.hpp>
 
 
-#include <boost/multi_array.hpp>
+#include <feel/feelcore/boostmultiarray.hpp>
 
 #include <Eigen/Core>
 

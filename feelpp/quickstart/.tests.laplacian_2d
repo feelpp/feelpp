@@ -1,0 +1,1 @@
+square-hpddm-linear --config-file=${CMAKE_CURRENT_SOURCE_DIR}/laplacian/cases/square/square.cfg --directory=qs_laplacian/square-hpddm-linear --pc-type=hpddm --pc-hpddm-has-neumann=true --pc-hpddm-levels-1-sub-pc-type=cholesky --pc-hpddm-levels-1-eps-nev=5 --ksp-rtol=1e-14

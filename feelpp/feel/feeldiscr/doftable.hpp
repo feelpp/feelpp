@@ -88,7 +88,7 @@ struct hash<std::tuple<TT...>>
 #include <algorithm>
 
 
-#include <boost/multi_array.hpp>
+#include <feel/feelcore/boostmultiarray.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 #include <boost/tuple/tuple_io.hpp>

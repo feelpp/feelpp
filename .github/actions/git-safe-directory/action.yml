@@ -1,0 +1,26 @@
+name: Configure Git Safe Directory
+description: Trust the checked-out workspace inside container jobs so CMake Git probes can run.
+
+runs:
+  using: composite
+  steps:
+    - name: Trust workspace in global git config
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        workspace="${GITHUB_WORKSPACE:?GITHUB_WORKSPACE is required}"
+
+        git config --global --add safe.directory "${workspace}"
+        if [ -e "${workspace}/.git" ]; then
+          git config --global --add safe.directory "${workspace}/.git"
+        fi
+
+        if git -C "${workspace}" submodule status --recursive >/dev/null 2>&1; then
+          git -C "${workspace}" submodule foreach --quiet --recursive '
+            git config --global --add safe.directory "$toplevel/$sm_path" || :
+            if [ -e "$toplevel/$sm_path/.git" ]; then
+              git config --global --add safe.directory "$toplevel/$sm_path/.git" || :
+            fi
+          '
+        fi

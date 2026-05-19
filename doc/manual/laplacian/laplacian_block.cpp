@@ -309,8 +309,6 @@ Feel::BlockSolveResult runLaplacianBlockV3( Feel::laplacian_block_mesh_ptrtype c
     auto U = Xh.element();
     auto u1h = U( 0_c );
 
-    l.close();
-    a.close();
     a.row( 0_c ) += on( _range=boundaryfaces( mesh ),
                         _rhs=l( 0_c ),
                         _element=u1h,

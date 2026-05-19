@@ -17,7 +17,7 @@ if ! command -v jsonnet &> /dev/null; then
 fi
 
 echo "Generating CMakePresets.json from CMakePresets.jsonnet..."
-jsonnet CMakePresets.jsonnet | python3 -m json.tool --indent 4 > CMakePresets.json
+jsonnet CMakePresets.jsonnet | python3 -m json.tool --indent 3 --no-ensure-ascii > CMakePresets.json
 
 echo "✓ Generated CMakePresets.json successfully"
 echo "  Original presets: $(grep -c '"name":' CMakePresets.json.backup 2>/dev/null || echo 'N/A')"

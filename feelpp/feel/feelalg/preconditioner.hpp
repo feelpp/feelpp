@@ -92,7 +92,7 @@ public:
 
     typedef std::shared_ptr<OperatorPCDBase<T> > operator_pcdbase_ptrtype;
     typedef std::shared_ptr<OperatorPMMBase<T> > operator_pmmbase_ptrtype;
-    
+
     //@}
 
     /** @name Constructors, destructor
@@ -114,7 +114,12 @@ public:
         M_prec_matrix_structure ( o.M_prec_matrix_structure ),
         M_is_initialized( o.M_is_initialized ),
         M_mat_has_changed( o.M_mat_has_changed ),
-        M_nearNullSpace( o.M_nearNullSpace )
+        M_nearNullSpace( o.M_nearNullSpace ),
+        M_auxiliarySparseMatrix( o.M_auxiliarySparseMatrix ),
+        M_auxiliaryVector( o.M_auxiliaryVector ),
+        M_inHousePreconditioners( o.M_inHousePreconditioners ),
+        M_operatorPCD( o.M_operatorPCD ),
+        M_operatorPMM( o.M_operatorPMM )
         {}
 
     //! destructor
@@ -154,6 +159,12 @@ public:
                 M_prec_matrix_structure = o.M_prec_matrix_structure;
                 M_preconditioner_type = o.M_preconditioner_type;
                 M_mat_has_changed = o.M_mat_has_changed;
+                M_nearNullSpace = o.M_nearNullSpace;
+                M_auxiliarySparseMatrix = o.M_auxiliarySparseMatrix;
+                M_auxiliaryVector = o.M_auxiliaryVector;
+                M_inHousePreconditioners = o.M_inHousePreconditioners;
+                M_operatorPCD = o.M_operatorPCD;
+                M_operatorPMM = o.M_operatorPMM;
             }
 
             return *this;

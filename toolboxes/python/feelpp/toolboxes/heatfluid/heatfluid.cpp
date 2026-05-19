@@ -72,17 +72,17 @@ void defToolbox(py::module &m)
         //.def( "rangeMeshElements", &toolbox_t::rangeMeshElements, "get the range of mesh elements" )
 
         // temperature space and field
-        .def( "modelHeat", []( toolbox_ptr_t& t ) { return t->heatModel(); } , "get the fluid model" )
-        .def( "spaceTemperature", []( toolbox_ptr_t& t ) { return t->heatModel()->spaceTemperature(); } , "get the temperature function space")
-        .def( "fieldTemperature", []( toolbox_ptr_t& t ) { return t->heatModel()->fieldTemperature(); } , "get the temperature function space")
-        .def( "fieldTemperaturePtr", []( toolbox_ptr_t& t ) { return t->heatModel()->fieldTemperaturePtr(); }, "returns the temperature field shared_ptr" )
+        .def( "modelHeat", []( toolbox_t& t ) { return t.heatModel(); } , "get the fluid model" )
+        .def( "spaceTemperature", []( toolbox_t& t ) { return t.heatModel()->spaceTemperature(); } , "get the temperature function space")
+        .def( "fieldTemperature", []( toolbox_t& t ) { return t.heatModel()->fieldTemperature(); } , "get the temperature function space")
+        .def( "fieldTemperaturePtr", []( toolbox_t& t ) { return t.heatModel()->fieldTemperaturePtr(); }, "returns the temperature field shared_ptr" )
 
         // fluid space and fields
-        .def( "modelFluid", []( toolbox_ptr_t& t ) { return t->fluidModel(); } , "get the fluid model" )
-        .def( "spaceVelocity", []( toolbox_ptr_t& t ) { return t->fluidModel()->functionSpaceVelocity(); } , "get the velocity function space" )
-        .def( "spacePressure", []( toolbox_ptr_t& t ) { return t->fluidModel()->functionSpacePressure(); } , "get the pressure function space" )
-        .def( "fieldVelocity", []( toolbox_ptr_t& t ) { return t->fluidModel()->fieldVelocity(); } , "get the velocity field" )
-        .def( "fieldPressure", []( toolbox_ptr_t& t ) { return t->fluidModel()->fieldPressure(); } , "get the pressure field" )
+        .def( "modelFluid", []( toolbox_t& t ) { return t.fluidModel(); } , "get the fluid model" )
+        .def( "spaceVelocity", []( toolbox_t& t ) { return t.fluidModel()->functionSpaceVelocity(); } , "get the velocity function space" )
+        .def( "spacePressure", []( toolbox_t& t ) { return t.fluidModel()->functionSpacePressure(); } , "get the pressure function space" )
+        .def( "fieldVelocity", []( toolbox_t& t ) { return t.fluidModel()->fieldVelocity(); } , "get the velocity field" )
+        .def( "fieldPressure", []( toolbox_t& t ) { return t.fluidModel()->fieldPressure(); } , "get the pressure field" )
 
         // solve
         .def("solve",&toolbox_t::solve, "solve the heatfluid mechanics problem, set boolean to true to update velocity and acceleration")
@@ -103,4 +103,3 @@ PYBIND11_MODULE(_heatfluid, m )
     defToolbox<3,1,2,1>(m);
 
 }
-

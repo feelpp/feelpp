@@ -34,9 +34,11 @@
 [submodule "feelpp/contrib/parmmg"]
 	path = feelpp/contrib/parmmg
 	url = https://github.com/feelpp/ParMmg
+	branch = fix-cmake-zlib
 [submodule "feelpp/contrib/mmg"]
 	path = feelpp/contrib/mmg
 	url = https://github.com/feelpp/mmg
+	branch = fix-cmake-zlib
 [submodule "feelpp/contrib/indicators"]
 	path = feelpp/contrib/indicators
 	url = https://github.com/feelpp/indicators.git
@@ -57,8 +59,8 @@
 	url = https://github.com/feelpp/hana.git
 [submodule "feelpp/contrib/eigen"]
 	path = feelpp/contrib/eigen
-	url = https://gitlab.com/libeigen/eigen.git
-	branch = 5.0
+	url = https://gitlab.com/feelpp/eigen.git
+        branch = fix-cmake-z-lib
 [submodule "feelpp/contrib/fmt"]
 	path = feelpp/contrib/fmt
 	url = https://github.com/feelpp/fmt.git
@@ -68,6 +70,7 @@
 [submodule "fmi4cpp"]
 	path = feelpp/contrib/fmi4cpp
 	url = https://github.com/feelpp/FMI4cpp.git
+	branch = fix-cmake-pugixml
 [submodule "pythonfmu"]
 	path = feelpp/contrib/pythonfmu
 	url = https://github.com/feelpp/PythonFMU.git

@@ -7,8 +7,9 @@ Current scope:
 - Debian and Ubuntu source package trees under `packaging/debian`
 - component and distro manifest data under `packaging/manifest`
 - `pbuilder` configuration and hooks under `packaging/pbuilder`
+- Docker image metadata under `packaging/docker`
+- Spack metadata under `packaging/spack`
 - future package-manager metadata such as:
-  - `spack/`
   - `guix/`
   - `homebrew/`
 
