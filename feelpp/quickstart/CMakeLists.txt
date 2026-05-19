@@ -50,10 +50,6 @@ if ( NOT TARGET hdg_stokes )
   add_custom_target(hdg_stokes)
 endif()
 
-add_library(qs_shell_benchmark_framework STATIC
-  qs_shell_benchmark_framework.cpp)
-target_link_libraries(qs_shell_benchmark_framework PUBLIC Feelpp::feelpp)
-
 add_subdirectory( python )
 add_subdirectory( laplacian )
 
@@ -87,13 +83,10 @@ feelpp_add_application( elasticity_shell_3d SRCS qs_elasticity.cpp INCLUDE_IN_AL
 feelpp_add_application( elasticity_shell_q2_3d SRCS qs_elasticity.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 FEELPP_HYPERCUBE=1 FEELPP_ORDER=2 EXEC QS_ELASTICITY_SHELL_Q2_3D INSTALL TESTS NO_MPI_TEST )
 feelpp_add_application( elasticity_pure_traction_2d SRCS qs_elasticity_pure_traction.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_ELASTICITY_PURE_TRACTION_2D INSTALL )
 feelpp_add_application( elasticity_pure_traction_3d SRCS qs_elasticity_pure_traction.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_ELASTICITY_PURE_TRACTION_3D INSTALL  )
-feelpp_add_application( shell_benchmark_info SRCS qs_shell_benchmark_info.cpp INCLUDE_IN_ALL LINK_LIBRARIES qs_shell_benchmark_framework EXEC QS_SHELL_BENCHMARK_INFO INSTALL )
 
 feelpp_add_testcase( elasticity PREFIX qs CATEGORY quickstart )
 add_dependencies(quickstart ${QS_ELASTICITY_2D} ${QS_ELASTICITY_3D} ${QS_ELASTICITY_SHELL_3D} ${QS_ELASTICITY_SHELL_Q2_3D})
 add_dependencies(check ${QS_ELASTICITY_2D} ${QS_ELASTICITY_3D} ${QS_ELASTICITY_SHELL_3D} ${QS_ELASTICITY_SHELL_Q2_3D})
-add_dependencies(quickstart ${QS_SHELL_BENCHMARK_INFO})
-add_dependencies(check ${QS_SHELL_BENCHMARK_INFO})
 
 #
 # HDG elasticity
