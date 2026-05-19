@@ -6,11 +6,54 @@
 #include <feel/feelmath/polyfit.hpp>
 #include <feel/feelmath/vector.hpp>
 
+namespace Feel::Toolboxes
+{
 
 template <typename ToolboxType>
 int
-runHConvergence(std::string const& prefix,
-               std::function<int(std::shared_ptr<ToolboxType>)> runToolboxSimulation)
+executeSingleRun( std::shared_ptr<ToolboxType> toolbox )
+{
+    toolbox->init();
+    toolbox->printAndSaveInfo();
+
+    if ( toolbox->isStationary() )
+    {
+        toolbox->solve();
+        toolbox->exportResults();
+    }
+    else
+    {
+        if ( !toolbox->doRestart() )
+            toolbox->exportResults(toolbox->timeInitial());
+
+        for ( toolbox->startTimeStep() ; !toolbox->timeStepBase()->isFinished(); toolbox->updateTimeStep() )
+        {
+            if (toolbox->worldComm().isMasterRank())
+            {
+                std::cout << "============================================================\n";
+                std::cout << "time simulation: " << toolbox->time() << "s \n";
+                std::cout << "============================================================\n";
+            }
+
+            toolbox->solve();
+            toolbox->exportResults();
+        }
+    }
+    return !toolbox->checkResults();
+}
+
+template <typename ToolboxType>
+int
+executeSingleRun( std::string const& prefix, std::string const& keyword )
+{
+    auto tb = ToolboxType::New( _prefix=prefix,_keyword=keyword );
+    return executeSingleRun( tb );
+}
+
+template <typename ToolboxType>
+int
+executeHConvergence(std::string const& prefix, std::string const& keyword,
+                    std::function<int(std::shared_ptr<ToolboxType>)> runToolboxSimulation)
 {
     using namespace Feel;
     int status = 0;
@@ -34,12 +77,13 @@ runHConvergence(std::string const& prefix,
         std::string runSubdir = (boost::format("run_h%1%")%k).str();
 
         auto vmToolbox = FeelModels::ModelBaseCommandLineOptions( ToolboxType::create_program_options( prefix ),
-                                                                  [&prefix,&meshSize]( po::options_description const& _options, po::variables_map & vm ){
-                                                                      std::istringstream iss( fmt::format("{}={}",prefixvm(prefix,"gmsh.hsize"), meshSize ) );
+                                                                  [&prefix,&keyword,&meshSize]( po::options_description const& _options, po::variables_map & vm ){
+                                                                      std::istringstream iss( fmt::format(R"({}={{"Meshes":{{"{}":{{"Import":{{"hsize":{} }}}}}}}})", prefixvm(prefix, "json.merge_patch"), keyword, meshSize) );
+                                                                      //std::istringstream iss( fmt::format("{}={}",prefixvm(prefix,"gmsh.hsize"), meshSize ) );
                                                                       po::store(po::parse_config_file(iss, _options,true), vm);
                                                                   } ).vm();
 
-        auto tb = ToolboxType::New( _prefix=prefix,
+        auto tb = ToolboxType::New( _prefix=prefix,_keyword=keyword,
                                     _repository=Feel::FeelModels::ModelBaseRepository( (fs::path(Environment::appRepository())/runSubdir).string(),
                                                                                        false, Environment::exprRepository() ),
                                     _vm=vmToolbox);
@@ -100,6 +144,16 @@ runHConvergence(std::string const& prefix,
     }
 
     return status;
+}
+
+template <typename ToolboxType>
+int
+executeHConvergence( std::string const& prefix, std::string const& keyword )
+{
+    return executeHConvergence<ToolboxType>( prefix, keyword,
+                                             []( std::shared_ptr<ToolboxType> tb ){ return executeSingleRun( tb ); } );
+}
+
 }
 
 #endif

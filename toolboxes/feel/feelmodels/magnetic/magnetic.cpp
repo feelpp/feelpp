@@ -44,8 +44,9 @@ MAGNETIC_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 {
     M_solverName = soption(_name="solver",_prefix=this->prefix(),_vm=this->clovm());
     M_nullSpaceMethod = soption(_name="null-space.method",_prefix=this->prefix(),_vm=this->clovm());
-    if ( M_nullSpaceMethod != "regularized-formulation" && M_nullSpaceMethod != "saddle-point" && M_nullSpaceMethod != "ams" )
-        throw std::runtime_error( "null-space.method should be regularized-formulation, saddle-point or ams" );
+    if ( M_nullSpaceMethod != "regularized-formulation" && M_nullSpaceMethod != "saddle-point" && M_nullSpaceMethod != "none" )
+        throw std::runtime_error( "null-space.method should be regularized-formulation, saddle-point or none" );
+    M_preconditionerAttachAms = boption(_name="preconditioner.attach-ams",_prefix=this->prefix(),_vm=this->clovm());
 }
 
 MAGNETIC_CLASS_TEMPLATE_DECLARATIONS
@@ -157,14 +158,15 @@ MAGNETIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( !this->isStationary() )
         this->initTimeStep();
 
-    // update constant parameters into
+    // post-process
+    this->initPostProcess();
+
+    // update constant parameters into expressions
     this->updateParameterValues();
 
     // update initial conditions
     this->updateInitialConditions( this->symbolsExpr() );
 
-    // post-process
-    this->initPostProcess();
     // automatic solver selection
     if ( M_solverName == "automatic" )
     {
@@ -200,6 +202,11 @@ MAGNETIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     // algebraic model
     this->initAlgebraicModel();
+
+
+    // // update constant parameters into (second time because some parameters can be defined from initial conditions or post-process measures)
+    // this->updateParameterValues();
+
 
     // mesh adaptation at event after_init
     using mesh_adaptation_type = typename super_type::super_model_meshes_type::mesh_adaptation_type;
@@ -277,18 +284,18 @@ MAGNETIC_CLASS_TEMPLATE_DECLARATIONS
 void
 MAGNETIC_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
 {
-    if ( M_nullSpaceMethod != "ams" )
+    if ( !M_preconditionerAttachAms )
         return;
 
     auto Xh = this->spaceVectorPotential();
     auto XhL = Pch<1>( Xh->mesh(), this->rangeMeshElements() );
-    M_nullSpaceAmsMatrixG = Grad( _domainSpace=XhL, _imageSpace=Xh).matPtr();
+    M_preconditionerAmsMatrixG = Grad( _domainSpace=XhL, _imageSpace=Xh).matPtr();
 
-#if 0
+#if 1
     for ( int k=0 ; k<nRealDim ; ++k )
     {
-        M_nullSpaceAmsVectorOnes[k] = this->backend()->newVector(Xh);
-        auto oneField = Xh->element( M_nullSpaceAmsVectorOnes[k] );
+        M_preconditionerAmsVectorOnes[k] = this->backend()->newVector(Xh);
+        auto oneField = Xh->element( M_preconditionerAmsVectorOnes[k] );
         oneField.on(_range=this->rangeMeshElements(),_expr=one<nRealDim>(k),_close=true);
     }
 #else
@@ -301,10 +308,10 @@ MAGNETIC_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
         ozz.on(_range=elements(Xh->mesh()),_expr=vec(cst(1),cst(0)/*,cst(0)*/));
         zoz.on(_range=elements(Xh->mesh()),_expr=vec(cst(0),cst(1)/*,cst(0)*/));
         //zzo.on(_range=elements(Xh->mesh()),_expr=vec(cst(0),cst(0),cst(1)));
-        M_nullSpaceAmsVectorOnes[0] = this->backend()->newVector(Xh); *M_nullSpaceAmsVectorOnes[0] = ozz; M_nullSpaceAmsVectorOnes[0]->close();
-        M_nullSpaceAmsVectorOnes[1] = this->backend()->newVector(Xh); *M_nullSpaceAmsVectorOnes[1] = zoz; M_nullSpaceAmsVectorOnes[1]->close();
+        M_preconditionerAmsVectorOnes[0] = this->backend()->newVector(Xh); *M_preconditionerAmsVectorOnes[0] = ozz; M_preconditionerAmsVectorOnes[0]->close();
+        M_preconditionerAmsVectorOnes[1] = this->backend()->newVector(Xh); *M_preconditionerAmsVectorOnes[1] = zoz; M_preconditionerAmsVectorOnes[1]->close();
     }
-    else if constexpr (nRealDim == 2 )
+    else if constexpr (nRealDim == 3 )
     {
         auto ozz = Xh->element();
         auto zoz = Xh->element();
@@ -312,8 +319,9 @@ MAGNETIC_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
         ozz.on(_range=elements(Xh->mesh()),_expr=vec(cst(1),cst(0),cst(0)));
         zoz.on(_range=elements(Xh->mesh()),_expr=vec(cst(0),cst(1),cst(0)));
         zzo.on(_range=elements(Xh->mesh()),_expr=vec(cst(0),cst(0),cst(1)));
-        M_nullSpaceAmsVectorOnes[0] = this->backend()->newVector(Xh); *M_nullSpaceAmsVectorOnes[0] = ozz; M_nullSpaceAmsVectorOnes[0]->close();
-        M_nullSpaceAmsVectorOnes[1] = this->backend()->newVector(Xh); *M_nullSpaceAmsVectorOnes[1] = zoz; M_nullSpaceAmsVectorOnes[1]->close();
+        M_preconditionerAmsVectorOnes[0] = this->backend()->newVector(Xh); *M_preconditionerAmsVectorOnes[0] = ozz; M_preconditionerAmsVectorOnes[0]->close();
+        M_preconditionerAmsVectorOnes[1] = this->backend()->newVector(Xh); *M_preconditionerAmsVectorOnes[1] = zoz; M_preconditionerAmsVectorOnes[1]->close();
+        M_preconditionerAmsVectorOnes[2] = this->backend()->newVector(Xh); *M_preconditionerAmsVectorOnes[2] = zzo; M_preconditionerAmsVectorOnes[2]->close();
     }
 
     // WARNING TODO
@@ -473,14 +481,14 @@ MAGNETIC_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
     auto algebraicFactory = std::make_shared<model_algebraic_factory_type>( this->shared_from_this(),this->backend() );
     this->setAlgebraicFactory( algebraicFactory );
 
-    if ( M_nullSpaceMethod == "ams" )
+    if ( M_preconditionerAttachAms )
     {
-        this->algebraicFactory()->attachAuxiliarySparseMatrix( "G", M_nullSpaceAmsMatrixG );
-        this->algebraicFactory()->attachAuxiliaryVector( "Px", M_nullSpaceAmsVectorOnes.at(0) );
-        if ( M_nullSpaceAmsVectorOnes.size() > 1 )
-        this->algebraicFactory()->attachAuxiliaryVector( "Py", M_nullSpaceAmsVectorOnes.at(1) );
-        if ( M_nullSpaceAmsVectorOnes.size() > 2 )
-            this->algebraicFactory()->attachAuxiliaryVector( "Pz", M_nullSpaceAmsVectorOnes.at(2) );
+        this->algebraicFactory()->attachAuxiliarySparseMatrix( "G", M_preconditionerAmsMatrixG );
+        this->algebraicFactory()->attachAuxiliaryVector( "Px", M_preconditionerAmsVectorOnes.at(0) );
+        if ( M_preconditionerAmsVectorOnes.size() > 1 )
+        this->algebraicFactory()->attachAuxiliaryVector( "Py", M_preconditionerAmsVectorOnes.at(1) );
+        if ( M_preconditionerAmsVectorOnes.size() > 2 )
+            this->algebraicFactory()->attachAuxiliaryVector( "Pz", M_preconditionerAmsVectorOnes.at(2) );
 
         //this->algebraicFactory()->attachAuxiliarySparseMatrix("a_beta",NULL);
     }
@@ -621,15 +629,23 @@ MAGNETIC_CLASS_TEMPLATE_TYPE::updateParameterValues()
     if ( !this->manageParameterValues() )
         return;
 
-    this->modelProperties().parameters().updateParameterValues();
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->materialsProperties()->updateParameterValues( paramValues );
-    for ( auto [physicName,physicData] : this->physics/*FromCurrentType*/() )
-        physicData->updateParameterValues( paramValues );
+    int previousParam = 0;
+    while ( true )
+    {
+        this->modelProperties().parameters().updateParameterValues();
+        auto paramValues = this->modelProperties().parameters().toParameterValues();
+        this->materialsProperties()->updateParameterValues( paramValues );
+        for ( auto [physicName,physicData] : this->physics/*FromCurrentType*/() )
+            physicData->updateParameterValues( paramValues );
 
-    this->updateParameterValues_postProcess( paramValues, prefixvm("postprocess",this->keyword(),"_" ) );
+        this->updateParameterValues_postProcess( paramValues, prefixvm("postprocess",this->keyword(),"_" ) );
 
-    this->setParameterValues( paramValues );
+        if ( paramValues.size() == previousParam )
+            break;
+        previousParam = paramValues.size();
+
+        this->setParameterValues( paramValues );
+    }
 }
 MAGNETIC_CLASS_TEMPLATE_DECLARATIONS
 void

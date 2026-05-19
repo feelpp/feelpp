@@ -207,6 +207,98 @@ ModelPhysic<Dim>::updateTabulateInformationsParameters( nl::json const& jsonInfo
 
 
 
+
+
+template <uint16_type Dim>
+std::string
+ModelPhysic<Dim>::addParameter( std::string const& pname, double val )
+{
+    //M_parameterNameToExpr.emplace( pname, ModelExpression(val) );
+    M_parameterNameToExpr[pname].reset();
+    M_parameterNameToExpr[pname].setExpr( val );
+    return this->symbolFromParameter( pname );
+}
+
+template <uint16_type Dim>
+std::string
+ModelPhysic<Dim>::addParameter( std::string const& pname, std::string const& expr, WorldComm const& worldComm, std::string const& directoryLibExpr )
+{
+    M_parameterNameToExpr[pname].reset();
+    M_parameterNameToExpr[pname].setExpr( expr, worldComm, directoryLibExpr );
+    return this->symbolFromParameter( pname );
+}
+template <uint16_type Dim>
+std::string
+ModelPhysic<Dim>::addParameter( std::string const& pname, std::string const& expr )
+{
+    return this->addParameter( pname,expr, *M_worldComm, M_directoryLibExpr );
+}
+
+template <uint16_type Dim>
+std::string
+ModelPhysic<Dim>::addParameter( std::string const& pname, nl::json const& jarg, WorldComm const& worldComm, std::string const& directoryLibExpr )
+{
+    M_parameterNameToExpr[pname].reset();
+    M_parameterNameToExpr[pname].setExpr( jarg, worldComm, directoryLibExpr );
+    return this->symbolFromParameter( pname );
+}
+template <uint16_type Dim>
+std::string
+ModelPhysic<Dim>::addParameter( std::string const& pname, nl::json const& jarg )
+{
+    return this->addParameter( pname, jarg, *M_worldComm, M_directoryLibExpr );
+}
+
+template <uint16_type Dim>
+void
+ModelPhysic<Dim>::setParameterValues( std::map<std::string,double> const& mp )
+{
+    for ( auto & [ pname, mexpr ] : M_parameterNameToExpr )
+        mexpr.setParameterValues( mp );
+
+    // TODO : maybe subphysics??
+}
+
+template <uint16_type Dim>
+std::map<std::string,double>
+ModelPhysic<Dim>::toParameterValues() const
+{
+    std::map<std::string,double> pv;
+    for ( auto const& [pname, mexpr] : M_parameterNameToExpr )
+        mexpr.updateParameterValues( this->symbolFromParameter( pname ), pv );
+    return pv;
+}
+
+template <uint16_type Dim>
+void
+ModelPhysic<Dim>::updateParameterValues( std::map<std::string,double> & mp )
+{
+    this->setParameterValues( mp );
+
+    std::set<std::string> allSymbNames;
+    for ( auto const& [pname, mexpr] : M_parameterNameToExpr )
+      allSymbNames.insert( pname );
+
+    // erase parameters values from material properties
+    for ( auto & [pname, mexpr] : M_parameterNameToExpr )
+      mexpr.eraseParameterValues( allSymbNames );
+
+    // get value of symbols evaluables
+    int previousParam = mp.size();
+    //std::map<std::string,double> curmp;
+    while ( true )
+      {
+          for ( auto const& [pname, mexpr] : M_parameterNameToExpr )
+              mexpr.updateParameterValues( this->symbolFromParameter( pname ), mp );
+
+          if ( mp.size() == previousParam )
+              break;
+          previousParam = mp.size();
+          this->setParameterValues( mp );
+      }
+}
+
+
 template <uint16_type Dim>
 ModelPhysicHeat<Dim>::ModelPhysicHeat( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model )
     :
@@ -461,21 +553,21 @@ ModelPhysicMagnetic<Dim>::ModelPhysicMagnetic( ModelPhysics<Dim> const& mphysics
     {
         auto const& j_setup_currentdensitysources = j_setup.at( "current_density-sources" );
         if ( j_setup_currentdensitysources.is_array() )
-          {
+        {
             for ( auto const& [j_setup_currentdensitysourceskey,j_setup_currentdensitysourcesval] : j_setup_currentdensitysources.items() )
-              {
+            {
                 CHECK( j_setup_currentdensitysourcesval.is_object() ) << "j_setup_currentdensitysourcesval should be an object";
                 CurrentDensitySource hs( this, fmt::format("currentdensitysource{}",M_currentDensitySources.size()) );
                 hs.setup( j_setup_currentdensitysourcesval );
                 M_currentDensitySources.push_back( std::move( hs ) );
-              }
-          }
+            }
+        }
         else if ( j_setup_currentdensitysources.is_object() )
-          {
+        {
             CurrentDensitySource hs( this, fmt::format("currentdensitysource{}",M_currentDensitySources.size()) );
             hs.setup( j_setup_currentdensitysources );
             M_currentDensitySources.push_back( std::move( hs ) );
-          }
+        }
     }
 }
 
@@ -514,25 +606,25 @@ ModelPhysicMagnetic<Dim>::tabulateInformations( nl::json const& jsonInfo, Tabula
     }
 
     if ( jsonInfo.contains("Magnetic") )
-      {
+    {
         auto const& jsonInfoMagnetic = jsonInfo.at("Magnetic");
         Feel::Table tabInfoEquation;
         TabulateInformationTools::FromJSON::addKeyToValues( tabInfoEquation, jsonInfoMagnetic, tabInfoProp, { "Equation" } );
         tabInfo->add( "", TabulateInformations::New( tabInfoEquation, tabInfoProp ) );
 
         if ( jsonInfoMagnetic.contains("CurrentDensitySources") )
-          {
+        {
             auto tabInfoCurrentDensitySources = TabulateInformationsSections::New( tabInfoProp );
             for ( auto const& [hskey,hsval] : jsonInfoMagnetic.at("CurrentDensitySources").items() )
-              tabInfoCurrentDensitySources->add( "", CurrentDensitySource::tabulateInformations( hsval, tabInfoProp ) );
+                tabInfoCurrentDensitySources->add( "", CurrentDensitySource::tabulateInformations( hsval, tabInfoProp ) );
             tabInfo->add( "Current Density Sources", tabInfoCurrentDensitySources );
-          }
-      }
+        }
+    }
     if ( jsonInfo.contains("Generic") )
-      {
+    {
         //super_type::updateTabulateInformationsSubphysics( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
         super_type::updateTabulateInformationsParameters( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
-      }
+    }
 
     return tabInfo;
 }

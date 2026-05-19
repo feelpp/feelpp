@@ -2,22 +2,7 @@
  */
 
 #include <feel/feelmodels/magnetic/magnetic.hpp>
-
-template <int nDim,typename FeBasisType>
-int
-runApplicationMagnetic()
-{
-    using namespace Feel;
-
-    typedef FeelModels::Magnetic< Simplex<nDim,1>, FeBasisType > model_type;
-    std::shared_ptr<model_type> magnetic( new model_type("magnetic") );
-    magnetic->init();
-    magnetic->printAndSaveInfo();
-    magnetic->solve();
-    magnetic->exportResults();
-
-    return !magnetic->checkResults();
-}
+#include <feel/feelmodels/modelcore/convergencemode.hpp>
 
 int
 main(int argc, char**argv )
@@ -26,10 +11,14 @@ main(int argc, char**argv )
     try
     {
         po::options_description magneticoptions( "magnetic options" );
-        magneticoptions.add( toolboxes_options("magnetic") );
+        //magneticoptions.add( toolboxes_options("magnetic") );
         magneticoptions.add_options()
             ("case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension")
             ("case.discretization", Feel::po::value<std::string>()->default_value( "Ned1h0" ), "discretization : Ned1h0 ")
+            ("case.mode", Feel::po::value<std::string>()->default_value( "simulation" ), "mode : simulation, h-convergence")
+            ("case.mode.h-convergence.hsize", po::value<std::vector<double> >()->multitoken(), "mesh hsize used in h-convergence" )
+            ("case.mode.h-convergence.measures", po::value<std::vector<std::string> >()->multitoken(), "measures names used in fit checker" )
+            ("case.mode.h-convergence.slopes", po::value<std::vector<double> >()->multitoken(), "reference slope for the fit checker" )
             ;
 
         Environment env( _argc=argc, _argv=argv,
@@ -38,6 +27,7 @@ main(int argc, char**argv )
                                     _author="Feel++ Consortium",
                                     _email="feelpp-devel@feelpp.org"));
 
+        std::string mode = soption(_name="case.mode");
         int dimension = ioption(_name="case.dimension");
         std::string discretization = soption(_name="case.discretization");
 
@@ -49,24 +39,20 @@ main(int argc, char**argv )
                                                  hana::make_tuple( "Ned1h0", std::type_identity<Nedelec<0,NedelecKind::NED1>>{} ) );
 
         int status = 0;
-        hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)), [&discretization,&dimension,&status]( auto const& d )
+        hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)), [&discretization,&dimension,&status,&mode]( auto const& d )
                                                                                              {
                                                                                                  constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
                                                                                                  std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
                                                                                                  using _feBasisType = typename std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ) )>::type;
+                                                                                                 using model_type = FeelModels::Magnetic< Simplex<_dim,1>, _feBasisType >;
                                                                                                  if ( dimension == _dim && discretization == _discretization )
-                                                                                                     status = runApplicationMagnetic<_dim,_feBasisType>();
+                                                                                                 {
+                                                                                                     if ( mode == "simulation" )
+                                                                                                         status = Toolboxes::executeSingleRun<model_type>( "magnetic", "magnetic" );
+                                                                                                     else if ( mode == "h-convergence" )
+                                                                                                         status = Toolboxes::executeHConvergence<model_type>( "magnetic", "magnetic" );
+                                                                                                 }
                                                                                              } );
-
-
-
-        // hana::for_each( Pc_t<2,3,1,2>, [&discretization, &dimension]( auto const& d )
-        //                 {
-        //                     constexpr int _dim = std::decay_t<decltype( hana::at_c<0>( d ) )>::value;
-        //                     constexpr int _torder = std::decay_t<decltype( hana::at_c<1>( d ) )>::value;
-        //                     std::string const& _discretization = hana::at_c<2>( d );
-        //                     if ( dimension == _dim && discretization == _discretization )
-        //                         runApplicationMagnetic<_dim,_torder>(); } );
         return status;
     }
     catch(...)

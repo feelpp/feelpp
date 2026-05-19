@@ -76,7 +76,7 @@ public:
             worldcomm_ptr_t worldcomm = args.get_else(_worldcomm,Environment::worldCommPtr());
             auto && repository = args.get_else(_repository,ModelBaseRepository{});
             auto && vm = args.get_else(_vm, create_program_options( prefix ) );
-            return std::make_shared<self_type>( prefix, keyword, worldcomm, "", repository, ModelBaseCommandLineOptions{vm} );
+            return std::make_shared<self_type>( prefix, keyword, worldcomm, repository, ModelBaseCommandLineOptions{vm} );
         }
 
     static Feel::po::options_description create_program_options( std::string const& prefix = "magnetic" ) { return magnetic_options( prefix );}
@@ -111,12 +111,16 @@ public:
     materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
     void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
 
+    //___________________________________________________________________________________//
+    // time step scheme (TODO)
+    std::shared_ptr<TSBase> timeStepBase() const { return {}; }
+    void startTimeStep() {}
+    void updateTimeStep() {}
 
     //___________________________________________________________________________________//
 
     void updateInformationObject( nl::json & p ) const override;
     tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
-  
 
 private :
     void loadParameterFromOptionsVm();
@@ -411,9 +415,10 @@ protected :
     std::shared_ptr<boundary_conditions_type> M_boundaryConditions;
 
     std::string M_solverName;
-    std::string M_nullSpaceMethod = "regularized-formulation"; // "regularized-formulation", "saddle-point", "ams"
-    sparse_matrix_ptrtype M_nullSpaceAmsMatrixG;
-    std::array<vector_ptrtype,nRealDim> M_nullSpaceAmsVectorOnes;
+    std::string M_nullSpaceMethod = "regularized-formulation"; // "regularized-formulation", "saddle-point"
+    bool M_preconditionerAttachAms = false;
+    sparse_matrix_ptrtype M_preconditionerAmsMatrixG;
+    std::array<vector_ptrtype,nRealDim> M_preconditionerAmsVectorOnes;
 
     // post-process
     export_ptrtype M_exporter;

@@ -175,104 +175,46 @@ public :
         }
 
     //! add a constant (double) parameter called \pname and return the symbol associated
-    std::string addParameter( std::string const& pname, double val )
-        {
-            //M_parameterNameToExpr.emplace( pname, ModelExpression(val) );
-            M_parameterNameToExpr[pname].reset();
-            M_parameterNameToExpr[pname].setExpr( val );
-            return this->symbolFromParameter( pname );
-        }
+    std::string addParameter( std::string const& pname, double val );
     //! add a parameter called \pname describe by an expression \expr and return the symbol associated
-    std::string addParameter( std::string const& pname, std::string const& expr, WorldComm const& worldComm, std::string const& directoryLibExpr )
-        {
-            M_parameterNameToExpr[pname].reset();
-            M_parameterNameToExpr[pname].setExpr( expr, worldComm, directoryLibExpr );
-            return this->symbolFromParameter( pname );
-        }
-    std::string addParameter( std::string const& pname, std::string const& expr )
-        {
-            return this->addParameter( pname,expr, *M_worldComm, M_directoryLibExpr );
-        }
+    std::string addParameter( std::string const& pname, std::string const& expr, WorldComm const& worldComm, std::string const& directoryLibExpr );
+    //! add a parameter called \pname describe by an expression \expr and return the symbol associated
+    std::string addParameter( std::string const& pname, std::string const& expr );
     //! add a parameter called \pname describe by a json entry \jarg and return the symbol associated
-    std::string addParameter( std::string const& pname, nl::json const& jarg, WorldComm const& worldComm, std::string const& directoryLibExpr )
-        {
-            M_parameterNameToExpr[pname].reset();
-            M_parameterNameToExpr[pname].setExpr( jarg, worldComm, directoryLibExpr );
-            return this->symbolFromParameter( pname );
-        }
-    std::string addParameter( std::string const& pname, nl::json const& jarg )
-        {
-            return this->addParameter( pname, jarg, *M_worldComm, M_directoryLibExpr );
-        }
+    std::string addParameter( std::string const& pname, nl::json const& jarg, WorldComm const& worldComm, std::string const& directoryLibExpr );
+    // add a parameter called \pname describe by a json entry \jarg and return the symbol associated
+    std::string addParameter( std::string const& pname, nl::json const& jarg );
 
     //! set parameter values in expression
-    virtual void setParameterValues( std::map<std::string,double> const& mp )
-        {
-            for ( auto & [ pname, mexpr ] : M_parameterNameToExpr )
-                mexpr.setParameterValues( mp );
+    virtual void setParameterValues( std::map<std::string,double> const& mp );
 
-            // TODO : maybe subphysics??
-        }
-
+    //! return the map of parameter values
     std::map<std::string,double>
-    toParameterValues() const
-        {
-            std::map<std::string,double> pv;
-            for ( auto const& [pname, mexpr] : M_parameterNameToExpr )
-                mexpr.updateParameterValues( this->symbolFromParameter( pname ), pv );
-            return pv;
-        }
+    toParameterValues() const;
 
-    void updateParameterValues( std::map<std::string,double> & mp )
-        {
-            this->setParameterValues( mp );
+    void updateParameterValues( std::map<std::string,double> & mp );
 
-            std::set<std::string> allSymbNames;
-            for ( auto const& [pname, mexpr] : M_parameterNameToExpr )
-                allSymbNames.insert( pname );
-
-            // erase parameters values from material properties
-            for ( auto & [pname, mexpr] : M_parameterNameToExpr )
-                mexpr.eraseParameterValues( allSymbNames );
-
-            // get value of symbols evaluables
-            int previousParam = 0;
-            std::map<std::string,double> curmp;
-            while ( true )
-            {
-                curmp = this->toParameterValues();
-                if ( curmp.size() == previousParam )
-                    break;
-                previousParam = curmp.size();
-                this->setParameterValues( curmp );
-            }
-
-            // update output parameter values
-            for ( auto const& [_name,_value] : curmp )
-                mp[_name] = _value;
-        }
-
-        auto symbolsExpr() const
+    auto symbolsExpr() const
         {
             auto tupleSymbolExprs = hana::transform( ModelExpression::expr_shapes, [this](auto const& e_ij) {
-                    constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
-                    constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+                                                                                       constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                                                                                       constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
 
-                    using _expr_type = std::decay_t< decltype( ModelExpression{}.template expr<ni,nj>() ) >;
-                    symbol_expression_t<_expr_type> se;
-                    for ( auto const& [pname, mexpr] : M_parameterNameToExpr )
-                    {
-                        if ( !mexpr.template hasExpr<ni,nj>() )
-                            continue;
-                        auto const& paramExpr = mexpr.template expr<ni,nj>();
-                        if ( paramExpr.expression().isEvaluable() )
-                            continue;
+                                                                                       using _expr_type = std::decay_t< decltype( ModelExpression{}.template expr<ni,nj>() ) >;
+                                                                                       symbol_expression_t<_expr_type> se;
+                                                                                       for ( auto const& [pname, mexpr] : M_parameterNameToExpr )
+                                                                                       {
+                                                                                           if ( !mexpr.template hasExpr<ni,nj>() )
+                                                                                               continue;
+                                                                                           auto const& paramExpr = mexpr.template expr<ni,nj>();
+                                                                                           if ( paramExpr.expression().isEvaluable() )
+                                                                                               continue;
 
-                        std::string symbolParam = this->symbolFromParameter( pname );
-                        se.add( symbolParam, paramExpr, SymbolExprComponentSuffix( ni,nj ) );
-                    }
-                    return se;
-                });
+                                                                                           std::string symbolParam = this->symbolFromParameter( pname );
+                                                                                           se.add( symbolParam, paramExpr, SymbolExprComponentSuffix( ni,nj ) );
+                                                                                       }
+                                                                                       return se;
+                                                                                   });
             return Feel::vf::SymbolsExpr( tupleSymbolExprs );
         }
 
