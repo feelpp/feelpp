@@ -689,6 +689,8 @@ MAGNETIC_CLASS_TEMPLATE_TYPE::updateAlgebraicDofEliminationIds()
 {
     for ( auto const& [bcName,bcData] : M_boundaryConditions->magneticPotentialImposed() )
         bcData->updateDofEliminationIds( *this, FieldTag::vectorPotential(this).identifierString(), this->spaceVectorPotential() );
+    for ( auto const& [bcName,bcData] : M_boundaryConditions->magneticInsulation() )
+        bcData->updateDofEliminationIds( *this, FieldTag::vectorPotential(this).identifierString(), this->spaceVectorPotential() );
 
     if ( M_nullSpaceMethod == "saddle-point" )
     {

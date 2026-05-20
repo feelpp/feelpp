@@ -167,10 +167,10 @@ public :
     void executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ModelMeasuresQuantitiesType const& mquantities );
 
     bool checkResults() const override;
+
     //___________________________________________________________________________________//
     // export expressions
     //___________________________________________________________________________________//
-
     template <typename SymbExprType>
     auto exprPostProcessExportsToolbox( SymbExprType const& se, std::string const& prefix ) const
         {
@@ -190,32 +190,11 @@ public :
                 for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicId ) )
                 {
                     auto const& matRange = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
-                    auto const& magneticRelativePermeability = this->materialsProperties()->materialProperty( matName, "magnetic-relative-permeability" );
-                    if ( magneticRelativePermeability.isMatrix() )
-                    {
-                        if constexpr (  nDim == 3 )
-                        {
-                            auto mu_r = expr( magneticRelativePermeability.template expr<nDim,nDim>(), se );
-                            // TODO
-                        }
-                    }
-                    else
-                    {
-                      //auto mu_r = expr( magneticRelativePermeability.expr(), se );
-                        //mapExprFieldIntensityIsotropic[prefixvm(prefix,"field-intensity")].push_back( std::make_tuple( (1./(mu_0*mur))*B, matRange, "element" ) );
-                      mapExprFieldIntensity[prefixvm(prefix,"field-intensity")].push_back( std::make_tuple( this->fieldIntensityExpr( A, matName, se ), matRange, "element" ) );
-                    }
-
-                    // if ( physicHeatData->hasConvectionEnabled() )
-                    // {
-                    //     auto velocityConvectionExpr = physicHeatData->convection().expr( se );
-                    //     mapExprVelocityConvection[prefixvm(prefix,"velocity-convection")].push_back( std::make_tuple( velocityConvectionExpr, range, "nodal" ) );
-                    // }
+                    mapExprFieldIntensity[prefixvm(prefix,"field-intensity")].push_back( std::make_tuple( this->fieldIntensityExpr( A, matName, se ), matRange, "element" ) );
                 }
             }
 
             return hana::make_tuple( mapExprFluxDensity, mapExprFieldIntensity );
-            //return hana::make_tuple();
         }
     template <typename SymbExprType>
     auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
@@ -229,12 +208,16 @@ public :
 
     auto modelFields( std::string const& prefix = "" ) const
         {
-            return this->modelFields( this->fieldVectorPotentialPtr(), prefix );
+            return this->modelFields( this->fieldVectorPotentialPtr(), this->fieldLagrangeMultiplierCoulombGaugePtr(), prefix );
         }
     auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
-            auto field_t = this->spaceVectorPotential()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( FieldTag::vectorPotential(this).identifier() ) );
-            return this->modelFields( field_t, prefix );
+            auto field_A = this->spaceVectorPotential()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( FieldTag::vectorPotential(this).identifier() ) );
+            element_lm_coulombgauge_ptrtype field_lmcg;
+            if ( this->spaceLagrangeMultiplierCoulombGauge() && M_nullSpaceMethod == "saddle-point" )
+                    field_lmcg = this->spaceLagrangeMultiplierCoulombGauge()->elementPtr(
+                        *sol, rowStartInVector + this->startSubBlockSpaceIndex( FieldTag::lagrangeMultiplierCoulombGauge(this).identifier() ) );
+            return this->modelFields( field_A, field_lmcg, prefix );
         }
     auto modelFields( std::map<std::string,std::tuple<vector_ptrtype,size_type> > const& vectorData, std::string const& prefix = "" ) const
         {
@@ -242,13 +225,21 @@ public :
             CHECK( itFindSolution != vectorData.end() ) << "require solution data";
             vector_ptrtype sol = std::get<0>( itFindSolution->second );
             size_type rowStartInVector =  std::get<1>( itFindSolution->second );
-            auto field_t = this->spaceVectorPotential()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( FieldTag::vectorPotential(this).identifier() ) );
-            return this->modelFields( field_t, prefix );
+            auto field_A = this->spaceVectorPotential()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( FieldTag::vectorPotential(this).identifier() ) );
+            element_lm_coulombgauge_ptrtype field_lmcg;
+            if ( this->spaceLagrangeMultiplierCoulombGauge() && M_nullSpaceMethod == "saddle-point" )
+                    field_lmcg = this->spaceLagrangeMultiplierCoulombGauge()->elementPtr(
+                        *sol, rowStartInVector + this->startSubBlockSpaceIndex( FieldTag::lagrangeMultiplierCoulombGauge(this).identifier() ) );
+            return this->modelFields( field_A, field_lmcg, prefix );
         }
-    template <typename MagneticVectorPotentialFieldType>
-    auto modelFields( MagneticVectorPotentialFieldType const& field_t, std::string const& prefix = "" ) const
+    template <typename MagneticVectorPotentialFieldType,typename LagrangeMultiplierCoulombGaugeFieldType>
+    auto modelFields( MagneticVectorPotentialFieldType const& field_A, LagrangeMultiplierCoulombGaugeFieldType const& field_lmcg,
+                      std::string const& prefix = "" ) const
         {
-            return Feel::FeelModels::modelFields( modelField<FieldCtx::FULL>( FieldTag::vectorPotential(this), prefix, FieldTag::vectorPotential(this).identifierString(), field_t, "A", this->keyword() ) );
+            return Feel::FeelModels::modelFields(
+                modelField<FieldCtx::FULL>( FieldTag::vectorPotential(this), prefix, FieldTag::vectorPotential(this).identifierString(), field_A, "A", this->keyword() ),
+                modelField<FieldCtx::ID>( FieldTag::lagrangeMultiplierCoulombGauge(this), prefix, FieldTag::lagrangeMultiplierCoulombGauge(this).identifierString(), field_lmcg, "lmcg", this->keyword() )
+                                                 );
         }
 
     auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const

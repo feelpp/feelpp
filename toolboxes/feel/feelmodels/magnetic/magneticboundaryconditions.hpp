@@ -20,6 +20,7 @@ class MagneticBoundaryConditions : public BoundaryConditionsBase
 public:
     enum class Type { MagneticPotentialImposed=0 };
 
+    //! n x A = g
     class MagneticPotentialImposed : public GenericDirichletBoundaryCondition<nRealDim,1>
     {
         using super_type = GenericDirichletBoundaryCondition<nRealDim,1>;
@@ -29,15 +30,27 @@ public:
         MagneticPotentialImposed( MagneticPotentialImposed && ) = default;
     };
 
+    //! n x A = 0
+    class MagneticInsulation : public GenericDirichletBoundaryCondition<nRealDim,1>
+    {
+        using super_type = GenericDirichletBoundaryCondition<nRealDim,1>;
+    public:
+        MagneticInsulation( std::string const& name, std::shared_ptr<ModelBase> const& tbParent ) : super_type( name, tbParent ) {}
+        MagneticInsulation( MagneticInsulation const& ) = default;
+        MagneticInsulation( MagneticInsulation && ) = default;
+    };
+
     MagneticBoundaryConditions( std::shared_ptr<ModelBase> const& tbParent ) : super_type( tbParent ) {}
     MagneticBoundaryConditions( MagneticBoundaryConditions const& ) = default;
     MagneticBoundaryConditions( MagneticBoundaryConditions && ) = default;
 
     //! return magnetic potential imposed
     std::map<std::string,std::shared_ptr<MagneticPotentialImposed>> const& magneticPotentialImposed() const { return M_magneticPotentialImposed; }
+    //! return magnetic insulation
+    std::map<std::string,std::shared_ptr<MagneticInsulation>> const& magneticInsulation() const { return M_magneticInsulation; }
 
     //! return true if a bc is type of dof eliminitation
-    bool hasTypeDofElimination() const { return !M_magneticPotentialImposed.empty(); }
+    bool hasTypeDofElimination() const { return !M_magneticPotentialImposed.empty() || !M_magneticInsulation.empty(); }
 
     //! apply dof elimination in linear context
     template <typename BfType, typename RhsType,typename MeshType, typename EltType, typename SymbolsExprType>
@@ -45,6 +58,7 @@ public:
     applyDofEliminationLinear( BfType& bilinearForm, RhsType& F, MeshType const& mesh, EltType const& u, SymbolsExprType const& se ) const
         {
             Feel::FeelModels::detail::applyDofEliminationLinearOnBoundaryConditions( M_magneticPotentialImposed, bilinearForm, F, mesh, u, se );
+            Feel::FeelModels::detail::applyDofEliminationLinearOnBoundaryConditions( M_magneticInsulation, bilinearForm, F, mesh, u, se );
         }
 
     //! apply Newton initial guess (on dof elimination context)
@@ -53,6 +67,7 @@ public:
     applyNewtonInitialGuess( MeshType const& mesh, EltType & u, SymbolsExprType const& se ) const
         {
             Feel::FeelModels::detail::applyNewtonInitialGuessOnBoundaryConditions( M_magneticPotentialImposed, mesh, u, se );
+            Feel::FeelModels::detail::applyNewtonInitialGuessOnBoundaryConditions( M_magneticInsulation, mesh, u, se );
         }
 
     void setParameterValues( std::map<std::string,double> const& paramValues );
@@ -67,6 +82,7 @@ public:
 
 private:
     std::map<std::string,std::shared_ptr<MagneticPotentialImposed>> M_magneticPotentialImposed;
+    std::map<std::string,std::shared_ptr<MagneticInsulation>> M_magneticInsulation;
 
 }; // MagneticBoundaryConditions
 

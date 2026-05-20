@@ -560,7 +560,7 @@ public :
 
     template <typename TagType>
     auto const&
-    field( TagType const& thetag, std::string const& name ) const
+    field( TagType const& thetag, std::string_view name ) const
         {
             // found the field type related to TagType
             using findFieldT_opt = std::decay_t<decltype( ModelFieldsFindTag<TagType>::find( hana::to_tuple( M_tuple ) ) )>;
@@ -662,7 +662,7 @@ private :
 
     template <typename FieldType,typename TagType,int Index>
     auto const&
-    fieldImpl( TagType const& thetag, std::string const& name, const FieldType * dummyRet ) const
+    fieldImpl( TagType const& thetag, std::string_view name, const FieldType * dummyRet ) const
         {
             if constexpr ( Index < nModelField )
             {
