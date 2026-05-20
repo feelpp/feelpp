@@ -209,3 +209,4 @@ CMakePresets.json.backup
 /ops/src/feelpp/pkg/build/__pycache__/
 doc/analysis/
 mor/examples/grepldeim/grepldeimapp.cpp
+**/.spack-env/**
