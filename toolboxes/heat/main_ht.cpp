@@ -4,49 +4,6 @@
 #include <feel/feelmodels/heat/heat.hpp>
 #include <feel/feelmodels/modelcore/convergencemode.hpp>
 
-template <typename ToolboxType>
-int
-runToolboxSimulation( std::shared_ptr<ToolboxType> toolbox )
-{
-    toolbox->init();
-    toolbox->printAndSaveInfo();
-
-    if ( toolbox->isStationary() )
-    {
-        toolbox->solve();
-        toolbox->exportResults();
-    }
-    else
-    {
-        if ( !toolbox->doRestart() )
-            toolbox->exportResults(toolbox->timeInitial());
-
-        for ( toolbox->startTimeStep() ; !toolbox->timeStepBase()->isFinished(); toolbox->updateTimeStep() )
-        {
-            if (toolbox->worldComm().isMasterRank())
-            {
-                std::cout << "============================================================\n";
-                std::cout << "time simulation: " << toolbox->time() << "s \n";
-                std::cout << "============================================================\n";
-            }
-
-            toolbox->solve();
-            toolbox->exportResults();
-        }
-    }
-    return !toolbox->checkResults();
-}
-
-
-template <typename ToolboxType>
-int
-runHeatSimulation()
-{
-    using namespace Feel;
-    auto heat = ToolboxType::New(_prefix="heat");
-    return runToolboxSimulation( heat );
-}
-
 int
 main(int argc, char**argv )
 {
@@ -100,9 +57,9 @@ main(int argc, char**argv )
                                 typedef Feel::FeelModels::Heat< Simplex<_dim,1>,
                                                                 Lagrange<_torder, Scalar,Continuous,PointSetFekete> > model_type;
                                 if ( mode == "simulation" )
-                                    status = runHeatSimulation<model_type>();
-                                else
-                                    status = runHConvergence<model_type>("heat", runToolboxSimulation<model_type>);
+                                    status = Toolboxes::executeSingleRun<model_type>( "heat", "heat" );
+                                else if ( mode == "h-convergence" )
+                                    status = Toolboxes::executeHConvergence<model_type>( "heat", "heat" );
                             }
                         } );
     }
