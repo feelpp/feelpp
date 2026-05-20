@@ -711,8 +711,7 @@ void SolverNonLinearPetsc<T>::init ()
         //PetscPCFactorSetMatSolverPackage( M_pc,this->matSolverPackageType() );
 
         // Have the Krylov subspace method use our good initial guess rather than 0
-        bool useInitialGuessNonZero = boption(_name="ksp-use-initial-guess-nonzero", _prefix=this->prefix() );
-        ierr = KSPSetInitialGuessNonzero ( M_ksp, (useInitialGuessNonZero)?PETSC_TRUE:PETSC_FALSE );
+        ierr = KSPSetInitialGuessNonzero ( M_ksp, (this->M_kspUseInitialGuessNonZero)?PETSC_TRUE:PETSC_FALSE );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
 
@@ -736,22 +735,19 @@ void SolverNonLinearPetsc<T>::init ()
         }
         else if ( std::string((char*)ksp_type) == std::string( ( char* )KSPGMRES ) )
         {
-            int nRestartGMRES = ioption(_name="gmres-restart", _prefix=this->prefix() );
-            ierr = KSPGMRESSetRestart( M_ksp, nRestartGMRES );
+            ierr = KSPGMRESSetRestart( M_ksp, this->M_kspRestartGMRES );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
         else if ( std::string((char*)ksp_type) == std::string( ( char* )KSPFGMRES ) )
         {
-            int nRestartFGMRES = ioption(_name="fgmres-restart", _prefix=this->prefix() );
-            ierr = KSPGMRESSetRestart( M_ksp, nRestartFGMRES );
+            ierr = KSPGMRESSetRestart( M_ksp, this->M_kspRestartFGMRES );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
             if ( this->M_preconditioner )
                 this->M_preconditioner->setSide( preconditioner_type::RIGHT );
         }
         else if ( std::string((char*)ksp_type) == std::string( ( char* )KSPGCR ) )
         {
-            int nRestartGCR = ioption(_name="gcr-restart", _prefix=this->prefix() );
-            ierr = KSPGCRSetRestart( M_ksp, nRestartGCR );
+            ierr = KSPGCRSetRestart( M_ksp, this->M_kspRestartGCR );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
             if ( this->M_preconditioner )
                 this->M_preconditioner->setSide( preconditioner_type::RIGHT );

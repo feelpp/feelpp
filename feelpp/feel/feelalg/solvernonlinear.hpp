@@ -663,6 +663,16 @@ protected:
      */
     SolverType M_kspSolver_type;
 
+    /*
+     * Flag indicating if the initial guess is non zero (for KSP solvers)
+     */
+    bool M_kspUseInitialGuessNonZero = false;
+
+    /*
+     * Number of iterations for GMRES, FGMRES and GCR solvers before restart
+     */
+    int M_kspRestartGMRES = 30, M_kspRestartFGMRES = 30, M_kspRestartGCR = 30;
+
     /**
      * Enum statitng with type of preconditioner to use.
      */
