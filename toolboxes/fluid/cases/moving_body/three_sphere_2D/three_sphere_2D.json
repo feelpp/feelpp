@@ -10,8 +10,26 @@
                 "equations":"Stokes"
             }
         },
-        "body":{
-            "materials":["CirLeft","CirCenter","CirRight"]
+        "multibody":{
+            "name":"toto",
+            "setup":{
+                "bodies":[
+                    {
+                        "name":"CircleLeft",
+                        "materials":["CirLeft"]
+                    },
+                    {
+                        "name":"CircleCenter",
+                        "materials":["CirCenter"]
+                    },
+                    {
+                        "name":"CircleRight",
+                        "materials":["CirRight"]
+                    }
+                ],
+                "connectors":{},
+                "constraints":{}
+            }
         }
     },
     "Meshes":
@@ -21,7 +39,14 @@
             "Import":
             {
                 "filename":"$cfgdir/three_sphere_2D.geo",
+                //"filename":"$cfgdir/ring.geo",
                 "hsize":3
+            },
+            "Partitioning":{
+                "splitting":[ "Fluid", ["CirLeft","CirCenter","CirRight"] ],
+                "constraints":{
+                    "no_interprocess_faces":["CircleCenter","CircleRight","CircleLeft"]
+                }
             },
             "MeshMotion":
             {
@@ -34,7 +59,34 @@
                 {
                     "Zero":["BoxWalls"]
                 }
+            },
+            "MeshAdaptation":[
+                {
+                    "metric":"min(mymetric_wall1,mymetric_wall2):mymetric_wall1:mymetric_wall2",
+                    "required_markers":["CirLeft","CirCenter","CirRight"],
+                    "events":{
+                        "after_import":{},
+                        //"after_init":{}
+                        "each_time_step":{
+                            "frequency":1//4 //15
+                        }
+                    }
+                }],
+            "DistanceToRange":
+            {
+                "wall1":
+                {
+                    "markers":["BoxWalls"],
+                    "normalization":"min_max"
+                },
+                "wall2":
+                {
+                    "markers":["CircleLeft","CircleCenter","CircleRight"],
+                    "normalization":"min_max"
+                }
             }
+
+
         }
     },
     "Materials":
@@ -55,7 +107,15 @@
     },
     "Parameters":
     {
-        "eps":1e-10
+        "eps":1e-10,
+
+        "hfar":3,
+        "hclose_wall1":1,
+        "hclose_wall2":0.1,//0.3,
+        "d2r_bounded_wall1":"min(meshes_fluid_distanceToRange_wall1_normalized_min_max,0.2)/0.2:meshes_fluid_distanceToRange_wall1_normalized_min_max",
+        "mymetric_wall1":"hclose_wall1+(hfar-hclose_wall1)*d2r_bounded_wall1:hclose_wall1:hfar:d2r_bounded_wall1",
+        "d2r_bounded_wall2":"min(meshes_fluid_distanceToRange_wall2_normalized_min_max,0.2)/0.2:meshes_fluid_distanceToRange_wall2_normalized_min_max",
+        "mymetric_wall2":"hclose_wall2+(hfar-hclose_wall2)*d2r_bounded_wall2:hclose_wall2:hfar:d2r_bounded_wall2"
     },
     "BoundaryConditions":
     {
@@ -72,41 +132,29 @@
             {
                 "CircleCenter":
                 {
-                    "markers":["CircleCenter"],
-                    //"materials":"MySolid",
-                    "materials":
-                    {
-                        "names":["CirCenter"]
-                    }
+                    "markers":["CircleCenter"]
                 },
                 "CircleRight":
                 {
                     "markers":["CircleRight"],
-                    //"materials":"MySolid",
-                    "materials":
-                    {
-                        "names":["CirRight"]
-                    },
                     "articulation":
                     {
                         "body":"CircleCenter",
                         //"translational-velocity":"4*pulse(t,1,2,4)-4*pulse(t,3,4,4):t"
-                        "translational-velocity":"4*pulse(t,1-eps,2-eps,4)-4*pulse(t,3-eps,4-eps,4):t:eps"
+                        //"translational-velocity":"4*pulse(t,1-eps,2-eps,4)-4*pulse(t,3-eps,4-eps,4):t:eps"
+                        "translational-velocity":"1.5*4*pulse(t,1-eps,2-eps,4)-1.5*4*pulse(t,3-eps,4-eps,4):t:eps"
                     }
                 },
                 "CircleLeft":
                 {
                     "markers":["CircleLeft"],
-                    //"materials":"MySolid",
-                    "materials":
-                    {
-                        "names":["CirLeft"]
-                    },
                     "articulation":
                     {
                         "body":"CircleCenter",
                         //"translational-velocity":"4*pulse(t,0,1,4)-4*pulse(t,2,3,4):t"
-                        "translational-velocity":"4*(pulse(t,0,1-eps,4)+pulse(t,4-eps,4,4)) -4*pulse(t,2-eps,3-eps,4):t:eps"
+                        //"translational-velocity":"4*(pulse(t,0,1-eps,4)+pulse(t,4-eps,4,4)) -4*pulse(t,2-eps,3-eps,4):t:eps"
+                        "translational-velocity":"1.5*4*(pulse(t,0,1-eps,4)+pulse(t,4-eps,4,4)) -1.5*4*pulse(t,2-eps,3-eps,4):t:eps"
+
                     }
                 }
             }
@@ -118,7 +166,7 @@
         {
             "Exports":
             {
-                "fields":["velocity","pressure","pid","displacement"]
+                "fields":["velocity","pressure","pid","mesh-displacement"]
             },
             "Measures":
             {

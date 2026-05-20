@@ -163,6 +163,8 @@ public :
 
     class DisplacementImposedOnInitialDomainOverElements
     {
+        template< class T >
+        friend class MeshALE;
     public:
         DisplacementImposedOnInitialDomainOverElements( self_type const* meshALE, std::set<std::string> const& markers );
 
@@ -172,14 +174,14 @@ public :
         bool isOnInitialDomain() const { return M_isRevertInitialDomain; }
 
         template <typename ExprType>
-        void updateDisplacementImposed( ale_map_element_type & outputField, ExprType const& expr, range_elements_type const& range )
+        void updateDisplacementImposed( ale_map_element_type & outputField, ExprType const& expr, range_elements_type const& range, bool requireRevertInitialDomain = true, bool syncFieldValues = true )
             {
                 bool meshIsOnInitialDomainAtBegin = this->isOnInitialDomain();
-                if ( !meshIsOnInitialDomainAtBegin )
+                if ( requireRevertInitialDomain && !meshIsOnInitialDomainAtBegin )
                     this->revertInitialDomain();
-                outputField.on(_range=range, _expr=expr );
-                if ( !meshIsOnInitialDomainAtBegin )
-                    this->revertReferenceDomain();
+                outputField.on(_range=range, _expr=expr, _close=syncFieldValues );
+                if ( requireRevertInitialDomain && !meshIsOnInitialDomainAtBegin )
+                     this->revertReferenceDomain();
             }
     private :
         self_type const* M_meshALE;
@@ -190,6 +192,8 @@ public :
 
     class DisplacementImposedOnInitialDomainOverFaces
     {
+        template< class T >
+        friend class MeshALE;
         using trace_mesh_type = trace_mesh_t<mesh_type>;
         using trace_mesh_ptrtype = trace_mesh_ptr_t<mesh_type>;
         using trace_functionspace_type = typename ale_map_functionspace_type::trace_functionspace_type;
@@ -209,15 +213,15 @@ public :
 
 
         template <typename ExprType>
-        void updateDisplacementImposed( ale_map_element_type & outputField, ExprType const& expr, range_faces_type const& range )
+        void updateDisplacementImposed( ale_map_element_type & outputField, ExprType const& expr, range_faces_type const& range, bool requireRevertInitialDomain = true )
             {
                 auto rangeElt = this->transformFromRelation( range );
                 bool meshIsOnInitialDomainAtBegin = this->isOnInitialDomain();
-                if ( !meshIsOnInitialDomainAtBegin )
-                    this->revertInitialDomain();
-                M_fieldDisplacementImposed->on(_range=rangeElt, _expr=expr ); // close?
-                if ( !meshIsOnInitialDomainAtBegin )
-                    this->revertReferenceDomain();
+                if ( requireRevertInitialDomain && !meshIsOnInitialDomainAtBegin )
+                     this->revertInitialDomain();
+                M_fieldDisplacementImposed->on(_range=rangeElt, _expr=expr );
+                if ( requireRevertInitialDomain && !meshIsOnInitialDomainAtBegin )
+                     this->revertReferenceDomain();
                 M_matrixInterpolationDisplacement->multVector( *M_fieldDisplacementImposed, outputField );
             }
 
@@ -336,10 +340,15 @@ public :
 
 
     //!
-    //template <typename ExprType>
-    //void updateDisplacementImposedOnInitialDomain( std::string const& name, ExprType const& expr, range_faces_type const& range );
     template <typename ExprType,typename RangeType>
     void updateDisplacementImposedOnInitialDomain( std::string const& name, ExprType const& expr, RangeType const& range );
+
+    //! update displacement imposed (from initial domain) from an expression \expr on entities defined by \range
+    //! if the expression doesn't required to move on initial domain (for example idv(field), put requireEvaluateOnInitialDomain
+    //! to false avoid to apply mesh mover before and after the update of the field, which can be costly)
+    template <typename ExprType,typename RangeType >
+    void updateDisplacementImposedOnInitialDomain( std::vector<std::tuple<std::string,ExprType,RangeType>> const& inputs, bool requireEvaluateOnInitialDomain = true );
+
 
     //! update displacement imposed from a velocity expression \v on entities defined by \range (use bdf scheme)
     template <typename ExprT, typename RangeType >
@@ -497,21 +506,62 @@ MeshALE<Convex>::updateDisplacementImposedOnInitialDomain( std::string const& na
 
     this->updateDisplacementImposed( idv(M_fieldTmp)  - ( idv(M_identity_ale) - idv(M_displacement) - idv(M_fieldInitialIdentity) ), range );
 }
-#if 0
+
 template< class Convex >
-template <typename ExprType >
+template <typename ExprType,typename RangeType >
 void
-MeshALE<Convex>::updateDisplacementImposedOnInitialDomain( std::string const& name, ExprType const& expr, range_faces_type const& range )
+MeshALE<Convex>::updateDisplacementImposedOnInitialDomain( std::vector<std::tuple<std::string,ExprType,RangeType>> const& inputs, bool requireRevertInitialDomain )
 {
-    auto itFind = M_displacementImposedOnInitialDomainOverFaces.find( name );
-    CHECK( itFind != M_displacementImposedOnInitialDomainOverFaces.end() ) << "no displacementImposedOnInitialDomainOverFaces with name " << name;
-
+    if ( inputs.empty() )
+        return;
     M_fieldTmp->zero();
-    itFind->second.updateDisplacementImposed( *M_fieldTmp, expr, range );
 
-    this->updateDisplacementImposed( idv(M_fieldTmp)  - ( idv(M_identity_ale) - idv(M_displacement) - idv(M_fieldInitialIdentity) ), range );
+    bool meshIsOnReferenceMeshAtBegin = this->isOnReferenceMesh();
+    bool meshIsOnMovingMeshAtBegin = this->isOnMovingMesh();
+    if ( requireRevertInitialDomain )
+        this->revertInitialDomain( false );
+
+    if constexpr ( std::is_same_v<RangeType,range_elements_type> )
+    {
+        for ( auto const& [name,expr,range] : inputs )
+        {
+            auto itFind = M_displacementImposedOnInitialDomainOverElements.find( name );
+            CHECK( itFind != M_displacementImposedOnInitialDomainOverElements.end() ) << "no displacementImposedOnInitialDomainOverElements with name " << name;
+            itFind->second.updateDisplacementImposed( *M_fieldTmp, expr, range, false, false );
+        }
+    }
+    else if constexpr ( std::is_same_v<RangeType,range_faces_type> )
+    {
+        for ( auto const& [name,expr,range] : inputs )
+        {
+            auto itFind = M_displacementImposedOnInitialDomainOverFaces.find( name );
+            CHECK( itFind != M_displacementImposedOnInitialDomainOverFaces.end() ) << "no displacementImposedOnInitialDomainOverFaces with name " << name;
+            itFind->second.updateDisplacementImposed( *M_fieldTmp, expr, range, false );
+        }
+    }
+    else
+        CHECK( false ) << "error"; // TODO static assert
+
+    sync( *M_fieldTmp );
+
+    std::decay_t<RangeType> rangeConcatEntities;
+    for ( auto const& [name,expr,range] : inputs )
+    {
+        // TODO optimize by avoiding to call concatenate, apply insert without check should be ok
+        //rangeConcatEntities.insert( rangeConcatEntities.end(), range.begin(), range.end() );
+        rangeConcatEntities = concatenate( rangeConcatEntities, range );
+    }
+
+    this->updateDisplacementImposed( idv(M_fieldTmp)  - ( idv(M_identity_ale) - idv(M_displacement) - idv(M_fieldInitialIdentity) ), rangeConcatEntities );
+
+    if ( requireRevertInitialDomain )
+    {
+        if ( meshIsOnReferenceMeshAtBegin )
+            this->revertReferenceMesh( false );
+        else if ( meshIsOnMovingMeshAtBegin )
+            this->revertMovingMesh( false );
+    }
 }
-#endif
 //------------------------------------------------------------------------------------------------//
 
 template <typename ... Ts>

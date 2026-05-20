@@ -1,7 +1,70 @@
-// -*- mode: javascript -*-
 {
     "Name": "cylinder under gravity-testcase",
-    "ShortName":"bug",
+    "ShortName":"cug",
+    "Parameters":
+    {
+        "hfar":0.1,
+        "hclose_wall1":0.05,
+        "hclose_wall2":0.01,
+        "d2r_bounded_wall1":"min(meshes_fluid_distanceToRange_wall1_normalized_min_max,0.2)/0.2:meshes_fluid_distanceToRange_wall1_normalized_min_max",
+        "mymetric_wall1":"hclose_wall1+(hfar-hclose_wall1)*d2r_bounded_wall1:hclose_wall1:hfar:d2r_bounded_wall1",
+        "d2r_bounded_wall2":"min(meshes_fluid_distanceToRange_wall2_normalized_min_max,0.2)/0.2:meshes_fluid_distanceToRange_wall2_normalized_min_max",
+        "mymetric_wall2":"hclose_wall2+(hfar-hclose_wall2)*d2r_bounded_wall2:hclose_wall2:hfar:d2r_bounded_wall2"
+    },
+    "Meshes":
+    {
+        "fluid":
+        {
+            "Import":
+            {
+                "filename":"$cfgdir/cylinder_under_gravity.geo",
+                "hsize":0.01
+            },
+            "Partitioning":{
+                "splitting":[ "Fluid", "CylinderVolume" ],
+                "constraints":{
+                    "no_interprocess_faces":["CylinderSurface"]
+                }
+            },
+            "MeshMotion":
+            {
+                "ComputationalDomain":
+                {
+                    "markers":"Fluid",
+                    "method":"harmonic_extension"
+                },
+                "Displacement":
+                {
+                    "Zero":["Walls","Top","Bottom"]
+                }
+            },
+            "MeshAdaptation":[
+                {
+                    "metric":"min(mymetric_wall1,mymetric_wall2):mymetric_wall1:mymetric_wall2",
+                    "required_markers":["CylinderVolume"],
+                    "events":{
+                        "after_import":{},
+                        //"after_init":{}
+                        "each_time_step":{
+                            "frequency":4 //15
+                        }
+                    }
+                }],
+            "DistanceToRange":
+            {
+                "wall1":
+                {
+                    "markers":["Walls","Top","Bottom"],
+                    "normalization":"min_max"
+                },
+                "wall2":
+                {
+                    "markers":["CylinderSurface"],
+                    "normalization":"min_max"
+                }
+            }
+        }
+    },
     "Models":
     {
         "fluid":
@@ -14,27 +77,31 @@
                 "gravity":
                 {
                     "enable":1,
-                    "expr":"{0,980}:t"
+                    "expr":"{0,-980}"
                 }
             }
         },
-        "body":{
-            "materials":"MySolid"
+        "multibody":{
+            "name":"mbody",
+            "setup":{
+                "bodies":[
+                    {
+                        "name":"body0",
+                        "materials":["MySolid"]
+                    }]
+            }
         }
     },
     "Materials":
     {
         "Fluid":{
             "markers":"Fluid",
-            "physics":"fluid",
             "rho":"1",
             "mu":"0.01"
         },
         "MySolid":{
             "markers":"CylinderVolume",
-            "physics":"body",
             "rho":"1.5"
-            //"rho":"2.0e3+1e3*sin((t/0.1)*pi/2):t"
         }
     },
     "BoundaryConditions":
@@ -59,17 +126,14 @@
             {
                 "Top":
                 {
-                    "expr":"0" 
+                    //"expr":"0"
                 }
             },
             "body":
             {
-                "p1_mark":
+                "body0":
                  {
-                     "markers":"CylinderSurface",
-                     "materials":"MySolid"
-                     // ,"translational-velocity":"{0.5,-1}"
-                     // ,"angular-velocity":"0"
+                     "markers":"CylinderSurface"
                 }
             }
         }
@@ -80,7 +144,7 @@
         {
             "Exports":
             {
-                "fields":["velocity","pressure","pid","displacement"]
+                "fields":["velocity","pressure","pid","mesh-displacement"]
             },
             "Measures":
             {

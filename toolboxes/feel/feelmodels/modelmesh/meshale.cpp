@@ -407,17 +407,29 @@ MeshALE<Convex>::revertReferenceMesh( bool updateMeshMeasures )
     }
     else if ( this->isMappedOntoTheInitialMesh() )
     {
+        M_fieldTmp->zero();
+        M_fieldTmp->on( _range=elements( M_movingMesh ),
+                        _expr= ( idv( this->identityALE() ) - idv( this->displacement() ) ) - P() );
+        bool saveUpdateMeshMeasures = true;
+        M_mesh_mover.setUpdateMeshMeasures( updateMeshMeasures );
+        M_mesh_mover.apply( M_movingMesh, *M_fieldTmp );
+        M_mesh_mover.setUpdateMeshMeasures( saveUpdateMeshMeasures );
+
         for ( auto & [name,dioidoe] : M_displacementImposedOnInitialDomainOverElements )
         {
-            if ( dioidoe.isOnInitialDomain() )
-                dioidoe.revertReferenceDomain();
+            dioidoe.M_isRevertInitialDomain = false;
+            // if ( dioidoe.isOnInitialDomain() )
+            //     dioidoe.revertReferenceDomain();
         }
         for ( auto & [name,dioidof] : M_displacementImposedOnInitialDomainOverFaces )
         {
-            if ( dioidof.isOnInitialDomain() )
-                dioidof.revertReferenceDomain();
+            dioidof.M_isRevertInitialDomain = false;
+            // if ( dioidof.isOnInitialDomain() )
+            //     dioidof.revertReferenceDomain();
         }
+
     }
+
     M_isOnReferenceMesh = true;
     M_isOnMovingMesh = false;
     M_isMappedOntoTheInitialMesh = false; // TODO : check if this is true in case of remesh with a new mesh not mapped onto the initial mesh
@@ -449,18 +461,36 @@ MeshALE<Convex>::revertInitialDomain( bool updateMeshMeasures )
     if ( this->isMappedOntoTheInitialMesh() )
         return;
 
-    for ( auto & [name,dioidoe] : M_displacementImposedOnInitialDomainOverElements )
-    {
-        if ( dioidoe.isOnInitialDomain() )
-            continue;
-        dioidoe.revertInitialDomain();
-    }
     for ( auto & [name,dioidof] : M_displacementImposedOnInitialDomainOverFaces )
     {
         if ( dioidof.isOnInitialDomain() )
             continue;
         dioidof.revertInitialDomain();
     }
+
+    std::set<std::string> markerElements;
+    for ( auto & [name,dioidoe] : M_displacementImposedOnInitialDomainOverElements )
+    {
+        if ( dioidoe.isOnInitialDomain() )
+            continue;
+        markerElements.insert( dioidoe.markers().begin(), dioidoe.markers().end() );
+        //dioidoe.updateDisplacementToInitialDomain( *M_fieldTmp );
+        //moveIsRequired = true;
+        //dioidoe.revertInitialDomain();
+    }
+    bool moveIsRequired = !markerElements.empty();
+    if ( moveIsRequired )
+    {
+        M_fieldTmp->zero();
+        M_fieldTmp->on( _range=markedelements( M_movingMesh, markerElements ),
+                        _expr= idv( this->fieldInitialIdentity() ) - P() );
+
+        bool saveUpdateMeshMeasures = true;
+        M_mesh_mover.setUpdateMeshMeasures( updateMeshMeasures );
+        M_mesh_mover.apply( M_movingMesh, *M_fieldTmp );
+        M_mesh_mover.setUpdateMeshMeasures( saveUpdateMeshMeasures );
+    }
+
     M_isOnReferenceMesh = false;
     M_isOnMovingMesh = false;
     M_isMappedOntoTheInitialMesh = true;

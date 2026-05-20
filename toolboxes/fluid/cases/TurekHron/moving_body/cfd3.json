@@ -7,9 +7,20 @@
             "materials":"Fluid",
             "equations":"Navier-Stokes"
         },
-        "body":{
-            "name":"bodyTOTO",
-            "materials":["MySolid","MySolid2"]
+        "multibody":{
+            "name":"mbody",
+            "setup":{
+                "bodies":{
+                    "name":"body0",
+                    "materials":["MySolid","MySolid2"],
+                    "mass-center":{
+                        "expr":"{0.2,0.2}"
+                        // "evaluate-on-materials":["MySolid"]
+                    }
+                },
+                "connectors":{},
+                "constraints":{}
+            }
         }
     },
     "Parameters":
@@ -23,8 +34,20 @@
         "d2r_bounded_wall1":"min(meshes_fluid_distanceToRange_wall1_normalized_min_max,0.2)/0.2:meshes_fluid_distanceToRange_wall1_normalized_min_max",
         "mymetric_wall1":"hclose_wall1+(hfar-hclose_wall1)*d2r_bounded_wall1:hclose_wall1:hfar:d2r_bounded_wall1",
         "d2r_bounded_wall2":"min(meshes_fluid_distanceToRange_wall2_normalized_min_max,0.2)/0.2:meshes_fluid_distanceToRange_wall2_normalized_min_max",
-        "mymetric_wall2":"hclose_wall2+(hfar-hclose_wall2)*d2r_bounded_wall2:hclose_wall2:hfar:d2r_bounded_wall2"
+        "mymetric_wall2":"hclose_wall2+(hfar-hclose_wall2)*d2r_bounded_wall2:hclose_wall2:hfar:d2r_bounded_wall2",
 
+        "u_magnitude_normalized":"min(2,fluid_U_magnitude)/2:fluid_U_magnitude",
+        "u_magnitude_normalized_log":"(log(u_magnitude_normalized+0.01) - log(0.01))/(log(1+0.01)-log(0.01)):u_magnitude_normalized",
+        "hclose_velocitymetric":"hfar/8:hfar",
+        "mymetric_velocity":"hfar+(hclose_velocitymetric/3-hfar)*u_magnitude_normalized_log:hclose_velocitymetric:hfar:u_magnitude_normalized_log",
+
+        "curl_u_magnitude_normalized":"min(100,fluid_curl_U_magnitude)/100:fluid_curl_U_magnitude",
+        "curl_u_magnitude_normalized_log":"(log(curl_u_magnitude_normalized+0.01) - log(0.01))/(log(1+0.01)-log(0.01)):curl_u_magnitude_normalized",
+        "hclose_curl_velocitymetric":"hfar/8:hfar",
+        "mymetric_curl_velocity":"hfar+(hclose_curl_velocitymetric-hfar)*curl_u_magnitude_normalized_log:hclose_curl_velocitymetric:hfar:curl_u_magnitude_normalized_log",
+
+        "metric_meshadapt":"min( min(mymetric_wall1,mymetric_wall2),mymetric_curl_velocity):mymetric_wall1:mymetric_wall2:mymetric_curl_velocity"
+        //"metric_meshadapt":"min( min(mymetric_wall1,mymetric_wall2),mymetric_velocity):mymetric_wall1:mymetric_wall2:mymetric_velocity"
     },
     "Meshes":
     {
@@ -34,6 +57,12 @@
             {
                 "filename":"$cfgdir/cfd.geo",
                 "hsize":0.03
+            },
+            "Partitioning":{
+                "splitting":[ "Fluid", ["cylinder","beam"] ],
+                "constraints":{
+                    "no_interprocess_faces":["fluid-cylinder","fluid-beam"]
+                }
             },
             "MeshMotion":
             {
@@ -69,11 +98,13 @@
                     }
                 },
                 {
-                    "metric":"min(mymetric_wall1,mymetric_wall2):mymetric_wall1:mymetric_wall2",
-                    "required_markers":["fluid-cylinder","fluid-beam","line-downstream"],
+                    //"metric":"min(mymetric_wall1,mymetric_wall2):mymetric_wall1:mymetric_wall2",
+                    "metric":"metric_meshadapt:metric_meshadapt",
+                    //"required_markers":["fluid-cylinder","fluid-beam","line-downstream"],
+                    "required_markers":["cylinder","beam"],
                     "events":{
                         "each_time_step":{
-                            "frequency":10
+                            "frequency":3//10
                         }
                     }
                 }]
@@ -82,18 +113,15 @@
     "Materials":
     {
         "Fluid":{
-            //"physics":"fluid",
             "rho":"1.0e3",
             "mu":"1.0"
         },
         "MySolid":{
             "markers":["cylinder"],
-            //"physics":"body",
             "rho":"7.0e3"
         },
         "MySolid2":{
             "markers":["beam"],
-            //"physics":"body",
             "rho":"9.0e2"
         }
     },
@@ -117,30 +145,26 @@
             {
                 "outlet":
                 {
-                    "expr":"0" 
+                    "expr":"0"
                 }
             },
             "body":
             {
-                "p1_mark":
+                "body0":
                  {
                      "markers":["fluid-cylinder","fluid-beam"],
-                     //"materials":"MySolid",
-                     "materials":
-                     {
-                         "names":["MySolid","MySolid2"]
-                         //"markers":["beam"] // optional
-                     },
-                     // "mass":"1",
-                     // "mass-center":"{0.2,0.2}",
-                     // "moment-of-inertia":"1"
 
                      "translational-velocity":"{0,0}"
-                     //,"angular-velocity":"sin(8*t):t"//10"
                      //,"angular-velocity":"0"
 
-                     // //"elastic-velocity":"{0, (x>0.25)*(pi/0.3)*(cos(pi*t/0.3)*2e-4)*(exp(10*x)-exp(10*0.25))}:x:t"
+                     // "elastic-displacement":"{0, 0.1*(sin(pi*t/0.3)-sin(pi*(t-0.01)/0.3))*(x>0.3)*(exp(10*x) - exp(10*0.3))/(exp(10*0.6) - exp(10*0.3))}:x:t"
+                     ,"elastic-displacement":"{0, 0.1*(sin(pi*t/0.3))*(x>0.3)*(exp(10*x) - exp(10*0.3))/(exp(10*0.6) - exp(10*0.3))}:x:t"
+
+                     //,"angular-velocity":"sin(8*t):t"
+
+                     //"elastic-velocity":"{0, (x>0.25)*(pi/0.3)*(cos(pi*t/0.3)*2e-4)*(exp(10*x)-exp(10*0.25))}:x:t",
                      // ,"elastic-displacement":"{0, 0.8*(x>0.25)*(sin(pi*t/0.3)*2e-4)*(exp(10*x)-exp(10*0.25))}:x:t"
+
                 }
             }
         }
@@ -151,7 +175,12 @@
         {
             "Exports":
             {
-                "fields":["velocity","pressure","pid","mesh-displacement"]
+                "fields":["velocity","pressure","pid","mesh-displacement"],
+                "expr":{
+                    "fluid_curl_U_magnitude": "fluid_curl_U_magnitude:fluid_curl_U_magnitude",
+                    //"mymetric_wall2": "mymetric_wall2:mymetric_wall2",
+                    "mymetric_curl_velocity": "mymetric_curl_velocity:mymetric_curl_velocity"
+                }
             },
             "Measures":
             {
@@ -166,13 +195,13 @@
                     {
                         "type":"mean",
                         "markers":["fluid-cylinder","fluid-beam"],
-                        "field":"body.p1_mark.translational-velocity"
+                        "field":"body.body0.translational-velocity"
                     },
                     "mybody_angular":
                     {
                         "type":"mean",
                         "markers":["fluid-cylinder","fluid-beam"],
-                        "field":"body.p1_mark.angular-velocity"
+                        "field":"body.body0.angular-velocity"
                     }
                 }
             }

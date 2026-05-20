@@ -172,10 +172,32 @@ Body<ConvexType>::updateForUse()
     this->computeMomentOfInertia_bodyFrame( this->massCenterExpr(), this->rigidRotationMatrix(), M_momentOfInertia_bodyFrame );
 }
 
+
+template<typename ConvexType>
+void
+Body<ConvexType>::updateDisplacementForUse()
+{
+    if ( M_meshMotionTool )
+    {
+        auto initialDomain = idv(M_meshMotionTool->fieldInitialIdentity());
+        auto mcExpr = this->massCenterExpr();
+        auto R = this->rigidRotationMatrixExpr();
+        if ( M_fieldElasticDisplacement )
+            this->updateDisplacement( elements(support(M_spaceDisplacement)),
+                                      R*(initialDomain + idv(M_fieldElasticDisplacement) + this->rigidTranslationExpr() - mcExpr) + mcExpr - initialDomain );
+        else
+            this->updateDisplacement( elements(support(M_spaceDisplacement)),
+                                      R*(initialDomain + this->rigidTranslationExpr() - mcExpr) + mcExpr - initialDomain );
+    }
+    else
+        throw std::runtime_error( "updateDisplacementForUse should not be called if no mesh motion tool is attached to the body" );
+}
+
 template<typename ConvexType>
 void
 Body<ConvexType>::updateDisplacementFromRigidDisplacement( eigen_vector_type<nRealDim> const& rigidTranslation, rotation_angles_type const& rigidRotationAngles )
 {
+#if 0
     M_rigidTranslationDisplacement = rigidTranslation;
     M_rigidRotationAngles = rigidRotationAngles;
     // we compute new displacement from current mesh position + rigid body displacement update
@@ -189,6 +211,28 @@ Body<ConvexType>::updateDisplacementFromRigidDisplacement( eigen_vector_type<nRe
     tmp = this->fieldDisplacement(); // TODO VINCENT : maybe previous time ? check also with elastic behavior
 
     this->updateDisplacement( elements(support(M_spaceDisplacement)), idv(tmp) + R*( P() - M ) + M + T - P() );
+#endif
+
+    // TODO: check is on moving mesh
+    //auto T = Feel::vf::toExpr( rigidTranslation - M_rigidTranslationDisplacement );
+    auto T = Feel::vf::toExpr( rigidTranslation ) - Feel::vf::toExpr( M_rigidTranslationDisplacement );
+    auto R = Feel::vf::toExpr( Body::rigidRotationMatrix( rigidRotationAngles - M_rigidRotationAngles ) );
+    auto M = this->massCenterExpr();
+
+    auto tmp = M_spaceDisplacement->element();
+    tmp = this->fieldDisplacement(); // TODO VINCENT : maybe previous time ? check also with elastic behavior
+    auto identityInitialDomain = P() - idv( tmp );
+
+    //auto identityPreviousTime = identityInitialDomain + idv( M_fieldDisplacementAtPreviousTime );
+
+    // this->updateDisplacement( elements(support(M_spaceDisplacement)),
+    //                           R*( P() - M ) + M + T - identityInitialDomain );
+    this->updateDisplacement( elements(support(M_spaceDisplacement)),
+                              R*( P() - M ) + M + T - identityInitialDomain );
+
+
+    M_rigidTranslationDisplacement = rigidTranslation;
+    M_rigidRotationAngles = rigidRotationAngles;
 }
 
 

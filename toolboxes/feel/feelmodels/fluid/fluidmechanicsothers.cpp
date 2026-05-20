@@ -693,8 +693,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
 
     // update elastic behavior of bodies
     this->updateElasticBody( se );
-#if 1  // VINCENT
-    M_bodySetBC.updateRigidDisplacement( this->timeStep(), se ); // NEW
+#if 1  // TODO VINCENT: move mesh is not always needed, find a way to update mesh only if needed
     // move mesh if available
     if ( this->hasMeshMotion() && M_applyMovingMeshBeforeSolve )
         this->updateALEmesh();
@@ -830,14 +829,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     //     M_turbulenceModelType->solve();
 
 
-#if 0 // VINCENT
+#if 1 // VINCENT
     M_bodySetBC.updateRigidDisplacement( this->timeStep(), se );
-
     bool postMeshMovingRequired = !M_bodySetBC.empty();
     if ( this->hasMeshMotion() && M_applyMovingMeshBeforeSolve && postMeshMovingRequired )
         this->updateALEmesh();
 #endif
-
     double tElapsed = this->timerTool("Solve").stop("solve");
     if ( this->scalabilitySave() )
     {

@@ -319,9 +319,6 @@ FluidMechanicsBoundaryConditions<Dim>::BodyInterface::setup( ModelBase const& mp
      else
          M_markers = { M_name };
 
-     if ( jarg.contains("materials") )
-         M_jsonMaterials = jarg.at("materials");
-
       if ( jarg.contains( "translational-velocity" ) )
           M_mexprTranslationalVelocity.setExpr( jarg.at( "translational-velocity"), mparent.worldComm(), mparent.repository().expr(), indexes );
       if ( jarg.contains( "angular-velocity" ) )

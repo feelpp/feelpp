@@ -80,8 +80,9 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateElasticBod
     // Warning : evaluate expression on reference mesh (maybe it will better to change the API in order to avoid these meshmoves)
     auto mmt = this->meshMotionTool();
     bool meshIsOnRefAtBegin = mmt->isOnReferenceMesh();
-    if ( !meshIsOnRefAtBegin )
-        mmt->revertReferenceMesh( false );
+    bool meshIsOnMovingAtBegin = mmt->isOnMovingMesh();
+    // if ( !meshIsOnRefAtBegin )
+    //     mmt->revertReferenceMesh( false );
     mmt->revertInitialDomain( false );
 
     for ( auto & [bpname,bbc] : M_bodySetBC )
@@ -90,7 +91,11 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateElasticBod
         {
             auto hola = bbc.createElasticBehavior( se );
             bbc.updateElasticBehavior( hola, *this );
+#if 0
             bbc.body().updateDisplacementFromElasticBehavior();
+#else
+            bbc.body().updateDisplacementForUse(); // VINCENT NEW!!
+#endif
             if ( bbc.hasElasticVelocity() ) // TODO: check if we need to apply this update
                 bbc.updateElasticVelocityWithRotation();
 
@@ -98,8 +103,9 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateElasticBod
         }
     }
 
-    mmt->revertReferenceMesh( false );
-    if ( !meshIsOnRefAtBegin )
+    if ( meshIsOnRefAtBegin )
+        mmt->revertReferenceMesh( false );
+    else if ( meshIsOnMovingAtBegin )
         mmt->revertMovingMesh( false );
 }
 

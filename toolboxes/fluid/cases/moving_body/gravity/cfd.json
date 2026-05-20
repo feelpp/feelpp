@@ -17,8 +17,15 @@
                 // }
             }
         },
-        "body":{
-            "materials":"MySolid"
+        "multibody":{
+            "name":"mbody",
+            "setup":{
+                "bodies":[
+                    {
+                        "name":"body0",
+                        "materials":["MySolid"]
+                    }]
+            }
         }
     },
     "Meshes":
@@ -48,13 +55,11 @@
     {
         "Fluid":{
             "markers":"Omega_fluid",
-            //"physics":"fluid",
             "rho":"1.0e3",
             "mu":"1.0"
         },
         "MySolid":{
             "markers":"Omega_body",
-            //"physics":"body",
             "rho":"7.0e3"
             //"rho":"2.0e3+1e3*sin((t/0.1)*pi/2):t"
         }
@@ -75,17 +80,14 @@
             {
                 "wall_top":
                 {
-                    "expr":"0" 
+                    "expr":"0"
                 }
             },
             "body":
             {
-                "p1_mark":
+                "body0":
                  {
-                     "markers":"wall_body",
-                     "materials":"MySolid"
-                     // ,"translational-velocity":"{0.5,-1}"
-                     // ,"angular-velocity":"0"
+                     "markers":"wall_body"
                 }
             }
         }

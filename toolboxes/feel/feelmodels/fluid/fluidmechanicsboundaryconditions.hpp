@@ -280,7 +280,6 @@ public:
 
         ModelExpression const& mexprTranslationalVelocity() const { return M_mexprTranslationalVelocity; }
         ModelExpression const& mexprAngularVelocity() const { return M_mexprAngularVelocity; }
-        nl::json const& jsonMaterials() const { return M_jsonMaterials; }
         std::map<std::string, std::tuple< ModelExpression, std::set<std::string>>> const& elasticVelocityExprBC() const { return M_elasticVelocityExprBC; }
         std::map<std::string, std::tuple< ModelExpression, std::set<std::string>>> const& elasticDisplacementExprBC() const { return M_elasticDisplacementExprBC; }
         std::map<std::string,ModelExpression> const& articulationTranslationalVelocityExpr() const { return M_articulationTranslationalVelocityExpr; }
@@ -296,7 +295,6 @@ public:
         std::string M_name;
         std::set<std::string> M_markers;
         ModelExpression M_mexprTranslationalVelocity, M_mexprAngularVelocity;
-        nl::json M_jsonMaterials;
         std::map<std::string, std::tuple< ModelExpression, std::set<std::string>>> M_elasticVelocityExprBC;
         std::map<std::string, std::tuple< ModelExpression, std::set<std::string>>> M_elasticDisplacementExprBC;
         std::map<std::string,ModelExpression> M_articulationTranslationalVelocityExpr;

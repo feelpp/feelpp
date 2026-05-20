@@ -211,12 +211,15 @@ public :
 
 
     //! update displacement by setting disp equal to previous disp + current elastic update
-    void updateDisplacementFromElasticBehavior()
+    void updateDisplacementFromElasticBehavior() // DEPRECATED!!!!
         {
             M_fieldDisplacement->zero();
             M_fieldDisplacement->add( 1.0, *M_fieldDisplacementAtPreviousTime );
             M_fieldDisplacement->add( 1.0, *M_fieldElasticDisplacement );
         }
+
+    //! update the current displacement from the rigid body displacement and eventually from the elastic behavior if enabled
+    void updateDisplacementForUse();
 
     // void addRigidTranslationToCurrentDisplacement( eigen_vector_type<nRealDim> const& rigidTranslation )
     //     {
