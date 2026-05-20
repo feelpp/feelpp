@@ -11,7 +11,7 @@ main(int argc, char**argv )
     try
     {
         po::options_description magneticoptions( "magnetic options" );
-        //magneticoptions.add( toolboxes_options("magnetic") );
+        magneticoptions.add( toolboxes_options("magnetic") );// TODO: to remove (missing use of custom vm in alg solver)
         magneticoptions.add_options()
             ("case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension")
             ("case.discretization", Feel::po::value<std::string>()->default_value( "Ned1h0" ), "discretization : Ned1h0 ")

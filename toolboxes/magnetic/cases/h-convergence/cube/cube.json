@@ -43,22 +43,29 @@
     {
         "Omega":
         {
-            "mu_r":1.25663706127e6
+            "mu_r":"1/mu_0:mu_0"//1.25663706127e6
         }
     },
     "BoundaryConditions":
     {
         "magnetic":
         {
-            "magnetic_potential_imposed":
+            "magnetic_insulation":
             {
                 "boundary":
                 {
-                    "markers":["Boundary"],
-                    //"expr":"{0,0,0}"
-                    "expr":"{solution_exact_0,solution_exact_1,solution_exact_2}:solution_exact_0:solution_exact_1:solution_exact_2"
+                    "markers":["Boundary"]
                 }
             }
+            // "magnetic_potential_imposed":
+            // {
+            //     "boundary":
+            //     {
+            //         "markers":["Boundary"]
+            //         "expr":"{0,0,0}"
+            //         //"expr":"{solution_exact_0,solution_exact_1,solution_exact_2}:solution_exact_0:solution_exact_1:solution_exact_2"
+            //     }
+            // }
         }
     },
     "PostProcess":
@@ -73,11 +80,7 @@
                     "vector_potential":{
                         "expr":"{magnetic_A_0,magnetic_A_1,magnetic_A_2}:magnetic_A_0:magnetic_A_1:magnetic_A_2",
                         "representation":"element"
-                    },
-                    "mu_0":"mu_0:mu_0",
-                    "mu_r":"mu_r:mu_r",
-                    "materials_Omega_mu_r":"materials_Omega_mu_r:materials_Omega_mu_r",
-                    "physics_magnetic_vacuum_mu_0":"physics_magnetic_magnetic_mu_0:physics_magnetic_magnetic_mu_0"
+                    }
                 }
             },
             "Measures":
