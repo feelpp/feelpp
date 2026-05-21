@@ -22,14 +22,14 @@
             "displacement":
             {
             "fixed":{
-                    "markers":["ZMoins"],
+                    "markers":["Dirichlet"],
                     "expr":"{0,0,0}"
                 }
 
             },
             "normal_stress":{
-                "ZPlus":{
-                    "expr":"{0,0,1}"
+                "ForceApply":{
+                    "expr":"{1,0,0}"
                 }
             }
         }
@@ -48,7 +48,7 @@
                 {
                     "point_central":
                     {
-                        "coord":"{0.5,0.5,0.6}",
+                        "coord":"{0.5,0.5,0.5}",
                         "expressions":
                         {
                             "sigma_xx":"solid_stress_P_00:solid_stress_P_00",
@@ -63,12 +63,37 @@
             },
             "Checkers":
             {
-                "Measures": // mettre ts sig + tol + basse possible 
+                "Measures":
                 {
-                    "Points_point_central_expr_sigma_zz":
+                    "Points_point_central_expr_sigma_xx":
                     {
                         "value":1.0,
-                        "tolerance":1e-8
+                        "tolerance":1e-15
+                    },
+                    "Points_point_central_expr_sigma_yy":
+                    {
+                        "value":"1.4/3",
+                        "tolerance":1e-15
+                    },
+                    "Points_point_central_expr_sigma_zz":
+                    {
+                        "value":"1.4/3",
+                        "tolerance":1e-15
+                    },
+                    "Points_point_central_expr_sigma_xy":
+                    {
+                        "value":0.0,
+                        "tolerance":1e-15
+                    },
+                    "Points_point_central_expr_sigma_xz":
+                    {
+                        "value":0.0,
+                        "tolerance":1e-15
+                    },
+                    "Points_point_central_expr_sigma_yz":
+                    {
+                        "value":0.0,
+                        "tolerance":1e-15
                     }
                 }
             }
