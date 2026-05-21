@@ -38,7 +38,7 @@ Physical Surface("ForceApply") = {3};
 Physical Surface("Dirichlet") = {5};
 
 
-// Physical Point("DirichletPoints") = {1,4,5,8};
+Physical Point("Points") = {2,3,6,7}; // {1,4,5,8};
 
 
 // Physical Surface("XPlus") = {3};

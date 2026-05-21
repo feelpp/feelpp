@@ -120,9 +120,9 @@ int main(int argc, char **argv)
         // a = integrate( _range = elements(mesh), _expr = lambda*trace(sym(gradt(u)))*trace(sym(grad(v))) + 2*mu*inner(sym(gradt(u)), sym(grad(v))));  // ok aussi
         // a = integrate( _range = elements(mesh), _expr = cst(lambda)*trace( sym(gradt(u)) )*trace( sym(grad(v)) ) + cst(2*mu)*inner( sym(gradt(u)), sym(grad(v)) ));
 
-        auto epsu = sym(gradt(u));    // symm_grad( u );
-        auto epsv = sym(grad(v));     // symm_grad( v );
-        a = integrate( _range = elements(mesh), _expr = cst( lambda )*trace( epsu )*trace( epsv ) + cst( 2.0*mu )*inner( epsu, epsv ));  // ok
+        // auto epsu = sym(gradt(u));    // symm_grad( u );
+        // auto epsv = sym(grad(v));     // symm_grad( v );
+        // a = integrate( _range = elements(mesh), _expr = cst( lambda )*trace( epsu )*trace( epsv ) + cst( 2.0*mu )*inner( epsu, epsv ));  // ok
 
         // auto C = isotropic_stiffness<3>( lambda, mu );
         // a = integrate( _range = elements(mesh), _expr = ddot( C, epsu, epsv ));   // ok
@@ -143,8 +143,9 @@ int main(int argc, char **argv)
 
         // test
         // l = integrate( _range = markedfaces(mesh, "ForceApply"), _expr = inner( f, id(v) ));  
-        a += on( _range = markedfaces(mesh,"Dirichlet"), _rhs=l, _element = u, _expr = vec(cst(0.0), cst(0.0), cst(0.0)) );   
-        a += on( _range = markedfaces(mesh,"ForceApply"), _rhs=l, _element = u, _expr = g );   
+        l = integrate( _range = markedpoints(mesh, "Points"), _expr = inner( f, id(v) ));  
+
+        a += on( _range = markedfaces(mesh,"Dirichlet"), _rhs=l, _element = u, _expr = g );   
 
         a.solve( _rhs = l, _solution = u );
 
