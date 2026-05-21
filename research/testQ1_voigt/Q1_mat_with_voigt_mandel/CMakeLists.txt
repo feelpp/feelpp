@@ -6,5 +6,7 @@ set(CMAKE_BUILD_TYPE Release CACHE STRING "Choix du type de build" FORCE)
 endif()
 
 add_executable(Q1voigt Q1_voigt.cpp)
+add_executable(Q1mandel Q1_mandel.cpp)
 
 target_link_libraries(Q1voigt PRIVATE Feelpp::feelpp)
+target_link_libraries(Q1mandel PRIVATE Feelpp::feelpp)
