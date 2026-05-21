@@ -1,0 +1,77 @@
+{
+    "Name": "Test traction ",
+    "ShortName":"Test",
+    "Models":
+    {
+        "solid":{
+            "equations":"Elasticity"
+        }
+    },
+    "Materials":
+    {
+        "Omega":
+        {
+            "E":"1",
+            "nu":"0.45"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "solid":
+        {
+            "displacement":
+            {
+            "fixed":{
+                    "markers":["ZMoins"],
+                    "expr":"{0,0,0}"
+                }
+
+            },
+            "normal_stress":{
+                "ZPlus":{
+                    "expr":"{0,0,1}"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "solid":
+        {
+            "Exports":
+            {
+                "fields":["displacement", "stress"]
+            },
+            "Measures":
+            {
+                "Points":
+                {
+                    "point_central":
+                    {
+                        "coord":"{0.5,0.5,0.6}",
+                        "expressions":
+                        {
+                            "sigma_xx":"solid_stress_P_00:solid_stress_P_00",
+                            "sigma_yy":"solid_stress_P_11:solid_stress_P_11",
+                            "sigma_zz":"solid_stress_P_22:solid_stress_P_22",
+                            "sigma_xy":"solid_stress_P_01:solid_stress_P_01",
+                            "sigma_xz":"solid_stress_P_02:solid_stress_P_02",
+                            "sigma_yz":"solid_stress_P_12:solid_stress_P_12"
+                        }
+                    }
+                }
+            },
+            "Checkers":
+            {
+                "Measures": // mettre ts sig + tol + basse possible 
+                {
+                    "Points_point_central_expr_sigma_zz":
+                    {
+                        "value":1.0,
+                        "tolerance":1e-8
+                    }
+                }
+            }
+        }
+    }
+}
