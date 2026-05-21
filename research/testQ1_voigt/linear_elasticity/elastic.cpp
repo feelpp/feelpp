@@ -1,11 +1,8 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:set fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4*/
-
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feelvf/vf.hpp>
-// #include "nullspace-rigidbody.hpp"
 
 
 int main(int argc, char**argv )
@@ -21,8 +18,6 @@ int main(int argc, char**argv )
             ( "weakdir", po::value<bool>()->default_value( false ), "use weak dirichlet" )
             ( "gamma", po::value<double>()->default_value( 100 ), "penalisation term" )
             ( "moment_x", po::value<bool>()->default_value( false ), "Moment x test" )
-
-            // ( "nullspace", po::value<bool>()->default_value( false ), "add null space" )
             ;
 
         Environment env( _argc=argc, _argv=argv,
@@ -33,9 +28,9 @@ int main(int argc, char**argv )
 
 
         tic();
-        // auto mesh = loadMesh(_mesh=new Mesh<Simplex<3,1>>);
         auto mesh_file = Environment::expand( soption(_name = "gmsh.filename") );
         auto mesh = loadMesh(_mesh = new Mesh<Hypercube<3,1>>(), _filename = mesh_file, _scale = 1, _straighten = false);
+        // auto mesh = loadMesh(_mesh=new Mesh<Simplex<3,1>>);
 
         toc("loadMesh");
 
@@ -59,7 +54,6 @@ int main(int argc, char**argv )
 
         tic();
         auto l = form1( _test=Vh );
-        // possible d'appliquer juste une force sur un point ?
 
         if( boption(_name = "moment_x" ) ) {
             auto force = vec( cst(0.), -6*Pz(), 6*(Py() - 0.5) );
@@ -67,15 +61,12 @@ int main(int argc, char**argv )
         }
         else
             l = integrate(_range= markedfaces(mesh, "ForceApply"), _expr = inner( f, id(v) ));
-
-
         toc("l");
 
         tic();
         auto a = form2( _trial=Vh, _test=Vh);
         a = integrate(_range = elements(mesh), _expr = inner( sigmat, grad(v) ));
 
-        // Appliquer sur des points ? avec markedpoints 
         a+=on(_range=markedfaces(mesh,"Dirichlet"), _rhs=l, _element=u, _expr=g );  
         toc("a");
 
@@ -94,7 +85,7 @@ int main(int argc, char**argv )
 
         l.vector().printMatlab("form1.m");
         a.matrix().printMatlab("form2.m");
-        u.printMatlab("solution.m");   // print de la solution noeud par noeud
+        u.printMatlab("solution.m");
 
         return 0;
     }
