@@ -132,18 +132,20 @@ int main(int argc, char **argv)
 
 
         // NOTATION VOIGT
-        // auto C = isotropic_stiffness<3, SymmetricTensorNotation::Voigt>( lambda, mu );
-        // a = integrate( _range = elements(mesh), _expr = ddot<SymmetricTensorNotation::Voigt>( C, Eps_u_voigt, Eps_v_voigt ));
+        auto C = isotropic_stiffness<3, SymmetricTensorNotation::Voigt>( lambda, mu );
+        a = integrate( _range = elements(mesh), _expr = ddot<SymmetricTensorNotation::Voigt>( C, Eps_u_voigt, Eps_v_voigt ));
 
 
         // NOTATION MANDEL
-        auto C = isotropic_stiffness<3>( lambda, mu );       // Mandel par défaut
-        a = integrate( _range = elements(mesh), _expr = ddot( C, Eps_u_mandel, Eps_v_mandel ));    // pareil, Mandel par défaut
+        // auto C = isotropic_stiffness<3>( lambda, mu );       // Mandel par défaut
+        // a = integrate( _range = elements(mesh), _expr = ddot( C, Eps_u_mandel, Eps_v_mandel ));    // pareil, Mandel par défaut
 
 
         // test
-        l = integrate( _range = markedfaces(mesh, "ForceApply"), _expr = inner( f, id(v) ));   
-        a += on( _range = markedfaces(mesh,"Dirichlet"), _rhs=l, _element = u, _expr = g );   
+        // l = integrate( _range = markedfaces(mesh, "ForceApply"), _expr = inner( f, id(v) ));  
+        a += on( _range = markedfaces(mesh,"Dirichlet"), _rhs=l, _element = u, _expr = vec(cst(0.0), cst(0.0), cst(0.0)) );   
+        a += on( _range = markedfaces(mesh,"ForceApply"), _rhs=l, _element = u, _expr = g );   
+
         a.solve( _rhs = l, _solution = u );
 
         
