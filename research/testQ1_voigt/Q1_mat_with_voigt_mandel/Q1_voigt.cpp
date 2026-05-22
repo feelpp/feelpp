@@ -112,6 +112,27 @@ int main(int argc, char **argv)
                           cst(0.5)* (grad(v)(2,1) + grad(v)(1,2))
                         );
         
+        
+
+
+        // vecVoigt.vector().printMatlab( "vecVoigt.m" );             
+        // std::cout << "Vecteur en notation de Voigt : " << vecVoigt(0) << ", " << vecVoigt(1) << ", " << vecVoigt(2) << ", " << vecVoigt(3) << ", " << vecVoigt(4) << ", " << vecVoigt(5) << std::endl;
+
+
+        auto vecVoigt = voigt_vec<3>( cst(1.0), cst(2.0), cst(3.0), cst(4.0), cst(5.0), cst(6.0));
+        auto devoigt = unvoigt( vecVoigt );
+
+        auto matAttendue = mat<3, 3>( cst( 1.0 ), cst( 4.0 ), cst( 5.0 ),
+                                      cst( 4.0 ), cst( 2.0 ), cst( 6.0 ),
+                                      cst( 5.0 ), cst( 6.0 ), cst( 3.0 ) );
+
+        auto diff_devoigt = devoigt - matAttendue;
+
+        std::cout << "Test unvoigt_vec : " << integrate( _range = elements( mesh ), _expr = inner( diff_devoigt, diff_devoigt ) ).evaluate()(0,0) << std::endl;
+
+
+
+
 
         // auto deft = sym(gradt(u));
         // auto Id = eye<3,3>();
