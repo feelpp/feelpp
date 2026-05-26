@@ -322,7 +322,7 @@ public :
     {
         auto const& magneticRelativePermeability = this->materialsProperties()->materialProperty( matName, "magnetic-relative-permeability" );
         double mu_0 = ModelPhysicMagnetic<nDim>::vacuumPermeabilityConstant();
-
+#if 0
         if ( magneticRelativePermeability.isMatrix() )
         {
           if constexpr (  nDim == 3 )
@@ -333,8 +333,49 @@ public :
         }
 
         auto mu_r = expr( magneticRelativePermeability.expr(), symbolsExpr );
+
         return 1./(mu_0*mu_r);
+#else
+        if constexpr ( nDim == 2 && true )
+        {
+            // case scalar only
+            auto mu_r = expr( magneticRelativePermeability.expr(), symbolsExpr );
+            return 1./(mu_0*mu_r);
+        }
+        else
+        {
+            auto Id = eye<nDim,nDim>();
+            using expr_mu_r_scalar_type = std::decay_t<decltype( expr( magneticRelativePermeability.expr(), symbolsExpr )*Id )>;
+            using expr_mu_r_matrix_type = std::decay_t<decltype( expr( magneticRelativePermeability.template expr<nDim,nDim>(), symbolsExpr ) )>;
+            auto mu_r = exprOptionalConcat<expr_mu_r_scalar_type,expr_mu_r_matrix_type>();
+            if ( magneticRelativePermeability.isMatrix() )
+                mu_r.expression().add( expr( magneticRelativePermeability.template expr<nDim,nDim>(), symbolsExpr ) );
+            else
+                mu_r.expression().add( expr( magneticRelativePermeability.expr(), symbolsExpr )*Id );
+            return (1./mu_0)*inv(mu_r);
+        }
+#endif
     }
+    template <typename SymbolsExpr = symbols_expression_empty_t>
+    auto reluctivityExpr( SymbolsExpr const& symbolsExpr = symbols_expression_empty_t{} ) const
+        {
+            double mu_0 = ModelPhysicMagnetic<nDim>::vacuumPermeabilityConstant();
+            static constexpr bool is2DPlanarTransverseMagnetic = nDim == 2 && false; // unknown is scalar
+            static constexpr bool is2DPlanarTransverseElectric = nDim == 2 && true; // unknown is vector
+            if constexpr ( is2DPlanarTransverseElectric )
+            {
+                // case scalar only
+                auto mu_r = this->materialsProperties()->template materialPropertyExpr<1,1>( "magnetic-relative-permeability", symbolsExpr );
+                return 1./(mu_0*mu_r);
+            }
+            else
+            {
+                // scalar or matrix, so return always matrix shape (scalar is mutliplied by Identity matrix)
+                auto mu_r = this->materialsProperties()->template materialPropertyExprScalarOrMatrix<nDim>( "magnetic-relative-permeability", symbolsExpr );
+                return (1./mu_0)*inv(mu_r);
+            }
+        }
+
 
     template <typename SymbolsExpr = symbols_expression_empty_t>
     auto fieldIntensityExpr( std::string const& matName, SymbolsExpr const& symbolsExpr = symbols_expression_empty_t{} ) const

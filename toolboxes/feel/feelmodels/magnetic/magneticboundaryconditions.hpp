@@ -20,6 +20,7 @@ class MagneticBoundaryConditions : public BoundaryConditionsBase
 public:
     enum class Type { MagneticPotentialImposed=0 };
 
+    using vector_potential_imposed_base_type = GenericDirichletBoundaryCondition<nRealDim,1>;
     //! n x A = g
     class MagneticPotentialImposed : public GenericDirichletBoundaryCondition<nRealDim,1>
     {
@@ -79,6 +80,20 @@ public:
     void updateInformationObject( nl::json & p ) const;
     //! return tabulate information from json info
     static tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
+
+    // helper functions to get vector potential bc by method
+    std::vector<std::tuple<std::string,std::shared_ptr<vector_potential_imposed_base_type>>> anyBcWithVectorPotentialImposed( typename vector_potential_imposed_base_type::Method method ) const
+        {
+            std::vector<std::tuple<std::string,std::shared_ptr<vector_potential_imposed_base_type>>> ret;
+            for ( auto const& [bcId,bcData] : M_magneticPotentialImposed )
+                if ( bcData->isMethod( method ) )
+                    ret.push_back( std::make_tuple( bcId, bcData ) );
+            for ( auto const& [bcId,bcData] : M_magneticInsulation )
+                if ( bcData->isMethod( method ) )
+                    ret.push_back( std::make_tuple( bcId, bcData ) );
+            return ret;
+        }
+
 
 private:
     std::map<std::string,std::shared_ptr<MagneticPotentialImposed>> M_magneticPotentialImposed;

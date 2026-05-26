@@ -98,16 +98,6 @@ Magnetic<ConvexType,BasisMagneticVectorPotentialType>::updateLinearPDE( DataUpda
                 }
             }
 
-            // // additional term in regularized formulation
-            // if ( buildCstPart )
-            //   {
-            //     double epsilonPenal = 1.;
-            //     bilinearForm_PatternCoupled +=
-            //       integrate( _range=range,
-            //                  _expr= timeSteppingScaling*epsilonPenal*inner(idt(u),id(v)),
-            //                  _geomap=this->geomap() );
-
-            //   }
             // current density sources
             for ( auto const& currentDensitySource : physicMagneticData->currentDensitySources() )
             {
@@ -162,43 +152,49 @@ Magnetic<ConvexType,BasisMagneticVectorPotentialType>::updateLinearPDE( DataUpda
 
     //--------------------------------------------------------------------------------------------------//
     // update weak bc
-#if 0
     if ( buildNonCstPart )
     {
-        for ( auto const& [bcName,bcData] : M_boundaryConditions->heatFlux() )
+        double M_penaldir = 1e6;
+        auto reluctivityExpr = this->reluctivityExpr( symbolsExpr );
+        for ( auto const& [bcName,bcData] : M_boundaryConditions->magneticPotentialImposed() )
         {
+            if ( !bcData->isMethodNitsche() )
+                continue;
             auto theExpr = bcData->expr( symbolsExpr );
             if ( doAssemblyRhs )
             {
-                myLinearForm +=
-                    integrate( _range=markedfaces(this->mesh(),bcData->markers()),
-                               _expr= timeSteppingScaling*theExpr*id(v),
-                               _geomap=this->geomap() );
+                if constexpr (  nDim == 3 ) // TODO 2D cases
+                {
+                    myLinearForm +=
+                        integrate( _range=markedfaces(this->mesh(),bcData->markers()),
+                                   _expr= -timeSteppingScaling*inner(curl(v),reluctivityExpr*cross(theExpr,N()))
+                                   + timeSteppingScaling*M_penaldir*trans( reluctivityExpr*cross(theExpr,N()) )*cross(id(v),N())/hFace(),
+                                   _geomap=this->geomap() );
+                }
             }
         }
-        for ( auto const& [bcName,bcData] : M_boundaryConditions->convectiveHeatFlux() )
+
+        if ( doAssemblyRhs )
         {
-            auto theExpr_h = bcData->expr_h( symbolsExpr );
-            auto theExpr_Text = bcData->expr_Text( symbolsExpr );
-            if ( doAssemblyLhs )
+            std::set<std::string> allmarkers;
+            for ( auto const& [bcId,bcData] : M_boundaryConditions->anyBcWithVectorPotentialImposed( boundary_conditions_type::vector_potential_imposed_base_type::Method::nitsche ) )
+                allmarkers.insert( bcData->markers().begin(), bcData->markers().end() );
+
+            if constexpr (  nDim == 3 ) // TODO 2D cases
             {
-                bilinearForm_PatternCoupled +=
-                    integrate( _range=markedfaces(mesh,bcData->markers()),
-                               _expr= timeSteppingScaling*theExpr_h*idt(v)*id(v),
-                               _geomap=this->geomap() );
-            }
-            if ( doAssemblyRhs )
-            {
-                myLinearForm +=
-                    integrate( _range=markedfaces(mesh,bcData->markers()),
-                               _expr= timeSteppingScaling*theExpr_h*theExpr_Text*id(v),
-                               _geomap=this->geomap() );
+                if ( !allmarkers.empty() )
+                    bilinearForm_A_A +=
+                        integrate(_range=markedfaces(this->mesh(),allmarkers),
+                                  _expr=-timeSteppingScaling*inner(reluctivityExpr*curlt(u),cross(id(v),N()))
+                                  - timeSteppingScaling*inner(curl(v),reluctivityExpr*cross(idt(u),N()))
+                                  + timeSteppingScaling*M_penaldir*trans( reluctivityExpr*cross(idt(u),N()) )*cross(id(v),N())/hFace(),
+                                  _geomap=this->geomap() );
             }
         }
     }
 
     //--------------------------------------------------------------------------------------------------//
-#endif
+
 
     double timeElapsed = this->timerTool("Solve").stop();
     this->log("Magnetic","updateLinearPDE",

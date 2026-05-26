@@ -1,1 +1,2 @@
 h-convergence_cube_Ned1h0 --config-files ${CMAKE_CURRENT_SOURCE_DIR}/cases/h-convergence/cube/cube.cfg ${CMAKE_CURRENT_SOURCE_DIR}/cases/common/prec_ams.cfg --directory=toolboxes/testsuite/magnetic/testsuite/h-convergence_cube_Ned1h0
+h-convergence_cube_Ned1h0_saddle-point --config-files ${CMAKE_CURRENT_SOURCE_DIR}/cases/h-convergence/cube/cube.cfg ${CMAKE_CURRENT_SOURCE_DIR}/cases/common/prec_saddlepoint_ams.cfg --null-space.method=saddle-point --directory=toolboxes/testsuite/magnetic/testsuite/h-convergence_cube_Ned1h0_saddle-point
