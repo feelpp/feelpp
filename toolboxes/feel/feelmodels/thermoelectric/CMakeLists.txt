@@ -27,50 +27,66 @@
 foreach(_DIM 2 3)
   math(EXPR _T_ORDER "${FEELPP_INSTANTIATION_ORDER_MAX}")
   feelpp_max( MAX_ORDER 1 ${_T_ORDER})
-  message(STATUS "[feelpp] THERMOELECTRIC ${_DIM}D PNG1 N=1..${MAX_ORDER}")
   foreach( _T_ORDER RANGE 1 ${MAX_ORDER} )
+    set(_FE_BASIS_TAG "Pch${_T_ORDER}")
+    set(_FE_BASIS_TYPE "Lagrange<${_T_ORDER},Scalar,Continuous,PointSetFekete>")
+    message(STATUS "[feelpp] THERMOELECTRIC ${_DIM}D_G1 Heat:${_FE_BASIS_TAG} Electric:${_FE_BASIS_TAG}")
     genLibThermoelectric(
       DIM     ${_DIM}
       T_ORDER ${_T_ORDER}
-      P_ORDER ${_T_ORDER}
+      ELECTRIC_P_FE_BASIS_TYPE ${_FE_BASIS_TYPE}
+      ELECTRIC_P_FE_BASIS_TAG ${_FE_BASIS_TAG}
       GEO_ORDER 1
       )
-    set(FEELPP_MODELS_LIBRARIES_THERMOELECTRIC ${FEELPP_MODELS_LIBRARIES_THERMOELECTRIC} ${THERMOELECTRIC_LIB_NAME}  )
-  endforeach()
-endforeach()
-
-# isoparametric
-foreach(_DIM 2 3)
-  math(EXPR _T_ORDER "${FEELPP_INSTANTIATION_ORDER_MAX}")
-  feelpp_min( MAX_ORDER ${FEELPP_MESH_MAX_ORDER} ${_T_ORDER})
-  message(STATUS "[feelpp] THERMOELECTRIC ${_DIM}D PNGN N=2..${MAX_ORDER}")
-  foreach( _T_ORDER RANGE 2 ${MAX_ORDER} )
-    genLibThermoelectric(
-      DIM     ${_DIM}
-      T_ORDER ${_T_ORDER}
-      P_ORDER ${_T_ORDER}
-      GEO_ORDER ${_T_ORDER}
-      )
     set(FEELPP_MODELS_LIBRARIES_THERMOELECTRIC ${FEELPP_MODELS_LIBRARIES_THERMOELECTRIC} ${THERMOELECTRIC_LIB_NAME} )
-  endforeach()
-endforeach()
 
-if( ${FEELPP_MESH_MAX_ORDER} GREATER 1 )
-  foreach(_DIM 2 3)
-    math(EXPR _T_ORDER "${FEELPP_INSTANTIATION_ORDER_MAX}")
-    feelpp_max( MAX_ORDER 1 ${_T_ORDER})
-    message(STATUS "[feelpp] THERMOELECTRIC ${_DIM}D PNG2 N=2..${MAX_ORDER}")
-    foreach( _T_ORDER RANGE 2 ${MAX_ORDER} )
+    if ( ${_T_ORDER} GREATER_EQUAL 2 AND ${FEELPP_MESH_MAX_ORDER} GREATER_EQUAL ${_T_ORDER} )
+      message(STATUS "[feelpp] THERMOELECTRIC ${_DIM}D_G${_T_ORDER} Heat:${_FE_BASIS_TAG} Electric:${_FE_BASIS_TAG}")
       genLibThermoelectric(
         DIM     ${_DIM}
         T_ORDER ${_T_ORDER}
-        P_ORDER ${_T_ORDER}
-        GEO_ORDER 2
-        )
+        ELECTRIC_P_FE_BASIS_TYPE ${_FE_BASIS_TYPE}
+        ELECTRIC_P_FE_BASIS_TAG ${_FE_BASIS_TAG}
+        GEO_ORDER ${_T_ORDER}
+      )
       set(FEELPP_MODELS_LIBRARIES_THERMOELECTRIC ${FEELPP_MODELS_LIBRARIES_THERMOELECTRIC} ${THERMOELECTRIC_LIB_NAME} )
-    endforeach()
+    endif()
+
   endforeach()
-endif()
+endforeach()
+
+# # isoparametric
+# foreach(_DIM 2 3)
+#   math(EXPR _T_ORDER "${FEELPP_INSTANTIATION_ORDER_MAX}")
+#   feelpp_min( MAX_ORDER ${FEELPP_MESH_MAX_ORDER} ${_T_ORDER})
+#   message(STATUS "[feelpp] THERMOELECTRIC ${_DIM}D PNGN N=2..${MAX_ORDER}")
+#   foreach( _T_ORDER RANGE 2 ${MAX_ORDER} )
+#     genLibThermoelectric(
+#       DIM     ${_DIM}
+#       T_ORDER ${_T_ORDER}
+#       P_ORDER ${_T_ORDER}
+#       GEO_ORDER ${_T_ORDER}
+#       )
+#     set(FEELPP_MODELS_LIBRARIES_THERMOELECTRIC ${FEELPP_MODELS_LIBRARIES_THERMOELECTRIC} ${THERMOELECTRIC_LIB_NAME} )
+#   endforeach()
+# endforeach()
+
+# if( ${FEELPP_MESH_MAX_ORDER} GREATER 1 )
+#   foreach(_DIM 2 3)
+#     math(EXPR _T_ORDER "${FEELPP_INSTANTIATION_ORDER_MAX}")
+#     feelpp_max( MAX_ORDER 1 ${_T_ORDER})
+#     message(STATUS "[feelpp] THERMOELECTRIC ${_DIM}D PNG2 N=2..${MAX_ORDER}")
+#     foreach( _T_ORDER RANGE 2 ${MAX_ORDER} )
+#       genLibThermoelectric(
+#         DIM     ${_DIM}
+#         T_ORDER ${_T_ORDER}
+#         P_ORDER ${_T_ORDER}
+#         GEO_ORDER 2
+#         )
+#       set(FEELPP_MODELS_LIBRARIES_THERMOELECTRIC ${FEELPP_MODELS_LIBRARIES_THERMOELECTRIC} ${THERMOELECTRIC_LIB_NAME} )
+#     endforeach()
+#   endforeach()
+# endif()
 
 
 add_library(feelpp_toolbox_thermoelectric_lib SHARED libthermoelectric.cpp )

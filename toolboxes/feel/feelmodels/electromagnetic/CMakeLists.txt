@@ -1,14 +1,14 @@
 
 set( _MAGNETIC_FE_BASIS_TYPE_LIST "Lagrange<1,Vectorial,Continuous,PointSetFekete>" "Nedelec<0,NedelecKind::NED1>")
 set( _MAGNETIC_FE_BASIS_TAG_LIST "Pchv1" "Ned1h0")
-set( _ELECTRIC_FE_BASIS_TYPE_LIST "Lagrange<1,Scalar,Continuous,PointSetFekete>")
-set( _ELECTRIC_FE_BASIS_TAG_LIST "Pch1")
+set( _ELECTRIC_FE_BASIS_TYPE_LIST "Lagrange<1,Scalar,Continuous,PointSetFekete>" "Lagrange<1,Scalar,Continuous,PointSetFekete>")
+set( _ELECTRIC_FE_BASIS_TAG_LIST "Pch1" "Pch1")
 
 foreach(_DIM 2 3)
   foreach( _FE_BASIS IN ZIP_LISTS
       _ELECTRIC_FE_BASIS_TYPE_LIST _ELECTRIC_FE_BASIS_TAG_LIST
       _MAGNETIC_FE_BASIS_TYPE_LIST _MAGNETIC_FE_BASIS_TAG_LIST )
-    message(STATUS "[feelpp] ELECTROMAGNETIC ${_DIM}D Electric:${_FE_BASIS_1} Magnetic:${_FE_BASIS_3}")
+    message(STATUS "[feelpp] ELECTROMAGNETIC ${_DIM}DG1 Electric:${_FE_BASIS_1} Magnetic:${_FE_BASIS_3}")
     genLibElectromagnetic(
       DIM     ${_DIM}
       ELECTRIC_P_FE_BASIS_TYPE ${_FE_BASIS_0}

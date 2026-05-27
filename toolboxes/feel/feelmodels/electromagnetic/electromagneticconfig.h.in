@@ -2,15 +2,15 @@
 #include <feel/feelmodels/electric/@ELECTRIC_LIB_VARIANTS@/electricconfig.h>
 #include <feel/feelmodels/magnetic/@MAGNETIC_LIB_VARIANTS@/magneticconfig.h>
 
-#define ELECTROMAGNETIC_CLASS_TEMPLATE_DECLARATIONS \
+#define ELECTROMAGNETIC_CLASS_TEMPLATE_DECLARATIONS         \
     template< typename ElectricType, typename MagneticType> \
-        /**/
-#define ELECTROMAGNETIC_CLASS_TEMPLATE_TYPE \
-    Electromagnetic<ElectricType,MagneticType>   \
-        /**/
-#define ELECTROMAGNETIC_CLASS_TYPE \
-    Electromagnetic< ELECTRIC_CLASS_TYPE, MAGNETIC_CLASS_TYPE >  \
     /**/
-#define ELECTROMAGNETIC_CLASS_INSTANTIATION \
+#define ELECTROMAGNETIC_CLASS_TEMPLATE_TYPE     \
+    Electromagnetic<ElectricType,MagneticType>  \
+    /**/
+#define ELECTROMAGNETIC_CLASS_TYPE                              \
+    Electromagnetic< ELECTRIC_CLASS_TYPE, MAGNETIC_CLASS_TYPE > \
+    /**/
+#define ELECTROMAGNETIC_CLASS_INSTANTIATION     \
     template class ELECTROMAGNETIC_CLASS_TYPE;  \
     /**/

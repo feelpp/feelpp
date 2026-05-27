@@ -42,17 +42,7 @@ ELECTROMAGNETIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTROMAGNETIC_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 {
-#if 0
     M_solverName = soption(_prefix=this->prefix(),_name="solver");
-    M_solverNewtonInitialGuessUseLinearElectromagnetic = boption(_prefix=this->prefix(),_name="solver-newton.initial-guess.use-linear-thermo-electric");
-    M_solverNewtonInitialGuessUseLinearHeat = boption(_prefix=this->prefix(),_name="solver-newton.initial-guess.use-linear-heat");
-    M_solverNewtonInitialGuessUseLinearElectric = boption(_prefix=this->prefix(),_name="solver-newton.initial-guess.use-linear-electric");
-    if ( M_solverNewtonInitialGuessUseLinearElectromagnetic )
-    {
-        M_solverNewtonInitialGuessUseLinearHeat = true;
-        M_solverNewtonInitialGuessUseLinearElectric = true;
-    }
-#endif
 }
 
 ELECTROMAGNETIC_CLASS_TEMPLATE_DECLARATIONS
@@ -74,16 +64,6 @@ ELECTROMAGNETIC_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("Electromagnetic","initMesh",(boost::format("finish in %1% s")%tElpased).str() );
 
 } // createMesh()
-
-
-
-// ELECTROMAGNETIC_CLASS_TEMPLATE_DECLARATIONS
-// int
-// ELECTROMAGNETIC_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
-// {
-//     int nBlock = M_electricModel->nBlockMatrixGraph() + M_magneticModel->nBlockMatrixGraph();
-//     return nBlock;
-// }
 
 
 ELECTROMAGNETIC_CLASS_TEMPLATE_DECLARATIONS
