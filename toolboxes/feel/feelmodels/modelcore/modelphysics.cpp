@@ -38,11 +38,11 @@ ModelPhysic<Dim>::ModelPhysic( std::string const& modeling, std::string const& t
         this->addMaterialPropertyDescription( "thermal-expansion", "beta", { scalarShape } );
         this->addMaterialPropertyDescription( "thermal-conductivity", "k", { scalarShape,matrixShape } );
     }
-    if ( M_modeling == "electric" || M_modeling == "thermo-electric" )
+    if ( M_modeling == "electric" || M_modeling == "thermo-electric" || M_modeling == "electromagnetic" )
     {
         this->addMaterialPropertyDescription( "electric-conductivity", "sigma", { scalarShape } );
     }
-    if ( M_modeling == "magnetic" || M_modeling == "electro-magnetic" )
+    if ( M_modeling == "magnetic" || M_modeling == "electro-magnetic" || M_modeling == "electromagnetic" )
     {
         this->addMaterialPropertyDescription( "magnetic-relative-permeability", "mu_r", { scalarShape,matrixShape } );
     }
@@ -85,6 +85,8 @@ ModelPhysic<Dim>::New( ModelPhysics<Dim> const& mphysics, std::string const& mod
         return std::make_shared<ModelPhysicMagnetic<Dim>>( mphysics, modeling, type, name, model );
     else if ( modeling == "thermo-electric" )
         return std::make_shared<ModelPhysicThermoElectric<Dim>>( mphysics, modeling, type, name, model );
+    else if ( modeling == "electromagnetic" )
+        return std::make_shared<ModelPhysicElectromagnetic<Dim>>( mphysics, modeling, type, name, model );
     else if ( modeling == "fluid" )
         return std::make_shared<ModelPhysicFluid<Dim>>( mphysics, modeling, type, name, model );
     else if ( modeling == "solid" )
@@ -681,6 +683,36 @@ ModelPhysicThermoElectric<Dim>::updateInformationObject( nl::json & p ) const
 template <uint16_type Dim>
 tabulate_informations_ptr_t
 ModelPhysicThermoElectric<Dim>::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
+    if ( jsonInfo.contains("Generic") )
+    {
+        super_type::updateTabulateInformationsBasic( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+        super_type::updateTabulateInformationsSubphysics( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+        super_type::updateTabulateInformationsParameters( jsonInfo.at("Generic"), tabInfo, tabInfoProp );
+    }
+    return tabInfo;
+}
+
+
+template <uint16_type Dim>
+ModelPhysicElectromagnetic<Dim>::ModelPhysicElectromagnetic( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model )
+    :
+    super_type( modeling, type, name, mphysics, model )
+{
+    auto const& j_setup = model.setup();
+}
+
+template <uint16_type Dim>
+void
+ModelPhysicElectromagnetic<Dim>::updateInformationObject( nl::json & p ) const
+{
+    super_type::updateInformationObject( p["Generic"] );
+}
+
+template <uint16_type Dim>
+tabulate_informations_ptr_t
+ModelPhysicElectromagnetic<Dim>::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
     auto tabInfo = TabulateInformationsSections::New( tabInfoProp );
     if ( jsonInfo.contains("Generic") )
@@ -1832,6 +1864,8 @@ template class ModelPhysicMagnetic<2>;
 template class ModelPhysicMagnetic<3>;
 template class ModelPhysicThermoElectric<2>;
 template class ModelPhysicThermoElectric<3>;
+template class ModelPhysicElectromagnetic<2>;
+template class ModelPhysicElectromagnetic<3>;
 template class ModelPhysicFluid<2>;
 template class ModelPhysicFluid<3>;
 template class ModelPhysicSolid<2>;

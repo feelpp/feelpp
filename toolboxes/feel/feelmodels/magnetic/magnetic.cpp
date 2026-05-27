@@ -254,6 +254,7 @@ MAGNETIC_CLASS_TEMPLATE_TYPE::initAlgebraicModel()
     this->initInHousePreconditioner();
 }
 
+
 MAGNETIC_CLASS_TEMPLATE_DECLARATIONS
 BlocksBaseGraphCSR
 MAGNETIC_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const

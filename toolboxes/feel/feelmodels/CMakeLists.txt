@@ -94,3 +94,6 @@ if ( FEELPP_TOOLBOXES_ENABLE_MAXWELL )
   add_subdirectory( maxwell )
 endif()
 
+if ( FEELPP_TOOLBOXES_ENABLE_ELECTROMAGNETIC AND FEELPP_TOOLBOXES_ENABLE_ELECTRIC AND FEELPP_TOOLBOXES_ENABLE_MAGNETIC )
+  add_subdirectory( electromagnetic )
+endif()

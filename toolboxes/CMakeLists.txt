@@ -89,6 +89,7 @@ option(FEELPP_TOOLBOXES_ENABLE_MULTIFLUID "Enable/Disable MultiFluid" OFF ) # ${
 option(FEELPP_TOOLBOXES_ENABLE_HDG "Enable/Disable HDG" ${FEELPP_TOOLBOXES_ENABLE})
 option(FEELPP_TOOLBOXES_ENABLE_MAGNETIC "Enable/Disable Magnetic" ${FEELPP_TOOLBOXES_ENABLE})
 option(FEELPP_TOOLBOXES_ENABLE_MAXWELL "Enable/Disable Magnetostatic" OFF)
+option(FEELPP_TOOLBOXES_ENABLE_ELECTROMAGNETIC "Enable/Disable Electromagnetic" ${FEELPP_TOOLBOXES_ENABLE})
 
 #option(FEELPP_ENABLE_PCH_MODELS "Enable precompiled headers for models (pch)" OFF)
 
@@ -164,6 +165,10 @@ endif()
 if ( FEELPP_TOOLBOXES_ENABLE_THERMOELECTRIC )
   add_subdirectory( thermoelectric )
   list(APPEND TOOLBOXES "thermoelectric")
+endif()
+if ( FEELPP_TOOLBOXES_ENABLE_ELECTROMAGNETIC )
+  add_subdirectory( electromagnetic )
+  list(APPEND TOOLBOXES "electromagnetic")
 endif()
 if ( FEELPP_TOOLBOXES_ENABLE_MESHALE )
   add_subdirectory( alemesh )

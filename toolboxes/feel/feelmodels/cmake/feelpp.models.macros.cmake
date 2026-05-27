@@ -1139,3 +1139,79 @@ macro( genLibMagnetic )
       )
   endif()
 endmacro(genLibMagnetic)
+
+
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+
+macro( genLibElectromagnetic )
+  PARSE_ARGUMENTS(FEELMODELS_APP
+    "DIM;ELECTRIC_P_FE_BASIS_TYPE;ELECTRIC_P_FE_BASIS_TAG;MAGNETIC_P_FE_BASIS_TYPE;MAGNETIC_P_FE_BASIS_TAG;GEO_ORDER;"
+    ""
+    ${ARGN}
+    )
+
+  if ( NOT ( FEELMODELS_APP_DIM OR
+        FEELMODELS_APP_ELECTRIC_P_FE_BASIS_TYPE OR FEELMODELS_APP_ELECTRIC_P_FE_BASIS_TAG OR
+        FEELMODELS_APP_MAGNETIC_P_FE_BASIS_TYPE OR FEELMODELS_APP_MAGNETIC_P_FE_BASIS_TAG OR
+        FEELMODELS_APP_GEO_ORDER ) )
+     message(FATAL_ERROR "miss argument! FEELMODELS_APP_DIM OR
+         FEELMODELS_APP_ELECTRIC_P_FE_BASIS_TYPE OR FEELMODELS_APP_ELECTRIC_P_FE_BASIS_TAG OR
+         FEELMODELS_APP_MAGNETIC_P_FE_BASIS_TYPE OR FEELMODELS_APP_MAGNETIC_P_FE_BASIS_TAG OR
+         FEELMODELS_APP_GEO_ORDER")
+  endif()
+
+  set(ELECTROMAGNETIC_DIM ${FEELMODELS_APP_DIM})
+  set(ELECTROMAGNETIC_ELECTRIC_P_FE_BASIS_TYPE ${FEELMODELS_APP_ELECTRIC_P_FE_BASIS_TYPE})
+  set(ELECTROMAGNETIC_ELECTRIC_P_FE_BASIS_TAG ${FEELMODELS_APP_ELECTRIC_P_FE_BASIS_TAG})
+  set(ELECTROMAGNETIC_MAGNETIC_P_FE_BASIS_TYPE ${FEELMODELS_APP_MAGNETIC_P_FE_BASIS_TYPE})
+  set(ELECTROMAGNETIC_MAGNETIC_P_FE_BASIS_TAG ${FEELMODELS_APP_MAGNETIC_P_FE_BASIS_TAG})
+  set(ELECTROMAGNETIC_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
+
+  genLibElectric(
+    DIM     ${ELECTROMAGNETIC_DIM}
+    P_ORDER 1 # TODO!!
+    GEO_ORDER ${ELECTROMAGNETIC_ORDERGEO}
+    )
+  genLibMagnetic(
+    DIM     ${ELECTROMAGNETIC_DIM}
+    P_FE_BASIS_TYPE ${ELECTROMAGNETIC_MAGNETIC_P_FE_BASIS_TYPE}
+    P_FE_BASIS_TAG ${ELECTROMAGNETIC_MAGNETIC_P_FE_BASIS_TAG}
+    GEO_ORDER ${ELECTROMAGNETIC_ORDERGEO}
+  )
+
+  set(ELECTROMAGNETIC_LIB_VARIANTS ${ELECTRIC_LIB_VARIANTS}_${MAGNETIC_LIB_VARIANTS})
+  set(ELECTROMAGNETIC_LIB_NAME feelpp_toolbox_electromagnetic_lib_${ELECTROMAGNETIC_LIB_VARIANTS})
+
+  if ( NOT TARGET ${ELECTROMAGNETIC_LIB_NAME} )
+    # configure the lib
+    set(ELECTROMAGNETIC_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/electromagnetic/${ELECTROMAGNETIC_LIB_VARIANTS})
+    set(ELECTROMAGNETIC_CODEGEN_FILES_TO_COPY
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electromagnetic/electromagnetic_inst.cpp
+      #${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electromagnetic/electromagneticassemblylinear_inst.cpp
+      #${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electromagnetic/electromagneticassemblyjacobian_inst.cpp
+      #${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electromagnetic/electromagneticassemblyresidual_inst.cpp
+      )
+    set(ELECTROMAGNETIC_CODEGEN_SOURCES
+      ${ELECTROMAGNETIC_LIB_DIR}/electromagnetic_inst.cpp
+      #${ELECTROMAGNETIC_LIB_DIR}/electromagneticassemblylinear_inst.cpp
+      #${ELECTROMAGNETIC_LIB_DIR}/electromagneticassemblyjacobian_inst.cpp
+      #${ELECTROMAGNETIC_LIB_DIR}/electromagneticassemblyresidual_inst.cpp
+      )
+    set(ELECTROMAGNETIC_LIB_DEPENDS feelpp_modelmesh feelpp_modelcore )
+    set(ELECTROMAGNETIC_LIB_DEPENDS ${ELECTRIC_LIB_NAME} ${MAGNETIC_LIB_NAME} ${ELECTROMAGNETIC_LIB_DEPENDS} )
+    # generate the lib target
+    genLibBase(
+      LIB_NAME ${ELECTROMAGNETIC_LIB_NAME}
+      LIB_DIR ${ELECTROMAGNETIC_LIB_DIR}
+      LIB_DEPENDS ${ELECTROMAGNETIC_LIB_DEPENDS}
+      FILES_TO_COPY ${ELECTROMAGNETIC_CODEGEN_FILES_TO_COPY}
+      FILES_SOURCES ${ELECTROMAGNETIC_CODEGEN_SOURCES}
+      CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electromagnetic/electromagneticconfig.h.in
+      )
+  endif()
+
+endmacro(genLibElectromagnetic)

@@ -461,11 +461,33 @@ template <uint16_type Dim>
 class ModelPhysicThermoElectric : public ModelPhysic<Dim>
 {
     using super_type = ModelPhysic<Dim>;
-    using self_type = ModelPhysicHeat<Dim>;
+    using self_type = ModelPhysicThermoElectric<Dim>;
 public :
     ModelPhysicThermoElectric( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
     ModelPhysicThermoElectric( ModelPhysicThermoElectric const& ) = default;
     ModelPhysicThermoElectric( ModelPhysicThermoElectric && ) = default;
+
+    void updateInformationObject( nl::json & p ) const override;
+    tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+private :
+};
+
+/**
+ * @brief Electromagnetic Physic Model
+ * @ingroup ModelCore
+ *
+ * @tparam Dim real dimension of the model
+ * @sa Electromagnetic
+ */
+template <uint16_type Dim>
+class ModelPhysicElectromagnetic : public ModelPhysic<Dim>
+{
+    using super_type = ModelPhysic<Dim>;
+    using self_type = ModelPhysicElectromagnetic<Dim>;
+public :
+    ModelPhysicElectromagnetic( ModelPhysics<Dim> const& mphysics, std::string const& modeling, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
+    ModelPhysicElectromagnetic( ModelPhysicElectromagnetic const& ) = default;
+    ModelPhysicElectromagnetic( ModelPhysicElectromagnetic && ) = default;
 
     void updateInformationObject( nl::json & p ) const override;
     tabulate_informations_ptr_t tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;

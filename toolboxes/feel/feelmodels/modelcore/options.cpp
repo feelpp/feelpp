@@ -464,6 +464,19 @@ thermoElectric_options(std::string const& prefix)
 }
 
 Feel::po::options_description
+electromagnetic_options( std::string const& prefix )
+{
+    Feel::po::options_description electromagneticOptions("Electromagnetic options");
+    electromagneticOptions.add_options()
+        (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >()->default_value( "automatic" ), "electromagnetic solver : automatic, Newton, Picard")
+        ;
+    electromagneticOptions.add( electricity_options( prefixvm(prefix,"electric") ) );
+    electromagneticOptions.add( magnetic_options( prefixvm(prefix,"magnetic") ) );
+    return electromagneticOptions.add( modelnumerical_options( prefix ) );
+}
+
+
+Feel::po::options_description
 heatFluid_options(std::string const& prefix)
 {
     Feel::po::options_description heatFluidOptions("HeatFluid options");
@@ -772,6 +785,8 @@ toolboxes_options( std::string const& type, std::string const& prefix )
       toolboxesOptions.add(magnetic_options(prefix));
     else if (type == "thermo-electric")
         toolboxesOptions.add(thermoElectric_options(prefix));
+    else if (type == "electromagnetic")
+        toolboxesOptions.add(electromagnetic_options(prefix));
     else if (type == "heat-fluid")
         toolboxesOptions.add(heatFluid_options(prefix));
     else if (type == "maxwell")
