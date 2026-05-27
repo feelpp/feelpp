@@ -102,13 +102,28 @@ public:
         static auto potential( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
     };
 
+
+    template <typename ... Ts>
+    static self_ptrtype New( Ts && ... v )
+        {
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            std::string const& prefix = args.get(_prefix);
+            std::string const& keyword = args.get_else(_keyword,"electric");
+            worldcomm_ptr_t worldcomm = args.get_else(_worldcomm,Environment::worldCommPtr());
+            auto && repository = args.get_else(_repository,ModelBaseRepository{});
+            auto && vm = args.get_else(_vm, create_program_options( prefix ) );
+            return std::make_shared<self_type>( prefix, keyword, worldcomm, repository, ModelBaseCommandLineOptions{vm} );
+        }
+
+    static Feel::po::options_description create_program_options( std::string const& prefix = "electric" ) { return electric_options( prefix );}
+
     //___________________________________________________________________________________//
     // constructor
     Electric( std::string const& prefix,
               std::string const& keyword = "electric",
               worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
-              std::string const& subPrefix = "",
-              ModelBaseRepository const& modelRep = ModelBaseRepository() );
+              ModelBaseRepository const& modelRep = ModelBaseRepository(),
+              ModelBaseCommandLineOptions const& modelOptions = ModelBaseCommandLineOptions{} );
 
     std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
 

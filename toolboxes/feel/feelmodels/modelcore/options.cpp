@@ -418,7 +418,7 @@ heat_options(std::string const& prefix)
     return heatOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) );
 }
 Feel::po::options_description
-electricity_options(std::string const& prefix)
+electric_options(std::string const& prefix)
 {
     Feel::po::options_description electricityOptions("Electricity options");
     electricityOptions.add_options()
@@ -459,7 +459,7 @@ thermoElectric_options(std::string const& prefix)
         (prefixvm(prefix,"solver-newton.initial-guess.use-linear-electric").c_str(), Feel::po::value<bool>()->default_value( false ), "solver-newton.initial-guess.use-linear-electric")
         ;
     thermoElectricOptions.add( heat_options( prefixvm(prefix,"heat") ) );
-    thermoElectricOptions.add( electricity_options( prefixvm(prefix,"electric") ) );
+    thermoElectricOptions.add( electric_options( prefixvm(prefix,"electric") ) );
     return thermoElectricOptions.add( modelnumerical_options( prefix ) );
 }
 
@@ -470,7 +470,7 @@ electromagnetic_options( std::string const& prefix )
     electromagneticOptions.add_options()
         (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >()->default_value( "automatic" ), "electromagnetic solver : automatic, Newton, Picard")
         ;
-    electromagneticOptions.add( electricity_options( prefixvm(prefix,"electric") ) );
+    electromagneticOptions.add( electric_options( prefixvm(prefix,"electric") ) );
     electromagneticOptions.add( magnetic_options( prefixvm(prefix,"magnetic") ) );
     return electromagneticOptions.add( modelnumerical_options( prefix ) );
 }
@@ -780,7 +780,7 @@ toolboxes_options( std::string const& type, std::string const& prefix )
     else if (type == "multifluid")
         toolboxesOptions.add(multifluid_options(prefix));
     else if (type == "electric")
-        toolboxesOptions.add(electricity_options(prefix));
+        toolboxesOptions.add(electric_options(prefix));
     else if (type == "magnetic")
       toolboxesOptions.add(magnetic_options(prefix));
     else if (type == "thermo-electric")

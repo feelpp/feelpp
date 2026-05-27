@@ -117,8 +117,11 @@ ELECTROMAGNETIC_CLASS_TEMPLATE_TYPE::updatePhysics( typename super_physics_type:
 {
     if ( !M_electricModel )
     {
-        M_electricModel = std::make_shared<electric_model_type>(prefixvm(this->prefix(),"electric"), "electric", this->worldCommPtr(),
-                                                                this->subPrefix(), this->repository() );
+        M_electricModel = electric_model_type::New( _prefix=prefixvm(this->prefix(),"electric"),
+                                                    _keyword="electric",
+                                                    _worldcomm=this->worldCommPtr(),
+                                                    _repository=this->repository(),
+                                                    _vm=this->clovm() );
     }
 
     if ( !M_magneticModel )
@@ -150,7 +153,7 @@ ELECTROMAGNETIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         this->shared_from_this(),
         [this]( typename super_physics_type::PhysicsTree & physicsTree ) {
             physicsTree.updatePhysics( this->shared_from_this(), this->modelProperties().models() );
-            CHECK( M_electricModel && M_magneticModel ) << "aiai";
+            CHECK( M_electricModel && M_magneticModel ) << "missing initialization of electric and magnetic models";
             physicsTree.updatePhysics( M_electricModel, this->modelProperties().models() );
             physicsTree.updatePhysics( M_magneticModel, this->modelProperties().models() );
         } );
@@ -509,7 +512,6 @@ ELECTROMAGNETIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTROMAGNETIC_CLASS_TEMPLATE_TYPE::solve()
 {
-#if 0 // TODO
     this->log("Electromagnetic","solve", "start");
     this->timerTool("Solve").start();
 
@@ -518,11 +520,12 @@ ELECTROMAGNETIC_CLASS_TEMPLATE_TYPE::solve()
     if ( M_solverName == "Linear" )
     {
         M_electricModel->solve();
-        M_heatModel->solve();
+        M_magneticModel->solve();
         this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
     }
     else if ( M_solverName == "Newton" || M_solverName == "Picard" )
     {
+#if 0 // TODO
         // initial guess
         if ( M_solverNewtonInitialGuessUseLinearElectric )
             M_electricModel->solve();
@@ -530,11 +533,12 @@ ELECTROMAGNETIC_CLASS_TEMPLATE_TYPE::solve()
             M_heatModel->solve();
 
         // solve non linear monolithic system
-        M_heatModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("heat") );
         M_electricModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("electric") );
+        M_magenticModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("magnetic") );
         this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
         this->algebraicFactory()->solve( M_solverName, this->algebraicBlockVectorSolution()->vectorMonolithic() );
         this->algebraicBlockVectorSolution()->localize();
+#endif
     }
 
     double tElapsed = this->timerTool("Solve").stop("solve");
@@ -545,7 +549,6 @@ ELECTROMAGNETIC_CLASS_TEMPLATE_TYPE::solve()
         this->timerTool("Solve").save();
     }
     this->log("Electromagnetic","solve", (boost::format("finish in %1% s")%tElapsed).str() );
-#endif
 }
 
 } // end namespace Feel::FeelModels

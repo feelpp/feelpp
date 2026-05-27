@@ -37,7 +37,7 @@ Feel::po::options_description solidMechanics_options(std::string const& prefix="
 Feel::po::options_description alemesh_options(std::string const& prefix="fsi");
 Feel::po::options_description fluidStructInteraction_options(std::string const& prefix);
 Feel::po::options_description heat_options(std::string const& prefix="heat");
-Feel::po::options_description electricity_options(std::string const& prefix);
+Feel::po::options_description electric_options(std::string const& prefix);
 Feel::po::options_description magnetic_options( std::string const& prefix );
 Feel::po::options_description maxwell_options(std::string const& prefix);
 Feel::po::options_description thermoElectric_options(std::string const& prefix);

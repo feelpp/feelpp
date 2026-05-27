@@ -40,12 +40,12 @@ ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 ELECTRIC_CLASS_TEMPLATE_TYPE::Electric( std::string const& prefix,
                                         std::string const& keyword,
                                         worldcomm_ptr_t const& worldComm,
-                                        std::string const& subPrefix,
-                                        ModelBaseRepository const& modelRep )
+                                        ModelBaseRepository const& modelRep,
+                                        ModelBaseCommandLineOptions const& modelOptions )
     :
-    super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
+    super_type( prefix, keyword, worldComm, "", modelRep, modelOptions ),
     ModelPhysics<nDim>( "electric" ),
-    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep )
+    ModelBase( prefix, keyword, worldComm, "", modelRep, modelOptions )
 {
     this->log("Electric","constructor", "start" );
 
