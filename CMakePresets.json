@@ -91,6 +91,21 @@
          "name": "release-clang-spack"
       },
       {
+         "configurePreset": "release-clang-spack-macosx",
+         "jobs": 25,
+         "name": "release-clang-spack-macosx"
+      },
+      {
+         "configurePreset": "debug-clang-spack",
+         "jobs": 25,
+         "name": "debug-clang-spack"
+      },
+      {
+         "configurePreset": "debug-clang-spack-macosx",
+         "jobs": 25,
+         "name": "debug-clang-spack-macosx"
+      },
+      {
          "configurePreset": "release-clang-cpp20-spack",
          "jobs": 25,
          "name": "release-clang-cpp20-spack"
@@ -104,6 +119,11 @@
          "configurePreset": "testsuite",
          "jobs": 25,
          "name": "testsuite"
+      },
+      {
+         "configurePreset": "quickstart",
+         "jobs": 25,
+         "name": "quickstart"
       },
       {
          "configurePreset": "toolboxes",
@@ -129,6 +149,11 @@
          "configurePreset": "feelpp-cpp20-spack",
          "jobs": 25,
          "name": "feelpp-cpp20-spack"
+      },
+      {
+         "configurePreset": "feelpp-cpp23-spack",
+         "jobs": 25,
+         "name": "feelpp-cpp23-spack"
       },
       {
          "configurePreset": "feelpp+specx",
@@ -204,6 +229,7 @@
             "CMAKE_C_COMPILER": "clang",
             "CMAKE_EXPORT_COMPILE_COMMANDS": "TRUE",
             "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/${presetName}$env{DISTRIBUTION}$env{ARCH}",
+            "CMAKE_POLICY_VERSION_MINIMUM": "3.5",
             "FEELPP_ENABLE_BENCHMARKS": "ON",
             "FEELPP_ENABLE_FEELPP_PYTHON": "ON",
             "FEELPP_ENABLE_FMILIB": "OFF",
@@ -275,6 +301,18 @@
          "description": "RelWithDebInfo flags for EZTrace instrumentation",
          "hidden": true,
          "name": "eztrace-flags"
+      },
+      {
+         "cacheVariables": {
+            "FEELPP_ENABLE_FFTW": "ON",
+            "FEELPP_ENABLE_GLPK": "ON"
+         },
+         "description": "macOS build settings",
+         "environment": {
+            "LDFLAGS": ""
+         },
+         "hidden": true,
+         "name": "macosx"
       },
       {
          "cacheVariables": {
@@ -416,9 +454,16 @@
       {
          "cacheVariables": {
             "CMAKE_INSTALL_RPATH_USE_LINK_PATH": "ON",
+            "CPR_USE_SYSTEM_CURL": "ON",
+            "CPR_USE_SYSTEM_LIB_PSL": "OFF",
+            "CURL_NO_CURL_CMAKE": "ON",
+            "FEELPP_ALLOW_AMBIENT_PYTHON": "ON",
+            "FEELPP_ENABLE_OMC": "OFF",
             "FEELPP_ENABLE_OPENTURNS": "OFF",
             "FEELPP_ENABLE_VTK": "OFF",
             "FEELPP_USE_EXTERNAL_CLN": "ON",
+            "FEELPP_USE_EXTERNAL_EIGEN3": "ON",
+            "PYBIND11_FINDPYTHON": "ON",
             "USE_VTK": "OFF"
          },
          "description": "spack config",
@@ -557,6 +602,41 @@
          "name": "release-clang-spack"
       },
       {
+         "displayName": "Release | clang | spack package manager | macOS",
+         "environment": {
+            "LDFLAGS": ""
+         },
+         "inherits": [
+            "macosx",
+            "spack",
+            "clang",
+            "release-cmake"
+         ],
+         "name": "release-clang-spack-macosx"
+      },
+      {
+         "displayName": "Debug | clang | spack package manager",
+         "inherits": [
+            "spack",
+            "clang",
+            "debug-cmake"
+         ],
+         "name": "debug-clang-spack"
+      },
+      {
+         "displayName": "Debug | clang | spack package manager | macOS",
+         "environment": {
+            "LDFLAGS": ""
+         },
+         "inherits": [
+            "macosx",
+            "spack",
+            "clang",
+            "debug-cmake"
+         ],
+         "name": "debug-clang-spack-macosx"
+      },
+      {
          "displayName": "Release | clang | C++20 | spack package manager",
          "inherits": [
             "cpp20",
@@ -598,6 +678,18 @@
             "release-cmake"
          ],
          "name": "testsuite"
+      },
+      {
+         "cacheVariables": {
+            "FEELPP_COMPONENT": "quickstart"
+         },
+         "description": "Build only the Quickstart component",
+         "displayName": "quickstart | clang | release | cmake package manager",
+         "inherits": [
+            "clang",
+            "release-cmake"
+         ],
+         "name": "quickstart"
       },
       {
          "cacheVariables": {
@@ -665,24 +757,24 @@
          "name": "feelpp-usrlocal"
       },
       {
-         "cacheVariables": {
-            "FEELPP_COMPONENT": "feelpp",
-            "FEELPP_ENABLE_BENCHMARKS": "OFF",
-            "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
-            "FEELPP_ENABLE_FMILIB": "OFF",
-            "FEELPP_ENABLE_MOR": "OFF",
-            "FEELPP_ENABLE_TESTS": "OFF",
-            "FEELPP_ENABLE_TOOLBOXES": "OFF"
-         },
          "description": "Build only the Feel++ library Component",
          "displayName": "feelpp | clang | cpp20 | release | spack package manager",
          "inherits": [
+            "feelpp",
             "cpp20",
-            "clang",
-            "spack",
-            "release-cmake"
+            "spack"
          ],
          "name": "feelpp-cpp20-spack"
+      },
+      {
+         "description": "Build only the Feel++ library Component",
+         "displayName": "feelpp | clang | cpp23 | release | spack package manager",
+         "inherits": [
+            "feelpp",
+            "cpp23",
+            "spack"
+         ],
+         "name": "feelpp-cpp23-spack"
       },
       {
          "cacheVariables": {
@@ -1092,6 +1184,30 @@
          }
       },
       {
+         "configurePreset": "release-clang-spack-macosx",
+         "inherits": "default",
+         "name": "release-clang-spack-macosx",
+         "output": {
+            "outputOnFailure": true
+         }
+      },
+      {
+         "configurePreset": "debug-clang-spack",
+         "inherits": "default",
+         "name": "debug-clang-spack",
+         "output": {
+            "outputOnFailure": true
+         }
+      },
+      {
+         "configurePreset": "debug-clang-spack-macosx",
+         "inherits": "default",
+         "name": "debug-clang-spack-macosx",
+         "output": {
+            "outputOnFailure": true
+         }
+      },
+      {
          "configurePreset": "release-clang-cpp20-spack",
          "inherits": "default",
          "name": "release-clang-cpp20-spack",
@@ -1125,6 +1241,21 @@
          },
          "inherits": "default",
          "name": "testsuite",
+         "output": {
+            "outputOnFailure": true
+         }
+      },
+      {
+         "configurePreset": "quickstart",
+         "execution": {
+            "jobs": 4,
+            "repeat": {
+               "count": 3,
+               "mode": "until-pass"
+            }
+         },
+         "inherits": "default",
+         "name": "quickstart",
          "output": {
             "outputOnFailure": true
          }
@@ -1368,6 +1499,25 @@
          ]
       },
       {
+         "description": "Configure, build, and test quickstart",
+         "displayName": "Workflow: quickstart",
+         "name": "quickstart",
+         "steps": [
+            {
+               "name": "quickstart",
+               "type": "configure"
+            },
+            {
+               "name": "quickstart",
+               "type": "build"
+            },
+            {
+               "name": "quickstart",
+               "type": "test"
+            }
+         ]
+      },
+      {
          "description": "Configure, build, and test toolboxes",
          "displayName": "Workflow: toolboxes",
          "name": "toolboxes",
@@ -1458,6 +1608,25 @@
             },
             {
                "name": "testsuite",
+               "type": "test"
+            }
+         ]
+      },
+      {
+         "description": "Configure, build, and test quickstart (for Docker builds)",
+         "displayName": "Docker: quickstart",
+         "name": "quickstart-docker",
+         "steps": [
+            {
+               "name": "quickstart",
+               "type": "configure"
+            },
+            {
+               "name": "quickstart",
+               "type": "build"
+            },
+            {
+               "name": "quickstart",
                "type": "test"
             }
          ]
@@ -1629,44 +1798,6 @@
             },
             {
                "name": "debug-cmake",
-               "type": "test"
-            }
-         ]
-      },
-      {
-         "description": "Configure, build, and test perf",
-         "displayName": "Workflow: perf",
-         "name": "perf",
-         "steps": [
-            {
-               "name": "perf",
-               "type": "configure"
-            },
-            {
-               "name": "perf",
-               "type": "build"
-            },
-            {
-               "name": "perf",
-               "type": "test"
-            }
-         ]
-      },
-      {
-         "description": "Configure, build, and test eztrace",
-         "displayName": "Workflow: eztrace",
-         "name": "eztrace",
-         "steps": [
-            {
-               "name": "eztrace",
-               "type": "configure"
-            },
-            {
-               "name": "eztrace",
-               "type": "build"
-            },
-            {
-               "name": "eztrace",
                "type": "test"
             }
          ]

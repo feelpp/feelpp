@@ -722,6 +722,16 @@ public:
     }
 
     /**
+     * Close the matrix only when it is known to be in assembly state.
+     * Backends may override this to add collective synchronization.
+     */
+    virtual void closeIfNeeded() const
+    {
+        if ( !this->closed() )
+            this->close();
+    }
+
+    /**
      * @ set false if the matrix is in assembly state and need to be closed
      * for some next used (global operation) , false otherwise.
      */

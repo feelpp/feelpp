@@ -220,7 +220,8 @@ public :
         }
     auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
-            auto field_p = this->spaceElectricPotential()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( "electric-potential" ) );
+            auto const& solConst = *sol;
+            auto field_p = this->spaceElectricPotential()->elementPtr( solConst, rowStartInVector + this->startSubBlockSpaceIndex( "electric-potential" ) );
             return this->modelFields( field_p, prefix );
         }
     template <typename PotentialFieldType>

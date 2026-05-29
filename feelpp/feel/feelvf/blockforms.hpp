@@ -19,11 +19,15 @@
 #define FEELPP_VF_BLOCKFORMS_H
 
 #include <feel/feelvf/form.hpp>
+#include <feel/feelalg/productspaceconcepts.hpp>
 #include <feel/feelalg/vectorblock.hpp>
 #include <feel/feelalg/matrixcondensed.hpp>
 #include <feel/feelalg/vectorcondensed.hpp>
 #include <feel/feeldiscr/csrgraphblocks.hpp>
 #include <feel/feeldiscr/product.hpp>
+#include <feel/feelvf/dirichletconstraints.hpp>
+
+#include <ranges>
 
 
 namespace Feel {
@@ -107,13 +111,119 @@ public :
     using size_type = typename condensed_matrix_type::size_type;
     using condensed_matrix_ptrtype = std::shared_ptr<condensed_matrix_type>;
     using product_space_t = decay_type<PS>;
+    using vector_type = Vector<value_type>;
+    using vector_ptrtype = typename vector_type::clone_ptrtype;
+    using deferred_dirichlet_set_type = vf::DeferredDirichletSet<value_type>;
+    using sparse_matrix_ptrtype = typename condensed_matrix_type::sparse_matrix_ptrtype;
+
+    template<typename SpacePtrType>
+    class RowDirichletView
+    {
+    public:
+        using parent_type = BlockBilinearForm<PS>;
+        using space_ptrtype = std::decay_t<SpacePtrType>;
+
+        RowDirichletView( parent_type& parent, space_ptrtype space, int rowstart )
+            :
+            M_parent( parent ),
+            M_space( std::move( space ) ),
+            M_rowDofIdToContainerId( parent.M_matrix->mapRowPtr()->dofIdToContainerId( rowstart ) )
+        {
+            if ( M_parent.M_matrix->staticCondensation() )
+            {
+                auto const maxContainerId = std::ranges::max( M_rowDofIdToContainerId );
+                M_rowContainerIdToDofId.assign( maxContainerId + 1, invalid_v<size_type> );
+                for ( size_type dofId = 0; dofId < M_rowDofIdToContainerId.size(); ++dofId )
+                {
+                    auto const containerId = M_rowDofIdToContainerId[dofId];
+                    DCHECK( containerId < M_rowContainerIdToDofId.size() ) << "invalid container id";
+                    M_rowContainerIdToDofId[containerId] = dofId;
+                }
+            }
+        }
+
+        template<typename ExprT>
+        RowDirichletView& operator+=( Expr<ExprT> const& expr )
+        {
+            expr.assemble( M_space, M_space, *this );
+            return *this;
+        }
+
+        condensed_matrix_type& matrix()
+        {
+            return *M_parent.M_matrix;
+        }
+
+        std::vector<size_type> const& dofIdToContainerIdTrial() const
+        {
+            return M_rowDofIdToContainerId;
+        }
+
+        std::vector<size_type> const& dofIdToContainerIdTest() const
+        {
+            return M_rowDofIdToContainerId;
+        }
+
+        bool shouldDeferDirichlet( Feel::Context const& on_context ) const
+        {
+            return M_parent.shouldDeferDirichlet( on_context );
+        }
+
+        void deferZeroRows( std::vector<int> const& dofs,
+                            std::vector<value_type> const& values,
+                            Feel::Context const& on_context,
+                            double value_on_diagonal,
+                            std::uint8_t entity_priority = vf::deferredDirichletEntityPriority( vf::DeferredDirichletEntity::unspecified ) )
+        {
+            if ( M_parent.M_matrix->staticCondensation() )
+            {
+                std::vector<int> remappedDofs;
+                remappedDofs.reserve( dofs.size() );
+                for ( int dof : dofs )
+                {
+                    CHECK( dof >= 0 && static_cast<size_type>( dof ) < M_rowContainerIdToDofId.size() )
+                        << "invalid deferred Dirichlet dof " << dof;
+                    auto const mappedDof = M_rowContainerIdToDofId[dof];
+                    CHECK( mappedDof != invalid_v<size_type> ) << "missing inverse dof mapping for deferred Dirichlet dof " << dof;
+                    remappedDofs.push_back( static_cast<int>( mappedDof ) );
+                }
+                M_parent.deferZeroRows( remappedDofs, values, on_context, value_on_diagonal, entity_priority );
+                return;
+            }
+
+            M_parent.deferZeroRows( dofs, values, on_context, value_on_diagonal, entity_priority );
+        }
+
+        void zeroRows( std::vector<int> const& dofs,
+                       Vector<value_type> const& values,
+                       Vector<value_type>& rhs,
+                       Feel::Context const& on_context,
+                       double value_on_diagonal )
+        {
+            M_parent.invalidateMaterializedDeferredDirichlet();
+            M_parent.close();
+            M_parent.M_matrix->zeroRows( dofs, values, rhs, on_context, value_on_diagonal );
+        }
+
+        void set( size_type i, size_type j, value_type const& value )
+        {
+            M_parent.invalidateMaterializedDeferredDirichlet();
+            M_parent.M_matrix->set( i, j, value );
+        }
+
+    private:
+        parent_type& M_parent;
+        space_ptrtype M_space;
+        std::vector<size_type> const& M_rowDofIdToContainerId;
+        std::vector<size_type> M_rowContainerIdToDofId;
+    };
 
     BlockBilinearForm() = default;
     BlockBilinearForm( BlockBilinearForm const& ) = default;
     BlockBilinearForm( BlockBilinearForm && ) = default;
     
     template<typename T>
-        requires std::is_base_of<ProductSpacesBase,decay_type<T>>::value
+        requires StaticProductSpacesType<T>
     BlockBilinearForm( T&& ps )
         :
         M_ps( remove_shared_ptr_f( std::forward<T>( ps ) ) ),
@@ -121,7 +231,7 @@ public :
         {}
 
     template<typename T>
-        requires std::is_base_of<ProductSpaceBase,decay_type<T>>::value
+        requires DynamicProductSpaceType<T>
     BlockBilinearForm( T&& ps )
         :
         M_ps( remove_shared_ptr_f( std::forward<T>( ps ) ) ),
@@ -129,7 +239,7 @@ public :
         {}    
     
     template<typename T,typename BackendT, typename RangeMapT>
-        requires std::is_base_of<ProductSpacesBase,decay_type<T>>::value && std::is_base_of<BackendBase,decay_type<BackendT>>::value
+        requires StaticProductSpacesType<T> && std::is_base_of_v<BackendBase,decay_type<BackendT>>
     BlockBilinearForm( T&& ps, BackendT&& b, RangeMapT r = stencilRangeMap() )
         :
         M_ps( remove_shared_ptr_f( std::forward<T>( ps ) ) ),
@@ -137,7 +247,7 @@ public :
         {}
 
     template<typename T, typename BackendT, typename RangeMapT>
-        requires std::is_base_of<ProductSpacesBase,decay_type<T>>::value && std::is_base_of<BackendBase,decay_type<BackendT>>::value
+        requires StaticProductSpacesType<T> && std::is_base_of_v<BackendBase,decay_type<BackendT>>
     BlockBilinearForm( T&& ps, solve::strategy s, BackendT&& b, size_type pattern = Pattern::COUPLED, RangeMapT r = stencilRangeMap() )
         :
         M_ps( remove_shared_ptr_f( std::forward<T>( ps ) ) ),
@@ -147,7 +257,7 @@ public :
                                                              (s>=solve::strategy::static_condensation)?false:true )  )
         {}
     template<typename T, typename BackendT>
-        requires std::is_base_of<ProductSpacesBase,decay_type<T>>::value && std::is_base_of<BackendBase,decay_type<BackendT>>::value
+        requires StaticProductSpacesType<T> && std::is_base_of_v<BackendBase,decay_type<BackendT>>
     BlockBilinearForm( T&& ps, solve::strategy s, BackendT&& b, std::vector<size_type> const& patterns )
         :
         M_ps( remove_shared_ptr_f( std::forward<T>( ps ) ) ),
@@ -182,12 +292,17 @@ public :
             }
             M_matrix->zero();
             M_matrix->addMatrix( 1.,(MatrixSparse<value_type> const&)*a.M_matrix->getSparseMatrix() );
+            M_pendingDirichlet = a.M_pendingDirichlet;
+            M_appliedDirichlet = a.M_appliedDirichlet;
+            M_constrainedMatrix = a.M_constrainedMatrix;
+            M_dirichletPolicy = a.M_dirichletPolicy;
             
             return *this;
         }
     BlockBilinearForm& operator=( BlockBilinearForm && a ) = default;
     BlockBilinearForm& operator+=( BlockBilinearForm& a )
         {
+            this->invalidateMaterializedDeferredDirichlet();
             if ( this == &a )
             {
                 M_matrix->scale( 2.0 );
@@ -207,6 +322,7 @@ public :
     void allocateMatrix( solve::strategy s = solve::strategy::monolithic, backend_ptrtype const& b = backend() )
         {
             M_matrix = std::make_shared<condensed_matrix_type>( s, csrGraphBlocks(M_ps, (s==solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), b, (s==solve::strategy::static_condensation)?false:true );
+            this->clearDeferredDirichlet();
         }
     //!
     //! @return true if allocated, false otherwise
@@ -226,6 +342,7 @@ public :
     template<typename N1, typename N2>
     decltype(auto) operator()( N1 n1, N2 n2, int s1 = 0, int s2 = 0 )
         {
+            this->invalidateMaterializedDeferredDirichlet();
             int n = 0;
             auto&& spaces=remove_shared_ptr_f( M_ps );
             #if 0
@@ -267,8 +384,27 @@ public :
 
         }
 
+    template<typename N1>
+    decltype(auto) row( N1 n1, int s1 = 0 )
+        {
+            this->invalidateMaterializedDeferredDirichlet();
+            auto&& spaces = remove_shared_ptr_f( M_ps );
+            auto space = hana::at( spaces.tupleSpaces(), n1 );
+
+            if constexpr ( std::is_base_of_v<ProductSpaceBase, decay_type<decltype(space)>> )
+            {
+                auto rowSpace = (*space)[s1];
+                return RowDirichletView<decltype( rowSpace )>( *this, rowSpace, int( n1 ) + s1 );
+            }
+            else
+            {
+                return RowDirichletView<decltype( space )>( *this, space, int( n1 ) );
+            }
+        }
+
     decltype(auto) operator()( int n1, int n2 )
         {
+            this->invalidateMaterializedDeferredDirichlet();
             cout << "filling out matrix block (" << n1 << "," << n2 << ")\n";
             return form2(_test=M_ps[n1],_trial=M_ps[n2], _matrix=M_matrix, _rowstart=int(n1), _colstart=int(n2) );
         }
@@ -283,6 +419,7 @@ public :
         {
             
             M_matrix = std::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, Pattern::COUPLED), std::forward<BackendT>(b), false );
+            this->clearDeferredDirichlet();
         }
     template<typename BackendT>
     void setStrategy( solve::strategy s, BackendT&& b, size_type pattern = Pattern::COUPLED )
@@ -291,6 +428,7 @@ public :
                                                                    csrGraphBlocks(M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:pattern),
                                                                    std::forward<BackendT>(b),
                                                                    (s>=solve::strategy::static_condensation)?false:true );
+            this->clearDeferredDirichlet();
         }
     template<typename BackendT>
     void setStrategy( solve::strategy s, BackendT&& b, std::vector<size_type> const& patterns )
@@ -299,21 +437,35 @@ public :
                                                                    csrGraphBlocks(M_ps, (s>=solve::strategy::static_condensation)?pattern::toZero(patterns):patterns),
                                                                    std::forward<BackendT>(b),
                                                                    (s>=solve::strategy::static_condensation)?false:true );
+            this->clearDeferredDirichlet();
         }
+    // Close the assembled base block operator only. Deferred Dirichlet
+    // constraints stay in form state until materialized explicitly.
     void close()
         {
             M_matrix->close();
         }
+    void closeBaseOperator()
+        {
+            this->close();
+        }
+    bool baseOperatorClosed() const noexcept
+        {
+            return M_matrix->closed();
+        }
     void zero()
         {
             M_matrix->zero();
+            this->clearDeferredDirichlet();
         }
     void zero(int n1, int n2 )
         {
+            this->invalidateMaterializedDeferredDirichlet();
             M_matrix->zero( n1, n2 );
         }
     void transpose(int n1, int n2 )
         {
+            this->invalidateMaterializedDeferredDirichlet();
             M_matrix->transposeBlock( n1, n2 );
         }
     //!
@@ -341,8 +493,265 @@ public :
                                 ++n;
                             });
         }
+    void deferZeroRows( std::vector<int> const& dofs,
+                        std::vector<value_type> const& values,
+                        Feel::Context const& on_context,
+                        double value_on_diagonal,
+                        std::uint8_t entity_priority = vf::deferredDirichletEntityPriority( vf::DeferredDirichletEntity::unspecified ) )
+        {
+            M_pendingDirichlet.append( dofs, values, on_context, value_on_diagonal, entity_priority );
+            this->invalidateMaterializedDeferredDirichlet();
+        }
+    vf::DeferredDirichletPolicy dirichletPolicy() const noexcept
+        {
+            return M_dirichletPolicy;
+        }
+    void setDirichletPolicy( vf::DeferredDirichletPolicy policy ) noexcept
+        {
+            M_dirichletPolicy = policy;
+        }
+    bool useDeferredDirichlet() const noexcept
+        {
+            return vf::usesDeferredDirichlet( this->dirichletPolicy() );
+        }
+    void setUseDeferredDirichlet( bool value ) noexcept
+        {
+            this->setDirichletPolicy( value ? vf::DeferredDirichletPolicy::deferred :
+                                             vf::DeferredDirichletPolicy::immediate );
+        }
+    BlockBilinearForm& deferDirichlet() noexcept
+        {
+            this->setDirichletPolicy( vf::DeferredDirichletPolicy::deferred );
+            return *this;
+        }
+    BlockBilinearForm& autoDirichlet() noexcept
+        {
+            this->setDirichletPolicy( vf::DeferredDirichletPolicy::automatic );
+            return *this;
+        }
+    BlockBilinearForm& immediateDirichlet() noexcept
+        {
+            this->setDirichletPolicy( vf::DeferredDirichletPolicy::immediate );
+            return *this;
+        }
+    bool shouldDeferDirichlet( Feel::Context const& on_context ) const noexcept
+        {
+            return vf::shouldDeferDirichlet( this->dirichletPolicy(),
+                                             on_context,
+                                             static_cast<bool>( M_matrix ) && !M_matrix->localSolve() );
+        }
+    bool hasDeferredDirichlet() const noexcept
+        {
+            return !M_pendingDirichlet.empty();
+        }
+    bool hasPendingDirichletConstraints() const noexcept
+        {
+            return this->hasDeferredDirichlet();
+        }
+    bool hasDirichletConstraints() const noexcept
+        {
+            return !M_pendingDirichlet.empty() || !M_appliedDirichlet.empty();
+        }
+    bool supportsConstrainedOperatorView() const noexcept
+        {
+            return static_cast<bool>( M_matrix ) && M_matrix->monolithic();
+        }
+    bool hasMaterializedConstrainedOperator() const noexcept
+        {
+            return static_cast<bool>( M_constrainedMatrix );
+        }
+    void clearDeferredDirichlet() noexcept
+        {
+            M_pendingDirichlet.clear();
+            M_appliedDirichlet.clear();
+            M_constrainedMatrix.reset();
+            M_constrainedVector.reset();
+            M_constrainedVectorSource = nullptr;
+            M_constrainedVectorSourceRevision = 0;
+        }
+    template<typename CondensedFormT, typename CondensedRhsT>
+    void applyDeferredDirichlet( CondensedFormT& condensedForm, CondensedRhsT& condensedRhs )
+        {
+            if ( !this->hasDirichletConstraints() )
+                return;
+
+            auto [matrix, rhsVector] = this->closeCondensedSystem( condensedForm, condensedRhs );
+            this->applyDeferredDirichletToClosedCondensedSystem( condensedForm, matrix, rhsVector );
+        }
+    template<typename RhsType>
+        requires requires( RhsType& rhs ) { rhs.vectorPtr(); }
+    void applyDeferredDirichlet( RhsType& rhs )
+        {
+            if ( !this->hasDirichletConstraints() )
+                return;
+
+            auto constrainedVector = this->constrainedVectorPtr( rhs );
+            auto rhsVectorHandle = rhs.vectorPtr();
+            vf::copyVectorValues( rhsVectorHandle->getVector(), constrainedVector );
+            M_constrainedVectorSource = static_cast<void const*>( rhsVectorHandle->getVector().get() );
+            M_constrainedVectorSourceRevision = rhsVectorHandle->getVector()->revision();
+        }
+    template<typename RhsType>
+        requires requires( RhsType const& rhs ) { rhs.vectorPtr(); }
+    void applyDeferredDirichlet( RhsType const& rhs )
+        {
+            if ( !this->hasDirichletConstraints() )
+                return;
+
+            auto rhsVectorHandle = rhs.vectorPtr();
+            auto constrainedVector = this->constrainedVectorPtr( rhs );
+            vf::copyVectorValues( rhsVectorHandle->getVector(), constrainedVector );
+            M_constrainedVectorSource = static_cast<void const*>( rhsVectorHandle->getVector().get() );
+            M_constrainedVectorSourceRevision = rhsVectorHandle->getVector()->revision();
+        }
+    sparse_matrix_ptrtype baseMatrixPtr() const
+        {
+            return M_matrix->getSparseMatrix();
+        }
+    sparse_matrix_ptrtype baseMatrixPtr()
+        {
+            this->invalidateMaterializedDeferredDirichlet();
+            return M_matrix->getSparseMatrix();
+        }
+
+    template<typename RhsType>
+        requires requires( RhsType& rhs ) { rhs.vectorPtr(); }
+    auto constrainedSystem( RhsType& rhs )
+        {
+            return this->materializeConstrainedSystem( rhs.vectorPtr()->getVector() );
+        }
+
+    template<typename RhsType>
+        requires requires( RhsType const& rhs ) { rhs.vectorPtr(); }
+    auto constrainedSystem( RhsType const& rhs )
+        {
+            return const_cast<BlockBilinearForm*>( this )->materializeConstrainedSystem( rhs.vectorPtr()->getVector() );
+        }
+
+    template<typename RhsType>
+        requires requires( RhsType& rhs ) { rhs.vectorPtr(); }
+    auto activeSystem( RhsType& rhs )
+        {
+            CHECK( this->supportsConstrainedOperatorView() || !this->hasDirichletConstraints() )
+                << "activeSystem() is only available for monolithic block solves when Dirichlet constraints are present";
+            if ( this->hasDirichletConstraints() )
+                return this->constrainedSystem( rhs );
+            return std::pair{ this->baseMatrixPtr(), rhs.vectorPtr()->getVector() };
+        }
+
+    template<typename RhsType>
+        requires requires( RhsType const& rhs ) { rhs.vectorPtr(); }
+    auto activeSystem( RhsType const& rhs )
+        {
+            CHECK( this->supportsConstrainedOperatorView() || !this->hasDirichletConstraints() )
+                << "activeSystem() is only available for monolithic block solves when Dirichlet constraints are present";
+            if ( this->hasDirichletConstraints() )
+                return const_cast<BlockBilinearForm*>( this )->materializeConstrainedSystem( rhs.vectorPtr()->getVector() );
+            return std::pair{ this->baseMatrixPtr(), rhs.vectorPtr()->getVector() };
+        }
+
+    sparse_matrix_ptrtype constrainedMatrixPtr()
+        {
+            return this->materializeConstrainedMatrix();
+        }
+    sparse_matrix_ptrtype constrainedMatrixPtr() const
+        {
+            return const_cast<BlockBilinearForm*>( this )->constrainedMatrixPtr();
+        }
+    template<typename RhsType>
+        requires requires( RhsType& rhs ) { rhs.vectorPtr(); }
+    sparse_matrix_ptrtype constrainedMatrixPtr( RhsType& rhs )
+        {
+            return this->constrainedSystem( rhs ).first;
+        }
+    template<typename RhsType>
+        requires requires( RhsType const& rhs ) { rhs.vectorPtr(); }
+    sparse_matrix_ptrtype constrainedMatrixPtr( RhsType const& rhs )
+        {
+            return const_cast<BlockBilinearForm*>( this )->constrainedMatrixPtr( rhs );
+        }
+    sparse_matrix_ptrtype activeMatrixPtr()
+        {
+            CHECK( this->supportsConstrainedOperatorView() || !this->hasDirichletConstraints() )
+                << "activeMatrixPtr() is only available for monolithic block solves when Dirichlet constraints are present";
+            return this->hasDirichletConstraints() ? this->constrainedMatrixPtr() : this->baseMatrixPtr();
+        }
+    sparse_matrix_ptrtype activeMatrixPtr() const
+        {
+            CHECK( this->supportsConstrainedOperatorView() || !this->hasDirichletConstraints() )
+                << "activeMatrixPtr() is only available for monolithic block solves when Dirichlet constraints are present";
+            return this->hasDirichletConstraints() ? this->constrainedMatrixPtr() : this->baseMatrixPtr();
+        }
+    template<typename RhsType>
+        requires requires( RhsType& rhs ) { rhs.vectorPtr(); }
+    sparse_matrix_ptrtype activeMatrixPtr( RhsType& rhs )
+        {
+            return this->activeSystem( rhs ).first;
+        }
+    template<typename RhsType>
+        requires requires( RhsType const& rhs ) { rhs.vectorPtr(); }
+    sparse_matrix_ptrtype activeMatrixPtr( RhsType const& rhs )
+        {
+            return const_cast<BlockBilinearForm*>( this )->activeMatrixPtr( rhs );
+        }
+    void materializeConstrainedOperator()
+        {
+            if ( !this->hasDirichletConstraints() )
+                return;
+            CHECK( this->supportsConstrainedOperatorView() )
+                << "materializeConstrainedOperator() is only available for monolithic block solves";
+            (void)this->constrainedMatrixPtr();
+        }
+    template<typename RhsType>
+        requires requires( RhsType& rhs ) { rhs.vectorPtr(); }
+    void materializeConstrainedOperator( RhsType& rhs )
+        {
+            if ( !this->hasDirichletConstraints() )
+                return;
+            CHECK( this->supportsConstrainedOperatorView() )
+                << "materializeConstrainedOperator() is only available for monolithic block solves";
+            (void)this->constrainedSystem( rhs );
+        }
+    template<typename RhsType>
+        requires requires( RhsType const& rhs ) { rhs.vectorPtr(); }
+    void materializeConstrainedOperator( RhsType const& rhs )
+        {
+            if ( !this->hasDirichletConstraints() )
+                return;
+            CHECK( this->supportsConstrainedOperatorView() )
+                << "materializeConstrainedOperator() is only available for monolithic block solves";
+            (void)this->constrainedSystem( rhs );
+        }
+    template<typename RhsType>
+        requires requires( RhsType& rhs ) { rhs.vectorPtr(); }
+    auto constrainedVectorPtr( RhsType& rhs )
+        {
+            return this->constrainedSystem( rhs ).second;
+        }
+    template<typename RhsType>
+        requires requires( RhsType const& rhs ) { rhs.vectorPtr(); }
+    auto constrainedVectorPtr( RhsType const& rhs )
+        {
+            return this->constrainedSystem( rhs ).second;
+        }
+    template<typename RhsType>
+        requires requires( RhsType& rhs ) { rhs.vectorPtr(); }
+    auto activeVectorPtr( RhsType& rhs )
+        {
+            return this->activeSystem( rhs ).second;
+        }
+    template<typename RhsType>
+        requires requires( RhsType const& rhs ) { rhs.vectorPtr(); }
+    auto activeVectorPtr( RhsType const& rhs )
+        {
+            return this->activeSystem( rhs ).second;
+        }
     sparse_matrix_ptrtype matrixPtr() const { return M_matrix; }
-    sparse_matrix_ptrtype matrixPtr() { return M_matrix; }
+    sparse_matrix_ptrtype matrixPtr() { this->invalidateMaterializedDeferredDirichlet(); return M_matrix; }
+    condensed_matrix_type const& matrix() const { return *M_matrix; }
+    condensed_matrix_type& matrix() { this->invalidateMaterializedDeferredDirichlet(); return *M_matrix; }
+    auto l1Norm() const { return M_matrix->l1Norm(); }
+    auto linftyNorm() const { return M_matrix->linftyNorm(); }
     using pre_solve_type = typename Backend<value_type>::pre_solve_type;
     using post_solve_type = typename Backend<value_type>::post_solve_type;
 
@@ -361,7 +770,7 @@ public :
             pre_solve_type pre = args.get_else(_pre, pre_solve_type() );
             post_solve_type post = args.get_else(_post,post_solve_type() );
 
-            if constexpr ( std::is_same_v<decay_type<decltype(condenser)>,condenser_stokes> )
+            if constexpr ( StokesCondenserTag<decltype( condenser )> )
                 return solveImpl( solution, rhs, name, kind, rebuild, pre, post );
             else
             {
@@ -375,7 +784,7 @@ public :
             }
         }
     template <typename PS_t, typename Solution_t, typename Rhs_t>
-        requires (!std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value)
+        requires StaticProductSpacesType<PS_t>
     typename Backend<double>::solve_return_type
     solveImplLocal( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
                     bool rebuild, pre_solve_type pre, post_solve_type post )
@@ -391,7 +800,7 @@ public :
             return r;
         }
     template <typename PS_t, typename Solution_t, typename Rhs_t>
-        requires std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value
+        requires DynamicProductSpaceType<PS_t>
     typename Backend<double>::solve_return_type
     solveImplLocal( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
                     bool rebuild, pre_solve_type pre, post_solve_type post )
@@ -400,21 +809,65 @@ public :
             return r;
         }
     template <typename PS_t, typename Solution_t, typename Rhs_t, typename CT>
-        requires std::is_base_of_v<ProductSpaceBase,decay_type<PS_t>> && is_condenser_v<CT>
+        requires DynamicProductSpaceType<PS_t> && CondenserTag<CT>
     typename Backend<double>::solve_return_type
     solveImplCondense( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
                        bool rebuild, pre_solve_type pre, post_solve_type post, CT ct )
         {
+            if constexpr ( Sb9CondenserTag<CT> )
+            {
+                return solveImplCondenseTwoFieldInternal( ps, solution, rhs, name, kind, rebuild, pre, post );
+            }
             return solveImpl( solution, rhs, name, kind, rebuild, pre, post );
         }
+    template <typename PS_t, typename Solution_t, typename Rhs_t>
+    typename Backend<double>::solve_return_type
+    solveImplCondenseTwoFieldInternal( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
+                                       bool rebuild, pre_solve_type pre, post_solve_type post )
+        {
+            static_assert( Sb9CondensableProductElement<Solution_t>,
+                           "SB9 static condensation expects a 2-field product element with plain local field blocks" );
+            CHECK( std::decay_t<Solution_t>::nspaces == 2 ) << "SB9 static condensation expects a 2-field product space";
+
+            auto& eu = solution( 0_c );
+            auto sc = M_matrix->sc();
+
+            tic();
+            auto psS = product( eu.functionSpace() );
+            auto S = blockform2( psS, solve::strategy::monolithic, backend() );
+            auto V = blockform1( psS, solve::strategy::monolithic, backend() );
+            toc( "blockform.sc.space", Environment::logVerbosityLevel() > 0 );
+
+            tic();
+            this->syncLocalMatrix();
+            sc->condense( rhs.vectorPtr()->sc(), solution, S, V );
+            toc( "blockform.sc.condense", Environment::logVerbosityLevel() > 0 );
+
+            this->prepareCondensedSystemForSolve( S, V );
+
+            tic();
+            auto U = psS.element();
+            auto r = S.solve( _solution=U, _rhs=V, _name=prefixvm( name, "sc" ), _kind=kind,
+                              _rebuild=rebuild, _pre=pre, _post=post );
+            toc( "blockform.sc.solve", Environment::logVerbosityLevel() > 0 );
+
+            solution( 0_c ) = U( 0_c );
+
+            tic();
+            sc->localSolve( rhs.vectorPtr()->sc(), solution );
+            toc( "blockform.sc.localsolve", Environment::logVerbosityLevel() > 0 );
+            return r;
+        }
     template <typename PS_t, typename Solution_t, typename Rhs_t, typename CT>
-        requires hana::Foldable<typename decay_type<PS_t>::tuple_spaces_type>::value &&
-                 (!std::is_base_of_v<ProductSpaceBase,decay_type<PS_t>>) &&
-                 is_condenser_v<CT>
+        requires FoldableProductSpacesType<PS_t> && CondenserTag<CT>
     typename Backend<double>::solve_return_type
     solveImplCondense( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
                        bool rebuild, pre_solve_type pre, post_solve_type post, CT ct )
         {
+            if constexpr ( Sb9CondenserTag<CT> )
+            {
+                return solveImplCondenseTwoFieldInternal( ps, solution, rhs, name, kind, rebuild, pre, post );
+            }
             return solveImplCondense( ps, solution, rhs, name, kind, rebuild, pre, post,hana::integral_constant<int,decltype(hana::size( M_ps.tupleSpaces() ))::value>() );
         }
     template <typename Solution_t, typename Rhs_t>
@@ -422,15 +875,23 @@ public :
     solveImpl( Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind = "petsc",
                bool rebuild = false, pre_solve_type pre = pre_solve_type(), post_solve_type post = post_solve_type() )
         {
+            if ( !this->hasDirichletConstraints() )
+            {
+                this->closeBaseOperator();
+                rhs.vectorPtr()->close();
+            }
+            auto [matrix, rhsVector] = this->activeSystem( rhs );
             auto U = backend()->newBlockVector(_block=solution, _copy_values=false);
+            auto solveBackend = backend( _name=name, _kind=kind, _rebuild=rebuild,
+                                         _worldcomm=Environment::worldCommPtr() );
             tic();
-            auto r1 = backend( _name=name, _kind=kind, _rebuild=rebuild,
-                               _worldcomm=Environment::worldCommPtr() )->solve( _matrix=M_matrix->getSparseMatrix(),
-                                                                             _rhs=rhs.vectorPtr()->getVector(),
-                                                                             _solution=U,
-                                                                             _pre=pre,
-                                                                             _post=post
-                                                                             );
+            auto r1 = solveBackend->solve( _matrix=matrix,
+                                           _auxiliary_matrix=this->baseMatrixPtr(),
+                                           _rhs=rhsVector,
+                                           _solution=U,
+                                           _pre=pre,
+                                           _post=post
+                                           );
             toc("blockform.monolithic",Environment::logVerbosityLevel()>0);
             if ( Environment::isSequential() && boption("exporter.matlab") )
             {
@@ -441,7 +902,7 @@ public :
             return r1;
         }
     template <typename PS_t, typename Solution_t, typename Rhs_t>
-        requires (!std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value)
+        requires StaticProductSpacesType<PS_t>
     typename Backend<double>::solve_return_type
     solveImplCondense( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
                        bool rebuild, pre_solve_type pre, post_solve_type post , hana::integral_constant<int,1> )
@@ -449,7 +910,7 @@ public :
             return typename Backend<double>::solve_return_type{};
         }
     template <typename PS_t, typename Solution_t, typename Rhs_t>
-        requires (!std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value)
+        requires StaticProductSpacesType<PS_t>
     typename Backend<double>::solve_return_type
     solveImplCondense( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
                        bool rebuild, pre_solve_type pre, post_solve_type post , hana::integral_constant<int,2> )
@@ -457,7 +918,7 @@ public :
             return typename Backend<double>::solve_return_type{};
         }
     template <typename PS_t, typename Solution_t, typename Rhs_t>
-        requires (!std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value)
+        requires StaticProductSpacesType<PS_t>
     typename Backend<double>::solve_return_type
     solveImplCondense( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
                        bool rebuild, pre_solve_type pre, post_solve_type post , hana::integral_constant<int,3> )
@@ -483,7 +944,7 @@ public :
             tic();
             sc->condense ( rhs.vectorPtr()->sc(), solution, S, V );
             toc("blockform.sc.condense", Environment::logVerbosityLevel()>0);
-            S.close();V.close();
+            this->prepareCondensedSystemForSolve( S, V );
             cout << " . Condensation done" << std::endl;
             tic();
             cout << " . starting Solve" << std::endl;
@@ -523,7 +984,7 @@ public :
     //! solve using static condensation in the case of 2 trace spaces
     //!
     template <typename PS_t, typename Solution_t, typename Rhs_t>
-        requires (!std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value)
+        requires StaticProductSpacesType<PS_t>
     typename Backend<double>::solve_return_type
     solveImplCondense( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
                        bool rebuild, pre_solve_type pre, post_solve_type post , hana::integral_constant<int,4> )
@@ -545,7 +1006,7 @@ public :
             this->syncLocalMatrix();
             sc->condense ( rhs.vectorPtr()->sc(), solution, S, V );
             toc("blockform.sc.condense", Environment::logVerbosityLevel()>0);
-            S.close();V.close();
+            this->prepareCondensedSystemForSolve( S, V );
             cout << " . Condensation done" << std::endl;
             tic();
             cout << " . starting Solve" << std::endl;
@@ -583,7 +1044,7 @@ public :
     //! solve using static condensation in the case of 2 trace spaces
     //!
     template <typename PS_t, typename Solution_t, typename Rhs_t>
-        requires (!std::is_base_of<ProductSpaceBase,decay_type<PS_t>>::value)
+        requires StaticProductSpacesType<PS_t>
     typename Backend<double>::solve_return_type
     solveImplCondense( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
                        bool rebuild, pre_solve_type pre, post_solve_type post , hana::integral_constant<int,5> )
@@ -608,7 +1069,7 @@ public :
             this->syncLocalMatrix();
             sc->condense ( rhs.vectorPtr()->sc(), solution, S, V );
             toc("blockform.sc.condense", Environment::logVerbosityLevel()>0);
-            S.close();V.close();
+            this->prepareCondensedSystemForSolve( S, V );
             cout << " . Condensation done" << std::endl;
             tic();
             cout << " . starting Solve" << std::endl;
@@ -648,7 +1109,7 @@ public :
         //! solve using static condensation in the case of 2 trace spaces
         //!
         template <typename PS_t, typename Solution_t, typename Rhs_t>
-            requires (!std::is_base_of<ProductSpaceBase, decay_type<PS_t>>::value)
+            requires StaticProductSpacesType<PS_t>
         typename Backend<double>::solve_return_type
         solveImplCondense( PS_t& ps, Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind,
                            bool rebuild, pre_solve_type pre, post_solve_type post, hana::integral_constant<int, 3*5> )
@@ -674,8 +1135,7 @@ public :
             this->syncLocalMatrix();
             sc->condense( rhs.vectorPtr()->sc(), solution, S, V );
             toc( "blockform.sc.condense", Environment::logVerbosityLevel() > 0 );
-            S.close();
-            V.close();
+            this->prepareCondensedSystemForSolve( S, V );
             cout << " . Condensation done" << std::endl;
             tic();
             cout << " . starting Solve" << std::endl;
@@ -713,6 +1173,139 @@ public :
             return typename Backend<double>::solve_return_type{};
 #endif
         }
+private:
+        template<typename CondensedFormT, typename CondensedRhsT>
+        auto closeCondensedSystem( CondensedFormT& condensedForm, CondensedRhsT& condensedRhs )
+        {
+            condensedForm.close();
+            condensedRhs.close();
+            return std::pair{ condensedForm.matrixPtr(), condensedRhs.vectorPtr()->getVector() };
+        }
+
+        template<typename CondensedFormT>
+        void applyDeferredDirichletToClosedCondensedSystem( CondensedFormT& condensedForm,
+                                                            sparse_matrix_ptrtype const& matrix,
+                                                            vector_ptrtype const& rhsVector )
+        {
+            auto const deferredEntries = this->allDeferredDirichletConstraints().entries();
+            vf::applyDeferredDirichletEntries( deferredEntries, matrix, rhsVector );
+            this->promotePendingDeferredDirichlet();
+            condensedForm.close();
+            if ( !rhsVector->closed() )
+                rhsVector->close();
+        }
+
+        template<typename CondensedFormT, typename CondensedRhsT>
+        auto prepareCondensedSystemForSolve( CondensedFormT& condensedForm, CondensedRhsT& condensedRhs )
+        {
+            auto [matrix, rhsVector] = this->closeCondensedSystem( condensedForm, condensedRhs );
+            if ( this->hasDirichletConstraints() )
+                this->applyDeferredDirichletToClosedCondensedSystem( condensedForm, matrix, rhsVector );
+            return std::pair{ matrix, rhsVector };
+        }
+
+        void invalidateMaterializedDeferredDirichlet() noexcept
+        {
+            M_constrainedMatrix.reset();
+            M_constrainedVector.reset();
+            M_constrainedVectorSource = nullptr;
+            M_constrainedVectorSourceRevision = 0;
+        }
+
+        deferred_dirichlet_set_type allDeferredDirichletConstraints() const
+        {
+            deferred_dirichlet_set_type constraints;
+            constraints.append( M_appliedDirichlet );
+            constraints.append( M_pendingDirichlet );
+            return constraints;
+        }
+
+        void promotePendingDeferredDirichlet()
+        {
+            M_appliedDirichlet.append( M_pendingDirichlet );
+            M_pendingDirichlet.clear();
+        }
+
+        template<typename VectorPtrType>
+        auto materializeConstrainedSystem( VectorPtrType const& rhsVector )
+        {
+            CHECK( M_matrix->monolithic() ) << "constrainedVectorPtr() is only available for monolithic block solves";
+            if ( !this->hasDirichletConstraints() )
+                return std::pair{ this->baseMatrixPtr(), rhsVector };
+
+            auto const rhsSource = static_cast<void const*>( rhsVector.get() );
+            auto const rhsRevision = rhsVector->revision();
+            if ( M_constrainedMatrix &&
+                 M_constrainedVector &&
+                 M_pendingDirichlet.empty() &&
+                 M_constrainedVectorSource == rhsSource &&
+                 M_constrainedVectorSourceRevision == rhsRevision )
+            {
+                return std::pair{ M_constrainedMatrix, M_constrainedVector };
+            }
+
+            this->close();
+            if ( !rhsVector->closed() )
+                rhsVector->close();
+
+            auto constrainedMatrix = this->baseMatrixPtr()->clone();
+            auto constrainedVector = vf::cloneVectorWithValues( rhsVector );
+            auto const deferredEntries = this->allDeferredDirichletConstraints().entries();
+            vf::applyDeferredDirichletEntries( deferredEntries, constrainedMatrix, constrainedVector );
+
+            constrainedMatrix->close();
+            if ( !constrainedVector->closed() )
+                constrainedVector->close();
+
+            M_constrainedMatrix = constrainedMatrix;
+            M_constrainedVector = constrainedVector;
+            M_constrainedVectorSource = rhsSource;
+            M_constrainedVectorSourceRevision = rhsRevision;
+            this->promotePendingDeferredDirichlet();
+            return std::pair{ M_constrainedMatrix, M_constrainedVector };
+        }
+
+        sparse_matrix_ptrtype materializeConstrainedMatrix()
+        {
+            CHECK( M_matrix->monolithic() ) << "constrainedMatrixPtr() is only available for monolithic block solves";
+            if ( !this->hasDirichletConstraints() )
+                return this->baseMatrixPtr();
+            if ( M_constrainedMatrix && M_pendingDirichlet.empty() )
+                return M_constrainedMatrix;
+
+            this->close();
+            auto constrainedMatrix = this->baseMatrixPtr()->clone();
+            auto dummyRhs = Feel::backend( _worldcomm=Environment::worldCommPtr() )->newVector( this->baseMatrixPtr()->mapRowPtr() );
+            dummyRhs->zero();
+            dummyRhs->close();
+            auto const deferredEntries = this->allDeferredDirichletConstraints().entries();
+            vf::applyDeferredDirichletEntries( deferredEntries, constrainedMatrix, dummyRhs );
+            constrainedMatrix->close();
+
+            M_constrainedMatrix = constrainedMatrix;
+            M_constrainedVector.reset();
+            M_constrainedVectorSource = nullptr;
+            M_constrainedVectorSourceRevision = 0;
+            this->promotePendingDeferredDirichlet();
+            return M_constrainedMatrix;
+        }
+
+        template<typename VectorPtrType>
+        auto materializeConstrainedVector( VectorPtrType const& rhsVector )
+        {
+            if ( !this->hasDirichletConstraints() )
+                return rhsVector;
+            auto [constrainedMatrix, constrainedVector] = this->materializeConstrainedSystem( rhsVector );
+            return constrainedVector;
+        }
+
+        deferred_dirichlet_set_type M_pendingDirichlet;
+        deferred_dirichlet_set_type M_appliedDirichlet;
+        sparse_matrix_ptrtype M_constrainedMatrix;
+        vector_ptrtype M_constrainedVector;
+        void const* M_constrainedVectorSource = nullptr;
+        std::size_t M_constrainedVectorSourceRevision = 0;
+        vf::DeferredDirichletPolicy M_dirichletPolicy = vf::DeferredDirichletPolicy::automatic;
         product_space_t M_ps;
         condensed_matrix_ptrtype M_matrix;
 };
@@ -782,28 +1375,28 @@ public :
     BlockLinearForm( BlockLinearForm const& ) = default;
 
     template<typename T, typename BackendT>
-        requires std::is_base_of<ProductSpacesBase,decay_type<T>>::value
+        requires StaticProductSpacesType<T>
     BlockLinearForm( T&& ps, solve::strategy s, BackendT&& b )
         :
         M_ps( remove_shared_ptr_f( std::forward<T>( ps ) ) ),
         M_vector(std::make_shared<condensed_vector_type>(s, blockVector(M_ps), std::forward<BackendT>(b), false))
         {}
     template<typename T>
-        requires std::is_base_of<ProductSpacesBase,decay_type<T>>::value
+        requires StaticProductSpacesType<T>
     BlockLinearForm(T&& ps)
         :
         M_ps( remove_shared_ptr_f( std::forward<T>( ps ) ) ),
         M_vector(std::make_shared<condensed_vector_type>(blockVector(M_ps), backend(), false))
         {}
     template<typename T>
-        requires std::is_base_of<ProductSpaceBase,decay_type<T>>::value
+        requires DynamicProductSpaceType<T>
     BlockLinearForm(T&& ps)
         :
         M_ps( remove_shared_ptr_f( std::forward<T>( ps ) ) ),
         M_vector(std::make_shared<condensed_vector_type>(blockVector(M_ps), backend(), false))
         {}    
     template<typename T, typename BackendT>
-        requires std::is_base_of<ProductSpacesBase,decay_type<T>>::value
+        requires StaticProductSpacesType<T>
     BlockLinearForm(T&& ps, BackendT&& b)
         :
         M_ps( remove_shared_ptr_f( std::forward<T>( ps ) ) ),
@@ -853,18 +1446,21 @@ public :
             return hana::eval_if(std::is_base_of<ProductSpaceBase,decay_type<decltype(space)>>{},
                                  [&] (auto _) {
                                      VLOG(2) << "filling out dyn vector block (" << int(n1) + s  << ") condense=" << M_vector->staticCondensation() << "\n";
-                                     return form1(_test=(*_(space))[s],_vector=M_vector->block(int(n1)+s), _rowstart=int(n1)+s );
+                                     auto vec = M_vector->monolithic() ? M_vector->vectorPtr() : M_vector->block( int(n1)+s );
+                                     return form1(_test=(*_(space))[s],_vector=vec, _rowstart=int(n1)+s );
                                  },
                                  [&] (auto _){
                                      VLOG(2) << "filling out vector block (" << n1  << ") condense=" << M_vector->staticCondensation() << "\n";
-                                     return form1(_test=_(space),_vector=M_vector->block(int(n1)), _rowstart=int(n1) );
+                                     auto vec = M_vector->monolithic() ? M_vector->vectorPtr() : M_vector->block( int(n1) );
+                                     return form1(_test=_(space),_vector=vec, _rowstart=int(n1) );
                                  });
         }
 
     decltype(auto) operator()( int n1 )
         {
             VLOG(2) << "filling out vector block (" << n1 << ") condense=" << M_vector->staticCondensation() << "\n";
-            return form1(_test=M_ps[n1],_vector=M_vector->block(int(n1)), _rowstart=int(n1) );
+            auto vec = M_vector->monolithic() ? M_vector->vectorPtr() : M_vector->block( int(n1) );
+            return form1(_test=M_ps[n1],_vector=vec, _rowstart=int(n1) );
         }
     template<typename T>
     void setFunctionSpace( T&& ps )
@@ -891,6 +1487,14 @@ public :
 
     condensed_vector_ptrtype const& vectorPtr() const { return M_vector; }
     condensed_vector_ptrtype vectorPtr() { return M_vector; }
+    condensed_vector_type const& vector() const { return *M_vector; }
+    condensed_vector_type& vector() { return *M_vector; }
+    auto sum() const { return M_vector->sum(); }
+    auto min() const { return M_vector->min(); }
+    auto max() const { return M_vector->max(); }
+    auto l1Norm() const { return M_vector->l1Norm(); }
+    auto l2Norm() const { return M_vector->l2Norm(); }
+    auto linftyNorm() const { return M_vector->linftyNorm(); }
 
     /**
      * set linear form to 0

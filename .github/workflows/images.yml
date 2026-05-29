@@ -1,0 +1,194 @@
+name: Feel++ Images
+
+on:
+  workflow_dispatch:
+    inputs:
+      targets:
+        description: 'Image targets or groups from profiles.images'
+        required: false
+        default: 'env-current'
+        type: string
+      publish:
+        description: 'Push generated OCI images to GHCR'
+        required: false
+        default: true
+        type: boolean
+  pull_request:
+    branches: ['*']
+    types: [opened, reopened, ready_for_review]
+    paths:
+      - '.github/plan-ci.json'
+      - '.github/workflows/images.yml'
+      - 'ops/pyproject.toml'
+      - 'ops/src/feelpp/pkg/**'
+      - 'packaging/docker/assets/**'
+      - 'packaging/docker/config/**'
+      - 'packaging/docker/templates/**'
+      - 'packaging/manifest/components.toml'
+      - 'packaging/spack/environments/**'
+      - 'packaging/spack/includes/**'
+      - 'packaging/spack/repo/**'
+  push:
+    branches: [master, develop]
+    paths:
+      - '.github/plan-ci.json'
+      - '.github/workflows/images.yml'
+      - 'ops/pyproject.toml'
+      - 'ops/src/feelpp/pkg/**'
+      - 'packaging/docker/assets/**'
+      - 'packaging/docker/config/**'
+      - 'packaging/docker/templates/**'
+      - 'packaging/manifest/components.toml'
+      - 'packaging/spack/environments/**'
+      - 'packaging/spack/includes/**'
+      - 'packaging/spack/repo/**'
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  FEELPP_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  FEELPP_GIRDER_API_KEY: ${{ secrets.FEELPP_GIRDER_API_KEY }}
+  FEELPP_CKAN_API_KEY: ${{ secrets.FEELPP_CKAN_API_KEY }}
+  FEELPP_CKAN_URL: ${{ secrets.FEELPP_CKAN_URL }}
+  FEELPP_CKAN_ORGANIZATION: ${{ secrets.FEELPP_CKAN_ORGANIZATION }}
+
+jobs:
+  plan_images:
+    name: Plan image matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix_json: ${{ steps.plan.outputs.matrix_json }}
+      enabled_jobs_json: ${{ steps.plan.outputs.enabled_jobs_json }}
+      publish_images: ${{ steps.publish.outputs.publish }}
+      directive_message: ${{ steps.directives.outputs.message }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Resolve planner directives
+        id: directives
+        shell: bash
+        env:
+          RAW_TARGETS: ${{ inputs.targets }}
+        run: |
+          set -euo pipefail
+          targets="${RAW_TARGETS:-}"
+          if [ -z "${targets}" ]; then
+            targets="env-current"
+          fi
+          echo "message=targets=${targets}" >> "${GITHUB_OUTPUT}"
+
+      - name: Resolve publication mode
+        id: publish
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RAW_PUBLISH: ${{ inputs.publish }}
+        run: |
+          set -euo pipefail
+          publish=false
+          if [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
+            if [ "${RAW_PUBLISH}" = "true" ]; then
+              publish=true
+            fi
+          elif [ "${EVENT_NAME}" = "push" ]; then
+            publish=true
+          fi
+          echo "publish=${publish}" >> "${GITHUB_OUTPUT}"
+
+      - name: Compute image matrix
+        id: plan
+        uses: feelpp/ci-matrix-planner@v1
+        with:
+          config-path: .github/plan-ci.json
+          profile: images
+          message-override: ${{ steps.directives.outputs.message }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Ensure matrix is not empty
+        shell: bash
+        env:
+          MATRIX_JSON: ${{ steps.plan.outputs.matrix_json }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+
+          matrix = json.loads(os.environ["MATRIX_JSON"] or '{"include":[]}')
+          rows = matrix.get("include", [])
+          if not rows:
+              raise SystemExit("images planner selected no targets")
+          PY
+
+      - name: Debug planner output
+        shell: bash
+        run: |
+          echo "message: ${{ steps.directives.outputs.message }}"
+          echo "publish_images: ${{ steps.publish.outputs.publish }}"
+          echo "matrix_json: ${{ steps.plan.outputs.matrix_json }}"
+          echo "enabled_jobs_json: ${{ steps.plan.outputs.enabled_jobs_json }}"
+
+  images:
+    name: Build OCI images (${{ matrix.target }})
+    needs: [plan_images]
+    runs-on: self-docker
+    if: contains(fromJSON(needs.plan_images.outputs.enabled_jobs_json), 'images')
+    continue-on-error: ${{ matrix['continue-on-error'] == 'true' }}
+    timeout-minutes: 600
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix: ${{ fromJSON(needs.plan_images.outputs.matrix_json) }}
+    env:
+      CHECKOUT_DIR: src-${{ github.run_id }}-${{ matrix.oci_dist }}
+      DOCKER_CONFIG: /nvme0/prudhomm/.docker/actions/${{ github.run_id }}-${{ matrix.oci_dist }}
+      JOB_ROOT: /nvme0/prudhomm/.cache/feelpp-actions/${{ github.run_id }}-${{ github.run_attempt }}/images/${{ matrix.oci_dist }}
+      BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+    steps:
+      - name: Bootstrap local actions
+        uses: actions/checkout@v5
+        with:
+          path: .ci-actions
+          clean: false
+          fetch-depth: 1
+          sparse-checkout: |
+            .github/actions
+
+      - id: setup
+        uses: ./.ci-actions/.github/actions/setup-oci-job
+        with:
+          checkout-dir: ${{ env.CHECKOUT_DIR }}
+          docker-config: ${{ env.DOCKER_CONFIG }}
+          setup-buildx: "true"
+          registry-username: ${{ needs.plan_images.outputs.publish_images == 'true' && secrets.CR_LOGIN || '' }}
+          registry-password: ${{ needs.plan_images.outputs.publish_images == 'true' && secrets.CR_PAT || '' }}
+
+      - name: Generate bake inputs
+        id: bake
+        uses: ./.ci-actions/.github/actions/generate-image-bake
+        with:
+          repo-root: ${{ steps.setup.outputs.repo_root }}
+          job-root: ${{ env.JOB_ROOT }}
+          branch: ${{ env.BRANCH_NAME }}
+          target: ${{ matrix.target }}
+
+      - name: Build recommended OCI image targets
+        uses: ./.ci-actions/.github/actions/build-publish-generated-image
+        with:
+          context_dir: ${{ steps.bake.outputs.context_dir }}
+          bake_file: ${{ steps.bake.outputs.bake_file }}
+          bake_groups: ${{ steps.bake.outputs.bake_groups }}
+          image_refs_json: ${{ steps.bake.outputs.image_refs_json }}
+          runtime_ref_key: feelpp-env
+          oci_dist: ${{ matrix.oci_dist }}
+          publish: ${{ needs.plan_images.outputs.publish_images }}
+
+      - name: Upload bake context
+        if: always() && steps.bake.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: images-${{ matrix.oci_dist }}
+          path: ${{ steps.bake.outputs.context_dir }}
+          if-no-files-found: error

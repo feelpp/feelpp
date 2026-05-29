@@ -32,7 +32,7 @@
 #include <fstream>
 #include <iomanip>
 
-#include <boost/multi_array.hpp>
+#include <feel/feelcore/boostmultiarray.hpp>
 #include <boost/array.hpp>
 #include <feel/feelalg/glas.hpp>
 

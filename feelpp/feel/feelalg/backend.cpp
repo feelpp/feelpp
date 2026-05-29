@@ -926,6 +926,7 @@ po::options_description backend_options( std::string const& prefix )
         ( prefixvm( prefix,"snes-view" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Prints the SNES data structure" )
         ( prefixvm( prefix,"snes-type" ).c_str(), Feel::po::value<std::string>()->default_value( "ls" ), "Set the SNES solver" )
         ( prefixvm( prefix,"snes-line-search-type" ).c_str(), Feel::po::value<std::string>()->default_value( "bt" ), "Set the SNES line search solver" )
+        ( prefixvm( prefix,"snes-line-search-maxstep" ).c_str(), Feel::po::value<double>()->default_value( 1e8 ), "Maximum Newton update norm before line search" )
         ( prefixvm( prefix,"snes-rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-8 ), "relative tolerance" )
         ( prefixvm( prefix,"snes-atol" ).c_str(), Feel::po::value<double>()->default_value( 1e-50 ), "absolute tolerance" )
         ( prefixvm( prefix,"snes-stol" ).c_str(), Feel::po::value<double>()->default_value( 1e-8 ), "step length tolerance" )
@@ -987,6 +988,24 @@ po::options_description backend_options( std::string const& prefix )
           "fields definition (ex: --fieldsplit-fields=0->(0,2),1->(1)" )
         ( prefixvm( prefix,"fieldsplit-use-components" ).c_str(), Feel::po::value<bool>()->default_value( false ),"split also with components" )
         ;
+#if defined(FEELPP_HAS_PETSC) && defined(PETSC_HAVE_MUMPS)
+    for ( int icntl = 1; icntl <= 33; ++icntl )
+    {
+        std::string mumpsOption = ( boost::format( "pc-factor-mumps.icntl-%1%" ) % icntl ).str();
+#if defined( MACOSX ) || defined( __APPLE__ )
+        if ( icntl == 20 )
+            _options.add_options()
+                ( prefixvm( prefix,mumpsOption ).c_str(),
+                  Feel::po::value<int>()->default_value( 0 ),
+                  "configure mumps factorisation : use centralized dense right-hand sides on macOS (safer on Apple Silicon; may use more memory on root)" );
+        else
+#endif
+            _options.add_options()
+                ( prefixvm( prefix,mumpsOption ).c_str(),
+                  Feel::po::value<int>(),
+                  "configure mumps factorisation (see mumps ICNTL documentation)" );
+    }
+#endif
 #endif
 
 

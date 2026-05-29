@@ -47,6 +47,7 @@ include(CTest)
 
 # Label all tests in this directory tree so they can be run via component targets
 set_directory_properties(PROPERTIES LABEL testsuite LABELS "testsuite;testsuite-feelpp")
+set(FEELPP_TEST_AGGREGATE_TARGET testsuite-feelpp)
 
 if ( NOT TARGET testsuite-feelpp )
   add_custom_target(testsuite-feelpp

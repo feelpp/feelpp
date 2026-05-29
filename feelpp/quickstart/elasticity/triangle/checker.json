@@ -36,7 +36,17 @@
             "exact": true
         }
     },
+    "{x+y,x+y}:x:y":{
+        "1": {
+            "exact": true
+        }
+    },
     "{2*x,2*y}:x:y":{
+        "1": {
+            "exact": true
+        }
+    },
+    "{2*x+3*y,5*x+7*y}:x:y":{
         "1": {
             "exact": true
         }

@@ -30,7 +30,7 @@
 #define FEELPP_VF_ONES_H 1
 
 //#include <blitz/array.h>
-#include <boost/multi_array.hpp>
+#include <feel/feelcore/boostmultiarray.hpp>
 
 
 namespace Feel

@@ -1,0 +1,103 @@
+name: Generate Image Bake
+description: Run fpp-pkg image bake and expose the generated bake metadata as action outputs
+
+inputs:
+  repo-root:
+    description: Absolute path to the Feel++ repository root
+    required: true
+  job-root:
+    description: Job-local root directory for generated bake assets
+    required: true
+  branch:
+    description: Branch name used for generated image tags
+    required: true
+  target:
+    description: Image target from .github/plan-ci.json
+    required: true
+  component:
+    description: Optional image component path (env, feelpp, toolboxes, mor, full)
+    required: false
+    default: ""
+  from-image:
+    description: Optional starting OCI image reference for the selected component
+    required: false
+    default: ""
+  platforms:
+    description: Optional OCI platform override, for example linux/amd64 or linux/amd64,linux/arm64
+    required: false
+    default: ""
+
+outputs:
+  metadata_file:
+    description: Path to the generated metadata JSON file
+    value: ${{ steps.generate.outputs.metadata_file }}
+  context_dir:
+    description: Bake context directory
+    value: ${{ steps.generate.outputs.context_dir }}
+  bake_file:
+    description: docker-bake.json path
+    value: ${{ steps.generate.outputs.bake_file }}
+  bake_groups:
+    description: Recommended bake groups as a space-separated string
+    value: ${{ steps.generate.outputs.bake_groups }}
+  image_refs_json:
+    description: JSON object of published image references keyed by logical image name
+    value: ${{ steps.generate.outputs.image_refs_json }}
+  selected_component:
+    description: Resolved component selection
+    value: ${{ steps.generate.outputs.selected_component }}
+
+runs:
+  using: composite
+  steps:
+    - id: generate
+      shell: bash
+      run: |
+        set -euo pipefail
+        job_root="${{ inputs.job-root }}"
+        rm -rf "${job_root}"
+        mkdir -p "${job_root}"
+        metadata_file="${job_root}/image-metadata.json"
+
+        cmd=(
+          fpp-pkg image bake
+          --repo-root "${{ inputs.repo-root }}"
+          --job-root "${job_root}"
+          --branch "${{ inputs.branch }}"
+          --target "${{ inputs.target }}"
+        )
+        if [ -n "${{ inputs.component }}" ]; then
+          cmd+=(--component "${{ inputs.component }}")
+        fi
+        if [ -n "${{ inputs.from-image }}" ]; then
+          cmd+=(--from-image "${{ inputs.from-image }}")
+        fi
+        if [ -n "${{ inputs.platforms }}" ]; then
+          cmd+=(--platform "${{ inputs.platforms }}")
+        fi
+
+        "${cmd[@]}" > "${metadata_file}"
+
+        METADATA_FILE="${metadata_file}" python - <<'PY'
+        import json
+        import os
+        from pathlib import Path
+
+        metadata = json.loads(Path(os.environ["METADATA_FILE"]).read_text(encoding="utf-8"))
+        groups = metadata.get("recommended_groups")
+        image_refs = metadata.get("image_refs", {})
+        if not isinstance(groups, list) or not groups or not all(isinstance(item, str) and item for item in groups):
+            raise SystemExit("image metadata must provide a non-empty recommended_groups list")
+        if not isinstance(image_refs, dict):
+            raise SystemExit("image metadata must provide image_refs as a JSON object")
+
+        with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+            fh.write(f"metadata_file={os.environ['METADATA_FILE']}\n")
+            fh.write(f"context_dir={metadata['context_dir']}\n")
+            fh.write(f"bake_file={metadata['bake_file']}\n")
+            fh.write(f"bake_groups={' '.join(groups)}\n")
+            fh.write(f"selected_component={metadata.get('selected_component', 'env')}\n")
+            fh.write("image_refs_json<<EOF\n")
+            fh.write(json.dumps(image_refs))
+            fh.write("\nEOF\n")
+        PY

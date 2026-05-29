@@ -1,0 +1,41 @@
+FROM {{ base_image }}
+LABEL maintainer="Feel++ Support <support@feelpp.org>"
+
+ARG DEBIAN_FRONTEND=noninteractive
+ENV TZ=Europe/Paris \
+    FEELPP_DEP_INSTALL_PREFIX=/usr/local \
+    PATH=/usr/local/bin:${PATH}
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       ca-certificates \
+       tzdata \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+{{ packages | join_packages(8) }}
+{% if openmpi_packages %}
+{{ openmpi_packages | join_packages(8) }}
+{% endif %}
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+RUN useradd -m -s /bin/bash -G sudo feelpp \
+    && echo "feelpp ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+COPY WELCOME /usr/local/share/feelpp/image/WELCOME
+COPY bashrc.feelpp /usr/local/etc/bashrc.feelpp
+COPY feelpp.conf.sh /usr/local/etc/feelpp.conf.sh
+COPY feelpp.env.sh /usr/local/etc/feelpp.env.sh
+COPY start.sh /usr/local/bin/feelpp-start
+COPY start-user.sh /usr/local/bin/feelpp-start-user
+COPY ctest-to-junit.xsl /usr/local/share/xsltproc/ctest-to-junit.xsl
+
+RUN chmod 0755 /usr/local/bin/feelpp-start /usr/local/bin/feelpp-start-user
+
+ENV OMPI_ALLOW_RUN_AS_ROOT=1 \
+    OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+
+CMD ["/bin/bash"]

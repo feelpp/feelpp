@@ -25,6 +25,9 @@
 #define BOOST_TEST_MODULE test_on_dofs
 #include <feel/feelcore/testsuite.hpp>
 
+#include <algorithm>
+#include <array>
+
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
@@ -32,6 +35,42 @@
 #include <feel/feelfilters/exporter.hpp>
 
 using namespace Feel;
+
+enum class MixedEntityCondition
+{
+    Elements,
+    Faces,
+    Edges,
+    Points
+};
+
+template<typename BilinearFormType, typename LinearFormType, typename MeshType, typename ElementType>
+void applyMixedEntityConditions( BilinearFormType& a,
+                                 LinearFormType& l,
+                                 std::shared_ptr<MeshType> const& mesh,
+                                 ElementType const& u,
+                                 ElementType const& g,
+                                 std::array<MixedEntityCondition, 4> const& order )
+{
+    for ( auto const condition : order )
+    {
+        switch ( condition )
+        {
+        case MixedEntityCondition::Elements:
+            a += on( _range=elements( mesh ), _rhs=l, _element=u, _expr=idv( g )*cst( 2. ) );
+            break;
+        case MixedEntityCondition::Faces:
+            a += on( _range=markedfaces( mesh, "S" ), _rhs=l, _element=u, _expr=idv( g )*cst( 12. ) );
+            break;
+        case MixedEntityCondition::Edges:
+            a += on( _range=markededges( mesh, "L" ), _rhs=l, _element=u, _expr=idv( g )*cst( 22. ) );
+            break;
+        case MixedEntityCondition::Points:
+            a += on( _range=markedpoints( mesh, "P" ), _rhs=l, _element=u, _expr=idv( g )*cst( 32. ) );
+            break;
+        }
+    }
+}
 
 template<int Dim, int PolyOrder=1>
 void runTestAssign()
@@ -78,6 +117,33 @@ void runTestAssign()
 #endif
 }
 
+template<typename MeshType, typename FunctionSpaceType, typename ElementType>
+void checkMixedEntityEliminationResult( std::shared_ptr<MeshType> const& mesh,
+                                        std::shared_ptr<FunctionSpaceType> const& Xh,
+                                        ElementType const& u,
+                                        ElementType const& g )
+{
+    auto err = Xh->element();
+
+    err.on( _range=elements( mesh ), _expr=abs(idv(u)-idv(g)*cst(2.)) );
+    auto dofsOnElt = err.functionSpace()->dofs( elements( mesh), ComponentType::NO_COMPONENT, true );
+    sync(err, "=", dofsOnElt);
+
+    err.on( _range=markedfaces( mesh,"S"), _expr=abs(idv(u)-idv(g)*cst(12.)) );
+    auto dofsOnFace = err.functionSpace()->dofs( markedfaces( mesh,"S"), ComponentType::NO_COMPONENT, true );
+    sync(err, "=", dofsOnFace);
+
+    err.on( _range=markededges( mesh,"L"), _expr=abs(idv(u)-idv(g)*cst(22.)) );
+    auto dofsOnEdge = err.functionSpace()->dofs( markededges( mesh,"L"), ComponentType::NO_COMPONENT, true );
+    sync(err, "=", dofsOnEdge);
+
+    err.on( _range=markedpoints( mesh,"P"), _expr=abs(idv(u)-idv(g)*cst(32.)) );
+    auto dofsOnPoint = err.functionSpace()->dofs( markedpoints( mesh,"P"), ComponentType::NO_COMPONENT, true );
+    sync(err, "=", dofsOnPoint);
+
+    BOOST_CHECK_SMALL( err.sum(), 1e-10 );
+}
+
 
 template<int Dim, int PolyOrder=1>
 void runTestElimination()
@@ -96,6 +162,7 @@ void runTestElimination()
     //l = integrate(_range=elements(mesh),
     //              _expr=id(u));
     auto a = form2( _trial=Xh, _test=Xh,_matrix=mat );
+    a.immediateDirichlet();
     //a = integrate(_range=elements(mesh),
     //_expr=inner(gradt(u),grad(u)) );
     a+=on(_range=elements( mesh ), _rhs=rhs, _element=u, _expr=idv(g)*cst(2.) );
@@ -104,26 +171,85 @@ void runTestElimination()
     a+=on(_range=markedpoints( mesh,"P"), _rhs=rhs, _element=u, _expr=idv(g)*cst(32.) );
 
     backend(_rebuild=true)->solve(_matrix=mat,_rhs=rhs,_solution=u );
+    checkMixedEntityEliminationResult( mesh, Xh, u, g );
+}
 
-    auto err = Xh->element();
+template<int Dim, int PolyOrder=1>
+void runTestDeferredElimination( bool mixedOrder = false )
+{
+    using mesh_type = Mesh<Simplex<Dim>>;
+    auto mesh = loadMesh( _mesh=new mesh_type );
+    auto Xh = Pch<PolyOrder>( mesh );
 
-    err.on( _range=elements( mesh ), _expr=abs(idv(u)-idv(g)*cst(2.)) );
-    auto dofsOnElt = err.functionSpace()->dofs( elements( mesh), ComponentType::NO_COMPONENT, true );
-    sync(err, "=", dofsOnElt); // useless here but just a check
+    auto u = Xh->element();
+    auto g = Xh->element();
+    g.on( _range=elements( mesh ), _expr=Px()+Py() );
 
-    err.on( _range=markedfaces( mesh,"S"), _expr=abs(idv(u)-idv(g)*cst(12.)) );
-    auto dofsOnFace = err.functionSpace()->dofs( markedfaces( mesh,"S"), ComponentType::NO_COMPONENT, true );
-    sync(err, "=", dofsOnFace);
+    auto l = form1( _test=Xh );
+    auto a = form2( _trial=Xh, _test=Xh );
+    a.deferDirichlet();
 
-    err.on( _range=markededges( mesh,"L"), _expr=abs(idv(u)-idv(g)*cst(22.)) );
-    auto dofsOnEdge = err.functionSpace()->dofs( markededges( mesh,"L"), ComponentType::NO_COMPONENT, true );
-    sync(err, "=", dofsOnEdge);
+    BOOST_REQUIRE_GT( nelements( markedfaces( mesh, "S" ), true ), 0 );
+    BOOST_REQUIRE_GT( nelements( markededges( mesh, "L" ), true ), 0 );
+    BOOST_REQUIRE_GT( nelements( markedpoints( mesh, "P" ), true ), 0 );
 
-    err.on( _range=markedpoints( mesh,"P"), _expr=abs(idv(u)-idv(g)*cst(32.)) );
-    auto dofsOnPoint = err.functionSpace()->dofs( markedpoints( mesh,"P"), ComponentType::NO_COMPONENT, true );
-    sync(err, "=", dofsOnPoint);
+    auto order = std::array{
+        MixedEntityCondition::Elements,
+        MixedEntityCondition::Faces,
+        MixedEntityCondition::Edges,
+        MixedEntityCondition::Points
+    };
+    if ( mixedOrder )
+        order = { MixedEntityCondition::Points,
+                  MixedEntityCondition::Elements,
+                  MixedEntityCondition::Edges,
+                  MixedEntityCondition::Faces };
 
-    BOOST_CHECK_SMALL( err.sum(), 1e-10 );
+    applyMixedEntityConditions( a, l, mesh, u, g, order );
+
+    BOOST_CHECK( a.hasPendingDirichletConstraints() );
+    BOOST_CHECK( a.hasDirichletConstraints() );
+
+    BOOST_REQUIRE_NO_THROW( a.solve( _solution=u, _rhs=l ) );
+    BOOST_CHECK( !a.hasPendingDirichletConstraints() );
+    BOOST_CHECK( a.hasDirichletConstraints() );
+    checkMixedEntityEliminationResult( mesh, Xh, u, g );
+}
+
+template<int Dim, int PolyOrder=1>
+void runTestDeferredEliminationAllOrders()
+{
+    using mesh_type = Mesh<Simplex<Dim>>;
+
+    auto order = std::array{
+        MixedEntityCondition::Elements,
+        MixedEntityCondition::Faces,
+        MixedEntityCondition::Edges,
+        MixedEntityCondition::Points
+    };
+
+    int permutationCount = 0;
+    do
+    {
+        auto mesh = loadMesh( _mesh=new mesh_type );
+        auto Xh = Pch<PolyOrder>( mesh );
+        auto u = Xh->element();
+        auto g = Xh->element();
+        g.on( _range=elements( mesh ), _expr=Px()+Py() );
+
+        auto l = form1( _test=Xh );
+        auto a = form2( _trial=Xh, _test=Xh );
+        a.deferDirichlet();
+
+        applyMixedEntityConditions( a, l, mesh, u, g, order );
+
+        BOOST_REQUIRE_NO_THROW( a.solve( _solution=u, _rhs=l ) );
+        checkMixedEntityEliminationResult( mesh, Xh, u, g );
+        ++permutationCount;
+    }
+    while ( std::next_permutation( order.begin(), order.end() ) );
+
+    BOOST_CHECK_EQUAL( permutationCount, 24 );
 }
 
 
@@ -206,6 +332,21 @@ BOOST_AUTO_TEST_CASE( assign_3d_meshrelated_order1 )
 BOOST_AUTO_TEST_CASE( elimination_3d )
 {
     runTestElimination<3>();
+}
+
+BOOST_AUTO_TEST_CASE( deferred_elimination_3d )
+{
+    runTestDeferredElimination<3>();
+}
+
+BOOST_AUTO_TEST_CASE( deferred_elimination_3d_mixed_order )
+{
+    runTestDeferredElimination<3>( true );
+}
+
+BOOST_AUTO_TEST_CASE( deferred_elimination_3d_all_orders )
+{
+    runTestDeferredEliminationAllOrders<3>();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

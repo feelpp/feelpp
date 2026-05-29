@@ -95,6 +95,71 @@ makeAbout()
 }
 
 
+inline void
+fillStokesPolynomialManufacturedSolution( std::map<std::string,std::string>& locals )
+{
+    auto const dim = locals.at( "dim" );
+    auto const velocity = locals.at( "velocity" );
+    auto const potential = locals.at( "potential" );
+
+    if ( dim == "2" && velocity == "Array([1,1])" && potential == "1" )
+    {
+        locals["velocity"] = "{1,1}";
+        locals["grad_velocity"] = "{0,0,0,0}";
+        locals["strain"] = "{0,0,0,0}";
+        locals["stress"] = "{-1,0,0,-1}";
+        locals["stressn"] = "{-nx,-ny}:nx:ny";
+        locals["f"] = "{0,0}";
+        return;
+    }
+    if ( dim == "2" && velocity == "Array([x,-y])" && potential == "x+y" )
+    {
+        locals["potential"] = "x + y:x:y";
+        locals["velocity"] = "{x,-y}:x:y";
+        locals["grad_velocity"] = "{1,0,0,-1}";
+        locals["strain"] = "{1.0,0,0,-1.0}";
+        locals["stress"] = "{-x - y + 2.0,0,0,-x - y - 2.0}:x:y";
+        locals["stressn"] = "{nx*(-x - y + 2.0),ny*(-x - y - 2.0)}:nx:ny:x:y";
+        locals["f"] = "{1,1}";
+        return;
+    }
+    if ( dim == "2" && velocity == "Array([y*y,x*x])" && potential == "x*y" )
+    {
+        locals["potential"] = "x*y:x:y";
+        locals["velocity"] = "{pow(y, 2),pow(x, 2)}:x:y";
+        locals["grad_velocity"] = "{0,2*x,2*y,0}:x:y";
+        locals["strain"] = "{0,1.0*x + 1.0*y,1.0*x + 1.0*y,0}:x:y";
+        locals["stress"] = "{-x*y,2.0*x + 2.0*y,2.0*x + 2.0*y,-x*y}:x:y";
+        locals["stressn"] = "{-nx*x*y + ny*(2.0*x + 2.0*y),nx*(2.0*x + 2.0*y) - ny*x*y}:nx:ny:x:y";
+        locals["f"] = "{y - 2.0,x - 2.0}:x:y";
+        return;
+    }
+    if ( dim == "3" && velocity == "Array([1,1,1])" && potential == "1" )
+    {
+        locals["velocity"] = "{1,1,1}";
+        locals["grad_velocity"] = "{0,0,0,0,0,0,0,0,0}";
+        locals["strain"] = "{0,0,0,0,0,0,0,0,0}";
+        locals["stress"] = "{-1,0,0,0,-1,0,0,0,-1}";
+        locals["stressn"] = "{-nx,-ny,-nz}:nx:ny:nz";
+        locals["f"] = "{0,0,0}";
+        return;
+    }
+    if ( dim == "3" && velocity == "Array([x,y,-2*z])" && potential == "x+y+z" )
+    {
+        locals["potential"] = "x + y + z:x:y:z";
+        locals["velocity"] = "{x,y,-2*z}:x:y:z";
+        locals["grad_velocity"] = "{1,0,0,0,1,0,0,0,-2}";
+        locals["strain"] = "{1.0,0,0,0,1.0,0,0,0,-2.0}";
+        locals["stress"] = "{-x - y - z + 2.0,0,0,0,-x - y - z + 2.0,0,0,0,-x - y - z - 4.0}:x:y:z";
+        locals["stressn"] = "{nx*(-x - y - z + 2.0),ny*(-x - y - z + 2.0),nz*(-x - y - z - 4.0)}:nx:ny:nz:x:y:z";
+        locals["f"] = "{1,1,1}";
+        return;
+    }
+
+    CHECK( false ) << "SymPy support is not available and no C++ fallback is registered for velocity="
+                   << velocity << ", potential=" << potential << ", dim=" << dim;
+}
+
 
 template<int Dim, int OrderG = 1>
 int hdg_stokes( std::map<std::string,std::string>& locals )
@@ -313,7 +378,6 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
 #endif
 
     auto U = ps.element();
-    auto Ue = ps.element();
     //a.solve( _solution=U, _rhs=rhs, _rebuild=true, _condense=boption("sc.condense"));
     a.solve( _solution=U, _rhs=rhs, _condense=boption("sc.condense"), _condenser=condenser_stokes() );
     toc("solve",true);
@@ -339,6 +403,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
         auto grad_velocity_exact = expr<Dim,Dim>(locals.at("grad_velocity"));
         if ( Environment::isSequential() && boption("exporter.matlab") )
         {
+            auto Ue = ps.element();
             Ue(0_c).on( _range=elements(mesh), _expr=delta_exact );
             Ue(1_c).on( _range=elements(mesh), _expr=velocity_exact );
             Ue(2_c).on( _range=elements(mesh), _expr=pressure_exact );
@@ -403,7 +468,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     e->addRegions();
     e->add( deltaName, deltap, "nodal" );
     e->add( uName, up, "nodal" );
-    e->add( uName, pp, "nodal" );
+    e->add( pName, pp, "nodal" );
     std::set<std::string> reps({ "nodal", "element" });
     e->add( "vonmises", vonmises(idv(deltap)), reps );
     e->add( "principal_stress", eig(idv(deltap)), reps );
@@ -445,7 +510,11 @@ int main( int argc, char** argv )
             {"stress",""},
             {"stressn",soption("stressn")},
             {"f",soption("f")}};
+#if defined(FEELPP_HAS_SYMPY)
         Feel::pyexprFromFile( Environment::expand(soption("pyexpr.filename")), locals  );
+#else
+        fillStokesPolynomialManufacturedSolution( locals );
+#endif
 
 
         for( auto d: locals )

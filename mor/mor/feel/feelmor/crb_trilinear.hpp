@@ -31,7 +31,7 @@
 #ifndef __CRBTrilinear_H
 #define __CRBTrilinear_H 1
 
-#include <boost/multi_array.hpp>
+#include <feel/feelcore/boostmultiarray.hpp>
 #include <boost/tuple/tuple.hpp>
 #include "boost/tuple/tuple_io.hpp"
 #include <boost/format.hpp>
