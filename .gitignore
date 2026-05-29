@@ -3,6 +3,8 @@
 *.exports/
 downloads/
 build*/
+!.github/actions/build-publish-generated-image/
+!.github/actions/build-publish-generated-image/action.yml
 *.bak
 *.aux
 *.cppbck
@@ -211,3 +213,4 @@ eztrace*/
 /ops/src/feelpp/pkg/build/__pycache__/
 doc/analysis/
 mor/examples/grepldeim/grepldeimapp.cpp
+**/.spack-env/**

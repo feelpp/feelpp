@@ -72,17 +72,17 @@ void defToolbox(py::module &m)
         //.def( "rangeMeshElements", &toolbox_t::rangeMeshElements, "get the range of mesh elements" )
 
         // temperature space and field
-        .def( "modelSolid", []( toolbox_ptr_t& t ) { return t->solidModel(); } , "get the fluid model" )
-        .def( "spaceDisplacement", []( toolbox_ptr_t& t ) { return t->solidModel()->spaceDisplacement(); } , "get the Displacement function space")
-        .def( "fieldDisplacement", []( toolbox_ptr_t& t ) { return t->solidModel()->fieldDisplacement(); } , "get the Displacement function space")
-        .def( "fieldDisplacementPtr", []( toolbox_ptr_t& t ) { return t->solidModel()->fieldDisplacementPtr(); }, "returns the Displacement field shared_ptr" )
+        .def( "modelSolid", []( toolbox_t& t ) { return t.solidModel(); } , "get the fluid model" )
+        .def( "spaceDisplacement", []( toolbox_t& t ) { return t.solidModel()->spaceDisplacement(); } , "get the Displacement function space")
+        .def( "fieldDisplacement", []( toolbox_t& t ) { return t.solidModel()->fieldDisplacement(); } , "get the Displacement function space")
+        .def( "fieldDisplacementPtr", []( toolbox_t& t ) { return t.solidModel()->fieldDisplacementPtr(); }, "returns the Displacement field shared_ptr" )
 
         // fluid space and fields
-        .def( "modelFluid", []( toolbox_ptr_t& t ) { return t->fluidModel(); } , "get the fluid model" )
-        .def( "spaceVelocity", []( toolbox_ptr_t& t ) { return t->fluidModel()->functionSpaceVelocity(); } , "get the velocity function space" )
-        .def( "spacePressure", []( toolbox_ptr_t& t ) { return t->fluidModel()->functionSpacePressure(); } , "get the pressure function space" )
-        .def( "fieldVelocity", []( toolbox_ptr_t& t ) { return t->fluidModel()->fieldVelocity(); } , "get the velocity field" )
-        .def( "fieldPressure", []( toolbox_ptr_t& t ) { return t->fluidModel()->fieldPressure(); } , "get the pressure field" )
+        .def( "modelFluid", []( toolbox_t& t ) { return t.fluidModel(); } , "get the fluid model" )
+        .def( "spaceVelocity", []( toolbox_t& t ) { return t.fluidModel()->functionSpaceVelocity(); } , "get the velocity function space" )
+        .def( "spacePressure", []( toolbox_t& t ) { return t.fluidModel()->functionSpacePressure(); } , "get the pressure function space" )
+        .def( "fieldVelocity", []( toolbox_t& t ) { return t.fluidModel()->fieldVelocity(); } , "get the velocity field" )
+        .def( "fieldPressure", []( toolbox_t& t ) { return t.fluidModel()->fieldPressure(); } , "get the pressure field" )
 
         // solve
         .def("solve",&toolbox_t::solve, "solve the solidfluid mechanics problem, set boolean to true to update velocity and acceleration")
@@ -103,4 +103,3 @@ PYBIND11_MODULE(_fsi, m )
     defToolbox<3,3,2,1>(m);
 
 }
-

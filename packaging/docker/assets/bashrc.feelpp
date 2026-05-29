@@ -1,0 +1,20 @@
+#!/bin/bash
+
+export OPENBLAS_NUM_THREADS=1
+export OPENBLAS_VERBOSE=0
+
+if [ -f /usr/local/etc/feelpp.env.sh ]; then
+    . /usr/local/etc/feelpp.env.sh
+fi
+
+if [ -f /usr/local/etc/feelpp.conf.sh ]; then
+    . /usr/local/etc/feelpp.conf.sh
+fi
+
+if [ -f "$HOME/.bashrc" ]; then
+    . "$HOME/.bashrc"
+fi
+
+if [ -f /usr/local/share/feelpp/image/WELCOME ]; then
+    cat /usr/local/share/feelpp/image/WELCOME
+fi

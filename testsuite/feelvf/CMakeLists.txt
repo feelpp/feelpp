@@ -30,6 +30,8 @@ endforeach()
 feelpp_add_test( expr CFG test_expr.cfg PYTHON test_expr.py )
 list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
 
+feelpp_add_test( ginac_jit_cache NO_MPI_TEST TIMEOUT 180 )
+list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
 feelpp_add_test( inner CFG test_inner.cfg )
 list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
 feelpp_add_test( laplacianv CFG test_laplacianv.cfg )
@@ -52,6 +54,9 @@ list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
 if ( NOT TARGET testvf )
     add_custom_target( testvf )
 endif()
+
+feelpp_add_test( forms_dirichlet CFG test_forms_dirichlet.cfg GEO ../feeldiscr/square_mmarked.geo )
+list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
 
 if ( TARGET feelpp )
     add_dependencies( testvf feelpp )

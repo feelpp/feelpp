@@ -84,8 +84,10 @@ template<typename Y,  typename Cont>
 FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::Element( Element const& __e )
     :
     super( __e ),
+    M_backingGuard( __e.M_backingGuard ),
     M_functionspace( __e.M_functionspace ),
     M_name( __e.M_name ),
+    M_desc( __e.M_desc ),
     M_start( __e.M_start ),
     M_ct( __e.M_ct ),
     M_ct2( __e.M_ct2 ),
@@ -256,10 +258,12 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::operator=( Element<Y,Cont> const
 
         if ( __e.M_name != "unknown" )
             M_name = __e.M_name;
+        M_desc = __e.M_desc;
 
         M_start = __e.M_start;
         M_ct = __e.M_ct;
         M_ct2 = __e.M_ct2;
+        M_backingGuard = __e.M_backingGuard;
         M_containersOffProcess = __e.M_containersOffProcess;
 
         super::operator=( __e );
@@ -278,9 +282,11 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::operator=( Element<Y,Cont> && __
     {
         M_functionspace = std::move(__e.M_functionspace);
         M_name = std::move(__e.M_name);
+        M_desc = std::move(__e.M_desc);
         M_start = __e.M_start;
         M_ct = __e.M_ct;
         M_ct2 = __e.M_ct2;
+        M_backingGuard = std::move( __e.M_backingGuard );
         M_containersOffProcess = __e.M_containersOffProcess;
 
         super::operator=( __e );
@@ -290,6 +296,7 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::operator=( Element<Y,Cont> && __
         __e.M_start = 0;
         __e.M_ct = ComponentType::NO_COMPONENT;
         __e.M_ct2 = ComponentType::NO_COMPONENT;
+        __e.M_backingGuard.reset();
         __e.M_containersOffProcess = boost::none;
     }
 

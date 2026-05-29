@@ -245,6 +245,7 @@ void compareGeomapMeshOpsStaticDynamicSimplex2D()
 
     auto mesh = std::make_shared<mesh_type>();
     GmshSimplexDomain td( 2, Order );
+    td.setNumberOfPartitions( 1 );
     td.setVersion( FEELPP_GMSH_FORMAT_VERSION );
     td.setCharacteristicLength( doption( _name = "gmsh.hsize" ) );
 
@@ -379,6 +380,7 @@ private:
         VLOG( 1 ) << "testing TestInterp<" << Dim << "," << Order << "> (static) with file format version " << version << "\n";
 
         GmshSimplexDomain td( entity_type::nDim, entity_type::nOrder );
+        td.setNumberOfPartitions( 1 );
         td.setVersion( version );
         td.setCharacteristicLength( hsize );
         auto fname = td.generate( entity_type::name().c_str() );

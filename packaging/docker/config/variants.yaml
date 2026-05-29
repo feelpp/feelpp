@@ -1,0 +1,12 @@
+variants:
+  feelpp-env:
+    description: "Feel++ development environment"
+    layers:
+      - base
+      - python
+      - math
+      - geometry
+      - build
+      - feelpp
+    enable_openmpi: true
+    extra_packages: []

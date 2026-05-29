@@ -68,6 +68,14 @@ applyDofEliminationLinearOnBoundaryConditions( BoundaryConditionsType const& bcs
     using space_type = typename unwrap_ptr_t<EltType>::functionspace_type;
     //using trial_space_type = typename BfType::trial_space_type;
     using mesh_type = unwrap_ptr_t<MeshType>;
+
+    // Toolbox linear assemblies solve the raw matrix/rhs through
+    // ModelAlgebraicFactory, after this temporary form wrapper is gone.
+    // Apply elimination immediately so constraints are not left deferred on
+    // the wrapper.
+    auto const previousDirichletPolicy = bilinearForm.dirichletPolicy();
+    bilinearForm.immediateDirichlet();
+
     for ( auto const& [bcId,bcData] : bcs )
         bcData->template applyDofEliminationLinear<MESH_ELEMENTS>( bilinearForm,F,mesh,u,se );
     for ( auto const& [bcId,bcData] : bcs )
@@ -80,6 +88,8 @@ applyDofEliminationLinearOnBoundaryConditions( BoundaryConditionsType const& bcs
         for ( auto const& [bcId,bcData] : bcs )
             bcData->template applyDofEliminationLinear<MESH_POINTS>( bilinearForm, F, mesh, u, se );
     }
+
+    bilinearForm.setDirichletPolicy( previousDirichletPolicy );
 }
 
 //! apply Newton initial guess (on dof elimination context)

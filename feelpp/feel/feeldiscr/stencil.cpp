@@ -46,7 +46,7 @@ stencilManagerGarbageCollect()
         auto fspace1 = entry.first.get<0>().lock();
         auto fspace2 = entry.first.get<1>().lock();
         // each entry is a pair of tuple and graph
-        if ( entry.second.unique() || entry.first.get<0>().expired() || entry.first.get<1>().expired() )
+        if ( entry.second.use_count() == 1 || entry.first.get<0>().expired() || entry.first.get<1>().expired() )
         {
 #if !defined ( NDEBUG )
             std::ostringstream ostr;
@@ -79,7 +79,7 @@ stencilManagerGarbage(StencilManagerImpl::key_type const& key)
     auto git = StencilManager::instance().find( key );
     if (  git != StencilManager::instance().end() )
     {
-        if ( git->second.unique() )
+        if ( git->second.use_count() == 1 )
             {
                 StencilManager::instance().erase( git->first );
             }

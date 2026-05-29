@@ -34,6 +34,7 @@
 #include <feel/feelalg/enums.hpp>
 #include <feel/feelalg/vectorblock.hpp>
 #include <feel/feelalg/vectorcondensed.hpp>
+#include <feel/feelvf/dirichletconstraints.hpp>
 namespace Feel
 {
 namespace vf
@@ -333,6 +334,60 @@ private:
                    std::shared_ptr<Elem2> const& __v,
                    FormType& __f ) const;
 
+    template<typename FormType>
+    void applyDirichletData( FormType& __form,
+                             std::vector<int> const& dofs,
+                             std::vector<value_type> const& values ) const
+    {
+        CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
+
+        if ( __form.shouldDeferDirichlet( M_on_strategy ) )
+        {
+            __form.deferZeroRows( dofs, values, M_on_strategy, M_value_on_diagonal, this->deferredEntityPriority() );
+            return;
+        }
+
+        if ( vf::isPenalisationDirichlet( M_on_strategy ) )
+        {
+            this->applyPenalisationData( __form, dofs, values );
+            return;
+        }
+
+        auto x = M_rhs->clone();
+        auto localDofs = dofs;
+        auto localValues = values;
+        x->setVector( localDofs.data(), localDofs.size(), localValues.data() );
+        x->close();
+        __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy, M_value_on_diagonal );
+    }
+
+    template<typename FormType>
+    void applyPenalisationData( FormType& __form,
+                                std::vector<int> const& dofs,
+                                std::vector<value_type> const& values ) const
+    {
+        auto const penalty = vf::deferredDirichletPenalty<value_type>();
+        for ( std::size_t k = 0; k < dofs.size(); ++k )
+        {
+            __form.set( dofs[k], dofs[k], penalty );
+            M_rhs->set( dofs[k], values[k] * penalty );
+        }
+    }
+
+    static constexpr std::uint8_t deferredEntityPriority() noexcept
+    {
+        if constexpr ( on_type::value == MESH_ELEMENTS )
+            return vf::deferredDirichletEntityPriority<MESH_ELEMENTS>();
+        else if constexpr ( on_type::value == MESH_FACES )
+            return vf::deferredDirichletEntityPriority<MESH_FACES>();
+        else if constexpr ( on_type::value == MESH_EDGES )
+            return vf::deferredDirichletEntityPriority<MESH_EDGES>();
+        else if constexpr ( on_type::value == MESH_POINTS )
+            return vf::deferredDirichletEntityPriority<MESH_POINTS>();
+        else
+            return vf::deferredDirichletEntityPriority( vf::DeferredDirichletEntity::unspecified );
+    }
+
 private:
 
     std::list<ElementRange> M_elts;
@@ -360,7 +415,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onElements( std::shared_
     static constexpr bool is_same_space = boost::is_same<functionspace_type,Elem1>::value;
     static constexpr bool is_comp_space = Elem1::is_vectorial && Elem1::is_product && boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
 
-    if (  M_on_strategy.test( ContextOn::PENALISATION ) )
+    if ( vf::isPenalisationDirichlet( M_on_strategy ) && !__form.shouldDeferDirichlet( M_on_strategy ) )
     {
         // make sure that the form is close, ie the associated matrix is assembled
         __form.matrix().close();
@@ -424,30 +479,18 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onElements( std::shared_
                     uint16_type thelocdof = ldof.first.localDof();
                     double __value = s(thelocdof)*IhLoc( thelocdof );
 
-                    if ( M_on_strategy.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
+                    if ( vf::isEliminationDirichlet( M_on_strategy ) || vf::isPenalisationDirichlet( M_on_strategy ) )
                     {
                         DVLOG(2) << "Eliminating row " << thedof << " using value : " << __value << "\n";
                         dofs.push_back( thedof );
                         values.push_back(  __value );
-                    }
-
-                    else if (  M_on_strategy.test( ContextOn::PENALISATION ) &&
-                               !M_on_strategy.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
-                    {
-                        __form.set( thedof, thedof, 1.0*1e30 );
-                        M_rhs->set( thedof, __value*1e30 );
                     }
                 }
             }
         }
     }
 
-    auto x = M_rhs->clone();
-    CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
-    x->setVector( dofs.data(), dofs.size(), values.data() );
-    x->close();
-    __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy, M_value_on_diagonal );
-    x.reset();
+    this->applyDirichletData( __form, dofs, values );
     LOG(INFO) << fmt::format("IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onElements() done.");
 }
 
@@ -491,7 +534,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onFaces( std::shared_ptr
     // dof
     typedef typename element_type::functionspace_type::dof_type dof_type;
 
-    if (  M_on_strategy.test( ContextOn::PENALISATION ) )
+    if ( vf::isPenalisationDirichlet( M_on_strategy ) && !__form.shouldDeferDirichlet( M_on_strategy ) )
     {
         // make sure that the form is close, ie the associated matrix is assembled
         __form.matrix().close();
@@ -711,7 +754,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onFaces( std::shared_ptr
                                     thedof ) != dofs.end() )
                         continue;
 
-                    if ( M_on_strategy.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
+                    if ( vf::isEliminationDirichlet( M_on_strategy ) || vf::isPenalisationDirichlet( M_on_strategy ) )
                         {
                             DVLOG(2) << fmt::format("Eliminating row {} using value {}, ldof.index={}", thedof, __value, ldof.index());
 
@@ -725,35 +768,15 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onFaces( std::shared_ptr
                                 dofs.push_back( thedof );
                                 values.push_back(  __value );
                             }
-
                             //M_rhs.set( thedof, __value );
-                        }
-
-                    else if (  M_on_strategy.test( ContextOn::PENALISATION ) &&
-                               !M_on_strategy.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
-                        {
-                            // __form.set( thedof, thedof, 1.0*1e30 );
-                            // M_rhs->set( thedof, __value*1e30 );
                         }
                 }
         }// __face_it != __face_en
         } // for( auto& lit : M_elts )
     }// findAFace
 
-    auto x = M_rhs->clone();
-    CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
-    x->setVector( dofs.data(), dofs.size(), values.data() );
-    x->close();
-
-    if ( !values.empty() )
-    {
-        auto [minIt, maxIt] = std::minmax_element( values.begin(), values.end() );
-        LOG(INFO) << fmt::format( "IntegratorOnExpr<>::onFaces() Dirichlet values: count={} min={} max={}",
-                                  values.size(), *minIt, *maxIt );
-    }
     LOG(INFO) << fmt::format("IntegratorOnExpr<>::onFaces() zeroRows set {} rhs values and set {} dofs", values.size(), dofs.size());
-    __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy, M_value_on_diagonal );
-    x.reset();
+    this->applyDirichletData( __form, dofs, values );
     LOG(INFO) << fmt::format("IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onFaces() done.");
 }
 
@@ -772,7 +795,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onEdges( std::shared_ptr
     static constexpr bool is_comp_space = Elem1::is_vectorial && Elem1::is_product && boost::is_same<functionspace_type,typename Elem1::component_functionspace_type>::value;
     VLOG(2) << "call on::assemble(edges): " << is_comp_space<< "\n";
 
-    if (  M_on_strategy.test( ContextOn::PENALISATION ) )
+    if ( vf::isPenalisationDirichlet( M_on_strategy ) && !__form.shouldDeferDirichlet( M_on_strategy ) )
     {
         // make sure that the form is close, ie the associated matrix is assembled
         __form.matrix().close();
@@ -889,7 +912,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onEdges( std::shared_ptr
                                     thedof ) != dofs.end() )
                         continue;
 
-                    if ( M_on_strategy.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
+                    if ( vf::isEliminationDirichlet( M_on_strategy ) || vf::isPenalisationDirichlet( M_on_strategy ) )
                         {
                             DVLOG(2) << "Eliminating row " << thedof << " using value : " << __value << "\n";
 
@@ -903,15 +926,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onEdges( std::shared_ptr
                                 dofs.push_back( thedof );
                                 values.push_back(  __value );
                             }
-
                             //M_rhs.set( thedof, __value );
-                        }
-
-                    else if (  M_on_strategy.test( ContextOn::PENALISATION ) &&
-                               !M_on_strategy.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
-                        {
-                            __form.set( thedof, thedof, 1.0*1e30 );
-                            M_rhs->set( thedof, __value*1e30 );
                         }
                 }
         }// edge_it != edge_en
@@ -920,12 +935,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onEdges( std::shared_ptr
 
     }// findAEdge
 
-    auto x = M_rhs->clone();
-    CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
-    x->setVector( dofs.data(), dofs.size(), values.data() );
-    x->close();
-    __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy, M_value_on_diagonal );
-    x.reset();
+    this->applyDirichletData( __form, dofs, values );
 
 }
 
@@ -959,7 +969,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onPoints( std::shared_pt
     auto const* __fe = M_u.functionSpace()->fe().get();
     auto gm = mesh->gm();
 
-    if (  M_on_strategy.test( ContextOn::PENALISATION ) )
+    if ( vf::isPenalisationDirichlet( M_on_strategy ) && !__form.shouldDeferDirichlet( M_on_strategy ) )
     {
         // make sure that the form is close, ie the associated matrix is assembled
         __form.matrix().close();
@@ -1079,29 +1089,18 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onPoints( std::shared_pt
                                     thedof ) != dofs.end() )
                         continue;
 
-                    if ( M_on_strategy.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
+                    if ( vf::isEliminationDirichlet( M_on_strategy ) || vf::isPenalisationDirichlet( M_on_strategy ) )
                     {
                         DVLOG(3) << "Eliminating row " << thedof << " using value : " << __value << "\n";
                         dofs.push_back( thedof );
                         values.push_back(  __value );
-                    }
-                    else if (  M_on_strategy.test( ContextOn::PENALISATION ) &&
-                               !M_on_strategy.test( ContextOn::ELIMINATION|ContextOn::SYMMETRIC ) )
-                    {
-                        __form.set( thedof, thedof, 1.0*1e30 );
-                        M_rhs->set( thedof, __value*1e30 );
                     }
                 }
             }// pt_it != pt_en
         } // for( auto& lit : M_elts )
     }// findAFace
 
-    auto x = M_rhs->clone();
-    CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
-    x->setVector( dofs.data(), dofs.size(), values.data() );
-    x->close();
-    __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy, M_value_on_diagonal );
-    x.reset();
+    this->applyDirichletData( __form, dofs, values );
     LOG(INFO) << fmt::format("IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onPoints() done");
 }
 

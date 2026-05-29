@@ -1020,6 +1020,7 @@ public:
     {
         auto args = NA::make_arguments( std::forward<Ts>(v)... );
         sparse_matrix_ptrtype matrix = args.get(_matrix);
+        sparse_matrix_ptrtype auxiliaryMatrix = args.get_else( _auxiliary_matrix, sparse_matrix_ptrtype{} );
         auto && solution = args.get(_solution);
         vector_ptrtype rhs = args.get(_rhs);
         preconditioner_ptrtype prec = args.get_else(_prec,preconditioner_ptrtype{});
@@ -1070,6 +1071,9 @@ public:
         }
         else
             this->attachPreconditioner( prec );
+
+        if ( this->preconditioner() && this->preconditioner()->type() == HPDDM_PRECOND && auxiliaryMatrix )
+            this->preconditioner()->attachAuxiliarySparseMatrix( "hpddm-auxiliary-matrix", auxiliaryMatrix );
 
         // attach null space (or near null space for multigrid) in backend
         auto mynullspace = std::make_shared<NullSpace<value_type>>(this->shared_from_this(),null_space);

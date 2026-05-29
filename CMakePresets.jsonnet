@@ -1,6 +1,6 @@
 // CMakePresets.jsonnet - Template for generating CMakePresets.json
 // Generate with: ./scripts/generate-presets.sh
-// Or manually: jsonnet CMakePresets.jsonnet | python3 -m json.tool --indent 4 > CMakePresets.json
+// Or manually: jsonnet CMakePresets.jsonnet | python3 -m json.tool --indent 3 --no-ensure-ascii > CMakePresets.json
 
 local compilers = ['gcc', 'clang'];
 local cppStds = ['20', '23'];
@@ -9,7 +9,7 @@ local buildTypes = {
   debug: 'Debug',
   relwithdebinfo: 'RelWithDebInfo',
 };
-local components = ['feelpp', 'testsuite', 'toolboxes', 'mor', 'python'];
+local components = ['feelpp', 'testsuite', 'quickstart', 'toolboxes', 'mor', 'python'];
 local packageManagers = ['cmake', 'spack', 'conan', 'vcpkg'];
 
 // ============================================================================
@@ -22,6 +22,7 @@ local capitalize(str) =
 local componentDisplayName(comp) = {
   feelpp: 'Feel++ Library',
   testsuite: 'Test Suite',
+  quickstart: 'Quickstart',
   toolboxes: 'Toolboxes',
   mor: 'MOR (Model Order Reduction)',
   python: 'Python Bindings',
@@ -50,6 +51,7 @@ local defaultPreset = {
     FEELPP_USE_EXTERNAL_EIGEN3: 'OFF',
     FEELPP_USE_EXTERNAL_PYBIND11: 'ON',
     CMAKE_EXPORT_COMPILE_COMMANDS: 'TRUE',
+    CMAKE_POLICY_VERSION_MINIMUM: '3.5',
     // Enable the maintained toolbox set in the main build.
     FEELPP_TOOLBOXES_ENABLE_HEAT: 'ON',
     FEELPP_TOOLBOXES_ENABLE_CFPDE: 'ON',
@@ -120,6 +122,19 @@ local eztraceFlagsPreset = {
   },
 };
 
+local macosxPreset = {
+  name: 'macosx',
+  hidden: true,
+  description: 'macOS build settings',
+  environment: {
+    LDFLAGS: '',
+  },
+  cacheVariables: {
+    FEELPP_ENABLE_FFTW: 'ON',
+    FEELPP_ENABLE_GLPK: 'ON',
+  },
+};
+
 // C++ Standard presets
 local cppStdPreset(std) = {
   name: 'cpp' + std,
@@ -150,10 +165,17 @@ local spackPreset = {
   inherits: ['default'],
   cacheVariables: {
     CMAKE_INSTALL_RPATH_USE_LINK_PATH: 'ON',
+    FEELPP_ALLOW_AMBIENT_PYTHON: 'ON',
     FEELPP_USE_EXTERNAL_CLN: 'ON',
+    FEELPP_USE_EXTERNAL_EIGEN3: 'ON',
     FEELPP_ENABLE_VTK: 'OFF',
     USE_VTK: 'OFF',
     FEELPP_ENABLE_OPENTURNS: 'OFF',
+    PYBIND11_FINDPYTHON: 'ON',
+    CPR_USE_SYSTEM_CURL: 'ON',
+    CPR_USE_SYSTEM_LIB_PSL: 'OFF',
+    CURL_NO_CURL_CMAKE: 'ON',
+    FEELPP_ENABLE_OMC: 'OFF',
   },
   environment: {
     VERBOSE: '1',
@@ -313,6 +335,16 @@ local buildTypeCompilerSpackPreset(buildType, compiler) = {
   inherits: ['spack', compiler, buildType + '-cmake'],
 };
 
+// Build-type + compiler + spack + macOS
+local buildTypeCompilerSpackMacosxPreset(buildType, compiler) = {
+  name: buildType + '-' + compiler + '-spack-macosx',
+  displayName: capitalize(buildType) + ' | ' + compiler + ' | spack package manager | macOS',
+  inherits: ['macosx', 'spack', compiler, buildType + '-cmake'],
+  environment: {
+    LDFLAGS: '',
+  },
+};
+
 // Build-type + compiler + cpp-std + spack
 local buildTypeCompilerCppStdSpackPreset(buildType, compiler, cppStd) = {
   name: buildType + '-' + compiler + '-cpp' + cppStd + '-spack',
@@ -370,6 +402,9 @@ local componentCacheVars = {
   testsuite: {
     FEELPP_COMPONENT: 'testsuite',
   },
+  quickstart: {
+    FEELPP_COMPONENT: 'quickstart',
+  },
 };
 
 local componentPreset(component) = {
@@ -390,18 +425,16 @@ local feelppUsrlocalPreset = {
 
 local feelppCpp20SpackPreset = {
   name: 'feelpp-cpp20-spack',
-  inherits: ['cpp20', 'clang', 'spack', 'release-cmake'],
+  inherits: ['feelpp', 'cpp20', 'spack'],
   displayName: 'feelpp | clang | cpp20 | release | spack package manager',
   description: 'Build only the Feel++ library Component',
-  cacheVariables: {
-    FEELPP_COMPONENT: 'feelpp',
-    FEELPP_ENABLE_MOR: 'OFF',
-    FEELPP_ENABLE_TOOLBOXES: 'OFF',
-    FEELPP_ENABLE_FEELPP_PYTHON: 'OFF',
-    FEELPP_ENABLE_TESTS: 'OFF',
-    FEELPP_ENABLE_FMILIB: 'OFF',
-    FEELPP_ENABLE_BENCHMARKS: 'OFF',
-  },
+};
+
+local feelppCpp23SpackPreset = {
+  name: 'feelpp-cpp23-spack',
+  inherits: ['feelpp', 'cpp23', 'spack'],
+  displayName: 'feelpp | clang | cpp23 | release | spack package manager',
+  description: 'Build only the Feel++ library Component',
 };
 
 local feelppSpecxPreset = {
@@ -614,6 +647,7 @@ local configurePresets =
     usrlocalPreset,
     perfFlagsPreset,
     eztraceFlagsPreset,
+    macosxPreset,
   ] +
   // C++ standard presets
   [cppStdPreset(std) for std in cppStds] +
@@ -645,6 +679,9 @@ local configurePresets =
   ]) +
   // Build type + compiler + spack
   [buildTypeCompilerSpackPreset('release', 'clang')] +
+  [buildTypeCompilerSpackMacosxPreset('release', 'clang')] +
+  [buildTypeCompilerSpackPreset('debug', 'clang')] +
+  [buildTypeCompilerSpackMacosxPreset('debug', 'clang')] +
   // Build type + compiler + cpp-std + spack
   [buildTypeCompilerCppStdSpackPreset('release', 'clang', '20')] +
   // Component presets
@@ -653,6 +690,7 @@ local configurePresets =
   [
     feelppUsrlocalPreset,
     feelppCpp20SpackPreset,
+    feelppCpp23SpackPreset,
     feelppSpecxPreset,
     morDbgPreset,
     researchMorPreset,
@@ -694,6 +732,9 @@ std.flattenArrays([
 ]) +
 // Build type + compiler + spack
 [buildPreset('release-clang-spack')] +
+[buildPreset('release-clang-spack-macosx')] +
+[buildPreset('debug-clang-spack')] +
+[buildPreset('debug-clang-spack-macosx')] +
 [buildPreset('release-clang-cpp20-spack')] +
 // Component presets
 [buildPreset(comp) for comp in components] +
@@ -701,6 +742,7 @@ std.flattenArrays([
 [
   buildPreset('feelpp-usrlocal'),
   buildPreset('feelpp-cpp20-spack'),
+  buildPreset('feelpp-cpp23-spack'),
   buildPreset('feelpp+specx'),
   buildPreset('mor-dbg'),
   buildPreset('research-mor'),
@@ -812,7 +854,7 @@ local dockerWorkflow(name) = {
 };
 
 local workflowPresets =
-  // Component workflows (feelpp, toolboxes, mor, python, testsuite)
+  // Component workflows (feelpp, testsuite, quickstart, toolboxes, mor, python)
   [simpleWorkflow(comp) for comp in components] +
   // Docker workflows for CI
   [dockerWorkflow(comp) for comp in components] +
@@ -824,7 +866,7 @@ local workflowPresets =
   [simpleWorkflow('release-cmake')] +
   // Debug workflows
   [simpleWorkflow('debug')] +
-  [simpleWorkflow('debug-cmake')] ;
+  [simpleWorkflow('debug-cmake')];
 
 local testPresets = [
   testPreset('default', { execution: { jobs: 4 } }),
@@ -847,6 +889,9 @@ std.flattenArrays([
 ]) +
 // Spack presets
 [testPreset('release-clang-spack', { inherits: 'default' })] +
+[testPreset('release-clang-spack-macosx', { inherits: 'default' })] +
+[testPreset('debug-clang-spack', { inherits: 'default' })] +
+[testPreset('debug-clang-spack-macosx', { inherits: 'default' })] +
 [testPreset('release-clang-cpp20-spack', { inherits: 'default' })] +
 // Component presets (inherit from default, use 4 jobs, retry failed tests 3 times)
 [

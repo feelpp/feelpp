@@ -33,7 +33,8 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 
-#include <boost/multi_array.hpp>
+#include <boost/mpl/print.hpp>
+#include <feel/feelcore/boostmultiarray.hpp>
 
 // clang-format off
 #include <feel/feelcore/warnoff.hpp>

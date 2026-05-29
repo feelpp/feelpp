@@ -535,11 +535,12 @@ public :
             element_pressure_ptrtype field_p;
             if ( this->hasSolidEquationStandard() )
             {
-                field_d = this->functionSpaceDisplacement()->elementPtr( *sol, startBlockSpaceIndex + this->startSubBlockSpaceIndex( "displacement" ) );
+                auto const& solConst = *sol;
+                field_d = this->functionSpaceDisplacement()->elementPtr( solConst, startBlockSpaceIndex + this->startSubBlockSpaceIndex( "displacement" ) );
                 if ( M_timeSteppingUseMixedFormulation )
-                    field_v = this->functionSpaceDisplacement()->elementPtr( *sol, startBlockSpaceIndex + this->startSubBlockSpaceIndex( "velocity" ) );
+                    field_v = this->functionSpaceDisplacement()->elementPtr( solConst, startBlockSpaceIndex + this->startSubBlockSpaceIndex( "velocity" ) );
                 if ( this->hasDisplacementPressureFormulation() )
-                    field_p = this->functionSpacePressure()->elementPtr( *sol, startBlockSpaceIndex + this->startSubBlockSpaceIndex( "pressure" ) );
+                    field_p = this->functionSpacePressure()->elementPtr( solConst, startBlockSpaceIndex + this->startSubBlockSpaceIndex( "pressure" ) );
             }
             return this->modelFields( field_d, field_v, field_p, prefix );
         }

@@ -1,12 +1,21 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:set fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4*/
 
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/checker.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
+#include <feel/feeldiscr/check.hpp>
 #include <feel/feeldiscr/pchv.hpp>
+#include <feel/feelalg/petschpddm.hpp>
+#include <feel/feelvf/vf.hpp>
 #include <feel/feelvf/vf_eval.hpp>
+#include <iostream>
 #include "nullspace-rigidbody.hpp"
 
+namespace
+{
+constexpr int ctestSkipReturnCode = 77;
+}
 
 int main(int argc, char**argv )
 {
@@ -29,6 +38,14 @@ int main(int argc, char**argv )
                                     _author="Feel++ Consortium",
                                     _email="feelpp-devel@feelpp.org"));
 
+        bool const useHpddm = soption(_name="pc-type") == "hpddm";
+        if ( useHpddm && !boption( "no-solve" ) && !petscHasHpddmRuntime( Environment::worldComm().globalComm() ) )
+        {
+            if ( Environment::isMasterRank() )
+                std::cout << "Skipping HPDDM elasticity quickstart: PETSc runtime does not provide HPDDM support\n";
+            return ctestSkipReturnCode;
+        }
+
         tic();
         auto mesh = loadMesh(_mesh=new Mesh<Simplex<FEELPP_DIM,1>>);
         toc("loadMesh");
@@ -48,13 +65,39 @@ int main(int argc, char**argv )
         auto Id = eye<FEELPP_DIM,FEELPP_DIM>();
         auto sigmat = lambda*trace(deft)*Id + 2*mu*deft;
         auto sigma = lambda*trace(def)*Id + 2*mu*def;
-        auto f = expr<FEELPP_DIM,1>( soption(_name="functions.f"), "f" );
-        auto g = expr<FEELPP_DIM,1>( soption(_name="functions.g"), "g" );
+        std::map<std::string,std::string> checkerInputs{
+            {"dim", std::to_string( FEELPP_DIM )},
+            {"lam1", std::to_string( mu )},
+            {"lam2", std::to_string( lambda )},
+            {"exact", "1"},
+            {"grad_displ", ""},
+            {"strain", ""},
+            {"stress", ""},
+            {"stressn", ""},
+            {"f", ""},
+            {"c1", ""},
+            {"c2", ""}
+        };
+        auto thechecker = checker( _name="L2/H1 displacement norms",
+                                   _solution_key="displ",
+                                   _gradient_key="grad_displ",
+                                   _inputs=checkerInputs );
+        auto locals = thechecker.check()? thechecker.runScript() : Checker::variables_t{};
 
         tic();
         auto l = form1( _test=Vh );
-        l = integrate(_range=elements(mesh),
-                    _expr=inner(f,id(v)));
+        if ( thechecker.check() )
+        {
+            auto f = expr<FEELPP_DIM,1>( locals.at( "f" ), "f" );
+            l = integrate(_range=elements(mesh),
+                          _expr=-inner(f,id(v)));
+        }
+        else
+        {
+            auto f = expr<FEELPP_DIM,1>( soption(_name="functions.f"), "f" );
+            l = integrate(_range=elements(mesh),
+                          _expr=inner(f,id(v)));
+        }
         toc("l");
 
         tic();
@@ -71,6 +114,7 @@ int main(int argc, char**argv )
         }
         else
         {
+            auto g = expr<FEELPP_DIM,1>( thechecker.check()? thechecker.solution() : soption(_name="functions.g"), "g" );
             a+=on(_range=markedfaces(mesh,"Dirichlet"), _rhs=l, _element=u, _expr=g );
         }
         toc("a");
@@ -80,8 +124,9 @@ int main(int argc, char**argv )
         {
             tic();
             std::shared_ptr<NullSpace<double> > myNullSpace( new NullSpace<double>(backend(),qsNullSpace(Vh,mpl::int_<FEELPP_DIM>())) );
-            backend()->attachNearNullSpace( myNullSpace );
-            if ( boption(_name="nullspace") )
+            if ( !useHpddm )
+                backend()->attachNearNullSpace( myNullSpace );
+            if ( boption(_name="nullspace") && !useHpddm )
                 backend()->attachNearNullSpace( myNullSpace );
 
             a.solve(_rhs=l,_solution=u);
@@ -92,9 +137,11 @@ int main(int argc, char**argv )
         auto e = exporter( _mesh=mesh );
         e->addRegions();
         e->add( "u", u );
+        if ( thechecker.check() )
+            e->add( "u_exact", expr<FEELPP_DIM,1>( thechecker.solution() ) );
         e->save();
         toc("Exporter");
-        return 0;
+        return check( thechecker, u );
     }
     catch(...)
     {
