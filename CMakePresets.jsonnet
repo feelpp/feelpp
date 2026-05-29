@@ -824,10 +824,7 @@ local workflowPresets =
   [simpleWorkflow('release-cmake')] +
   // Debug workflows
   [simpleWorkflow('debug')] +
-  [simpleWorkflow('debug-cmake')] +
-  // Profiling workflows
-  [simpleWorkflow('perf')] +
-  [simpleWorkflow('eztrace')];
+  [simpleWorkflow('debug-cmake')] ;
 
 local testPresets = [
   testPreset('default', { execution: { jobs: 4 } }),

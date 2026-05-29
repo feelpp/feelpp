@@ -1632,44 +1632,6 @@
                "type": "test"
             }
          ]
-      },
-      {
-         "description": "Configure, build, and test perf",
-         "displayName": "Workflow: perf",
-         "name": "perf",
-         "steps": [
-            {
-               "name": "perf",
-               "type": "configure"
-            },
-            {
-               "name": "perf",
-               "type": "build"
-            },
-            {
-               "name": "perf",
-               "type": "test"
-            }
-         ]
-      },
-      {
-         "description": "Configure, build, and test eztrace",
-         "displayName": "Workflow: eztrace",
-         "name": "eztrace",
-         "steps": [
-            {
-               "name": "eztrace",
-               "type": "configure"
-            },
-            {
-               "name": "eztrace",
-               "type": "build"
-            },
-            {
-               "name": "eztrace",
-               "type": "test"
-            }
-         ]
       }
    ]
 }
