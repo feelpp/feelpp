@@ -116,7 +116,7 @@ public :
         requires std::is_base_of<ProductSpacesBase,decay_type<T>>::value
     BlockBilinearForm( T&& ps )
         :
-        M_ps(std::forward<T>(ps)),
+        M_ps( remove_shared_ptr_f( std::forward<T>( ps ) ) ),
         M_matrix( std::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, Pattern::COUPLED), backend(), false ) )
         {}
 
@@ -124,7 +124,7 @@ public :
         requires std::is_base_of<ProductSpaceBase,decay_type<T>>::value
     BlockBilinearForm( T&& ps )
         :
-        M_ps(std::forward<T>(ps)),
+        M_ps( remove_shared_ptr_f( std::forward<T>( ps ) ) ),
         M_matrix( std::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, Pattern::COUPLED), backend(), false ) )
         {}    
     
@@ -132,7 +132,7 @@ public :
         requires std::is_base_of<ProductSpacesBase,decay_type<T>>::value && std::is_base_of<BackendBase,decay_type<BackendT>>::value
     BlockBilinearForm( T&& ps, BackendT&& b, RangeMapT r = stencilRangeMap() )
         :
-        M_ps(std::forward<T>(ps)),
+        M_ps( remove_shared_ptr_f( std::forward<T>( ps ) ) ),
         M_matrix( std::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, Pattern::COUPLED, r), std::forward<BackendT>(b), false ) )
         {}
 
@@ -140,7 +140,7 @@ public :
         requires std::is_base_of<ProductSpacesBase,decay_type<T>>::value && std::is_base_of<BackendBase,decay_type<BackendT>>::value
     BlockBilinearForm( T&& ps, solve::strategy s, BackendT&& b, size_type pattern = Pattern::COUPLED, RangeMapT r = stencilRangeMap() )
         :
-        M_ps(std::forward<T>(ps)),
+        M_ps( remove_shared_ptr_f( std::forward<T>( ps ) ) ),
         M_matrix( std::make_shared<condensed_matrix_type>( s,
                                                              csrGraphBlocks(M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:pattern,r),
                                                              std::forward<BackendT>(b),
@@ -150,7 +150,7 @@ public :
         requires std::is_base_of<ProductSpacesBase,decay_type<T>>::value && std::is_base_of<BackendBase,decay_type<BackendT>>::value
     BlockBilinearForm( T&& ps, solve::strategy s, BackendT&& b, std::vector<size_type> const& patterns )
         :
-        M_ps(std::forward<T>(ps)),
+        M_ps( remove_shared_ptr_f( std::forward<T>( ps ) ) ),
         M_matrix( std::make_shared<condensed_matrix_type>( s,
                                                              csrGraphBlocks(M_ps, (s>=solve::strategy::static_condensation)?pattern::toZero(patterns):patterns),
                                                              std::forward<BackendT>(b),
@@ -276,7 +276,7 @@ public :
     template<typename T>
     void setFunctionSpace( T&& ps )
         {
-            M_ps = std::forward<T>(ps);
+            M_ps = remove_shared_ptr_f( std::forward<T>( ps ) );
         }
     template<typename BackendT>
     void setStrategy( BackendT&& b )
@@ -785,34 +785,34 @@ public :
         requires std::is_base_of<ProductSpacesBase,decay_type<T>>::value
     BlockLinearForm( T&& ps, solve::strategy s, BackendT&& b )
         :
-        M_ps(std::forward<T>(ps)),
+        M_ps( remove_shared_ptr_f( std::forward<T>( ps ) ) ),
         M_vector(std::make_shared<condensed_vector_type>(s, blockVector(M_ps), std::forward<BackendT>(b), false))
         {}
     template<typename T>
         requires std::is_base_of<ProductSpacesBase,decay_type<T>>::value
     BlockLinearForm(T&& ps)
         :
-        M_ps(std::forward<T>(ps)),
+        M_ps( remove_shared_ptr_f( std::forward<T>( ps ) ) ),
         M_vector(std::make_shared<condensed_vector_type>(blockVector(M_ps), backend(), false))
         {}
     template<typename T>
         requires std::is_base_of<ProductSpaceBase,decay_type<T>>::value
     BlockLinearForm(T&& ps)
         :
-        M_ps(std::forward<T>(ps)),
+        M_ps( remove_shared_ptr_f( std::forward<T>( ps ) ) ),
         M_vector(std::make_shared<condensed_vector_type>(blockVector(M_ps), backend(), false))
         {}    
     template<typename T, typename BackendT>
         requires std::is_base_of<ProductSpacesBase,decay_type<T>>::value
     BlockLinearForm(T&& ps, BackendT&& b)
         :
-        M_ps(std::forward<T>(ps)),
+        M_ps( remove_shared_ptr_f( std::forward<T>( ps ) ) ),
         M_vector(std::make_shared<condensed_vector_type>(blockVector(M_ps), std::forward<BackendT>(b), false))
         {}
     template<typename T>
     BlockLinearForm(T&& ps, condensed_vector_ptrtype v )
         :
-        M_ps(std::forward<T>(ps)),
+        M_ps( remove_shared_ptr_f( std::forward<T>( ps ) ) ),
         M_vector(v)
         {}
     BlockLinearForm( BlockLinearForm&& ) = default;
@@ -847,9 +847,7 @@ public :
     decltype(auto) operator()( N1 n1, int s = 0 )
         {
             int n = 0;
-            auto&& spaces=hana::if_( hana::bool_<Feel::is_shared_ptr_v<PS>>{},
-                                     []( auto&& x ) { return *x; },
-                                     []( auto&& x ) { return x; } )(M_ps);
+            auto&& spaces = remove_shared_ptr_f( M_ps );
             auto space = hana::at( spaces.tupleSpaces(), n1 );
 
             return hana::eval_if(std::is_base_of<ProductSpaceBase,decay_type<decltype(space)>>{},
@@ -871,7 +869,7 @@ public :
     template<typename T>
     void setFunctionSpace( T&& ps )
         {
-            M_ps = std::forward<T>(ps);
+            M_ps = remove_shared_ptr_f( std::forward<T>( ps ) );
         }
     template<typename BackendT>
     void setStrategy( BackendT&& b )

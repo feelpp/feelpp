@@ -486,16 +486,84 @@ public:
         return "CrouzeixRaviart";
     }
 
+    uint16_type localDofPerComponent() const override
+    {
+        return nLocalDof;
+    }
+
+    uint16_type localDofId( uint16_type parentLocalDofId, uint16_type component = 0 ) const override
+    {
+        FEELPP_ASSERT( component < nComponents )
+            ( component )( parentLocalDofId )( nComponents ).error( "invalid component index" );
+        FEELPP_ASSERT( parentLocalDofId < nLocalDof )
+            ( parentLocalDofId )( nLocalDof ).error( "invalid parent local dof index" );
+        return static_cast<uint16_type>( nLocalDof * component + parentLocalDofId );
+    }
+
     //! \return the component of a local dof
     uint16_type component( uint16_type localDofId ) const override
         {
-            return 0;
+            uint16_type comp = localDofId/nLocalDof;
+            DCHECK( comp < nComponents ) << "invalid localDofId " << localDofId;
+            return comp;
         }
 
     //! \return a parent local dof id for each component (for example, the first component)
     uint16_type dofParent( uint16_type localDofId ) const override
         {
-            return localDofId;
+            return static_cast<uint16_type>( localDofId % nLocalDof );
+        }
+
+    typename super::DofAttachment dofAttachment( uint16_type localDofId ) const override
+        {
+            const uint16_type parentLocalDofId = this->dofParent( localDofId );
+            const uint16_type nV = static_cast<uint16_type>( reference_convex_type::numVertices * nDofPerVertex );
+            const uint16_type nE = static_cast<uint16_type>( reference_convex_type::numEdges * nDofPerEdge );
+            const uint16_type nF = static_cast<uint16_type>( reference_convex_type::numFaces * nDofPerFace );
+
+            if constexpr ( nDofPerVertex > 0 )
+            {
+                if ( parentLocalDofId < nV )
+                {
+                    return typename super::DofAttachment{
+                        .entityDim = 0,
+                        .entityId = static_cast<uint16_type>( parentLocalDofId / nDofPerVertex ),
+                        .ordinal = static_cast<uint16_type>( parentLocalDofId % nDofPerVertex ),
+                        .kind = this->dofType( localDofId ) };
+                }
+            }
+
+            const uint16_type parentAfterVertex = static_cast<uint16_type>( parentLocalDofId - nV );
+            if constexpr ( nDofPerEdge > 0 )
+            {
+                if ( parentAfterVertex < nE )
+                {
+                    return typename super::DofAttachment{
+                        .entityDim = 1,
+                        .entityId = static_cast<uint16_type>( parentAfterVertex / nDofPerEdge ),
+                        .ordinal = static_cast<uint16_type>( parentAfterVertex % nDofPerEdge ),
+                        .kind = this->dofType( localDofId ) };
+                }
+            }
+
+            const uint16_type parentAfterEdge = static_cast<uint16_type>( parentAfterVertex - nE );
+            if constexpr ( nDofPerFace > 0 )
+            {
+                if ( parentAfterEdge < nF )
+                {
+                    return typename super::DofAttachment{
+                        .entityDim = 2,
+                        .entityId = static_cast<uint16_type>( parentAfterEdge / nDofPerFace ),
+                        .ordinal = static_cast<uint16_type>( parentAfterEdge % nDofPerFace ),
+                        .kind = this->dofType( localDofId ) };
+                }
+            }
+
+            return typename super::DofAttachment{
+                .entityDim = -1,
+                .entityId = super::DofAttachment::invalid_id,
+                .ordinal = super::DofAttachment::invalid_id,
+                .kind = this->dofType( localDofId ) };
         }
 
     //! \return the type of a local dof

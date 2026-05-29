@@ -13,18 +13,19 @@ namespace Feel
  *
  */
 template<typename PS, typename RangeMapT = StencilRangeMap0Type>
-    requires std::is_base_of_v<ProductSpacesBase, std::remove_reference_t<PS>>
+    requires std::is_base_of_v<ProductSpacesBase, decay_type<PS>>
           && std::is_base_of_v<StencilRangeMapTypeBase, RangeMapT>
 BlocksBaseGraphCSR
 csrGraphBlocks( PS&& ps,
                 uint32_type pattern = Pattern::COUPLED,
                 RangeMapT range = stencilRangeMap() )
 {
-    int s = ps.numberOfSpaces();
+    auto&& productSpace = remove_shared_ptr_f( std::forward<PS>( ps ) );
+    int s = productSpace.numberOfSpaces();
     BlocksBaseGraphCSR g( s, s );
 
     int n = 0;
-    auto pst = ps.tupleSpaces();
+    auto pst = productSpace.tupleSpaces();
     auto cp = hana::cartesian_product( hana::make_tuple( pst, pst ) );
     int nstatic = hana::if_(std::is_base_of<ProductSpaceBase,decay_type<decltype(hana::back(pst))>>{},
                             [s] (auto&& x ) { return s-hana::back(std::forward<decltype(x)>(x))->numberOfSpaces()+1; },
@@ -103,19 +104,20 @@ csrGraphBlocks( PS&& ps,
 }
 
 template<typename PS>
-    requires std::is_base_of_v<ProductSpaceBase, std::remove_reference_t<PS>>
+    requires std::is_base_of_v<ProductSpaceBase, decay_type<PS>>
 BlocksBaseGraphCSR
 csrGraphBlocks( PS&& ps,
                 uint32_type pattern = Pattern::COUPLED )
 {
-    int s = ps.numberOfSpaces();
+    auto&& productSpace = remove_shared_ptr_f( std::forward<PS>( ps ) );
+    int s = productSpace.numberOfSpaces();
     BlocksBaseGraphCSR g( s, s );
 
 
-    for( int i = 0; i < ps.numberOfSpaces(); ++i )
-        for( int j = 0; j < ps.numberOfSpaces(); ++j )
+    for( int i = 0; i < productSpace.numberOfSpaces(); ++i )
+        for( int j = 0; j < productSpace.numberOfSpaces(); ++j )
         {
-            g( i, j ) = stencil( _test=ps[i],_trial=ps[j], _pattern=pattern, _diag_is_nonzero=false, _close=false)->graph();
+            g( i, j ) = stencil( _test=productSpace[i],_trial=productSpace[j], _pattern=pattern, _diag_is_nonzero=false, _close=false)->graph();
             LOG(INFO) << "filling out stencil (" << i << "," << j << ")\n";
         }
     return g;

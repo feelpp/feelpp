@@ -56,6 +56,7 @@ public:
     using mesh_ptrtype = typename underlying_functionspace_type::mesh_ptrtype;
     using value_type = typename underlying_functionspace_type::value_type;
     using worldcomm_type = WorldComm;
+    using datamap_ptrtype = std::shared_ptr<DataMap<>>;
     
     /**
      * construct a product of n identical spaces from mesh \p m
@@ -117,7 +118,7 @@ public:
             if ( same_mesh )
                 return M_nspaces*this->front()->nDof();
             else
-                return std::accumulate( this->begin(), this->end(), size_type(0), []( auto i, auto const& e ) { return i+e.nDof(); } );
+                return std::accumulate( this->begin(), this->end(), size_type(0), []( auto i, auto const& e ) { return i+e->nDof(); } );
 
         }
 
@@ -127,9 +128,40 @@ public:
             if ( same_mesh )
                 return M_nspaces*this->front()->nLocalDof();
             else
-                return std::accumulate( this->begin(), this->end(), size_type(0), []( auto i, auto const& e ) { return i+e.nLocalDof(); } );
+                return std::accumulate( this->begin(), this->end(), size_type(0), []( auto i, auto const& e ) { return i+e->nLocalDof(); } );
 
         }
+
+    size_type nDofStart( size_type i = 0 ) const
+    {
+        CHECK( i <= static_cast<size_type>( this->numberOfSpaces() ) )
+            << "invalid block index " << i << " for product space with "
+            << this->numberOfSpaces() << " spaces";
+        if ( same_mesh )
+            return i*this->front()->nDof();
+
+        size_type start = 0;
+        for ( size_type k = 0; k < i; ++k )
+            start += this->space( k )->nDof();
+        return start;
+    }
+
+    size_type nLocalDofStart( size_type i = 0 ) const
+    {
+        CHECK( i <= static_cast<size_type>( this->numberOfSpaces() ) )
+            << "invalid block index " << i << " for product space with "
+            << this->numberOfSpaces() << " spaces";
+        if ( same_mesh )
+            return i*this->front()->nLocalDof();
+
+        size_type start = 0;
+        for ( size_type k = 0; k < i; ++k )
+            start += this->space( k )->nLocalDof();
+        return start;
+    }
+
+    size_type blockDofStart( size_type i = 0 ) const { return this->nDofStart( i ); }
+    size_type blockLocalDofStart( size_type i = 0 ) const { return this->nLocalDofStart( i ); }
 
     worldcomm_type const& worldComm()  { return this->front()->worldComm(); }
     worldcomm_type const& worldComm() const { return this->front()->worldComm(); }
@@ -137,6 +169,31 @@ public:
     
     underlying_functionspace_ptrtype& operator[]( int i ) { return same_mesh?this->front():this->at(i); }
     underlying_functionspace_ptrtype const& operator[]( int i ) const { return same_mesh?this->front():this->at(i); }
+
+    underlying_functionspace_ptrtype& space( size_type i ) { return (*this)[static_cast<int>( i )]; }
+    underlying_functionspace_ptrtype const& space( size_type i ) const { return (*this)[static_cast<int>( i )]; }
+
+    template<int I>
+    underlying_functionspace_ptrtype& space()
+    {
+        static_assert( I >= 0, "product space index must be non-negative" );
+        return this->space( static_cast<size_type>( I ) );
+    }
+
+    template<int I>
+    underlying_functionspace_ptrtype const& space() const
+    {
+        static_assert( I >= 0, "product space index must be non-negative" );
+        return this->space( static_cast<size_type>( I ) );
+    }
+
+    datamap_ptrtype blockMapPtr( size_type i ) const
+    {
+        CHECK( i < static_cast<size_type>( this->numberOfSpaces() ) )
+            << "invalid block index " << i << " for product space with "
+            << this->numberOfSpaces() << " spaces";
+        return this->space( i )->mapPtr();
+    }
 
     void setProperties( std::initializer_list<std::string> s )
         {
@@ -153,6 +210,7 @@ public:
     {
     public:
         using super = BlocksBaseVector<double>;
+        using functionspace_type = typename ProductSpace<T,same_mesh>::functionspace_type;
         using value_type = typename underlying_functionspace_type::value_type;
         using underlying_element_type = typename underlying_functionspace_type::element_type;
         using underlying_element_ptrtype = typename underlying_functionspace_type::element_ptrtype;
@@ -242,6 +300,7 @@ public:
     //using value_type = typename decay_type<decltype(super[0_c])>::value_type;
     using value_type = double;
     using functionspace_type = ProductSpaces<SpaceList...>;
+    using datamap_ptrtype = std::shared_ptr<DataMap<>>;
 
     ProductSpaces( SpaceList... l ) : M_tupleSpaces( l... ){}
     constexpr int numberOfSpaces() const { return hana::size( M_tupleSpaces ); }
@@ -253,6 +312,41 @@ public:
     size_type nDof() const { return hana::fold_left( M_tupleSpaces, 0, [&](size_type s, auto& e ) { return s + e->nDof(); } ); }
     //! \return the number of degrees of freedom owned by the process
     size_type nLocalDof() const { return hana::fold_left( M_tupleSpaces, 0, [&](size_type s, auto& e ) { return s + e->nLocalDof(); } ); }
+
+    size_type nDofStart( size_type i = 0 ) const
+    {
+        CHECK( i <= static_cast<size_type>( this->numberOfSpaces() ) )
+            << "invalid block index " << i << " for product space with "
+            << this->numberOfSpaces() << " spaces";
+        size_type start = 0;
+        size_type c = 0;
+        hana::for_each( M_tupleSpaces, [&]( auto const& e )
+                        {
+                            if ( c < i )
+                                start += e->nDof();
+                            ++c;
+                        } );
+        return start;
+    }
+
+    size_type nLocalDofStart( size_type i = 0 ) const
+    {
+        CHECK( i <= static_cast<size_type>( this->numberOfSpaces() ) )
+            << "invalid block index " << i << " for product space with "
+            << this->numberOfSpaces() << " spaces";
+        size_type start = 0;
+        size_type c = 0;
+        hana::for_each( M_tupleSpaces, [&]( auto const& e )
+                        {
+                            if ( c < i )
+                                start += e->nLocalDof();
+                            ++c;
+                        } );
+        return start;
+    }
+
+    size_type blockDofStart( size_type i = 0 ) const { return this->nDofStart( i ); }
+    size_type blockLocalDofStart( size_type i = 0 ) const { return this->nLocalDofStart( i ); }
 
     template<typename N>
     decltype(auto)
@@ -267,11 +361,59 @@ public:
             return M_tupleSpaces[n1];
         }
 
+    template<int I>
+    decltype(auto)
+    space() const
+    {
+        static_assert( I >= 0 && I < sizeof...(SpaceList), "invalid product space index" );
+        return M_tupleSpaces[hana::int_c<I>];
+    }
+
+    template<int I>
+    decltype(auto)
+    space()
+    {
+        static_assert( I >= 0 && I < sizeof...(SpaceList), "invalid product space index" );
+        return M_tupleSpaces[hana::int_c<I>];
+    }
+
+    template<typename N>
+    decltype(auto)
+    space( N const& n ) const
+    {
+        return M_tupleSpaces[n];
+    }
+
+    template<typename N>
+    decltype(auto)
+    space( N const& n )
+    {
+        return M_tupleSpaces[n];
+    }
+
+    datamap_ptrtype blockMapPtr( size_type i ) const
+    {
+        CHECK( i < static_cast<size_type>( this->numberOfSpaces() ) )
+            << "invalid block index " << i << " for product space with "
+            << this->numberOfSpaces() << " spaces";
+        datamap_ptrtype dm;
+        size_type c = 0;
+        hana::for_each( M_tupleSpaces, [&]( auto const& e )
+                        {
+                            if ( c == i )
+                                dm = e->mapPtr();
+                            ++c;
+                        } );
+        return dm;
+    }
+
 
     class Element : public BlocksBaseVector<double>, FunctionSpaceBase::ElementBase
     {
     public:
         using super = BlocksBaseVector<double>;
+        using functionspace_type = typename ProductSpaces<SpaceList...>::functionspace_type;
+        using value_type = typename functionspace_type::value_type;
         static const int nspaces = sizeof...(SpaceList);
         Element() = default;
         Element( Element const& ) = default;
@@ -286,13 +428,13 @@ public:
         decltype(auto)
         operator[]( N const& n1 ) const
             {
-                return dynamic_cast<decltype(M_fspace[n1]->element()) const&>(*((*this)(n1,0)));
+                return dynamic_cast<decltype(M_fspace[n1]->element()) const&>(*(super::operator()(int(n1),0)));
             }
         template<typename N>
         decltype(auto)
             operator[]( N const& n1 )
             {
-                return dynamic_cast<decltype(M_fspace[n1]->element())&>(*((*this)(n1,0)));
+                return dynamic_cast<decltype(M_fspace[n1]->element())&>(*(super::operator()(int(n1),0)));
             }
 
         template<typename N>
@@ -359,6 +501,8 @@ public:
     using functionspace_type = ProductSpaces2<T,SpaceList...>;
     using mesh_type = typename decay_type<T>::mesh_type;
     using mesh_ptrtype = typename decay_type<T>::mesh_ptrtype;
+    using datamap_ptrtype = std::shared_ptr<DataMap<>>;
+    static constexpr int nTupleSpaces = sizeof...(SpaceList) + ( mpl::is_void_<T>::value ? 0 : 1 );
 
     ProductSpaces2() = default;
     ProductSpaces2( std::shared_ptr<ProductSpace<T,true>> const& p, SpaceList... l ) : M_tupleSpaces( l..., p) {}
@@ -369,9 +513,72 @@ public:
     tuple_spaces_type & tupleSpaces() { return M_tupleSpaces; }
 
     //! \return the total number of degrees of freedom
-    //size_type nDof() const { return hana::fold_left( *this, 0, [&](size_type s, auto& e ) { return s + e->nDof(); } ); }
+    size_type nDof() const { return hana::fold_left( M_tupleSpaces, 0, [&](size_type s, auto& e ) { return s + e->nDof(); } ); }
     //! \return the number of degrees of freedom owned by the process
-    //size_type nLocalDof() const { return hana::fold_left( *this, 0, [&](size_type s, auto& e ) { return s + e->nLocalDof(); } ); }
+    size_type nLocalDof() const { return hana::fold_left( M_tupleSpaces, 0, [&](size_type s, auto& e ) { return s + e->nLocalDof(); } ); }
+
+    size_type nDofStart( size_type i = 0 ) const
+    {
+        CHECK( i <= static_cast<size_type>( this->numberOfSpaces() ) )
+            << "invalid block index " << i << " for product space with "
+            << this->numberOfSpaces() << " spaces";
+        size_type start = 0;
+        size_type c = 0;
+        hana::for_each( M_tupleSpaces, [&]( auto const& e )
+                        {
+                            using pointer_type = std::decay_t<decltype( e )>;
+                            using pointed_type = typename pointer_type::element_type;
+                            if constexpr ( std::is_base_of_v<ProductSpaceBase, pointed_type> )
+                            {
+                                for ( int j = 0; j < e->numberOfSpaces(); ++j )
+                                {
+                                    if ( c < i )
+                                        start += e->space( static_cast<size_type>( j ) )->nDof();
+                                    ++c;
+                                }
+                            }
+                            else
+                            {
+                                if ( c < i )
+                                    start += e->nDof();
+                                ++c;
+                            }
+                        } );
+        return start;
+    }
+
+    size_type nLocalDofStart( size_type i = 0 ) const
+    {
+        CHECK( i <= static_cast<size_type>( this->numberOfSpaces() ) )
+            << "invalid block index " << i << " for product space with "
+            << this->numberOfSpaces() << " spaces";
+        size_type start = 0;
+        size_type c = 0;
+        hana::for_each( M_tupleSpaces, [&]( auto const& e )
+                        {
+                            using pointer_type = std::decay_t<decltype( e )>;
+                            using pointed_type = typename pointer_type::element_type;
+                            if constexpr ( std::is_base_of_v<ProductSpaceBase, pointed_type> )
+                            {
+                                for ( int j = 0; j < e->numberOfSpaces(); ++j )
+                                {
+                                    if ( c < i )
+                                        start += e->space( static_cast<size_type>( j ) )->nLocalDof();
+                                    ++c;
+                                }
+                            }
+                            else
+                            {
+                                if ( c < i )
+                                    start += e->nLocalDof();
+                                ++c;
+                            }
+                        } );
+        return start;
+    }
+
+    size_type blockDofStart( size_type i = 0 ) const { return this->nDofStart( i ); }
+    size_type blockLocalDofStart( size_type i = 0 ) const { return this->nLocalDofStart( i ); }
 
     template<typename N>
     decltype(auto)
@@ -386,10 +593,72 @@ public:
             return M_tupleSpaces[n1];
         }
 
+    template<int I>
+    decltype(auto)
+    space() const
+    {
+        static_assert( I >= 0 && I < nTupleSpaces, "invalid product space tuple index" );
+        return M_tupleSpaces[hana::int_c<I>];
+    }
+
+    template<int I>
+    decltype(auto)
+    space()
+    {
+        static_assert( I >= 0 && I < nTupleSpaces, "invalid product space tuple index" );
+        return M_tupleSpaces[hana::int_c<I>];
+    }
+
+    template<typename N>
+    decltype(auto)
+    space( N const& n ) const
+    {
+        return M_tupleSpaces[n];
+    }
+
+    template<typename N>
+    decltype(auto)
+    space( N const& n )
+    {
+        return M_tupleSpaces[n];
+    }
+
+    datamap_ptrtype blockMapPtr( size_type i ) const
+    {
+        CHECK( i < static_cast<size_type>( this->numberOfSpaces() ) )
+            << "invalid block index " << i << " for product space with "
+            << this->numberOfSpaces() << " spaces";
+        datamap_ptrtype dm;
+        size_type c = 0;
+        hana::for_each( M_tupleSpaces, [&]( auto const& e )
+                        {
+                            using pointer_type = std::decay_t<decltype( e )>;
+                            using pointed_type = typename pointer_type::element_type;
+                            if constexpr ( std::is_base_of_v<ProductSpaceBase, pointed_type> )
+                            {
+                                for ( int j = 0; j < e->numberOfSpaces(); ++j )
+                                {
+                                    if ( c == i )
+                                        dm = e->space( static_cast<size_type>( j ) )->mapPtr();
+                                    ++c;
+                                }
+                            }
+                            else
+                            {
+                                if ( c == i )
+                                    dm = e->mapPtr();
+                                ++c;
+                            }
+                        } );
+        return dm;
+    }
+
     class Element : public BlocksBaseVector<double>, FunctionSpaceBase::ElementBase
     {
     public:
         using super = BlocksBaseVector<double>;
+        using functionspace_type = typename ProductSpaces2<T,SpaceList...>::functionspace_type;
+        using value_type = typename functionspace_type::value_type;
         static const int nspaces = sizeof...(SpaceList)+1;
 
         Element() = default;
@@ -405,13 +674,13 @@ public:
         decltype(auto)
             operator[]( N const& n1 ) const
             {
-                return dynamic_cast<decltype(M_fspace[n1]->element()) const&>(*((*this)(n1,0)));
+                return dynamic_cast<decltype(M_fspace[n1]->element()) const&>(*(super::operator()(int(n1),0)));
             }
         template<typename N>
         decltype(auto)
             operator[]( N const& n1 )
             {
-                return dynamic_cast<decltype(M_fspace[n1]->element()) &>(*((*this)(n1,0)));
+                return dynamic_cast<decltype(M_fspace[n1]->element()) &>(*(super::operator()(int(n1),0)));
             }
 #if 0
         template<typename N>

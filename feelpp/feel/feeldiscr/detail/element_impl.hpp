@@ -45,64 +45,10 @@ typename FunctionSpace<A0, A1, A2, A3>::template Element<Y,Cont>::template sub_e
 FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::elementImpl( std::string const& name,
                                                                       bool updateOffViews )
 {
-    size_type nbdof_start = this->functionSpace()->nLocalDofWithoutGhostStart( i );
-    size_type nbdofWithGhost_start = this->functionSpace()->nLocalDofWithGhostStart( i );
-    size_type startDofIndexGhost = nbdofWithGhost_start - nbdof_start;
-    //if ( !Cont::is_shallow_array_adaptor_vector )
-        //startDofIndexGhost += this->functionSpace()->dof()->nLocalDofWithoutGhost();
-
-
-    typename mpl::at_c<functionspace_vector_type,i>::type space( M_functionspace->template functionSpace<i>() );
-    DVLOG(2) << "Element <" << i << ">::start :  "<< nbdof_start << "\n";
-    DVLOG(2) << "Element <" << i << ">::size :  "<<  space->nDof()<< "\n";
-    DVLOG(2) << "Element <" << i << ">::local size :  "<<  space->nLocalDof()<< "\n";
-    DVLOG(2) << "Element <" << -1 << ">::size :  "<<  this->size() << "\n";
-
-    if ( this->functionSpace()->template functionSpace<i>()->worldComm().isActive() )
-    {
-        ct_type ct( *this, ublas::range( nbdof_start, nbdof_start+space->dof()->nLocalDofWithoutGhost() ),
-                    ublas::range( startDofIndexGhost, startDofIndexGhost+space->dof()->nLocalGhosts() ),
-                    M_functionspace->template functionSpace<i>()->dof() );
-
-        // update M_containersOffProcess<i> : send
-        if ( this->worldComm().globalSize()>1 && updateOffViews && !this->functionSpace()->hasEntriesForAllSpaces() )
-        {
-            std::vector<double> dataToSend( ct.begin(), ct.end() );
-
-            if ( !M_containersOffProcess ) M_containersOffProcess = boost::in_place();
-
-            fusion::for_each( *M_containersOffProcess, Feel::detail::SendContainersOn<i,functionspace_type>( this->functionSpace(), dataToSend ) );
-        }
-
-        DVLOG(2) << "Element <" << i << ">::range.size :  "<< ct.size() << "\n";
-        DVLOG(2) << "Element <" << i << ">::range.start :  "<< ct.start() << "\n";
-        return typename sub_element<i>::type( space, ct, name );
-    }
-
-    else
-    {
-        // initialize if not the case
-        if ( !M_containersOffProcess ) M_containersOffProcess = boost::in_place();
-
-        fusion::for_each( *M_containersOffProcess, Feel::detail::InitializeContainersOff<i,functionspace_type>( this->functionSpace() ) );
-
-        // update M_containersOffProcess<i> : recv
-        if ( this->worldComm().globalSize()>1 && updateOffViews && !this->functionSpace()->hasEntriesForAllSpaces() )
-        {
-            fusion::for_each( *M_containersOffProcess, Feel::detail::RecvContainersOff<i,functionspace_type>( this->functionSpace() ) );
-        }
-
-        // build a subrange view identical
-        ct_type ct( *fusion::at_c<i>( *M_containersOffProcess ),
-                    ublas::range( 0, space->nLocalDof() ),
-                    ublas::range( 0, 0 ),
-                    M_functionspace->template functionSpace<i>()->dof() );
-
-        DVLOG(2) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
-        DVLOG(2) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
-
-        return typename sub_element<i>::type( space, ct, name );
-    }
+    return functionspace_type::legacy_composite_element_ops_type::template buildSubElementView<i>( *this,
+                                                                                                  M_containersOffProcess,
+                                                                                                  name,
+                                                                                                  updateOffViews );
 }
 
 template<typename A0, typename A1, typename A2, typename A3>
@@ -290,47 +236,13 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::initFromSpace( functionspace_ptr
     ( container_type )*this = __c;
 }
 
-namespace detail
-{
-template<typename ElementType>
-struct InitializeElement
-{
-    InitializeElement( ElementType * element )
-        :
-        M_element( element )
-        {}
-    template <typename T>
-    void operator()( T & x ) const
-    {
-        typedef typename T::first_type key_type;
-        typedef typename T::second_type::element_type myelt_type;
-        std::string name = (boost::format("%1%_%2%")%M_element->name() %key_type::value).str();
-
-        if( M_element->functionSpace() )
-        {
-            // build view if not built or built with an empty space
-            if ( !x.second || ( !x.second->functionSpace() ) )
-            {
-                auto e = M_element->template elementImpl<key_type::value>( name );
-                auto sp = std::make_shared<myelt_type>( e );
-                x = std::make_pair(key_type(), sp );
-            }
-        }
-        else if ( !x.second )
-        {
-            x = std::make_pair(key_type(), nullptr );
-        }
-    }
-    ElementType * M_element;
-};
-} // namespace detail
 template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 void
 FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::initSubElementView( mpl::true_ )
 {
     fusion::for_each( M_elements,
-                      Feel::detail::InitializeElement<Element<Y,Cont>>(this) );
+                      Feel::detail::LegacyCompositeInitializeElement<Element<Y,Cont>>( this ) );
 }
 
 template<typename A0, typename A1, typename A2, typename A3>

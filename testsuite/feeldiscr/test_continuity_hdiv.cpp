@@ -35,6 +35,7 @@
 
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/dh.hpp>
+#include <feel/feeldiscr/doflayout.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelvf/vf.hpp>
@@ -98,7 +99,7 @@ checkInternalFaceDofConsistency( SpacePtrType const& Xh,
     using face_permutation_type = typename mesh_type::element_type::face_permutation_type;
 
     auto const& fe = *Xh->fe();
-    auto const localDofCount = static_cast<uint16_type>( Xh->nLocalDof() );
+    auto const localDofCount = fe.localDofPerComponent();
     auto dof = Xh->dof();
 
     int checkedFaces = 0;
@@ -133,6 +134,10 @@ checkInternalFaceDofConsistency( SpacePtrType const& Xh,
 
         auto const& signs0 = dof->localToGlobalSigns( e0 );
         auto const& signs1 = dof->localToGlobalSigns( e1 );
+        auto const& transforms0 = dof->localToGlobalTransforms( e0 );
+        auto const& transforms1 = dof->localToGlobalTransforms( e1 );
+        BOOST_REQUIRE_GE( transforms0.size(), static_cast<std::size_t>( localDofCount ) );
+        BOOST_REQUIRE_GE( transforms1.size(), static_cast<std::size_t>( localDofCount ) );
 
         for ( uint16_type ldof = 0; ldof < localDofCount; ++ldof )
         {
@@ -142,11 +147,27 @@ checkInternalFaceDofConsistency( SpacePtrType const& Xh,
 
             if ( attachment.entityId == lf0 )
             {
+                auto const& transform = transforms0[ldof];
+                BOOST_CHECK_EQUAL( dof->dofTransformSignProjection( transform ), signs0( ldof ) );
+                if constexpr ( FiniteElementDofTransformProvider<fe_type, typename mesh_type::element_type> )
+                {
+                    auto const expectedTransform = fe.dofTransform( elt0, ldof );
+                    BOOST_CHECK_EQUAL( static_cast<int>( transform.kind ), static_cast<int>( expectedTransform.kind ) );
+                    BOOST_CHECK_EQUAL( transform.sign, expectedTransform.sign );
+                }
                 const size_type gdof = dof->localToGlobal( e0, ldof ).index();
                 g0ToSign[gdof] = signs0( ldof );
             }
             if ( attachment.entityId == lf1 )
             {
+                auto const& transform = transforms1[ldof];
+                BOOST_CHECK_EQUAL( dof->dofTransformSignProjection( transform ), signs1( ldof ) );
+                if constexpr ( FiniteElementDofTransformProvider<fe_type, typename mesh_type::element_type> )
+                {
+                    auto const expectedTransform = fe.dofTransform( elt1, ldof );
+                    BOOST_CHECK_EQUAL( static_cast<int>( transform.kind ), static_cast<int>( expectedTransform.kind ) );
+                    BOOST_CHECK_EQUAL( transform.sign, expectedTransform.sign );
+                }
                 const size_type gdof = dof->localToGlobal( e1, ldof ).index();
                 g1ToSign[gdof] = signs1( ldof );
             }

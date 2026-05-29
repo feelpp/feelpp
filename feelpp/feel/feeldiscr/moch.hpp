@@ -29,7 +29,7 @@
 #if !defined(FEELPP_MOCH_HPP)
 #define FEELPP_MOCH_HPP 1
 
-#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/mortarfunctionspace.hpp>
 #include <feel/feelpoly/order.hpp>
 
 namespace Feel {
@@ -38,10 +38,7 @@ template<typename MeshType,
          int Order = Dynamic,
          template<class, int, class> class Pts = PointSetEquiSpaced,
          typename T = double>
-using Moch_type = FunctionSpace<MeshType,
-                                bases<Lagrange<Order,Scalar,Continuous,Pts>>,
-                                T,
-                                mortars<Mortar>>;
+using Moch_type = MortarLagrangeSpace<MeshType, Order, Pts, T>;
 
 template<typename MeshType,
          int Order = Dynamic,
@@ -62,10 +59,7 @@ Moch( std::shared_ptr<MeshType> const& mesh,
       RuntimeOrder order,
       DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
 {
-    return Moch_type<MeshType,Order,Pts,T>::New( _mesh = mesh,
-                                                  _worldscomm = makeWorldsComm( 1,mesh->worldCommPtr() ),
-                                                  _runtime_order = order,
-                                                  _extended_doftable = dte );
+    return mortarFunctionSpace<Order, Pts, MeshType, T>( mesh, order, dte );
 }
 
 template<int Order,

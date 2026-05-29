@@ -72,13 +72,14 @@ public :
 
     template<typename PS>
     BlocksBaseVector( PS&& ps, backend_ptr_t<T,size_type> b = backend(),
-                      std::enable_if_t<std::is_base_of<ProductSpacesBase,std::remove_reference_t<PS>>::value>* = nullptr )
+                      std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<PS>>::value>* = nullptr )
         :
-        super_type( ps.numberOfSpaces(), 1 ),
+        super_type( remove_shared_ptr_f( ps ).numberOfSpaces(), 1 ),
         M_backend( b )
         {
             int n = 0;
-            hana::for_each( ps.tupleSpaces(), [&]( auto const& e )
+            auto&& productSpace = remove_shared_ptr_f( ps );
+            hana::for_each( productSpace.tupleSpaces(), [&]( auto const& e )
                             {
 
                                 hana::if_(std::is_base_of<ProductSpaceBase,decay_type<decltype(e)>>{},
@@ -103,15 +104,16 @@ public :
 
     template<typename PS>
     BlocksBaseVector( PS&& ps, backend_ptr_t<T,size_type> b = backend(),
-                      std::enable_if_t<std::is_base_of<ProductSpaceBase,std::remove_reference_t<PS>>::value>* = nullptr )
+                      std::enable_if_t<std::is_base_of<ProductSpaceBase,decay_type<PS>>::value>* = nullptr )
         :
-        super_type( ps.numberOfSpaces(), 1 ),
+        super_type( remove_shared_ptr_f( ps ).numberOfSpaces(), 1 ),
         M_backend( b )
         {
-            for( int i = 0; i < ps.numberOfSpaces(); ++i )
+            auto&& productSpace = remove_shared_ptr_f( ps );
+            for( int i = 0; i < productSpace.numberOfSpaces(); ++i )
             {
                 VLOG(3) << "[BlocksBaseVector] creating dyn vector block (" << i  << ")\n";
-                (*this)(i,0) = ps[i]->elementPtr();
+                (*this)(i,0) = productSpace[i]->elementPtr();
             }
 
         }
@@ -459,7 +461,7 @@ newVectorBlocks( const Arg1& arg1, const Args&... args )
 template<typename Arg1, typename ...Args>
 BlocksBaseVector<typename decay_type<Arg1>::value_type>
 vectorBlocks( const Arg1& arg1, const Args&... args,
-              std::enable_if_t<std::is_base_of<ProductSpacesBase,std::remove_reference_t<Arg1>>::value>* = nullptr )
+              std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<Arg1>>::value>* = nullptr )
 {
     const int size = sizeof...(Args)+1;
     BlocksBaseVector<typename decay_type<Arg1>::value_type> g( size, backend() );
@@ -471,11 +473,12 @@ vectorBlocks( const Arg1& arg1, const Args&... args,
 template<typename Arg>
 BlocksBaseVector<typename decay_type<Arg>::value_type>
 vectorBlocks( const Arg& arg,
-              std::enable_if_t<std::is_base_of<ProductSpaceBase,std::remove_reference_t<Arg>>::value>* = nullptr )
+              std::enable_if_t<std::is_base_of<ProductSpaceBase,decay_type<Arg>>::value>* = nullptr )
 {
-    BlocksBaseVector<typename decay_type<Arg>::value_type> g( arg.numberOfSpaces(), backend() );
-    for( int i = 0; i < arg.numberOfSpaces(); ++i )
-        g(i) = arg.elementPtr();
+    auto&& productSpace = remove_shared_ptr_f( arg );
+    BlocksBaseVector<typename decay_type<Arg>::value_type> g( productSpace.numberOfSpaces(), backend() );
+    for( int i = 0; i < productSpace.numberOfSpaces(); ++i )
+        g(i) = productSpace.elementPtr();
     return g;
 }
 
@@ -490,14 +493,15 @@ template<typename PS>
 //BlocksBaseVector<typename decay_type<PS>::value_type>
 BlocksBaseVector<double,uint32_type>
 blockVector( PS && ps, backend_ptrtype b = backend(),
-             std::enable_if_t<std::is_base_of<ProductSpacesBase,std::remove_reference_t<PS>>::value>* = nullptr )
+             std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<PS>>::value>* = nullptr )
 {
-    const int size = ps.numberOfSpaces();
+    auto&& productSpace = remove_shared_ptr_f( std::forward<PS>( ps ) );
+    const int size = productSpace.numberOfSpaces();
     //BlocksBaseVector<typename decay_type<PS>::value_type> g( size, backend() );
     BlocksBaseVector<double,uint32_type> g( size, b );
 
     int n = 0;
-    hana::for_each( ps.tupleSpaces(), [&]( auto const& e )
+    hana::for_each( productSpace.tupleSpaces(), [&]( auto const& e )
                     {
 
                         hana::if_(std::is_base_of<ProductSpaceBase,decay_type<decltype(e)>>{},
@@ -519,12 +523,13 @@ blockVector( PS && ps, backend_ptrtype b = backend(),
 template<typename PS>
 BlocksBaseVector<double,uint32_type>
 blockVector( PS && ps, backend_ptrtype b = backend(),
-             std::enable_if_t<std::is_base_of<ProductSpaceBase,std::remove_reference_t<PS>>::value>* = nullptr )
+             std::enable_if_t<std::is_base_of<ProductSpaceBase,decay_type<PS>>::value>* = nullptr )
 {
-    BlocksBaseVector<double,uint32_type> g( ps.numberOfSpaces(), b );
+    auto&& productSpace = remove_shared_ptr_f( std::forward<PS>( ps ) );
+    BlocksBaseVector<double,uint32_type> g( productSpace.numberOfSpaces(), b );
 
-    for( int i = 0; i < ps.numberOfSpaces(); ++i )
-        g(i,0) = b->newVector( ps[i] );
+    for( int i = 0; i < productSpace.numberOfSpaces(); ++i )
+        g(i,0) = b->newVector( productSpace[i] );
     return g;
 }
 

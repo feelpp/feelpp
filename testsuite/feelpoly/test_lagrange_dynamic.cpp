@@ -39,6 +39,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cmath>
+#include <memory>
 #include <string>
 #include <type_traits>
 
@@ -193,6 +194,132 @@ void checkStaticRuntimeLagrangeAgreementDefaultPointSet( double tol, std::string
                        fe_dynamic.evaluate( pts_dynamic ),
                        tol,
                        prefix + "basis eval on dynamic nodes" );
+}
+
+template <int Order>
+void checkSimplex2dRuntimeSubEntityPoints( double tol )
+{
+    using lagrange_static_t = Lagrange<Order, Scalar, Continuous, PointSetEquiSpaced>;
+    using lagrange_dynamic_t = Lagrange<Dynamic, Scalar, Continuous, PointSetEquiSpaced>;
+    using fe_static_t = typename lagrange_static_t::template apply<2, 2, double, Simplex<2>>::type;
+    using fe_dynamic_t = typename lagrange_dynamic_t::template apply<2, 2, double, Simplex<2>>::type;
+
+    fe_static_t fe_static;
+    fe_dynamic_t fe_dynamic{ RuntimeOrder{ Order } };
+
+    for ( uint16_type v = 0; v < Simplex<2>::numVertices; ++v )
+    {
+        checkMatricesNear( fe_static.vertexPoints( v ),
+                           fe_dynamic.vertexPoints( v ),
+                           tol,
+                           "P" + std::to_string( Order ) + " vertex " + std::to_string( v ) + " points" );
+    }
+
+    for ( uint16_type e = 0; e < Simplex<2>::numEdges; ++e )
+    {
+        checkMatricesNear( fe_static.edgePoints( e ),
+                           fe_dynamic.edgePoints( e ),
+                           tol,
+                           "P" + std::to_string( Order ) + " edge " + std::to_string( e ) + " points" );
+        checkMatricesNear( fe_static.points( e ),
+                           fe_dynamic.points( e ),
+                           tol,
+                           "P" + std::to_string( Order ) + " facet accessor " + std::to_string( e ) + " points" );
+    }
+}
+
+template <int Order>
+void checkHypercube2dRuntimeDofLayout()
+{
+    using lagrange_dynamic_t = Lagrange<Dynamic, Scalar, Continuous, PointSetEquiSpaced>;
+    using fe_dynamic_t = typename lagrange_dynamic_t::template apply<2, 2, double, Hypercube<2>>::type;
+
+    fe_dynamic_t fe{ RuntimeOrder{ Order } };
+
+    const auto expectedLocalDof = static_cast<uint16_type>( ( Order + 1 ) * ( Order + 1 ) );
+    const auto expectedEdgeDof = static_cast<uint16_type>( Order - 1 );
+    const auto expectedFaceDof = static_cast<uint16_type>( ( Order - 1 ) * ( Order - 1 ) );
+
+    BOOST_CHECK_EQUAL( fe.runtimeLocalDof(), expectedLocalDof );
+    BOOST_CHECK_EQUAL( fe.runtimeDofPerVertex(), 1 );
+    BOOST_CHECK_EQUAL( fe.runtimeDofPerEdge(), expectedEdgeDof );
+    BOOST_CHECK_EQUAL( fe.runtimeDofPerFace(), expectedFaceDof );
+    BOOST_CHECK_EQUAL( fe.runtimeDofPerVolume(), 0 );
+    BOOST_CHECK_EQUAL( fe.localInterpolant().size(), expectedLocalDof );
+    BOOST_CHECK_EQUAL( fe.localInterpolants( 3 ).rows(), expectedLocalDof );
+    BOOST_CHECK_EQUAL( fe.localInterpolants( 3 ).cols(), 3 );
+    BOOST_CHECK_EQUAL( fe.faceLocalInterpolant().size(), Order + 1 );
+}
+
+struct fake_facet_gmc
+{
+    static constexpr int subEntityCoDim = 1;
+};
+
+struct fake_facet_geom
+{
+    uint16_type M_facet = 0;
+    uint16_type faceId() const { return M_facet; }
+};
+
+template <typename TestBasis>
+struct fake_scalar_face_expr_type
+{
+    using test_basis = TestBasis;
+};
+
+template <typename TestBasis>
+class fake_scalar_facet_expr
+{
+public:
+    using gmc_type = fake_facet_gmc;
+    using expr_type = fake_scalar_face_expr_type<TestBasis>;
+    struct shape
+    {
+        static constexpr uint16_type M = 1;
+        static constexpr uint16_type N = 1;
+    };
+
+    fake_scalar_facet_expr( int nPoints, uint16_type facet )
+        :
+        M_nPoints( nPoints ),
+        M_geom( std::make_shared<fake_facet_geom>( fake_facet_geom{ facet } ) )
+    {}
+
+    int nPoints() const { return M_nPoints; }
+    std::shared_ptr<fake_facet_geom> const& geom() const { return M_geom; }
+
+    double evaliq( uint16_type, int, int, int q ) const
+    {
+        return static_cast<double>( q + 1 );
+    }
+
+private:
+    int M_nPoints = 0;
+    std::shared_ptr<fake_facet_geom> M_geom;
+};
+
+template <int Order>
+void checkDynamicSimplex2dFacetInterpolationUsesRuntimeDofs()
+{
+    using lagrange_dynamic_t = Lagrange<Dynamic, Scalar, Continuous, PointSetEquiSpaced>;
+    using fe_dynamic_t = typename lagrange_dynamic_t::template apply<2, 2, double, Simplex<2>>::type;
+
+    fe_dynamic_t fe{ RuntimeOrder{ Order } };
+    const auto nFacetDof = static_cast<uint16_type>( 2 * fe.runtimeDofPerVertex() + fe.runtimeDofPerEdge() );
+
+    fake_scalar_facet_expr<fe_dynamic_t> expr( nFacetDof, 0 );
+    fe_dynamic_t::local_interpolants_type Ihloc =
+        fe_dynamic_t::local_interpolants_type::Zero( 1, fe.runtimeLocalDof() );
+
+    fe.interpolateBasisFunction( expr, Ihloc );
+
+    int nonzeroColumns = 0;
+    for ( int j = 0; j < Ihloc.cols(); ++j )
+        if ( std::abs( Ihloc( 0, j ) ) > 0.0 )
+            ++nonzeroColumns;
+
+    BOOST_CHECK_EQUAL( nonzeroColumns, nFacetDof );
 }
 }
 
@@ -426,6 +553,24 @@ BOOST_AUTO_TEST_CASE( test_lagrange_dynamic_equispaced_policy )
         const double tol = ( order >= 10 ) ? 1e-8 : 1e-10;
         checkKroneckerDeltaProperty( fe, tol, "dynamic equispaced P" + std::to_string( order ) );
     }
+}
+
+BOOST_AUTO_TEST_CASE( test_lagrange_dynamic_simplex_subentity_points )
+{
+    checkSimplex2dRuntimeSubEntityPoints<2>( 1e-12 );
+    checkSimplex2dRuntimeSubEntityPoints<3>( 1e-12 );
+}
+
+BOOST_AUTO_TEST_CASE( test_lagrange_dynamic_hypercube_dof_layout )
+{
+    checkHypercube2dRuntimeDofLayout<2>();
+    checkHypercube2dRuntimeDofLayout<3>();
+}
+
+BOOST_AUTO_TEST_CASE( test_lagrange_dynamic_facet_interpolation_uses_runtime_dofs )
+{
+    checkDynamicSimplex2dFacetInterpolationUsesRuntimeDofs<2>();
+    checkDynamicSimplex2dFacetInterpolationUsesRuntimeDofs<3>();
 }
 
 BOOST_AUTO_TEST_CASE( test_lagrange_partition_of_unity )

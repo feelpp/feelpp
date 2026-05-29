@@ -382,7 +382,16 @@ public:
     matrix_type
     evaluate( node_type const& __x ) const
     {
-        return ublas::prod( M_coeff, M_basis( __x ) );
+        if constexpr ( is_order_dynamic && requires( points_type const& pts, uint16_type order ) { basis_type::evaluate( pts, order ); } )
+        {
+            points_type pts( __x.size(), 1 );
+            ublas::column( pts, 0 ) = __x;
+            return ublas::prod( M_coeff, basis_type::evaluate( pts, order_value() ) );
+        }
+        else
+        {
+            return ublas::prod( M_coeff, M_basis( __x ) );
+        }
     }
 
     /**
@@ -393,13 +402,21 @@ public:
      */
     matrix_type evaluate( points_type const& __pts ) const
     {
-        return ublas::prod( M_coeff, M_basis( __pts ) );
+        if constexpr ( is_order_dynamic && requires( points_type const& pts, uint16_type order ) { basis_type::evaluate( pts, order ); } )
+            return ublas::prod( M_coeff, basis_type::evaluate( __pts, order_value() ) );
+        else
+            return ublas::prod( M_coeff, M_basis( __pts ) );
     }
 
     template<typename AE>
     matrix_type derivate( uint16_type i, ublas::matrix_expression<AE> const& pts ) const
     {
-        ublas::vector<matrix_type> der( M_basis.derivate( pts ) );
+        ublas::vector<matrix_type> der = [&]() {
+            if constexpr ( is_order_dynamic && requires( ublas::matrix_expression<AE> const& ptsExpr, uint16_type order ) { basis_type::derivate( ptsExpr, order ); } )
+                return basis_type::derivate( pts, order_value() );
+            else
+                return M_basis.derivate( pts );
+        }();
         matrix_type res( M_coeff.size1(), pts().size2() );
         ublas::axpy_prod( M_coeff, der[i], res );
         return res;

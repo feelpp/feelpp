@@ -23,6 +23,8 @@ feelpp_add_test( rt0_static )
 list(APPEND FEELPP_POLY_TEST_TARGETS ${targetname})
 feelpp_add_test( bdm_static )
 list(APPEND FEELPP_POLY_TEST_TARGETS ${targetname})
+feelpp_add_test( fe_runtime_contract )
+list(APPEND FEELPP_POLY_TEST_TARGETS ${targetname})
 
 feelpp_add_test( feelpoly_traits SRCS test_traits.cpp )
 list(APPEND FEELPP_POLY_TEST_TARGETS ${targetname})

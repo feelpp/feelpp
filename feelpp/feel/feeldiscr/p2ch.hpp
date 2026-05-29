@@ -26,9 +26,11 @@
 #define FEELPP_P2CH_HPP 1
 
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/productfunctionspaces.hpp>
 
 namespace Feel {
 
+#if FEELPP_ENABLE_LEGACY_COMPOSITE_FUNCTIONSPACE
 namespace meta {
 template<int Order1, int Order2,typename MeshType>
 struct P2ch
@@ -61,7 +63,40 @@ using P2ch_type = FunctionSpace<MeshType,
  */
 template<typename Base1, typename Base2, typename MeshType>
 using P2ch_ptrtype = std::shared_ptr<P2ch_type<Base1,Base2,MeshType>>;
+#endif // FEELPP_ENABLE_LEGACY_COMPOSITE_FUNCTIONSPACE
 
+template<typename Base1, typename Base2, typename MeshType>
+using P2ch_product_space0_type = FunctionSpace<MeshType,
+                                               bases<Base1>,
+                                               double,
+                                               mortars<NoMortar>>;
+
+template<typename Base1, typename Base2, typename MeshType>
+using P2ch_product_space1_type = FunctionSpace<MeshType,
+                                               bases<Base2>,
+                                               double,
+                                               mortars<NoMortar>>;
+
+template<typename Base1, typename Base2, typename MeshType>
+using P2ch_product_space0_ptrtype = std::shared_ptr<P2ch_product_space0_type<Base1,Base2,MeshType>>;
+
+template<typename Base1, typename Base2, typename MeshType>
+using P2ch_product_space1_ptrtype = std::shared_ptr<P2ch_product_space1_type<Base1,Base2,MeshType>>;
+
+template<typename Base1, typename Base2, typename MeshType>
+using P2ch_product_type = product_function_spaces_t<P2ch_product_space0_ptrtype<Base1,Base2,MeshType>,
+                                                    P2ch_product_space1_ptrtype<Base1,Base2,MeshType>>;
+
+template<typename Base1, typename Base2, typename MeshType>
+using P2ch_product_ptrtype = std::shared_ptr<P2ch_product_type<Base1,Base2,MeshType>>;
+
+template<typename Base1, typename Base2, typename MeshType>
+using P2chProduct_type = P2ch_product_type<Base1,Base2,MeshType>;
+
+template<typename Base1, typename Base2, typename MeshType>
+using P2chProduct_ptrtype = P2ch_product_ptrtype<Base1,Base2,MeshType>;
+
+#if FEELPP_ENABLE_LEGACY_COMPOSITE_FUNCTIONSPACE
 /**
    Given a \p mesh and polynomial order \f$k\f$(template argument), build a
    product function space of \f$[P_{k}]^d \times P_{l}]\f$ where $d$ is the
@@ -83,6 +118,25 @@ P2ch( std::shared_ptr<MeshType> mesh,
     return P2ch_type<Base1,Base2,MeshType>::New( _mesh=mesh,
                                                  _worldscomm=makeWorldsComm( 2,mesh->worldCommPtr() ),
                                                  _extended_doftable=dte );
+}
+#endif // FEELPP_ENABLE_LEGACY_COMPOSITE_FUNCTIONSPACE
+
+template<typename Base1, typename Base2, typename MeshType>
+inline
+P2ch_product_ptrtype<Base1, Base2, MeshType>
+P2chProduct( std::shared_ptr<MeshType> mesh,
+             std::vector<DofTableExtendedType> dte = std::vector<DofTableExtendedType>( 2, DofTableExtendedType::DEFAULT ) )
+{
+    CHECK( dte.size() == 2 ) << " vector activation for extended dof table must be equal to 2 but here " << dte.size();
+    using space0_type = P2ch_product_space0_type<Base1,Base2,MeshType>;
+    using space1_type = P2ch_product_space1_type<Base1,Base2,MeshType>;
+    auto Xh0 = space0_type::New( _mesh=mesh,
+                                 _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
+                                 _extended_doftable=dte[0] );
+    auto Xh1 = space1_type::New( _mesh=mesh,
+                                 _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
+                                 _extended_doftable=dte[1] );
+    return productFunctionSpacesPtr( Xh0, Xh1 );
 }
 
 

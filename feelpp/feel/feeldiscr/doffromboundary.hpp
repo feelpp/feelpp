@@ -32,6 +32,7 @@
 #include <algorithm>
 #include <cmath>
 #include <vector>
+#include <feel/feeldiscr/doflayout.hpp>
 #include <feel/feelpoly/order.hpp>
 #include <feel/feelpoly/hdivpolynomialset.hpp>
 #include <feel/feelpoly/hcurlpolynomialset.hpp>
@@ -157,7 +158,8 @@ public:
             if ( this->addBoundaryDofUsingFiniteElementLayout( face, useConnection0 ) )
                 return;
 
-            if ( this->addBoundaryDofUsingFiniteElementOrdering( face, useConnection0 ) )
+            if ( !this->hasCompleteFiniteElementLayout() &&
+                 this->addBoundaryDofUsingFiniteElementOrdering( face, useConnection0 ) )
                 return;
 
             uint16_type lcVertex = 0;
@@ -247,6 +249,23 @@ private:
         return face_type::numVertices * runtimeDofPerVertex() +
                face_type::numEdges * runtimeDofPerEdge() +
                face_type::numFaces * runtimeDofPerFace();
+    }
+
+    [[nodiscard]] bool hasCompleteFiniteElementLayout() const
+    {
+        if constexpr ( !FiniteElementDofLayoutProvider<fe_type> )
+            return false;
+        else
+        {
+            const uint16_type nLocalDof = finiteElementLocalDofCount( M_fe );
+            if ( nLocalDof == 0 )
+                return false;
+
+            for ( uint16_type localDof = 0; localDof < nLocalDof; ++localDof )
+                if ( !M_fe.localDofLayout( localDof ).attachment.isValid() )
+                    return false;
+            return true;
+        }
     }
 
     void getAdjacentElementAndLocalFace( face_type const& face, bool useConnection0, size_type& iElAd, uint16_type& iFaEl ) const
@@ -348,45 +367,54 @@ private:
 
     bool addBoundaryDofUsingFiniteElementLayout( face_type const& face, bool useConnection0 )
     {
+        if constexpr ( !FiniteElementDofLayoutProvider<fe_type> )
+            return false;
+
         if constexpr ( fe_type::is_modal )
+            return false;
+
+        if ( !this->hasCompleteFiniteElementLayout() )
             return false;
 
         size_type iElAd;
         uint16_type iFaEl;
         getAdjacentElementAndLocalFace( face, useConnection0, iElAd, iFaEl );
 
-        const uint16_type nLocalDof = runtimeLocalDof();
+        const uint16_type nLocalDof = finiteElementLocalDofCount( M_fe );
         const uint16_type nDofPerVertex = runtimeDofPerVertex();
         const uint16_type nDofPerEdge = runtimeDofPerEdge();
         const uint16_type nDofPerFace = runtimeDofPerFace();
 
-        const size_type ndofF = runtimeNDofOnFace();
-        if ( nLocalDof == 0 || ndofF == 0 )
+        const size_type ndofFPerComponent = M_fe.localDofCountOnFacet( iFaEl, true );
+        if ( nLocalDof == 0 || ndofFPerComponent == 0 )
             return false;
 
-        const int ncdof = is_product ? nComponents : 1;
-        std::vector<global_dof_from_entity_type> faceDofs( ncdof * ndofF );
-        std::vector<bool> hasFaceDof( ncdof * ndofF, false );
+        std::vector<global_dof_from_entity_type> faceDofs;
+        std::vector<bool> hasFaceDof;
 
-        for ( uint16_type parentLid = 0; parentLid < nLocalDof; ++parentLid )
+        for ( uint16_type localDof = 0; localDof < nLocalDof; ++localDof )
         {
-            auto const layout = M_fe.localDofLayout( parentLid );
+            auto const layout = M_fe.localDofLayout( localDof );
             auto const localIndexOnFace = localFaceDofIndexFromAttachment( iFaEl, layout.attachment,
                                                                            nDofPerVertex, nDofPerEdge, nDofPerFace );
             if ( localIndexOnFace == invalid_uint16_type_value )
                 continue;
 
-            for ( int c = 0; c < ncdof; ++c )
+            const uint16_type lcc = static_cast<uint16_type>( layout.component * ndofFPerComponent + localIndexOnFace );
+            if ( faceDofs.size() <= lcc )
             {
-                const uint16_type lcc = static_cast<uint16_type>( c * ndofF + localIndexOnFace );
-                const uint16_type ldinelt = M_doftable->localDofId( parentLid, c );
-                auto const& temp = M_doftable->localToGlobal( iElAd, parentLid, c );
-                faceDofs[lcc] = FaceDof( temp, lcc, ldinelt );
-                hasFaceDof[lcc] = true;
+                faceDofs.resize( lcc + 1 );
+                hasFaceDof.resize( lcc + 1, false );
             }
+
+            const uint16_type ldinelt = M_doftable->localDofId( layout.parentLocalDofId, layout.component );
+            auto const& temp = M_doftable->localToGlobal( iElAd, layout.parentLocalDofId, layout.component );
+            faceDofs[lcc] = FaceDof( temp, lcc, ldinelt );
+            hasFaceDof[lcc] = true;
         }
 
-        if ( std::any_of( hasFaceDof.begin(), hasFaceDof.end(), []( bool x ) { return !x; } ) )
+        if ( faceDofs.empty() ||
+             std::any_of( hasFaceDof.begin(), hasFaceDof.end(), []( bool x ) { return !x; } ) )
             return false;
 
         for ( uint16_type lcc = 0; lcc < static_cast<uint16_type>( faceDofs.size() ); ++lcc )
@@ -397,6 +425,9 @@ private:
 
     bool addBoundaryDofUsingFiniteElementOrdering( face_type const& face, bool useConnection0 )
     {
+        if constexpr ( is_hdiv_conforming_v<fe_type> || is_hcurl_conforming_v<fe_type> )
+            return false;
+
         if constexpr ( fe_type::is_modal )
             return false;
 

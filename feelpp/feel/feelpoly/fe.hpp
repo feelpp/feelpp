@@ -355,6 +355,25 @@ public:
     }
 
     /**
+     * \return number of local dofs owned by the FE layout.
+     *
+     * When \p perComponent is false this is the flattened local cardinality
+     * exposed to local-to-global tables. When it is true this is the parent
+     * local cardinality for one component.
+     */
+    virtual uint16_type localDofCount( bool perComponent = false ) const
+    {
+        const uint16_type localDofPerComp = this->localDofPerComponent();
+        if ( perComponent )
+            return localDofPerComp;
+
+        if constexpr ( P::is_product )
+            return static_cast<uint16_type>( super::nComponents * localDofPerComp );
+        else
+            return localDofPerComp;
+    }
+
+    /**
      * \return local dof id from (parent local dof id, component)
      *
      * Layout ownership stays in FE implementation.
@@ -402,6 +421,135 @@ public:
                                .parentLocalDofId = this->dofParent( localDofId ),
                                .component = this->component( localDofId ),
                                .attachment = this->dofAttachment( localDofId ) };
+    }
+
+    /**
+     * \return number of local dofs attached to a reference entity.
+     *
+     * The default implementation derives the count from FE-owned local dof
+     * layouts. FE families may override when a cheaper/runtime-aware path is
+     * available.
+     */
+    virtual uint16_type localDofCountOnEntity( uint16_type topologicalDim,
+                                               uint16_type localEntity,
+                                               bool perComponent = false ) const
+    {
+        uint16_type count = 0;
+        const uint16_type nLocalDof = this->localDofCount();
+        for ( uint16_type localDof = 0; localDof < nLocalDof; ++localDof )
+        {
+            auto const layout = this->localDofLayout( localDof );
+            auto const& attachment = layout.attachment;
+            if ( !attachment.isValid() )
+                continue;
+            if ( perComponent && layout.component != 0 )
+                continue;
+            if ( attachment.entityDim == static_cast<int8_t>( topologicalDim ) &&
+                 attachment.entityId == localEntity )
+                ++count;
+        }
+        return count;
+    }
+
+    /**
+     * \return number of local dofs attached to a reference codim-1 facet.
+     */
+    virtual uint16_type localDofCountOnFacet( uint16_type localFacet = 0,
+                                              bool perComponent = false ) const
+    {
+        if constexpr ( super::nDim == 1 )
+            return this->localDofCountOnEntity( 0, localFacet, perComponent );
+        else
+        {
+            using convex_type = typename super::convex_type;
+            using face_type = typename convex_type::topological_face_type;
+
+            auto isInFacetClosure = [localFacet]( DofAttachment const& attachment ) -> bool
+            {
+                if ( !attachment.isValid() )
+                    return false;
+
+                if ( attachment.entityDim == 0 )
+                {
+                    for ( uint16_type localVertex = 0; localVertex < face_type::numVertices; ++localVertex )
+                        if ( static_cast<uint16_type>( convex_type::f2p( localFacet, localVertex ) ) == attachment.entityId )
+                            return true;
+                    return false;
+                }
+
+                if ( attachment.entityDim == 1 )
+                {
+                    if constexpr ( super::nDim == 2 )
+                        return attachment.entityId == localFacet;
+                    else
+                    {
+                        for ( uint16_type localEdge = 0; localEdge < face_type::numEdges; ++localEdge )
+                            if ( static_cast<uint16_type>( convex_type::f2e( localFacet, localEdge ) ) == attachment.entityId )
+                                return true;
+                        return false;
+                    }
+                }
+
+                if ( attachment.entityDim == 2 )
+                {
+                    if constexpr ( super::nDim == 3 )
+                        return attachment.entityId == localFacet;
+                    else
+                        return false;
+                }
+
+                return false;
+            };
+
+            uint16_type count = 0;
+            const uint16_type nLocalDof = this->localDofCount();
+            for ( uint16_type localDof = 0; localDof < nLocalDof; ++localDof )
+            {
+                auto const layout = this->localDofLayout( localDof );
+                if ( perComponent && layout.component != 0 )
+                    continue;
+                if ( isInFacetClosure( layout.attachment ) )
+                    ++count;
+            }
+            return count;
+        }
+    }
+
+    /**
+     * \return true when a local dof has a representative interpolation point.
+     *
+     * Point-evaluation finite elements keep the historical behavior: the
+     * representative point is the FE point indexed by dofParent(localDofId).
+     * Moment/modal finite elements should override this method when no such
+     * geometric representative exists.
+     */
+    virtual bool dofHasRepresentativePoint( uint16_type localDofId ) const
+    {
+        (void)localDofId;
+        return true;
+    }
+
+    /**
+     * \return point index in points() used to represent localDofId.
+     *
+     * This method is only meaningful when dofHasRepresentativePoint(localDofId)
+     * returns true.
+     */
+    virtual uint16_type dofRepresentativePointIndex( uint16_type localDofId ) const
+    {
+        return this->dofParent( localDofId );
+    }
+
+    /**
+     * \return finite-element owned functional kind for a local dof.
+     *
+     * The default preserves legacy DofAttachment::kind values. FE families with
+     * moment functionals can override this without changing their public
+     * DofAttachment compatibility value.
+     */
+    virtual uint16_type dofFunctionalKind( uint16_type localDofId ) const
+    {
+        return this->dofType( localDofId );
     }
 
     //! \return the component of a local dof

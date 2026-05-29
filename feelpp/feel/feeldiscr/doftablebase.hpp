@@ -109,6 +109,13 @@ public:
                                                                const uint16_type localNode,
                                                                const uint16_type c = 0 ) const = 0;
 
+    global_dof_fromface_type const& facetLocalToGlobal( const size_type ElId,
+                                                        const uint16_type localNode,
+                                                        const uint16_type c = 0 ) const
+        {
+            return this->faceLocalToGlobal( ElId, localNode, c );
+        }
+
     virtual mesh_support_base_ptrtype meshSupportBase() const = 0;
 
 };

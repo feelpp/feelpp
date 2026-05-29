@@ -6,6 +6,7 @@
 #include <sstream>
 #include <set>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <vector>
 
@@ -13,6 +14,7 @@
 #include <feel/feeldiscr/dh.hpp>
 #include <feel/feeldiscr/ned1h.hpp>
 #include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pchv.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/loadgmshmesh.hpp>
 #include <feel/feelfilters/straightenmesh.hpp>
@@ -181,7 +183,8 @@ void checkPeriodicBoundaryEdgesShareDofs( SpacePtrType const& space,
 }
 
 template <typename SpacePtrType>
-void checkPeriodicVertexPairsShareDofIds( SpacePtrType const& space, mesh_ptrtype const& mesh )
+void checkPeriodicVertexPairsShareDofIds( SpacePtrType const& space, mesh_ptrtype const& mesh,
+                                          uint16_type nComponents = 1 )
 {
     auto const relation = space->dof()->pointIdToDofRelation( "", false, true );
     auto const& pointToDof = relation.second;
@@ -197,11 +200,14 @@ void checkPeriodicVertexPairsShareDofIds( SpacePtrType const& space, mesh_ptrtyp
             if ( !mesh->hasPoint( slaveId ) || !mesh->hasPoint( masterId ) )
                 continue;
 
-            auto itSlave = pointToDof.find( slaveId );
-            auto itMaster = pointToDof.find( masterId );
-            BOOST_REQUIRE( itSlave != pointToDof.end() );
-            BOOST_REQUIRE( itMaster != pointToDof.end() );
-            BOOST_CHECK_EQUAL( itSlave->second, itMaster->second );
+            for ( uint16_type c = 0; c < nComponents; ++c )
+            {
+                auto itSlave = pointToDof.find( nComponents * slaveId + c );
+                auto itMaster = pointToDof.find( nComponents * masterId + c );
+                BOOST_REQUIRE( itSlave != pointToDof.end() );
+                BOOST_REQUIRE( itMaster != pointToDof.end() );
+                BOOST_CHECK_EQUAL( itSlave->second, itMaster->second );
+            }
             if ( slaveId != masterId )
                 ++checkedPairs;
         }
@@ -232,10 +238,21 @@ BOOST_AUTO_TEST_CASE( periodic_mesh_drives_dof_numbering )
 
     auto XhPeriodic = Pch<1>( meshPeriodic );
     auto XhNonPeriodic = Pch<1>( meshNonPeriodic );
+    BOOST_CHECK( XhPeriodic->meshHasPeriodicity() );
+    BOOST_CHECK( !XhNonPeriodic->meshHasPeriodicity() );
+    BOOST_CHECK( !std::remove_reference_t<decltype( *XhPeriodic )>::has_type_level_periodicity );
     BOOST_CHECK_EQUAL( XhPeriodic->nDof(), periodicCanonicalPoints );
     BOOST_CHECK_EQUAL( XhNonPeriodic->nDof(), nonPeriodicCanonicalPoints );
     BOOST_CHECK_LT( XhPeriodic->nDof(), XhNonPeriodic->nDof() );
     checkPeriodicVertexPairsShareDofIds( XhPeriodic, meshPeriodic );
+
+    auto XhvPeriodic = Pchv<1>( meshPeriodic );
+    auto XhvNonPeriodic = Pchv<1>( meshNonPeriodic );
+    constexpr uint16_type nVectorComponents = Mesh<Simplex<2, 1>>::nRealDim;
+    BOOST_CHECK_EQUAL( XhvPeriodic->nDof(), nVectorComponents * periodicCanonicalPoints );
+    BOOST_CHECK_EQUAL( XhvNonPeriodic->nDof(), nVectorComponents * nonPeriodicCanonicalPoints );
+    BOOST_CHECK_LT( XhvPeriodic->nDof(), XhvNonPeriodic->nDof() );
+    checkPeriodicVertexPairsShareDofIds( XhvPeriodic, meshPeriodic, nVectorComponents );
 
     auto RThPeriodic = Dh<0>( meshPeriodic );
     auto RThNonPeriodic = Dh<0>( meshNonPeriodic );

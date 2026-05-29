@@ -111,6 +111,14 @@
 #include <feel/feelvf/ginac.hpp>
 #include <feel/feelvf/detail/gmc.hpp>
 
+#ifndef FEELPP_ENABLE_LEGACY_COMPOSITE_FUNCTIONSPACE
+#define FEELPP_ENABLE_LEGACY_COMPOSITE_FUNCTIONSPACE 1
+#endif
+
+#ifndef FEELPP_WARN_LEGACY_COMPOSITE_FUNCTIONSPACE
+#define FEELPP_WARN_LEGACY_COMPOSITE_FUNCTIONSPACE 0
+#endif
+
 namespace Feel
 {
 namespace fusion = boost::fusion;
@@ -567,884 +575,7 @@ struct H
     array_type M_hess;
 };
 
-template<typename SpaceType>
-struct InitializeSpace
-{
-    typedef typename SpaceType::functionspace_vector_type functionspace_vector_type;
-    typedef typename SpaceType::mesh_ptrtype MeshPtrType;
-    typedef typename SpaceType::mesh_support_vector_type mesh_support_vector_type;
-    using globaldof_type = Dof<typename SpaceType::mesh_type::size_type>;
-    InitializeSpace( functionspace_vector_type & functionspaces,
-                     MeshPtrType const& mesh,
-                     mesh_support_vector_type const& meshSupport,
-                     std::vector<globaldof_type> const& dofindices,
-                     worldscomm_ptr_t const & worldsComm,
-                     std::vector<DofTableExtendedType> extendedDofTable )
-        :
-        M_functionspaces( functionspaces ),
-        M_cursor( 0 ),
-        M_worldsComm( worldsComm ),
-        M_mesh( mesh ),
-        M_meshSupport( meshSupport ),
-        M_dofindices( dofindices ),
-        M_extendedDofTable( extendedDofTable )
-    {}
-    template <typename T>
-    void operator()( T const& t ) const
-        {
-            if constexpr ( is_shared_ptr<MeshPtrType>() )
-            {
-                typedef typename fusion::result_of::at_c<functionspace_vector_type,T::value>::type _subspace_ptrtype;
-                typedef typename boost::remove_reference<_subspace_ptrtype>::type subspace_ptrtype;
-                typedef typename subspace_ptrtype::element_type subspace_type;
-
-                auto & subSpace = boost::fusion::at_c<T::value>( M_functionspaces );
-                auto subMeshSupport = typename subspace_type::mesh_support_vector_type( boost::fusion::at_c<T::value>( M_meshSupport ) );
-                subSpace = subspace_ptrtype( new subspace_type( M_mesh, subMeshSupport, M_dofindices,
-                                                                makeWorldsComm( 1,M_worldsComm[M_cursor] ),
-                                                                std::vector<DofTableExtendedType>( 1,M_extendedDofTable[M_cursor] ) ) );
-                FEELPP_ASSERT( subSpace ).error( "invalid function space" );
-
-                ++M_cursor;// warning M_cursor < nb color
-            }
-            else
-            {
-                typedef typename fusion::result_of::at_c<functionspace_vector_type,T::value>::type _subspace_ptrtype;
-                typedef typename boost::remove_reference<_subspace_ptrtype>::type subspace_ptrtype;
-                typedef typename subspace_ptrtype::element_type subspace_type;
-
-                auto & subSpace = boost::fusion::at_c<T::value>( M_functionspaces );
-                // look for T::mesh_ptrtype in MeshPtrType
-                //auto m = *fusion::find<typename subspace_type::mesh_ptrtype>(M_mesh);
-                auto m = boost::fusion::at_c<T::value>( M_mesh );
-                auto subMeshSupport = typename subspace_type::mesh_support_vector_type( boost::fusion::at_c<T::value>( M_meshSupport ) );
-                subSpace = subspace_ptrtype( new subspace_type( m, subMeshSupport, M_dofindices,
-                                                                makeWorldsComm( 1,M_worldsComm[M_cursor] ),
-                                                                std::vector<DofTableExtendedType>( 1,M_extendedDofTable[M_cursor] ) ) );
-                FEELPP_ASSERT( subSpace ).error( "invalid function space" );
-
-                ++M_cursor;// warning M_cursor < nb color
-            }
-        }
-    functionspace_vector_type & M_functionspaces;
-    mutable uint16_type M_cursor;
-    worldscomm_ptr_t M_worldsComm;
-    MeshPtrType M_mesh;
-    mesh_support_vector_type const& M_meshSupport;
-    std::vector<globaldof_type> const& M_dofindices;
-    std::vector<DofTableExtendedType> M_extendedDofTable;
-};
-template<typename DofType>
-struct updateDataMapProcessStandard
-{
-    typedef std::shared_ptr<DofType> result_type;
-
-    updateDataMapProcessStandard( worldcomm_ptr_t const& worldComm,
-                                  uint16_type nSpaces )
-        :
-        M_worldComm( worldComm ),
-        M_cursor( 0 ),
-        M_lastCursor( nSpaces-1 )
-    {}
-
-    template <typename T>
-    result_type operator()( result_type const& r, std::shared_ptr<T> & x ) const
-    {
-        M_subdm.push_back( x->mapPtr() );
-        if ( M_cursor == M_lastCursor )
-        {
-            result_type dm = std::make_shared<DofType>( M_subdm,M_worldComm );
-            return dm;
-        }
-        ++M_cursor;
-        return r;
-    }
-
-    worldcomm_ptr_t M_worldComm;
-    mutable uint16_type M_cursor;
-    uint16_type M_lastCursor;
-    mutable std::vector<datamap_ptrtype<>> M_subdm;
-};
-
-
-
-
-
-struct NbDof
-{
-    typedef size_type result_type;
-    NbDof( size_type start = 0, size_type size = invalid_v<size_type> )
-        :
-        M_cursor( start ),
-        M_finish( size )
-    {}
-    template<typename Sig>
-    struct result;
-
-    template<typename T, typename S>
-#if BOOST_VERSION < 104200
-    struct result<NbDof( T,S )>
-#else
-    struct result<NbDof( S,T )>
-#endif
-:
-    boost::remove_reference<S>
-    {};
-    template <typename T>
-    size_type
-    operator()( T const& x, size_type s ) const
-    {
-        size_type ret = s;
-
-        if ( !x )
-            return ret;
-
-        if ( M_cursor < M_finish )
-            ret += x->nDof();
-
-        ++M_cursor;
-        return ret;
-    }
-
-    template <typename T>
-    size_type
-    operator()( size_type s, T const& x ) const
-    {
-        return this->operator()( x, s );
-    }
-private:
-    mutable size_type M_cursor;
-    size_type M_finish;
-};
-
-#if 0
-struct NLocalDof
-{
-    NLocalDof( size_type start = 0, size_type size = invalid_v<size_type> )
-        :
-        M_cursor( start ),
-        M_finish( size )
-    {}
-    template<typename Sig>
-    struct result;
-
-    template<typename T, typename S>
-#if BOOST_VERSION < 104200
-    struct result<NLocalDof( T,S )>
-#else
-    struct result<NLocalDof( S,T )>
-#endif
-:
-    boost::remove_reference<S>
-    {};
-    template <typename T>
-    size_type
-    operator()( T const& x, size_type s ) const
-    {
-        size_type ret = s;
-
-        if ( M_cursor < M_finish )
-            ret += x->nLocalDof();
-
-        ++M_cursor;
-        return ret;
-    }
-    template <typename T>
-    size_type
-    operator()( size_type s, T const& x ) const
-    {
-        return this->operator()( x, s );
-    }
-private:
-    mutable size_type M_cursor;
-    size_type M_finish;
-};
-#else // MPI
-template< typename IsWithGhostType>
-struct NLocalDof
-{
-
-    NLocalDof( worldscomm_ptr_t const & worldsComm = Environment::worldsComm(1),
-               bool useOffSubSpace = false,
-               size_type start = 0, size_type size = invalid_v<size_type> )
-        :
-        M_cursor( start ),
-        M_finish( size ),
-        M_worldsComm( worldsComm ),
-        M_useOffSubSpace( useOffSubSpace )
-    {}
-    template<typename Sig>
-    struct result;
-
-    template<typename T, typename S>
-#if BOOST_VERSION < 104200
-    struct result<NLocalDof( T,S )>
-#else
-    struct result<NLocalDof( S,T )>
-#endif
-:
-    boost::remove_reference<S>
-    {};
-
-    template <typename T>
-    size_type
-    nLocalDof( T const& x, mpl::bool_<true> /**/ ) const
-    {
-        return x->nLocalDofWithGhost();
-    }
-
-    template <typename T>
-    size_type
-    nLocalDof( T const& x, mpl::bool_<false> /**/ ) const
-    {
-        return x->nLocalDofWithoutGhost();
-    }
-
-    template <typename T>
-    size_type
-    operator()( T const& x, size_type s ) const
-    {
-        size_type ret = s;
-
-        if ( M_cursor < M_finish )
-        {
-            if ( M_useOffSubSpace )
-            {
-                ret += nLocalDof( x, mpl::bool_<IsWithGhostType::value>() );
-            }
-
-            else
-            {
-                if ( M_worldsComm[M_cursor]->isActive() )
-                    ret += nLocalDof( x, mpl::bool_<IsWithGhostType::value>() );
-            }
-        }
-
-        ++M_cursor;
-        return ret;
-    }
-
-    template <typename T>
-    size_type
-    operator()( size_type s, T const& x ) const
-    {
-        return this->operator()( x, s );
-    }
-private:
-    mutable size_type M_cursor;
-    size_type M_finish;
-    worldscomm_ptr_t M_worldsComm;
-    bool M_useOffSubSpace;
-};
-#endif // end MPI
-
-
-template< typename IsWithGhostType>
-struct NLocalDofOnProc
-{
-
-    NLocalDofOnProc( const int proc,
-                     worldscomm_ptr_t const & worldsComm = Environment::worldsComm(1),
-                     bool useOffSubSpace = false,
-                     size_type start = 0, size_type size = invalid_v<size_type> )
-        :
-        M_proc(proc),
-        M_cursor( start ),
-        M_finish( size ),
-        M_worldsComm( worldsComm ),
-        M_useOffSubSpace( useOffSubSpace )
-    {}
-
-    template<typename Sig>
-    struct result;
-
-    template<typename T, typename S>
-#if BOOST_VERSION < 104200
-    struct result<NLocalDofOnProc( T,S )>
-#else
-    struct result<NLocalDofOnProc( S,T )>
-#endif
-:
-    boost::remove_reference<S>
-    {};
-
-    template <typename T>
-    size_type
-    nLocalDof( T const& x, mpl::bool_<true> /**/ ) const
-    {
-        return x->nLocalDofWithGhostOnProc(M_proc);
-    }
-
-    template <typename T>
-    size_type
-    nLocalDof( T const& x, mpl::bool_<false> /**/ ) const
-    {
-        return x->nLocalDofWithoutGhostOnProc(M_proc);
-    }
-
-    template <typename T>
-    size_type
-    operator()( T const& x, size_type s ) const
-    {
-        size_type ret = s;
-
-        if ( M_cursor < M_finish )
-        {
-            if ( M_useOffSubSpace )
-            {
-                ret += nLocalDof( x, mpl::bool_<IsWithGhostType::value>() );
-            }
-
-            else
-            {
-                if ( M_worldsComm[M_cursor]->isActive() )
-                    ret += nLocalDof( x, mpl::bool_<IsWithGhostType::value>() );
-            }
-        }
-
-        ++M_cursor;
-        return ret;
-    }
-
-    template <typename T>
-    size_type
-    operator()( size_type s, T const& x ) const
-    {
-        return this->operator()( x, s );
-    }
-private:
-    int M_proc;
-    mutable size_type M_cursor;
-    size_type M_finish;
-    worldscomm_ptr_t M_worldsComm;
-    bool M_useOffSubSpace;
-}; // NLocalDofOnProc
-
-
-template<int i,typename SpaceCompositeType>
-struct InitializeContainersOff
-{
-    explicit InitializeContainersOff( std::shared_ptr<SpaceCompositeType> const& _space )
-        :
-        M_cursor( 0 ),
-        M_space( _space )
-    {}
-    template <typename T>
-    void operator()( std::shared_ptr<T> & x ) const
-    {
-        if ( M_cursor==i && !x )
-            x = std::shared_ptr<T>( new T( M_space->template functionSpace<i>()->dof() ) );
-
-        ++M_cursor;// warning M_cursor < nb color
-    }
-    mutable uint16_type M_cursor;
-    std::shared_ptr<SpaceCompositeType> M_space;
-};
-
-
-template<int i,typename SpaceCompositeType>
-struct SendContainersOn
-{
-    SendContainersOn( std::shared_ptr<SpaceCompositeType> const& _space,
-                      std::vector<double> const& _dataToSend )
-        :
-        M_cursor( 0 ),
-        M_space( _space ),
-        M_dataToSend( _dataToSend )
-    {}
-    template <typename T>
-    void operator()( std::shared_ptr<T> & x ) const
-    {
-        if ( M_cursor!=i )
-        {
-            int locRank=M_space->worldComm().localRank();
-            int globRank=M_space->worldComm().localColorToGlobalRank( M_cursor,locRank );
-            int tag = 0;
-            //std::cout << "\n I am proc " << M_space->worldComm().globalRank()
-            //          << " I send to proc " << globRank << std::endl;
-            M_space->worldComm().globalComm().send( globRank,tag,M_dataToSend );
-        }
-
-        ++M_cursor;// warning M_cursor < nb color
-    }
-    mutable uint16_type M_cursor;
-    std::shared_ptr<SpaceCompositeType> M_space;
-    std::vector<double> M_dataToSend;
-};
-
-
-template<int i,typename SpaceCompositeType>
-struct RecvContainersOff
-{
-    explicit RecvContainersOff( std::shared_ptr<SpaceCompositeType> const& _space )
-        :
-        M_cursor( 0 ),
-        M_space( _space )
-    {}
-    template <typename T>
-    void operator()( std::shared_ptr<T> & x ) const
-    {
-        if ( M_cursor==i )
-        {
-            std::vector<double> dataToRecv( M_space->template functionSpace<i>()->nLocalDof() );
-            int locRank=M_space->worldComm().localRank();
-            int globRank=M_space->worldComm().localColorToGlobalRank( i,locRank );
-            int tag = 0;//locRank;
-            //std::cout << "\n I am proc " << M_space->worldComm().globalRank()
-            //          << " I recv to proc " << globRank << std::endl;
-            M_space->worldComm().globalComm().recv( globRank,tag,dataToRecv );
-            std::copy( dataToRecv.begin(), dataToRecv.end(), x->begin() );
-        }
-
-        ++M_cursor;// warning M_cursor < nb color
-    }
-    mutable uint16_type M_cursor;
-    std::shared_ptr<SpaceCompositeType> M_space;
-};
-
-
-
-template< typename map_type >
-struct searchIndicesBySpace
-{
-    searchIndicesBySpace()
-    {}
-
-    searchIndicesBySpace( map_type& /*u*/ )
-    {}
-
-    template<typename T>
-    searchIndicesBySpace( T const& fspace, map_type& u )
-    {
-        u = getIndicesFromSpace( fspace,u );
-    }
-
-    template<typename Sig>
-    struct result;
-
-    template<typename T, typename M>
-#if BOOST_VERSION < 104200
-    struct result<searchIndicesBySpace( T,M )>
-#else
-    struct result<searchIndicesBySpace( M,T )>
-#endif
-:
-    boost::remove_reference<M>
-    {};
-
-    template < typename T >
-    map_type getIndicesFromSpace( T const& fspace, map_type t ) const
-    {
-        if ( fspace->mesh()->numElements() == 0 )
-            return t;
-
-        size_type nProc = fspace->dof()->nProcessors();
-
-        //search for the biggest index already in t; this will give the shift for the dofs
-        std::vector< size_type > max_per_space;
-
-        for ( size_type j=0; j<t.size(); j++ )
-        {
-            size_type _end = t[j].size();
-
-            if ( _end )
-                max_per_space.push_back( t[j][_end-1] );
-        }
-
-        //from all max indices found, determine the biggest
-        size_type max_index = 0;
-
-        if ( t.size() )
-            max_index = *max_element( max_per_space.begin(), max_per_space.end() ) + 1;
-
-        //std::cout << "maximum index " << max_index << "\n";
-
-        //loop in all processors
-        for ( size_type i=0; i<nProc; i++ )
-        {
-            /*
-              std::cout << "Processor " << i << " has dofs"
-              << " from " << fspace->dof()->firstDof(i)
-              << " to " << fspace->dof()->lastDof(i) << "\n";
-            */
-
-            size_type _first = fspace->dof()->firstDof( i );
-            size_type _last  = fspace->dof()->lastDof( i );
-
-            //the dofs numbering for the current space start at max_index+1
-            for ( size_type j=_first; j<=_last; j++ )
-                t[i].push_back( max_index + j );
-        }
-
-        return t;
-    }
-    template <typename T>
-    map_type
-#if BOOST_VERSION < 104200
-    operator()( T const& fspace, map_type t ) const
-#else
-    operator()( map_type t, T const& fspace ) const
-#endif
-    {
-        return getIndicesFromSpace( fspace,t );
-    }
-};
-
-// get start for each proc ->( proc0 : 0 ), (proc1 : sumdofproc0 ), (proc2 : sumdofproc0+sumdofproc1 ) ....
-struct computeStartOfFieldSplit
-{
-    typedef boost::tuple< uint16_type , size_type > result_type;
-
-    template<typename T>
-    result_type operator()( result_type const &  previousRes, T const& t )
-    {
-        auto cptSpaces = previousRes.get<0>();
-        auto start = previousRes.get<1>();
-
-        for (int proc=0;proc<t->dof()->worldComm().globalSize();++proc)
-            {
-                if (proc < t->dof()->worldComm().globalRank())
-                    start+=t->dof()->nLocalDofWithoutGhost(proc);
-            }
-        return boost::make_tuple( ++cptSpaces, start );
-    }
-};
-
-struct hasSubSpaceWithComponentsSplit
-{
-    typedef bool result_type;
-    template<typename T>
-    result_type operator()( result_type const &  previousRes, T const& t )
-    {
-        //return ( T::element_type::dof_type::is_product && T::element_type::dof_type::nComponents > 1 ) || previousRes;
-        return t->map().hasIndexSplitWithComponents() || previousRes;
-    }
-};
-
-// compute split
-template<bool UseComponentsSplit>
-struct computeNDofForEachSpace
-{
-    computeNDofForEachSpace(size_type startSplit)
-        :
-        M_indexSplit( new IndexSplit() ),
-        M_startSplit(startSplit)
-    {}
-
-    std::shared_ptr<IndexSplit> const& indexSplit() const { return M_indexSplit; }
-
-    typedef boost::tuple< uint16_type, size_type, IndexSplit > result_type;
-
-    template<typename T>
-    void operator()( T const& t ) const
-    {
-        this->operator()( t, mpl::bool_<UseComponentsSplit>() );
-    }
-    template<typename T>
-    void operator()( T const& t, mpl::false_ ) const
-    {
-        M_indexSplit->addSplit( M_startSplit, t->map().indexSplit() );
-    }
-    template<typename T>
-    void operator()( T const& t, mpl::true_ ) const
-    {
-        M_indexSplit->addSplit( M_startSplit, t->map().indexSplitWithComponents() );
-    }
-
-    mutable std::shared_ptr<IndexSplit> M_indexSplit;
-    size_type M_startSplit;
-};
-
-struct rebuildDofPointsTool
-{
-
-    template <typename T>
-    void operator()( std::shared_ptr<T> & x ) const
-    {
-        x->dof()->rebuildDofPoints( *x->mesh() );
-    }
-};
-
-struct BasisName
-{
-    typedef std::string result_type;
-
-    template<typename T>
-    result_type operator()( result_type const & previousRes, T const& t )
-    {
-        std::ostringstream os;
-
-        if ( previousRes.size() )
-            os << previousRes << "_" << t->basis()->familyName();
-
-        else
-            os << t->basis()->familyName();
-
-        return os.str();
-    }
-};
-
-struct BasisOrder
-{
-    typedef std::vector<int> result_type;
-
-    template<typename T>
-    result_type operator()( result_type const & previousRes, T const& t )
-    {
-        std::vector<int> res( previousRes );
-        res.push_back( t->nSubFunctionSpace() );
-        return res;
-    }
-};
-
-template<typename SpaceType>
-struct createWorldsComm
-{
-
-    typedef typename SpaceType::mesh_ptrtype mesh_ptrtype;
-    typedef typename SpaceType::meshes_list meshes_list;
-    static inline const bool useMeshesList = !boost::is_base_of<MeshBase<>, meshes_list >::value;
-
-    struct UpdateWorldsComm
-    {
-        UpdateWorldsComm( createWorldsComm<SpaceType> & cwc )
-            :
-            M_cwc( cwc )
-            {}
-        template<typename T>
-        void operator()( T const& t) const
-            {
-                M_cwc.M_worldsComm.push_back( t->worldComm().shared_from_this() );
-            }
-        createWorldsComm<SpaceType> & M_cwc;
-    };
-
-    createWorldsComm( mesh_ptrtype const& mesh )
-        {
-            this->init<useMeshesList>( mesh );
-        }
-    template<bool _UseMeshesList >
-    void init( mesh_ptrtype const& mesh, typename std::enable_if< !_UseMeshesList >::type* = nullptr )
-        {
-            M_worldsComm.resize( SpaceType::nSpaces, mesh->worldComm().shared_from_this() );
-        }
-    template<bool _UseMeshesList >
-    void init( mesh_ptrtype const& mesh, typename std::enable_if< _UseMeshesList >::type* = nullptr )
-        {
-            boost::fusion::for_each( mesh, UpdateWorldsComm( *this ) );
-        }
-    worldscomm_ptr_t worldsComm()       { return M_worldsComm; }
-    worldscomm_ptr_t worldsComm() const { return M_worldsComm; }
-
-    worldscomm_ptr_t M_worldsComm;
-};
-
-template<typename SpaceType>
-std::vector<DofTableExtendedType>
-createInfoExtendedDofTable( DofTableExtendedType b )
-{
-    return std::vector<DofTableExtendedType>( SpaceType::nSpaces,b );
-}
-template<typename SpaceType>
-std::vector<DofTableExtendedType>
-createInfoExtendedDofTable( std::vector<DofTableExtendedType> const& b )
-{
-    CHECK( b.size() == SpaceType::nSpaces ) << "invalid extended doftable info vector size : " << b.size() << " should be : " << SpaceType::nSpaces;
-    return b;
-}
-
-template<typename SpaceType>
-struct createMeshSupport
-{
-    typedef typename SpaceType::mesh_support_vector_type mesh_support_vector_type;
-    typedef typename fusion::result_of::at_c<mesh_support_vector_type,0>::type _mesh_support_ptrtype;
-    typedef typename boost::remove_reference<_mesh_support_ptrtype>::type mesh_support_ptrtype;
-    typedef typename mesh_support_ptrtype::element_type mesh_support_type;
-    typedef typename SpaceType::mesh_ptrtype mesh_ptrtype;
-    typedef typename mesh_support_type::range_elements_type range_elements_type;
-
-    typedef typename SpaceType::meshes_list meshes_list;
-    static inline const bool useMeshesList = !boost::is_base_of<MeshBase<>, meshes_list >::value;
-
-    struct HasAllMeshSupportDefined
-    {
-        typedef bool result_type;
-        template<typename T>
-        result_type operator()( result_type const& r, T const& t) const
-            {
-                if ( !t )
-                    return false;
-                else
-                    return r;
-            }
-    };
-
-    struct UpdateMeshSupport
-    {
-        UpdateMeshSupport( createMeshSupport<SpaceType> & cms )
-            :
-            M_cms( cms )
-            {}
-        template<typename T>
-        void operator()( T const& t) const
-            {
-                this->updateImpl<T,useMeshesList>( t );
-            }
-        template<typename T,bool _UseMeshesList >
-            requires (!_UseMeshesList)
-        void updateImpl( T const& t ) const
-            {
-                auto & meshSupport = boost::fusion::at_c<T::value>( M_cms.M_meshSupportVector );
-                if ( meshSupport )
-                    return;
-                CHECK( M_cms.M_meshSupport0 ) << "no mesh support defined";
-                meshSupport = M_cms.M_meshSupport0;
-            }
-        template<typename T,bool _UseMeshesList >
-            requires _UseMeshesList
-        void updateImpl( T const& t ) const
-            {
-                auto & meshSupport = boost::fusion::at_c<T::value>( M_cms.M_meshSupportVector );
-                if ( meshSupport )
-                    return;
-                typedef typename fusion::result_of::at_c<mesh_support_vector_type,T::value>::type _submesh_support_ptrtype;
-                typedef typename boost::remove_reference<_submesh_support_ptrtype>::type submesh_support_ptrtype;
-                typedef typename submesh_support_ptrtype::element_type submesh_support_type;
-                auto const& mesh = boost::fusion::at_c<T::value>( M_cms.M_mesh );
-                meshSupport.reset( new submesh_support_type(mesh) );
-            }
-
-        createMeshSupport<SpaceType> & M_cms;
-    };
-
-    createMeshSupport( mesh_ptrtype const& mesh, mesh_support_vector_type const& meshSupport )
-        :
-        M_mesh( mesh ),
-        M_meshSupportVector( meshSupport )
-        {
-            this->init<useMeshesList>(mesh);
-        }
-    template<typename RangeType>
-        requires is_range_v<RangeType>
-    createMeshSupport( mesh_ptrtype const& mesh, RangeType && rangeMeshElt )
-        :
-        M_mesh( mesh )
-        {
-            this->init2<useMeshesList>(mesh,std::forward<RangeType>(rangeMeshElt));
-        }
-    createMeshSupport( mesh_ptrtype const& mesh, mesh_support_ptrtype const& meshSupport )
-        :
-        M_mesh( mesh )
-        {
-            M_meshSupport0 = meshSupport;
-            mpl::range_c<int,0,SpaceType::nSpaces> keySpaces;
-            boost::fusion::for_each( keySpaces, UpdateMeshSupport( *this ) );
-        }
-
-    template<bool _UseMeshesList >
-    void init( mesh_ptrtype const& mesh, typename std::enable_if< !_UseMeshesList >::type* = nullptr )
-        {
-            HasAllMeshSupportDefined hasMSFunctor;
-            bool hasMS = boost::fusion::fold( M_meshSupportVector, true, hasMSFunctor );
-            if ( !hasMS )
-                M_meshSupport0.reset( new mesh_support_type(mesh) );
-
-            mpl::range_c<int,0,SpaceType::nSpaces> keySpaces;
-            boost::fusion::for_each( keySpaces, UpdateMeshSupport( *this ) );
-        }
-    template<bool _UseMeshesList >
-    void init( mesh_ptrtype const& mesh, typename std::enable_if< _UseMeshesList >::type* = nullptr )
-        {
-            mpl::range_c<int,0,SpaceType::nSpaces> keySpaces;
-            boost::fusion::for_each( keySpaces, UpdateMeshSupport( *this ) );
-        }
-    template<bool _UseMeshesList, typename RangeType >
-    void init2( mesh_ptrtype const& mesh, RangeType && rangeMeshElt )
-        {
-            if constexpr ( _UseMeshesList )
-            {
-                CHECK( false ) << fmt::format( "MeshSupport not allowed in Mesh List" );
-            }
-            else
-            {
-                if ( std::forward<RangeType>( rangeMeshElt ).container() )
-                {
-                    M_meshSupport0.reset( new mesh_support_type(mesh,std::forward<RangeType>(rangeMeshElt) ) );
-                }
-                else
-                {
-                    M_meshSupport0.reset( new mesh_support_type(mesh) );
-                }
-
-                mpl::range_c<int,0,SpaceType::nSpaces> keySpaces;
-                boost::fusion::for_each( keySpaces, UpdateMeshSupport( *this ) );
-            }
-        }
-
-    mesh_ptrtype const& M_mesh;
-    mesh_support_vector_type M_meshSupportVector;
-    mesh_support_ptrtype M_meshSupport0;
-};
-
-template<typename SpaceType>
-struct FunctionSpaceMeshSupport
-{
-    typedef typename SpaceType::mesh_support_vector_type mesh_support_vector_type;
-
-    struct UpdateMeshSupport
-    {
-        UpdateMeshSupport( FunctionSpaceMeshSupport<SpaceType> & fsms )
-            :
-            M_fsms( fsms )
-            {}
-
-        template<typename T>
-        void operator()( T const& t) const
-            {
-                this->updateImpl<T,SpaceType::is_composite>( t );
-            }
-
-        template<typename T,bool _IsComposite >
-        void updateImpl( T const& t, typename std::enable_if< !_IsComposite >::type* = nullptr ) const
-            {
-                auto doftable = M_fsms.M_space.dof();
-                if ( !doftable )
-                    return;
-                if ( doftable->hasMeshSupport() )
-                {
-                    auto & meshSupport = boost::fusion::at_c<T::value>( M_fsms.M_meshSupportVector );
-                    meshSupport = doftable->meshSupport();
-                }
-            }
-        template<typename T,bool _IsComposite >
-        void updateImpl( T const& t, typename std::enable_if< _IsComposite >::type* = nullptr ) const
-            {
-                auto subspace = M_fsms.M_space.template functionSpace<T::value>();
-                if ( !subspace )
-                    return;
-                auto doftable = subspace->dof();
-                if ( !doftable )
-                    return;
-                if ( doftable->hasMeshSupport() )
-                {
-                    auto & meshSupport = boost::fusion::at_c<T::value>( M_fsms.M_meshSupportVector );
-                    meshSupport = doftable->meshSupport();
-                }
-            }
-        FunctionSpaceMeshSupport<SpaceType> & M_fsms;
-    };
-
-    FunctionSpaceMeshSupport( SpaceType const& space )
-        :
-        M_space( space )
-        {
-            mpl::range_c<int,0,SpaceType::nSpaces> keySpaces;
-            boost::fusion::for_each( keySpaces, UpdateMeshSupport( *this ) );
-        }
-
-    SpaceType const& M_space;
-    mesh_support_vector_type M_meshSupportVector;
-};
+#include <feel/feeldiscr/detail/functionspacelegacycomposite.hpp>
 
 } // detail
 
@@ -1495,6 +626,7 @@ public:
     using meshes_list = MeshTypes;
     using bases_list = BasisTypes;
     using value_type = T;
+    // Compatibility aliases only: periodic behavior is mesh/DofTable-owned.
     using periodicity_type = boost::fusion::vector<NoPeriodicity>;
     using periodicity_0_type = NoPeriodicity;
     using mortar_list = MortarType;
@@ -1594,6 +726,19 @@ public:
      */
     //@{
     static inline const bool is_composite = ( mpl::size<bases_list>::type::value > 1 );
+    using legacy_composite_policy = Feel::detail::LegacyCompositeFunctionSpacePolicy<is_composite>;
+    static constexpr bool legacy_composite_enabled = legacy_composite_policy::legacy_composite_enabled;
+    static constexpr bool is_legacy_composite = legacy_composite_policy::is_legacy_composite;
+    static constexpr bool uses_internal_composite = legacy_composite_policy::uses_internal_composite;
+    static constexpr bool is_product_backed_composite = legacy_composite_policy::is_product_backed_composite;
+    static_assert( legacy_composite_enabled || !is_composite,
+                   "Legacy multi-basis FunctionSpace is disabled. Use product(), ProductFunctionSpaces, and blockforms for mixed spaces." );
+#if FEELPP_WARN_LEGACY_COMPOSITE_FUNCTIONSPACE
+    [[deprecated( "Legacy multi-basis FunctionSpace is deprecated. Use product(), ProductFunctionSpaces, and blockforms for mixed spaces." )]]
+    static void legacyCompositeFunctionSpaceDeprecationNotice() noexcept {}
+#else
+    static void legacyCompositeFunctionSpaceDeprecationNotice() noexcept {}
+#endif
 
     template<typename MeshListType,int N>
     struct GetMesh
@@ -1694,7 +839,8 @@ public:
     static constexpr uint16_type N_COMPONENTS = nComponents;
     static constexpr uint16_type nSpaces = mpl::size<bases_list>::type::value;
     static constexpr uint16_type nRealComponents = is_tensor2symm?basis_0_type::nComponents1*(basis_0_type::nComponents1+1)/2:nComponents;
-    static constexpr bool is_periodic = periodicity_0_type::is_periodic;
+    static constexpr bool has_type_level_periodicity = false;
+    static constexpr bool is_periodic = has_type_level_periodicity;
 
     typedef typename GetMortar<mortar_list,0>::type mortar_0_type;
     static inline const bool is_mortar = mortar_0_type::is_mortar;
@@ -1715,6 +861,9 @@ public:
     typedef functionspace_type space_type;
     typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef std::shared_ptr<functionspace_type> pointer_type;
+    using legacy_composite_storage_type = Feel::detail::LegacyCompositeFunctionSpaceStorage<functionspace_type, is_composite>;
+    using legacy_composite_dof_ops_type = Feel::detail::LegacyCompositeFunctionSpaceDofOps<functionspace_type>;
+    using legacy_composite_element_ops_type = Feel::detail::LegacyCompositeFunctionSpaceElementOps<functionspace_type>;
 
     typedef FunctionSpace<meshes_list, component_basis_vector_type, value_type, mortar_list> component_functionspace_type;
     typedef std::shared_ptr<component_functionspace_type> component_functionspace_ptrtype;
@@ -3671,6 +2820,8 @@ public:
         //functionspace_vector_type const&
         //functionSpaces() const { return M_functionspace->functionSpaces(); }
 
+        template <typename SpaceT=functionspace_type>
+            requires SpaceT::is_composite
         functionspace_vector_type const&
         functionSpaces() const
         {
@@ -3681,6 +2832,7 @@ public:
          * get the \p i -th \c FunctionSpace out the list
          */
         template<int i>
+            requires functionspace_type::is_composite
         typename mpl::at_c<functionspace_vector_type,i>::type
         functionSpace() const
         {
@@ -3737,29 +2889,25 @@ public:
         typename sub_element<i>::type &
         element( std::string const& name ="u", bool updateOffViews=true )
         {
-            CHECK ( fusion::at_c<i>( M_elements ).second ) << " has not element \n";
-            return *(fusion::at_c<i>( M_elements ).second);
+            return functionspace_type::legacy_composite_element_ops_type::template subElement<i, Element<TT,Cont>>( M_elements );
         }
         template<int i>
         typename sub_element<i>::type const&
         element( std::string const& name ="u", bool updateOffViews=true ) const
         {
-            CHECK ( fusion::at_c<i>( M_elements ).second ) << " has not element \n";
-            return *(fusion::at_c<i>( M_elements ).second);
+            return functionspace_type::legacy_composite_element_ops_type::template subElement<i, Element<TT,Cont>>( M_elements );
         }
         template<int i>
         typename sub_element<i>::ptrtype &
         elementPtr()
         {
-            CHECK ( fusion::at_c<i>( M_elements ).second ) << " has not element \n";
-            return fusion::at_c<i>( M_elements ).second;
+            return functionspace_type::legacy_composite_element_ops_type::template subElementPtr<i, Element<TT,Cont>>( M_elements );
         }
         template<int i>
         typename sub_element<i>::ptrtype const&
         elementPtr() const
         {
-            CHECK ( fusion::at_c<i>( M_elements ).second ) << " has not element \n";
-            return fusion::at_c<i>( M_elements ).second;
+            return functionspace_type::legacy_composite_element_ops_type::template subElementPtr<i, Element<TT,Cont>>( M_elements );
         }
 
         /**
@@ -4466,7 +3614,7 @@ public:
     NewFromList( FSpaceList... fspacelist )
         {
             auto X = pointer_type( new functionspace_type );
-            X->M_functionspaces = fusion::make_vector(fspacelist...);
+            X->M_legacyComposite.setFunctionSpacesFromList( fspacelist... );
             X->initList( fspacelist... );
             return X;
         }
@@ -4487,14 +3635,14 @@ public:
             M_worldsComm = simSpace->worldsComm();
             this->setWorldComm( simSpace->worldCommPtr() );
             M_mesh = simSpace->mesh();
-            M_periodicity = simSpace->periodicity();
             M_ref_fe=simSpace->fe();
             if ( simSpace->hasCompSpace() )
                 M_comp_space = simSpace->compSpace();
             M_dof = simSpace->dof();
             M_dofOnOff = simSpace->dofOnOff();
             M_extendedDofTableComposite = simSpace->extendedDofTableComposite();
-            M_functionspaces = simSpace->functionSpaces();
+            if constexpr ( SimilarSpaceType::is_composite )
+                M_legacyComposite.setFunctionSpaces( simSpace->functionSpaces() );
             if ( simSpace->hasRegionTree() )
                 M_rt = simSpace->regionTree();
         }
@@ -4607,7 +3755,16 @@ public:
         return __c_interp->xReal();
     }
 
-    periodicity_type const& periodicity() const { return M_periodicity; }
+    bool meshHasPeriodicity() const noexcept
+    {
+        return M_mesh && M_mesh->isPeriodic();
+    }
+
+    periodicity_type const& periodicity() const
+    {
+        static const periodicity_type noPeriodicity;
+        return noPeriodicity;
+    }
 
     /**
      * return 1 if scalar space or the number of components if vectorial space
@@ -4625,7 +3782,7 @@ public:
         if constexpr ( is_composite )
         {
             DVLOG(2) << "calling nDof(<composite>) begin\n";
-            size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), Feel::detail::NbDof() );
+            size_type ndof =  legacy_composite_dof_ops_type::nDof( this->functionSpaces() );
             DVLOG(2) << "calling nDof(<composite>) end\n";
             return ndof;
         }
@@ -4643,7 +3800,7 @@ public:
         if constexpr( is_composite )
         {
             DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
-            size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), Feel::detail::NLocalDof<mpl::bool_<true> >( this->worldsComm() ) );
+            size_type ndof =  legacy_composite_dof_ops_type::nLocalDofWithGhost( this->functionSpaces(), this->worldsComm() );
             DVLOG(2) << "calling nLocalDof(<composite>) end\n";
             return ndof;
         }
@@ -4659,7 +3816,7 @@ public:
         if constexpr ( is_composite )
         {
             DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
-            size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), Feel::detail::NLocalDof<mpl::bool_<true> >( this->worldsComm() ) );
+            size_type ndof =  legacy_composite_dof_ops_type::nLocalDofWithGhost( this->functionSpaces(), this->worldsComm() );
             DVLOG(2) << "calling nLocalDof(<composite>) end\n";
             return ndof;
         }
@@ -4674,7 +3831,7 @@ public:
         if constexpr ( is_composite )
         {
             DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
-            size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), Feel::detail::NLocalDof<mpl::bool_<false> >( this->worldsComm() ) );
+            size_type ndof =  legacy_composite_dof_ops_type::nLocalDofWithoutGhost( this->functionSpaces(), this->worldsComm() );
             DVLOG(2) << "calling nLocalDof(<composite>) end\n";
             return ndof;
         }
@@ -4689,7 +3846,7 @@ public:
         if constexpr ( is_composite )
         {
             DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
-            size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), Feel::detail::NLocalDofOnProc<mpl::bool_<true> >( proc, this->worldsComm() ) );
+            size_type ndof =  legacy_composite_dof_ops_type::nLocalDofWithGhostOnProc( this->functionSpaces(), proc, this->worldsComm() );
             DVLOG(2) << "calling nLocalDof(<composite>) end\n";
             return ndof;
         }
@@ -4704,7 +3861,7 @@ public:
         if constexpr ( is_composite )
         {
             DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
-            size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), Feel::detail::NLocalDofOnProc<mpl::bool_<false> >( proc, this->worldsComm() ) );
+            size_type ndof =  legacy_composite_dof_ops_type::nLocalDofWithoutGhostOnProc( this->functionSpaces(), proc, this->worldsComm() );
             DVLOG(2) << "calling nLocalDof(<composite>) end\n";
             return ndof;
         }
@@ -4728,38 +3885,62 @@ public:
      */
     size_type nDofStart( size_type i = /*invalid_v<size_type>*/0 ) const
     {
-        size_type start =  fusion::accumulate( this->functionSpaces(), size_type( 0 ), Feel::detail::NbDof( 0, i ) );
-        return start;
+        CHECK( i <= static_cast<size_type>( nSpaces ) )
+            << "invalid block index " << i << " for FunctionSpace with " << nSpaces << " spaces";
+        if constexpr ( is_composite )
+            return legacy_composite_dof_ops_type::nDofStart( this->functionSpaces(), i );
+        else
+            return i == 0 ? size_type( 0 ) : this->nDof();
     }
 
     size_type nLocalDofStart( size_type i = 0 ) const
     {
-        size_type start =  fusion::accumulate( this->functionSpaces(), size_type( 0 ), Feel::detail::NLocalDof<mpl::bool_<true> >( this->worldsComm(),true,0,i ) );
-        return start;
+        CHECK( i <= static_cast<size_type>( nSpaces ) )
+            << "invalid block index " << i << " for FunctionSpace with " << nSpaces << " spaces";
+        if constexpr ( is_composite )
+            return legacy_composite_dof_ops_type::nLocalDofWithGhostStart( this->functionSpaces(), this->worldsComm(), i );
+        else
+            return i == 0 ? size_type( 0 ) : this->nLocalDof();
     }
 
     size_type nLocalDofWithGhostStart( size_type i = 0 ) const
     {
-        size_type start =  fusion::accumulate( this->functionSpaces(), size_type( 0 ), Feel::detail::NLocalDof<mpl::bool_<true> >( this->worldsComm(),true,0,i ) );
-        return start;
+        CHECK( i <= static_cast<size_type>( nSpaces ) )
+            << "invalid block index " << i << " for FunctionSpace with " << nSpaces << " spaces";
+        if constexpr ( is_composite )
+            return legacy_composite_dof_ops_type::nLocalDofWithGhostStart( this->functionSpaces(), this->worldsComm(), i );
+        else
+            return i == 0 ? size_type( 0 ) : this->nLocalDofWithGhost();
     }
 
     size_type nLocalDofWithoutGhostStart( size_type i = 0 ) const
     {
-        size_type start =  fusion::accumulate( this->functionSpaces(), size_type( 0 ), Feel::detail::NLocalDof<mpl::bool_<false> >( this->worldsComm(),true,0,i ) );
-        return start;
+        CHECK( i <= static_cast<size_type>( nSpaces ) )
+            << "invalid block index " << i << " for FunctionSpace with " << nSpaces << " spaces";
+        if constexpr ( is_composite )
+            return legacy_composite_dof_ops_type::nLocalDofWithoutGhostStart( this->functionSpaces(), this->worldsComm(), i );
+        else
+            return i == 0 ? size_type( 0 ) : this->nLocalDofWithoutGhost();
     }
 
     size_type nLocalDofWithGhostOnProcStart( const int proc, size_type i = 0 ) const
     {
-        size_type start =  fusion::accumulate( this->functionSpaces(), size_type( 0 ), Feel::detail::NLocalDofOnProc<mpl::bool_<true> >( proc, this->worldsComm(),true,0,i ) );
-        return start;
+        CHECK( i <= static_cast<size_type>( nSpaces ) )
+            << "invalid block index " << i << " for FunctionSpace with " << nSpaces << " spaces";
+        if constexpr ( is_composite )
+            return legacy_composite_dof_ops_type::nLocalDofWithGhostOnProcStart( this->functionSpaces(), proc, this->worldsComm(), i );
+        else
+            return i == 0 ? size_type( 0 ) : this->nLocalDofWithGhostOnProc( proc );
     }
 
     size_type nLocalDofWithoutGhostOnProcStart( const int proc, size_type i = 0 ) const
     {
-        size_type start =  fusion::accumulate( this->functionSpaces(), size_type( 0 ), Feel::detail::NLocalDofOnProc<mpl::bool_<false> >( proc, this->worldsComm(),true,0,i ) );
-        return start;
+        CHECK( i <= static_cast<size_type>( nSpaces ) )
+            << "invalid block index " << i << " for FunctionSpace with " << nSpaces << " spaces";
+        if constexpr ( is_composite )
+            return legacy_composite_dof_ops_type::nLocalDofWithoutGhostOnProcStart( this->functionSpaces(), proc, this->worldsComm(), i );
+        else
+            return i == 0 ? size_type( 0 ) : this->nLocalDofWithoutGhostOnProc( proc );
     }
 
     uint16_type nSubFunctionSpace() const
@@ -4871,7 +4052,7 @@ public:
     }
     std::string basisName( mpl::bool_<true> ) const
     {
-        return  fusion::accumulate( this->functionSpaces(), std::string(), Feel::detail::BasisName() );
+        return legacy_composite_dof_ops_type::basisName( this->functionSpaces() );
     }
     std::string basisName( mpl::bool_<false> ) const
     {
@@ -4890,7 +4071,7 @@ public:
     }
     std::vector<int> basisOrder( mpl::bool_<true> ) const
     {
-        return  fusion::accumulate( this->functionSpaces(), std::vector<int>(), Feel::detail::BasisOrder() );
+        return legacy_composite_dof_ops_type::basisOrder( this->functionSpaces() );
     }
     std::vector<int> basisOrder( mpl::bool_<false> ) const
     {
@@ -5040,36 +4221,30 @@ public:
      * get the \c FunctionSpace vector
      */
     //functionspace_vector_type const&
-    //functionSpaces() const { return M_functionspaces; }
+    //functionSpaces() const { return M_legacyComposite.functionSpaces(); }
 
+    template <typename TT=functionspace_type>
+        requires TT::is_composite
     functionspace_vector_type const&
     functionSpaces() const
     {
-        return M_functionspaces;
+        return M_legacyComposite.functionSpaces();
     }
 
 
+    template <typename TT=functionspace_type>
+        requires TT::is_composite
     std::shared_ptr<IndexSplit>
     buildDofIndexSplit()
     {
-        auto startSplit = boost::fusion::fold( functionSpaces(), boost::make_tuple(0,0), Feel::detail::computeStartOfFieldSplit() ).template get<1>();
-        auto computeSplit = Feel::detail::computeNDofForEachSpace<false>(startSplit);
-        boost::fusion::for_each( functionSpaces(), computeSplit );
-        return computeSplit.indexSplit();
+        return legacy_composite_dof_ops_type::buildDofIndexSplit( this->functionSpaces() );
     }
+    template <typename TT=functionspace_type>
+        requires TT::is_composite
     std::shared_ptr<IndexSplit>
     buildDofIndexSplitWithComponents()
     {
-        bool hasCompSplit = boost::fusion::fold( functionSpaces(), false, Feel::detail::hasSubSpaceWithComponentsSplit() );
-        if ( hasCompSplit )
-        {
-            auto startSplit = boost::fusion::fold( functionSpaces(), boost::make_tuple(0,0), Feel::detail::computeStartOfFieldSplit() ).template get<1>();
-            auto computeSplit = Feel::detail::computeNDofForEachSpace<true>(startSplit);
-            boost::fusion::for_each( functionSpaces(), computeSplit );
-            return computeSplit.indexSplit();
-        }
-        else
-            return std::shared_ptr<IndexSplit>();
+        return legacy_composite_dof_ops_type::buildDofIndexSplitWithComponents( this->functionSpaces() );
     }
 
     std::shared_ptr<IndexSplit> const&
@@ -5245,10 +4420,7 @@ public:
 
         size_type const nActiveDof = this->dof()->nLocalDofWithoutGhost();
         size_type const nGhostDof  = this->dof()->nLocalGhosts();
-        size_type const nActiveDofFirstSubSpace =
-            ( is_composite )
-                ? this->template functionSpace<0>()->dof()->nLocalDofWithoutGhost()
-                : nActiveDof;
+        size_type const nActiveDofFirstSubSpace = legacy_composite_element_ops_type::template firstSubSpaceActiveDofCount<0>( *this, nActiveDof );
 
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 22)
         // PETSc >= 3.22: Use guards for safe array access
@@ -5370,10 +4542,7 @@ public:
 
         size_type nActiveDof = this->dof()->nLocalDofWithoutGhost();
         size_type nGhostDof  = this->dof()->nLocalGhosts();
-        size_type nActiveDofFirstSubSpace =
-            ( is_composite )
-                ? this->template functionSpace<0>()->dof()->nLocalDofWithoutGhost()
-                : nActiveDof;
+        size_type nActiveDofFirstSubSpace = legacy_composite_element_ops_type::template firstSubSpaceActiveDofCount<0>( *this, nActiveDof );
 
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 22)
         // PETSc >= 3.22: Use guards for safe array access
@@ -5499,10 +4668,7 @@ public:
 
         size_type nActiveDof = this->dof()->nLocalDofWithoutGhost();
         size_type nGhostDof  = this->dof()->nLocalGhosts();
-        size_type nActiveDofFirstSubSpace =
-            ( is_composite )
-                ? this->template functionSpace<0>()->dof()->nLocalDofWithoutGhost()
-                : nActiveDof;
+        size_type nActiveDofFirstSubSpace = legacy_composite_element_ops_type::template firstSubSpaceActiveDofCount<0>( *this, nActiveDof );
 
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 22)
         // PETSc >= 3.22: Use guards for safe array access
@@ -5559,20 +4725,22 @@ public:
      * get the \p i -th \c FunctionSpace out the list
      */
     template<int i>
+        requires functionspace_type::is_composite
     typename mpl::at_c<functionspace_vector_type,i>::type
     functionSpace()
     {
-        return fusion::at_c<i>( M_functionspaces );
+        return M_legacyComposite.template functionSpace<i>();
     }
 
     /**
      * get the \p i -th \c FunctionSpace out the list
      */
     template<int i>
+        requires functionspace_type::is_composite
     typename mpl::at_c<functionspace_vector_type,i>::type const&
     functionSpace() const
     {
-        return fusion::at_c<i>( M_functionspaces );
+        return M_legacyComposite.template functionSpace<i>();
     }
 
 
@@ -5906,7 +5074,9 @@ public:
         M_dof( __fe.M_dof ),
         M_dofOnOff( __fe.M_dofOnOff ),
         M_extendedDofTableComposite( __fe.M_extendedDofTableComposite ),
-        M_rt( __fe.M_rt )
+        M_rt( __fe.M_rt ),
+        M_runtime_order( __fe.M_runtime_order ),
+        M_legacyComposite( __fe.M_legacyComposite )
     {
         DVLOG(2) << "copying FunctionSpace\n";
     }
@@ -6187,7 +5357,6 @@ protected:
 
     // finite element mesh
     mutable mesh_ptrtype M_mesh;
-    mutable periodicity_type M_periodicity;
     //! finite element reference type
     reference_element_ptrtype M_ref_fe;
 
@@ -6215,7 +5384,7 @@ private:
     //! disable default constructor
     //FunctionSpace();
 
-    functionspace_vector_type M_functionspaces;
+    legacy_composite_storage_type M_legacyComposite;
 
     proc_dist_map_type procDistMap;
 #if 0
@@ -6239,32 +5408,14 @@ FunctionSpace<A0, A1, A2, A3>::init( mesh_ptrtype const& __m,
     if constexpr ( !is_composite )
     {
         DVLOG(2) << "calling init(<space>) begin\n";
-        DVLOG(2) << "calling init(<space>) is_periodic: " << is_periodic << "\n";
+        DVLOG(2) << "calling init(<space>) type-level periodicity: " << has_type_level_periodicity << "\n";
 
         M_mesh = __m;
+        DVLOG(2) << "calling init(<space>) mesh periodicity: " << meshHasPeriodicity() << "\n";
         VLOG(1) << "FunctionSpace init begin mesh use_count : " << M_mesh.use_count();
 
-        if ( M_mesh->components().test( MESH_DO_NOT_UPDATE ) )
-        {
-
-            if ( basis_type::nDofPerEdge || nDim >= 3 )
-                mesh_components |= MESH_UPDATE_EDGES;
-
-            /*
-             * update faces info in mesh only if dofs exists on faces or the
-             * expansion is continuous between elements. This case handles strong
-             * Dirichlet imposition
-             */
-            if ( basis_type::nDofPerFace || is_continuous || nDim >= 3 )
-                mesh_components |= MESH_UPDATE_FACES;
-
-            if ( !M_mesh->isUpdatedForUse() )
-            {
-                M_mesh->components().set( mesh_components );
-                M_mesh->updateForUse();
-            }
-        }
-        // Create reference finite element, passing RuntimeOrder for dynamic order bases
+        // Create the concrete reference finite element before mesh update decisions.
+        // Dynamic-order bases own their runtime local layout through this instance.
         if constexpr ( requires { basis_type::is_order_dynamic; } && basis_type::is_order_dynamic )
         {
             M_ref_fe = std::make_shared<basis_type>( M_runtime_order );
@@ -6272,6 +5423,83 @@ FunctionSpace<A0, A1, A2, A3>::init( mesh_ptrtype const& __m,
         else
         {
             M_ref_fe = std::make_shared<basis_type>();
+        }
+
+        auto feHasDofsOnEdges = [this]() -> bool
+        {
+            if constexpr ( nDim < 2 )
+                return false;
+            else
+            {
+                if ( M_ref_fe )
+                {
+                    if constexpr ( requires( reference_element_ptrtype const& fe, uint16_type entity, bool perComponent )
+                                   {
+                                       fe->localDofCountOnEntity( entity, entity, perComponent );
+                                   } && requires { basis_type::reference_convex_type::numEdges; } )
+                    {
+                        for ( uint16_type localEdge = 0; localEdge < basis_type::reference_convex_type::numEdges; ++localEdge )
+                            if ( M_ref_fe->localDofCountOnEntity( 1, localEdge, true ) != 0 )
+                                return true;
+                    }
+                    else if constexpr ( requires( reference_element_ptrtype const& fe ) { fe->dofPerEdge(); } )
+                        return M_ref_fe->dofPerEdge() != 0;
+                }
+
+                if constexpr ( requires { basis_type::nDofPerEdge; } )
+                    return basis_type::nDofPerEdge != 0;
+                else
+                    return false;
+            }
+        };
+
+        auto feHasDofsOnFacets = [this]() -> bool
+        {
+            if constexpr ( nDim < 2 )
+                return false;
+            else
+            {
+                if ( M_ref_fe )
+                {
+                    if constexpr ( requires( reference_element_ptrtype const& fe, uint16_type facet, bool perComponent )
+                                   {
+                                       fe->localDofCountOnFacet( facet, perComponent );
+                                   } && requires { basis_type::reference_convex_type::numFaces; } )
+                    {
+                        for ( uint16_type localFacet = 0; localFacet < basis_type::reference_convex_type::numFaces; ++localFacet )
+                            if ( M_ref_fe->localDofCountOnFacet( localFacet, true ) != 0 )
+                                return true;
+                    }
+                    else if constexpr ( requires( reference_element_ptrtype const& fe ) { fe->dofPerFace(); } )
+                        return M_ref_fe->dofPerFace() != 0;
+                }
+
+                if constexpr ( requires { basis_type::nDofPerFace; } )
+                    return basis_type::nDofPerFace != 0;
+                else
+                    return false;
+            }
+        };
+
+        if ( M_mesh->components().test( MESH_DO_NOT_UPDATE ) )
+        {
+
+            if ( feHasDofsOnEdges() || nDim >= 3 )
+                mesh_components |= MESH_UPDATE_EDGES;
+
+            /*
+             * update faces info in mesh only if dofs exists on faces or the
+             * expansion is continuous between elements. This case handles strong
+             * Dirichlet imposition
+             */
+            if ( feHasDofsOnFacets() || is_continuous || nDim >= 3 )
+                mesh_components |= MESH_UPDATE_FACES;
+
+            if ( !M_mesh->isUpdatedForUse() )
+            {
+                M_mesh->components().set( mesh_components );
+                M_mesh->updateForUse();
+            }
         }
 
         tic();
@@ -6286,7 +5514,7 @@ FunctionSpace<A0, A1, A2, A3>::init( mesh_ptrtype const& __m,
         CHECK( dofindices.empty() ) << "NOT GO HERE";
         //M_dof->setDofIndices( dofindices );
         toc("FunctionSpace dof-3", Environment::logVerbosityLevel()>0);
-        DVLOG(2) << "[functionspace] is_periodic = " << is_periodic << "\n";
+        DVLOG(2) << "[functionspace] mesh periodicity = " << meshHasPeriodicity() << "\n";
         tic();
         if ( fusion::at_c<0>( meshSupport ) && fusion::at_c<0>( meshSupport )->isPartialSupport() )
             M_dof->setMeshSupport( fusion::at_c<0>( meshSupport ) );
@@ -6316,12 +5544,13 @@ FunctionSpace<A0, A1, A2, A3>::init( mesh_ptrtype const& __m,
     }
     else if constexpr ( is_composite )
     {
+        legacyCompositeFunctionSpaceDeprecationNotice();
         M_mesh = __m;
 
-        // todo : check worldsComm size and M_functionspaces are the same!
+        // todo : check worldsComm size and legacy composite subspace storage are the same!
         mpl::range_c<int,0,nSpaces> keySpaces;
         fusion::for_each( keySpaces,
-                        Feel::detail::InitializeSpace<functionspace_type>( M_functionspaces,__m, meshSupport,
+                        Feel::detail::InitializeSpace<functionspace_type>( M_legacyComposite.functionSpaces(),__m, meshSupport,
                                                                             dofindices,
                                                                             this->worldsComm(),
                                                                             this->extendedDofTableComposite() ) );
@@ -6344,17 +5573,14 @@ FunctionSpace<A0, A1, A2, A3>::initList()
         DVLOG(2) << "init(<composite>) type hasEntriesForAllSpaces\n";
 
         // build datamap
-        auto dofInitTool=Feel::detail::updateDataMapProcessStandard<dof_type>( this->worldCommPtr(),
-                                                                               this->nSubFunctionSpace() );
-        M_dof = fusion::fold( M_functionspaces, M_dof, dofInitTool );
+        M_dof = legacy_composite_dof_ops_type::buildCompositeDof( M_legacyComposite.functionSpaces(),
+                                                                  M_dof,
+                                                                  this->worldCommPtr(),
+                                                                  this->nSubFunctionSpace() );
         // finish update datamap
         M_dof->setNDof( this->nDof() );
         M_dofOnOff = M_dof;
-
-    #if 0
-        M_dof->setIndexSplit( this->buildDofIndexSplit() );
-        M_dof->setIndexSplitWithComponents( this->buildDofIndexSplitWithComponents() );
-    #endif
+        legacy_composite_dof_ops_type::installDofIndexSplits( M_dof, M_legacyComposite.functionSpaces() );
         //M_dof->indexSplit().showMe();
         this->applyUpdateInformationObject();
     }
@@ -6413,7 +5639,7 @@ void FunctionSpace<A0, A1, A2, A3>::rebuildDofPoints()
     }
     else
     {
-        fusion::for_each( M_functionspaces, Feel::detail::rebuildDofPointsTool() );
+        legacy_composite_dof_ops_type::rebuildDofPoints( M_legacyComposite.functionSpaces() );
     }
 }
 

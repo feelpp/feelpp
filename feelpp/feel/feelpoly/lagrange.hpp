@@ -136,6 +136,7 @@ public:
         M_eid( d.M_eid ),
         M_pts( d.M_pts ),
         M_points_face( d.M_points_face ),
+        M_points_by_subentity( d.M_points_by_subentity ),
         M_fset( d.M_fset )
         {}
 
@@ -170,6 +171,7 @@ public:
 
             M_pts.resize( nDim, runtime_numPoints );
             M_pts = dyn_pset.points();
+            cacheSubEntityPoints( dyn_pset );
 
             if ( order.value > 0 )
             {
@@ -177,7 +179,7 @@ public:
                         e < M_convex_ref.entityRange( nDim-1 ).end();
                         ++e )
                 {
-                    M_points_face[e] = dyn_pset.pointsBySubEntity( nDim-1, e, 1 );
+                    M_points_face[e] = M_points_by_subentity[nDim-1][e];
                     DVLOG(2) << "face " << e << " pts " <<  M_points_face[e] << "\n";
                 }
             }
@@ -220,6 +222,7 @@ public:
         DVLOG(2) << " o- nbPtsPerVolume = " << nbPtsPerVolume << "\n";
 
         M_pts = M_pset.points();
+        cacheSubEntityPoints( M_pset );
 
         if constexpr ( nOrder > 0 )
         {
@@ -227,7 +230,7 @@ public:
                     e < M_convex_ref.entityRange( nDim-1 ).end();
                     ++e )
             {
-                M_points_face[e] = M_pset.pointsBySubEntity( nDim-1, e, 1 );
+                M_points_face[e] = M_points_by_subentity[nDim-1][e];
                 DVLOG(2) << "face " << e << " pts " <<  M_points_face[e] << "\n";
             }
         }
@@ -254,13 +257,15 @@ public:
         DVLOG(2) << " o- nbPtsPerFace   = " << nbPtsPerFace << "\n";
         DVLOG(2) << " o- nbPtsPerVolume = " << nbPtsPerVolume << "\n";
 
+        cacheSubEntityPoints( M_pset );
+
         if constexpr ( nOrder > 0 )
         {
             for ( uint16_type e = M_convex_ref.entityRange( nDim-1 ).begin();
                     e < M_convex_ref.entityRange( nDim-1 ).end();
                     ++e )
             {
-                M_points_face[e] = M_pset.pointsBySubEntity( nDim-1, e, 1 );
+                M_points_face[e] = M_points_by_subentity[nDim-1][e];
                 DVLOG(2) << "face " << e << " pts " <<  M_points_face[e] << "\n";
             }
         }
@@ -304,19 +309,23 @@ public:
 #endif
      points_type points( int topodim, int entity ) const
             {
-                return M_pset.pointsBySubEntity( topodim, entity, 1 );
+                if ( topodim == nDim )
+                    return M_pts;
+                return M_points_by_subentity.at( topodim ).at( entity );
             }
 
 
     points_type edgePoints(int edge) const
         {
-            return M_pset.pointsBySubEntity( 1, edge, 1 );
+            if constexpr ( nDim == 1 )
+                return M_pts;
+            return M_points_by_subentity.at( 1 ).at( edge );
         }
 
 
     points_type vertexPoints(int vertex) const
         {
-            return M_pset.pointsBySubEntity( 0, vertex, 1 );
+            return M_points_by_subentity.at( 0 ).at( vertex );
         }
 
     matrix_type operator()( primal_space_type const& pset ) const
@@ -347,10 +356,132 @@ private:
     }
 
 private:
+    template<typename PointSetT>
+    uint16_type pointSetPtsPerVertex( PointSetT const& pset ) const
+    {
+        if constexpr ( requires { pset.runtimeNbPtsPerVertex(); } )
+            return static_cast<uint16_type>( pset.runtimeNbPtsPerVertex() );
+        else if constexpr ( requires { PointSetT::is_order_dynamic; PointSetT::Dim; } )
+        {
+            if constexpr ( PointSetT::is_order_dynamic && PointSetT::is_simplex )
+                return ::Feel::detail::simplexPerVertex( PointSetT::Dim, pset.order() );
+            else if constexpr ( PointSetT::is_order_dynamic )
+                return ::Feel::detail::hypercubePerVertex( PointSetT::Dim, pset.order() );
+            else
+                return static_cast<uint16_type>( PointSetT::nbPtsPerVertex );
+        }
+        else
+            return static_cast<uint16_type>( PointSetT::nbPtsPerVertex );
+    }
+
+    template<typename PointSetT>
+    uint16_type pointSetPtsPerEdge( PointSetT const& pset ) const
+    {
+        if constexpr ( requires { pset.runtimeNbPtsPerEdge(); } )
+            return static_cast<uint16_type>( pset.runtimeNbPtsPerEdge() );
+        else if constexpr ( requires { PointSetT::is_order_dynamic; PointSetT::Dim; } )
+        {
+            if constexpr ( PointSetT::is_order_dynamic && PointSetT::is_simplex )
+                return ::Feel::detail::simplexPerEdge( PointSetT::Dim, pset.order() );
+            else if constexpr ( PointSetT::is_order_dynamic )
+                return ::Feel::detail::hypercubePerEdge( PointSetT::Dim, pset.order() );
+            else
+                return static_cast<uint16_type>( PointSetT::nbPtsPerEdge );
+        }
+        else
+            return static_cast<uint16_type>( PointSetT::nbPtsPerEdge );
+    }
+
+    template<typename PointSetT>
+    uint16_type pointSetPtsPerFace( PointSetT const& pset ) const
+    {
+        if constexpr ( requires { pset.runtimeNbPtsPerFace(); } )
+            return static_cast<uint16_type>( pset.runtimeNbPtsPerFace() );
+        else if constexpr ( requires { PointSetT::is_order_dynamic; PointSetT::Dim; } )
+        {
+            if constexpr ( PointSetT::is_order_dynamic && PointSetT::is_simplex )
+                return ::Feel::detail::simplexPerFace( PointSetT::Dim, pset.order() );
+            else if constexpr ( PointSetT::is_order_dynamic )
+                return ::Feel::detail::hypercubePerFace( PointSetT::Dim, pset.order() );
+            else
+                return static_cast<uint16_type>( PointSetT::nbPtsPerFace );
+        }
+        else
+            return static_cast<uint16_type>( PointSetT::nbPtsPerFace );
+    }
+
+    template<typename PointSetT>
+    uint16_type pointSetPtsPerVolume( PointSetT const& pset ) const
+    {
+        if constexpr ( requires { pset.runtimeNbPtsPerVolume(); } )
+            return static_cast<uint16_type>( pset.runtimeNbPtsPerVolume() );
+        else if constexpr ( requires { PointSetT::is_order_dynamic; PointSetT::Dim; } )
+        {
+            if constexpr ( PointSetT::is_order_dynamic && PointSetT::is_simplex )
+                return ::Feel::detail::simplexPerVolume( PointSetT::Dim, pset.order() );
+            else if constexpr ( PointSetT::is_order_dynamic )
+                return ::Feel::detail::hypercubePerVolume( PointSetT::Dim, pset.order() );
+            else
+                return static_cast<uint16_type>( PointSetT::nbPtsPerVolume );
+        }
+        else
+            return static_cast<uint16_type>( PointSetT::nbPtsPerVolume );
+    }
+
+    template<typename PointSetT>
+    uint16_type subEntityPointCount( PointSetT const& pset, uint16_type topodim ) const
+    {
+        const auto ptsPerVertex = pointSetPtsPerVertex( pset );
+        const auto ptsPerEdge = pointSetPtsPerEdge( pset );
+        const auto ptsPerFace = pointSetPtsPerFace( pset );
+        const auto ptsPerVolume = pointSetPtsPerVolume( pset );
+
+        switch ( topodim )
+        {
+        case 0:
+            return ptsPerVertex;
+        case 1:
+            return static_cast<uint16_type>( 2 * ptsPerVertex + ptsPerEdge );
+        case 2:
+            if constexpr ( convex_type::is_simplex )
+                return static_cast<uint16_type>( 3 * ptsPerVertex + 3 * ptsPerEdge + ptsPerFace );
+            else
+                return static_cast<uint16_type>( 4 * ptsPerVertex + 4 * ptsPerEdge + ptsPerFace );
+        case 3:
+            if constexpr ( convex_type::is_simplex )
+                return static_cast<uint16_type>( 4 * ptsPerVertex + 6 * ptsPerEdge + 4 * ptsPerFace + ptsPerVolume );
+            else
+                return static_cast<uint16_type>( 8 * ptsPerVertex + 12 * ptsPerEdge + 6 * ptsPerFace + ptsPerVolume );
+        default:
+            return 0;
+        }
+    }
+
+    template<typename PointSetT>
+    void cacheSubEntityPoints( PointSetT const& pset )
+    {
+        M_points_by_subentity.clear();
+        M_points_by_subentity.resize( nDim + 1 );
+        for ( uint16_type d = 0; d < nDim; ++d )
+        {
+            auto const range = M_convex_ref.entityRange( d );
+            M_points_by_subentity[d].resize( range.end() );
+            auto const nSubEntityPoints = subEntityPointCount( pset, d );
+            for ( uint16_type e = range.begin(); e < range.end(); ++e )
+            {
+                if ( nSubEntityPoints == 0 )
+                    M_points_by_subentity[d][e].resize( nDim, 0, false );
+                else
+                    M_points_by_subentity[d][e] = pset.pointsBySubEntity( d, e, 1 );
+            }
+        }
+    }
+
     reference_convex_type M_convex_ref;
     std::vector<std::vector<uint16_type> > M_eid;
     points_type M_pts;
     std::vector<points_type> M_points_face;
+    std::vector<std::vector<points_type> > M_points_by_subentity;
     FunctionalSet<primal_space_type> M_fset;
     pointset_type M_pset;
 
@@ -527,8 +658,10 @@ public:
         requires is_dynamic_order<O>
     {
         const auto runtime_order = this->order();
-        return static_cast<uint16_type>(
-            ::Feel::detail::simplexTotal( nDim, runtime_order ) );
+        if constexpr ( convex_type::is_simplex )
+            return static_cast<uint16_type>( ::Feel::detail::simplexTotal( nDim, runtime_order ) );
+        else
+            return static_cast<uint16_type>( ::Feel::detail::hypercubeTotal( nDim, runtime_order ) );
     }
 
     /**
@@ -551,7 +684,10 @@ public:
     [[nodiscard]] uint16_type dofPerVertex() const noexcept
         requires is_dynamic_order<O>
     {
-        return ::Feel::detail::simplexPerVertex( nDim, this->order() );
+        if constexpr ( convex_type::is_simplex )
+            return ::Feel::detail::simplexPerVertex( nDim, this->order() );
+        else
+            return ::Feel::detail::hypercubePerVertex( nDim, this->order() );
     }
 
     /**
@@ -574,7 +710,10 @@ public:
     [[nodiscard]] uint16_type dofPerEdge() const noexcept
         requires is_dynamic_order<O>
     {
-        return ::Feel::detail::simplexPerEdge( nDim, this->order() );
+        if constexpr ( convex_type::is_simplex )
+            return ::Feel::detail::simplexPerEdge( nDim, this->order() );
+        else
+            return ::Feel::detail::hypercubePerEdge( nDim, this->order() );
     }
 
     /**
@@ -597,7 +736,10 @@ public:
     [[nodiscard]] uint16_type dofPerFace() const noexcept
         requires is_dynamic_order<O>
     {
-        return ::Feel::detail::simplexPerFace( nDim, this->order() );
+        if constexpr ( convex_type::is_simplex )
+            return ::Feel::detail::simplexPerFace( nDim, this->order() );
+        else
+            return ::Feel::detail::hypercubePerFace( nDim, this->order() );
     }
 
     /**
@@ -620,7 +762,10 @@ public:
     [[nodiscard]] uint16_type dofPerVolume() const noexcept
         requires is_dynamic_order<O>
     {
-        return ::Feel::detail::simplexPerVolume( nDim, this->order() );
+        if constexpr ( convex_type::is_simplex )
+            return ::Feel::detail::simplexPerVolume( nDim, this->order() );
+        else
+            return ::Feel::detail::hypercubePerVolume( nDim, this->order() );
     }
 
     /**
@@ -1164,16 +1309,37 @@ public:
     interpolateBasisFunction( ExprType&& expr, local_interpolants_type & Ihloc ) const
         {
             int nPoints = expr.nPoints();
-            CHECK( nLocalFaceDof == nPoints ) << nLocalFaceDof << " vs "<< nPoints;
+            const uint16_type rtDofPerVertex = runtimeDofPerVertex();
+            const uint16_type rtDofPerEdge = runtimeDofPerEdge();
+            const uint16_type rtDofPerFace = runtimeDofPerFace();
+            const uint16_type rtLocalFacetDof =
+                static_cast<uint16_type>( face_type::numVertices * rtDofPerVertex +
+                                          face_type::numEdges * rtDofPerEdge +
+                                          face_type::numFaces * rtDofPerFace );
+            CHECK( rtLocalFacetDof == nPoints ) << rtLocalFacetDof << " vs "<< nPoints;
             auto gmc = expr.geom();
-            uint16_type faceIdInElt = gmc->faceId();
-            std::vector<uint16_type> mapExprPointToDofPoint( nLocalFaceDof );
-            for ( int lfd = 0;lfd < nLocalFaceDof;++lfd )
+            uint16_type facetIdInElt = gmc->faceId();
+            std::vector<uint16_type> mapExprPointToDofPoint( rtLocalFacetDof );
+            for ( int lfd = 0;lfd < rtLocalFacetDof;++lfd )
             {
                 if ( reference_convex_type::nDim == 2 )
                 {
-                    if ( lfd < (face_type::numVertices * nDofPerVertex) )
-                        mapExprPointToDofPoint[lfd] = reference_convex_type::e2p(faceIdInElt,lfd);
+                    const uint16_type vertexBlock = static_cast<uint16_type>( face_type::numVertices * rtDofPerVertex );
+                    if ( lfd < vertexBlock )
+                    {
+                        const uint16_type facetVertex = static_cast<uint16_type>( lfd / rtDofPerVertex );
+                        const uint16_type vertexOrdinal = static_cast<uint16_type>( lfd % rtDofPerVertex );
+                        const uint16_type elementVertex = reference_convex_type::e2p( facetIdInElt, facetVertex );
+                        mapExprPointToDofPoint[lfd] = static_cast<uint16_type>( elementVertex * rtDofPerVertex + vertexOrdinal );
+                    }
+                    else if ( lfd < vertexBlock + face_type::numEdges * rtDofPerEdge )
+                    {
+                        const uint16_type edgeOrdinal = static_cast<uint16_type>( ( lfd - vertexBlock ) % rtDofPerEdge );
+                        mapExprPointToDofPoint[lfd] =
+                            static_cast<uint16_type>( reference_convex_type::numVertices * rtDofPerVertex +
+                                                      facetIdInElt * rtDofPerEdge +
+                                                      edgeOrdinal );
+                    }
                     else
                         CHECK( false ) << "TODO";
                 }

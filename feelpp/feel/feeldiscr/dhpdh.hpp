@@ -24,11 +24,14 @@
 #if !defined(FEELPP_DHPDH_HPP)
 #define FEELPP_DHPDH_HPP 1
 
+#include <feel/feeldiscr/dh.hpp>
 #include <feel/feelpoly/raviartthomas.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/productfunctionspaces.hpp>
 
 namespace Feel {
 
+#if FEELPP_ENABLE_LEGACY_COMPOSITE_FUNCTIONSPACE
 template<typename MeshType, int Order = Dynamic, typename T = double>
 using DhPdh_type = FunctionSpace<MeshType,
                                  bases<RaviartThomas<Order>,Lagrange<Order,Scalar,Discontinuous>>,
@@ -36,7 +39,36 @@ using DhPdh_type = FunctionSpace<MeshType,
 
 template<typename MeshType, int Order = Dynamic, typename T = double>
 using DhPdh_ptrtype = std::shared_ptr<DhPdh_type<MeshType,Order,T>>;
+#endif // FEELPP_ENABLE_LEGACY_COMPOSITE_FUNCTIONSPACE
 
+template<typename MeshType, int Order = Dynamic, typename T = double>
+using DhPdh_product_flux_space_type = RTh_type<MeshType,Order,T>;
+
+template<typename MeshType, int Order = Dynamic, typename T = double>
+using DhPdh_product_pressure_space_type = FunctionSpace<MeshType,
+                                                        bases<Lagrange<Order,Scalar,Discontinuous>>,
+                                                        T>;
+
+template<typename MeshType, int Order = Dynamic, typename T = double>
+using DhPdh_product_flux_space_ptrtype = std::shared_ptr<DhPdh_product_flux_space_type<MeshType,Order,T>>;
+
+template<typename MeshType, int Order = Dynamic, typename T = double>
+using DhPdh_product_pressure_space_ptrtype = std::shared_ptr<DhPdh_product_pressure_space_type<MeshType,Order,T>>;
+
+template<typename MeshType, int Order = Dynamic, typename T = double>
+using DhPdh_product_type = product_function_spaces_t<DhPdh_product_flux_space_ptrtype<MeshType,Order,T>,
+                                                     DhPdh_product_pressure_space_ptrtype<MeshType,Order,T>>;
+
+template<typename MeshType, int Order = Dynamic, typename T = double>
+using DhPdh_product_ptrtype = std::shared_ptr<DhPdh_product_type<MeshType,Order,T>>;
+
+template<typename MeshType, int Order = Dynamic, typename T = double>
+using DhPdhProduct_type = DhPdh_product_type<MeshType,Order,T>;
+
+template<typename MeshType, int Order = Dynamic, typename T = double>
+using DhPdhProduct_ptrtype = DhPdh_product_ptrtype<MeshType,Order,T>;
+
+#if FEELPP_ENABLE_LEGACY_COMPOSITE_FUNCTIONSPACE
 /**
 
    \code
@@ -57,7 +89,26 @@ DhPdh( std::shared_ptr<MeshType> mesh,
                                               _runtime_order=order,
                                               _extended_doftable=dte );
 }
+#endif // FEELPP_ENABLE_LEGACY_COMPOSITE_FUNCTIONSPACE
 
+template<int Order = Dynamic,typename MeshType, typename T = double>
+inline
+DhPdh_product_ptrtype<MeshType,Order,T>
+DhPdhProduct( std::shared_ptr<MeshType> mesh,
+              RuntimeOrder order,
+              std::vector<DofTableExtendedType> dte = std::vector<DofTableExtendedType>( 2, DofTableExtendedType::DEFAULT ) )
+{
+    CHECK( dte.size() == 2 ) << " vector activation for extended dof table must be equal to 2 but here " << dte.size();
+    using pressure_space_type = DhPdh_product_pressure_space_type<MeshType,Order,T>;
+    auto Dh = RTh<Order>( mesh, order, dte[0] );
+    auto Pd = pressure_space_type::New( _mesh=mesh,
+                                        _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
+                                        _runtime_order=order,
+                                        _extended_doftable=dte[1] );
+    return productFunctionSpacesPtr( Dh, Pd );
+}
+
+#if FEELPP_ENABLE_LEGACY_COMPOSITE_FUNCTIONSPACE
 template<int Order,typename MeshType, typename T = double>
 requires ( Order >= 0 )
 inline
@@ -70,6 +121,19 @@ DhPdh( std::shared_ptr<MeshType> mesh,
                                               _worldscomm=makeWorldsComm( 2,mesh->worldComm() ),
                                               _runtime_order=RuntimeOrder{ static_cast<uint16_type>( Order ) },
                                               _extended_doftable=dte );
+}
+#endif // FEELPP_ENABLE_LEGACY_COMPOSITE_FUNCTIONSPACE
+
+template<int Order,typename MeshType, typename T = double>
+requires ( Order >= 0 )
+inline
+DhPdh_product_ptrtype<MeshType,Order,T>
+DhPdhProduct( std::shared_ptr<MeshType> mesh,
+              std::vector<DofTableExtendedType> dte = std::vector<DofTableExtendedType>( 2, DofTableExtendedType::DEFAULT ) )
+{
+    return DhPdhProduct<Order,MeshType,T>( mesh,
+                                           RuntimeOrder{ static_cast<uint16_type>( Order ) },
+                                           dte );
 }
 
 

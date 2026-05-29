@@ -64,7 +64,9 @@
 #include <feel/feelpoly/functionals.hpp>
 #include <feel/feelpoly/functionals2.hpp>
 #include <feel/feelpoly/pointsetquadrature.hpp>
+#include <feel/feeldiscr/doflayout.hpp>
 #include <feel/feelpoly/fe.hpp>
+#include <feel/feelpoly/order.hpp>
 
 #include <feel/feelpoly/hcurlpolynomialset.hpp>
 
@@ -190,14 +192,14 @@ public:
         Pkp1_v_type Pkp1_v;
         vectorial_polynomialset_type Pk_v( Pkp1_v.polynomialsUpToDimension( dim_Pk ) );
 #if 1
-        LOG(INFO) << "[Nedelec1stKindset] Pk_v =" << Pk_v.coeff() << "\n";
+        VLOG(4) << "[Nedelec1stKindset] Pk_v =" << Pk_v.coeff() << "\n";
         VLOG(4) << "[Nedelec1stKindset] Pk_v =" << Pk_v.coeff() << "\n";
 #endif
         // P_k
         Pkp1_s_type Pkp1;
         scalar_polynomialset_type Pk ( Pkp1.polynomialsUpToDimension( dim_Pk ) );
 #if 1
-        LOG(INFO) << "[Nedelec1stKindset] Pk =" << Pk.coeff() << "\n";
+        VLOG(4) << "[Nedelec1stKindset] Pk =" << Pk.coeff() << "\n";
         VLOG(4) << "[Nedelec1stKindset] Pk(0) =" << Pk.polynomial( 0 ).coefficients() << "\n";
 #endif
 
@@ -221,10 +223,10 @@ public:
 
         //VLOG(4) << "[Nedelec1stKindPset] after xPkc = " << xPkc << "\n";
         vectorial_polynomialset_type xPk( typename super::basis_type(), xPkc, true );
-        LOG(INFO) << "[Nedelec1stKindset] xPk =" << xPk.coeff() << "\n";
+        VLOG(4) << "[Nedelec1stKindset] xPk =" << xPk.coeff() << "\n";
         //VLOG(4) << "[Nedelec1stKindPset] here 1\n";
         // (P_k)^d + x P_k
-        LOG(INFO) << "[Nedelec1stKindPset] Nedelec1stKind Poly coeff = " << unite( Pk_v, xPk ).coeff() << "\n";
+        VLOG(4) << "[Nedelec1stKindPset] Nedelec1stKind Poly coeff = " << unite( Pk_v, xPk ).coeff() << "\n";
         this->setCoefficient( unite( Pk_v, xPk ).coeff(), true );
         //VLOG(4) << "[Nedelec1stKindPset] here 2\n";
     }
@@ -751,16 +753,16 @@ public:
         VLOG(4) << " o- nbPtsPerVolume = " << ( int )nbPtsPerVolume << "\n";
         VLOG(4) << " o- nLocalDof      = " << nLocalDof << "\n";
 
-        LOG(INFO) << "Nedelec finite element(dual): \n";
-        LOG(INFO) << " o- dim   = " << nDim << "\n";
-        LOG(INFO) << " o- order = " << nOrder << "\n";
-        LOG(INFO) << " o- kind = " << static_cast<int>(kind) << "\n";
-        LOG(INFO) << " o- numPoints      = " << numPoints << "\n";
-        LOG(INFO) << " o- nbPtsPerVertex = " << ( int )nbPtsPerVertex << "\n";
-        LOG(INFO) << " o- nbPtsPerEdge   = " << ( int )nbPtsPerEdge << "\n";
-        LOG(INFO) << " o- nbPtsPerFace   = " << ( int )nbPtsPerFace << "\n";
-        LOG(INFO) << " o- nbPtsPerVolume = " << ( int )nbPtsPerVolume << "\n";
-        LOG(INFO) << " o- nLocalDof      = " << nLocalDof << "\n";
+        VLOG(4) << "Nedelec finite element(dual): \n";
+        VLOG(4) << " o- dim   = " << nDim << "\n";
+        VLOG(4) << " o- order = " << nOrder << "\n";
+        VLOG(4) << " o- kind = " << static_cast<int>(kind) << "\n";
+        VLOG(4) << " o- numPoints      = " << numPoints << "\n";
+        VLOG(4) << " o- nbPtsPerVertex = " << ( int )nbPtsPerVertex << "\n";
+        VLOG(4) << " o- nbPtsPerEdge   = " << ( int )nbPtsPerEdge << "\n";
+        VLOG(4) << " o- nbPtsPerFace   = " << ( int )nbPtsPerFace << "\n";
+        VLOG(4) << " o- nbPtsPerVolume = " << ( int )nbPtsPerVolume << "\n";
+        VLOG(4) << " o- nLocalDof      = " << nLocalDof << "\n";
 
         size_type nbDofPerFace = ( nDim == 2 )
             ? face_type::numEdges*nbPtsPerEdge
@@ -879,8 +881,8 @@ public:
                             q[i](2) = 0.5*solx(1,i) + 0.5*soly(1,i);
                         }
                 }
-            LOG(INFO) << "q0 = " << q[0] << std::endl;
-            LOG(INFO) << "q1 = " << q[1] << std::endl;
+            VLOG(4) << "q0 = " << q[0] << std::endl;
+            VLOG(4) << "q1 = " << q[1] << std::endl;
 
             // Compute and add associated functionnals ( \int (u.t) q[i], i=0,1 )
             // dcpe2_type __dcpe2_0( primal, dir, ublas::trans(Gt_ext), q[0]);
@@ -926,10 +928,10 @@ public:
 #endif
 
         VLOG(4) << "[Nedelec2ndKind Dual] done 3, n fset = " << fset.size() << std::endl;
-        LOG(INFO) << "[Nedelec2ndKind Dual] done 3, n fset = " << fset.size() << std::endl;
+        VLOG(4) << "[Nedelec2ndKind Dual] done 3, n fset = " << fset.size() << std::endl;
         M_fset.setFunctionalSet( fset );
         VLOG(4) << "[Nedelec2ndKind DUAL matrix] mat = " << M_fset.rep() << "\n";
-        LOG(INFO) << "[Nedelec2ndKind DUAL matrix] mat = " << M_fset.rep() << "\n";
+        VLOG(4) << "[Nedelec2ndKind DUAL matrix] mat = " << M_fset.rep() << "\n";
         VLOG(4) << "[Nedelec2ndKind Dual] done 4\n";
 
     }
@@ -941,7 +943,7 @@ public:
 
     points_type const& points() const
     {
-        LOG(INFO) << "ned2 points =" << M_pts << std::endl;
+        VLOG(4) << "ned2 points =" << M_pts << std::endl;
         return M_pts;
     }
 
@@ -1026,6 +1028,9 @@ class Nedelec
 {
 
 public:
+    static_assert( Kind == NedelecKind::NED1 || O == 0,
+                   "Nedelec second kind currently has validated dual moments only for the lowest order; higher-order NED2 is intentionally unsupported until full edge/face/interior moments are implemented." );
+
     typedef typename NedelecBase<N,O,Kind,T,TheTAG>::type super;
 
     BOOST_STATIC_ASSERT( N > 1 );
@@ -1170,6 +1175,22 @@ public:
             return localDofId;
         }
 
+    bool dofHasRepresentativePoint( uint16_type localDofId ) const override
+        {
+            (void)localDofId;
+            return false;
+        }
+
+    uint16_type dofFunctionalKind( uint16_type localDofId ) const override
+        {
+            auto const attachment = this->dofAttachment( localDofId );
+            if ( !attachment.isValid() )
+                return static_cast<uint16_type>( DofFunctionalKind::Other );
+            if ( static_cast<uint16_type>( attachment.entityDim ) == nDim )
+                return static_cast<uint16_type>( DofFunctionalKind::InteriorMoment );
+            return static_cast<uint16_type>( DofFunctionalKind::TangentialMoment );
+        }
+
     typename super::DofAttachment dofAttachment( uint16_type localDofId ) const override
         {
             // Nedelec is not a product space: local dof id is already the parent dof id.
@@ -1233,6 +1254,12 @@ public:
                 .ordinal = super::DofAttachment::invalid_id,
                 .kind = this->dofType( localDofId ) };
         }
+
+    template<typename ElementType>
+    [[nodiscard]] DofTransform dofTransform( ElementType const& element, uint16_type localDofId ) const
+    {
+        return finiteElementEntityOrientationTransform( *this, element, localDofId );
+    }
 
     //! \return the type of a local dof
     uint16_type dofType( uint16_type localDofId ) const override
@@ -1466,13 +1493,23 @@ template<int Order,
 class Nedelec
 {
 public:
+    static constexpr bool is_order_static = ( Order != Dynamic );
+    static constexpr bool is_order_dynamic = !is_order_static;
+    static constexpr int nOrder_v = Order;
+
     template<uint16_type N,
              uint16_type R = N,
              typename T = double,
              typename Convex=Simplex<N>>
     struct apply
     {
-        typedef fem::Nedelec<N,Order,Kind,T,TheTAG> result_type;
+        static_assert( is_order_static,
+                       "Nedelec<Dynamic> needs a dedicated FE-level runtime dispatch path; the static Nedelec factory cannot accept Dynamic as a uint16_type order." );
+        static_assert( Convex::is_simplex,
+                       "Nedelec hypercube support is not implemented in feelpoly; use simplex Nedelec or add a tensor-product H(curl) implementation first." );
+        static_assert( Kind == NedelecKind::NED1 || Order == 0,
+                       "Nedelec second kind higher-order dual moments are incomplete; only the lowest-order NED2 path is allowed." );
+        typedef fem::Nedelec<N,static_cast<uint16_type>( Order ),Kind,T,TheTAG> result_type;
         typedef result_type type;
     };
 
@@ -1483,9 +1520,9 @@ public:
     };
 
     //typedef Lagrange<Order,Scalar> component_basis_type;
-    typedef Lagrange<Order+1,Scalar> component_basis_type;
+    typedef Lagrange<( Order == Dynamic ? Dynamic : Order + 1 ),Scalar> component_basis_type;
 
-    static inline const uint16_type nOrder =  Order;
+    static inline const uint16_type nOrder = is_order_static ? static_cast<uint16_type>( Order ) : 0;
     static inline const NedelecKind kind =  Kind;
     static const uint16_type TAG = TheTAG;
 };

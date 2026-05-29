@@ -45,6 +45,7 @@
 
 #include <concepts>
 #include <memory>
+#include <type_traits>
 #include <feel/feelcore/concepts.hpp>
 
 namespace Feel
@@ -114,8 +115,18 @@ concept FunctionSpaceElementConcept = requires(T t) {
  */
 template <typename T>
 concept ProductSpaceConcept = requires(T t) {
-    typename T::spaces_tuple_type;
+    typename std::remove_cvref_t<T>::functionspace_type;
+    typename std::remove_cvref_t<T>::value_type;
+    typename std::remove_cvref_t<T>::element_type;
     { t.numberOfSpaces() } -> std::convertible_to<int>;
+    { t.nDof() } -> std::convertible_to<std::size_t>;
+    { t.nLocalDof() } -> std::convertible_to<std::size_t>;
+    { t.nDofStart(0) } -> std::convertible_to<std::size_t>;
+    { t.nLocalDofStart(0) } -> std::convertible_to<std::size_t>;
+    { t.blockDofStart(0) } -> std::convertible_to<std::size_t>;
+    { t.blockLocalDofStart(0) } -> std::convertible_to<std::size_t>;
+    t.blockMapPtr(0);
+    { t.element() } -> std::same_as<typename std::remove_cvref_t<T>::element_type>;
 };
 
 /**
@@ -123,7 +134,21 @@ concept ProductSpaceConcept = requires(T t) {
  */
 template <typename T>
 concept ProductSpacesConcept = ProductSpaceConcept<T> && requires {
-    typename T::spaces_array_type;
+    typename std::remove_cvref_t<T>::tuple_spaces_type;
+} && requires(T t) {
+    t.tupleSpaces();
+    t.template space<0>();
+};
+
+/**
+ * @brief An element owned by a product-space object.
+ */
+template <typename T>
+concept BlockElementConcept = requires(T t) {
+    typename std::remove_cvref_t<T>::functionspace_type;
+    typename std::remove_cvref_t<T>::value_type;
+    requires ProductSpaceConcept<typename std::remove_cvref_t<T>::functionspace_type>;
+    t.functionSpace();
 };
 
 //
@@ -376,6 +401,38 @@ concept CompositeSpaceConcept = FunctionSpaceConcept<T> && requires {
 };
 
 /**
+ * @brief A legacy composite implemented by multi-basis FunctionSpace internals.
+ *
+ * New mixed-space code should avoid this concept and use product-backed
+ * composition instead.
+ */
+template <typename T>
+concept LegacyCompositeFunctionSpaceConcept =
+    CompositeSpaceConcept<std::remove_cvref_t<T>> && requires {
+        { std::remove_cvref_t<T>::uses_internal_composite } -> std::convertible_to<bool>;
+        { std::remove_cvref_t<T>::is_legacy_composite } -> std::convertible_to<bool>;
+        requires (std::remove_cvref_t<T>::uses_internal_composite == true);
+        requires (std::remove_cvref_t<T>::is_legacy_composite == true);
+    };
+
+/**
+ * @brief A composite facade backed by product.hpp/ProductFunctionSpaces.
+ *
+ * This is the preferred compatibility shape for mixed spaces that still need
+ * FunctionSpace-like accessors while storing composition outside FunctionSpace.
+ */
+template <typename T>
+concept ProductBackedCompositeSpaceConcept =
+    CompositeSpaceConcept<std::remove_cvref_t<T>> &&
+    ProductSpaceConcept<std::remove_cvref_t<T>> &&
+    requires {
+        { std::remove_cvref_t<T>::uses_internal_composite } -> std::convertible_to<bool>;
+        { std::remove_cvref_t<T>::is_product_backed_composite } -> std::convertible_to<bool>;
+        requires (std::remove_cvref_t<T>::uses_internal_composite == false);
+        requires (std::remove_cvref_t<T>::is_product_backed_composite == true);
+    };
+
+/**
  * @brief A non-composite (simple) function space
  *
  * @details Simple function spaces represent a single approximation space.
@@ -386,6 +443,23 @@ template <typename T>
 concept NonCompositeSpaceConcept = FunctionSpaceConcept<T> && requires {
     { T::is_composite } -> std::convertible_to<bool>;
     requires (T::is_composite == false);
+};
+
+/**
+ * @brief An explicit mortar function space.
+ *
+ * @details Mortar spaces are non-composite spaces with a mortar construction
+ * policy.  New code should depend on this concept instead of detecting raw
+ * FunctionSpace<..., mortars<Mortar>> instantiations.
+ */
+template <typename T>
+concept MortarFunctionSpaceConcept = NonCompositeSpaceConcept<T> && requires {
+    typename std::remove_cvref_t<T>::mortar_policy_type;
+    typename std::remove_cvref_t<T>::mortar_0_type;
+    { std::remove_cvref_t<T>::is_mortar } -> std::convertible_to<bool>;
+    { std::remove_cvref_t<T>::is_explicit_mortar_space } -> std::convertible_to<bool>;
+    requires (std::remove_cvref_t<T>::is_mortar == true);
+    requires (std::remove_cvref_t<T>::is_explicit_mortar_space == true);
 };
 
 /**
@@ -711,6 +785,9 @@ constexpr bool is_shape_3d_v = Shape3D<T>;
 // Function space property bridges
 template <typename T>
 constexpr bool is_composite_space_v = CompositeSpaceConcept<T>;
+
+template <typename T>
+constexpr bool is_mortar_space_v = MortarFunctionSpaceConcept<T>;
 
 template <typename T>
 constexpr bool is_modal_basis_v = ModalBasisSpaceConcept<T>;
