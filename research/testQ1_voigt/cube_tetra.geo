@@ -28,13 +28,17 @@ Extrude {0, 0, epaisseur} {
 Transfinite Curve {1,2,3,4} = 1 Using Progression 1;
 
 
+Physical Surface("ForceApply") = {3};
+Physical Surface("Dirichlet") = {5};
+
+
 Physical Volume("Omega") = {1};
 
-Physical Surface("XPlus") = {3};
-Physical Surface("XMoins") = {5};
+// Physical Surface("XPlus") = {3};
+// Physical Surface("XMoins") = {5};
 
-Physical Surface("YPlus") = {4};
-Physical Surface("YMoins") = {2};
+// Physical Surface("YPlus") = {4};
+// Physical Surface("YMoins") = {2};
 
-Physical Surface("ZMoins") = {1};
-Physical Surface("ZPlus") = {6};
+// Physical Surface("ZMoins") = {1};
+// Physical Surface("ZPlus") = {6};

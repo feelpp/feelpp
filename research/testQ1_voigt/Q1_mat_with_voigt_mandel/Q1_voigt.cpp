@@ -119,6 +119,7 @@ int main(int argc, char **argv)
         // std::cout << "Vecteur en notation de Voigt : " << vecVoigt(0) << ", " << vecVoigt(1) << ", " << vecVoigt(2) << ", " << vecVoigt(3) << ", " << vecVoigt(4) << ", " << vecVoigt(5) << std::endl;
 
 
+
         auto vecVoigt = voigt_vec<3>( cst(1.0), cst(2.0), cst(3.0), cst(4.0), cst(5.0), cst(6.0));
         auto devoigt = unvoigt( vecVoigt );
 
@@ -129,6 +130,19 @@ int main(int argc, char **argv)
         auto diff_devoigt = devoigt - matAttendue;
 
         std::cout << "Test unvoigt_vec : " << integrate( _range = elements( mesh ), _expr = inner( diff_devoigt, diff_devoigt ) ).evaluate()(0,0) << std::endl;
+
+
+
+        auto vecMandel = mandel_vec<3>( cst(1.0), cst(2.0), cst(3.0), cst(4.0), cst(5.0), cst(6.0));
+        auto deMandel = unmandel( vecMandel );
+
+        auto matAttendue = mat<3, 3>( cst( 1.0 ), cst( 4.0 ), cst( 5.0 ),
+                                      cst( 4.0 ), cst( 2.0 ), cst( 6.0 ),
+                                      cst( 5.0 ), cst( 6.0 ), cst( 3.0 ) );
+
+        auto diff_deMandel = deMandel - matAttendue;
+
+        std::cout << "Test unMandel_vec : " << integrate( _range = elements( mesh ), _expr = inner( diff_deMandel, diff_deMandel ) ).evaluate()(0,0) << std::endl;
 
 
 
