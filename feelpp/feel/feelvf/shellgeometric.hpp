@@ -598,6 +598,89 @@ struct ShellJacobian0Accessor
     static decltype(auto) get( TensorType const& data ) { return ( data.jacobian0 ); }
 };
 
+template <typename TensorType>
+struct ShellBxAccessor
+{
+    static decltype(auto) get( TensorType const& data ) { return ( data.bx ); }
+};
+
+template <typename TensorType>
+struct ShellByAccessor
+{
+    static decltype(auto) get( TensorType const& data ) { return ( data.by ); }
+};
+
+template <typename TensorType>
+struct ShellBzAccessor
+{
+    static decltype(auto) get( TensorType const& data ) { return ( data.bz ); }
+};
+
+// template <typename TensorType>
+// struct ShellHallquistAccessor       // on ajoute ça ? ou peut-être pas nécessaire, on peut juste utiliser bx, by, bz directement sans donner le nom de Hallquist
+// {
+//     static decltype(auto) get( TensorType const& data ) { return ( vector(data.bx, data.by, data.bz) ); }
+// };
+
+template <typename TensorType>
+struct ShellVgammaAccessor     
+{
+    static decltype(auto) get( TensorType const& data ) { return ( data.vgamma ); }
+};
+
+// les regrouper en une seule matrice ?
+template <typename TensorType>
+struct ShellJaAccessor
+{
+    static decltype(auto) get( TensorType const& data ) { return ( data.Ja ); }
+};
+
+template <typename TensorType>
+struct ShellJbAccessor
+{
+    static decltype(auto) get( TensorType const& data ) { return ( data.Jb ); }
+};
+
+template <typename TensorType>
+struct ShellJcAccessor
+{
+    static decltype(auto) get( TensorType const& data ) { return ( data.Jc ); }
+};
+
+template <typename TensorType>
+struct ShellJdAccessor
+{
+    static decltype(auto) get( TensorType const& data ) { return ( data.Jd ); }
+};
+
+template <typename TensorType>
+struct ShellInvJaAccessor
+{
+    static decltype(auto) get( TensorType const& data ) { return ( data.invJa ); }
+};
+
+template <typename TensorType>
+struct ShellInvJbAccessor
+{
+    static decltype(auto) get( TensorType const& data ) { return ( data.invJb ); }
+};
+
+template <typename TensorType>
+struct ShellInvJcAccessor
+{
+    static decltype(auto) get( TensorType const& data ) { return ( data.invJc ); }
+};
+
+template <typename TensorType>
+struct ShellInvJdAccessor
+{
+    static decltype(auto) get( TensorType const& data ) { return ( data.invJd ); }
+};
+
+
+
+
+
 template<typename Geo_t, typename Basis_i_t, typename Basis_j_t, typename Derived, template <typename> typename AccessorT>
 struct ShellCellScalarTensor : public ShellCellGeometryTensorBase<Geo_t, Basis_i_t, Basis_j_t>
 {
@@ -790,6 +873,114 @@ struct ShellCellVectorTensor : public ShellCellGeometryTensorBase<Geo_t, Basis_i
     }
 };
 
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+template<typename Geo_t, typename Basis_i_t, typename Basis_j_t, typename Derived, template <typename> typename AccessorT>
+struct ShellCellHallquistTensor : public ShellCellGeometryTensorBase<Geo_t, Basis_i_t, Basis_j_t>
+{
+    using base_type = ShellCellGeometryTensorBase<Geo_t, Basis_i_t, Basis_j_t>;
+    using expression_type = Derived;
+    using gmc_type = typename base_type::gmc_type;
+    using value_type = typename expression_type::value_type;
+    using shape = Shape<gmc_type::NDim, Vectorial, false, false>;     // mais Vectorial est de taille dim=3 ...
+    // using shape = Shape<gmc_type::NDim, Scalar, false, false>;     // nDim -> 8 ? ou 1 ? pcq bx -> phix 
+    // using shape = Shape<8, Scalar, false, false>;
+    using hallquist_type = Eigen::Matrix<value_type, 8, 1>;
+
+    struct is_zero
+    {
+        static inline const bool value = false;
+    };
+
+    ShellCellHallquistTensor( expression_type const&, Geo_t const& geom, Basis_i_t const&, Basis_j_t const& )
+    {
+        this->update( geom );
+    }
+
+    ShellCellHallquistTensor( expression_type const&, Geo_t const& geom, Basis_i_t const& )
+    {
+        this->update( geom );
+    }
+
+    ShellCellHallquistTensor( expression_type const&, Geo_t const& geom )
+    {
+        this->update( geom );
+    }
+
+    template<typename TheExprExpandedType, typename TupleTensorSymbolsExprType, typename... TheArgsType>
+    ShellCellHallquistTensor( std::true_type, TheExprExpandedType const&, TupleTensorSymbolsExprType&,
+                           expression_type const& expr, Geo_t const& geom, TheArgsType const&... args )
+        :
+        ShellCellHallquistTensor( expr, geom, args... )
+    {
+    }
+
+    void update( Geo_t const& geom, Basis_i_t const&, Basis_j_t const& )
+    {
+        this->update( geom );
+    }
+
+    void update( Geo_t const& geom, Basis_i_t const& )
+    {
+        this->update( geom );
+    }
+
+    void update( Geo_t const& geom )
+    {
+        this->updateFromGeom( geom );
+    }
+
+    template<typename TheExprExpandedType, typename TupleTensorSymbolsExprType, typename... TheArgsType>
+    void update( std::true_type, TheExprExpandedType const&, TupleTensorSymbolsExprType&,
+                 Geo_t const& geom, TheArgsType const&... )
+    {
+        this->update( geom );
+    }
+
+    template<typename... CTX>
+    void updateContext( CTX const&... ctx )
+    {
+        this->updateFromContext( ctx... );
+    }
+
+    value_type evalijq( uint16_type, uint16_type, uint16_type c1, uint16_type, uint16_type ) const
+    {
+        return AccessorT<typename base_type::geometry_data_type>::get( this->M_data )( c1 );
+    }
+
+    Eigen::Map<const hallquist_type> evalijq( uint16_type, uint16_type, uint16_type ) const
+    {
+        return Eigen::Map<const hallquist_type>( AccessorT<typename base_type::geometry_data_type>::get( this->M_data ).data() );
+    }
+
+    template<int PatternContext>
+    value_type evalijq( uint16_type, uint16_type, uint16_type c1, uint16_type, uint16_type,
+                        mpl::int_<PatternContext> ) const
+    {
+        return AccessorT<typename base_type::geometry_data_type>::get( this->M_data )( c1 );
+    }
+
+    value_type evaliq( uint16_type, uint16_type c1, uint16_type, uint16_type ) const
+    {
+        return AccessorT<typename base_type::geometry_data_type>::get( this->M_data )( c1 );
+    }
+
+    Eigen::Map<const hallquist_type> evaliq( uint16_type, uint16_type ) const
+    {
+        return Eigen::Map<const hallquist_type>( AccessorT<typename base_type::geometry_data_type>::get( this->M_data ).data() );
+    }
+
+    value_type evalq( uint16_type c1, uint16_type, uint16_type ) const
+    {
+        return AccessorT<typename base_type::geometry_data_type>::get( this->M_data )( c1 );
+    }
+
+    Eigen::Map<const hallquist_type> evalq( uint16_type ) const
+    {
+        return Eigen::Map<const hallquist_type>( AccessorT<typename base_type::geometry_data_type>::get( this->M_data ).data() );
+    }
+};
+
 template<typename Geo_t, typename Basis_i_t, typename Basis_j_t, typename Derived, template <typename> typename AccessorT>
 struct ShellCellMatrixTensor : public ShellCellGeometryTensorBase<Geo_t, Basis_i_t, Basis_j_t>
 {
@@ -894,6 +1085,112 @@ struct ShellCellMatrixTensor : public ShellCellGeometryTensorBase<Geo_t, Basis_i
     }
 };
 
+
+template<typename Geo_t, typename Basis_i_t, typename Basis_j_t, typename Derived, template <typename> typename AccessorT>
+struct ShellCellMatrix2Tensor : public ShellCellGeometryTensorBase<Geo_t, Basis_i_t, Basis_j_t>
+{
+    using base_type = ShellCellGeometryTensorBase<Geo_t, Basis_i_t, Basis_j_t>;
+    using expression_type = Derived;
+    using gmc_type = typename base_type::gmc_type;
+    using value_type = typename expression_type::value_type;
+    using shape = Shape<gmc_type::NDim, Tensor2, false, false>;    // quel type ?
+    using matrix_type = Eigen::Matrix<value_type, 2, 2>;
+
+    struct is_zero
+    {
+        static inline const bool value = false;
+    };
+
+    ShellCellMatrix2Tensor( expression_type const&, Geo_t const& geom, Basis_i_t const&, Basis_j_t const& )
+    {
+        this->update( geom );
+    }
+
+    ShellCellMatrix2Tensor( expression_type const&, Geo_t const& geom, Basis_i_t const& )
+    {
+        this->update( geom );
+    }
+
+    ShellCellMatrix2Tensor( expression_type const&, Geo_t const& geom )
+    {
+        this->update( geom );
+    }
+
+    template<typename TheExprExpandedType, typename TupleTensorSymbolsExprType, typename... TheArgsType>
+    ShellCellMatrix2Tensor( std::true_type, TheExprExpandedType const&, TupleTensorSymbolsExprType&,
+                           expression_type const& expr, Geo_t const& geom, TheArgsType const&... args )
+        :
+        ShellCellMatrix2Tensor( expr, geom, args... )
+    {
+    }
+
+    void update( Geo_t const& geom, Basis_i_t const&, Basis_j_t const& )
+    {
+        this->update( geom );
+    }
+
+    void update( Geo_t const& geom, Basis_i_t const& )
+    {
+        this->update( geom );
+    }
+
+    void update( Geo_t const& geom )
+    {
+        this->updateFromGeom( geom );
+    }
+
+    template<typename TheExprExpandedType, typename TupleTensorSymbolsExprType, typename... TheArgsType>
+    void update( std::true_type, TheExprExpandedType const&, TupleTensorSymbolsExprType&,
+                 Geo_t const& geom, TheArgsType const&... )
+    {
+        this->update( geom );
+    }
+
+    template<typename... CTX>
+    void updateContext( CTX const&... ctx )
+    {
+        this->updateFromContext( ctx... );
+    }
+
+    value_type evalijq( uint16_type, uint16_type, uint16_type c1, uint16_type c2, uint16_type ) const
+    {
+        return AccessorT<typename base_type::geometry_data_type>::get( this->M_data )( c1, c2 );
+    }
+
+    template<int PatternContext>
+    value_type evalijq( uint16_type, uint16_type, uint16_type c1, uint16_type c2, uint16_type,
+                        mpl::int_<PatternContext> ) const
+    {
+        return AccessorT<typename base_type::geometry_data_type>::get( this->M_data )( c1, c2 );
+    }
+
+    value_type evaliq( uint16_type, uint16_type c1, uint16_type c2, uint16_type ) const
+    {
+        return AccessorT<typename base_type::geometry_data_type>::get( this->M_data )( c1, c2 );
+    }
+
+    value_type evalq( uint16_type c1, uint16_type c2, uint16_type ) const
+    {
+        return AccessorT<typename base_type::geometry_data_type>::get( this->M_data )( c1, c2 );
+    }
+
+    Eigen::Map<const matrix_type> evalijq( uint16_type, uint16_type, uint16_type ) const
+    {
+        return Eigen::Map<const matrix_type>( AccessorT<typename base_type::geometry_data_type>::get( this->M_data ).data() );
+    }
+
+    Eigen::Map<const matrix_type> evaliq( uint16_type, uint16_type ) const
+    {
+        return Eigen::Map<const matrix_type>( AccessorT<typename base_type::geometry_data_type>::get( this->M_data ).data() );
+    }
+
+    Eigen::Map<const matrix_type> evalq( uint16_type ) const
+    {
+        return Eigen::Map<const matrix_type>( AccessorT<typename base_type::geometry_data_type>::get( this->M_data ).data() );
+    }
+};
+
+
 template <typename Derived, template <typename> typename AccessorT>
 class ShellCellScalarTerminal : public ShellCellTerminalBase<Derived>
 {
@@ -927,6 +1224,21 @@ public:
 };
 
 template <typename Derived, template <typename> typename AccessorT>
+class ShellCellHallquistTerminal : public ShellCellTerminalBase<Derived>
+{
+public:
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const&, WorldComm const&, std::string const&,
+               TheSymbolExprType const& ) const
+    {
+        return vector_zero();      // mais quelle dim ? sinon faire à la main vec( cst( value_type( 0 ) ) )
+    }
+
+    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
+    using tensor = ShellCellHallquistTensor<Geo_t, Basis_i_t, Basis_j_t, Derived, AccessorT>;
+};
+
+template <typename Derived, template <typename> typename AccessorT>
 class ShellCellMatrixTerminal : public ShellCellTerminalBase<Derived>
 {
 public:
@@ -939,6 +1251,21 @@ public:
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
     using tensor = ShellCellMatrixTensor<Geo_t, Basis_i_t, Basis_j_t, Derived, AccessorT>;
+};
+
+template <typename Derived, template <typename> typename AccessorT>
+class ShellCellMatrix2Terminal : public ShellCellTerminalBase<Derived>
+{
+public:
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const&, WorldComm const&, std::string const&,
+               TheSymbolExprType const& ) const
+    {
+        return zero<2,2>();
+    }
+
+    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
+    using tensor = ShellCellMatrix2Tensor<Geo_t, Basis_i_t, Basis_j_t, Derived, AccessorT>;
 };
 } // namespace detail
 
@@ -973,6 +1300,55 @@ class ShellNormal : public detail::ShellCellVectorTerminal<ShellNormal, detail::
 class ShellFrame : public detail::ShellCellMatrixTerminal<ShellFrame, detail::ShellFrameAccessor>
 {
 };
+
+class ShellBx : public detail::ShellCellHallquistTerminal<ShellBx, detail::ShellBxAccessor>
+{
+};
+
+class ShellBy : public detail::ShellCellHallquistTerminal<ShellBy, detail::ShellByAccessor>
+{
+};
+
+class ShellBz : public detail::ShellCellHallquistTerminal<ShellBz, detail::ShellBzAccessor>
+{
+};
+
+class ShellVgamma : public detail::ShellCellVectorTerminal<ShellVgamma, detail::ShellVgammaAccessor> // hallquist*4
+{
+};
+
+class ShellJa : public detail::ShellCellMatrix2Terminal<ShellJa, detail::ShellJaAccessor>
+{
+};
+
+class ShellJb : public detail::ShellCellMatrix2Terminal<ShellJb, detail::ShellJbAccessor>
+{
+};
+
+class ShellJc : public detail::ShellCellMatrix2Terminal<ShellJc, detail::ShellJcAccessor>
+{
+};
+
+class ShellJd : public detail::ShellCellMatrix2Terminal<ShellJd, detail::ShellJdAccessor>
+{
+};
+
+class ShellInvJa : public detail::ShellCellMatrixTerminal<ShellInvJa, detail::ShellInvJaAccessor>
+{
+};
+
+class ShellInvJb : public detail::ShellCellMatrixTerminal<ShellInvJb, detail::ShellInvJbAccessor>
+{
+};
+
+class ShellInvJc : public detail::ShellCellMatrixTerminal<ShellInvJc, detail::ShellInvJcAccessor>
+{
+};
+
+class ShellInvJd : public detail::ShellCellMatrixTerminal<ShellInvJd, detail::ShellInvJdAccessor>
+{
+};
+
 
 inline
 Expr<Xi>
@@ -1049,6 +1425,91 @@ Expr<ShellFrame>
 shellFrame()
 {
     return Expr<ShellFrame>( ShellFrame() );
+}
+
+//shellNormal à ajouter aussi ?
+inline
+Expr<ShellBx>
+shellBx()
+{
+    return Expr<ShellBx>( ShellBx() );
+}
+
+inline
+Expr<ShellBy>
+shellBy()
+{
+    return Expr<ShellBy>( ShellBy() );
+}
+
+inline
+Expr<ShellBz>
+shellBz()
+{
+    return Expr<ShellBz>( ShellBz() );
+}
+
+inline
+Expr<ShellVgamma>
+shellVgamma()    // mettre pour qu'on l'appelle avec un idx ou on sépare gamma1, ..., gamma4 et on les appelle séparemment
+{
+    return Expr<ShellVgamma>( ShellVgamma() );
+}
+
+inline
+Expr<ShellJa>
+shellJa()
+{
+    return Expr<ShellJa>( ShellJa() );
+}
+
+inline
+Expr<ShellJb>
+shellJb()
+{
+    return Expr<ShellJb>( ShellJb() );
+}
+
+inline
+Expr<ShellJc>
+shellJc()
+{
+    return Expr<ShellJc>( ShellJc() );
+}
+
+inline
+Expr<ShellJd>
+shellJd()
+{
+    return Expr<ShellJd>( ShellJd() );
+}
+
+inline
+Expr<ShellInvJa>
+shellInvJa()
+{
+    return Expr<ShellInvJa>( ShellInvJa() );
+}
+
+inline
+Expr<ShellInvJb>
+shellInvJb()
+{
+    return Expr<ShellInvJb>( ShellInvJb() );
+}
+
+inline
+Expr<ShellInvJc>
+shellInvJc()
+{
+    return Expr<ShellInvJc>( ShellInvJc() );
+}
+
+inline
+Expr<ShellInvJd>
+shellInvJd()
+{
+    return Expr<ShellInvJd>( ShellInvJd() );
 }
 
 } // namespace vf
