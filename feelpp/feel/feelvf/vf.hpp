@@ -58,6 +58,7 @@
 //#include <feel/feelvf/operators3.hpp>
 #include <feel/feelvf/geometricdata.hpp>
 #include <feel/feelvf/shellgeometric.hpp>
+#include <feel/feelvf/sb9.hpp>
 #include <feel/feelvf/stdmathfunctors.hpp>
 #include <feel/feelvf/trace.hpp>
 #include <feel/feelvf/det.hpp>
