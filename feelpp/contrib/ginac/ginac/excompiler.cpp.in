@@ -331,8 +331,7 @@ public:
 	 * empty, a unique random name is produced and used.
 	 *
 	 * For user-provided filenames, use as-is to enable caching of compiled
-	 * expressions. Rank 0 compiles and broadcasts the filename to other ranks.
-	 * Race conditions are handled by file locking in compile_src_file().
+	 * expressions. Race conditions are handled by file locking.
 	 */
 	void create_src_file(std::string& filename, std::ofstream& ofs)
 		{
@@ -351,9 +350,7 @@ public:
 				ofs.open(filename.c_str(), std::ios::out | std::ios::trunc);
 				delete[] new_filename;
 			} else {
-				// User-provided filename: use as-is for caching
-				// Rank 0 compiles and broadcasts filename to other ranks
-				// File locking in compile_src_file() handles race conditions
+				// User-provided filename: use as-is for caching.
 				ofs.open(filename.c_str(), std::ios::out | std::ios::trunc);
 			}
 			if (!ofs) {
@@ -578,8 +575,9 @@ void compile_ex(const ex& expr, const symbol& sym, FUNCP_1P& fp, const std::stri
 	std::string unique_filename = filename;
 
 	boost::mpi::communicator world;
+	bool doCompile = filename.empty() ? ( world.rank() == 0 ) : true;
 
-	if( world.rank() == 0 )
+	if( doCompile )
 	{
 		std::unique_ptr<FileLock> source_lock;
 		if (!filename.empty()) {
@@ -599,8 +597,9 @@ void compile_ex(const ex& expr, const symbol& sym, FUNCP_1P& fp, const std::stri
 
 		unique_filename = global_excompiler.compile_src_file(unique_filename, filename.empty(), filename.empty());
 	}
-	world.barrier(); // Waiting for proc 0 to ensure the compilation step is OK
-	boost::mpi::broadcast( world, unique_filename, 0);
+	world.barrier(); // Waiting for compilation steps to finish before linking.
+	if ( filename.empty() )
+		boost::mpi::broadcast( world, unique_filename, 0);
 
 	// This is not standard compliant! ... no conversion between
 	// pointer-to-functions and pointer-to-objects ...
@@ -616,8 +615,9 @@ void compile_ex(const ex& expr, const symbol& sym1, const symbol& sym2, FUNCP_2P
 	std::string unique_filename = filename;
 
 	boost::mpi::communicator world;
+	bool doCompile = filename.empty() ? ( world.rank() == 0 ) : true;
 
-	if( world.rank() == 0 )
+	if( doCompile )
 	{
 		std::unique_ptr<FileLock> source_lock;
 		if (!filename.empty()) {
@@ -637,8 +637,9 @@ void compile_ex(const ex& expr, const symbol& sym1, const symbol& sym2, FUNCP_2P
 
 		unique_filename = global_excompiler.compile_src_file(unique_filename, filename.empty(), filename.empty());
 	}
-	world.barrier(); // Waiting for proc 0 to ensure the compilation step is OK
-	boost::mpi::broadcast( world, unique_filename, 0);
+	world.barrier(); // Waiting for compilation steps to finish before linking.
+	if ( filename.empty() )
+		boost::mpi::broadcast( world, unique_filename, 0);
 
 	// This is not standard compliant! ... no conversion between
 	// pointer-to-functions and pointer-to-objects ...
@@ -664,7 +665,7 @@ void compile_ex(const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::st
 	std::string unique_filename = filename;
 
 	boost::mpi::communicator world;
-	bool doCompile = world.rank() == 0;
+	bool doCompile = filename.empty() ? ( world.rank() == 0 ) : true;
 
 	if ( doCompile )
 	{
@@ -688,8 +689,8 @@ void compile_ex(const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::st
 		unique_filename = global_excompiler.compile_src_file(unique_filename, filename.empty(), filename.empty(), filename_is_content_addressed);
 	}
 
-	world.barrier(); // Waiting for proc 0 to ensure the compilation step is OK
-	if ( filename.empty() || !filename_is_content_addressed )
+	world.barrier(); // Waiting for compilation steps to finish before linking.
+	if ( filename.empty() )
 		boost::mpi::broadcast( world, unique_filename, 0);
 	else
 		unique_filename = filename;
