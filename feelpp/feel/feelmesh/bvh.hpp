@@ -111,7 +111,8 @@ public:
     using index_type = typename mesh_entity_type::index_type;
     static constexpr uint16_type nDim = mesh_entity_type::nDim;
     static constexpr uint16_type nRealDim = mesh_entity_type::nRealDim;
-    using vector_realdim_type = Eigen::Matrix<double,nRealDim,1>;
+    using value_type = double;
+    using vector_realdim_type = Eigen::Matrix<value_type,nRealDim,1>;
     using ray_type = BVHRay<nRealDim>;
 
 
@@ -245,6 +246,7 @@ public:
             bool useRobustTraversal = args.get_else(_robust,true);
             IntersectContext ctx = args.get_else(_context,IntersectContext::closest);
             bool parallel = args.get_else(_parallel,this->worldComm().size() > 1);
+            value_type tolerance = args.get_else(_tolerance,std::numeric_limits<value_type>::epsilon());
 
             //bool closestOnly = ctx == IntersectContext::closest;
             using napp_ray_type = std::decay_t<decltype(ray)>;
@@ -256,25 +258,25 @@ public:
             case IntersectContext::closest:
             {
                 if ( useRobustTraversal )
-                    ret = intersectGenericImpl<IntersectContext::closest,true>( ray, parallel );
+                    ret = intersectGenericImpl<IntersectContext::closest,true>( ray, tolerance, parallel );
                 else
-                    ret = intersectGenericImpl<IntersectContext::closest,false>( ray, parallel);
+                    ret = intersectGenericImpl<IntersectContext::closest,false>( ray, tolerance, parallel);
                 break;
             }
             case IntersectContext::anyHint:
             {
                 if ( useRobustTraversal )
-                    ret = intersectGenericImpl<IntersectContext::anyHint,true>( ray, parallel );
+                    ret = intersectGenericImpl<IntersectContext::anyHint,true>( ray, tolerance, parallel );
                 else
-                    ret = intersectGenericImpl<IntersectContext::anyHint,false>( ray, parallel );
+                    ret = intersectGenericImpl<IntersectContext::anyHint,false>( ray, tolerance, parallel );
                 break;
             }
             case IntersectContext::all:
             {
                 if ( useRobustTraversal )
-                    ret = intersectGenericImpl<IntersectContext::all,true>( ray, parallel );
+                    ret = intersectGenericImpl<IntersectContext::all,true>( ray, tolerance, parallel );
                 else
-                    ret = intersectGenericImpl<IntersectContext::all,false>( ray, parallel );
+                    ret = intersectGenericImpl<IntersectContext::all,false>( ray, tolerance, parallel );
                 break;
             }
             }
@@ -285,7 +287,7 @@ public:
 
     template <IntersectContext Ctx,bool useRobustTraversal,typename RayType>
     std::vector<std::vector<rayintersection_result_type>>
-    intersectGenericImpl( RayType const& ray, bool parallel );
+    intersectGenericImpl( RayType const& ray, value_type tolerance, bool parallel );
 
 protected:
 
@@ -298,7 +300,7 @@ protected:
             return ranks;
         }
 
-    virtual std::vector<rayintersection_result_type> intersectSequential( ray_type const& rayon, bool useRobustTraversal = true ) = 0;
+    virtual std::vector<rayintersection_result_type> intersectSequential( ray_type const& rayon, value_type tolerance, bool useRobustTraversal = true ) = 0;
 
     template <typename RangeType>
     void
@@ -331,7 +333,7 @@ class BVH_ThirdParty : public BVH<MeshEntityType>
     using vector_realdim_type = typename super_type::vector_realdim_type;
     static constexpr uint16_type nRealDim = super_type::nRealDim;
 
-    using value_type = double;
+    using value_type = typename super_type::value_type;
     using node_type = bvh::v2::Node<value_type, nRealDim>;
     using backend_bvh_type = bvh::v2::Bvh<node_type>;
     using backend_vector_realdim_type = bvh::v2::Vec<value_type, nRealDim>;
@@ -505,7 +507,7 @@ public:
 
     template <typename BVH<MeshEntityType>::IntersectContext Ctx,bool useRobustTraversal,typename RayType>
     std::vector<std::vector<rayintersection_result_type>>
-    intersectFullImpl( RayType const& ray, bool parallel )
+    intersectFullImpl( RayType const& ray, value_type tolerance, bool parallel )
         {
             static constexpr bool closestOnly = Ctx == super_type::IntersectContext::closest;
             static constexpr bool isAnyHint = Ctx == super_type::IntersectContext::anyHint;
@@ -519,7 +521,7 @@ public:
                 if ( !parallel || this->worldComm().size() <= 1 )
                 {
                     for(size_t i = 0; i < localRays.size(); ++i) {
-                        final_results[i] = this->intersectSequentialImpl<useRobustTraversal,isAnyHint>(localRays[i]);
+                        final_results[i] = this->intersectSequentialImpl<useRobustTraversal,isAnyHint>( localRays[i], tolerance );
                         if constexpr ( closestOnly )
                             if( final_results[i].size() > 1)
                                 final_results[i].resize(1);
@@ -561,12 +563,12 @@ public:
                         ready_rays.push((int)i); // The ray is ready for processing
                     }
                 }
-                toc("BVH Intersect - Initialization");
+                toc("BVH Intersect - Initialization",Environment::logVerbosityLevel() > 0);
                 tic();
                 int global_active_rays = 0;
                 mpi::all_reduce(this->worldComm(), my_active_rays, global_active_rays, std::plus<int>());
-                toc("BVH Intersect - Global Active Rays Count");
-
+                toc("BVH Intersect - Global Active Rays Count",Environment::logVerbosityLevel() > 0);
+                tic();
                 // some useful data structures and constants for the main loop
                 const int TAG_REQ = 100;
                 const int TAG_RES = 101;
@@ -661,10 +663,23 @@ public:
                             states[ray_id].current_idx++;
 
                             bool hasIntersection = res.result.processId() != invalid_v<rank_type>;
-                            // TODO: le contexte de l'intersection (anyHint,all,closest)
+                            // store the result if it's an intersection
                             if ( hasIntersection )
-                                if (final_results[ray_id].empty() || res.result.distance() < final_results[ray_id].front().distance())
+                            {
+                                if constexpr ( isAnyHint )
+                                {
                                     final_results[ray_id] = { res.result };
+                                }
+                                else if constexpr ( closestOnly )
+                                {
+                                    if (final_results[ray_id].empty() || res.result.distance() < final_results[ray_id].front().distance())
+                                        final_results[ray_id] = { res.result };
+                                }
+                                else
+                                {
+                                    final_results[ray_id].push_back( res.result );
+                                }
+                            }
 
                             // Put it back in the job queue or mark as completed
                             if constexpr ( isAnyHint )
@@ -739,8 +754,6 @@ public:
                                                return is_done;
                                            });
 
-
-
                     // ==========================================================
                     // PHASE 4 : HEAVY CPU COMPUTATION (While the network is active)
                     // ==========================================================
@@ -748,18 +761,31 @@ public:
                     // Calculate the intersections for our own local rays
                     for (int ray_id : pending_local_compute)
                     {
-                        auto local_res = this->intersectSequentialImpl<useRobustTraversal,isAnyHint>(localRays[ray_id]);
+                        auto local_res = this->intersectSequentialImpl<useRobustTraversal,isAnyHint>( localRays[ray_id], tolerance );
                         states[ray_id].current_idx++;
 
-                        // TODO!!!!!!!!!!! en fonction du context
-                        if (!local_res.empty()) {
-                            if (final_results[ray_id].empty() || local_res.front().distance() < final_results[ray_id].front().distance()) {
-                                final_results[ray_id] = {local_res.front()};
+                        bool hasIntersection = !local_res.empty();
+
+                        // store the result if it's an intersection
+                        if ( hasIntersection )
+                        {
+                            if constexpr ( isAnyHint )
+                            {
+                                final_results[ray_id] = { local_res.front() };
+                            }
+                            else if constexpr ( closestOnly )
+                            {
+                                // we guess that local_res is sorted by distance
+                                if (final_results[ray_id].empty() || local_res.front().distance() < final_results[ray_id].front().distance())
+                                    final_results[ray_id] = { local_res.front() };
+                            }
+                            else
+                            {
+                                final_results[ray_id].insert(final_results[ray_id].end(), local_res.begin(), local_res.end());
                             }
                         }
 
                         // Re-queue or terminate
-                        bool hasIntersection = !local_res.empty();
                         if constexpr ( isAnyHint )
                         {
                             if ( hasIntersection || states[ray_id].current_idx >= states[ray_id].targets.size() )
@@ -798,8 +824,9 @@ public:
                         for (size_t k = 0; k < reqs.size(); ++k)
                         {
                             auto const& req = reqs[k];
-                            auto local_res = this->intersectSequentialImpl<useRobustTraversal,isAnyHint>(req.ray);
+                            auto local_res = this->intersectSequentialImpl<useRobustTraversal,isAnyHint>( req.ray, tolerance );
 
+                            // TODO VINCENT: depending on context (anyHint, closest, all)
                             if ( !local_res.empty() )
                                 outgoing_resps[k] = {req.ray_id, local_res.front()};
                             else
@@ -841,6 +868,7 @@ public:
                 for (auto& ps : active_sends)
                     MPI_Wait(&ps.mpi_req, MPI_STATUS_IGNORE);
 
+                toc("BVH Intersect - Main Loop",Environment::logVerbosityLevel() > 0);
                 return final_results;
             }
 #else
@@ -860,7 +888,7 @@ public:
                 mpi::gatherv( this->worldComm(), localRays, raysGathered.data(), resLocalSize, this->worldComm().masterRank() );
                 mpi::broadcast( this->worldComm(), raysGathered, this->worldComm().masterRank() );
 
-                auto intersectGlobal = this->intersect(_ray=raysGathered,_robust=useRobustTraversal,_context=ctx,_parallel=true);
+                auto intersectGlobal = this->intersect(_ray=raysGathered,_robust=useRobustTraversal,_context=ctx,_parallel=true,_tolerance=tolerance);
 
                 std::vector<std::vector<rayintersection_result_type>> res;
                 res.resize( ray.numberOfLocalRay() );
@@ -877,7 +905,7 @@ public:
                 resSeq.reserve( ray.size() );
                 for ( auto const& currentRay : ray )
                 {
-                    auto currentResSeq = this->intersectSequential( currentRay,useRobustTraversal );
+                    auto currentResSeq = this->intersectSequential( currentRay, tolerance, useRobustTraversal );
                     if constexpr ( closestOnly )
                         if ( currentResSeq.size() > 1 )
                             currentResSeq.resize(1);
@@ -914,7 +942,7 @@ public:
             }
             else // only one ray (all process should have the same ray if parallel=true)
             {
-                auto resSeq = this->intersectSequential( ray,useRobustTraversal );
+                auto resSeq = this->intersectSequential( ray, tolerance, useRobustTraversal );
                 if ( closestOnly && resSeq.size() > 1 )
                     resSeq.resize(1);
                 if ( !parallel )
@@ -992,7 +1020,7 @@ private:
             //std::cout << "AAAA hint ranks size: " << fmt::format("{}",hit_ranks) << std::endl;
             return hit_ranks;
         }
-    std::vector<rayintersection_result_type> intersectSequential( ray_type const& ray, bool useRobustTraversal = true ) override
+    std::vector<rayintersection_result_type> intersectSequential( ray_type const& ray, value_type tolerance, bool useRobustTraversal = true ) override
         {
             auto rayBackend = bvh::v2::Ray<value_type,nRealDim>{
                 backend_vector_realdim_type::generate([&ray] (std::size_t i) { return ray.origin()[i]; }),
@@ -1000,24 +1028,24 @@ private:
                 ray.distanceMin(), ray.distanceMax()
             };
             if ( useRobustTraversal )
-                return this->intersectSequentialImpl<true,false>( rayBackend );
+                return this->intersectSequentialImpl<true,false>( rayBackend, tolerance );
             else
-                return this->intersectSequentialImpl<false,false>( rayBackend );
+                return this->intersectSequentialImpl<false,false>( rayBackend, tolerance );
         };
 
     template <bool UseRobustTraversal,bool IsAnyHit>
-    std::vector<rayintersection_result_type> intersectSequentialImpl( ray_type const& ray )
+    std::vector<rayintersection_result_type> intersectSequentialImpl( ray_type const& ray, value_type tolerance )
         {
             auto rayBackend = bvh::v2::Ray<value_type,nRealDim>{
                 backend_vector_realdim_type::generate([&ray] (std::size_t i) { return ray.origin()[i]; }),
                 backend_vector_realdim_type::generate([&ray] (std::size_t i) { return ray.dir()[i]; }),
                 ray.distanceMin(), ray.distanceMax()
             };
-            return this->intersectSequentialImpl<UseRobustTraversal,IsAnyHit>( rayBackend );
+            return this->intersectSequentialImpl<UseRobustTraversal,IsAnyHit>( rayBackend, tolerance );
         }
 
     template <bool UseRobustTraversal,bool IsAnyHit>
-    std::vector<rayintersection_result_type> intersectSequentialImpl( bvh::v2::Ray<value_type,nRealDim> & rayBackend )
+    std::vector<rayintersection_result_type> intersectSequentialImpl( bvh::v2::Ray<value_type,nRealDim> & rayBackend, value_type tolerance )
         {
             if (  !M_bvh )
                 return {};
@@ -1028,7 +1056,7 @@ private:
             bvh::v2::SmallStack<typename backend_bvh_type::Index, stack_size> stack;
             std::vector<rayintersection_result_type> res;
             M_bvh->template intersect<IsAnyHit, UseRobustTraversal>( rayBackend, M_bvh->get_root().index, stack,
-                                                                     [this,&res,&rayBackend] (std::size_t begin, std::size_t end) {
+                                                                     [this,&res,&rayBackend,tolerance] (std::size_t begin, std::size_t end) {
                                                                          std::size_t previousResultSize = res.size();
                                                                          for (std::size_t i = begin; i < end; ++i)
                                                                          {
@@ -1039,11 +1067,14 @@ private:
                                                                              }
                                                                              else if constexpr ( nRealDim == 3 )
                                                                              {
-                                                                                 if (auto hit = M_precomputeTriangle[j].intersect(rayBackend))
+                                                                                 // NOTE: we apply minus with tolerance because positive tolerance means
+                                                                                 // that we can accept intersection outside of triangle at distance given by tolerance
+                                                                                 if ( auto hit = M_precomputeTriangle[j].intersect( rayBackend, -tolerance ) )
                                                                                  {
                                                                                      //std::tie(u, v) = *hit;
                                                                                      res.push_back( rayintersection_result_type(this->worldComm().rank(), M_bvh->prim_ids[i], rayBackend.tmax) );
-                                                                                     res.back().setCoordinates( this->barycentricToCartesianCoordinates( M_precomputeTriangle[j].convert_to_tri(), hit->first, hit->second ) );
+                                                                                     res.back().setCoordinates( this->barycentricToCartesianCoordinates( M_precomputeTriangle[j].convert_to_tri(),
+                                                                                                                                                         hit->first, hit->second ) );
                                                                                      if constexpr ( IsAnyHit )
                                                                                          return true;
                                                                                  }
@@ -1085,6 +1116,7 @@ class BVH_InHouse : public BVH<MeshEntityType>
     using mesh_entity_type = typename super_type::mesh_entity_type;
     using vector_realdim_type = typename super_type::vector_realdim_type;
     static constexpr uint16_type nRealDim = super_type::nRealDim;
+    using value_type = typename super_type::value_type;
     using primitiveinfo_type = typename super_type::primitiveinfo_type;
 public:
     using ray_type = typename super_type::ray_type;
@@ -1273,7 +1305,7 @@ private:
     // Verify if the ray intersects the whole bounding structure
     // Returns the integer corresponding to the intersected element
     // If no element is intersected, return -1
-    std::vector<rayintersection_result_type> intersectSequential( ray_type const& rayon, bool useRobustTraversal = true ) override
+    std::vector<rayintersection_result_type> intersectSequential( ray_type const& rayon, value_type tolerance, bool useRobustTraversal = true ) override
         {
             M_intersected_leaf = {};
             M_lengths = {};
@@ -1485,11 +1517,11 @@ private:
 template <typename MeshEntityType>
 template <typename BVH<MeshEntityType>::IntersectContext Ctx,bool useRobustTraversal,typename RayType>
 std::vector<std::vector<typename BVH<MeshEntityType>::rayintersection_result_type>>
-BVH<MeshEntityType>::intersectGenericImpl( RayType const& ray, bool parallel )
+BVH<MeshEntityType>::intersectGenericImpl( RayType const& ray, value_type tolerance, bool parallel )
 {
     auto bvh = dynamic_cast<BVH_ThirdParty<mesh_entity_type>*>( this );
     if (bvh)
-        return bvh->template intersectFullImpl<Ctx,useRobustTraversal,RayType>( ray, parallel );
+        return bvh->template intersectFullImpl<Ctx,useRobustTraversal,RayType>( ray, tolerance, parallel );
     else
         throw std::logic_error("intersectGenericImpl should be called on BVH_ThirdParty");
     return {};
