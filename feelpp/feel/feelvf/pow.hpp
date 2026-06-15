@@ -29,11 +29,29 @@
 #ifndef FEELPP_VF_POW_HPP
 #define FEELPP_VF_POW_HPP 1
 
+#include <feel/feelvf/symbolicdiagnostics.hpp>
+
 namespace Feel
 {
 namespace vf
 {
-template < typename ExprT1, typename ExprT2 >
+/**
+ * @brief Domain assumption used by symbolic differentiation of powers.
+ */
+enum class PowerDomainAssumption
+{
+    SymbolIndependentExponent,
+    PositiveBase
+};
+
+/**
+ * @brief Tag selecting the positive-base power differentiation policy.
+ */
+struct PositiveBasePowerTag {};
+
+inline constexpr PositiveBasePowerTag positiveBasePower;
+
+template < typename ExprT1, typename ExprT2, PowerDomainAssumption DomainAssumption = PowerDomainAssumption::SymbolIndependentExponent >
 class Pow
 {
 public:
@@ -59,7 +77,7 @@ public:
     using test_basis = std::nullptr_t;
     using trial_basis = std::nullptr_t;
 
-    typedef Pow<ExprT1, ExprT2> this_type;
+    typedef Pow<ExprT1, ExprT2, DomainAssumption> this_type;
     typedef ExprT1 expression_1_type;
     typedef ExprT2 expression_2_type;
     typedef typename expression_1_type::value_type value_1_type;
@@ -137,7 +155,7 @@ public:
             auto newRightExpr = this->right().applySymbolsExpr( se );
             using new_expr_left_type = std::decay_t<decltype(newLeftExpr)>;
             using new_expr_right_type = std::decay_t<decltype(newRightExpr)>;
-            return Pow<new_expr_left_type,new_expr_right_type>( newLeftExpr,newRightExpr );
+            return Pow<new_expr_left_type,new_expr_right_type,DomainAssumption>( newLeftExpr,newRightExpr );
         }
 
     template <typename TheSymbolExprType>
@@ -157,13 +175,26 @@ public:
     auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
                TheSymbolExprType const& se ) const
         {
-            // NOTE : this expression assumes that the exponent does not depend on the symbol to be derived
             auto diffExpr1 = M_expr_1.template diff<diffOrder>( diffVariable, world, dirLibExpr, se );
-            using expr1_diff_type = std::decay_t<decltype(diffExpr1)>;
-            auto newExponant = M_expr_2 - cst(1.); // 1.0;
-            using new_expr2_type = std::decay_t<decltype(newExponant)>;
-            using new_pow_type = Pow<expression_1_type, new_expr2_type>;
-            return diffExpr1*M_expr_2*expr(new_pow_type( M_expr_1, newExponant));
+            if constexpr ( DomainAssumption == PowerDomainAssumption::PositiveBase )
+            {
+                auto diffExpr2 = M_expr_2.template diff<diffOrder>( diffVariable, world, dirLibExpr, se );
+                using current_pow_type = Pow<expression_1_type, expression_2_type, PowerDomainAssumption::PositiveBase>;
+                return expr( current_pow_type( M_expr_1, M_expr_2 ) ) *
+                       ( diffExpr2*loge( M_expr_1 ) + M_expr_2*diffExpr1/M_expr_1 );
+            }
+            else
+            {
+                if ( M_expr_2.hasSymbolDependency( diffVariable, se ) )
+                    throw details::missingDomainAssumptionForPower(
+                        "the exponent depends on '" + diffVariable +
+                        "'; use powPositiveBase(base, exponent) or pow(base, exponent, positiveBasePower) when the base is strictly positive" );
+
+                auto newExponent = M_expr_2 - cst(1.);
+                using new_expr2_type = std::decay_t<decltype(newExponent)>;
+                using new_pow_type = Pow<expression_1_type, new_expr2_type, DomainAssumption>;
+                return diffExpr1*M_expr_2*expr(new_pow_type( M_expr_1, newExponent));
+            }
         }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
@@ -346,7 +377,7 @@ protected:
 template<typename ExprT1,  typename ExprT2>
 [[nodiscard]] inline
 auto
-pow( ExprT1 && __e1, ExprT2 && __e2 )
+powImpl( ExprT1 && __e1, ExprT2 && __e2 )
 {
     auto arg_to_expr = []( auto && b ) -> decltype(auto) {
                            if constexpr ( std::is_arithmetic_v<std::decay_t<decltype(b)>> )
@@ -358,8 +389,52 @@ pow( ExprT1 && __e1, ExprT2 && __e2 )
     decltype(auto) e2 = arg_to_expr( std::forward<ExprT2>( __e2 ) );
     using t1 = std::decay_t<decltype(e1)>;
     using t2 = std::decay_t<decltype(e2)>;
-    using expr_t = Pow<t1, t2>;
+    using expr_t = Pow<t1, t2, PowerDomainAssumption::SymbolIndependentExponent>;
     return Feel::vf::expr( expr_t(e1,e2) );
+}
+
+/**
+ * @brief provide pow expression e1^e2.
+ */
+template<typename ExprT1,  typename ExprT2>
+[[nodiscard]] inline
+auto
+pow( ExprT1 && __e1, ExprT2 && __e2 )
+{
+    return powImpl( std::forward<ExprT1>( __e1 ), std::forward<ExprT2>( __e2 ) );
+}
+
+/**
+ * @brief provide pow expression e1^e2 with an explicit positive-base domain assumption.
+ */
+template<typename ExprT1,  typename ExprT2>
+[[nodiscard]] inline
+auto
+pow( ExprT1 && __e1, ExprT2 && __e2, PositiveBasePowerTag )
+{
+    auto arg_to_expr = []( auto && b ) -> decltype(auto) {
+                           if constexpr ( std::is_arithmetic_v<std::decay_t<decltype(b)>> )
+                               return cst( std::forward<decltype(b)>( b ) );
+                           else
+                               return std::forward<decltype(b)>( b );
+                       };
+    decltype(auto) e1 = arg_to_expr( std::forward<ExprT1>( __e1 ) );
+    decltype(auto) e2 = arg_to_expr( std::forward<ExprT2>( __e2 ) );
+    using t1 = std::decay_t<decltype(e1)>;
+    using t2 = std::decay_t<decltype(e2)>;
+    using expr_t = Pow<t1, t2, PowerDomainAssumption::PositiveBase>;
+    return Feel::vf::expr( expr_t(e1,e2) );
+}
+
+/**
+ * @brief provide pow expression e1^e2 with an explicit positive-base domain assumption.
+ */
+template<typename ExprT1,  typename ExprT2>
+[[nodiscard]] inline
+auto
+powPositiveBase( ExprT1 && __e1, ExprT2 && __e2 )
+{
+    return pow( std::forward<ExprT1>( __e1 ), std::forward<ExprT2>( __e2 ), positiveBasePower );
 }
 
 
