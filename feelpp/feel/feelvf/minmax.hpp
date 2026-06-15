@@ -29,6 +29,12 @@
 #ifndef FEELPP_VF_MINMAX_HPP
 #define FEELPP_VF_MINMAX_HPP 1
 
+#include <map>
+#include <set>
+#include <type_traits>
+
+#include <feel/feelvf/symbolicdiagnostics.hpp>
+
 namespace Feel
 {
 namespace vf
@@ -95,6 +101,49 @@ public:
     expression_2_type const& right() const
     {
         return M_expr_2;
+    }
+
+    void setParameterValues( std::map<std::string,value_type> const& mp )
+    {
+        M_expr_1.setParameterValues( mp );
+        M_expr_2.setParameterValues( mp );
+    }
+
+    void updateParameterValues( std::map<std::string,double> & pv ) const
+    {
+        M_expr_1.updateParameterValues( pv );
+        M_expr_2.updateParameterValues( pv );
+    }
+
+    template <typename SymbolsExprType>
+    auto applySymbolsExpr( SymbolsExprType const& se ) const
+    {
+        auto newLeftExpr = M_expr_1.applySymbolsExpr( se );
+        auto newRightExpr = M_expr_2.applySymbolsExpr( se );
+        using new_expr_left_type = std::decay_t<decltype(newLeftExpr)>;
+        using new_expr_right_type = std::decay_t<decltype(newRightExpr)>;
+        return OpMax<new_expr_left_type,new_expr_right_type>( newLeftExpr,newRightExpr );
+    }
+
+    template <typename TheSymbolExprType>
+    bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
+    {
+        return M_expr_1.hasSymbolDependency( symb, se ) || M_expr_2.hasSymbolDependency( symb, se );
+    }
+
+    template <typename TheSymbolExprType>
+    void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se ) const
+    {
+        M_expr_1.dependentSymbols( symb,res,se );
+        M_expr_2.dependentSymbols( symb,res,se );
+    }
+
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
+               TheSymbolExprType const& se ) const
+    {
+        throw details::unsupportedPiecewiseDifferentiation( "max", "max" );
+        return *this;
     }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
@@ -286,6 +335,49 @@ public:
     expression_2_type const& right() const
     {
         return M_expr_2;
+    }
+
+    void setParameterValues( std::map<std::string,value_type> const& mp )
+    {
+        M_expr_1.setParameterValues( mp );
+        M_expr_2.setParameterValues( mp );
+    }
+
+    void updateParameterValues( std::map<std::string,double> & pv ) const
+    {
+        M_expr_1.updateParameterValues( pv );
+        M_expr_2.updateParameterValues( pv );
+    }
+
+    template <typename SymbolsExprType>
+    auto applySymbolsExpr( SymbolsExprType const& se ) const
+    {
+        auto newLeftExpr = M_expr_1.applySymbolsExpr( se );
+        auto newRightExpr = M_expr_2.applySymbolsExpr( se );
+        using new_expr_left_type = std::decay_t<decltype(newLeftExpr)>;
+        using new_expr_right_type = std::decay_t<decltype(newRightExpr)>;
+        return OpMin<new_expr_left_type,new_expr_right_type>( newLeftExpr,newRightExpr );
+    }
+
+    template <typename TheSymbolExprType>
+    bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
+    {
+        return M_expr_1.hasSymbolDependency( symb, se ) || M_expr_2.hasSymbolDependency( symb, se );
+    }
+
+    template <typename TheSymbolExprType>
+    void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se ) const
+    {
+        M_expr_1.dependentSymbols( symb,res,se );
+        M_expr_2.dependentSymbols( symb,res,se );
+    }
+
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
+               TheSymbolExprType const& se ) const
+    {
+        throw details::unsupportedPiecewiseDifferentiation( "min", "min" );
+        return *this;
     }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
