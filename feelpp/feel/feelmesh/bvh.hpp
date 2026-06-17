@@ -291,13 +291,18 @@ public:
 
 protected:
 
+    struct TlasHit {
+        rank_type rank;
+        value_type distance;
+    };
+
     //! Returns a list of MPI ranks whose bounding boxes intersect the ray (using TLAS)
-    virtual std::vector<rank_type> getHitPartitions(ray_type const& ray) const
+    virtual std::vector<TlasHit> getHitPartitions(ray_type const& ray) const
         {
             // Sequential/default fallback: everyone is queried
-            std::vector<rank_type> ranks(this->worldComm().size());
-            std::iota(ranks.begin(), ranks.end(), 0);
-            return ranks;
+            std::vector<TlasHit> hitPartitions(this->worldComm().size());
+            std::for_each( hitPartitions.begin(), hitPartitions.end(), [this](TlasHit& hit) { hit.rank = this->worldComm().rank(); hit.distance = 0; } );
+            return hitPartitions;
         }
 
     virtual std::vector<rayintersection_result_type> intersectSequential( ray_type const& rayon, value_type tolerance, bool useRobustTraversal = true ) = 0;
@@ -338,6 +343,9 @@ class BVH_ThirdParty : public BVH<MeshEntityType>
     using backend_bvh_type = bvh::v2::Bvh<node_type>;
     using backend_vector_realdim_type = bvh::v2::Vec<value_type, nRealDim>;
     using backend_precompute_triangle_type = bvh::v2::PrecomputedTri<value_type>;
+    using backend_bbox_type = bvh::v2::BBox<value_type, nRealDim>;
+
+    using TlasHit = typename super_type::TlasHit;
 public:
     using ray_type = typename super_type::ray_type;
     using rayintersection_result_type = typename super_type::rayintersection_result_type;
@@ -353,7 +361,7 @@ public:
             super_type::updateForUse( range );
 
             // init bvh backend
-            using BBox = bvh::v2::BBox<value_type, nRealDim>;
+            using BBox = backend_bbox_type;//bvh::v2::BBox<value_type, nRealDim>;
             std::vector<BBox> bboxes;
             std::vector<backend_vector_realdim_type> centers;
             bboxes.reserve( this->M_primitiveInfo.size() );
@@ -449,7 +457,8 @@ public:
                 tlasBBoxes.reserve( this->worldComm().size() );
                 std::vector<backend_vector_realdim_type> tlasCenters;
                 tlasCenters.reserve( this->worldComm().size() );
-                std::vector<rank_type> primitiveInfoTlas;
+                //std::vector<rank_type> primitiveInfoTlas;
+                std::vector<std::tuple<rank_type,backend_bbox_type>> primitiveInfoTlas;
                 primitiveInfoTlas.reserve( this->worldComm().size() );
                 for ( rank_type p = 0; p < this->worldComm().size(); ++p )
                 {
@@ -467,24 +476,27 @@ public:
                                 });
                     auto & bbox = tlasBBoxes.back();
                     tlasCenters.push_back( backend_vector_realdim_type::generate([&bbox] (std::size_t i) { return 0.5 * ( bbox.min[i] + bbox.max[i] ); }) );
-                    primitiveInfoTlas.push_back( p );
+                    //auto Eigen::Matrix<value_type,nRealDim,1>;
+                    primitiveInfoTlas.push_back( std::make_tuple( p, bbox ) );
                 }
 
-                // if ( this->worldComm().isMasterRank() )
-                // {
-                //   for ( int i = 0; i < tlasBBoxes.size(); ++i )
-                //     {
-                //         auto const& bbox = tlasBBoxes[i];
-                //         //LOG(INFO) << "global bbox: min: " << bbox.min << " max: " << bbox.max;
-                //         std::cout << "global bbox: min: " << bbox.min[0] << " " << bbox.min[1] << " " << bbox.min[2]
-                //                   << " max: " << bbox.max[0] << " " << bbox.max[1] << " " << bbox.max[2]
-                //                   << " center: " << tlasCenters[i][0] << " " << tlasCenters[i][1] << " " << tlasCenters[i][2]
-                //                   << std::endl;
-                //     }
-                // }
+                if ( this->worldComm().isMasterRank() && Environment::logVerbosityLevel() > 1 )
+                {
+                  for ( int i = 0; i < tlasBBoxes.size(); ++i )
+                    {
+                        auto const& bbox = tlasBBoxes[i];
+                        //LOG(INFO) << "global bbox: min: " << bbox.min << " max: " << bbox.max;
+                        std::cout << "global bbox: min: " << bbox.min[0] << " " << bbox.min[1] << " " << bbox.min[2]
+                                  << " max: " << bbox.max[0] << " " << bbox.max[1] << " " << bbox.max[2]
+                                  << " center: " << tlasCenters[i][0] << " " << tlasCenters[i][1] << " " << tlasCenters[i][2]
+                                  << " volume: " << (bbox.max[0]-bbox.min[0])*(bbox.max[1]-bbox.min[1])*(bbox.max[2]-bbox.min[2])
+                                  << std::endl;
+                    }
+                }
 
                 typename bvh::v2::DefaultBuilder<node_type>::Config tlasConfig;
                 tlasConfig.quality = bvh::v2::DefaultBuilder<node_type>::Quality::High;
+                tlasConfig.max_leaf_size = 1; // <-- AJOUT CRUCIAL : force 1 processus par feuille
                 if ( tlasBBoxes.size() > 0 )
                     M_bvhTlas = std::make_unique<backend_bvh_type>( bvh::v2::DefaultBuilder<node_type>::build(/*thread_pool,*/ tlasBBoxes, tlasCenters, tlasConfig) );
                 else
@@ -544,17 +556,10 @@ public:
                 // Initialization: TLAS and queue filling
                 for (size_t i = 0; i < localRays.size(); ++i)
                 {
-                    std::vector<rank_type> hit_ranks = this->getHitPartitions(localRays[i]);
+                    std::vector<TlasHit> hit_ranks = this->getHitPartitions(localRays[i]);
 
-                    // Prioritize local partitioning
-                    if ( false )
-                    {
-                        auto it = std::find(hit_ranks.begin(), hit_ranks.end(), this->worldComm().rank());
-                        if (it != hit_ranks.end()) { std::swap(hit_ranks[0], *it); }
-                    }
-
-                    for (rank_type r : hit_ranks)
-                        states[i].targets.push_back({r});
+                    for (auto const& hit : hit_ranks)
+                        states[i].targets.push_back({hit.rank});
 
                     if (!states[i].targets.empty())
                     {
@@ -573,6 +578,8 @@ public:
                 const int TAG_REQ = 100;
                 const int TAG_RES = 101;
                 const size_t BATCH_SIZE = 8192;//256;
+                const int CHUNK_SIZE = 1024;//8192;//4096;//64;
+                const int BATCH_THRESHOLD = 8192;//1024;
 
                 MPI_Comm raw_comm = (MPI_Comm)this->worldComm();
                 MPI_Request term_req = MPI_REQUEST_NULL;
@@ -589,12 +596,29 @@ public:
                     int ray_id;
                     rayintersection_result_type result;
                 };
-                struct PendingSend { std::vector<NetworkReq> req_data;
+                struct PendingSend {
+                    std::vector<NetworkReq> req_data;
                     std::vector<NetworkRes> res_data;
                     MPI_Request mpi_req;
                 };
-
                 std::list<PendingSend> active_sends;
+
+                struct PendingRecv {
+                    std::vector<NetworkReq> buffer;
+                    MPI_Request req;
+                    int source_rank;
+                };
+                std::list<PendingRecv> active_recvs;
+
+
+                struct RemoteTask {
+                    int source_rank;
+                    NetworkReq req;
+                };
+                std::queue<RemoteTask> pending_remote_compute;
+                std::queue<int> pending_local_compute;
+                std::unordered_map<int, std::vector<NetworkRes>> pending_outgoing_resps;
+
                 // map rank to requests to send to that rank
                 std::map<int, std::vector<NetworkReq>> out_buffers;
                 // map rank to requests received from that rank but not yet processed
@@ -602,42 +626,76 @@ public:
                 // Reception buffer for responses
                 std::vector<NetworkRes> incoming_resps;
 
+                double total_network_time = 0.0;
+                double total_compute_time = 0.0;
+                double total_sleep_time = 0.0;
+
                 // Main loop
                 while (global_active_rays > 0)
                 {
                     // if ( this->worldComm().isMasterRank() )
                     //   std::cout << "start loop iteration, global_active_rays = " << global_active_rays << " counter:"<< loop_counter << std::endl;
                     // tic();
+                    // On part du principe qu'on ne va rien faire ce tour-ci
+                    bool did_work = false;
                     loop_counter++;
                     bool received_something = false;
                     pending_incoming_reqs.clear(); // The worklist is cleared at the start of the round
 
                     // ==========================================================
-                    // PHASE 1: PURE NETWORK READING
+                    // PHASE 1: PURE NETWORK READING & PROCESSING
                     // ==========================================================
                     int flag; MPI_Status status;
                     // Get all incoming requests and put them in pending_incoming_reqs (one batch per sender)
+
+                    double start_network = MPI_Wtime();
+                    // 1.A - Get new incoming requests and start Irecv for them
                     MPI_Iprobe(MPI_ANY_SOURCE, TAG_REQ, raw_comm, &flag, &status);
                     while (flag)
                     {
+                        did_work = true;
                         received_something = true;
                         int count_bytes;
                         MPI_Get_count(&status, MPI_BYTE, &count_bytes);
-
-                        int source_rank = status.MPI_SOURCE;
                         int num_items = count_bytes / sizeof(NetworkReq);
 
-                        // We specifically resize the sender's CET vector
-                        size_t old_size = pending_incoming_reqs[source_rank].size();
-                        pending_incoming_reqs[source_rank].resize(old_size + num_items);
+                        PendingRecv pr;
+                        pr.buffer.resize(num_items);
+                        pr.source_rank = status.MPI_SOURCE;
+                        MPI_Irecv(pr.buffer.data(), count_bytes, MPI_BYTE, pr.source_rank, TAG_REQ, raw_comm, &pr.req);
+                        active_recvs.push_back(std::move(pr));
 
-                        // Receive the requests
-                        MPI_Recv(pending_incoming_reqs[source_rank].data() + old_size, count_bytes, MPI_BYTE,
-                                 source_rank, TAG_REQ, raw_comm, MPI_STATUS_IGNORE);
-
-                        // Ask MPI if there are more messages to receive from the same sender
                         MPI_Iprobe(MPI_ANY_SOURCE, TAG_REQ, raw_comm, &flag, &status);
                     }
+
+                    // 1.B - Process completed Irecv requests and put them in pending_remote_compute
+                    for (auto it = active_recvs.begin(); it != active_recvs.end(); )
+                    {
+                        int is_done = 0;
+                        MPI_Test(&it->req, &is_done, MPI_STATUS_IGNORE); // Est-ce que le Irecv a fini ?
+
+                        if (is_done)
+                        {
+                            did_work = true;
+                            for (auto const& req : it->buffer)
+                            {
+                                pending_remote_compute.push({it->source_rank, req});
+                            }
+                            // The work is done; we're removing the request from the waiting list
+                            it = active_recvs.erase(it);
+                        }
+                        else
+                        {
+                            // It's not finished downloading yet, so let's move on to the next one
+                            ++it;
+                        }
+                    }
+
+                    double end_network = MPI_Wtime();
+                    total_network_time += (end_network - start_network);
+
+
+
                     // get all incoming responses and directly process them (update ray states, final_results, and ready_rays)
                     MPI_Iprobe(MPI_ANY_SOURCE, TAG_RES, raw_comm, &flag, &status);
                     while (flag)
@@ -651,7 +709,7 @@ public:
                         // Prepare the buffer
                         if ( incoming_resps.size() < num_items )
                             incoming_resps.resize(num_items);
-                        // TODO VINCENT faire un recv d'un boolean avant pour dire oui si intersec ou pas
+
                         // Recv message
                         MPI_Recv(incoming_resps.data(), count_bytes, MPI_BYTE, status.MPI_SOURCE, TAG_RES, raw_comm, MPI_STATUS_IGNORE);
 
@@ -713,7 +771,6 @@ public:
                     // - If it's for another process -> we put it in out_buffers.
                     // - If it's local -> store it in a “local work to do” list
                     //   to compute it WHILE the network is running.
-                    std::vector<int> pending_local_compute;
                     while (!ready_rays.empty())
                     {
                         int ray_id = ready_rays.front();
@@ -721,7 +778,7 @@ public:
                         int target_rank = states[ray_id].targets[states[ray_id].current_idx].rank;
 
                         if (target_rank == this->worldComm().rank())
-                            pending_local_compute.push_back(ray_id);
+                            pending_local_compute.push(ray_id);
                         else {
                             out_buffers[target_rank].push_back({ ray_id, localRays[ray_id] });
                             states[ray_id].is_waiting = true;
@@ -736,7 +793,7 @@ public:
                     {
                         if ( batch.empty() )
                             continue;
-                        if ( batch.size() >= BATCH_SIZE || !received_something ) {
+                        if ( batch.size() >= BATCH_THRESHOLD/*BATCH_SIZE*/ || !received_something ) {
                             active_sends.push_back({std::move(batch), {}, MPI_REQUEST_NULL});
                             MPI_Isend(active_sends.back().req_data.data(),
                                       active_sends.back().req_data.size() * sizeof(NetworkReq),
@@ -757,10 +814,33 @@ public:
                     // ==========================================================
                     // PHASE 4 : HEAVY CPU COMPUTATION (While the network is active)
                     // ==========================================================
+                    int chunk_count = 0;
+                    double start_compute = MPI_Wtime();
+                    if ( !pending_remote_compute.empty() || !pending_local_compute.empty() )
+                        did_work = true;
 
-                    // Calculate the intersections for our own local rays
-                    for (int ray_id : pending_local_compute)
+                    // 1. Requests from other processes are processed first
+                    while (!pending_remote_compute.empty() && chunk_count < CHUNK_SIZE)
                     {
+                        auto task = pending_remote_compute.front();
+                        pending_remote_compute.pop();
+
+                        auto local_res = this->intersectSequentialImpl<useRobustTraversal,isAnyHint>(task.req.ray, tolerance);
+                        if (!local_res.empty())
+                            pending_outgoing_resps[task.source_rank].push_back({task.req.ray_id, local_res.front()});
+                        else
+                            pending_outgoing_resps[task.source_rank].push_back({task.req.ray_id, rayintersection_result_type(-1, -1, std::numeric_limits<double>::max())});
+
+                        chunk_count++;
+                    }
+
+                    // 2. If we haven't reached the CHUNK limit, we calculate our own radii
+                    while (!pending_local_compute.empty() && chunk_count < CHUNK_SIZE)
+                    {
+                        int ray_id = pending_local_compute.front();
+                        pending_local_compute.pop();
+
+                        // Heavy computation: intersect the ray with the local BVH
                         auto local_res = this->intersectSequentialImpl<useRobustTraversal,isAnyHint>( localRays[ray_id], tolerance );
                         states[ray_id].current_idx++;
 
@@ -809,33 +889,35 @@ public:
                             }
                         }
 
+                        chunk_count++;
                     }
 
-                    // Calculate incoming requests by sender
-                    for (auto& [source_rank, reqs] : pending_incoming_reqs)
+                    double end_compute = MPI_Wtime();
+                    total_compute_time += (end_compute - start_compute);
+
+                    if (!did_work)
                     {
-                        if ( reqs.empty() )
-                            continue;
+                        // If no messages have been received, no buffer has finished downloading,
+                        // and there are no ray intersection to calculate... We put the processor to sleep for 100 microseconds.
+                        double start_sleep = MPI_Wtime();
+                        std::this_thread::sleep_for(std::chrono::microseconds(100));
+                        double end_sleep = MPI_Wtime();
+                        total_sleep_time += (end_sleep - start_sleep);
+                    }
 
-                        // A response buffer is allocated for this specific sender
-                        active_sends.push_back({{}, std::vector<NetworkRes>(reqs.size()), MPI_REQUEST_NULL});
-                        auto& outgoing_resps = active_sends.back().res_data;
-
-                        for (size_t k = 0; k < reqs.size(); ++k)
+                    // send responses to other processes if we have enough or if we have nothing else to do
+                    for (auto& [target_rank, resps] : pending_outgoing_resps)
+                    {
+                        if (resps.size() >= BATCH_THRESHOLD || (pending_remote_compute.empty() && pending_local_compute.empty()))
                         {
-                            auto const& req = reqs[k];
-                            auto local_res = this->intersectSequentialImpl<useRobustTraversal,isAnyHint>( req.ray, tolerance );
-
-                            // TODO VINCENT: depending on context (anyHint, closest, all)
-                            if ( !local_res.empty() )
-                                outgoing_resps[k] = {req.ray_id, local_res.front()};
-                            else
-                                outgoing_resps[k] = {req.ray_id, rayintersection_result_type(-1, -1, std::numeric_limits<double>::max())};
+                            if (!resps.empty()) {
+                                active_sends.push_back({{}, std::move(resps), MPI_REQUEST_NULL});
+                                MPI_Isend(active_sends.back().res_data.data(),
+                                          active_sends.back().res_data.size() * sizeof(NetworkRes),
+                                          MPI_BYTE, target_rank, TAG_RES, raw_comm, &active_sends.back().mpi_req);
+                                // resps has been “moved”; we no longer need to empty it manually
+                            }
                         }
-
-                        // Asynchronous transmission of results
-                        MPI_Isend(outgoing_resps.data(), outgoing_resps.size() * sizeof(NetworkRes),
-                                  MPI_BYTE, source_rank, TAG_RES, raw_comm, &active_sends.back().mpi_req);
                     }
 
                     // ==========================================================
@@ -862,8 +944,19 @@ public:
                             global_active_rays = temp_global_active_rays;
                         }
                     }
+
+
+
+
                 } // loop while
 
+
+                if ( Environment::logVerbosityLevel() > 0 )
+                    std::cout << "Rang " << this->worldComm().rank() << " - Boucle principale terminée après " << loop_counter << " itérations."
+                              << " Temps de calcul pur : " << total_compute_time << " secondes, "
+                              << "Temps gestion réseau : " << total_network_time << " secondes, "
+                              << "Temps de sommeil : " << total_sleep_time << " secondes."
+                              << std::endl;
                 // Final cleaning
                 for (auto& ps : active_sends)
                     MPI_Wait(&ps.mpi_req, MPI_STATUS_IGNORE);
@@ -988,36 +1081,69 @@ public:
 
 
 private:
-    std::vector<rank_type> getHitPartitions(ray_type const& ray) const override
+    std::vector<TlasHit> getHitPartitions(ray_type const& ray) const override
         {
-            if ( false )
-            {
-                std::vector<rank_type> ranks(this->worldComm().size());
-                std::iota(ranks.begin(), ranks.end(), 0);
-                return ranks;
-            }
+            auto intersect_bbox = [](const auto& ray, const auto& bbox) {
+                                      // Initialize with infinity
+                                      value_type t_enter = -std::numeric_limits<value_type>::infinity();
+                                      value_type t_exit  =  std::numeric_limits<value_type>::infinity();
 
+                                      for (int i = 0; i < 3; ++i) {
+                                          auto invD = 1.0 / ray.dir[i];
+                                          auto t0 = (bbox.min[i] - ray.org[i]) * invD;
+                                          auto t1 = (bbox.max[i] - ray.org[i]) * invD;
 
-            std::vector<rank_type> hit_ranks;
-            if (!M_bvhTlas) return hit_ranks;
-            //hit_ranks.push_back( this->worldComm().rank() );
+                                          if (invD < 0.0) {
+                                              std::swap(t0, t1);
+                                          }
+
+                                          t_enter = std::max(t_enter, t0);
+                                          t_exit  = std::min(t_exit, t1);
+
+                                          // If the ray completely misses the bounding box
+                                          if (t_exit < t_enter) {
+                                              return std::make_pair(1.0, -1.0); // Miss
+                                          }
+                                      }
+
+                                      // Check against the ray's bounds (tmin / tmax)
+                                      // If the box is completely behind the ray, or beyond the maximum distance
+                                      if (t_exit < ray.tmin || t_enter > ray.tmax)
+                                          return std::make_pair(1.0, -1.0); // Miss
+
+                                      // Returns the actual distance of the input (which will indeed be negative if the origin is within it)
+                                      return std::make_pair(t_enter, t_exit);
+                                  };
+
+            std::vector<TlasHit> hit_ranks;
+            if ( !M_bvhTlas )
+                return hit_ranks;
+
             auto rayBackend = bvh::v2::Ray<value_type, nRealDim>{
                 backend_vector_realdim_type::generate([&ray] (std::size_t i) { return ray.origin()[i]; }),
                 backend_vector_realdim_type::generate([&ray] (std::size_t i) { return ray.dir()[i]; }),
-                -1e-4/*ray.distanceMin()*/, ray.distanceMax()
+                ray.distanceMin(), ray.distanceMax()
             };
 
             bvh::v2::SmallStack<typename backend_bvh_type::Index, 64> stack;
             M_bvhTlas->template intersect<false, /*true*/false>( rayBackend, M_bvhTlas->get_root().index, stack,
-                                                                 [this,&hit_ranks] (std::size_t begin, std::size_t end) {
+                                                                 [this,&hit_ranks,&rayBackend,&intersect_bbox] (std::size_t begin, std::size_t end) {
                                                                      for (std::size_t i = begin; i < end; ++i) {
-                                                                         //hit_ranks.push_back(M_bvhTlas->prim_ids[i]); // prim_ids correspond au Rank MPI
-                                                                         hit_ranks.push_back(M_primitiveInfoTlas[i]);
+                                                                         auto const& [rank, bbox] = M_primitiveInfoTlas[i];
+                                                                         auto hit = intersect_bbox(rayBackend, bbox);
+                                                                         // hit.first = t_enter, hit.second = t_exit
+                                                                         // If the test is valid (Hit), add to the result
+                                                                         if (hit.first <= hit.second) {
+                                                                             hit_ranks.push_back({rank, hit.first});
+                                                                         }
                                                                      }
-                                                                     return false; // On ne s'arrête pas, on veut toutes les intersections
+                                                                     return false; // We're not stopping—we want all the intersections
                                                                  }
                                                                  );
-            //std::cout << "AAAA hint ranks size: " << fmt::format("{}",hit_ranks) << std::endl;
+            //std::cout << "Rang " << this->worldComm().rank() << " - getHitPartitions: " << hit_ranks.size() << " hits." << std::endl;
+            std::sort(hit_ranks.begin(), hit_ranks.end(), [](const TlasHit& a, const TlasHit& b) {
+                                                              return a.distance < b.distance; // Sort by entry distance
+                                                          });
             return hit_ranks;
         }
     std::vector<rayintersection_result_type> intersectSequential( ray_type const& ray, value_type tolerance, bool useRobustTraversal = true ) override
@@ -1103,7 +1229,7 @@ private:
     std::unique_ptr<backend_bvh_type> M_bvh;
     std::vector<backend_precompute_triangle_type> M_precomputeTriangle;
     std::unique_ptr<backend_bvh_type> M_bvhTlas; // top level acceleration structure for parallel case
-    std::vector<rank_type> M_primitiveInfoTlas;
+    std::vector<std::tuple<rank_type,backend_bbox_type> > M_primitiveInfoTlas;
 };
 
 
