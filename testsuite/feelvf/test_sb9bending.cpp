@@ -72,6 +72,10 @@ checkSb9BendingRigidMode( SpaceType const& Uh,
     uh.on( _range=elements( Uh->mesh() ), _expr=fieldExpr, _close=true );
     vh.on( _range=elements( Uh->mesh() ), _expr=fieldExpr, _close=true );
 
+
+    bending.matrix().printMatlab( "testsb9Bending_form2.m" );
+    uh.printMatlab( "testsb9Bending.m" );
+
     BOOST_CHECK_SMALL( formEnergy( bending, vh, uh ), g_tol );
 }
 

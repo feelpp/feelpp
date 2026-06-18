@@ -110,8 +110,10 @@ public:
 
         if constexpr ( Kind == SB9BendingKind::Bm0 )
             this->fillMembraneCoefficients( coeff, component, this->M_data.bx( node ), this->M_data.by( node ) );
+            // this->fillMembraneCoefficients( coeff, component, value_type( 12.0 ), value_type( 12.0 ) );
         else
             this->fillMembraneCoefficients( coeff, component, M_bending[node][0], M_bending[node][1] );
+            // this->fillMembraneCoefficients( coeff, component, value_type( 12.0 ), value_type( 12.0 ) );
     }
 
 private:
