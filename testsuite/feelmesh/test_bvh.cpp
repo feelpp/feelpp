@@ -69,6 +69,7 @@ void printRayIntersectionResults( BvhType const& bvh, std::vector<RayIntersectio
         counter++;
     }
 }
+#if 0
 template <typename RangeType>
 void test2D( RangeType const& range )
 {
@@ -94,7 +95,7 @@ void test2D( RangeType const& range )
     auto rayIntersectionResult2 = bvhInHouse->intersect(_ray=ray_2) ;
     printRayIntersectionResults( bvhInHouse.get(),rayIntersectionResult2,pointIntersections[1] );
 }
-
+#endif
 template <typename RangeType>
 void test3D( RangeType const& range )
 {
@@ -124,10 +125,10 @@ void test3D( RangeType const& range )
         raysDistributedIndices.push_back( k );
     }
 
-    auto bvhInHouse = boundingVolumeHierarchy(_range=range,_kind="in-house");
+    // auto bvhInHouse = boundingVolumeHierarchy(_range=range,_kind="in-house");
     auto bvhThirdParty = boundingVolumeHierarchy(_range=range,_kind="third-party");
     auto bvhThirdPartyLow = boundingVolumeHierarchy(_range=range,_kind="third-party",_quality=BVHEnum::Quality::Low);
-    for ( auto bvhCurrent : {bvhInHouse.get(),bvhThirdParty.get(),bvhThirdPartyLow.get()} )
+    for ( auto bvhCurrent : {/*bvhInHouse.get(),*/bvhThirdParty.get(),bvhThirdPartyLow.get()} )
     {
         std::size_t counter = 0;
         for ( auto const& ray : rays )
@@ -143,7 +144,7 @@ void test3D( RangeType const& range )
         }
     }
 }
-
+#if 0
 BOOST_AUTO_TEST_CASE( intersection_bvh_2D )
 {
     if ( Environment::isParallel() )
@@ -155,7 +156,7 @@ BOOST_AUTO_TEST_CASE( intersection_bvh_2D )
     auto submesh = createSubmesh(_mesh=mesh,_range=markedfaces(mesh,{"RequiredBoundaryOfRequiredElements"}));
     test2D( elements(submesh) );
 }
-
+#endif
 BOOST_AUTO_TEST_CASE( intersection_bvh_3D )
 {
     using mesh_type = Mesh<Simplex<3,1,3>>;

@@ -281,7 +281,11 @@ public:
             }
             }
 
-            return ret;
+            // If the input ray is a single ray, return a single vector of intersection results
+            if constexpr ( std::is_same_v<napp_ray_type,ray_type> )
+                return ret.front();
+            else
+                return ret;
         }
 
 
@@ -1039,7 +1043,7 @@ public:
                 if ( closestOnly && resSeq.size() > 1 )
                     resSeq.resize(1);
                 if ( !parallel )
-                    return resSeq;
+                    return { resSeq };
 
 #if 1
                 mpi::all_reduce( this->worldComm(), mpi::inplace( resSeq ), [](auto const& a, auto const& b) -> std::vector<rayintersection_result_type> {
@@ -1056,7 +1060,7 @@ public:
                                 return { b.front() };
                         }
                     } );
-                return resSeq;
+                return { resSeq };
 #else
                 std::vector<int> resLocalSize( this->worldComm().size() );
                 mpi::gather( this->worldComm(), (int)resSeq.size(), resLocalSize, this->worldComm().masterRank() );
