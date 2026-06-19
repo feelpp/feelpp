@@ -137,6 +137,16 @@ protected:
         coeff( 3 ) = mandelShearScale() * ( bx * frame[1] + by * frame[0] );
     }
 
+    template <typename VectorType>
+    void fillPinchingCoefficients( VectorType& coeff,
+                                   uint16_type component,
+                                   value_type bz ) const
+    {
+        auto const& frame = M_frame[component];
+        coeff( 2 ) = bz * frame[2];
+        std::cout << "DEBUG coeff(2) Bpc ou Bpz = " << coeff(2) << std::endl;
+    }
+
     /**
      * \brief Fill transverse-shearing Mandel coefficients for one local dof.
      *
@@ -556,6 +566,413 @@ private:
     /// Basis proxy element stored by the terminal expression.
     element_type M_element;
 };
+
+
+template <typename ElementType, OperatorType Role, template <typename> typename KernelCacheTemplate, auto Kind>
+class SB9ScalarOperator
+{
+public:
+    static_assert( Role == __TEST || Role == __TRIAL,
+                   "SB9ScalarOperator requires a trial or test basis role" );
+
+    /// Expression context flags requested from the geometric mapping context.
+    static const size_type context = 0;
+    /// Marks this expression as a terminal node in the Feel++ expression tree.
+    static inline const bool is_terminal = true;
+
+    /// Basis proxy element type carried by the expression.
+    using element_type = ElementType;
+    /// Function space associated with \ref element_type.
+    using functionspace_type = typename element_type::functionspace_type;
+    /// Reference finite element type.
+    using fe_type = typename functionspace_type::reference_element_type;
+    /// Current expression type.
+    using this_type = SB9ScalarOperator<element_type, Role, KernelCacheTemplate, Kind>;
+    /// Expression type returned by Feel++ expression machinery.
+    using expression_type = this_type;
+    /// Scalar value type of the function space.
+    using value_type = typename functionspace_type::value_type;
+    static constexpr int storage_size = symmetric_storage_size_v<3>;
+    /// Runtime value type produced by the expression.
+    // using evaluate_type = value_type;    // Eigen::Matrix<value_type, 1, 1>;
+    using evaluate_type = Eigen::Matrix<value_type, storage_size, 1>;   // utilisé nul part ??
+
+    /// Trait reporting whether this expression contains the requested test basis.
+    template<typename Func>
+    struct HasTestFunction
+    {
+        /// True when \c Func is the expression test basis finite element.
+        static inline const bool result = ( Role == __TEST ) && boost::is_same<Func, fe_type>::value;
+    };
+
+    /// Trait reporting whether this expression contains the requested trial basis.
+    template<typename Func>
+    struct HasTrialFunction
+    {
+        /// True when \c Func is the expression trial basis finite element.
+        static inline const bool result = ( Role == __TRIAL ) && boost::is_same<Func, fe_type>::value;
+    };
+
+    /// Compile-time test-basis flag used by Feel++ form assembly.
+    template<typename Func>
+    static inline const bool has_test_basis = ( Role == __TEST ) && boost::is_same<Func, fe_type>::value;
+
+    /// Compile-time trial-basis flag used by Feel++ form assembly.
+    template<typename Func>
+    static inline const bool has_trial_basis = ( Role == __TRIAL ) && boost::is_same<Func, fe_type>::value;
+
+    /// Test basis type exposed to the expression system.
+    using test_basis = std::conditional_t<Role == __TEST, fe_type, std::nullptr_t>;
+    /// Trial basis type exposed to the expression system.
+    using trial_basis = std::conditional_t<Role == __TRIAL, fe_type, std::nullptr_t>;
+
+    /// Lambda rebinding hook required by the Feel++ expression system.
+    template<typename... TheExpr>
+    struct Lambda
+    {
+        /// Rebound expression type.
+        using type = expression_type;
+    };
+
+    /**
+     * \brief Construct the SB9 vector operator for a trial or test basis proxy.
+     * \param element Basis proxy element.
+     */
+    SB9ScalarOperator( element_type element )
+        :
+        M_element( std::move( element ) )
+    {
+    }
+
+    /**
+     * \brief Return this expression for Feel++ expression expansion.
+     * \return A copy of this terminal expression.
+     */
+    template<typename... TheExpr>
+    expression_type
+    operator()( TheExpr... ) const
+    {
+        return *this;
+    }
+
+    /// Return the polynomial order advertised to the expression system.
+    constexpr uint16_type polynomialOrder() const
+    {
+        return 0;
+    }
+
+    /// SB9 operators are geometry-dependent and are not marked polynomial.
+    constexpr bool isPolynomial() const
+    {
+        return false;
+    }
+
+    /**
+     * \brief Apply symbolic substitutions.
+     *
+     * SB9 terminal operators do not contain symbolic sub-expressions, so the
+     * operation returns the expression unchanged.
+     */
+    template <typename SymbolsExprType>
+    expression_type applySymbolsExpr( SymbolsExprType const& ) const
+    {
+        return *this;
+    }
+
+    /**
+     * \brief Symbolic derivative of an SB9 terminal expression.
+     *
+     * The operator is linear in the basis function and independent of symbolic
+     * scalar symbols, so the symbolic derivative is the zero symmetric vector.
+     */
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const&, WorldComm const&, std::string const&,
+               TheSymbolExprType const& ) const
+    {
+        // return cst( value_type( 0 ) );   // ou garder en vec de taille 6 ?
+        return vec( cst( value_type( 0 ) ),
+                    cst( value_type( 0 ) ),
+                    cst( value_type( 0 ) ),
+                    cst( value_type( 0 ) ),
+                    cst( value_type( 0 ) ),
+                    cst( value_type( 0 ) ) );
+    }
+
+    /// Return the underlying basis proxy element.
+    element_type const& element() const
+    {
+        return M_element;
+    }
+
+    /**
+     * \brief Tensor evaluator for an SB9 vector contribution.
+     *
+     * The tensor owns the coefficient matrix for one geometric context and
+     * exposes scalar/vector evaluation functions expected by Feel++ assembly.
+     *
+     * \tparam Geo_t Geometric mapping context type.
+     * \tparam Basis_i_t Test basis tensor type.
+     * \tparam Basis_j_t Trial basis tensor type.
+     */
+    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
+    struct tensor : public ShellCellGeometryTensorBase<Geo_t, Basis_i_t, Basis_j_t>
+    {
+        /// Base class providing shell geometry cache updates.
+        using base_type = ShellCellGeometryTensorBase<Geo_t, Basis_i_t, Basis_j_t>;
+        /// Parent expression type.
+        using expression_type = typename this_type::expression_type;
+        /// Geometric mapping context type.
+        using gmc_type = typename base_type::gmc_type;
+        /// Scalar value type.
+        using value_type = typename expression_type::value_type;
+        /// Feel++ tensor shape: vector with symmetric-storage length.
+        // using shape = Shape<1, Scalar, false, false>;
+        using shape = Shape<storage_size, Scalar, false, false>;   // essayer
+        /// Matrix storing one coefficient vector per element dof.
+        using vector_type = Eigen::Matrix<value_type, storage_size, 1>;  // essayer
+
+        // using coeff_matrix_type = Eigen::Matrix<value_type, 1, Eigen::Dynamic>;
+        using coeff_matrix_type = Eigen::Matrix<value_type, storage_size, Eigen::Dynamic>;   // type de coeff -> 6,1
+
+        /// Contribution-specific kernel cache for the current geometry data.
+        using kernel_cache_type = KernelCacheTemplate<typename base_type::geometry_data_type>;
+
+        /// Zero-trait required by the Feel++ tensor API.
+        struct is_zero
+        {
+            /// SB9 vector contribution tensors are generally nonzero.
+            static inline const bool value = false;
+        };
+
+        /**
+         * \brief Construct from expression, geometry, test basis, and trial basis.
+         */
+        tensor( expression_type const& expr, Geo_t const& geom, Basis_i_t const&, Basis_j_t const& )
+            :
+            M_expr( expr ),
+            M_fe( expr.element().functionSpace()->fe() )
+        {
+            this->checkFiniteElement();
+            this->update( geom );
+        }
+
+        /**
+         * \brief Construct from expression, geometry, and one basis tensor.
+         */
+        tensor( expression_type const& expr, Geo_t const& geom, Basis_i_t const& )
+            :
+            M_expr( expr ),
+            M_fe( expr.element().functionSpace()->fe() )
+        {
+            this->checkFiniteElement();
+            this->update( geom );
+        }
+
+        /**
+         * \brief Construct from expression and geometry only.
+         */
+        tensor( expression_type const& expr, Geo_t const& geom )
+            :
+            M_expr( expr ),
+            M_fe( expr.element().functionSpace()->fe() )
+        {
+            this->checkFiniteElement();
+            this->update( geom );
+        }
+
+        /**
+         * \brief Construct from an already-expanded expression.
+         */
+        template<typename TheExprExpandedType, typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type, TheExprExpandedType const&, TupleTensorSymbolsExprType&,
+                expression_type const& expr, Geo_t const& geom, TheArgsType const&... args )
+            :
+            tensor( expr, geom, args... )
+        {
+        }
+
+        /// Update tensor data from geometry and test/trial basis tensors.
+        void update( Geo_t const& geom, Basis_i_t const&, Basis_j_t const& )
+        {
+            this->update( geom );
+        }
+
+        /// Update tensor data from geometry and one basis tensor.
+        void update( Geo_t const& geom, Basis_i_t const& )
+        {
+            this->update( geom );
+        }
+
+        /// Update geometry data and recompute the coefficient matrix.
+        void update( Geo_t const& geom )
+        {
+            this->updateFromGeom( geom );
+            this->computeCoefficients();
+        }
+
+        /// Update tensor data from an already-expanded expression.
+        template<typename TheExprExpandedType, typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type, TheExprExpandedType const&, TupleTensorSymbolsExprType&,
+                     Geo_t const& geom, TheArgsType const&... )
+        {
+            this->update( geom );
+        }
+
+        /// Update from a Feel++ assembly context and recompute coefficients.
+        template<typename... CTX>
+        void updateContext( CTX const&... ctx )
+        {
+            this->updateFromContext( ctx... );
+            this->computeCoefficients();
+        }
+
+        /**
+         * \brief Evaluate one scalar component for a test/trial dof pair.
+         *
+         * \param i Local test dof index.
+         * \param j Local trial dof index.
+         * \param c1 Symmetric-storage component index.
+         * \return Coefficient value for the role-selected dof.
+         */
+        value_type evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type, uint16_type ) const
+        {
+            return M_coeff( c1, this->localDofId( i, j ) );
+        }
+
+        /// Pattern-context overload forwarding to \ref evalijq.
+        template<int PatternContext>
+        value_type evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
+                            mpl::int_<PatternContext> ) const
+        {
+            return this->evalijq( i, j, c1, c2, q );
+        }
+
+        /// Evaluate one scalar component for a single local dof.
+        value_type evaliq( uint16_type i, uint16_type c1, uint16_type, uint16_type ) const
+        {
+            return M_coeff( c1, i );
+        }
+
+        /// Evaluate one scalar component for context-independent access.
+        value_type evalq( uint16_type c1, uint16_type, uint16_type ) const
+        {
+            return M_coeff( c1, 0 );
+        }
+
+        // /// Evaluate the full symmetric-storage vector for a test/trial dof pair.
+        // Eigen::Map<const value_type> evalijq( uint16_type i, uint16_type j, uint16_type ) const
+        // {
+        //     return Eigen::Map<const value_type>( M_coeff.col( this->localDofId( i, j ) ).data() );
+        // }
+
+        // /// Evaluate the full symmetric-storage vector for a single local dof.
+        // Eigen::Map<const value_type> evaliq( uint16_type i, uint16_type ) const
+        // {
+        //     return Eigen::Map<const value_type>( M_coeff.col( i ).data() );
+        // }
+
+        // /// Evaluate the first coefficient vector for context-independent access.
+        // Eigen::Map<const value_type> evalq( uint16_type ) const
+        // {
+        //     return Eigen::Map<const value_type>( M_coeff.col( 0 ).data() );
+        // }
+
+        // essayer
+        Eigen::Map<const vector_type> evalijq( uint16_type i, uint16_type j, uint16_type ) const
+        {
+            return Eigen::Map<const vector_type>( M_coeff.col( this->localDofId( i, j ) ).data() );
+        }
+
+        /// Evaluate the full symmetric-storage vector for a single local dof.
+        Eigen::Map<const vector_type> evaliq( uint16_type i, uint16_type ) const
+        {
+            return Eigen::Map<const vector_type>( M_coeff.col( i ).data() );
+        }
+
+        /// Evaluate the first coefficient vector for context-independent access.
+        Eigen::Map<const vector_type> evalq( uint16_type ) const
+        {
+            return Eigen::Map<const vector_type>( M_coeff.col( 0 ).data() );
+        }
+
+
+    private:
+        /// Validate that the finite element matches the current SB9 assumptions.
+        void checkFiniteElement() const
+        {
+            CHECK( functionspace_type::nDim == 3 && functionspace_type::nRealDim == 3 )
+                << "SB9 shell operators require a 3D displacement space";
+            CHECK( M_fe )
+                << "SB9 shell operators require a valid reference element";
+            CHECK( M_fe->is_scalar )  // ou vectorial ?
+                << "SB9 shell operators require a vector-valued displacement basis";
+            CHECK( M_fe->nComponents == 1 )
+                << "SB9 shell operators require a 3-component displacement basis";
+            CHECK( M_fe->nLocalDof == 1 )
+                << "SB9 shell operators currently support Q1 eight-node hexahedra only";
+        }
+
+        /// Select the active local dof according to the expression role.
+        uint16_type localDofId( uint16_type i, uint16_type j ) const
+        {
+            if constexpr ( Role == __TRIAL )
+                return j;
+            else
+                return i;
+        }
+
+        /// Build the coefficient matrix for all vector components and nodes.
+        void computeCoefficients()
+        {
+            uint16_type const nScalarLocalDof = M_fe->nLocalDof;
+            uint16_type const nElementDof = M_fe->nComponents * nScalarLocalDof;
+            uint16_type const nComponents = M_fe->nComponents;
+            kernel_cache_type const cache( this->M_data );
+
+            CHECK( nScalarLocalDof == 1 )  // kernel_cache_type::node_count
+                << "SB9 shell operators currently support 8 hexahedral vertices only";
+            CHECK( nComponents == 1 )    // kernel_cache_type::component_count
+                << "SB9 shell operators require a 3-component vector basis";
+
+
+            // M_coeff.resize( 1, nElementDof );  // (1,1)
+            // M_coeff.setZero();
+
+            // value_type coeff = value_type( 0 );
+            // cache.template fillScalarCoefficients<Kind>( coeff );
+            // M_coeff( 0, 0 ) = coeff;
+
+            M_coeff.resize( storage_size, nElementDof );  // (1,1)
+            M_coeff.setZero();
+
+            vector_type coeff = vector_type::Zero();
+            cache.template fillScalarCoefficients<Kind>( coeff );
+            M_coeff.col( 0 ) = coeff;
+
+
+            // // essayer
+            // M_coeff.resize( storage_size, nElementDof );  // (1,1)
+            // M_coeff.setZero();
+            // value_type coeff = vector_type::Zero();
+            // cache.template fillScalarCoefficients<Kind>( coeff );
+            // M_coeff.col( 0 ) = coeff;
+        }
+
+        /// Parent expression instance.
+        expression_type const& M_expr;
+        /// Reference finite element associated with the basis proxy.
+        std::shared_ptr<fe_type> M_fe;
+        /// Coefficient matrix with one column per element dof.
+        coeff_matrix_type M_coeff;
+    };
+
+private:
+    /// Basis proxy element stored by the terminal expression.
+    element_type M_element;
+};
+
+
+
 
 /**
  * \brief Generic Feel++ expression node for SB9 stabilization contributions.
