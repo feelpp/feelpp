@@ -529,7 +529,7 @@ public:
             static constexpr bool isAnyHint = Ctx == super_type::IntersectContext::anyHint;
 
 #if 1
-            if constexpr( std::is_same_v<BVHRaysDistributed<nRealDim>,RayType/*napp_ray_type*/> ) // case rays distributed on process
+            if constexpr( std::is_same_v<BVHRaysDistributed<nRealDim>,RayType> ) // case rays distributed on process
             {
                 auto const& localRays = ray.rays();
                 std::vector<std::vector<rayintersection_result_type>> final_results(localRays.size());
@@ -562,6 +562,12 @@ public:
                 {
                     std::vector<TlasHit> hit_ranks = this->getHitPartitions(localRays[i]);
 
+                    // Prioritize local partitioning
+                    auto itFindLocalRank = std::find_if(hit_ranks.begin(), hit_ranks.end(),
+                                                        [this](const TlasHit& hit) { return hit.rank == this->worldComm().rank(); });
+                    if (itFindLocalRank != hit_ranks.end())
+                        std::iter_swap(hit_ranks.begin(), itFindLocalRank);
+
                     for (auto const& hit : hit_ranks)
                         states[i].targets.push_back({hit.rank});
 
@@ -581,9 +587,8 @@ public:
                 // some useful data structures and constants for the main loop
                 const int TAG_REQ = 100;
                 const int TAG_RES = 101;
-                const size_t BATCH_SIZE = 8192;//256;
-                const int CHUNK_SIZE = 1024;//8192;//4096;//64;
-                const int BATCH_THRESHOLD = 8192;//1024;
+                const int CHUNK_SIZE = 4096;//8192;//1024;//8192;//4096;//64;
+                const int BATCH_THRESHOLD = 2048;//1024;//8192;//1024;
 
                 MPI_Comm raw_comm = (MPI_Comm)this->worldComm();
                 MPI_Request term_req = MPI_REQUEST_NULL;
@@ -614,6 +619,13 @@ public:
                 };
                 std::list<PendingRecv> active_recvs;
 
+                struct PendingResRecv {
+                    std::vector<NetworkRes> buffer;
+                    MPI_Request req;
+                    int source_rank;
+                };
+                std::list<PendingResRecv> active_res_recvs;
+
 
                 struct RemoteTask {
                     int source_rank;
@@ -630,6 +642,13 @@ public:
                 // Reception buffer for responses
                 std::vector<NetworkRes> incoming_resps;
 
+                double last_probe_time = MPI_Wtime();
+                double last_reduce_time = MPI_Wtime();
+
+                // Intervals in seconds
+                const double PROBE_INTERVAL = 0.1;//0.002;//0.5;//0.05;//0.002;  // 2 ms (pour écouter le réseau)
+                const double REDUCE_INTERVAL = 0.5;//0.5;//0.050;//0.5;// 0.050; // 50 ms (pour vérifier la terminaison)
+
                 double total_network_time = 0.0;
                 double total_compute_time = 0.0;
                 double total_sleep_time = 0.0;
@@ -640,11 +659,17 @@ public:
                     // if ( this->worldComm().isMasterRank() )
                     //   std::cout << "start loop iteration, global_active_rays = " << global_active_rays << " counter:"<< loop_counter << std::endl;
                     // tic();
-                    // On part du principe qu'on ne va rien faire ce tour-ci
                     bool did_work = false;
                     loop_counter++;
                     bool received_something = false;
                     pending_incoming_reqs.clear(); // The worklist is cleared at the start of the round
+
+                    // Read the time ponctually to avoid calling MPI_Wtime too much
+                    double current_time = 0.0;
+                    bool check_time = (loop_counter % 32 == 0);
+                    if (check_time) {
+                        current_time = MPI_Wtime();
+                    }
 
                     // ==========================================================
                     // PHASE 1: PURE NETWORK READING & PROCESSING
@@ -652,27 +677,54 @@ public:
                     int flag; MPI_Status status;
                     // Get all incoming requests and put them in pending_incoming_reqs (one batch per sender)
 
-                    double start_network = MPI_Wtime();
-                    // 1.A - Get new incoming requests and start Irecv for them
-                    MPI_Iprobe(MPI_ANY_SOURCE, TAG_REQ, raw_comm, &flag, &status);
-                    while (flag)
+                    //if (loop_counter % 64 == 0)
+                    if (pending_remote_compute.empty() || (check_time && (current_time - last_probe_time > PROBE_INTERVAL)))
                     {
-                        did_work = true;
-                        received_something = true;
-                        int count_bytes;
-                        MPI_Get_count(&status, MPI_BYTE, &count_bytes);
-                        int num_items = count_bytes / sizeof(NetworkReq);
-
-                        PendingRecv pr;
-                        pr.buffer.resize(num_items);
-                        pr.source_rank = status.MPI_SOURCE;
-                        MPI_Irecv(pr.buffer.data(), count_bytes, MPI_BYTE, pr.source_rank, TAG_REQ, raw_comm, &pr.req);
-                        active_recvs.push_back(std::move(pr));
-
+                        //double start_network = MPI_Wtime();
+                        // 1.A - Get new incoming requests and start Irecv for them
                         MPI_Iprobe(MPI_ANY_SOURCE, TAG_REQ, raw_comm, &flag, &status);
+                        while (flag)
+                        {
+                            did_work = true;
+                            received_something = true;
+                            int count_bytes;
+                            MPI_Get_count(&status, MPI_BYTE, &count_bytes);
+                            int num_items = count_bytes / sizeof(NetworkReq);
+
+                            PendingRecv pr;
+                            pr.buffer.resize(num_items);
+                            pr.source_rank = status.MPI_SOURCE;
+                            MPI_Irecv(pr.buffer.data(), count_bytes, MPI_BYTE, pr.source_rank, TAG_REQ, raw_comm, &pr.req);
+                            active_recvs.push_back(std::move(pr));
+
+                            MPI_Iprobe(MPI_ANY_SOURCE, TAG_REQ, raw_comm, &flag, &status);
+                        }
+
+                        // 1.B - Get new incoming responses and start Irecv for them
+                        MPI_Iprobe(MPI_ANY_SOURCE, TAG_RES, raw_comm, &flag, &status);
+                        while (flag)
+                        {
+                            did_work = true;
+                            received_something = true;
+                            int count_bytes = 0;
+                            MPI_Get_count(&status, MPI_BYTE, &count_bytes);
+                            int num_items = count_bytes / sizeof(NetworkRes);
+
+                            PendingResRecv pr;
+                            pr.buffer.resize(num_items);
+                            pr.source_rank = status.MPI_SOURCE;
+
+                            MPI_Irecv(pr.buffer.data(), count_bytes, MPI_BYTE, pr.source_rank, TAG_RES, raw_comm, &pr.req);
+                            active_res_recvs.push_back(std::move(pr));
+
+                            MPI_Iprobe(MPI_ANY_SOURCE, TAG_RES, raw_comm, &flag, &status);
+                        }
+
+                        //double end_network = MPI_Wtime();
+                        //total_network_time += (end_network - start_network);
                     }
 
-                    // 1.B - Process completed Irecv requests and put them in pending_remote_compute
+                    // 1.C - Process completed Irecv requests and put them in pending_remote_compute
                     for (auto it = active_recvs.begin(); it != active_recvs.end(); )
                     {
                         int is_done = 0;
@@ -695,77 +747,64 @@ public:
                         }
                     }
 
-                    double end_network = MPI_Wtime();
-                    total_network_time += (end_network - start_network);
 
 
-
-                    // get all incoming responses and directly process them (update ray states, final_results, and ready_rays)
-                    MPI_Iprobe(MPI_ANY_SOURCE, TAG_RES, raw_comm, &flag, &status);
-                    while (flag)
+                    // 1.D - Process completed Irecv responses and directly update states, final_results and ready_rays accordingly
+                    for (auto it = active_res_recvs.begin(); it != active_res_recvs.end(); )
                     {
-                        received_something = true;
-                        // Get the exact size of the message in bytes
-                        int count_bytes = 0;
-                        MPI_Get_count(&status, MPI_BYTE, &count_bytes);
-                        int num_items = count_bytes / sizeof(NetworkRes);
+                        int is_done = 0;
+                        MPI_Test(&it->req, &is_done, MPI_STATUS_IGNORE);
 
-                        // Prepare the buffer
-                        if ( incoming_resps.size() < num_items )
-                            incoming_resps.resize(num_items);
-
-                        // Recv message
-                        MPI_Recv(incoming_resps.data(), count_bytes, MPI_BYTE, status.MPI_SOURCE, TAG_RES, raw_comm, MPI_STATUS_IGNORE);
-
-                        // treat responses one by one and update states, final_results and ready_rays accordingly
-                        for ( std::size_t k = 0; k < num_items; ++k ) {
-                            auto const& res = incoming_resps[k];
-                            int ray_id = res.ray_id;
-                            states[ray_id].is_waiting = false;
-                            states[ray_id].current_idx++;
-
-                            bool hasIntersection = res.result.processId() != invalid_v<rank_type>;
-                            // store the result if it's an intersection
-                            if ( hasIntersection )
+                        if (is_done)
+                        {
+                            did_work = true;
+                            for (auto const& res : it->buffer)
                             {
+                                int ray_id = res.ray_id;
+                                states[ray_id].is_waiting = false;
+                                states[ray_id].current_idx++;
+
+                                bool hasIntersection = res.result.processId() != invalid_v<rank_type>;
+
+                                if ( hasIntersection ) {
+                                    if constexpr ( isAnyHint ) {
+                                        final_results[ray_id] = { res.result };
+                                    } else if constexpr ( closestOnly ) {
+                                        if (final_results[ray_id].empty() || res.result.distance() < final_results[ray_id].front().distance())
+                                            final_results[ray_id] = { res.result };
+                                    } else {
+                                        final_results[ray_id].push_back( res.result );
+                                    }
+                                }
+
+                                // Put it back in the job queue or mark as completed
                                 if constexpr ( isAnyHint )
                                 {
-                                    final_results[ray_id] = { res.result };
-                                }
-                                else if constexpr ( closestOnly )
-                                {
-                                    if (final_results[ray_id].empty() || res.result.distance() < final_results[ray_id].front().distance())
-                                        final_results[ray_id] = { res.result };
-                                }
-                                else
-                                {
-                                    final_results[ray_id].push_back( res.result );
-                                }
-                            }
-
-                            // Put it back in the job queue or mark as completed
-                            if constexpr ( isAnyHint )
-                            {
-                                if ( hasIntersection || states[ray_id].current_idx >= states[ray_id].targets.size() )
-                                {
-                                    states[ray_id].active = false;
-                                    my_active_rays--;
+                                    if ( hasIntersection || states[ray_id].current_idx >= states[ray_id].targets.size() )
+                                    {
+                                        states[ray_id].active = false;
+                                        my_active_rays--;
+                                    }
+                                    else
+                                        ready_rays.push(ray_id);
                                 }
                                 else
-                                    ready_rays.push(ray_id);
-                            }
-                            else
-                            {
-                                if ( states[ray_id].current_idx < states[ray_id].targets.size() ) {
-                                    ready_rays.push(ray_id);
-                                }
-                                else {
-                                    states[ray_id].active = false;
-                                    my_active_rays--;
+                                {
+                                    if ( states[ray_id].current_idx < states[ray_id].targets.size() )
+                                        ready_rays.push(ray_id);
+                                    else
+                                    {
+                                        states[ray_id].active = false;
+                                        my_active_rays--;
+                                    }
                                 }
                             }
+                            it = active_res_recvs.erase(it);
                         }
-                        MPI_Iprobe(MPI_ANY_SOURCE, TAG_RES, raw_comm, &flag, &status);
+                        else
+                        {
+                            ++it;
+                        }
                     }
 
                     // ==========================================================
@@ -919,7 +958,7 @@ public:
                                 MPI_Isend(active_sends.back().res_data.data(),
                                           active_sends.back().res_data.size() * sizeof(NetworkRes),
                                           MPI_BYTE, target_rank, TAG_RES, raw_comm, &active_sends.back().mpi_req);
-                                // resps has been “moved”; we no longer need to empty it manually
+                                resps.clear();
                             }
                         }
                     }
@@ -929,7 +968,8 @@ public:
                     // ==========================================================
                     if (!checking_term)
                     {
-                        if (loop_counter % 64 == 0)
+                        //if (loop_counter % 64 == 0)
+                        if (check_time && (current_time - last_reduce_time > REDUCE_INTERVAL))
                         {
                             snapshot_my_active_rays = my_active_rays;
                             MPI_Iallreduce(&snapshot_my_active_rays, &temp_global_active_rays, 1, MPI_INT, MPI_SUM, raw_comm, &term_req);
@@ -969,7 +1009,7 @@ public:
                 return final_results;
             }
 #else
-            if constexpr( std::is_same_v<BVHRaysDistributed<nRealDim>,napp_ray_type> ) // case rays distributed on process
+            if constexpr( std::is_same_v<BVHRaysDistributed<nRealDim>,RayType> ) // case rays distributed on process
             {
                 // WARNING: this algo is not good (all_gather of rays then all run bvh), just a quick version for test
                 auto const& localRays = ray.rays();
@@ -985,7 +1025,7 @@ public:
                 mpi::gatherv( this->worldComm(), localRays, raysGathered.data(), resLocalSize, this->worldComm().masterRank() );
                 mpi::broadcast( this->worldComm(), raysGathered, this->worldComm().masterRank() );
 
-                auto intersectGlobal = this->intersect(_ray=raysGathered,_robust=useRobustTraversal,_context=ctx,_parallel=true,_tolerance=tolerance);
+                auto intersectGlobal = this->intersect(_ray=raysGathered,_robust=useRobustTraversal,_context=Ctx,_parallel=true,_tolerance=tolerance);
 
                 std::vector<std::vector<rayintersection_result_type>> res;
                 res.resize( ray.numberOfLocalRay() );
@@ -1147,7 +1187,7 @@ private:
             //std::cout << "Rang " << this->worldComm().rank() << " - getHitPartitions: " << hit_ranks.size() << " hits." << std::endl;
             std::sort(hit_ranks.begin(), hit_ranks.end(), [](const TlasHit& a, const TlasHit& b) {
                                                               return a.distance < b.distance; // Sort by entry distance
-                                                          });
+                                                    });
             return hit_ranks;
         }
     std::vector<rayintersection_result_type> intersectSequential( ray_type const& ray, value_type tolerance, bool useRobustTraversal = true ) override
