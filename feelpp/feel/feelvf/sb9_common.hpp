@@ -137,6 +137,35 @@ protected:
         coeff( 3 ) = mandelShearScale() * ( bx * frame[1] + by * frame[0] );
     }
 
+    /**
+     * \brief Fill transverse-shearing Mandel coefficients for one local dof.
+     *
+     * The SB9 transverse-shearing operator contributes only to the shear
+     * components in Mandel storage (entries 4 and 5). Each component is obtained
+     * by projecting the local transverse-shear derivatives onto the element frame and 
+     * applying the Mandel scaling factor.
+     * 
+     * \tparam VectorType Eigen-compatible coefficient vector type.
+     * \param coeff Output coefficient vector in symmetric storage order.
+     * \param component Displacement component index.
+     * \param s0 First shear derivative coefficient (correspond to the entry 4).
+     * \param s1 Second shear derivative coefficient (correspond to the entry 5).
+     */
+    template <typename VectorType>
+    void fillShearingCoefficients( VectorType& coeff,
+                                   uint16_type component,
+                                   value_type s0x,
+                                   value_type s0y,
+                                   value_type s0z,
+                                   value_type s1x,
+                                   value_type s1y,
+                                   value_type s1z ) const
+    {
+        auto const& frame = M_frame[component];
+        coeff( 4 ) = mandelShearScale() * ( s0x * frame[0] + s0y * frame[1] + s0z * frame[2] );
+        coeff( 5 ) = mandelShearScale() * ( s1x * frame[0] + s1y * frame[1] + s1z * frame[2] );
+    }
+
     /// Referenced shell geometry data for the current element.
     GeometryDataType const& M_data;
     /// Inverse-transpose of the mid-surface Jacobian.
