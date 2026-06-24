@@ -86,8 +86,7 @@ public:
     {
         for ( uint16_type node = 0; node < node_count; ++node )
         {
-            M_bending[node][0] = this->M_data.vgamma( node, 0 )*this->M_invJ0( 0, 1 ) +
-                                 this->M_data.vgamma( node, 1 )*this->M_invJ0( 0, 0 );
+            M_bending[node][0] = this->M_data.vgamma( node, 1 )*this->M_invJ0( 0, 0 );
             M_bending[node][1] = this->M_data.vgamma( node, 0 )*this->M_invJ0( 1, 1 ) +
                                  this->M_data.vgamma( node, 1 )*this->M_invJ0( 1, 0 );
         }
