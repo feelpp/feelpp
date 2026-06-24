@@ -1,0 +1,243 @@
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- */
+
+#include <feel/feelcore/environment.hpp>
+#include <feel/feeldiscr/pchv.hpp>
+#include <feel/feeldiscr/pdh.hpp>
+#include <feel/feeldiscr/product.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/geo.hpp>
+#include <feel/feelmesh/hypercube.hpp>
+#include <feel/feelvf/blockforms.hpp>
+#include <feel/feelvf/sb9_bending.hpp>
+#include <feel/feelvf/sb9_pinching.hpp>
+#include <feel/feelvf/sb9_shear.hpp>
+#include <feel/feelvf/sb9_strain.hpp>
+#include <feel/feelvf/vf.hpp>
+
+#include <boost/format.hpp>
+
+using namespace Feel;
+
+namespace
+{
+using mesh_type = Mesh<Hypercube<3>>;
+
+po::options_description
+makeOptions()
+{
+    po::options_description options( "qs_sb9 options" );
+    options.add_options()
+        ( "E", po::value<double>()->default_value( 10.0 ), "Young modulus" )
+        ( "nu", po::value<double>()->default_value( 0.3 ), "Poisson ratio" )
+        ( "load", po::value<double>()->default_value( -1.0 ), "constant z traction on XPlus" )
+        ( "alpha-scale", po::value<double>()->default_value( 1.0 ), "scale applied to the internal SB9 scalar mode" )
+        ( "monolithic", po::value<bool>()->default_value( false ), "use the monolithic mixed solve instead of SB9 static condensation" )
+        ( "no-solve", po::value<bool>()->default_value( false ), "assemble only" );
+    return options.add( feel_options() );
+}
+
+AboutData
+makeAbout()
+{
+    AboutData about( "qs_sb9",
+                     "qs_sb9",
+                     "0.1",
+                     "Minimal SB9 mixed shell formulation without stabilization terms",
+                     Feel::AboutData::License_GPL,
+                     "Copyright (c) Feel++ Consortium" );
+    about.addAuthor( "Feel++ Consortium", "developer", "feelpp-devel@feelpp.org", "" );
+    return about;
+}
+
+std::string
+unitShellGeo()
+{
+    return R"(
+Mesh.RecombineAll = 1;
+
+Point(1) = {0, 0, -0.05, 1};
+Point(2) = {1, 0, -0.05, 1};
+Point(3) = {0, 1, -0.05, 1};
+Point(4) = {1, 1, -0.05, 1};
+Point(5) = {0, 0,  0.05, 1};
+Point(6) = {1, 0,  0.05, 1};
+Point(7) = {0, 1,  0.05, 1};
+Point(8) = {1, 1,  0.05, 1};
+
+Line(1) = {1, 2};
+Line(2) = {2, 4};
+Line(3) = {4, 3};
+Line(4) = {3, 1};
+Line(5) = {5, 6};
+Line(6) = {6, 8};
+Line(7) = {8, 7};
+Line(8) = {7, 5};
+Line(9) = {1, 5};
+Line(10) = {2, 6};
+Line(11) = {4, 8};
+Line(12) = {3, 7};
+
+Line Loop(1) = {1, 2, 3, 4};
+Plane Surface(1) = {1};
+Line Loop(2) = {5, 6, 7, 8};
+Plane Surface(2) = {2};
+Line Loop(3) = {1, 10, -5, -9};
+Plane Surface(3) = {3};
+Line Loop(4) = {2, 11, -6, -10};
+Plane Surface(4) = {4};
+Line Loop(5) = {-3, 11, 7, -12};
+Plane Surface(5) = {5};
+Line Loop(6) = {-4, 12, 8, -9};
+Plane Surface(6) = {6};
+
+Surface Loop(1) = {1, 2, 3, 4, 5, 6};
+Volume(1) = {1};
+
+Transfinite Line {1, 3, 5, 7} = 2;
+Transfinite Line {2, 4, 6, 8} = 2;
+Transfinite Line {9, 10, 11, 12} = 2;
+Transfinite Surface {1} = {1, 2, 4, 3};
+Transfinite Surface {2} = {5, 6, 8, 7};
+Transfinite Surface {3} = {1, 2, 6, 5};
+Transfinite Surface {4} = {2, 4, 8, 6};
+Transfinite Surface {5} = {3, 4, 8, 7};
+Transfinite Surface {6} = {1, 3, 7, 5};
+Transfinite Volume {1} = {1, 2, 4, 3, 5, 6, 8, 7};
+Recombine Surface {1, 2, 3, 4, 5, 6};
+Recombine Volume {1};
+
+Physical Surface("ZMoins") = {1};
+Physical Surface("ZPlus") = {2};
+Physical Surface("YMoins") = {3};
+Physical Surface("XPlus") = {4};
+Physical Surface("YPlus") = {5};
+Physical Surface("XMoins") = {6};
+Physical Volume("Shell") = {1};
+)";
+}
+
+std::shared_ptr<mesh_type>
+createUnitShellMesh()
+{
+    Environment::changeRepository( _directory=boost::format( "quickstart/%1%/" ) % Environment::about().appName() );
+    return createGMSHMesh( _mesh=new mesh_type,
+                           _desc=geo( _filename="qs_sb9_unit_shell.geo",
+                                      _desc=unitShellGeo(),
+                                      _dim=3,
+                                      _order=1,
+                                      _h=1.0 ),
+                           _force_rebuild=boption( "gmsh.rebuild" ) );
+}
+} // namespace
+
+int
+main( int argc, char** argv )
+{
+    using namespace vf;
+
+    Environment env( _argc=argc, _argv=argv, _desc=makeOptions(), _about=makeAbout() );
+
+    auto mesh = createUnitShellMesh();
+
+    double const E = doption( "E" );
+    double const nu = doption( "nu" );
+    double const lambda = E * nu / ( ( 1.0 + nu ) * ( 1.0 - 2.0 * nu ) );
+    double const mu = E / ( 2.0 * ( 1.0 + nu ) );
+    double const alphaScale = doption( "alpha-scale" );
+
+    auto Uh = Pchv<1>( mesh );
+    auto Ah = Pdh<0>( mesh );
+    auto Xh = productPtr( Uh, Ah );
+
+    auto u = trial( Uh, "u" );
+    auto v = test( Uh, "v" );
+    auto alpha = trial( Ah, "alpha" );
+    auto beta = test( Ah, "beta" );
+
+    auto X = Xh->element();
+    auto uBc = X( 0_c );
+
+    auto backend = Feel::backend( _rebuild=true, _worldcomm=Uh->worldCommPtr() );
+    bool const useStaticCondensation = !boption( "monolithic" );
+    solve::strategy const strategy = useStaticCondensation
+                                         ? solve::strategy::static_condensation
+                                         : solve::strategy::monolithic;
+    auto a = blockform2( *Xh, strategy, backend );
+    auto l = blockform1( *Xh, strategy, backend );
+
+    auto zt = zeta();
+    auto C = isotropic_stiffness<3>( lambda, mu );
+    auto shearWeight = cst( 5.0 / 4.0 ) * ( cst( 1.0 ) - zt * zt );
+
+    auto epsU = sb9MembraneBending( u, zt );
+    auto epsV = sb9MembraneBending( v, zt );
+    auto epsP = sb9Pinching( u, zt );
+    auto epsQ = sb9Pinching( v, zt );
+    auto epsS = sb9Shear( u, shearWeight );
+    auto epsT = sb9Shear( v, shearWeight );
+    auto epsW = sb9W9( alpha, cst( alphaScale ) );
+    auto epsZ = sb9W9( beta, cst( alphaScale ) );
+
+    auto epsShellTrial = vec( component<0, 0>( epsU ),
+                              component<1, 0>( epsU ),
+                              component<2, 0>( epsS ),
+                              component<3, 0>( epsU ),
+                              component<4, 0>( epsS ),
+                              component<5, 0>( epsP ) );
+    auto epsShellTest = vec( component<0, 0>( epsV ),
+                             component<1, 0>( epsV ),
+                             component<2, 0>( epsT ),
+                             component<3, 0>( epsV ),
+                             component<4, 0>( epsT ),
+                             component<5, 0>( epsQ ) );
+
+    // Minimal SB9 mixed elastic formulation:
+    //
+    // [ u     ]  displacement Q1 vector field, 24 element dofs
+    // [ alpha ]  internal P0 scalar mode, one element dof
+    //
+    // No Hallquist Bc1/Bc2 stabilization and no Bs1..Bs4 stabilization are
+    // assembled here. This file intentionally shows only the elastic blocks.
+    a( 0_c, 0_c ) += integrate( _range=elements( mesh ),
+                                _expr=ddot( C, epsShellTrial, epsShellTest ) );
+    a( 0_c, 1_c ) += integrate( _range=elements( mesh ),
+                                _expr=ddot( C, epsW, epsShellTest ) );
+    a( 1_c, 0_c ) += integrate( _range=elements( mesh ),
+                                _expr=ddot( C, epsShellTrial, epsZ ) );
+    a( 1_c, 1_c ) += integrate( _range=elements( mesh ),
+                                _expr=ddot( C, epsW, epsZ ) );
+
+    l( 0_c ) += integrate( _range=markedfaces( mesh, "XPlus" ),
+                           _expr=inner( vec( cst( 0.0 ), cst( 0.0 ), cst( doption( "load" ) ) ), v ) );
+
+    l.close();
+    a.close();
+
+    a.row( 0_c ) += on( _range=markedfaces( mesh, "XMoins" ),
+                        _rhs=l( 0_c ),
+                        _element=uBc,
+                        _expr=zero<3, 1>(),
+                        _type="elimination" );
+
+    if ( !boption( "no-solve" ) )
+        a.solve( _rhs=l, _solution=X,
+                 _condense=useStaticCondensation,
+                 _condenser=condenser_sb9() );
+
+    auto uh = X( 0_c );
+    auto alphah = X( 1_c );
+    std::cout << "qs_sb9 minimal formulation assembled"
+              << " with E=" << E
+              << ", nu=" << nu
+              << ", load=" << doption( "load" )
+              << ", strategy=" << ( useStaticCondensation ? "static_condensation" : "monolithic" ) << "\n";
+
+    auto e = exporter( _mesh=mesh );
+    e->addRegions();
+    e->add( "u", uh );
+    e->add( "alpha", alphah );
+    e->save();
+
+    return 0;
+}
