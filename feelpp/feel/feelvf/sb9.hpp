@@ -26,6 +26,7 @@
 #define FEELPP_VF_SB9_HPP 1
 
 #include <feel/feelvf/sb9_bending.hpp>
+#include <feel/feelvf/sb9_pinching.hpp>
 #include <feel/feelvf/sb9_shearing.hpp>
 
 #endif
