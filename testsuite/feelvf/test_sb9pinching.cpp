@@ -60,9 +60,6 @@ namespace
  * \param beta Test basis proxy for the scalar space.
  * \param fieldExpr Field interpolated in the displacement component of \p Xh 
  *        before energy evaluation.
- *  
- * Note: The SB9 integration scheme is not yet fully implemented, so the `Bpz`
- * term is set to zero to match the current Matlab reference implementation.
  */
 template <typename ProductSpacePtrType, typename TrialUType, typename TestUType, typename TrialAType, typename TestAType, typename FieldExprType>
 void
@@ -83,11 +80,11 @@ checkSb9PinchingRigidMode( mesh_ptrtype const& mesh,
     auto zt = zeta();
 
     pinching( 0_c, 0_c ) += integrate( _range=elements( mesh ),
-                                _expr=ddot( C, sb9Pinching( u, zt, 0.0 ), sb9Pinching( v, zt, 0.0 ) ) );
+                                _expr=ddot( C, sb9Pinching( u, zt ), sb9Pinching( v, zt ) ) );
     pinching( 0_c, 1_c ) += integrate( _range=elements( mesh ),
-                                _expr=ddot( C, sb9PinchingW9( alpha ), sb9Pinching( v, zt, 0.0 ) ) );
+                                _expr=ddot( C, sb9PinchingW9( alpha ), sb9Pinching( v, zt ) ) );
     pinching( 1_c, 0_c ) += integrate( _range=elements( mesh ),
-                                _expr=ddot( C, sb9Pinching( u, zt, 0.0 ), sb9PinchingW9( beta ) ) );
+                                _expr=ddot( C, sb9Pinching( u, zt ), sb9PinchingW9( beta ) ) );
     pinching( 1_c, 1_c ) += integrate( _range=elements( mesh ),
                                 _expr=ddot( C, sb9PinchingW9( alpha ), sb9PinchingW9( beta ) ) );
     pinching.close();
@@ -135,9 +132,6 @@ checkSb9PinchingRigidModesOnPatch( mesh_ptrtype const& mesh )
  * \param uy Y displacement expression.
  * \param uz Z displacement expression.
  * \return Quadratic pinching energy of the interpolated field.
- * 
- * Note: The SB9 integration scheme is not yet fully implemented, so the `Bpz`
- * term is set to zero to match the current Matlab reference implementation.
  */
 template <typename UxExpr, typename UyExpr, typename UzExpr>
 double
@@ -164,11 +158,11 @@ sb9PinchingLinearEnergy( mesh_ptrtype const& mesh,
     auto zt = zeta();
 
     a( 0_c, 0_c ) += integrate( _range=elements( mesh ),
-                                _expr=ddot( C, sb9Pinching( u, zt, 0.0 ), sb9Pinching( v, zt, 0.0 ) ) );
+                                _expr=ddot( C, sb9Pinching( u, zt ), sb9Pinching( v, zt ) ) );
     a( 0_c, 1_c ) += integrate( _range=elements( mesh ),
-                                _expr=ddot( C, sb9PinchingW9( alpha ), sb9Pinching( v, zt, 0.0 ) ) );
+                                _expr=ddot( C, sb9PinchingW9( alpha ), sb9Pinching( v, zt ) ) );
     a( 1_c, 0_c ) += integrate( _range=elements( mesh ),
-                                _expr=ddot( C, sb9Pinching( u, zt, 0.0 ), sb9PinchingW9( beta ) ) );
+                                _expr=ddot( C, sb9Pinching( u, zt ), sb9PinchingW9( beta ) ) );
     a( 1_c, 1_c ) += integrate( _range=elements( mesh ),
                                 _expr=ddot( C, sb9PinchingW9( alpha ), sb9PinchingW9( beta ) ) );
     a.close();
@@ -223,6 +217,5 @@ BOOST_AUTO_TEST_CASE( sb9_pinching_linear_fields_have_expected_energy_on_axis_al
     BOOST_CHECK_SMALL( energyZ - energyMZ, g_tol );
     BOOST_CHECK_SMALL( energyX, g_tol );
 }
-
 
 BOOST_AUTO_TEST_SUITE_END()

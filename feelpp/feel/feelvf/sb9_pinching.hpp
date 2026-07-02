@@ -85,9 +85,8 @@ public:
     {
         for ( uint16_type node = 0; node < node_count; ++node )
         {
-            M_pinching[node] = this->M_data.bz( node ) 
-                               + this->M_data.vgamma( node, 0 )*this->M_invJ0( 2, 1 ) 
-                               + this->M_data.vgamma( node, 1 )*this->M_invJ0( 2, 0 );
+            M_pinching[node] = this->M_data.vgamma( node, 0 )*this->M_invJ0( 2, 1 ) +
+                               this->M_data.vgamma( node, 1 )*this->M_invJ0( 2, 0 );
         }
     }
 
@@ -175,18 +174,16 @@ sb9Bpz( ProxyType const& proxy )
  *         coordinate, typically `zeta()`.
  * \param proxy Trial or test basis proxy.
  * \param zetaExpr Through-thickness coordinate or scaling expression.
- * \param scaleBpz Scaling factor applied to the `Bpz` contribution to cancel the
- *        term when set to zero.
  * \return Feel++ Mandel-vector expression for the SB9 pinching strain.
  */
 template <detail::BasisProxyType ProxyType, typename ZetaExprT>
 [[nodiscard]] inline auto
-sb9Pinching( ProxyType const& proxy, ZetaExprT const& zetaExpr, double scaleBpz = 1. )
+sb9Pinching( ProxyType const& proxy, ZetaExprT const& zetaExpr )
 {
     auto bpc = sb9Bpc( proxy );
     auto bpz = sb9Bpz( proxy );
 
-    return mandel_component<3,2,2>( component<2,0>( bpc ) + scaleBpz * zetaExpr * component<2,0>( bpz ) );
+    return mandel_component<3,2,2>( component<2,0>( bpc ) + zetaExpr * component<2,0>( bpz ) );
 }
 
 /**
@@ -195,9 +192,9 @@ sb9Pinching( ProxyType const& proxy, ZetaExprT const& zetaExpr, double scaleBpz 
  */
 template <detail::BasisProxyType ProxyType>
 [[nodiscard]] inline auto
-sb9Pinching( ProxyType const& proxy, double scaleBpz = 1.  )
+sb9Pinching( ProxyType const& proxy )
 {
-    return sb9Pinching( proxy, zeta(), scaleBpz );
+    return sb9Pinching( proxy, zeta() );
 }
 
 /**
