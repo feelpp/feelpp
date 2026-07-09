@@ -1,25 +1,10 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-   This file is part of the Feel library
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
-   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   Date: 2007-07-21
+    SPDX-FileCopyrightText: 2026 University of Strasbourg
 
-   Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
-
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 3.0 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    SPDX-License-Identifier: LGPL-3.0-or-later
 */
 /**
    \file exportergmsh.cpp
@@ -882,13 +867,11 @@ ExporterGmsh<MeshType,N>::saveFields( typename timeset_type::step_ptrtype step, 
         auto const& fieldData =  __var->second;
         auto const& field00 = unwrap_ptr( fieldData.second[0][0] );
         auto const& d = field00.functionSpace()->dof().get();
-        //int reorder_tensor2symm[6] = { 0,3,5,1,4,2 };
         index_type nValuesPerComponent = invalid_v<index_type>;
 
         Eigen::VectorXf __field;
 
         uint16_type nComponents = invalid_uint16_type_value, nComponents1 = invalid_uint16_type_value, nComponents2 = invalid_uint16_type_value;
-        bool isTensor2Symm = false;
         if ( fieldData.first == FunctionSpaceType::SCALAR )
         {
             nComponents = 1;
@@ -912,7 +895,6 @@ ExporterGmsh<MeshType,N>::saveFields( typename timeset_type::step_ptrtype step, 
             nComponents = 6;
             nComponents1 = 3;
             nComponents2 = 3;
-            isTensor2Symm = true;
         }
 
         auto r = elements( step->mesh() );
@@ -950,8 +932,6 @@ ExporterGmsh<MeshType,N>::saveFields( typename timeset_type::step_ptrtype step, 
                                 {
                                     auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
                                     uint16_type cMap = c2*nComponents1+c1;
-                                    //if ( isTensor2Symm )
-                                    // cMap = reorder_tensor2symm[Feel::detail::symmetricIndex( c1,c2, nComponents1 )];
                                     size_type global_node_id = nComponents * ptid + cMap;
                                     __field[global_node_id] = fieldComp.globalValue( dof_id );
                                 }
@@ -981,8 +961,6 @@ ExporterGmsh<MeshType,N>::saveFields( typename timeset_type::step_ptrtype step, 
                         {
                             auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
                             uint16_type cMap = c2*nComponents1+c1;
-                            //if ( isTensor2Symm )
-                            //   cMap = reorder_tensor2symm[Feel::detail::symmetricIndex( c1,c2, nComponents1 )];
                             size_type global_node_id = nComponents * e + cMap;
                             __field(global_node_id) = fieldComp.globalValue( dof_id );
                         }
