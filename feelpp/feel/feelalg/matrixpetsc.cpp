@@ -763,11 +763,7 @@ void MatrixPetsc<T>::closeIfNeeded() const
     if ( !this->isInitialized() )
         return;
 
-    int needsClose = super::closed() ? 0 : 1;
-    if ( this->comm().size() > 1 )
-        mpi::all_reduce( this->comm(), mpi::inplace( needsClose ), mpi::maximum<int>() );
-
-    if ( needsClose )
+    if ( !super::closed() )
         this->close();
 }
 
@@ -1765,9 +1761,10 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows,
                           Context const& on_context,
                           value_type value_on_diagonal )
 {
-    // MatZeroRows* preserves the assembled matrix state. Only flush pending
-    // MatSetValues* assembly before entering this collective PETSc path.
-    this->closeIfNeeded();
+    // zeroRows() is a collective Dirichlet materialization path. Assemble
+    // collectively here instead of deciding from rank-local closed() state,
+    // which can diverge after local insertion work and deadlock PETSc.
+    this->close();
 
     int ierr = 0;
     if ( !rhs.closed() )
@@ -3243,9 +3240,9 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
     bool hasAllProcess = true;
     if ( hasAllProcess )
     {
-        // MatZeroRowsLocal keeps the PETSc matrix assembled. Only close when
-        // some rank still has pending MatSetValues* assembly to flush first.
-        this->closeIfNeeded();
+        // Keep all ranks in the collective PETSc assembly path before local
+        // row elimination, even if only a subset inserted entries recently.
+        this->close();
         if ( !rhs.closed() )
             rhs.close();
     }
