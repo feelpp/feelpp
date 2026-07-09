@@ -1,4 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- */
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+
+    SPDX-FileCopyrightText: 2026 University of Strasbourg
+
+    SPDX-License-Identifier: LGPL-3.0-or-later
+*/
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feeldiscr/pchv.hpp>
@@ -11,6 +18,7 @@
 #include <feel/feelvf/blockforms.hpp>
 #include <feel/feelvf/sb9_bending.hpp>
 #include <feel/feelvf/sb9_pinching.hpp>
+#include <feel/feelvf/sb9_quadrature.hpp>
 #include <feel/feelvf/sb9_shear.hpp>
 #include <feel/feelvf/sb9_strain.hpp>
 #include <feel/feelvf/vf.hpp>
@@ -192,6 +200,8 @@ main( int argc, char** argv )
                              component<4, 0>( epsT ),
                              component<5, 0>( epsQ ) );
 
+    auto sb9Quad = sb9ThroughThicknessLobatto5();
+
     // Minimal SB9 mixed elastic formulation:
     //
     // [ u     ]  displacement Q1 vector field, 24 element dofs
@@ -200,14 +210,29 @@ main( int argc, char** argv )
     // No Hallquist Bc1/Bc2 stabilization and no Bs1..Bs4 stabilization are
     // assembled here. This file intentionally shows only the elastic blocks.
     a( 0_c, 0_c ) += integrate( _range=elements( mesh ),
+                                _quad=sb9Quad,
                                 _expr=ddot( C, epsShellTrial, epsShellTest ) );
     a( 0_c, 1_c ) += integrate( _range=elements( mesh ),
+                                _quad=sb9Quad,
                                 _expr=ddot( C, epsW, epsShellTest ) );
     a( 1_c, 0_c ) += integrate( _range=elements( mesh ),
+                                _quad=sb9Quad,
                                 _expr=ddot( C, epsShellTrial, epsZ ) );
     a( 1_c, 1_c ) += integrate( _range=elements( mesh ),
+                                _quad=sb9Quad,
                                 _expr=ddot( C, epsW, epsZ ) );
 
+#if 0
+    // Transient extension: mass belongs only to the physical Q1 displacement
+    // field. The internal SB9 scalar alpha is an assumed-strain/static
+    // condensation variable and is intentionally not included in inertia.
+    double constexpr rho = 1.0;
+    auto massQuad = sb9LumpedMassLobatto();
+    auto m = form2( _trial=Uh, _test=Uh );
+    m = integrate( _range=elements( mesh ),
+                   _quad=massQuad,
+                   _expr=cst( rho ) * inner( u, v ) );
+#endif
     l( 0_c ) += integrate( _range=markedfaces( mesh, "XPlus" ),
                            _expr=inner( vec( cst( 0.0 ), cst( 0.0 ), cst( doption( "load" ) ) ), v ) );
 
