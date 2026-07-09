@@ -8,8 +8,10 @@
 */
 
 #include <feel/feelcore/environment.hpp>
+#include <feel/feeldiscr/tensorformat.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/pdh.hpp>
+#include <feel/feeldiscr/pdhm.hpp>
 #include <feel/feeldiscr/product.hpp>
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
@@ -41,6 +43,8 @@ makeOptions()
         ( "load", po::value<double>()->default_value( -1.0 ), "constant z traction on XPlus" )
         ( "alpha-scale", po::value<double>()->default_value( 1.0 ), "scale applied to the internal SB9 scalar mode" )
         ( "monolithic", po::value<bool>()->default_value( false ), "use the monolithic mixed solve instead of SB9 static condensation" )
+        ( "print-matlab-fields", po::value<bool>()->default_value( false ),
+          "print epsilon/sigma tensor fields in MATLAB validation order" )
         ( "no-solve", po::value<bool>()->default_value( false ), "assemble only" );
     return options.add( feel_options() );
 }
@@ -157,6 +161,12 @@ main( int argc, char** argv )
     auto Uh = Pchv<1>( mesh );
     auto Ah = Pdh<0>( mesh );
     auto Xh = productPtr( Uh, Ah );
+    auto Th = Pdhms<1>( mesh );
+
+    auto epsilon = Th->element( "epsilon" );
+    auto sigma = Th->element( "sigma" );
+    [[maybe_unused]] auto epsilonXY = epsilon.tensorComponent( Component::X, Component::Y );
+    [[maybe_unused]] auto sigmaZZ = sigma.tensorComponent( Component::Z, Component::Z );
 
     auto u = trial( Uh, "u" );
     auto v = test( Uh, "v" );
@@ -199,6 +209,23 @@ main( int argc, char** argv )
                              component<3, 0>( epsV ),
                              component<4, 0>( epsT ),
                              component<5, 0>( epsQ ) );
+
+    // SB9 assembly uses Feel++ compact symmetric storage in Mandel scaling:
+    //   Storage + Mandel = xx,xy,xz,yy,yz,zz with sqrt(2)-scaled shear slots.
+    // MATLAB validation tables use:
+    //   epsilon: xx,yy,zz,xy,xz,yz with engineering shear components,
+    //   sigma:   xx,yy,zz,xy,xz,yz with tensor shear components.
+    [[maybe_unused]] SymmetricTensorFormat const sb9AssemblyFormat{
+        SymmetricTensorOrder::Storage, SymmetricTensorScaling::Mandel };
+    [[maybe_unused]] SymmetricTensorFormat const matlabEpsilonFormat{
+        SymmetricTensorOrder::DiagonalFirst, SymmetricTensorScaling::EngineeringShear };
+    [[maybe_unused]] SymmetricTensorFormat const matlabSigmaFormat{
+        SymmetricTensorOrder::DiagonalFirst, SymmetricTensorScaling::Tensor };
+
+    // The tensor fields above are the semantic storage target for postprocessed
+    // SB9 strain/stress values. Use tensorComponent(i,j) to assign physical
+    // tensor entries, then evaluate/print with matlabEpsilonFormat or
+    // matlabSigmaFormat when comparing against the MATLAB validation order.
 
     auto sb9Quad = sb9ThroughThicknessLobatto5();
 
@@ -252,6 +279,28 @@ main( int argc, char** argv )
 
     auto uh = X( 0_c );
     auto alphah = X( 1_c );
+
+    if ( boption( "print-matlab-fields" ) )
+    {
+        auto matlabContext = Th->context();
+        node_type center( 3 );
+        center( 0 ) = 0.5;
+        center( 1 ) = 0.5;
+        center( 2 ) = 0.0;
+        matlabContext.add( center );
+
+        epsilon.printMatlab( "epsilon_matlab",
+                             matlabContext,
+                             matlabEpsilonFormat,
+                             true,
+                             "epsilon" );
+        sigma.printMatlab( "sigma_matlab",
+                           matlabContext,
+                           matlabSigmaFormat,
+                           true,
+                           "sigma" );
+    }
+
     std::cout << "qs_sb9 minimal formulation assembled"
               << " with E=" << E
               << ", nu=" << nu
