@@ -314,7 +314,7 @@ public:
     void close () const override;
 
     /**
-     * Close the matrix only if at least one rank still has pending assembly.
+     * Close the matrix when the local wrapper state says assembly is pending.
      */
     void closeIfNeeded() const override;
 
