@@ -1,26 +1,10 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-  This file is part of the Feel library
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2004-11-09
+    SPDX-FileCopyrightText: 2026 University of Strasbourg
 
-  Copyright (C) 2004,2005 EPFL
-  Copyright (C) 2007-2012 Universite Joseph Fourier (Grenoble I)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    SPDX-License-Identifier: LGPL-3.0-or-later
 */
 #ifndef FEELPP_FILTERS_EXPORTERXDMF_IMPL_HPP
 #define FEELPP_FILTERS_EXPORTERXDMF_IMPL_HPP 1
@@ -28,6 +12,7 @@
 #if defined(FEELPP_HAS_HDF5)
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feeldiscr/tensorformat.hpp>
 #include <feel/feelfilters/exporterxdmf.hpp>
 
 namespace Feel
@@ -414,7 +399,7 @@ void ExporterXDMF<MeshType, N>::saveFields( std::string const& fieldsfilename, s
                                 auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
                                 uint16_type cMap = c2*nComponents1+c1;
                                 if ( isTensor2Symm )
-                                    cMap = /*reorder_tensor2symm[*/Feel::detail::symmetricIndex( c1,c2, nComponents1 );
+                                    cMap = symmetricTensorOutputSlot( c1, c2, nComponents1, SymmetricTensorOrder::XdmfTensor6 );
                                 size_type global_node_id = nComponents * ptid + cMap;
                                 DCHECK( global_node_id < realBuffer.size() ) << "invalid node id " << global_node_id << " vs " << realBuffer.size();
                                 realBuffer[global_node_id] = fieldComp.globalValue( dof_id );
@@ -461,7 +446,7 @@ void ExporterXDMF<MeshType, N>::saveFields( std::string const& fieldsfilename, s
                         auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
                         uint16_type cMap = c2*nComponents1+c1;
                         if ( isTensor2Symm )
-                            cMap = /*reorder_tensor2symm[*/Feel::detail::symmetricIndex( c1,c2, nComponents1 );
+                            cMap = symmetricTensorOutputSlot( c1, c2, nComponents1, SymmetricTensorOrder::XdmfTensor6 );
                         size_type global_node_id = nComponents * e + cMap;
                         realBuffer[global_node_id] = fieldComp.globalValue( dof_id );
                     }
@@ -491,7 +476,7 @@ void ExporterXDMF<MeshType, N>::saveFields( std::string const& fieldsfilename, s
                     auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
                     uint16_type cMap = c2*nComponents1+c1;
                     if ( isTensor2Symm )
-                        cMap = /*reorder_tensor2symm[*/Feel::detail::symmetricIndex( c1,c2, nComponents1 );
+                        cMap = symmetricTensorOutputSlot( c1, c2, nComponents1, SymmetricTensorOrder::XdmfTensor6 );
                     size_type global_node_id = nComponents*k + cMap;
                     realBuffer[global_node_id] = fieldComp.globalValue( dof_id );
                 }
