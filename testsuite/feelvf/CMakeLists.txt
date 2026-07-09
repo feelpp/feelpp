@@ -29,6 +29,7 @@ feelpp_add_test( pow CFG test_pow.cfg)
 feelpp_add_test( projtangent )
 feelpp_add_test( shellgeometric )
 feelpp_add_test( sb9bending )
+feelpp_add_test( sb9pinching )
 feelpp_add_test( sb9shearing )
 feelpp_add_test( sb9mass NO_MPI_TEST )
 

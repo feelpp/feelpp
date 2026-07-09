@@ -127,6 +127,27 @@ protected:
     }
 
     /**
+     * \brief Fill pinching Mandel coefficients for one local dof.
+     *
+     * The SB9 pinching operator contributes only to the transverse normal
+     * component in Mandel storage (entry 2). The coefficient is obtained by
+     * projecting the local pinching contribution onto the element frame.
+     *
+     * \tparam VectorType Eigen-compatible coefficient vector type.
+     * \param coeff Output coefficient vector in symmetric storage order.
+     * \param component Displacement component index.
+     * \param bz Local pinching coefficient.
+     */
+    template <typename VectorType>
+    void fillPinchingCoefficients( VectorType& coeff,
+                                   uint16_type component,
+                                   value_type bz ) const
+    {
+        auto const& frame = M_frame[component];
+        coeff( 2 ) = bz * frame[2];
+    }
+
+    /**
      * \brief Fill transverse-shearing Mandel coefficients for one local dof.
      *
      * The SB9 transverse-shearing operator contributes only to the shear
