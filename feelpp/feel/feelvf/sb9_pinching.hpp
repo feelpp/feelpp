@@ -1,26 +1,15 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-  This file is part of the Feel library
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+    SPDX-FileContributor: Hanna Chetouane
 
-  Author(s): Feel++ Consortium
+    SPDX-FileCopyrightText: 2026 University of Strasbourg
 
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    SPDX-License-Identifier: LGPL-3.0-or-later
 */
 /**
    \file sb9_pinching.hpp
-   \brief SB9 pinch shell kinematic operators
+   \brief SB9 pinching shell kinematic operators
  */
 #ifndef FEELPP_VF_SB9_PINCHING_HPP
 #define FEELPP_VF_SB9_PINCHING_HPP 1
@@ -166,6 +155,35 @@ sb9Bpz( ProxyType const& proxy )
  * \brief Build the SB9 pinching Mandel strain expression associated with the Q1
  * displacement field.
  *
+ * This helper combines the pinching coefficient expressions as
+ * `Bpc + bpzScale * zeta * Bpz` and returns a six-component Mandel vector,
+ * with all other components set to zero.
+ *
+ * \tparam ProxyType Feel++ trial/test basis proxy type.
+ * \tparam ZetaExprT Feel++ expression type used for the through-thickness
+ *         coordinate, typically `zeta()`.
+ * \tparam ScaleExprT Feel++ expression type used to scale the `zeta * Bpz`
+ *         contribution.
+ * \param proxy Trial or test basis proxy.
+ * \param zetaExpr Through-thickness coordinate or scaling expression.
+ * \param bpzScaleExpr Scale applied to the linear-through-thickness `Bpz`
+ *        contribution.
+ * \return Feel++ Mandel-vector expression for the SB9 pinching strain.
+ */
+template <detail::BasisProxyType ProxyType, typename ZetaExprT, typename ScaleExprT>
+[[nodiscard]] inline auto
+sb9Pinching( ProxyType const& proxy, ZetaExprT const& zetaExpr, ScaleExprT const& bpzScaleExpr )
+{
+    auto bpc = sb9Bpc( proxy );
+    auto bpz = sb9Bpz( proxy );
+
+    return mandel_component<3,2,2>( component<2,0>( bpc ) + bpzScaleExpr * zetaExpr * component<2,0>( bpz ) );
+}
+
+/**
+ * \brief Build the SB9 pinching Mandel strain expression associated with the Q1
+ * displacement field.
+ *
  * This helper combines the pinching coefficient expressions as `Bpc + zeta * Bpz`
  * and returns a six-component Mandel vector, with all other components set to zero.
  *
@@ -180,10 +198,7 @@ template <detail::BasisProxyType ProxyType, typename ZetaExprT>
 [[nodiscard]] inline auto
 sb9Pinching( ProxyType const& proxy, ZetaExprT const& zetaExpr )
 {
-    auto bpc = sb9Bpc( proxy );
-    auto bpz = sb9Bpz( proxy );
-
-    return mandel_component<3,2,2>( component<2,0>( bpc ) + zetaExpr * component<2,0>( bpz ) );
+    return sb9Pinching( proxy, zetaExpr, cst( 1.0 ) );
 }
 
 /**
