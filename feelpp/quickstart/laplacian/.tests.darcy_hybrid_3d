@@ -1,0 +1,1 @@
+quarterturn-hybrid --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/quarter-turn/darcy-quarter-turn3D-hybrid.cfg --no-export
