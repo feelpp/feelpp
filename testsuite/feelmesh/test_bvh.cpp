@@ -69,7 +69,7 @@ void printRayIntersectionResults( BvhType const& bvh, std::vector<RayIntersectio
         counter++;
     }
 }
-#if 0
+
 template <typename RangeType>
 void test2D( RangeType const& range )
 {
@@ -89,13 +89,13 @@ void test2D( RangeType const& range )
     bvh_ray_type ray_2(origin,direction_perp_2);
     pointIntersections.push_back( { Eigen::Vector2d( origin.x(), 0.6 ) } );
 
-    auto bvhInHouse = boundingVolumeHierarchy(_range=range,_kind="in-house");
-    auto rayIntersectionResult1 = bvhInHouse->intersect(_ray=ray_1) ;
-    printRayIntersectionResults( bvhInHouse.get(),rayIntersectionResult1,pointIntersections[0] );
-    auto rayIntersectionResult2 = bvhInHouse->intersect(_ray=ray_2) ;
-    printRayIntersectionResults( bvhInHouse.get(),rayIntersectionResult2,pointIntersections[1] );
+    auto bvh = boundingVolumeHierarchy(_range=range);
+    auto rayIntersectionResult1 = bvh->intersect(_ray=ray_1) ;
+    printRayIntersectionResults( bvh.get(),rayIntersectionResult1,pointIntersections[0] );
+    auto rayIntersectionResult2 = bvh->intersect(_ray=ray_2) ;
+    printRayIntersectionResults( bvh.get(),rayIntersectionResult2,pointIntersections[1] );
 }
-#endif
+
 template <typename RangeType>
 void test3D( RangeType const& range )
 {
@@ -144,19 +144,15 @@ void test3D( RangeType const& range )
         }
     }
 }
-#if 0
+
 BOOST_AUTO_TEST_CASE( intersection_bvh_2D )
 {
-    if ( Environment::isParallel() )
-        return;
-
     using mesh_type = Mesh<Simplex<2,1,2>>;
     auto mesh = loadMesh(_mesh = new mesh_type, _filename=soption(_name="mesh2D.filename" ) );
-
     auto submesh = createSubmesh(_mesh=mesh,_range=markedfaces(mesh,{"RequiredBoundaryOfRequiredElements"}));
     test2D( elements(submesh) );
 }
-#endif
+
 BOOST_AUTO_TEST_CASE( intersection_bvh_3D )
 {
     using mesh_type = Mesh<Simplex<3,1,3>>;
