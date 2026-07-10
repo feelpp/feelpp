@@ -17,5 +17,6 @@
 #include <feel/feelvf/sb9_bending.hpp>
 #include <feel/feelvf/sb9_pinching.hpp>
 #include <feel/feelvf/sb9_shearing.hpp>
+#include <feel/feelvf/sb9_stabilization.hpp>
 
 #endif
