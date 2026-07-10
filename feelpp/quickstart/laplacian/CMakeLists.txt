@@ -52,6 +52,14 @@ feelpp_add_application( periodic_laplacian_2d SRCS qs_periodic_laplacian.cpp INC
 # CG laplacian using model properties
 feelpp_add_application( laplacian_model_2d SRCS qs_laplacian_model.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_MODEL_LAPLACIAN_2D )
 
+#
+# Mixed Darcy/electrostatic formulation
+#
+feelpp_add_application( darcy_3d SRCS qs_darcy.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_DARCY_3D INSTALL TESTS
+  TEST --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/quarter-turn/darcy-quarter-turn3D.cfg
+       --no-export )
+feelpp_add_application( darcy_hybrid_3d SRCS qs_darcy_hybrid.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_DARCY_HYBRID_3D INSTALL TESTS )
+
 add_dependencies(qs_laplacian
   ${QS_LAPLACIAN_2D}
   ${QS_LAPLACIAN_2DH}
@@ -61,6 +69,8 @@ add_dependencies(qs_laplacian
   ${QS_MODEL_LAPLACIAN_2D}
   ${QS_SIMPLE_LAP_2D}
   ${QS_PERIODIC_LAPLACIAN_2D}
+  ${QS_DARCY_3D}
+  ${QS_DARCY_HYBRID_3D}
 )
 
 #

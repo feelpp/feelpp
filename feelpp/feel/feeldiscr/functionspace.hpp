@@ -1,27 +1,10 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-   This file is part of the Feel library
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
-   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   Date: 2004-11-22
+    SPDX-FileCopyrightText: 2026 University of Strasbourg
 
-   Copyright (C) 2004 EPFL
-   Copyright (C) 2006-2012 Universite Joseph Fourier (Grenoble I)
-   Copyright (C) 2011-2021 Feel++ Consortium
-
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 3.0 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    SPDX-License-Identifier: LGPL-3.0-or-later
 */
 /**
    \file FunctionSpace.hpp
@@ -31,6 +14,7 @@
 #ifndef FEELPP_DISCR_FUNCTIONSPACE_H
 #define FEELPP_DISCR_FUNCTIONSPACE_H 1
 
+#include <concepts>
 #include <type_traits>
 #include <variant>
 #include <boost/static_assert.hpp>
@@ -77,6 +61,8 @@
 
 
 
+#include <fstream>
+#include <iomanip>
 #include <stdexcept>
 #include <sstream>
 #include <limits>
@@ -105,6 +91,7 @@
 #include <feel/feeldiscr/functionspacebase.hpp>
 #include <feel/feeldiscr/mortar.hpp>
 #include <feel/feeldiscr/traits.hpp>
+#include <feel/feeldiscr/tensorformat.hpp>
 
 #include <feel/feeldiscr/region.hpp>
 #include <feel/feelvf/exprbase.hpp>
@@ -123,6 +110,32 @@ namespace Feel
 {
 namespace fusion = boost::fusion;
 namespace parameter = boost::parameter;
+
+/**
+ * @brief Concept matching field elements backed by tensor2 spaces.
+ *
+ * This includes full tensor2 fields and tensor2-symmetric fields. It is used to
+ * expose semantic tensor APIs only on elements whose component layout represents
+ * matrix-valued data.
+ */
+template<typename ElementT>
+concept Tensor2FieldElement = requires
+{
+    { ElementT::is_tensor2 } -> std::convertible_to<bool>;
+    { ElementT::is_tensor2symm } -> std::convertible_to<bool>;
+} && ( ElementT::is_tensor2 || ElementT::is_tensor2symm );
+
+/**
+ * @brief Concept matching field elements backed by tensor2-symmetric spaces.
+ *
+ * This is stricter than Tensor2FieldElement and constrains APIs that rely on
+ * compact symmetric storage, component labels, or symmetric tensor scaling.
+ */
+template<typename ElementT>
+concept Tensor2SymmetricFieldElement = requires
+{
+    { ElementT::is_tensor2symm } -> std::convertible_to<bool>;
+} && ElementT::is_tensor2symm;
 
 namespace detail
 {
@@ -1263,6 +1276,8 @@ public:
         typedef Cont ct_type;
 
         typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> eigen_type;
+        /** Matrix type returned by semantic tensor-field evaluation helpers. */
+        typedef Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic> tensor_evaluation_type;
 
         /**
          * useful in // with composite case
@@ -1596,6 +1611,41 @@ public:
                     startContainerIndex,
                     i,j );
             return c;
+        }
+
+        /**
+         * @brief Extract a tensor component using explicit tensor semantics.
+         *
+         * This wrapper is equivalent to `comp(i,j)` for tensor fields, including
+         * symmetric aliasing for tensor2-symmetric spaces. It is only available
+         * on elements satisfying Tensor2FieldElement.
+         *
+         * @param i Tensor row component.
+         * @param j Tensor column component.
+         * @return Scalar component element for entry `(i,j)`.
+         */
+        component_type
+        tensorComponent( ComponentType i, ComponentType j ) const
+            requires Tensor2FieldElement<this_type>
+        {
+            return this->comp( i, j );
+        }
+
+        /**
+         * @brief Extract a mutable tensor component using explicit tensor semantics.
+         *
+         * This overload is only available on elements satisfying
+         * Tensor2FieldElement.
+         *
+         * @param i Tensor row component.
+         * @param j Tensor column component.
+         * @return Mutable scalar component element for entry `(i,j)`.
+         */
+        component_type
+        tensorComponent( ComponentType i, ComponentType j )
+            requires Tensor2FieldElement<this_type>
+        {
+            return this->comp( i, j );
         }
 
         component_type
@@ -2242,6 +2292,117 @@ public:
                 __globalr = __localr;
 
             return __globalr;
+        }
+
+        /**
+         * @brief Evaluate a symmetric tensor field in an explicit tensor format.
+         *
+         * The returned matrix is point-major: rows correspond to context points
+         * and columns correspond to the slots of `format.order`. Compact orders
+         * have 3 columns in 2D and 6 columns in 3D. Tensor-six exporter orders
+         * always have 6 columns; unused 2D z-components are zero-filled.
+         *
+         * @param context Evaluation context containing the points to evaluate.
+         * @param format Output order and off-diagonal scaling convention.
+         * @param do_communications If true, collect point values across ranks.
+         * @return Matrix with shape `context.nPoints() x symmetricTensorComponentCount(nComponents1, format)`.
+         */
+        tensor_evaluation_type
+        evaluateSymmetric( functionspace_type::Context const& context,
+                           SymmetricTensorFormat const& format = SymmetricTensorFormat{},
+                           bool do_communications = true ) const
+            requires Tensor2SymmetricFieldElement<this_type>
+        {
+            const int npoints = context.nPoints();
+            const uint16_type nstorage = symmetricTensorStorageComponentCount( nComponents1 );
+            const uint16_type nout = symmetricTensorComponentCount( nComponents1, format );
+            tensor_evaluation_type result( npoints, nout );
+            result.setZero();
+
+            auto referenceComponent = this->tensorComponent( ComponentType::X, ComponentType::X );
+            auto componentContext = referenceComponent.functionSpace()->context();
+            for ( int p = 0; p < npoints; ++p )
+                componentContext.add( context.node( p ) );
+
+            for ( uint16_type storageSlot = 0; storageSlot < nstorage; ++storageSlot )
+            {
+                auto const ij = symmetricTensorStorageComponent( storageSlot, nComponents1 );
+                auto const values = this->tensorComponent( static_cast<ComponentType>( ij[0] ),
+                                                           static_cast<ComponentType>( ij[1] ) )
+                                         .evaluate( componentContext, do_communications );
+                auto const outputSlot = symmetricTensorOutputSlotFromStorage( storageSlot, nComponents1, format );
+                auto const scale = symmetricTensorStorageScale<value_type>( storageSlot, nComponents1, format.scaling );
+                for ( int p = 0; p < npoints; ++p )
+                    result( p, outputSlot ) = scale * values( p );
+            }
+
+            return result;
+        }
+
+        /**
+         * @brief Evaluate a symmetric tensor field in legacy compact storage order.
+         *
+         * This is a named convenience wrapper for `evaluateSymmetric()` using
+         * storage order and unscaled tensor components. The result is point-major
+         * with 3 columns in 2D (`xx,xy,yy`) and 6 columns in 3D
+         * (`xx,xy,xz,yy,yz,zz`).
+         *
+         * @param context Evaluation context containing the points to evaluate.
+         * @param do_communications If true, collect point values across ranks.
+         * @return Matrix with shape `context.nPoints() x symmetricTensorStorageComponentCount(nComponents1)`.
+         */
+        tensor_evaluation_type
+        evaluateSymmetricStorage( functionspace_type::Context const& context,
+                                  bool do_communications = true ) const
+            requires Tensor2SymmetricFieldElement<this_type>
+        {
+            return this->evaluateSymmetric( context,
+                                            SymmetricTensorFormat{ SymmetricTensorOrder::Storage,
+                                                                   SymmetricTensorScaling::Tensor },
+                                            do_communications );
+        }
+
+        /**
+         * @brief Evaluate a tensor field as full row-major matrix components.
+         *
+         * The returned matrix is point-major. Each row contains the full tensor
+         * values for one context point, ordered as `i*nComponents2 + j`. For
+         * tensor2-symmetric fields both triangular entries are populated through
+         * the symmetric component aliasing used by `tensorComponent(i,j)`.
+         *
+         * @param context Evaluation context containing the points to evaluate.
+         * @param do_communications If true, collect point values across ranks.
+         * @return Matrix with shape `context.nPoints() x (nComponents1*nComponents2)`.
+         */
+        tensor_evaluation_type
+        evaluateTensor( functionspace_type::Context const& context,
+                        bool do_communications = true ) const
+            requires Tensor2FieldElement<this_type>
+        {
+            const int npoints = context.nPoints();
+            const uint16_type nout = nComponents1*nComponents2;
+            tensor_evaluation_type result( npoints, nout );
+            result.setZero();
+
+            auto referenceComponent = this->tensorComponent( ComponentType::X, ComponentType::X );
+            auto componentContext = referenceComponent.functionSpace()->context();
+            for ( int p = 0; p < npoints; ++p )
+                componentContext.add( context.node( p ) );
+
+            for ( uint16_type i = 0; i < nComponents1; ++i )
+            {
+                for ( uint16_type j = 0; j < nComponents2; ++j )
+                {
+                    auto const values = this->tensorComponent( static_cast<ComponentType>( i ),
+                                                               static_cast<ComponentType>( j ) )
+                                             .evaluate( componentContext, do_communications );
+                    auto const outputSlot = i*nComponents2 + j;
+                    for ( int p = 0; p < npoints; ++p )
+                        result( p, outputSlot ) = values( p );
+                }
+            }
+
+            return result;
         }
 
         value_type
@@ -3275,6 +3436,81 @@ public:
                 }
                 m.printMatlab( fname );
             }
+
+        /**
+         * @brief Print evaluated symmetric tensor components to a self-describing Matlab file.
+         *
+         * This context-based overload is available only on tensor2-symmetric
+         * fields. The existing `printMatlab(fname, gmsh)` overload remains a raw
+         * container dump. The generated Matlab file includes order, scaling,
+         * component labels, point-major metadata, and the evaluated tensor
+         * component matrix returned by `evaluateSymmetric()`.
+         *
+         * @param fname Output filename. A `.m` extension is appended when absent.
+         * @param context Evaluation context containing the points to print.
+         * @param format Output order and off-diagonal scaling convention.
+         * @param do_communications If true, collect point values across ranks.
+         * @param variableName Matlab variable prefix for metadata and values.
+         * @throws std::invalid_argument if `variableName` is empty.
+         * @throws std::runtime_error if the output file cannot be opened.
+         */
+        void
+        printMatlab( std::string fname,
+                     functionspace_type::Context const& context,
+                     SymmetricTensorFormat const& format = SymmetricTensorFormat{},
+                     bool do_communications = true,
+                     std::string const& variableName = "tensor_components" ) const
+            requires Tensor2SymmetricFieldElement<this_type>
+        {
+            if ( variableName.empty() )
+                throw std::invalid_argument( "printMatlab() requires a non-empty variable name" );
+
+            auto const values = this->evaluateSymmetric( context, format, do_communications );
+
+            if ( !this->worldComm().isMasterRank() )
+                return;
+
+            std::string name = fname;
+            auto const dot = fname.find_last_of( "." );
+            if ( dot == std::string::npos || dot == 0 )
+                name = fname + ".m";
+            else if ( dot != fname.size() - 2 || fname[dot + 1] != 'm' )
+                name = fname + ".m";
+
+            std::ofstream fileOut( name.c_str() );
+            if ( !fileOut )
+                throw std::runtime_error( "printMatlab() cannot open output file '" + name + "'" );
+
+            fileOut << "% Feel++ tensor field diagnostic\n";
+            fileOut << variableName << "_order = '" << symmetricTensorOrderName( format.order ) << "';\n";
+            fileOut << variableName << "_scaling = '" << symmetricTensorScalingName( format.scaling ) << "';\n";
+            fileOut << variableName << "_point_major = true;\n";
+            fileOut << variableName << "_npoints = " << values.rows() << ";\n";
+            fileOut << variableName << "_ncomponents = " << values.cols() << ";\n";
+            fileOut << variableName << "_labels = {";
+            for ( int c = 0; c < values.cols(); ++c )
+            {
+                if ( c > 0 )
+                    fileOut << ",";
+                fileOut << "'" << symmetricTensorComponentLabel( static_cast<uint16_type>( c ), nComponents1, format ) << "'";
+            }
+            fileOut << "};\n";
+
+            fileOut << variableName << " = [\n";
+            fileOut << std::setprecision( 16 ) << std::scientific;
+            for ( int p = 0; p < values.rows(); ++p )
+            {
+                fileOut << "  ";
+                for ( int c = 0; c < values.cols(); ++c )
+                {
+                    if ( c > 0 )
+                        fileOut << " ";
+                    fileOut << values( p, c );
+                }
+                fileOut << "\n";
+            }
+            fileOut << "];\n";
+        }
 
         //!
         //! compute the element wise mean value of an element
