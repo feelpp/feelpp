@@ -32,6 +32,8 @@ list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
 
 feelpp_add_test( ginac_jit_cache NO_MPI_TEST TIMEOUT 180 )
 list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
+feelpp_add_test( ginac_jit_mpi TIMEOUT 180 )
+list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
 feelpp_add_test( inner CFG test_inner.cfg )
 list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
 feelpp_add_test( laplacianv CFG test_laplacianv.cfg )
