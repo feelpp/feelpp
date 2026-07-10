@@ -176,6 +176,83 @@ protected:
         coeff( 5 ) = mandelShearScale() * ( s1x * frame[0] + s1y * frame[1] + s1z * frame[2] );
     }
 
+    /**
+     * \brief Fill mode stabilization coefficients for one local dof.
+     *
+     * These helpers build the three-component coefficient vectors associated
+     * with the four mode stabilization blocks by projecting the coefficients
+     * onto the element frame. Bs2 has the same structure as Bs1, so it reuses
+     * the same helper.
+     * 
+     * \tparam VectorType Eigen-compatible coefficient vector type.
+     * \param coeff Output coefficient vector in symmetric storage order.
+     * \param component Displacement component index.
+     */
+    template <typename VectorType>
+    void fillBs1Coefficients( VectorType& coeff,
+                              uint16_type component,
+                              value_type bs1 ) const
+    {
+        auto const& frame = M_frame[component];
+        coeff( 2 ) = bs1 * frame[2];
+    }
+    template <typename VectorType>
+    void fillBs3Coefficients( VectorType& coeff,
+                              uint16_type component,
+                              value_type bs3 ) const
+    {
+        auto const& frame = M_frame[component];
+        coeff( 0 ) = bs3 * frame[0];
+        coeff( 1 ) = bs3 * frame[1];
+    }
+    template <typename VectorType>
+    void fillBs4Coefficients( VectorType& coeff,
+                              uint16_type component,
+                              value_type bs4 ) const
+    {
+        auto const& frame = M_frame[component];
+        coeff( 0 ) = bs4 * frame[0];
+        coeff( 1 ) = bs4 * frame[1];
+        coeff( 2 ) = bs4 * frame[2];
+    }
+    
+    /**
+     * \brief Fill transverse shear stabilization coefficients for one local dof.
+     *
+     * 
+     * These helpers build the two-component coefficient vectors associated
+     * with the two transverse shear stabilization blocks by projecting the
+     * coefficients onto the element frame.
+     * 
+     * \tparam VectorType Eigen-compatible coefficient vector type.
+     * \param coeff Output coefficient vector in symmetric storage order.
+     * \param component Displacement component index.
+     */
+    template <typename VectorType>
+    void fillBc1Coefficients( VectorType& coeff,
+                              uint16_type component,
+                              value_type bc11,
+                              value_type bc12,
+                              value_type bc13,
+                              value_type bc21,
+                              value_type bc22,
+                              value_type bc23 ) const
+    {
+        auto const& frame = M_frame[component];
+        coeff( 0 ) = bc11 * frame[0] + bc12 * frame[1] + bc13 * frame[2];
+        coeff( 1 ) = bc21 * frame[0] + bc22 * frame[1] + bc23 * frame[2];
+    }
+    template <typename VectorType>
+    void fillBc2Coefficients( VectorType& coeff,
+                              uint16_type component,
+                              value_type bc1,
+                              value_type bc2,
+                              value_type bc3 ) const
+    {
+        auto const& frame = M_frame[component];
+        coeff( 1 ) = bc1 * frame[0] + bc2 * frame[1] + bc3 * frame[2];
+    }
+
     /// Referenced shell geometry data for the current element.
     GeometryDataType const& M_data;
     /// Inverse-transpose of the mid-surface Jacobian.

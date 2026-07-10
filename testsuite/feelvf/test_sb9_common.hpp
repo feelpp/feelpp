@@ -24,6 +24,8 @@
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/geo.hpp>
 #include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/sb9_quadrature.hpp>
+
 
 /**
  * \namespace Feel::Tests::SB9
@@ -92,7 +94,14 @@ createShellPatch( std::string const& caseName,
             << "  Layers{1};\n"
             << "  Recombine;\n"
             << "};\n"
-            << "Physical Volume(\"Shell\") = {out[1]};\n";
+            << "Physical Volume(\"Shell\") = {out[1]};\n"
+            << "Physical Surface(\"Top\") = {out[0]};\n"
+            << "Physical Surface(\"Bottom\") = {1};\n"
+            << "Physical Surface(\"Left\")  = {out[5]};\n"
+            << "Physical Surface(\"Right\") = {out[3]};\n"
+            << "Physical Surface(\"Front\")  = {out[2]};\n"
+            << "Physical Surface(\"Back\") = {out[4]};\n";
+
 
     Environment::changeRepository( _directory=boost::format( "testsuite/feelvf/%1%/%2%/" )
                                    % Environment::about().appName()
@@ -214,6 +223,16 @@ createAxisAlignedUnitPatch( std::string const& caseName )
 {
     return createShellPatch( caseName,
                              test_vector_type( 0.0, 0.0, 0.0 ),
+                             test_vector_type( 1.0, 0.0, 0.0 ),
+                             test_vector_type( 0.0, 1.0, 0.0 ),
+                             test_vector_type( 0.0, 0.0, 1.0 ) );
+}
+
+inline mesh_ptrtype
+createUnitPatch( std::string const& caseName )    // cube entre [0,1]^3
+{
+    return createShellPatch( caseName,
+                             test_vector_type( 0.0, 0.0, 0.5 ),
                              test_vector_type( 1.0, 0.0, 0.0 ),
                              test_vector_type( 0.0, 1.0, 0.0 ),
                              test_vector_type( 0.0, 0.0, 1.0 ) );
