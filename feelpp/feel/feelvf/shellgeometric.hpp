@@ -67,6 +67,15 @@ struct ShellCellGeometryData
     matrix_type contravariantBasis0 = matrix_type::Identity();
     matrix_type metric0 = matrix_type::Identity();
     matrix_type jacobian0 = matrix_type::Identity();
+    value_type invJ0_00 = value_type( 0 );
+    value_type invJ0_01 = value_type( 0 );
+    value_type invJ0_02 = value_type( 0 );
+    value_type invJ0_10 = value_type( 0 );
+    value_type invJ0_11 = value_type( 0 );
+    value_type invJ0_12 = value_type( 0 );
+    value_type invJ0_20 = value_type( 0 );
+    value_type invJ0_21 = value_type( 0 );
+    value_type invJ0_22 = value_type( 0 );
     node_matrix_type localNodes = node_matrix_type::Zero();
     hallquist_vector_type bx = hallquist_vector_type::Zero();
     hallquist_vector_type by = hallquist_vector_type::Zero();
@@ -199,6 +208,15 @@ computeShellCellGeometry( GMCType const* gmc )
             << "shellJacobian0() requires an invertible local center Jacobian";
         auto const invJacobian0 = luJacobian0.inverse();
         auto const invMatJ0 = invJacobian0.transpose();
+        data.invJ0_00 = invMatJ0(0,0);
+        data.invJ0_01 = invMatJ0(0,1);
+        data.invJ0_02 = invMatJ0(0,2);
+        data.invJ0_10 = invMatJ0(1,0);
+        data.invJ0_11 = invMatJ0(1,1);
+        data.invJ0_12 = invMatJ0(1,2);
+        data.invJ0_20 = invMatJ0(2,0);
+        data.invJ0_22 = invMatJ0(2,2);
+        data.invJ0_22 = invMatJ0(2,2);
 
         Eigen::Matrix<value_type, 3, 8> BKsi = Eigen::Matrix<value_type, 3, 8>::Zero();
         value_type const u = value_type( 1 ) / value_type( 8 );
@@ -598,6 +616,52 @@ struct ShellJacobian0Accessor
     static decltype(auto) get( TensorType const& data ) { return ( data.jacobian0 ); }
 };
 
+template <typename TensorType>
+struct ShellInvJ0_00Accessor
+{
+    static decltype(auto) get( TensorType const& data ) { return ( data.invJ0_00 ); }
+};
+template <typename TensorType>
+struct ShellInvJ0_01Accessor
+{
+    static decltype(auto) get( TensorType const& data ) { return ( data.invJ0_01 ); }
+};
+template <typename TensorType>
+struct ShellInvJ0_02Accessor
+{
+    static decltype(auto) get( TensorType const& data ) { return ( data.invJ0_02 ); }
+};
+template <typename TensorType>
+struct ShellInvJ0_10Accessor
+{
+    static decltype(auto) get( TensorType const& data ) { return ( data.invJ0_10 ); }
+};
+template <typename TensorType>
+struct ShellInvJ0_11Accessor
+{
+    static decltype(auto) get( TensorType const& data ) { return ( data.invJ0_11 ); }
+};
+template <typename TensorType>
+struct ShellInvJ0_12Accessor
+{
+    static decltype(auto) get( TensorType const& data ) { return ( data.invJ0_12 ); }
+};
+template <typename TensorType>
+struct ShellInvJ0_20Accessor
+{
+    static decltype(auto) get( TensorType const& data ) { return ( data.invJ0_20 ); }
+};
+template <typename TensorType>
+struct ShellInvJ0_21Accessor
+{
+    static decltype(auto) get( TensorType const& data ) { return ( data.invJ0_21 ); }
+};
+template <typename TensorType>
+struct ShellInvJ0_22Accessor
+{
+    static decltype(auto) get( TensorType const& data ) { return ( data.invJ0_22 ); }
+};
+
 template<typename Geo_t, typename Basis_i_t, typename Basis_j_t, typename Derived, template <typename> typename AccessorT>
 struct ShellCellScalarTensor : public ShellCellGeometryTensorBase<Geo_t, Basis_i_t, Basis_j_t>
 {
@@ -966,6 +1030,34 @@ class ShellJacobian0 : public detail::ShellCellMatrixTerminal<ShellJacobian0, de
 {
 };
 
+class ShellInvJ0_00 : public detail::ShellCellScalarTerminal<ShellInvJ0_00, detail::ShellInvJ0_00Accessor>
+{
+};
+class ShellInvJ0_01 : public detail::ShellCellScalarTerminal<ShellInvJ0_01, detail::ShellInvJ0_01Accessor>
+{
+};
+class ShellInvJ0_02 : public detail::ShellCellScalarTerminal<ShellInvJ0_02, detail::ShellInvJ0_02Accessor>
+{
+};
+class ShellInvJ0_10 : public detail::ShellCellScalarTerminal<ShellInvJ0_10, detail::ShellInvJ0_10Accessor>
+{
+};
+class ShellInvJ0_11 : public detail::ShellCellScalarTerminal<ShellInvJ0_11, detail::ShellInvJ0_11Accessor>
+{
+};
+class ShellInvJ0_12 : public detail::ShellCellScalarTerminal<ShellInvJ0_12, detail::ShellInvJ0_12Accessor>
+{
+};
+class ShellInvJ0_20 : public detail::ShellCellScalarTerminal<ShellInvJ0_20, detail::ShellInvJ0_20Accessor>
+{
+};
+class ShellInvJ0_21 : public detail::ShellCellScalarTerminal<ShellInvJ0_21, detail::ShellInvJ0_21Accessor>
+{
+};
+class ShellInvJ0_22 : public detail::ShellCellScalarTerminal<ShellInvJ0_22, detail::ShellInvJ0_22Accessor>
+{
+};
+
 class ShellNormal : public detail::ShellCellVectorTerminal<ShellNormal, detail::ShellNormalAccessor>
 {
 };
@@ -1043,6 +1135,62 @@ shellJacobian0()
 {
     return Expr<ShellJacobian0>( ShellJacobian0() );
 }
+
+inline
+Expr<ShellInvJ0_00>
+shellInvJ0_00()
+{
+    return Expr<ShellInvJ0_00>( ShellInvJ0_00() );
+}
+inline
+Expr<ShellInvJ0_01>
+shellInvJ0_01()
+{
+    return Expr<ShellInvJ0_01>( ShellInvJ0_01() );
+}
+inline
+Expr<ShellInvJ0_02>
+shellInvJ0_02()
+{
+    return Expr<ShellInvJ0_02>( ShellInvJ0_02() );
+}
+inline
+Expr<ShellInvJ0_10>
+shellInvJ0_10()
+{
+    return Expr<ShellInvJ0_10>( ShellInvJ0_10() );
+}
+inline
+Expr<ShellInvJ0_11>
+shellInvJ0_11()
+{
+    return Expr<ShellInvJ0_11>( ShellInvJ0_11() );
+}
+inline
+Expr<ShellInvJ0_12>
+shellInvJ0_12()
+{
+    return Expr<ShellInvJ0_12>( ShellInvJ0_12() );
+}
+inline
+Expr<ShellInvJ0_20>
+shellInvJ0_20()
+{
+    return Expr<ShellInvJ0_20>( ShellInvJ0_20() );
+}
+inline
+Expr<ShellInvJ0_21>
+shellInvJ0_21()
+{
+    return Expr<ShellInvJ0_21>( ShellInvJ0_21() );
+}
+inline
+Expr<ShellInvJ0_22>
+shellInvJ0_22()
+{
+    return Expr<ShellInvJ0_22>( ShellInvJ0_22() );
+}
+
 
 inline
 Expr<ShellFrame>
