@@ -195,6 +195,10 @@ BOOST_AUTO_TEST_CASE( flat_shell_patch )
     auto contravariantField = vf::project( _space=Rh, _range=elements( patch.mesh ), _expr=shellContravariantBasis0() );
     auto metricField = vf::project( _space=Rh, _range=elements( patch.mesh ), _expr=shellMetric0() );
     auto jacobianField = vf::project( _space=Rh, _range=elements( patch.mesh ), _expr=shellJacobian0() );
+    auto invJ0Mat = mat<3,3>( shellInvJ0_00(), shellInvJ0_01(), shellInvJ0_02(),
+                              shellInvJ0_10(), shellInvJ0_11(), shellInvJ0_12(),
+                              shellInvJ0_20(), shellInvJ0_21(), shellInvJ0_22() );
+    auto invJ0Field = vf::project( _space=Rh, _range=elements( patch.mesh ), _expr=invJ0Mat );
 
     auto ctx = Zh->context();
     ctx.add( patch.center );
@@ -215,6 +219,7 @@ BOOST_AUTO_TEST_CASE( flat_shell_patch )
     auto contravariantError = fieldL2Magnitude( patch.mesh, idv( contravariantField ) - matrixExpr( expectedContravariant ) );
     auto metricError = fieldL2Magnitude( patch.mesh, idv( metricField ) - matrixExpr( expectedMetric ) );
     auto jacobianError = fieldL2Magnitude( patch.mesh, idv( jacobianField ) - matrixExpr( expectedCovariant ) );
+    auto invJ0Error = fieldL2Magnitude( patch.mesh, idv( invJ0Field ) - matrixExpr( expectedContravariant ) );
     auto frameOrthoError = fieldL2Magnitude( patch.mesh, trans( idv( frameField ) ) * idv( frameField ) - eye<3, 3>() );
     auto dualityError = fieldL2Magnitude( patch.mesh,
                                           trans( idv( contravariantField ) ) * idv( covariantField ) - eye<3, 3>() );
@@ -227,6 +232,7 @@ BOOST_AUTO_TEST_CASE( flat_shell_patch )
     BOOST_CHECK_SMALL( contravariantError, g_tol );
     BOOST_CHECK_SMALL( metricError, g_tol );
     BOOST_CHECK_SMALL( jacobianError, g_tol );
+    BOOST_CHECK_SMALL( invJ0Error, g_tol );
     BOOST_CHECK_SMALL( frameOrthoError, g_tol );
     BOOST_CHECK_SMALL( dualityError, g_tol );
 }
@@ -252,6 +258,11 @@ BOOST_AUTO_TEST_CASE( rotated_shell_patch )
             1.0, 0.0, 0.0,
             0.0, 0.5, 0.0,
             0.0, 0.0, 0.1 ).finished();
+    shell_test_matrix_type const expectedInvJ0 =
+        ( shell_test_matrix_type() <<
+            1.0, 0.0, 0.0,
+            0.0, 2.0, 0.0,
+            0.0, 0.0, 10.0 ).finished();
     shell_test_matrix_type const expectedCovariant = rotation * expectedJacobian;
     shell_test_matrix_type const expectedContravariant = rotation *
         ( shell_test_matrix_type() <<
@@ -278,6 +289,10 @@ BOOST_AUTO_TEST_CASE( rotated_shell_patch )
     auto contravariantField = vf::project( _space=Rh, _range=elements( patch.mesh ), _expr=shellContravariantBasis0() );
     auto metricField = vf::project( _space=Rh, _range=elements( patch.mesh ), _expr=shellMetric0() );
     auto jacobianField = vf::project( _space=Rh, _range=elements( patch.mesh ), _expr=shellJacobian0() );
+    auto invJ0Mat = mat<3,3>( shellInvJ0_00(), shellInvJ0_01(), shellInvJ0_02(),
+                              shellInvJ0_10(), shellInvJ0_11(), shellInvJ0_12(),
+                              shellInvJ0_20(), shellInvJ0_21(), shellInvJ0_22() );
+    auto invJ0Field = vf::project( _space=Rh, _range=elements( patch.mesh ), _expr=invJ0Mat );
 
     shell_test_vector_type expectedNormal = rotation.col( 2 );
     auto areaError = scalarL2Error( patch.mesh, idv( areaField ) - cst( 2.0 ) );
@@ -288,6 +303,7 @@ BOOST_AUTO_TEST_CASE( rotated_shell_patch )
     auto contravariantError = fieldL2Magnitude( patch.mesh, idv( contravariantField ) - matrixExpr( expectedContravariant ) );
     auto metricError = fieldL2Magnitude( patch.mesh, idv( metricField ) - matrixExpr( expectedMetric ) );
     auto jacobianError = fieldL2Magnitude( patch.mesh, idv( jacobianField ) - matrixExpr( expectedJacobian ) );
+    auto invJ0Error = fieldL2Magnitude( patch.mesh, idv( invJ0Field ) - matrixExpr( expectedInvJ0 ) );
     auto frameOrthoError = fieldL2Magnitude( patch.mesh, trans( idv( frameField ) ) * idv( frameField ) - eye<3, 3>() );
     auto dualityError = fieldL2Magnitude( patch.mesh,
                                           trans( idv( contravariantField ) ) * idv( covariantField ) - eye<3, 3>() );
@@ -300,6 +316,7 @@ BOOST_AUTO_TEST_CASE( rotated_shell_patch )
     BOOST_CHECK_SMALL( contravariantError, g_tol );
     BOOST_CHECK_SMALL( metricError, g_tol );
     BOOST_CHECK_SMALL( jacobianError, g_tol );
+    BOOST_CHECK_SMALL( invJ0Error, g_tol );
     BOOST_CHECK_SMALL( frameOrthoError, g_tol );
     BOOST_CHECK_SMALL( dualityError, g_tol );
 }
