@@ -331,7 +331,82 @@ protected:
     BVHEnum::Quality M_quality = BVHEnum::Quality::High;
 };
 
+namespace detail
+{
 
+template <typename ValueType,int RealDim>
+struct PrecomputedEdge
+{
+    using value_type = ValueType;
+    static constexpr int nRealDim = RealDim;
+    using vector_type = std::array<ValueType, RealDim>;
+
+    vector_type p0; // Point A on the edge
+    vector_type e;  // Vector of edge (B - A)
+
+    PrecomputedEdge() = default;
+
+    PrecomputedEdge(const vector_type& pt0, const vector_type& pt1)
+        {
+            if constexpr ( nRealDim == 2 )
+            {
+                p0 = pt0;
+                e[0] = pt1[0] - pt0[0];
+                e[1] = pt1[1] - pt0[1];
+            }
+            else
+            {
+                throw std::runtime_error("PrecomputedEdge is only implemented for 2D.");
+            }
+        }
+
+    // Returns {t, u}: t = distance along the radius, u = barycentric coordinate along the edge
+    std::optional<std::pair<value_type, value_type>> intersect(const bvh::v2::Ray<value_type, 2>& ray, value_type tolerance) const
+        {
+            if constexpr ( nRealDim != 2 )
+            {
+                throw std::runtime_error("intersect is only implemented for 2D.");
+            }
+            // Compute determinant
+            value_type term1 = ray.dir[0] * e[1];
+            value_type term2 = ray.dir[1] * e[0];
+            value_type det = term1 - term2;
+
+            // Compute a dynamic epsilon based on the magnitude of the terms involved in the determinant calculation
+            constexpr value_type machine_eps = std::numeric_limits<value_type>::epsilon();
+            // We scale it to the magnitude of our calculation
+            // (A factor of 3.0 or 4.0 is often added to provide a safety margin
+            // against the accumulation of errors from multiplication and subsequent subtraction)
+            value_type dynamic_epsilon = (std::abs(term1) + std::abs(term2)) * machine_eps * 3.0;
+             // We avoid a value of exactly zero if both the direction and the edge are zero (extreme case)
+            constexpr value_type min_eps = std::numeric_limits<value_type>::min();
+            dynamic_epsilon = std::max(dynamic_epsilon, min_eps);
+
+            // Test if the determinant is effectively zero (ray is parallel to the edge)
+            if (std::abs(det) <= dynamic_epsilon) {
+                return std::nullopt;
+            }
+
+            // Compute the inverse of the determinant and the parameters t and u
+            value_type invDet = 1.0 / det;
+            value_type tx = p0[0] - ray.org[0];
+            value_type ty = p0[1] - ray.org[1];
+            value_type u = (tx * ray.dir[1] - ty * ray.dir[0]) * invDet;
+
+            // Does the ray miss the segment? (taking your tolerance into account)
+            if (u < -tolerance || u > 1.0 + tolerance)
+                return std::nullopt;
+            // t : distance along the ray to the intersection point
+            value_type t = (tx * e[1] - ty * e[0]) * invDet;
+            // Check if the intersection point is within the ray's bounds
+            if (t < ray.tmin || t > ray.tmax) {
+                return std::nullopt;
+            }
+
+            return std::make_pair(t, u);
+        }
+};
+} // namespace detail
 
 //! @brief implementation of BVH tool with an external third party
 template <typename MeshEntityType>
@@ -350,6 +425,7 @@ class BVH_ThirdParty : public BVH<MeshEntityType>
     using backend_bbox_type = bvh::v2::BBox<value_type, nRealDim>;
 
     using TlasHit = typename super_type::TlasHit;
+
 public:
     using ray_type = typename super_type::ray_type;
     using rayintersection_result_type = typename super_type::rayintersection_result_type;
@@ -397,15 +473,17 @@ public:
             // Permuting the primitive data allows to remove indirections during traversal, which makes it faster.
             static constexpr bool should_permute = true;
 
-            if constexpr ( nRealDim == 3 )
+            if constexpr ( is_triangle<mesh_entity_type>::value )
                 M_precomputeTriangle.resize( this->M_primitiveInfo.size() );
+            else if constexpr ( is_edge<mesh_entity_type>::value )
+                M_precomputeEdge.resize( this->M_primitiveInfo.size() );
 
             for ( std::size_t i = 0; i < this->M_primitiveInfo.size(); ++i )
             {
                 auto j = should_permute ? M_bvh->prim_ids[i] : i;
                 auto const& primInfo = this->M_primitiveInfo[j];
                 auto const& meshEntity = primInfo.meshEntity();
-                if constexpr ( nRealDim == 3 )
+                if constexpr ( is_triangle<mesh_entity_type>::value )
                 {
                     auto const& pt0 = meshEntity.point(0);
                     auto const& pt1 = meshEntity.point(1);
@@ -414,6 +492,15 @@ public:
                         backend_vector_realdim_type::generate([&pt0] (std::size_t i) { return pt0[i]; }),
                         backend_vector_realdim_type::generate([&pt1] (std::size_t i) { return pt1[i]; }),
                         backend_vector_realdim_type::generate([&pt2] (std::size_t i) { return pt2[i]; })
+                    };
+                }
+                else if constexpr ( is_edge<mesh_entity_type>::value )
+                {
+                    auto const& pt0 = meshEntity.point(0);
+                    auto const& pt1 = meshEntity.point(1);
+                    M_precomputeEdge[i] = Feel::detail::PrecomputedEdge<value_type,nRealDim> {
+                        {pt0[0], pt0[1]},
+                        {pt1[0], pt1[1]}
                     };
                 }
             }
@@ -1132,8 +1219,10 @@ private:
                                       value_type t_enter = -std::numeric_limits<value_type>::infinity();
                                       value_type t_exit  =  std::numeric_limits<value_type>::infinity();
 
-                                      for (int i = 0; i < 3; ++i) {
-                                          auto invD = 1.0 / ray.dir[i];
+                                      constexpr value_type EPSILON = std::numeric_limits<value_type>::min();
+                                      for (int i = 0; i < nRealDim; ++i) {
+                                          value_type safeDir = (ray.dir[i] == 0.0) ? EPSILON : ray.dir[i];
+                                          value_type invD = 1.0 / safeDir;
                                           auto t0 = (bbox.min[i] - ray.org[i]) * invD;
                                           auto t1 = (bbox.max[i] - ray.org[i]) * invD;
 
@@ -1231,11 +1320,29 @@ private:
                                                                          for (std::size_t i = begin; i < end; ++i)
                                                                          {
                                                                              std::size_t j = should_permute ? i : M_bvh->prim_ids[i];
-                                                                             if constexpr ( nRealDim == 2 )
+                                                                             if constexpr ( is_edge<mesh_entity_type>::value )
                                                                              {
-                                                                                 CHECK( false ) << "TODO";
+                                                                                 if ( auto hit = M_precomputeEdge[j].intersect( rayBackend, -tolerance ) )
+                                                                                 {
+                                                                                     value_type t = hit->first;
+                                                                                     value_type u = hit->second;
+                                                                                     res.push_back( rayintersection_result_type(this->worldComm().rank(), M_bvh->prim_ids[i], t) );
+
+                                                                                     // Calculating the exact Cartesian coordinates of the point of intersection
+                                                                                     // P = A + u * (B - A)
+                                                                                     auto const& edge = M_precomputeEdge[j];
+                                                                                     //backend_vector_realdim_type intersection_pt;
+                                                                                     vector_realdim_type intersectionPt{
+                                                                                         edge.p0[0] + u * edge.e[0],
+                                                                                         edge.p0[1] + u * edge.e[1]
+                                                                                     };
+                                                                                     res.back().setCoordinates( std::move( intersectionPt ) );
+
+                                                                                     if constexpr ( IsAnyHit )
+                                                                                         return true;
+                                                                                 }
                                                                              }
-                                                                             else if constexpr ( nRealDim == 3 )
+                                                                             else if constexpr ( is_triangle<mesh_entity_type>::value )
                                                                              {
                                                                                  // NOTE: we apply minus with tolerance because positive tolerance means
                                                                                  // that we can accept intersection outside of triangle at distance given by tolerance
@@ -1272,6 +1379,7 @@ private:
 private:
     std::unique_ptr<backend_bvh_type> M_bvh;
     std::vector<backend_precompute_triangle_type> M_precomputeTriangle;
+    std::vector<Feel::detail::PrecomputedEdge<value_type,nRealDim>> M_precomputeEdge;
     std::unique_ptr<backend_bvh_type> M_bvhTlas; // top level acceleration structure for parallel case
     std::vector<std::tuple<rank_type,backend_bbox_type> > M_primitiveInfoTlas;
 };
@@ -1704,28 +1812,32 @@ auto boundingVolumeHierarchy( Ts && ... v )
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
     auto && range = args.get(_range);
     using mesh_entity_type = std::remove_const_t<entity_range_t<std::decay_t<decltype(range)>>>;
-    std::string const& kind = args.get_else(_kind, mesh_entity_type::nRealDim == 3 ? "third-party" : "in-house");
+    std::string const& kind = args.get_else(_kind, "third-party" );
     BVHEnum::Quality quality = args.get_else(_quality, BVHEnum::Quality::High );
-    worldcomm_ptr_t worldcomm = args.get_else(_worldcomm,Environment::worldCommPtr()); // TODO : use default worldcomm from range
+    worldcomm_ptr_t worldcomm = args.get_else_invocable(_worldcomm,[&range](){
+                                                                       if ( range.hasWorldComm() )
+                                                                           return range.worldCommPtr();
+                                                                       return Environment::worldCommPtr();
+                                                                   } );
 
     using bvh_type = BVH<mesh_entity_type>;
     std::unique_ptr<bvh_type> bvh;
 
-    if ( kind == "in-house" )
+    if ( kind == "third-party" )
+    {
+        auto bvhThirdParty = std::make_unique<BVH_ThirdParty<mesh_entity_type>>( quality, worldcomm );
+        bvhThirdParty->updateForUse(range);
+        bvh = std::move( bvhThirdParty );
+    }
+#if 0
+    else if ( kind == "in-house" )
     {
         using bvh_inhouse_type = BVH_InHouse<mesh_entity_type>;
         auto bvhInHouse = std::make_unique<bvh_inhouse_type>(worldcomm);
         bvhInHouse->updateForUse(range);
         bvh = std::move( bvhInHouse );
     }
-    else if ( kind == "third-party" )
-    {
-        if constexpr ( mesh_entity_type::nRealDim != 3 )
-            throw std::invalid_argument("third-party only implement with triangle in 3D");
-        auto bvhThirdParty = std::make_unique<BVH_ThirdParty<mesh_entity_type>>( quality, worldcomm );
-        bvhThirdParty->updateForUse(range);
-        bvh = std::move( bvhThirdParty );
-    }
+#endif
     else
         throw std::invalid_argument(fmt::format("invalid bvh arg kind {} (should be third-party or in-house)",kind ));
 
