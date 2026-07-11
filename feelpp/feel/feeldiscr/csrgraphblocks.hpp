@@ -280,46 +280,50 @@ csrGraphBlocks( TestPS&& testPs,
 }
 
 template<typename PS, typename PatternSizeT, typename RangeMapT = StencilRangeMap0Type>
-    requires std::is_base_of_v<ProductSpacesBase, std::remove_reference_t<PS>>
+    requires std::is_base_of_v<ProductSpacesBase, decay_type<PS>>
           && std::is_base_of_v<StencilRangeMapTypeBase, RangeMapT>
 BlocksBaseGraphCSR
 csrGraphBlocks( PS&& ps,
                 std::vector<PatternSizeT> const& patterns,
                 RangeMapT range = stencilRangeMap() )
 {
-    return csrGraphBlocks( ps, ps, patterns, range );
+    auto&& productSpace = remove_shared_ptr_f( std::forward<PS>( ps ) );
+    return csrGraphBlocks( productSpace, productSpace, patterns, range );
 }
 
 template<typename PS, typename RangeMapT = StencilRangeMap0Type>
-    requires std::is_base_of_v<ProductSpacesBase, std::remove_reference_t<PS>>
+    requires std::is_base_of_v<ProductSpacesBase, decay_type<PS>>
           && std::is_base_of_v<StencilRangeMapTypeBase, RangeMapT>
 BlocksBaseGraphCSR
 csrGraphBlocks( PS&& ps,
                 uint32_type pattern = Pattern::COUPLED,
                 RangeMapT range = stencilRangeMap() )
 {
-    return csrGraphBlocks( ps, ps, pattern, range );
+    auto&& productSpace = remove_shared_ptr_f( std::forward<PS>( ps ) );
+    return csrGraphBlocks( productSpace, productSpace, pattern, range );
 }
 
 template<typename PS, typename PatternSizeT, typename RangeMapT = StencilRangeMap0Type>
-    requires std::is_base_of_v<ProductSpaceBase, std::remove_reference_t<PS>>
+    requires std::is_base_of_v<ProductSpaceBase, decay_type<PS>>
           && std::is_base_of_v<StencilRangeMapTypeBase, RangeMapT>
 BlocksBaseGraphCSR
 csrGraphBlocks( PS&& ps,
                 std::vector<PatternSizeT> const& patterns,
                 RangeMapT range = stencilRangeMap() )
 {
-    return csrGraphBlocks( ps, ps, patterns, range );
+    auto&& productSpace = remove_shared_ptr_f( std::forward<PS>( ps ) );
+    return csrGraphBlocks( productSpace, productSpace, patterns, range );
 }
 
 template<typename PS, typename RangeMapT = StencilRangeMap0Type>
-    requires std::is_base_of_v<ProductSpaceBase, std::remove_reference_t<PS>>
+    requires std::is_base_of_v<ProductSpaceBase, decay_type<PS>>
           && std::is_base_of_v<StencilRangeMapTypeBase, RangeMapT>
 BlocksBaseGraphCSR
 csrGraphBlocks( PS&& ps,
                 uint32_type pattern = Pattern::COUPLED,
                 RangeMapT range = stencilRangeMap() )
 {
-    return csrGraphBlocks( ps, ps, pattern, range );
+    auto&& productSpace = remove_shared_ptr_f( std::forward<PS>( ps ) );
+    return csrGraphBlocks( productSpace, productSpace, pattern, range );
 }
 }

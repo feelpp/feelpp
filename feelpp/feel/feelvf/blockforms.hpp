@@ -316,7 +316,7 @@ public :
         requires StaticProductSpacesType<T>
     BlockBilinearForm( T&& ps )
         :
-        M_test_ps(std::forward<T>(ps)),
+        M_test_ps(remove_shared_ptr_f( std::forward<T>(ps) )),
         M_trial_ps(M_test_ps),
         M_matrix( std::make_shared<condensed_matrix_type>( csrGraphBlocks(M_test_ps, M_trial_ps, Pattern::COUPLED), backend(), false ) )
         {}
@@ -325,7 +325,7 @@ public :
         requires DynamicProductSpaceType<T>
     BlockBilinearForm( T&& ps )
         :
-        M_test_ps(std::forward<T>(ps)),
+        M_test_ps(remove_shared_ptr_f( std::forward<T>(ps) )),
         M_trial_ps(M_test_ps),
         M_matrix( std::make_shared<condensed_matrix_type>( csrGraphBlocks(M_test_ps, M_trial_ps, Pattern::COUPLED), backend(), false ) )
         {}    
@@ -335,8 +335,8 @@ public :
                  ( StaticProductSpacesType<TrialT> || DynamicProductSpaceType<TrialT> )
     BlockBilinearForm( TestT&& testPs, TrialT&& trialPs )
         :
-        M_test_ps(std::forward<TestT>(testPs)),
-        M_trial_ps(std::forward<TrialT>(trialPs)),
+        M_test_ps(remove_shared_ptr_f( std::forward<TestT>(testPs) )),
+        M_trial_ps(remove_shared_ptr_f( std::forward<TrialT>(trialPs) )),
         M_matrix( std::make_shared<condensed_matrix_type>( csrGraphBlocks(M_test_ps, M_trial_ps, Pattern::COUPLED), backend(), false ) )
         {}
     
@@ -344,7 +344,7 @@ public :
         requires StaticProductSpacesType<T> && Feel::detail::is_backend_like_v<BackendT>
     BlockBilinearForm( T&& ps, BackendT&& b, RangeMapT r = stencilRangeMap() )
         :
-        M_test_ps(std::forward<T>(ps)),
+        M_test_ps(remove_shared_ptr_f( std::forward<T>(ps) )),
         M_trial_ps(M_test_ps),
         M_matrix( std::make_shared<condensed_matrix_type>( csrGraphBlocks(M_test_ps, M_trial_ps, Pattern::COUPLED, r), std::forward<BackendT>(b), false ) )
         {}
@@ -355,8 +355,8 @@ public :
                  Feel::detail::is_backend_like_v<BackendT>
     BlockBilinearForm( TestT&& testPs, TrialT&& trialPs, BackendT&& b, RangeMapT r = stencilRangeMap() )
         :
-        M_test_ps(std::forward<TestT>(testPs)),
-        M_trial_ps(std::forward<TrialT>(trialPs)),
+        M_test_ps(remove_shared_ptr_f( std::forward<TestT>(testPs) )),
+        M_trial_ps(remove_shared_ptr_f( std::forward<TrialT>(trialPs) )),
         M_matrix( std::make_shared<condensed_matrix_type>( csrGraphBlocks(M_test_ps, M_trial_ps, Pattern::COUPLED, r), std::forward<BackendT>(b), false ) )
         {}
 
@@ -364,7 +364,7 @@ public :
         requires StaticProductSpacesType<T> && Feel::detail::is_backend_like_v<BackendT>
     BlockBilinearForm( T&& ps, solve::strategy s, BackendT&& b, size_type pattern = Pattern::COUPLED, RangeMapT r = stencilRangeMap() )
         :
-        M_test_ps(std::forward<T>(ps)),
+        M_test_ps(remove_shared_ptr_f( std::forward<T>(ps) )),
         M_trial_ps(M_test_ps),
         M_matrix( std::make_shared<condensed_matrix_type>( s,
                                                              csrGraphBlocks(M_test_ps, M_trial_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:pattern,r),
@@ -377,8 +377,8 @@ public :
                  Feel::detail::is_backend_like_v<BackendT>
     BlockBilinearForm( TestT&& testPs, TrialT&& trialPs, solve::strategy s, BackendT&& b, size_type pattern = Pattern::COUPLED, RangeMapT r = stencilRangeMap() )
         :
-        M_test_ps(std::forward<TestT>(testPs)),
-        M_trial_ps(std::forward<TrialT>(trialPs)),
+        M_test_ps(remove_shared_ptr_f( std::forward<TestT>(testPs) )),
+        M_trial_ps(remove_shared_ptr_f( std::forward<TrialT>(trialPs) )),
         M_matrix( std::make_shared<condensed_matrix_type>( s,
                                                              csrGraphBlocks(M_test_ps, M_trial_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:pattern,r),
                                                              std::forward<BackendT>(b),
@@ -390,7 +390,7 @@ public :
         requires StaticProductSpacesType<T> && Feel::detail::is_backend_like_v<BackendT>
     BlockBilinearForm( T&& ps, solve::strategy s, BackendT&& b, std::vector<PatternSizeT> const& patterns, RangeMapT r = stencilRangeMap() )
         :
-        M_test_ps(std::forward<T>(ps)),
+        M_test_ps(remove_shared_ptr_f( std::forward<T>(ps) )),
         M_trial_ps(M_test_ps),
         M_matrix( std::make_shared<condensed_matrix_type>( s,
                                                              csrGraphBlocks(M_test_ps, M_trial_ps, (s>=solve::strategy::static_condensation)?std::vector<PatternSizeT>( patterns.size(), static_cast<PatternSizeT>( Pattern::ZERO ) ):patterns, r),
@@ -404,8 +404,8 @@ public :
                  Feel::detail::is_backend_like_v<BackendT>
     BlockBilinearForm( TestT&& testPs, TrialT&& trialPs, solve::strategy s, BackendT&& b, std::vector<PatternSizeT> const& patterns, RangeMapT r = stencilRangeMap() )
         :
-        M_test_ps(std::forward<TestT>(testPs)),
-        M_trial_ps(std::forward<TrialT>(trialPs)),
+        M_test_ps(remove_shared_ptr_f( std::forward<TestT>(testPs) )),
+        M_trial_ps(remove_shared_ptr_f( std::forward<TrialT>(trialPs) )),
         M_matrix( std::make_shared<condensed_matrix_type>( s,
                                                              csrGraphBlocks(M_test_ps, M_trial_ps, (s>=solve::strategy::static_condensation)?std::vector<PatternSizeT>( patterns.size(), static_cast<PatternSizeT>( Pattern::ZERO ) ):patterns, r),
                                                              std::forward<BackendT>(b),
@@ -1631,34 +1631,34 @@ public :
         requires StaticProductSpacesType<T>
     BlockLinearForm( T&& ps, solve::strategy s, BackendT&& b )
         :
-        M_ps(std::forward<T>(ps)),
+        M_ps(remove_shared_ptr_f( std::forward<T>(ps) )),
         M_vector(std::make_shared<condensed_vector_type>(s, blockVector(M_ps), std::forward<BackendT>(b), false))
         {}
     template<typename T>
         requires StaticProductSpacesType<T>
     BlockLinearForm(T&& ps)
         :
-        M_ps(std::forward<T>(ps)),
+        M_ps(remove_shared_ptr_f( std::forward<T>(ps) )),
         M_vector(std::make_shared<condensed_vector_type>(blockVector(M_ps), backend(), false))
         {}
     template<typename T>
         requires DynamicProductSpaceType<T>
     BlockLinearForm(T&& ps)
         :
-        M_ps(std::forward<T>(ps)),
+        M_ps(remove_shared_ptr_f( std::forward<T>(ps) )),
         M_vector(std::make_shared<condensed_vector_type>(blockVector(M_ps), backend(), false))
         {}    
     template<typename T, typename BackendT>
         requires StaticProductSpacesType<T>
     BlockLinearForm(T&& ps, BackendT&& b)
         :
-        M_ps(std::forward<T>(ps)),
+        M_ps(remove_shared_ptr_f( std::forward<T>(ps) )),
         M_vector(std::make_shared<condensed_vector_type>(blockVector(M_ps), std::forward<BackendT>(b), false))
         {}
     template<typename T>
     BlockLinearForm(T&& ps, condensed_vector_ptrtype v )
         :
-        M_ps(std::forward<T>(ps)),
+        M_ps(remove_shared_ptr_f( std::forward<T>(ps) )),
         M_vector(v)
         {}
     BlockLinearForm( BlockLinearForm&& ) = default;
