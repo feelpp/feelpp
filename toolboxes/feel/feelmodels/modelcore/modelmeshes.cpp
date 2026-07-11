@@ -1055,6 +1055,14 @@ template class ModelMeshes<uint32_type>;
           ( Hypercube,3,1,3)  ) )                                       \
     /**/
 
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER2_LIST \
+    BOOST_PP_TUPLE_TO_LIST(                                             \
+        ( ( Simplex,2,2,2),                                             \
+          ( Simplex,3,2,3),                                             \
+          ( Simplex,1,2,2),                                             \
+          ( Simplex,1,2,3)  ) )                                         \
+    /**/
+
 #define FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_CLASS_NAME(T)   BOOST_PP_TUPLE_ELEM(4, 0, T)
 #define FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_DIM(T)   BOOST_PP_TUPLE_ELEM(4, 1, T)
 #define FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_ORDER(T)   BOOST_PP_TUPLE_ELEM(4, 2, T)
@@ -1087,6 +1095,18 @@ template class ModelMeshes<uint32_type>;
 
 BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_METHODS_OP, 2, (FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_INDEXTYPE_LIST,FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_LIST) )
 /**/
+
+#if FEELPP_MESH_MAX_ORDER >= 2
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_UPDATEFORUSE_METHOD_OP(_, IS) \
+    FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_UPDATEFORUSE_METHOD_OP_CODE IS \
+   /**/
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_UPDATEFORUSE_METHOD_OP_CODE(PP_I,PP_GS) \
+    template void ModelMesh<PP_I>::updateForUse<Mesh<FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_CLASS(PP_GS)>>( ModelMeshes<PP_I> const&, RuntimeOrder );
+    /**/
+
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_UPDATEFORUSE_METHOD_OP, 2, (FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_INDEXTYPE_LIST,FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER2_LIST) )
+/**/
+#endif
 
 } // namespace FeelModels
 } // namespace Feel

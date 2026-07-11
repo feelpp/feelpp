@@ -25,3 +25,4 @@
 set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testmodels")
 
 feelpp_add_test( modelproperties CFG modelproperties.cfg GEO feelpp.json )
+feelpp_add_test( modelmesh_basis NO_MPI_TEST LINK_LIBRARIES Feelpp::feelpp_modelcore )
