@@ -53,6 +53,7 @@
 #include <feel/feelpoly/dualbasis.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
 #include <feel/feelpoly/functionalset.hpp>
+#include <feel/feelpoly/pointfunctionals.hpp>
 #include <feel/feelpoly/moment.hpp>
 
 namespace Feel
@@ -210,7 +211,7 @@ public:
         }
 
         //std::cout << "[CrouzeixRaviartDual] points= " << M_pts << "\n";
-        setFset( primal, M_pts, mpl::bool_<primal_space_type::is_scalar>() );
+        M_fset.setFunctionalSet( functional::makePointEvaluationFunctionals( primal, M_pts ) );
 
 
     }
@@ -230,19 +231,6 @@ public:
         return M_fset( pset );
     }
 private:
-
-    void setFset( primal_space_type const& primal, points_type const& __pts, mpl::bool_<true> )
-    {
-        M_fset.setFunctionalSet( functional::PointsEvaluation<primal_space_type>( primal,
-                                  __pts ) );
-    }
-
-    void setFset( primal_space_type const& primal, points_type const& __pts, mpl::bool_<false> )
-    {
-        M_fset.setFunctionalSet( functional::ComponentsPointsEvaluation<primal_space_type>( primal,
-                                  __pts ) );
-    }
-
 
 private:
     reference_convex_type M_convex_ref;
@@ -298,6 +286,8 @@ public:
     typedef typename super::primal_space_type primal_space_type;
     typedef typename super::dual_space_type dual_space_type;
     typedef Continuous continuity_type;
+    /** CR is nonconforming: only its facet functional is shared globally. */
+    static inline constexpr bool is_nonconforming = true;
     static inline const uint16_type TAG = TheTAG;
 
     /**

@@ -60,12 +60,12 @@
 #include <feel/feelpoly/polynomialset.hpp>
 #include <feel/feelpoly/functionalset.hpp>
 #include <feel/feelpoly/operations.hpp>
-#include <feel/feelpoly/functionals.hpp>
-#include <feel/feelpoly/functionals2.hpp>
 #include <feel/feelpoly/pointsetquadrature.hpp>
 #include <feel/feeldiscr/doflayout.hpp>
 #include <feel/feelpoly/fe.hpp>
 #include <feel/feelpoly/hdivpolynomialset.hpp>
+#include <feel/feelpoly/hdivinterpolation.hpp>
+#include <feel/feelpoly/hdivfunctionals.hpp>
 #include <feel/feelpoly/meta.hpp>
 #include <feel/feelpoly/order.hpp>
 
@@ -161,34 +161,6 @@ dynamicPolynomialSetFrom( SourcePolynomialSet const& source, uint16_type order )
     DynamicPolynomialSet result( source.coeff(), true );
     result.setOrder( order );
     return result;
-}
-
-template<typename Space, typename Polynomial>
-[[nodiscard]] Functional<Space>
-makeIntegralMomentFunctional( Space const& space,
-                              Polynomial const& polynomial,
-                              uint16_type quadratureOrder )
-{
-    using value_type = typename Space::value_type;
-    static constexpr uint16_type nDim = Space::nDim;
-
-    IMGeneral<nDim, value_type, Simplex> im( 2*quadratureOrder );
-    auto const basisAtQuadPts = functional::detail::basisEvaluateAtPoints( space, im.points() );
-    auto const polynomialAtQuadPts = polynomial.evaluate( im.points() );
-
-    typename Space::matrix_type coeff( Space::nComponents, basisAtQuadPts.size1() );
-    coeff.clear();
-    for ( uint16_type c = 0; c < Space::nComponents; ++c )
-    {
-        for ( uint16_type b = 0; b < basisAtQuadPts.size1(); ++b )
-        {
-            value_type value = 0;
-            for ( uint16_type q = 0; q < im.nPoints(); ++q )
-                value += im.weight( q ) * polynomialAtQuadPts( c, q ) * basisAtQuadPts( b, q );
-            coeff( c, b ) = value;
-        }
-    }
-    return Functional<Space>( space, coeff );
 }
 
 #if 0
@@ -510,31 +482,7 @@ public:
         typedef Functional<primal_space_type> functional_type;
         std::vector<functional_type> fset;
 
-        // jacobian of the transformation from reference face to the face in the
-        // reference element
-        std::vector<double> j;
-        if ( nDim == 2 )
-            j = {2.8284271247461903,2.0,2.0};
-
-        if ( nDim == 3 )
-            j = {3.464101615137754, 2, 2, 2};
-
-        //for( int k = 0; k < nDim; ++k )
-        {
-            // loopover the each edge entities and add the corresponding functionals
-            for ( int e = M_convex_ref.entityRange( nDim-1 ).begin();
-                    e < M_convex_ref.entityRange( nDim-1 ).end();
-                    ++e )
-            {
-                typedef Feel::functional::DirectionalComponentPointsEvaluation<primal_space_type> dcpe_type;
-                node_type dir( nDim );
-                em_node_type<value_type> edir( dir.data().begin(), dir.size() );
-                edir = M_convex_ref.normal( e )*j[e];
-                //dcpe_type __dcpe( primal, 1, dir, pts_per_face[e] );
-                dcpe_type __dcpe( primal, dir, M_pts_per_face[e] );
-                std::copy( __dcpe.begin(), __dcpe.end(), std::back_inserter( fset ) );
-            }
-        }
+        Feel::detail::appendHDivFacetNormalPointFunctionals( primal, M_convex_ref, M_pts_per_face, fset );
 
         //VLOG(1) << "[RT Dual] done 2" << std::endl;
         if ( nOrder-1 > 0 )
@@ -566,9 +514,9 @@ public:
             for ( int i = 0; i < Pkm1.polynomialDimension(); ++i )
             {
                 //VLOG(1) << "P(" << i << ")=" << Pkm1.polynomial( i ).coeff() << "\n";
-                fset.push_back( Feel::detail::makeIntegralMomentFunctional( primal,
-                                                                            Pkm1.polynomial( i ),
-                                                                            static_cast<uint16_type>( nOrder + 1 ) ) );
+                fset.push_back( Feel::detail::makeHDivIntegralMomentFunctional( primal,
+                                                                                Pkm1.polynomial( i ),
+                                                                                static_cast<uint16_type>( nOrder + 1 ) ) );
             }
         }
 
@@ -700,23 +648,7 @@ public:
         using functional_type = Functional<primal_space_type>;
         std::vector<functional_type> fset;
 
-        std::array<value_type, convex_type::numTopologicalFaces> jacobianScaling{};
-        if constexpr ( nDim == 2 )
-            jacobianScaling = { value_type( 2.8284271247461903 ), value_type( 2.0 ), value_type( 2.0 ) };
-        else if constexpr ( nDim == 3 )
-            jacobianScaling = { value_type( 3.464101615137754 ), value_type( 2.0 ), value_type( 2.0 ), value_type( 2.0 ) };
-
-        for ( int e = M_convex_ref.entityRange( nDim-1 ).begin();
-              e < M_convex_ref.entityRange( nDim-1 ).end();
-              ++e )
-        {
-            using dcpe_type = Feel::functional::DirectionalComponentPointsEvaluation<primal_space_type>;
-            node_type dir( nDim );
-            em_node_type<value_type> edir( dir.data().begin(), dir.size() );
-            edir = M_convex_ref.normal( e )*jacobianScaling[e];
-            dcpe_type dcpe( primal, dir, M_pts_per_face[e] );
-            std::copy( dcpe.begin(), dcpe.end(), std::back_inserter( fset ) );
-        }
+        Feel::detail::appendHDivFacetNormalPointFunctionals( primal, M_convex_ref, M_pts_per_face, fset );
 
         if ( M_internalOrder > 1 )
         {
@@ -741,9 +673,9 @@ public:
             ublas::subrange( M_pts, 0, nDim, firstInternalDof, requiredPointCount ) = im.points();
 
             for ( int i = 0; i < Pkm1.polynomialDimension(); ++i )
-                fset.push_back( Feel::detail::makeIntegralMomentFunctional( primal,
-                                                                            Pkm1.polynomial( i ),
-                                                                            static_cast<uint16_type>( M_internalOrder + 1 ) ) );
+                fset.push_back( Feel::detail::makeHDivIntegralMomentFunctional( primal,
+                                                                                Pkm1.polynomial( i ),
+                                                                                static_cast<uint16_type>( M_internalOrder + 1 ) ) );
         }
 
         CHECK( fset.size() == Feel::detail::raviartThomasSimplexTotalDof( nDim, M_publicOrder ) )
@@ -1159,10 +1091,9 @@ public:
                     const int dof = firstInternalDof + l;
                     for ( int q = 0; q < im.nPoints(); ++q )
                     {
-                        value_type scal = 0.;
                         const int exprPoint = firstInternalDof + q;
-                        for ( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                            scal += expr.evalq( c1, 0, exprPoint ) * Pkm1AtQuadPts( nComponents*l + c1, q );
+                        const value_type scal = Feel::detail::hdivInteriorMomentIntegrand(
+                            expr, Pkm1AtQuadPts, l, q, exprPoint, nComponents );
                         Ihloc( dof ) += im.weight( q ) * scal;
                     }
                 }
@@ -1750,10 +1681,9 @@ public:
                 const int dof = firstInternalDof + l;
                 for ( int q = 0; q < im.nPoints(); ++q )
                 {
-                    value_type scal = 0.;
                     const int exprPoint = firstInternalDof + q;
-                    for ( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                        scal += expr.evalq( c1, 0, exprPoint ) * Pkm1AtQuadPts( nComponents*l + c1, q );
+                    const value_type scal = Feel::detail::hdivInteriorMomentIntegrand(
+                        expr, Pkm1AtQuadPts, l, q, exprPoint, nComponents );
                     Ihloc( dof ) += im.weight( q ) * scal;
                 }
             }

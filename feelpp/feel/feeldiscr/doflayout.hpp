@@ -31,6 +31,8 @@
 #include <vector>
 
 #include <feel/feelcore/feeltypes.hpp>
+#include <feel/feelpoly/hcurlpolynomialset.hpp>
+#include <feel/feelpoly/hdivpolynomialset.hpp>
 
 namespace Feel
 {
@@ -240,6 +242,83 @@ concept FiniteElementRuntimeSizedDofProvider =
     { fe.order() } -> std::convertible_to<uint16_type>;
     { fe.runtimeOrder() } -> std::convertible_to<uint16_type>;
 };
+
+/**
+ * @brief Minimal mathematical finite-element family contract used by Feel++.
+ *
+ * DoF topology requirements are composed from the canonical provider concepts
+ * above; they are deliberately not repeated here.
+ */
+template<class FE>
+concept FiniteElementFamily =
+    FiniteElementReferenceTopologyProvider<FE> &&
+    FiniteElementDofLayoutProvider<FE> &&
+    requires( FE const& fe )
+{
+    typename FE::value_type;
+    typename FE::primal_space_type;
+    typename FE::dual_space_type;
+    typename FE::polyset_type;
+    typename FE::continuity_type;
+    { FE::nComponents } -> std::convertible_to<uint16_type>;
+    { FE::is_scalar } -> std::convertible_to<bool>;
+    { FE::is_vectorial } -> std::convertible_to<bool>;
+    { fe.order() } -> std::convertible_to<uint16_type>;
+    { fe.polynomialDegree() } -> std::convertible_to<uint16_type>;
+    { fe.localDof() } -> std::convertible_to<uint16_type>;
+    { fe.dofPerEntity( uint16_type{}, uint16_type{} ) } -> std::convertible_to<uint16_type>;
+};
+
+/** @brief Ciarlet FE exposing its primal space and ordered dual set. */
+template<class FE>
+concept CiarletFiniteElement =
+    FiniteElementFamily<FE> &&
+    requires( FE const& fe )
+{
+    { fe.primal() } -> std::same_as<typename FE::primal_space_type const&>;
+    { fe.dual() } -> std::same_as<typename FE::dual_space_type const&>;
+    fe.dual()( fe.primal() );
+};
+
+template<class FE>
+inline constexpr bool finiteElementIsNonconforming =
+    []
+    {
+        if constexpr ( requires { FE::is_nonconforming; } )
+            return static_cast<bool>( FE::is_nonconforming );
+        else
+            return false;
+    }();
+
+/** @brief Discontinuous L2 finite element. */
+template<class FE>
+concept L2FiniteElement =
+    CiarletFiniteElement<FE> &&
+    FE::continuity_type::is_discontinuous_totally;
+
+/** @brief Conforming H1 finite element. */
+template<class FE>
+concept H1FiniteElement =
+    CiarletFiniteElement<FE> &&
+    FE::isContinuous &&
+    !finiteElementIsNonconforming<FE> &&
+    !is_hdiv_conforming_v<FE> &&
+    !is_hcurl_conforming_v<FE>;
+
+/** @brief Broken/nonconforming H1 finite element (for example CR). */
+template<class FE>
+concept NonconformingH1FiniteElement =
+    CiarletFiniteElement<FE> && finiteElementIsNonconforming<FE>;
+
+/** @brief H(curl)-conforming finite element. */
+template<class FE>
+concept HCurlFiniteElement =
+    CiarletFiniteElement<FE> && FE::is_vectorial && is_hcurl_conforming_v<FE>;
+
+/** @brief H(div)-conforming finite element. */
+template<class FE>
+concept HDivFiniteElement =
+    CiarletFiniteElement<FE> && FE::is_vectorial && is_hdiv_conforming_v<FE>;
 
 template<FiniteElementDofLayoutProvider FE, class Element>
 [[nodiscard]] DofTransform

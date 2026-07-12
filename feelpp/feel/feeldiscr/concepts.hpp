@@ -47,6 +47,7 @@
 #include <memory>
 #include <type_traits>
 #include <feel/feelcore/concepts.hpp>
+#include <feel/feeldiscr/doflayout.hpp>
 
 namespace Feel
 {
@@ -677,10 +678,12 @@ concept InterpolationOnEdges = requires {
  * @endcode
  */
 template <typename T>
-concept HdivConforming = requires {
-    { T::is_hdiv_conforming } -> std::convertible_to<bool>;
-    requires (T::is_hdiv_conforming == true);
-};
+concept HdivConforming =
+    HDivFiniteElement<T> ||
+    requires {
+        { T::is_hdiv_conforming } -> std::convertible_to<bool>;
+        requires (T::is_hdiv_conforming == true);
+    };
 
 /**
  * @brief H(curl) conforming basis (e.g., Nedelec)
@@ -689,10 +692,12 @@ concept HdivConforming = requires {
  * Replaces SFINAE patterns checking is_hcurl_conforming.
  */
 template <typename T>
-concept HcurlConforming = requires {
-    { T::is_hcurl_conforming } -> std::convertible_to<bool>;
-    requires (T::is_hcurl_conforming == true);
-};
+concept HcurlConforming =
+    HCurlFiniteElement<T> ||
+    requires {
+        { T::is_hcurl_conforming } -> std::convertible_to<bool>;
+        requires (T::is_hcurl_conforming == true);
+    };
 
 /**
  * @brief H1 conforming (continuous) basis
@@ -700,10 +705,12 @@ concept HcurlConforming = requires {
  * @details H1 conforming spaces ensure full continuity across element boundaries.
  */
 template <typename T>
-concept H1Conforming = requires {
-    { T::is_continuous } -> std::convertible_to<bool>;
-    requires (T::is_continuous == true);
-};
+concept H1Conforming =
+    H1FiniteElement<T> ||
+    requires {
+        { T::is_continuous } -> std::convertible_to<bool>;
+        requires (T::is_continuous == true);
+    };
 
 //
 // Expression Concepts

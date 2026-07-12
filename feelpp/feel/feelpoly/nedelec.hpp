@@ -61,8 +61,10 @@
 #include <feel/feelpoly/orthonormalpolynomialset.hpp>
 #include <feel/feelpoly/functionalset.hpp>
 #include <feel/feelpoly/operations.hpp>
-#include <feel/feelpoly/functionals.hpp>
-#include <feel/feelpoly/functionals2.hpp>
+#include <feel/feelpoly/pointfunctionals.hpp>
+#include <feel/feelpoly/momentfunctionals.hpp>
+#include <feel/feelpoly/hcurlfunctionals.hpp>
+#include <feel/feelpoly/hcurlinterpolation.hpp>
 #include <feel/feelpoly/pointsetquadrature.hpp>
 #include <feel/feeldiscr/doflayout.hpp>
 #include <feel/feelpoly/fe.hpp>
@@ -73,10 +75,77 @@
 namespace Feel
 {
 /**
- * - NED1 H(curl) Nedelec finite element of the first kind
- * - NED2 H(curl) Nedelec finite element of the second kind (full polynomial space)
+ * @enum NedelecKind
+ * @brief Mathematical Nedelec family variant.
  */
-enum class NedelecKind { NED1, NED2 };
+enum class NedelecKind
+{
+    NED1, /**< First-kind/trimmed H(curl) polynomial family. */
+    NED2  /**< Second-kind/full H(curl) polynomial family. */
+};
+
+/**
+ * @brief Whether a simplex Nedelec combination is implemented and validated.
+ * @tparam Dim reference-simplex dimension
+ * @tparam Order public Feel++ family order
+ * @tparam Kind first- or second-kind family
+ */
+template<uint16_type Dim, uint16_type Order, NedelecKind Kind>
+inline constexpr bool nedelecSimplexIsSupported =
+    ( Kind == NedelecKind::NED1 ) ? ( Dim == 2 || Order == 0 )
+                                 : ( Dim == 2 && Order == 0 );
+
+/**
+ * @brief Mathematical order and dimension traits for simplex Nedelec spaces.
+ *
+ * Dimension formulae describe the intended complete Ciarlet family. The
+ * separate `isSupported` flag records the smaller envelope implemented and
+ * validated today.
+ *
+ * @tparam Kind first- or second-kind Nedelec family
+ * @tparam Dim reference-simplex dimension
+ * @tparam Order public Feel++ family order
+ */
+template<NedelecKind Kind, uint16_type Dim, uint16_type Order>
+struct NedelecTraits
+{
+    static_assert( Dim == 2 || Dim == 3, "Nedelec simplex traits support dimensions 2 and 3." );
+
+    static constexpr uint16_type publicOrder = Order; /**< Feel++ family order. */
+    static constexpr uint16_type polynomialDegree = static_cast<uint16_type>( Order + 1 ); /**< Degree of the ambient polynomial space. */
+    /** Number of ordered tangential DoFs attached to one edge. */
+    static constexpr uint16_type edgeDof = Kind == NedelecKind::NED1
+                                                ? static_cast<uint16_type>( Order + 1 )
+                                                : static_cast<uint16_type>( Order + 2 );
+    /** Number of face-interior tangential DoFs attached to one triangular face. */
+    static constexpr uint16_type faceDof = Dim == 3
+                                                ? ( Kind == NedelecKind::NED1
+                                                        ? static_cast<uint16_type>( Order * ( Order + 1 ) )
+                                                        : static_cast<uint16_type>( Order * ( Order + 2 ) ) )
+                                                : 0;
+    /** Number of cell-interior DoFs. */
+    static constexpr uint16_type cellDof = Kind == NedelecKind::NED1
+                                                ? ( Dim == 2
+                                                        ? static_cast<uint16_type>( Order * ( Order + 1 ) )
+                                                        : ( Order > 1
+                                                                ? static_cast<uint16_type>( ( Order + 1 ) * Order * ( Order - 1 ) / 2 )
+                                                                : 0 ) )
+                                                : ( Dim == 2
+                                                        ? static_cast<uint16_type>( Order * ( Order + 2 ) )
+                                                        : ( Order > 1
+                                                                ? static_cast<uint16_type>( Order * ( Order - 1 ) * ( Order + 2 ) / 2 )
+                                                                : 0 ) );
+    /** Mathematical dimension of the complete reference polynomial space. */
+    static constexpr uint16_type totalDof = Kind == NedelecKind::NED1
+                                                 ? ( Dim == 2
+                                                         ? static_cast<uint16_type>( ( Order + 1 ) * ( Order + 3 ) )
+                                                         : static_cast<uint16_type>( ( Order + 1 ) * ( Order + 3 ) * ( Order + 4 ) / 2 ) )
+                                                 : ( Dim == 2
+                                                         ? static_cast<uint16_type>( ( Order + 2 ) * ( Order + 3 ) )
+                                                         : static_cast<uint16_type>( ( Order + 2 ) * ( Order + 3 ) * ( Order + 4 ) / 2 ) );
+    /** Whether this combination is implemented and validated in Feel++. */
+    static constexpr bool isSupported = nedelecSimplexIsSupported<Dim, Order, Kind>;
+};
 
 namespace detail
 {
@@ -135,7 +204,7 @@ struct extract_all_poly_indices
 
 template<uint16_type N,
          uint16_type O,
-         NedelecKind Kind = NedelecKind::NED2,
+         NedelecKind Kind = NedelecKind::NED1,
          typename T = double,
          uint16_type TheTAG = 0 >
 class NedelecPolynomialSet{};
@@ -245,6 +314,8 @@ class NedelecPolynomialSet<3,O,NedelecKind::NED1,T,TheTAG>
     typedef Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, TheTAG, Simplex> super;
 
 public:
+    static_assert( O == 0,
+                   "3D Nedelec first kind currently supports only public order 0; higher orders require face and volume moments." );
     static const uint16_type Om1 = (O==0)?0:O-1;
     typedef Feel::detail::OrthonormalPolynomialSet<N, O, N, Vectorial, T, TheTAG, Simplex> Pk_v_type;
     typedef Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, TheTAG, Simplex> Pkp1_v_type;
@@ -374,7 +445,7 @@ public:
     typedef PolynomialSet<typename super::basis_type,Scalar> scalar_polynomialset_type;
     typedef typename scalar_polynomialset_type::polynomial_type scalar_polynomial_type;
 
-    typedef NedelecPolynomialSet<N, O, NedelecKind::NED1,T> self_type;
+    typedef NedelecPolynomialSet<N, O, NedelecKind::NED2,T,TheTAG> self_type;
 
     typedef typename super::value_type value_type;
     typedef typename super::convex_type convex_type;
@@ -389,16 +460,8 @@ public:
         :
         super()
     {
-        VLOG(4) << "[Nedelec1stKindset] nOrder = " << nOrder << "\n";
-        VLOG(4) << "[Nedelec1stKindset] O = " << O << "\n";
-        uint16_type dim_Pkp1 = convex_type::polyDims( nOrder );
-        uint16_type dim_Pk = convex_type::polyDims( nOrder-1 );
-        uint16_type dim_Pkm1 = ( nOrder==1 )?0:convex_type::polyDims( nOrder-2 );
-#if 1
-        VLOG(4) << "[Nedelec1stKindset] dim_Pkp1 = " << dim_Pkp1 << "\n";
-        VLOG(4) << "[Nedelec1stKindset] dim_Pk   = " << dim_Pk << "\n";
-        VLOG(4) << "[Nedelec1stKindset] dim_Pkm1 = " << dim_Pkm1 << "\n";
-#endif
+        VLOG(4) << "[Nedelec2ndKindset] nOrder = " << nOrder << "\n";
+        VLOG(4) << "[Nedelec2ndKindset] O = " << O << "\n";
         // (P_k)^d
         Pkp1_v_type Pkp1_v;
         //vectorial_polynomialset_type Pk_v( Pkp1_v );
@@ -481,6 +544,10 @@ public:
         M_pts_per_face( nFacesInConvex ),
         M_fset( primal )
     {
+        CHECK( primal.polynomialDimension() == nLocalDof )
+            << "Invalid Nedelec first-kind primal/dual cardinality: primal dimension "
+            << primal.polynomialDimension() << " differs from dual dimension " << nLocalDof
+            << " in dimension " << nDim << " at internal order " << nOrder;
         VLOG(4) << "Nedelec finite element(dual): \n";
         VLOG(4) << " o- dim   = " << nDim << "\n";
         VLOG(4) << " o- order = " << nOrder << "\n";
@@ -524,57 +591,8 @@ public:
         typedef Functional<primal_space_type> functional_type;
         std::vector<functional_type> fset;
 
-        // loop on each entity forming the convex of topological
-        // dimension nDim-1 ( the faces)
-        int d = (nDim == 2 )?nDim-1:1;
-        for ( int p = 0, e = M_convex_ref.entityRange( d ).begin();
-                e < M_convex_ref.entityRange( d ).end();
-                ++e )
-        {
-            // Dof coord on current edge
-            points_type Gt ( M_convex_ref.makePoints( d, e ) );
-
-            for( int f = M_convex_ref.entityRange( nDim-1 ).begin(); f < M_convex_ref.entityRange( nDim-1 ).end(); ++f)
-                {
-                    // M_pts_per_face[f] : set of dofs on a face (face_type::numTopologicalFaces*nbPtsPerFace)
-                    //for(int k=0; k<face_type::numTopologicalFaces; ++k)
-                    for(int k=0; k<nbEdgesPerFace; ++k)
-                        {
-                            int curEdge;
-                            if( nDim <= 2 )
-                                curEdge = convex_type::f2e(f,f);
-                            else
-                                curEdge = convex_type::f2e(f,k);
-
-                            if( curEdge == e )
-                                {
-                                    ublas::subrange( M_pts_per_face[f], 0, nDim, nbPtsPerEdge*k, nbPtsPerEdge*(k+1) ) = Gt;
-                                }
-                        }
-                }
-
-            // M_pts : set of dofs on an element
-            if ( Gt.size2() )
-            {
-                VLOG(4) << "Gt = " << Gt << "\n";
-                //VLOG(4) << "p = " << p << "\n";
-                ublas::subrange( M_pts, 0, nDim, p, p+Gt.size2() ) = Gt;
-                //for ( size_type j = 0; j < Gt.size2(); ++j )
-                //M_eid[d].push_back( p+j );
-                p+=Gt.size2();
-            }
-
-            typedef Feel::functional::DirectionalComponentPointsEvaluation<primal_space_type> dcpe_type;
-            VLOG(4) << "tangent " << e << ":" << M_convex_ref.tangent( e ) << "\n";
-            node_type dir(nDim);
-            em_node_type<value_type> edir( dir.data().begin(), dir.size());
-            edir = M_convex_ref.tangent(e);
-
-            //dcpe_type __dcpe( primal, dir, M_pts_per_face[e] );
-            dcpe_type __dcpe( primal, dir, Gt );
-            std::copy( __dcpe.begin(), __dcpe.end(), std::back_inserter( fset ) );
-
-        }
+        Feel::detail::appendHCurlEdgeTangentialPointFunctionals(
+            primal, M_convex_ref, nbPtsPerEdge, M_pts, M_pts_per_face, fset );
 
         // add integrals of tangential component
         if ( nOrder-1 > 0 )
@@ -742,17 +760,10 @@ public:
         M_pts_per_face( nFacesInConvex ),
         M_fset( primal )
     {
-        VLOG(4) << "Nedelec finite element(dual): \n";
-        VLOG(4) << " o- dim   = " << nDim << "\n";
-        VLOG(4) << " o- order = " << nOrder << "\n";
-        VLOG(4) << " o- kind = " << static_cast<int>(kind) << "\n";
-        VLOG(4) << " o- numPoints      = " << numPoints << "\n";
-        VLOG(4) << " o- nbPtsPerVertex = " << ( int )nbPtsPerVertex << "\n";
-        VLOG(4) << " o- nbPtsPerEdge   = " << ( int )nbPtsPerEdge << "\n";
-        VLOG(4) << " o- nbPtsPerFace   = " << ( int )nbPtsPerFace << "\n";
-        VLOG(4) << " o- nbPtsPerVolume = " << ( int )nbPtsPerVolume << "\n";
-        VLOG(4) << " o- nLocalDof      = " << nLocalDof << "\n";
-
+        CHECK( primal.polynomialDimension() == nLocalDof )
+            << "Invalid Nedelec second-kind primal/dual cardinality: primal dimension "
+            << primal.polynomialDimension() << " differs from dual dimension " << nLocalDof
+            << " in dimension " << nDim << " at internal order " << nOrder;
         VLOG(4) << "Nedelec finite element(dual): \n";
         VLOG(4) << " o- dim   = " << nDim << "\n";
         VLOG(4) << " o- order = " << nOrder << "\n";
@@ -818,10 +829,10 @@ public:
                 p+=Gt.size2();
             }
 
-            //typedef Feel::functional::DirectionalComponentPointsEvaluation<primal_space_type> dcpe_type;
-            typedef Feel::functional::SecondDirectionalComponentPointEvaluation<primal_space_type> dcpe2_type;
             //std::cout << "tangent " << e << ":" << M_convex_ref.tangent( e ) << "\n";
-            node_type dir= M_convex_ref.tangent(e);
+            node_type dir( nDim );
+            em_node_type<value_type> mappedDir( dir.data().begin(), dir.size() );
+            mappedDir = M_convex_ref.tangent( e );
 
             // Find extrem points of e (current edge)
             points_type Gt_ext(2,nDim);
@@ -887,11 +898,8 @@ public:
             // Compute and add associated functionnals ( \int (u.t) q[i], i=0,1 )
             // dcpe2_type __dcpe2_0( primal, dir, ublas::trans(Gt_ext), q[0]);
             // dcpe2_type __dcpe2_1( primal, dir, ublas::trans(Gt_ext), q[1]);
-            dcpe2_type __dcpe2_0( primal, dir, Gt, q[0]);
-            dcpe2_type __dcpe2_1( primal, dir, Gt, q[1]);
-
-            std::copy( __dcpe2_0.begin(), __dcpe2_0.end(), std::back_inserter( fset ) );
-            std::copy( __dcpe2_1.begin(), __dcpe2_1.end(), std::back_inserter( fset ) );
+            Feel::detail::appendHCurlWeightedEdgeFunctional( primal, dir, Gt, q[0], fset );
+            Feel::detail::appendHCurlWeightedEdgeFunctional( primal, dir, Gt, q[1], fset );
         }
 
 #if 0
@@ -928,9 +936,7 @@ public:
 #endif
 
         VLOG(4) << "[Nedelec2ndKind Dual] done 3, n fset = " << fset.size() << std::endl;
-        VLOG(4) << "[Nedelec2ndKind Dual] done 3, n fset = " << fset.size() << std::endl;
         M_fset.setFunctionalSet( fset );
-        VLOG(4) << "[Nedelec2ndKind DUAL matrix] mat = " << M_fset.rep() << "\n";
         VLOG(4) << "[Nedelec2ndKind DUAL matrix] mat = " << M_fset.rep() << "\n";
         VLOG(4) << "[Nedelec2ndKind Dual] done 4\n";
 
@@ -990,7 +996,7 @@ private:
 
 template<uint16_type N,
          uint16_type O,
-         NedelecKind Kind = NedelecKind::NED2,
+         NedelecKind Kind = NedelecKind::NED1,
          typename T = double,
          uint16_type TheTAG = 0 >
 struct NedelecBase
@@ -1017,7 +1023,7 @@ struct NedelecBase
  */
 template<uint16_type N,
          uint16_type O,
-         NedelecKind Kind = NedelecKind::NED2,
+         NedelecKind Kind = NedelecKind::NED1,
          typename T = double,
          uint16_type TheTAG = 0 >
 class Nedelec
@@ -1030,6 +1036,10 @@ class Nedelec
 public:
     static_assert( Kind == NedelecKind::NED1 || O == 0,
                    "Nedelec second kind currently has validated dual moments only for the lowest order; higher-order NED2 is intentionally unsupported until full edge/face/interior moments are implemented." );
+    static_assert( Kind != NedelecKind::NED1 || N == 2 || O == 0,
+                   "3D Nedelec first kind currently supports only public order 0; higher orders require face and volume moments." );
+    static_assert( Kind != NedelecKind::NED2 || N == 2,
+                   "3D Nedelec second kind is unsupported; its tetrahedral dual functionals are incomplete." );
 
     typedef typename NedelecBase<N,O,Kind,T,TheTAG>::type super;
 
@@ -1300,18 +1310,12 @@ public:
             Ihloc.setZero();
             auto g = expr.geom();
 
-            // edge dof
-            for( int e = 0; e < convex_type::numEdges; ++e )
-            {
-                expr.geom()->edgeTangent(e, t, true);
-
-                for ( int l = 0; l < nDofPerEdge; ++l )
+            Feel::detail::interpolateHCurlEdgePointDofs(
+                expr, Ihloc, convex_type::numEdges, nDofPerEdge, t,
+                [&expr]( uint16_type edge, auto& tangent )
                 {
-                    int q = e*nDofPerEdge+l;
-                    for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                        Ihloc(q) += expr.evalq( c1, 0, q )*t(c1);
-                }
-            }
+                    expr.geom()->edgeTangent( edge, tangent, true );
+                } );
             // internal dof: internal moment of the expression against
             // polynomials of degree k-1
             if ( nOrder-2 >= 0 )
@@ -1355,25 +1359,15 @@ public:
             Ihloc.setZero();
             auto g = expr.geom();
 
-            for( int e = 0; e < face_type::numEdges; ++e )
-            {
-                int edgeid_in_element;
-                if( nDim <= 2 )
-                    edgeid_in_element = g->element().fToE( g->faceId(), g->faceId());
-                else
-                    edgeid_in_element = g->element().fToE( g->faceId(), e);
-                //std::cout << "face id:  " << g->faceId() << " einf :" << e << " edge id in element : " << edgeid_in_element << std::endl;
-                expr.geom()->edgeTangent(edgeid_in_element, t, true);
-
-                for ( int l = 0; l < nDofPerEdge; ++l )
+            Feel::detail::interpolateHCurlEdgePointDofs(
+                expr, Ihloc, face_type::numEdges, nDofPerEdge, t,
+                [&expr, &g]( uint16_type edge, auto& tangent )
                 {
-                    int q = e*nDofPerEdge+l;
-                    for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                        {
-                            Ihloc(q) += expr.evalq( c1, 0, q )*t(c1);
-                        }
-                }
-            }
+                    const int elementEdge = nDim <= 2
+                                                ? g->element().fToE( g->faceId(), g->faceId() )
+                                                : g->element().fToE( g->faceId(), edge );
+                    expr.geom()->edgeTangent( elementEdge, tangent, true );
+                } );
 
         }
 
@@ -1509,6 +1503,10 @@ public:
                        "Nedelec hypercube support is not implemented in feelpoly; use simplex Nedelec or add a tensor-product H(curl) implementation first." );
         static_assert( Kind == NedelecKind::NED1 || Order == 0,
                        "Nedelec second kind higher-order dual moments are incomplete; only the lowest-order NED2 path is allowed." );
+        static_assert( Kind != NedelecKind::NED1 || N == 2 || Order == 0,
+                       "3D Nedelec first kind currently supports only public order 0; higher orders require face and volume moments." );
+        static_assert( Kind != NedelecKind::NED2 || N == 2,
+                       "3D Nedelec second kind is unsupported; its tetrahedral dual functionals are incomplete." );
         typedef fem::Nedelec<N,static_cast<uint16_type>( Order ),Kind,T,TheTAG> result_type;
         typedef result_type type;
     };

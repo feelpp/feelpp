@@ -45,7 +45,7 @@
 #include <feel/feelpoly/dualbasis.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
 #include <feel/feelpoly/functionalset.hpp>
-#include <feel/feelpoly/functionals.hpp>
+#include <feel/feelpoly/pointfunctionals.hpp>
 #include <feel/feelpoly/fe.hpp>
 #include <feel/feelpoly/isp0continuous.hpp>
 #include <feel/feelpoly/order.hpp>
@@ -200,7 +200,7 @@ public:
             initFromPointSet( dyn_pset );
         }
 
-        setFset( primal, M_pts, bool_c<primal_space_type::is_scalar>{} );
+        M_fset.setFunctionalSet( functional::makePointEvaluationFunctionals( primal, M_pts ) );
     }
 
     LagrangeDual( primal_space_type const& primal )
@@ -235,7 +235,7 @@ public:
             }
         }
 
-        setFset( primal, M_pts, bool_c<primal_space_type::is_scalar>{} );
+        M_fset.setFunctionalSet( functional::makePointEvaluationFunctionals( primal, M_pts ) );
     }
 
     LagrangeDual( primal_space_type const& primal, pointset_type const& pts )
@@ -270,7 +270,7 @@ public:
             }
         }
 
-        setFset( primal, M_pts, bool_c<primal_space_type::is_scalar>{} );
+        M_fset.setFunctionalSet( functional::makePointEvaluationFunctionals( primal, M_pts ) );
     }
 
     ~LagrangeDual() = default;
@@ -333,18 +333,6 @@ public:
         return M_fset( pset );
     }
 private:
-
-    void setFset( primal_space_type const& primal, points_type const& __pts, bool_c<true> )
-    {
-        M_fset.setFunctionalSet( functional::PointsEvaluation<primal_space_type>( primal,
-                                  __pts ) );
-    }
-
-    void setFset( primal_space_type const& primal, points_type const& __pts, bool_c<false> )
-    {
-        M_fset.setFunctionalSet( functional::ComponentsPointsEvaluation<primal_space_type>( primal,
-                                  __pts ) );
-    }
 
     /**
      * set the pointset at face \c f using points \c n

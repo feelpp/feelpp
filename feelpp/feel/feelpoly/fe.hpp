@@ -143,6 +143,8 @@ public:
         DVLOG(2) << "============================================================\n";
         DVLOG(2) << "New FE \n";
         ublas::matrix<value_type> A( M_dual( M_primal ) );
+        CHECK_EQ( A.size1(), A.size2() )
+            << "invalid Ciarlet triple: dual-on-primal matrix must be square";
         //std::cout << "[FiniteElement] A = " << A << "\n";
 
         ublas::matrix<value_type> D = ublas::identity_matrix<value_type>( A.size1(), A.size2() );
@@ -248,6 +250,21 @@ public:
     [[nodiscard]] uint16_type runtimeOrder() const
     {
         return this->order();
+    }
+
+    /**
+     * \return polynomial degree of the primal reference space.
+     *
+     * This is intentionally distinct from the public family order: for
+     * shifted-order families such as RT, BDM, and Nedelec second kind the two
+     * values need not coincide.
+     */
+    [[nodiscard]] uint16_type polynomialDegree() const
+    {
+        if constexpr ( requires( primal_space_type const& p ) { p.order(); } )
+            return static_cast<uint16_type>( M_primal.order() );
+        else
+            return static_cast<uint16_type>( primal_space_type::nOrder );
     }
 
     //! return true if finite element is linear, false otherwise
@@ -371,6 +388,19 @@ public:
             return static_cast<uint16_type>( super::nComponents * localDofPerComp );
         else
             return localDofPerComp;
+    }
+
+    /** \return parent local cardinality for one field component. */
+    [[nodiscard]] uint16_type localDof() const
+    {
+        return this->localDofCount( true );
+    }
+
+    /** \return per-component cardinality on one reference entity. */
+    [[nodiscard]] uint16_type dofPerEntity( uint16_type topologicalDim,
+                                            uint16_type localEntity = 0 ) const
+    {
+        return this->localDofCountOnEntity( topologicalDim, localEntity, true );
     }
 
     /**

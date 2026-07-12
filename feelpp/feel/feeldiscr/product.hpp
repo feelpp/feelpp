@@ -454,6 +454,7 @@ public:
     using functionspace_type = ProductSpaces2<T,SpaceList...>;
     using mesh_type = typename decay_type<T>::mesh_type;
     using mesh_ptrtype = typename decay_type<T>::mesh_ptrtype;
+    using datamap_ptrtype = std::shared_ptr<DataMap<>>;
 
     ProductSpaces2() = default;
     ProductSpaces2( std::shared_ptr<ProductSpace<T,true>> const& p, SpaceList... l ) : M_tupleSpaces( l..., p) {}
@@ -514,10 +515,38 @@ public:
             return M_tupleSpaces[n1];
         }
 
+    template<int I>
+    decltype(auto) space() const { return M_tupleSpaces[hana::int_c<I>]; }
+    template<int I>
+    decltype(auto) space() { return M_tupleSpaces[hana::int_c<I>]; }
+    template<typename N>
+    decltype(auto) space( N const& n ) const { return M_tupleSpaces[n]; }
+    template<typename N>
+    decltype(auto) space( N const& n ) { return M_tupleSpaces[n]; }
+
+    datamap_ptrtype blockMapPtr( size_type i ) const
+    {
+        datamap_ptrtype dm;
+        size_type block = 0;
+        hana::for_each( M_tupleSpaces, [&]( auto const& e )
+        {
+            if constexpr ( std::is_base_of_v<ProductSpaceBase, typename std::decay_t<decltype( e )>::element_type> )
+            {
+                for ( int j = 0; j < e->numberOfSpaces(); ++j )
+                    if ( block++ == i ) dm = (*e)[j]->mapPtr();
+            }
+            else if ( block++ == i )
+                dm = e->mapPtr();
+        } );
+        CHECK( dm ) << "invalid mixed product space block index " << i;
+        return dm;
+    }
+
     class Element : public BlocksBaseVector<double>, FunctionSpaceBase::ElementBase
     {
     public:
         using super = BlocksBaseVector<double>;
+        using functionspace_type = typename ProductSpaces2<T,SpaceList...>::functionspace_type;
         static const int nspaces = sizeof...(SpaceList)+1;
 
         Element() = default;
@@ -533,13 +562,13 @@ public:
         decltype(auto)
             operator[]( N const& n1 ) const
             {
-                return dynamic_cast<decltype(M_fspace[n1]->element()) const&>(*((*this)(n1,0)));
+                return dynamic_cast<decltype(M_fspace[n1]->element()) const&>(*(super::operator()(int(n1),0)));
             }
         template<typename N>
         decltype(auto)
             operator[]( N const& n1 )
             {
-                return dynamic_cast<decltype(M_fspace[n1]->element()) &>(*((*this)(n1,0)));
+                return dynamic_cast<decltype(M_fspace[n1]->element()) &>(*(super::operator()(int(n1),0)));
             }
 #if 0
         template<typename N>
