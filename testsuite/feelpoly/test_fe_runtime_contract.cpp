@@ -1,25 +1,10 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-  This file is part of the Feel library
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2026-05-09
+    SPDX-FileCopyrightText: 2026 University of Strasbourg
 
-  Copyright (C) 2026 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    SPDX-License-Identifier: LGPL-3.0-or-later
 */
 /**
  * @file test_fe_runtime_contract.cpp
@@ -28,6 +13,7 @@
 #define BOOST_TEST_MODULE test_fe_runtime_contract
 #include <feel/feelcore/testsuite.hpp>
 
+#include <feel/feeldiscr/doflayout.hpp>
 #include <feel/feelpoly/brezzidouglasmarini.hpp>
 #include <feel/feelpoly/crouzeixraviart.hpp>
 #include <feel/feelpoly/lagrange.hpp>
@@ -135,6 +121,73 @@ BOOST_AUTO_TEST_CASE( static_low_order_simplex_factories_still_apply )
     BOOST_CHECK_EQUAL( cr.familyName(), "CrouzeixRaviart" );
     BOOST_CHECK_EQUAL( cr.localDofCount(), cr.localDofPerComponent() );
     BOOST_CHECK_EQUAL( cr.localDofCountOnFacet( 0, true ), 1 );
+}
+
+/** @test Classify representative concrete families with the layered FE concepts. */
+BOOST_AUTO_TEST_CASE( concrete_families_satisfy_one_layered_fe_contract )
+{
+    using h1_p1 = typename Lagrange<1, Scalar>::template apply<2, 2, double, Simplex<2>>::type;
+    using l2_p1 = typename Lagrange<1, Scalar, Discontinuous>::template apply<2, 2, double, Simplex<2>>::type;
+    using rt0 = typename RaviartThomas<0>::template apply<2, 2, double, Simplex<2>>::type;
+    using bdm0 = typename BrezziDouglasMarini<0>::template apply<2, 2, double, Simplex<2>>::type;
+    using ned0 = typename Nedelec<0, NedelecKind::NED1>::template apply<2, 2, double, Simplex<2>>::type;
+    using cr1 = typename CrouzeixRaviart<1>::template apply<2, 2, double, Simplex<2>>::type;
+
+    static_assert( CiarletFiniteElement<h1_p1> );
+    static_assert( CiarletFiniteElement<l2_p1> );
+    static_assert( CiarletFiniteElement<rt0> );
+    static_assert( CiarletFiniteElement<bdm0> );
+    static_assert( CiarletFiniteElement<ned0> );
+    static_assert( CiarletFiniteElement<cr1> );
+
+    static_assert( H1FiniteElement<h1_p1> );
+    static_assert( L2FiniteElement<l2_p1> );
+    static_assert( HDivFiniteElement<rt0> );
+    static_assert( HDivFiniteElement<bdm0> );
+    static_assert( HCurlFiniteElement<ned0> );
+    static_assert( NonconformingH1FiniteElement<cr1> );
+
+    static_assert( !H1FiniteElement<cr1> );
+    static_assert( !HDivFiniteElement<ned0> );
+    static_assert( !HCurlFiniteElement<rt0> );
+
+    h1_p1 h1;
+    rt0 rt;
+    bdm0 bdm;
+    ned0 ned;
+
+    BOOST_CHECK_EQUAL( h1.polynomialDegree(), 1 );
+    BOOST_CHECK_EQUAL( h1.localDof(), h1.localDofCount( true ) );
+    BOOST_CHECK_EQUAL( rt.localDof(), rt.localDofCount( true ) );
+    BOOST_CHECK_EQUAL( bdm.localDof(), bdm.localDofCount( true ) );
+    BOOST_CHECK_EQUAL( ned.localDof(), ned.localDofCount( true ) );
+}
+
+/** @test Check zero-copy Eigen representations while retaining mathematical functional objects. */
+BOOST_AUTO_TEST_CASE( functional_objects_expose_eigen_representations_without_losing_math_api )
+{
+    using fe_type = typename Lagrange<1, Scalar>::template apply<2, 2, double, Simplex<2>>::type;
+    using primal_type = typename fe_type::primal_space_type;
+    using functional_type = Functional<primal_type>;
+
+    static_assert( !std::is_polymorphic_v<functional_type> );
+
+    fe_type fe;
+    auto functionals = functional::makePointEvaluationFunctionals( fe.primal(), fe.points() );
+    FunctionalSet<primal_type> dual( fe.primal(), functionals );
+
+    BOOST_REQUIRE_EQUAL( dual.size(), functionals.size() );
+    BOOST_CHECK_EQUAL( dual.dualMatrix().size1(), functionals.size() );
+    BOOST_CHECK_EQUAL( dual.dualMatrix().size2(), fe.primal().polynomialDimension() );
+
+    auto const eigenDual = dual.eigenDualMatrix();
+    BOOST_CHECK_EQUAL( eigenDual.rows(), dual.dualMatrix().size1() );
+    BOOST_CHECK_EQUAL( eigenDual.cols(), dual.dualMatrix().size2() );
+    BOOST_CHECK_EQUAL( eigenDual( 0, 0 ), dual.dualMatrix()( 0, 0 ) );
+
+    auto const riesz = functionals.front().rieszRepresentation();
+    BOOST_CHECK_EQUAL( riesz.rows(), 1 );
+    BOOST_CHECK_EQUAL( riesz.cols(), fe.primal().polynomialDimension() );
 }
 
 BOOST_AUTO_TEST_SUITE_END()

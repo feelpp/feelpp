@@ -1,3 +1,7 @@
+# SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+# SPDX-FileCopyrightText: 2026 University of Strasbourg
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
 set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testpoly")
 
 set(FEELPP_POLY_TEST_TARGETS)
@@ -22,6 +26,8 @@ list(APPEND FEELPP_POLY_TEST_TARGETS ${targetname})
 feelpp_add_test( rt0_static )
 list(APPEND FEELPP_POLY_TEST_TARGETS ${targetname})
 feelpp_add_test( bdm_static )
+list(APPEND FEELPP_POLY_TEST_TARGETS ${targetname})
+feelpp_add_test( nedelec_static )
 list(APPEND FEELPP_POLY_TEST_TARGETS ${targetname})
 feelpp_add_test( fe_runtime_contract )
 list(APPEND FEELPP_POLY_TEST_TARGETS ${targetname})

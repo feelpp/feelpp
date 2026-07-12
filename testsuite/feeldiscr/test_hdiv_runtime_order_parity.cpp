@@ -1,25 +1,10 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-  This file is part of the Feel library
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2026-02-18
+    SPDX-FileCopyrightText: 2026 University of Strasbourg
 
-  Copyright (C) 2026 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    SPDX-License-Identifier: LGPL-3.0-or-later
 */
 /**
  * @file test_hdiv_runtime_order_parity.cpp
@@ -179,11 +164,8 @@ checkRtStaticDynamicParityAndExactness( simplex_mesh_ptrtype<Dim> const& mesh )
         BOOST_CHECK_EQUAL( rtDynamic->basis()->runtimeOrder(), Order );
         BOOST_CHECK_EQUAL( rtDynamic->basis()->localDofPerComponent(), rtStatic->basis()->localDofPerComponent() );
         checkOnParity( rtStatic, rtDynamic, mesh, expr, 1e-11, false );
-        if constexpr ( Dim == 2 || Order == 0 )
-        {
-            checkInterpolationExactness( rtStatic, mesh, expr, 1e-10 );
-            checkInterpolationExactness( rtDynamic, mesh, expr, 1e-10 );
-        }
+        checkInterpolationExactness( rtStatic, mesh, expr, 1e-10 );
+        checkInterpolationExactness( rtDynamic, mesh, expr, 1e-10 );
     }
 }
 
@@ -200,11 +182,8 @@ checkBdmStaticDynamicParityAndExactness( simplex_mesh_ptrtype<Dim> const& mesh )
         BOOST_CHECK_EQUAL( bdmDynamic->basis()->runtimeOrder(), Order );
         BOOST_CHECK_EQUAL( bdmDynamic->basis()->localDofPerComponent(), bdmStatic->basis()->localDofPerComponent() );
         checkOnParity( bdmStatic, bdmDynamic, mesh, expr, 1e-11, false );
-        if constexpr ( Dim == 2 || Order == 0 )
-        {
-            checkInterpolationExactness( bdmStatic, mesh, expr, 1e-10 );
-            checkInterpolationExactness( bdmDynamic, mesh, expr, 1e-10 );
-        }
+        checkInterpolationExactness( bdmStatic, mesh, expr, 1e-10 );
+        checkInterpolationExactness( bdmDynamic, mesh, expr, 1e-10 );
     }
 }
 
