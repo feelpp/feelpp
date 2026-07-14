@@ -280,6 +280,34 @@ concept CiarletFiniteElement =
     fe.dual()( fe.primal() );
 };
 
+/**
+ * @brief Local reference finite element consumable by FunctionSpace.
+ *
+ * This composed contract intentionally reuses the canonical Ciarlet and DoF
+ * provider concepts.  The additional requirements are the compatibility
+ * facade currently consumed by FunctionSpace and basis contexts; they can be
+ * retired individually as those consumers move to dedicated customization
+ * points.
+ */
+template<class FE>
+concept ReferenceFiniteElement =
+    CiarletFiniteElement<FE> &&
+    FiniteElementRuntimeSizedDofProvider<FE> &&
+    requires( FE const& fe )
+{
+    typename FE::SSpace;
+    typename FE::PreCompute;
+    typename FE::points_type;
+    { FE::rank } -> std::convertible_to<uint16_type>;
+    { FE::nComponents1 } -> std::convertible_to<uint16_type>;
+    { FE::nComponents2 } -> std::convertible_to<uint16_type>;
+    { FE::isContinuous } -> std::convertible_to<bool>;
+    { FE::is_modal } -> std::convertible_to<bool>;
+    { FE::is_product } -> std::convertible_to<bool>;
+    { fe.points() } -> std::same_as<typename FE::points_type const&>;
+    fe.localInterpolant();
+};
+
 template<class FE>
 inline constexpr bool finiteElementIsNonconforming =
     []

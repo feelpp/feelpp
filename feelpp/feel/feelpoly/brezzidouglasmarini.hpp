@@ -60,6 +60,7 @@
 #include <feel/feelpoly/nedelec.hpp>
 #include <feel/feelpoly/meta.hpp>
 #include <feel/feelpoly/order.hpp>
+#include <feel/feelpoly/fefamilyshell.hpp>
 
 namespace Feel
 {
@@ -1383,15 +1384,64 @@ protected:
     mutable ublas::vector<value_type> n{ nDim };
 };
 
+namespace detail
+{
+template<int Order, uint16_type Dim, typename T,
+         template<int, int, int> class Convex, uint16_type Tag>
+struct BrezziDouglasMariniBackend
+{
+    using type = BrezziDouglasMarini<Dim, static_cast<uint16_type>( Order ), T, Convex, Tag>;
+};
+
+template<uint16_type Dim, typename T,
+         template<int, int, int> class Convex, uint16_type Tag>
+struct BrezziDouglasMariniBackend<Dynamic, Dim, T, Convex, Tag>
+{
+    using type = BrezziDouglasMariniDynamicSimplex<Dim, T, Convex, Tag>;
+};
+} // namespace detail
+
+/**
+ * @brief Unified public BDM finite-element shell for static and runtime order.
+ * @tparam Dim reference-cell dimension
+ * @tparam Order public static order or `Dynamic`
+ * @tparam T scalar type
+ * @tparam Convex reference-cell family
+ * @tparam Tag compatibility family tag
+ */
+template<uint16_type Dim, int Order, typename T = double,
+         template<int, int, int> class Convex = Simplex, uint16_type Tag = 0>
+class BrezziDouglasMariniElement :
+    public detail::BrezziDouglasMariniBackend<Order, Dim, T, Convex, Tag>::type
+{
+    using super = typename detail::BrezziDouglasMariniBackend<Order, Dim, T, Convex, Tag>::type;
+
+public:
+    using super::super;
+    BrezziDouglasMariniElement() = default;
+
+    /** @return public BDM family order, distinct from the internal polynomial degree. */
+    [[nodiscard]] uint16_type order() const noexcept
+    {
+        if constexpr ( Order == Dynamic )
+            return super::order();
+        else
+            return static_cast<uint16_type>( Order );
+    }
+    /** @return public BDM family order. */
+    [[nodiscard]] uint16_type runtimeOrder() const noexcept { return order(); }
+};
+
 } // namespace fem
 
 template<int Order,
          uint16_type TheTAG = 0>
-class BrezziDouglasMarini
+class BrezziDouglasMarini : public FiniteElementFamilyDescriptor<Order, TheTAG>
 {
 public:
-    static constexpr bool is_order_static = ( Order != Dynamic );
-    static constexpr bool is_order_dynamic = !is_order_static;
+    using descriptor_base = FiniteElementFamilyDescriptor<Order, TheTAG>;
+    static constexpr bool is_order_static = descriptor_base::is_order_static;
+    static constexpr bool is_order_dynamic = descriptor_base::is_order_dynamic;
     static constexpr int nOrder_v = Order;
 
     template<uint16_type N,
@@ -1400,11 +1450,9 @@ public:
              typename Convex = Simplex<N>>
     struct apply
     {
-        static_assert( is_order_static,
-                       "BrezziDouglasMarini<Dynamic> needs a dedicated FE-level runtime dispatch path; the static BDM factory cannot accept Dynamic as a uint16_type order." );
         static_assert( Convex::is_simplex,
                        "BrezziDouglasMarini hypercube support is not implemented in feelpoly; use simplex BDM or add a tensor-product H(div) implementation first." );
-        using result_type = fem::BrezziDouglasMarini<N, static_cast<uint16_type>( Order ), T, Simplex, TheTAG>;
+        using result_type = fem::BrezziDouglasMariniElement<N, Order, T, Simplex, TheTAG>;
         using type = result_type;
     };
 
@@ -1416,40 +1464,6 @@ public:
 
     typedef Lagrange<Order, Scalar> component_basis_type;
 
-    static inline const uint16_type nOrder = is_order_static ? static_cast<uint16_type>( Order ) : 0;
-    static const uint16_type TAG = TheTAG;
-};
-
-template<uint16_type TheTAG>
-class BrezziDouglasMarini<Dynamic, TheTAG>
-{
-public:
-    static constexpr bool is_order_static = false;
-    static constexpr bool is_order_dynamic = true;
-    static constexpr int nOrder_v = Dynamic;
-
-    template<uint16_type N,
-             uint16_type R = N,
-             typename T = double,
-             typename Convex = Simplex<N>>
-    struct apply
-    {
-        static_assert( Convex::is_simplex,
-                       "BrezziDouglasMarini hypercube support is not implemented in feelpoly; use simplex BDM or add a tensor-product H(div) implementation first." );
-        using result_type = fem::BrezziDouglasMariniDynamicSimplex<N, T, Simplex, TheTAG>;
-        using type = result_type;
-    };
-
-    template<uint16_type TheNewTAG>
-    struct ChangeTag
-    {
-        typedef BrezziDouglasMarini<Dynamic, TheNewTAG> type;
-    };
-
-    typedef Lagrange<Dynamic, Scalar> component_basis_type;
-
-    static inline const uint16_type nOrder = 0;
-    static const uint16_type TAG = TheTAG;
 };
 
 } // namespace Feel

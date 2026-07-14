@@ -4322,6 +4322,11 @@ public:
      */
     [[nodiscard]] uint16_type order() const noexcept
     {
+        if constexpr ( !is_composite && requires( basis_type const& fe ) { fe.order(); } )
+        {
+            if ( M_ref_fe )
+                return M_ref_fe->order();
+        }
         if constexpr ( orderIsDynamic<basis_type> )
         {
             return M_runtime_order.value;

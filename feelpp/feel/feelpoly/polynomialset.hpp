@@ -1793,7 +1793,9 @@ public:
                 {
                     if ( M_ref_ele )
                     {
-                        if constexpr ( requires( reference_element_type const& fe ) { fe.order(); } )
+                        if constexpr ( requires( reference_element_type const& fe ) { fe.polynomialDegree(); } )
+                            return static_cast<uint16_type>( M_ref_ele->polynomialDegree() );
+                        else if constexpr ( requires( reference_element_type const& fe ) { fe.order(); } )
                             return static_cast<uint16_type>( M_ref_ele->order() );
                         else if constexpr ( requires( reference_element_type const& fe ) { fe.runtimeOrder(); } )
                             return static_cast<uint16_type>( M_ref_ele->runtimeOrder() );

@@ -89,6 +89,38 @@ BOOST_AUTO_TEST_CASE( dynamic_family_component_bases_preserve_dynamic_order )
     static_assert( bdm_dynamic_component::is_order_dynamic );
 }
 
+/** @test Bind static and runtime descriptors through the same public family shells. */
+BOOST_AUTO_TEST_CASE( family_descriptors_bind_to_unified_shells )
+{
+    using rt_static = typename RaviartThomas<0>::template apply<2, 2, double, Simplex<2>>::type;
+    using rt_dynamic = typename RaviartThomas<Dynamic>::template apply<2, 2, double, Simplex<2>>::type;
+    using bdm_static = typename BrezziDouglasMarini<0>::template apply<2, 2, double, Simplex<2>>::type;
+    using bdm_dynamic = typename BrezziDouglasMarini<Dynamic>::template apply<2, 2, double, Simplex<2>>::type;
+    using ned_static = typename Nedelec<0, NedelecKind::NED1>::template apply<2, 2, double, Simplex<2>>::type;
+    using ned_dynamic = typename Nedelec<Dynamic, NedelecKind::NED1>::template apply<2, 2, double, Simplex<2>>::type;
+
+    static_assert( std::same_as<rt_static, fem::RaviartThomasElement<2, 0, double, Simplex, 0>> );
+    static_assert( std::same_as<rt_dynamic, fem::RaviartThomasElement<2, Dynamic, double, Simplex, 0>> );
+    static_assert( std::same_as<bdm_static, fem::BrezziDouglasMariniElement<2, 0, double, Simplex, 0>> );
+    static_assert( std::same_as<bdm_dynamic, fem::BrezziDouglasMariniElement<2, Dynamic, double, Simplex, 0>> );
+    static_assert( std::same_as<ned_static, fem::NedelecElement<2, 0, NedelecKind::NED1, double, 0>> );
+    static_assert( std::same_as<ned_dynamic, fem::NedelecElement<2, Dynamic, NedelecKind::NED1, double, 0>> );
+
+    static_assert( HDivFiniteElement<rt_static> && HDivFiniteElement<rt_dynamic> );
+    static_assert( HDivFiniteElement<bdm_static> && HDivFiniteElement<bdm_dynamic> );
+    static_assert( HCurlFiniteElement<ned_static> && HCurlFiniteElement<ned_dynamic> );
+
+    ned_dynamic ned0( RuntimeOrder{ 0 } );
+    ned_dynamic ned1( RuntimeOrder{ 1 } );
+    ned_dynamic ned3( RuntimeOrder{ 3 } );
+    BOOST_CHECK_EQUAL( ned0.order(), 0 );
+    BOOST_CHECK_EQUAL( ned0.polynomialDegree(), 1 );
+    BOOST_CHECK_EQUAL( ned1.order(), 1 );
+    BOOST_CHECK_EQUAL( ned1.polynomialDegree(), 2 );
+    BOOST_CHECK_EQUAL( ned3.order(), 3 );
+    BOOST_CHECK_EQUAL( ned3.polynomialDegree(), 4 );
+}
+
 BOOST_AUTO_TEST_CASE( static_low_order_simplex_factories_still_apply )
 {
     using lag_p1 = typename Lagrange<1, Scalar>::template apply<2, 2, double, Simplex<2>>::type;
