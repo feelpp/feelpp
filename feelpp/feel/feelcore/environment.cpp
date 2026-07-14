@@ -1,27 +1,14 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
- This file is part of the Feel library
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+    SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
 
- Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- Date: 2010-04-14
+    SPDX-FileCopyrightText: 2007-2011 Joseph Fourier University
+    SPDX-FileCopyrightText: 2011-2026 University of Strasbourg
 
- Copyright (C) 2010,2011 Université Joseph Fourier (Grenoble I)
- Copyright (C) 2010-2016 Feel++ Consortium
-
- This library is free software; you can redistribute it and/or
- modify it under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation; either
- version 2.1 of the License, or (at your option) any later version.
-
- This library is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
-
- You should have received a copy of the GNU Lesser General Public
- License along with this library; if not, write to the Free Software
- Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    SPDX-License-Identifier: LGPL-3.0-or-later
 */
+
 #include <cstdlib>
 #include <pwd.h>
 #include <utility>
@@ -1776,6 +1763,48 @@ Environment::setConfigFile( std::string const& cfgfile )
 {
     setConfigFiles( std::vector<std::string>{ cfgfile } );
 }
+
+void
+Environment::addOptions( po::options_description const& desc )
+{
+    if ( !S_desc )
+        throw std::logic_error(
+            "Environment::addOptions requires an initialized Environment" );
+
+    bool anyRegistered = false;
+    bool allRegistered = true;
+    for ( auto const& option : desc.options() )
+    {
+        bool const registered =
+            S_desc->find_nothrow( option->long_name(), false ) != nullptr;
+        anyRegistered = anyRegistered || registered;
+        allRegistered = allRegistered && registered;
+    }
+
+    if ( allRegistered )
+        return;
+    if ( anyRegistered )
+        throw std::invalid_argument(
+            "Environment::addOptions received a partially registered option description" );
+
+    S_desc->add( desc );
+    po::store(
+        po::command_line_parser( S_argc, S_argv )
+            .options( desc )
+            .allow_unregistered()
+            .run(),
+        S_vm );
+
+    for ( auto& config : S_configFiles )
+    {
+        auto& stream = std::get<1>( config );
+        stream.clear();
+        stream.seekg( 0 );
+        po::store( po::parse_config_file( stream, desc, true ), S_vm );
+    }
+    po::notify( S_vm );
+}
+
 bool
 Environment::initialized()
 {
