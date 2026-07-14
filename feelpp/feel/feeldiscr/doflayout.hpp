@@ -127,9 +127,24 @@ struct DofKey
 
 struct DofTransform
 {
+    /** @brief Shared row-major storage for a dense entity-block operator. */
+    struct MatrixStorage
+    {
+        uint16_type rows = 0;
+        uint16_type cols = 0;
+        std::vector<double> values;
+
+        [[nodiscard]] double operator()( uint16_type row, uint16_type col ) const noexcept
+        {
+            return values[static_cast<std::size_t>( row ) * cols + col];
+        }
+    };
+
     DofTransformKind kind = DofTransformKind::Identity;
     int16_type sign = 1;
     std::vector<uint16_type> permutation = {};
+    std::shared_ptr<MatrixStorage const> matrix = {};
+    uint16_type matrixRow = 0;
 
     [[nodiscard]] bool isIdentity() const noexcept
     {
@@ -137,9 +152,24 @@ struct DofTransform
                ( kind == DofTransformKind::Sign && sign == 1 );
     }
 
+    /** @return canonical entity ordinal corresponding to a local ordinal. */
+    [[nodiscard]] uint16_type mapOrdinal( uint16_type ordinal ) const noexcept
+    {
+        return ordinal < permutation.size() ? permutation[ordinal] : ordinal;
+    }
+
     [[nodiscard]] std::span<uint16_type const> permutationView() const noexcept
     {
         return permutation;
+    }
+
+    /** @return one row of the dense entity operator, or an empty span. */
+    [[nodiscard]] std::span<double const> matrixRowView() const noexcept
+    {
+        if ( !matrix || matrixRow >= matrix->rows )
+            return {};
+        return { matrix->values.data() + static_cast<std::size_t>( matrixRow ) * matrix->cols,
+                 matrix->cols };
     }
 
     [[nodiscard]] static DofTransform identity() noexcept
@@ -151,6 +181,26 @@ struct DofTransform
     {
         return DofTransform{ .kind = DofTransformKind::Sign,
                              .sign = orientation };
+    }
+
+    /** @brief Build a possibly signed entity permutation operator. */
+    [[nodiscard]] static DofTransform signedPermutation( int16_type orientation,
+                                                         std::vector<uint16_type> permutation )
+    {
+        const auto kind = orientation == 1 ? DofTransformKind::Permutation
+                                           : DofTransformKind::SignedPermutation;
+        return DofTransform{ .kind = kind,
+                             .sign = orientation,
+                             .permutation = std::move( permutation ) };
+    }
+
+    /** @brief Build one row descriptor of a shared dense entity operator. */
+    [[nodiscard]] static DofTransform matrixOperator( std::shared_ptr<MatrixStorage const> storage,
+                                                      uint16_type row )
+    {
+        return DofTransform{ .kind = DofTransformKind::Matrix,
+                             .matrix = std::move( storage ),
+                             .matrixRow = row };
     }
 };
 
