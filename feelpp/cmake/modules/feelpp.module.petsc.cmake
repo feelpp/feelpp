@@ -77,6 +77,41 @@ else()
   #include_directories(${PETSC_PACKAGE_INCLUDES})
 endif()
 
+# TAO has shipped as part of PETSc for many releases, but the callback API has
+# evolved independently of the core KSP/SNES API. Detect the exact modern API
+# used by Feel++ instead of raising the minimum PETSc version for all users.
+include(CheckCXXSourceCompiles)
+set(_SAVE_CMAKE_REQUIRED_INCLUDES_TAO ${CMAKE_REQUIRED_INCLUDES})
+set(_SAVE_CMAKE_REQUIRED_LIBRARIES_TAO ${CMAKE_REQUIRED_LIBRARIES})
+set(CMAKE_REQUIRED_INCLUDES "${PETSC_INCLUDES};${CMAKE_REQUIRED_INCLUDES}")
+set(CMAKE_REQUIRED_LIBRARIES PkgConfig::PETSC MPI::MPI_CXX)
+check_cxx_source_compiles(
+  "#include <petsctao.h>
+   int main()
+   {
+       auto create = &TaoCreate;
+       auto objective = &TaoSetObjective;
+       auto gradient = &TaoSetGradient;
+       auto objectiveGradient = &TaoSetObjectiveAndGradient;
+       auto hessian = &TaoSetHessian;
+       auto monitor = &TaoMonitorSet;
+       auto monitorCancel = &TaoMonitorCancel;
+       auto getKsp = &TaoGetKSP;
+       auto variableBounds = &TaoSetVariableBounds;
+       auto solutionStatus = &TaoGetSolutionStatus;
+       return create && objective && gradient && objectiveGradient && hessian && monitor &&
+              monitorCancel && getKsp && variableBounds && solutionStatus ? 0 : 1;
+   }"
+  FEELPP_HAS_PETSC_TAO)
+set(CMAKE_REQUIRED_INCLUDES ${_SAVE_CMAKE_REQUIRED_INCLUDES_TAO})
+set(CMAKE_REQUIRED_LIBRARIES ${_SAVE_CMAKE_REQUIRED_LIBRARIES_TAO})
+
+if(FEELPP_HAS_PETSC_TAO)
+  message(STATUS "Found PETSc TAO modern callback API")
+else()
+  message(STATUS "PETSc TAO modern callback API is unavailable; TAO support is disabled")
+endif()
+
 set(FEELPP_PETSC_ENABLED_OPTIONS)
 
 if ( PETSC_GFORTRAN_LIB )
