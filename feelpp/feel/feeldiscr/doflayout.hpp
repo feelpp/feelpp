@@ -290,6 +290,17 @@ inline constexpr bool finiteElementIsNonconforming =
             return false;
     }();
 
+/** @brief True when FE assembly topology is explicitly cell-local. */
+template<class FE>
+inline constexpr bool finiteElementIsBroken =
+    []
+    {
+        if constexpr ( requires { FE::is_broken; } )
+            return static_cast<bool>( FE::is_broken );
+        else
+            return false;
+    }();
+
 /** @brief Discontinuous L2 finite element. */
 template<class FE>
 concept L2FiniteElement =
