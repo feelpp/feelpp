@@ -1676,6 +1676,42 @@ public:
             index_type index=M_functionspace->dof()->localToGlobal( e, l, c ).index();
             return super::operator()( index );
         }
+
+        /**
+         * @brief Return the coefficient in the oriented local finite-element frame.
+         *
+         * Signed permutations are already reflected by the local-to-global key
+         * plus its sign projection. Dense entity operators gather a complete
+         * canonical entity block and apply the row owned by `l`.
+         */
+        value_type orientedLocalCoefficient( index_type e, uint16_type l ) const
+        {
+            if constexpr ( is_hcurl_conforming || is_hdiv_conforming )
+            {
+                auto const& transform = M_functionspace->dof()->localToGlobalTransform( e, l );
+                if ( transform.kind == DofTransformKind::Matrix )
+                {
+                    auto const row = transform.matrixRowView();
+                    DCHECK( !row.empty() ) << "invalid dense dof transform row";
+                    uint16_type const first = static_cast<uint16_type>( l - transform.matrixRow );
+                    value_type result = 0;
+                    for ( uint16_type column = 0; column < row.size(); ++column )
+                    {
+                        auto const index = M_functionspace->dof()->localToGlobal( e, first + column ).index();
+                        result += static_cast<value_type>( row[column] ) * super::operator[]( index );
+                    }
+                    return result;
+                }
+                auto const index = M_functionspace->dof()->localToGlobal( e, l ).index();
+                return super::operator[]( index ) *
+                       M_functionspace->dof()->localToGlobalSigns( e )( l );
+            }
+            else
+            {
+                auto const index = M_functionspace->dof()->localToGlobal( e, l ).index();
+                return super::operator[]( index );
+            }
+        }
 #if 0
         value_type& localToGlobal( index_type e, index_type l, int c )
         {
@@ -1871,32 +1907,100 @@ public:
                         }
                     }
             }
+
+        /**
+         * @brief Convert element-local coefficients to the canonical global
+         * orientation used by the DoF table.
+         *
+         * H(div) and H(curl) moment elements may couple all coefficients on
+         * an entity under a change of orientation.  A sign is therefore not
+         * sufficient in general: if
+         * @f$u_{\mathrm{local}}=T u_{\mathrm{canonical}}@f$, this routine returns
+         * @f$T^{-1}u_{\mathrm{local}}@f$.
+         *
+         * @param e mesh element identifier
+         * @param localCoefficients coefficients evaluated in the local FE frame
+         * @return coefficients in the canonical DoF-table frame
+         */
+        [[nodiscard]] local_interpolant_type
+        canonicalLocalInterpolant( index_type e,
+                                   local_interpolant_type const& localCoefficients ) const
+        {
+            auto canonicalCoefficients = localCoefficients;
+            if ( M_functionspace->dof()->hasDenseDofTransform( e ) )
+            {
+                auto const transform =
+                    M_functionspace->dof()->localToGlobalCoefficientTransform( e );
+                canonicalCoefficients = transform.fullPivLu().solve( localCoefficients );
+            }
+            else
+            {
+                auto const& signs = M_functionspace->dof()->localToGlobalSigns( e );
+                for ( Eigen::Index i = 0; i < canonicalCoefficients.size(); ++i )
+                    canonicalCoefficients( i ) *= signs( i );
+            }
+            return canonicalCoefficients;
+        }
+
+        /**
+         * @brief Convert facet-local interpolation coefficients to the
+         * canonical DoF-table frame of one adjacent element.
+         *
+         * The facet closure is embedded in a full element-local vector before
+         * applying the block-diagonal orientation operator. This reuses the
+         * element policy for edge permutations and coupled face moments
+         * without maintaining a second orientation implementation.
+         *
+         * @param face mesh face being interpolated
+         * @param elementId adjacent element used by the facet context
+         * @param localCoefficients coefficients in facet-local ordering
+         * @return full element vector in canonical DoF-table coordinates
+         */
+        [[nodiscard]] local_interpolant_type
+        canonicalFaceLocalInterpolant(
+            geoface_type const& face,
+            index_type elementId,
+            local_interpolant_type const& localCoefficients ) const
+        {
+            local_interpolant_type elementLocal = local_interpolant_type::Zero(
+                M_functionspace->dof()->nLocalDof() );
+            for ( auto const& localDof :
+                  M_functionspace->dof()->faceLocalDof( face.id() ) )
+                elementLocal( localDof.localDof() ) =
+                    localCoefficients( localDof.localDofInFace() );
+            return this->canonicalLocalInterpolant( elementId, elementLocal );
+        }
+
+        /** Assign element-local interpolation coefficients to global DoFs. */
         void assign( index_type e, local_interpolant_type const& Ihloc )
             {
-                auto const& s = M_functionspace->dof()->localToGlobalSigns( e );
+                auto const canonicalIh = this->canonicalLocalInterpolant( e, Ihloc );
                 for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
                 {
                     index_type index = ldof.second.index();
-                    super::operator[]( index ) = s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
-                }
-            }
-        void plus_assign( index_type e, local_interpolant_type const& Ihloc )
-            {
-                auto const& s = M_functionspace->dof()->localToGlobalSigns( e );
-                for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
-                {
-                    index_type index = ldof.second.index();
-                    super::operator[]( index ) += s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
+                    super::operator[]( index ) = canonicalIh( ldof.first.localDof() );
                 }
             }
 
+        /** Add element-local interpolation coefficients to global DoFs. */
+        void plus_assign( index_type e, local_interpolant_type const& Ihloc )
+            {
+                auto const canonicalIh = this->canonicalLocalInterpolant( e, Ihloc );
+                for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
+                {
+                    index_type index = ldof.second.index();
+                    super::operator[]( index ) += canonicalIh( ldof.first.localDof() );
+                }
+            }
+
+        /** Assign local interpolation coefficients for a geometric element. */
         void assign( geoelement_type const& e, local_interpolant_type const& Ihloc )
         {
-            auto const& s = M_functionspace->dof()->localToGlobalSigns( e.id() );
+            auto const canonicalIh = this->canonicalLocalInterpolant( e.id(), Ihloc );
             for( auto const& ldof : M_functionspace->dof()->localDof( e.id() ) )
             {
                 index_type index = ldof.second.index();
-                super::operator[]( index ) = s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
+                super::operator[]( index ) = canonicalIh( ldof.first.localDof() );
             }
         }
         template<typename EltType>
@@ -1948,29 +2052,34 @@ public:
 
         void assign( geoface_type const& e, uint16_type faceConnectionId, local_interpolant_type const& Ihloc )
         {
-            auto const& s = M_functionspace->dof()->localToGlobalSigns( e.element( faceConnectionId ).id() );
+            const index_type elementId = e.element( faceConnectionId ).id();
+            auto const canonicalIh =
+                this->canonicalFaceLocalInterpolant( e, elementId, Ihloc );
             for( auto const& ldof : M_functionspace->dof()->faceLocalDof( e.id() ) )
             {
                 index_type index = ldof.index();
-                super::operator[]( index ) = s(ldof.localDof())*Ihloc( ldof.localDofInFace() );
+                super::operator[]( index ) = canonicalIh( ldof.localDof() );
             }
         }
+        /** Add local interpolation coefficients for a geometric element. */
         void plus_assign( geoelement_type const& e, local_interpolant_type const& Ihloc )
         {
-            auto const& s = M_functionspace->dof()->localToGlobalSigns( e.id() );
+            auto const canonicalIh = this->canonicalLocalInterpolant( e.id(), Ihloc );
             for( auto const& ldof : M_functionspace->dof()->localDof( e.id() ) )
             {
                 index_type index = ldof.second.index();
-                super::operator[]( index ) += s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
+                super::operator[]( index ) += canonicalIh( ldof.first.localDof() );
             }
         }
         void plus_assign( geoface_type const& e, uint16_type faceConnectionId, local_interpolant_type const& Ihloc )
          {
-             auto const& s = M_functionspace->dof()->localToGlobalSigns( e.element( faceConnectionId ).id() );
+            const index_type elementId = e.element( faceConnectionId ).id();
+            auto const canonicalIh =
+                this->canonicalFaceLocalInterpolant( e, elementId, Ihloc );
             for( auto const& ldof : M_functionspace->dof()->faceLocalDof( e.id() ) )
             {
                 index_type index = ldof.index();
-                super::operator[]( index ) += s(ldof.localDof())*Ihloc( ldof.localDofInFace() );
+                super::operator[]( index ) += canonicalIh( ldof.localDof() );
             }
         }
 

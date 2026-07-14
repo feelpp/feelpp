@@ -38,6 +38,7 @@
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feelfilters/unitsquare.hpp>
 #include <feel/feelmesh/filters.hpp>
+#include <feel/feelfilters/unitcube.hpp>
 #include <feel/feelpoly/brezzidouglasmarini.hpp>
 #include <feel/feelpoly/crouzeixraviart.hpp>
 #include <feel/feelpoly/lagrange.hpp>
@@ -1172,14 +1173,31 @@ checkTransformProjectionContract( SpacePtrType const& Xh, std::string const& lab
             {
                 BOOST_CHECK_EQUAL( static_cast<int>( actual.kind ), static_cast<int>( expected.kind ) );
                 BOOST_CHECK_EQUAL( actual.sign, expected.sign );
+                BOOST_CHECK_EQUAL_COLLECTIONS( actual.permutation.begin(), actual.permutation.end(),
+                                               expected.permutation.begin(), expected.permutation.end() );
+                BOOST_CHECK_EQUAL_COLLECTIONS( actual.matrixRowView().begin(), actual.matrixRowView().end(),
+                                               expected.matrixRowView().begin(), expected.matrixRowView().end() );
                 BOOST_CHECK_EQUAL( actualSign, expectedSign );
                 BOOST_CHECK_EQUAL( signs( localDof ), actualSign );
+                if ( !actual.permutation.empty() )
+                {
+                    const auto ordinal = layout.attachment.ordinal;
+                    BOOST_REQUIRE_LT( ordinal, actual.permutation.size() );
+                    const auto mapped = actual.mapOrdinal( ordinal );
+                    BOOST_REQUIRE_LT( mapped, actual.permutation.size() );
+                    auto sortedPermutation = actual.permutation;
+                    std::sort( sortedPermutation.begin(), sortedPermutation.end() );
+                    for ( uint16_type i = 0; i < sortedPermutation.size(); ++i )
+                        BOOST_CHECK_EQUAL( sortedPermutation[i], i );
+                }
             }
 
             if ( actualSign < 0 )
                 ++negativeTransforms;
             ++checkedDofs;
         }
+        auto const coefficientTransform = dof->localToGlobalCoefficientTransform( elt.id() );
+        BOOST_CHECK_EQUAL( coefficientTransform.fullPivLu().rank(), coefficientTransform.rows() );
     }
 
     mpi::all_reduce( Environment::worldComm(), mpi::inplace( checkedDofs ), std::plus<size_type>() );
@@ -1300,6 +1318,9 @@ BOOST_AUTO_TEST_CASE( phase0_hdiv_hcurl_public_contract )
     checkPublicDofContract( BDMh<0>( mesh ), "BDMh<0>" );
     checkPublicDofContract( BDMh<Dynamic>( mesh, RuntimeOrder{ 1 } ), "BDMh<Dynamic,P1>" );
     checkPublicDofContract( Neh<0>( mesh ), "Neh<0>" );
+    checkPublicDofContract( Neh<Dynamic>( mesh, RuntimeOrder{ 0 } ), "Neh<Dynamic,P0>" );
+    checkPublicDofContract( Neh<Dynamic>( mesh, RuntimeOrder{ 1 } ), "Neh<Dynamic,P1>" );
+    checkPublicDofContract( Neh<Dynamic>( mesh, RuntimeOrder{ 2 } ), "Neh<Dynamic,P2>" );
 }
 
 BOOST_AUTO_TEST_CASE( phase1_fe_descriptor_contract )
@@ -1310,6 +1331,7 @@ BOOST_AUTO_TEST_CASE( phase1_fe_descriptor_contract )
     using rt1_type = typename RaviartThomas<1>::template apply<2, 2, double, Simplex<2>>::type;
     using rt_dynamic_type = typename RaviartThomas<Dynamic>::template apply<2, 2, double, Simplex<2>>::type;
     using nedelec0_type = typename Nedelec<0, NedelecKind::NED1>::template apply<2, 2, double, Simplex<2>>::type;
+    using nedelec_dynamic_type = typename Nedelec<Dynamic, NedelecKind::NED1>::template apply<2, 2, double, Simplex<2>>::type;
     using bdm0_type = typename BrezziDouglasMarini<0>::template apply<2, 2, double, Simplex<2>>::type;
     using bdm_dynamic_type = typename BrezziDouglasMarini<Dynamic>::template apply<2, 2, double, Simplex<2>>::type;
     using cr1_type = typename CrouzeixRaviart<1>::template apply<2, 2, double, Simplex<2>>::type;
@@ -1320,6 +1342,7 @@ BOOST_AUTO_TEST_CASE( phase1_fe_descriptor_contract )
     static_assert( FiniteElementDofLayoutProvider<rt1_type> );
     static_assert( FiniteElementDofLayoutProvider<rt_dynamic_type> );
     static_assert( FiniteElementDofLayoutProvider<nedelec0_type> );
+    static_assert( FiniteElementDofLayoutProvider<nedelec_dynamic_type> );
     static_assert( FiniteElementDofLayoutProvider<bdm0_type> );
     static_assert( FiniteElementDofLayoutProvider<bdm_dynamic_type> );
     static_assert( FiniteElementDofLayoutProvider<cr1_type> );
@@ -1329,6 +1352,7 @@ BOOST_AUTO_TEST_CASE( phase1_fe_descriptor_contract )
     static_assert( FiniteElementRuntimeSizedDofProvider<rt1_type> );
     static_assert( FiniteElementRuntimeSizedDofProvider<rt_dynamic_type> );
     static_assert( FiniteElementRuntimeSizedDofProvider<nedelec0_type> );
+    static_assert( FiniteElementRuntimeSizedDofProvider<nedelec_dynamic_type> );
     static_assert( FiniteElementRuntimeSizedDofProvider<bdm0_type> );
     static_assert( FiniteElementRuntimeSizedDofProvider<bdm_dynamic_type> );
     static_assert( FiniteElementRuntimeSizedDofProvider<cr1_type> );
@@ -1337,6 +1361,15 @@ BOOST_AUTO_TEST_CASE( phase1_fe_descriptor_contract )
     static_assert( FiniteElementDofCardinalityProvider<rt0_type> );
     static_assert( FiniteElementDofCardinalityProvider<rt_dynamic_type> );
     static_assert( FiniteElementDofCardinalityProvider<nedelec0_type> );
+    static_assert( ReferenceFiniteElement<lagrange_p2_type> );
+    static_assert( ReferenceFiniteElement<lagrange_dynamic_type> );
+    static_assert( ReferenceFiniteElement<rt0_type> );
+    static_assert( ReferenceFiniteElement<rt_dynamic_type> );
+    static_assert( ReferenceFiniteElement<nedelec0_type> );
+    static_assert( ReferenceFiniteElement<nedelec_dynamic_type> );
+    static_assert( ReferenceFiniteElement<bdm0_type> );
+    static_assert( ReferenceFiniteElement<bdm_dynamic_type> );
+    static_assert( ReferenceFiniteElement<cr1_type> );
     static_assert( FiniteElementDofCardinalityProvider<bdm0_type> );
     static_assert( FiniteElementDofCardinalityProvider<bdm_dynamic_type> );
     static_assert( FiniteElementDofCardinalityProvider<cr1_type> );
@@ -1391,9 +1424,21 @@ BOOST_AUTO_TEST_CASE( phase1_fe_descriptor_contract )
     DofTransform identity;
     DofTransform positiveSign{ .kind = DofTransformKind::Sign, .sign = 1 };
     DofTransform negativeSign{ .kind = DofTransformKind::Sign, .sign = -1 };
+    auto signedPermutation = DofTransform::signedPermutation( -1, { 2, 1, 0 } );
+    auto denseStorage = std::make_shared<DofTransform::MatrixStorage>();
+    denseStorage->rows = 2;
+    denseStorage->cols = 2;
+    denseStorage->values = { 1., 2., 3., 4. };
+    auto denseRow = DofTransform::matrixOperator( denseStorage, 1 );
     BOOST_CHECK( identity.isIdentity() );
     BOOST_CHECK( positiveSign.isIdentity() );
     BOOST_CHECK( !negativeSign.isIdentity() );
+    BOOST_CHECK_EQUAL( signedPermutation.mapOrdinal( 0 ), 2 );
+    BOOST_CHECK_EQUAL( signedPermutation.mapOrdinal( 2 ), 0 );
+    BOOST_CHECK_EQUAL( static_cast<int>( denseRow.kind ), static_cast<int>( DofTransformKind::Matrix ) );
+    BOOST_REQUIRE_EQUAL( denseRow.matrixRowView().size(), 2 );
+    BOOST_CHECK_EQUAL( denseRow.matrixRowView()[0], 3. );
+    BOOST_CHECK_EQUAL( denseRow.matrixRowView()[1], 4. );
 }
 
 BOOST_AUTO_TEST_CASE( phase2_descriptor_backed_entity_views )
@@ -1445,8 +1490,31 @@ BOOST_AUTO_TEST_CASE( phase5_hdiv_hcurl_transform_projection )
     checkTransformProjectionContract( RTh<0>( mesh ), "RTh<0>" );
     checkTransformProjectionContract( RTh<1>( mesh ), "RTh<1>" );
     checkTransformProjectionContract( RTh<Dynamic>( mesh, RuntimeOrder{ 0 } ), "RTh<Dynamic,P0>" );
+    checkTransformProjectionContract( RTh<Dynamic>( mesh, RuntimeOrder{ 1 } ), "RTh<Dynamic,P1>" );
     checkTransformProjectionContract( BDMh<0>( mesh ), "BDMh<0>" );
+    checkTransformProjectionContract( BDMh<Dynamic>( mesh, RuntimeOrder{ 1 } ), "BDMh<Dynamic,P1>" );
     checkTransformProjectionContract( Neh<0>( mesh ), "Neh<0>" );
+    checkTransformProjectionContract( Neh<Dynamic>( mesh, RuntimeOrder{ 0 } ), "Neh<Dynamic,P0>" );
+    checkTransformProjectionContract( Neh<Dynamic>( mesh, RuntimeOrder{ 1 } ), "Neh<Dynamic,P1>" );
+    checkTransformProjectionContract( Neh<Dynamic>( mesh, RuntimeOrder{ 2 } ), "Neh<Dynamic,P2>" );
+}
+
+BOOST_AUTO_TEST_CASE( phase5c_three_dimensional_facet_group_actions )
+{
+    auto mesh = unitCube( 0.8 );
+
+    checkTransformProjectionContract( RTh<1>( mesh ), "RTh<1>,3D" );
+    checkTransformProjectionContract( RTh<Dynamic>( mesh, RuntimeOrder{ 1 } ), "RTh<Dynamic,P1>,3D" );
+    checkTransformProjectionContract( BDMh<1>( mesh ), "BDMh<1>,3D" );
+    checkTransformProjectionContract( BDMh<Dynamic>( mesh, RuntimeOrder{ 1 } ), "BDMh<Dynamic,P1>,3D" );
+    checkTransformProjectionContract( Neh<0>( mesh ), "Neh<0>,3D" );
+    checkTransformProjectionContract( Neh<1>( mesh ), "Neh<1>,3D" );
+    checkTransformProjectionContract( Neh<2>( mesh ), "Neh<2>,3D" );
+    checkTransformProjectionContract( Neh<3>( mesh ), "Neh<3>,3D" );
+    checkTransformProjectionContract( Neh<Dynamic>( mesh, RuntimeOrder{ 0 } ), "Neh<Dynamic,P0>,3D" );
+    checkTransformProjectionContract( Neh<Dynamic>( mesh, RuntimeOrder{ 1 } ), "Neh<Dynamic,P1>,3D" );
+    checkTransformProjectionContract( Neh<Dynamic>( mesh, RuntimeOrder{ 2 } ), "Neh<Dynamic,P2>,3D" );
+    checkTransformProjectionContract( Neh<Dynamic>( mesh, RuntimeOrder{ 3 } ), "Neh<Dynamic,P3>,3D" );
 }
 
 BOOST_AUTO_TEST_CASE( phase5b_fe_owned_local_cardinality )
@@ -1501,6 +1569,32 @@ BOOST_AUTO_TEST_CASE( phase7a_runtime_sized_fe_instance_contract )
     BOOST_CHECK_EQUAL( bdmDynamic1->dof()->nLocalDof(), bdmFe1.localDofCount() );
     BOOST_CHECK_GT( bdmFe1.localDofCountOnFacet( 0, true ), 0 );
     BOOST_REQUIRE( static_cast<bool>( validateFiniteElementDofLayout( bdmFe1 ) ) );
+
+    auto nedDynamic1 = Neh<Dynamic>( mesh, RuntimeOrder{ 1 } );
+    auto const& nedFe1 = *nedDynamic1->basis();
+    BOOST_CHECK_EQUAL( nedFe1.order(), 1 );
+    BOOST_CHECK_EQUAL( nedFe1.runtimeOrder(), 1 );
+    BOOST_CHECK_EQUAL( nedFe1.polynomialDegree(), 2 );
+    BOOST_CHECK_EQUAL( nedFe1.localDofCount(), 8 );
+    BOOST_CHECK_EQUAL( nedFe1.dofPerEdge(), 2 );
+    BOOST_CHECK_EQUAL( nedFe1.dofPerFace(), 2 );
+    BOOST_CHECK_EQUAL( nedDynamic1->dof()->nLocalDof(), nedFe1.localDofCount() );
+    BOOST_CHECK_EQUAL( nedDynamic1->dof()->nLocalDof( true ), nedFe1.localDofCount( true ) );
+    BOOST_CHECK_EQUAL( nedFe1.localDofCountOnFacet( 0, true ), nedFe1.dofPerEdge() );
+    BOOST_CHECK( !nedFe1.dofHasRepresentativePoint( 0 ) );
+    BOOST_REQUIRE( static_cast<bool>( validateFiniteElementDofLayout( nedFe1 ) ) );
+
+    auto nedDynamic2 = Neh<Dynamic>( mesh, RuntimeOrder{ 2 } );
+    auto const& nedFe2 = *nedDynamic2->basis();
+    BOOST_CHECK_EQUAL( nedFe2.order(), 2 );
+    BOOST_CHECK_EQUAL( nedFe2.runtimeOrder(), 2 );
+    BOOST_CHECK_EQUAL( nedFe2.polynomialDegree(), 3 );
+    BOOST_CHECK_EQUAL( nedFe2.localDofCount(), 15 );
+    BOOST_CHECK_EQUAL( nedFe2.dofPerEdge(), 3 );
+    BOOST_CHECK_EQUAL( nedFe2.dofPerFace(), 6 );
+    BOOST_CHECK_EQUAL( nedDynamic2->dof()->nLocalDof(), nedFe2.localDofCount() );
+    BOOST_CHECK_EQUAL( nedFe2.localDofCountOnFacet( 0, true ), nedFe2.dofPerEdge() );
+    BOOST_REQUIRE( static_cast<bool>( validateFiniteElementDofLayout( nedFe2 ) ) );
 }
 
 BOOST_AUTO_TEST_CASE( phase5c_descriptor_driven_flat_insertion )

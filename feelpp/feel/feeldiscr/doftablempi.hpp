@@ -259,11 +259,16 @@ DofTable<MeshType, FEType, MortarType>::buildGlobalProcessToGlobalClusterDofMapD
                         return false;
 
                     uint16_type ordinal = attachment.ordinal;
-                    auto const edgePermutation = elt.edgePermutation( attachment.entityId );
-                    if ( edgePermutation.value() == edge_permutation_type::REVERSE_PERMUTATION )
-                        ordinal = static_cast<uint16_type>( nDofPerEdge - 1 - attachment.ordinal );
-                    else if ( edgePermutation.value() != edge_permutation_type::IDENTITY )
-                        return false;
+                    if constexpr ( FiniteElementDofTransformProvider<fe_type, element_type> )
+                        ordinal = M_fe->dofTransform( elt, layout.localDofId ).mapOrdinal( attachment.ordinal );
+                    else
+                    {
+                        auto const edgePermutation = elt.edgePermutation( attachment.entityId );
+                        if ( edgePermutation.value() == edge_permutation_type::REVERSE_PERMUTATION )
+                            ordinal = static_cast<uint16_type>( nDofPerEdge - 1 - attachment.ordinal );
+                        else if ( edgePermutation.value() != edge_permutation_type::IDENTITY )
+                            return false;
+                    }
 
                     if constexpr ( nDim == 2 )
                     {
@@ -317,7 +322,9 @@ DofTable<MeshType, FEType, MortarType>::buildGlobalProcessToGlobalClusterDofMapD
                     auto const facePermutation = elt.facePermutation( attachment.entityId );
                     if ( facePermutation == face_permutation_type( 0 ) )
                         return false;
-                    if ( nDofPerFace != 1 && facePermutation != face_permutation_type( face_permutation_type::IDENTITY ) )
+                    if constexpr ( FiniteElementDofTransformProvider<fe_type, element_type> )
+                        ordinal = M_fe->dofTransform( elt, layout.localDofId ).mapOrdinal( attachment.ordinal );
+                    else if ( nDofPerFace != 1 && facePermutation != face_permutation_type( face_permutation_type::IDENTITY ) )
                     {
                         if ( !this->hasValidFacePermutation( facePermutation, nDofPerFace ) )
                             return false;
@@ -1440,11 +1447,16 @@ DofTable<MeshType, FEType, MortarType>::buildGhostDofMapExtended( mesh_type& mes
                             return false;
 
                         uint16_type ordinal = attachment.ordinal;
-                        auto const edgePermutation = elt.edgePermutation( attachment.entityId );
-                        if ( edgePermutation.value() == edge_permutation_type::REVERSE_PERMUTATION )
-                            ordinal = static_cast<uint16_type>( nDofPerEdge - 1 - attachment.ordinal );
-                        else if ( edgePermutation.value() != edge_permutation_type::IDENTITY )
-                            return false;
+                        if constexpr ( FiniteElementDofTransformProvider<fe_type, element_type> )
+                            ordinal = M_fe->dofTransform( elt, layout.localDofId ).mapOrdinal( attachment.ordinal );
+                        else
+                        {
+                            auto const edgePermutation = elt.edgePermutation( attachment.entityId );
+                            if ( edgePermutation.value() == edge_permutation_type::REVERSE_PERMUTATION )
+                                ordinal = static_cast<uint16_type>( nDofPerEdge - 1 - attachment.ordinal );
+                            else if ( edgePermutation.value() != edge_permutation_type::IDENTITY )
+                                return false;
+                        }
 
                         if constexpr ( nDim == 2 )
                         {
@@ -1496,7 +1508,9 @@ DofTable<MeshType, FEType, MortarType>::buildGhostDofMapExtended( mesh_type& mes
                         auto const facePermutation = elt.facePermutation( attachment.entityId );
                         if ( facePermutation == face_permutation_type( 0 ) )
                             return false;
-                        if ( nDofPerFace != 1 && facePermutation != face_permutation_type( face_permutation_type::IDENTITY ) )
+                        if constexpr ( FiniteElementDofTransformProvider<fe_type, element_type> )
+                            ordinal = M_fe->dofTransform( elt, layout.localDofId ).mapOrdinal( attachment.ordinal );
+                        else if ( nDofPerFace != 1 && facePermutation != face_permutation_type( face_permutation_type::IDENTITY ) )
                         {
                             if ( !this->hasValidFacePermutation( facePermutation, nDofPerFace ) )
                                 return false;

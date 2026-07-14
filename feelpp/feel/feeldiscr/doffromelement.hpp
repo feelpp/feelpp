@@ -393,7 +393,11 @@ class DofFromElement
                     auto const canonicalEntityId = this->canonicalEdgeId( __elt.edge( attachment.entityId ).id() );
                     entry.marker = __elt.edge( attachment.entityId ).hasMarker() ? __elt.edge( attachment.entityId ).marker() : M_emptyMarker;
 
-                    if ( __elt.edgePermutation( attachment.entityId ).value() == edge_permutation_type::IDENTITY )
+                    if constexpr ( FiniteElementDofTransformProvider<fe_type, element_type> )
+                    {
+                        setKey( 1, canonicalEntityId, entry.transform.mapOrdinal( attachment.ordinal ) );
+                    }
+                    else if ( __elt.edgePermutation( attachment.entityId ).value() == edge_permutation_type::IDENTITY )
                     {
                         setKey( 1, canonicalEntityId, attachment.ordinal );
                         if constexpr ( ( is_hdiv_conforming_v<fe_type> || is_hcurl_conforming_v<fe_type> ) &&
@@ -446,7 +450,9 @@ class DofFromElement
                     auto const canonicalEntityId = this->canonicalFaceId( __elt.face( attachment.entityId ).id() );
                     entry.marker = __elt.face( attachment.entityId ).hasMarker() ? __elt.face( attachment.entityId ).marker() : M_emptyMarker;
 
-                    if ( nDofPerFace == 1 || permutation == face_permutation_type( face_permutation_type::IDENTITY ) )
+                    if constexpr ( FiniteElementDofTransformProvider<fe_type, element_type> )
+                        setKey( 2, canonicalEntityId, entry.transform.mapOrdinal( attachment.ordinal ) );
+                    else if ( nDofPerFace == 1 || permutation == face_permutation_type( face_permutation_type::IDENTITY ) )
                         setKey( 2, canonicalEntityId, attachment.ordinal );
                     else
                     {

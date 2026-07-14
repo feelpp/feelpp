@@ -1,25 +1,10 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-  This file is part of the Feel library
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2014-04-07
+    SPDX-FileCopyrightText: 2026 University of Strasbourg
 
-  Copyright (C) 2014-2016 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    SPDX-License-Identifier: LGPL-3.0-or-later
 */
 /**
    \file element_impl.hpp
@@ -486,13 +471,11 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::id_( Context_t const & context, 
         return;
 
     const uint16_type nq = context.xRefs().size2();
-    auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
-
     for( auto const& ldof : M_functionspace->dof()->localDof( elt_id ) )
     {
         size_type index = ldof.second.index();
         uint16_type local_dof = ldof.first.localDof();
-        auto v_ = super::operator[]( index )*s(local_dof);
+        auto v_ = this->orientedLocalCoefficient( elt_id, local_dof );
         for ( uint16_type q = 0; q < nq; ++q )
         {
             v[q] += context.id(local_dof,q)*v_;
@@ -703,12 +686,11 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::grad_( ContextType const & conte
     if ( elt_id == invalid_v<index_type> )
         return;
 
-    auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
     for ( auto const& ldof : M_functionspace->dof()->localDof( elt_id ) )
     {
         size_type index = ldof.second.index();
         uint16_type local_dof = ldof.first.localDof();
-        value_type v_ = super::operator[]( index ) * s( local_dof );
+        value_type v_ = this->orientedLocalCoefficient( elt_id, local_dof );
 
         for ( size_type q = 0; q < context.xRefs().size2(); ++q )
         {
@@ -775,12 +757,11 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::symmetricGradient( ContextType c
     if ( elt_id == invalid_v<index_type> )
         return;
 
-    auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
     for ( auto const& ldof : M_functionspace->dof()->localDof( elt_id ) )
     {
         size_type index = ldof.second.index();
         uint16_type local_dof = ldof.first.localDof();
-        value_type v_ = super::operator[]( index ) * s( local_dof );
+        value_type v_ = this->orientedLocalCoefficient( elt_id, local_dof );
 
         for ( size_type q = 0; q < context.xRefs().size2(); ++q )
             v[q] = v_ * context.symmetricGradient( local_dof, q );
@@ -878,7 +859,6 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::dn_( ContextType const & context
 
     const size_type Q = context.xRefs().size2();
 
-    auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
     for ( int l = 0; l < basis_type::nDof; ++l )
     {
         const int ncdof = is_product?nComponents1:1;
@@ -896,10 +876,10 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::dn_( ContextType const & context
             ( this->firstLocalIndex() )( this->lastLocalIndex() )
             .error( "FunctionSpace::Element invalid access index" );
 
-            value_type v_ = this->globalValue( gdof );
+            value_type v_ = this->orientedLocalCoefficient( elt_id, ldof );
 
             for ( size_type q = 0; q < Q; ++q )
-                v[q] += context.dn( ldof, q )*(s(ldof)*v_);
+                v[q] += context.dn( ldof, q )*v_;
         }
     }
 
@@ -933,15 +913,15 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::div_( ContextType const & contex
 
     const size_type Q = context.xRefs().size2();
 
-    auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
-    for ( int l = 0; l < basis_type::nDof; ++l )
+    const uint16_type nLocalDofPerComponent = M_functionspace->fe()->localDofPerComponent();
+    for ( uint16_type l = 0; l < nLocalDofPerComponent; ++l )
     {
         const int ncdof = is_product?nComponents:1;
         const int ncdof2 = is_product?nComponents2:1;
 
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
-            int ldof = c1*basis_type::nDof+l;
+            uint16_type ldof = c1*nLocalDofPerComponent+l;
             size_type gdof = M_functionspace->dof()->localToGlobal( elt_id, l, c1 ).index();
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
@@ -950,10 +930,10 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::div_( ContextType const & contex
             ( this->size() )( this->localSize() )
             ( this->firstLocalIndex() )( this->lastLocalIndex() )
             .error( "FunctionSpace::Element invalid access index" );
-            value_type v_ = this->globalValue( gdof );
+            value_type v_ = this->orientedLocalCoefficient( elt_id, ldof );
             for ( size_type q = 0; q < Q; ++q )
             {
-                v[q] += context.div( ldof, q )*(s(ldof)*v_);
+                v[q] += context.div( ldof, q )*v_;
             }
         }
     }
@@ -1051,14 +1031,14 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::curl_( ContextType const & conte
     if ( elt_id == invalid_v<index_type> )
         return;
 
-    auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
-    for ( int l = 0; l < basis_type::nDof; ++l )
+    const uint16_type nLocalDofPerComponent = M_functionspace->fe()->localDofPerComponent();
+    for ( uint16_type l = 0; l < nLocalDofPerComponent; ++l )
     {
         const int ncdof = is_product?nComponents1:1;
 
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
-            int ldof = c1*basis_type::nDof+l;
+            uint16_type ldof = c1*nLocalDofPerComponent+l;
             size_type gdof = M_functionspace->dof()->localToGlobal( elt_id, l, c1 ).index();
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
@@ -1069,25 +1049,25 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::curl_( ContextType const & conte
             .error( "FunctionSpace::Element invalid access index" );
 
             //value_type v_ = (*this)( gdof );
-            value_type v_ = this->globalValue( gdof );
+            value_type v_ = this->orientedLocalCoefficient( elt_id, ldof );
             const uint16_type nq = context.xRefs().size2();
 
             for ( uint16_type q = 0; q < nq ; ++q )
             {
 #if 0
-                v[q] += s(ldof)*v_*context.curl( ldof, q );
+                v[q] += v_*context.curl( ldof, q );
 #else
                 if ( nRealDim == 3 )
                 {
                     for ( typename array_type::index i = 0; i < nRealDim; ++i )
                     {
-                        v[q]( i,0 ) += s(ldof)*v_*context.curl( ldof, i, 0, q );
+                        v[q]( i,0 ) += v_*context.curl( ldof, i, 0, q );
                     }
                 }
 
                 else if ( nRealDim == 2 )
                 {
-                    v[q]( 0,0 ) += s(ldof)*v_*context.curl( ldof, 0, 0, q );
+                    v[q]( 0,0 ) += v_*context.curl( ldof, 0, 0, q );
                 }
 #endif
             }
@@ -1114,14 +1094,14 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::curl_( ContextType const & conte
     if ( elt_id == invalid_v<index_type> )
         return;
 
-    auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
-    for ( int l = 0; l < basis_type::nDof; ++l )
+    const uint16_type nLocalDofPerComponent = M_functionspace->fe()->localDofPerComponent();
+    for ( uint16_type l = 0; l < nLocalDofPerComponent; ++l )
     {
         const int ncdof = is_product?nComponents1:1;
 
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
-            int ldof = c1*basis_type::nDof+l;
+            uint16_type ldof = c1*nLocalDofPerComponent+l;
             size_type gdof = M_functionspace->dof()->localToGlobal( elt_id, l, c1 ).index();
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
@@ -1132,19 +1112,19 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::curl_( ContextType const & conte
             .error( "FunctionSpace::Element invalid access index" );
 
             //value_type v_ = (*this)( gdof );
-            value_type v_ = this->globalValue( gdof );
+            value_type v_ = this->orientedLocalCoefficient( elt_id, ldof );
             const uint16_type nq = context.xRefs().size2();
 
             for ( uint16_type q = 0; q < nq ; ++q )
             {
                 if ( nRealDim == 3 )
                 {
-                    v[q]( 0,0 ) += s(ldof)*v_*context.curl( ldof, comp, 0, q );
+                    v[q]( 0,0 ) += v_*context.curl( ldof, comp, 0, q );
                 }
 
                 else if ( nRealDim == 2 )
                 {
-                    v[q]( 0,0 ) += s(ldof)*v_*context.curl( ldof, 0, 0, q );
+                    v[q]( 0,0 ) += v_*context.curl( ldof, 0, 0, q );
                 }
 
             }

@@ -1,31 +1,18 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-  This file is part of the Feel library
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
-  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
-       Date: 2026-05-09
+    SPDX-FileCopyrightText: 2026 University of Strasbourg
 
-  Copyright (C) 2026 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    SPDX-License-Identifier: LGPL-3.0-or-later
 */
 #ifndef FEELPP_FEELDISCR_DOFLAYOUT_HPP
 #define FEELPP_FEELDISCR_DOFLAYOUT_HPP 1
 
 #include <concepts>
 #include <limits>
+#include <optional>
+#include <memory>
 #include <span>
 #include <tuple>
 #include <vector>
@@ -62,7 +49,8 @@ enum class DofTransformKind : uint8_type
     Identity = 0,
     Sign = 1,
     Permutation = 2,
-    Matrix = 3
+    SignedPermutation = 3,
+    Matrix = 4
 };
 
 struct DofEntityAttachment
@@ -402,12 +390,78 @@ concept NonconformingH1FiniteElement =
 /** @brief H(curl)-conforming finite element. */
 template<class FE>
 concept HCurlFiniteElement =
-    CiarletFiniteElement<FE> && FE::is_vectorial && is_hcurl_conforming_v<FE>;
+    CiarletFiniteElement<FE> && FE::is_vectorial && is_hcurl_conforming_v<FE> &&
+    !finiteElementIsBroken<FE>;
 
 /** @brief H(div)-conforming finite element. */
 template<class FE>
 concept HDivFiniteElement =
-    CiarletFiniteElement<FE> && FE::is_vectorial && is_hdiv_conforming_v<FE>;
+    CiarletFiniteElement<FE> && FE::is_vectorial && is_hdiv_conforming_v<FE> &&
+    !finiteElementIsBroken<FE>;
+
+namespace detail
+{
+[[nodiscard]] inline std::vector<uint16_type>
+composeDofPermutations( std::vector<uint16_type> const& lhs,
+                        std::vector<uint16_type> const& rhs )
+{
+    if ( lhs.size() != rhs.size() )
+        return {};
+    std::vector<uint16_type> result( lhs.size() );
+    for ( uint16_type i = 0; i < lhs.size(); ++i )
+        result[i] = lhs[rhs[i]];
+    return result;
+}
+
+template<class FacePermutation>
+[[nodiscard]] std::optional<std::vector<uint16_type>>
+simplexTriangularDofPermutation( FacePermutation permutation, uint16_type nDof )
+{
+    uint16_type nSide = 0;
+    while ( nSide * ( nSide + 1 ) / 2 < nDof )
+        ++nSide;
+    if ( nSide * ( nSide + 1 ) / 2 != nDof )
+        return std::nullopt;
+
+    std::vector<uint16_type> reverseHypotenuse( nDof );
+    std::vector<uint16_type> reverseBase( nDof );
+    for ( uint16_type i = 0; i < nSide; ++i )
+    {
+        for ( uint16_type j = 0; j <= i; ++j )
+        {
+            const uint16_type first = i + j * ( j - 1 ) / 2 + j * ( nSide - j );
+            const uint16_type last = i + ( i - j ) * ( i - j - 1 ) / 2 + ( i - j ) * ( nSide - ( i - j ) );
+            reverseHypotenuse[first] = last;
+        }
+        const uint16_type begin = i * nSide - i * ( i - 1 ) / 2;
+        const uint16_type end = ( i + 1 ) * nSide - ( i + 1 ) * i / 2 - 1;
+        for ( uint16_type j = 0; j <= nSide - i - 1; ++j )
+            reverseBase[begin + j] = end - j;
+    }
+
+    if ( permutation == FacePermutation( FacePermutation::IDENTITY ) )
+    {
+        std::vector<uint16_type> identity( nDof );
+        for ( uint16_type i = 0; i < nDof; ++i )
+            identity[i] = i;
+        return identity;
+    }
+    if ( permutation == FacePermutation( FacePermutation::REVERSE_HYPOTENUSE ) )
+        return reverseHypotenuse;
+    if ( permutation == FacePermutation( FacePermutation::REVERSE_BASE ) )
+        return reverseBase;
+
+    auto const rotationAntiClock = composeDofPermutations( reverseBase, reverseHypotenuse );
+    auto const rotationClockwise = composeDofPermutations( reverseHypotenuse, reverseBase );
+    if ( permutation == FacePermutation( FacePermutation::ROTATION_ANTICLOCK ) )
+        return rotationAntiClock;
+    if ( permutation == FacePermutation( FacePermutation::ROTATION_CLOCKWISE ) )
+        return rotationClockwise;
+    if ( permutation == FacePermutation( FacePermutation::REVERSE_HEIGHT ) )
+        return composeDofPermutations( reverseBase, rotationClockwise );
+    return std::nullopt;
+}
+} // namespace detail
 
 template<FiniteElementDofLayoutProvider FE, class Element>
 [[nodiscard]] DofTransform
@@ -427,7 +481,13 @@ finiteElementEntityOrientationTransform( FE const& fe, Element const& element, u
             using edge_permutation_type = typename Element::edge_permutation_type;
             auto const edgePermutation = element.edgePermutation( attachment.entityId );
             if ( edgePermutation.value() == edge_permutation_type::REVERSE_PERMUTATION )
-                return DofTransform::signedOrientation( -1 );
+            {
+                const auto nEntityDof = fe.localDofCountOnEntity( 1, attachment.entityId, true );
+                std::vector<uint16_type> permutation( nEntityDof );
+                for ( uint16_type ordinal = 0; ordinal < nEntityDof; ++ordinal )
+                    permutation[ordinal] = static_cast<uint16_type>( nEntityDof - 1 - ordinal );
+                return DofTransform::signedPermutation( -1, std::move( permutation ) );
+            }
         }
         break;
     }
@@ -436,8 +496,17 @@ finiteElementEntityOrientationTransform( FE const& fe, Element const& element, u
         if constexpr ( Element::nDim == 3 )
         {
             auto const& face = element.face( attachment.entityId );
-            if ( face.ad_first() != element.id() )
-                return DofTransform::signedOrientation( -1 );
+            const int16_type sign = face.ad_first() == element.id() ? 1 : -1;
+            const auto nEntityDof = fe.localDofCountOnEntity( 2, attachment.entityId, true );
+            if ( nEntityDof > 1 )
+            {
+                auto permutation = Feel::detail::simplexTriangularDofPermutation(
+                    element.facePermutation( attachment.entityId ), nEntityDof );
+                if ( permutation )
+                    return DofTransform::signedPermutation( sign, std::move( *permutation ) );
+            }
+            if ( sign < 0 )
+                return DofTransform::signedOrientation( sign );
         }
         break;
     }

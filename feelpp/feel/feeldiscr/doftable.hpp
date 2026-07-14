@@ -1,22 +1,11 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
- This file is part of the Feel library
 
- Copyright (C) 2010 Université de Grenoble 1
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
- This library is free software; you can redistribute it and/or
- modify it under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation; either
- version 3.0 of the License, or (at your option) any later version.
+    SPDX-FileCopyrightText: 2026 University of Strasbourg
 
- This library is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
-
- You should have received a copy of the GNU Lesser General Public
- License along with this library; if not, write to the Free Software
- Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- */
+    SPDX-License-Identifier: LGPL-3.0-or-later
+*/
 /**
  * \file doftable.hpp
  * \author Christophe Prud'homme
@@ -792,9 +781,56 @@ public:
             return transforms[localNode];
         }
 
+    /**
+     * @brief Coefficient operator from canonical global to oriented local DoFs.
+     *
+     * The matrix is identity for nodal spaces, diagonal for sign operators,
+     * and contains the FE-owned entity blocks for coupled moment transforms.
+     */
+    [[nodiscard]] Eigen::MatrixXd localToGlobalCoefficientTransform( size_type ElId ) const
+    {
+        auto const n = static_cast<Eigen::Index>( runtimeNDofPerElement() );
+        Eigen::MatrixXd result = Eigen::MatrixXd::Identity( n, n );
+        if constexpr ( is_hdiv_conforming || is_hcurl_conforming )
+        {
+            auto const& transforms = this->localToGlobalTransforms( ElId );
+            for ( uint16_type localDof = 0; localDof < transforms.size(); ++localDof )
+            {
+                auto const& transform = transforms[localDof];
+                if ( transform.kind == DofTransformKind::Matrix )
+                {
+                    auto const row = transform.matrixRowView();
+                    uint16_type const first = static_cast<uint16_type>( localDof - transform.matrixRow );
+                    result.row( localDof ).setZero();
+                    for ( uint16_type column = 0; column < row.size(); ++column )
+                        result( localDof, first + column ) = row[column];
+                }
+                else
+                    result( localDof, localDof ) = dofTransformSignProjection( transform );
+            }
+        }
+        return result;
+    }
+
+    /** @return true if the element owns at least one coupled DoF block. */
+    [[nodiscard]] bool hasDenseDofTransform( size_type ElId ) const
+    {
+        if constexpr ( is_hdiv_conforming || is_hcurl_conforming )
+        {
+            auto const& transforms = this->localToGlobalTransforms( ElId );
+            return std::any_of( transforms.begin(), transforms.end(),
+                                []( DofTransform const& transform )
+                                { return transform.kind == DofTransformKind::Matrix; } );
+        }
+        return false;
+    }
+
     [[nodiscard]] static int16_type dofTransformSignProjection( DofTransform const& transform ) noexcept
         {
-            return transform.kind == DofTransformKind::Sign ? transform.sign : 1;
+            return transform.kind == DofTransformKind::Sign ||
+                   transform.kind == DofTransformKind::SignedPermutation
+                       ? transform.sign
+                       : 1;
         }
 
     void setLocalToGlobalTransform( size_type ElId, uint16_type localDof, DofTransform transform )
@@ -1211,68 +1247,60 @@ public:
 
     [[nodiscard]] uint16_type runtimeDofPerVertex() const noexcept
         {
-            if constexpr ( is_order_dynamic )
+            if ( M_fe )
             {
-                if ( !M_fe )
-                    return 0;
                 if constexpr ( requires( fe_ptrtype const& fe ) { fe->dofPerVertex(); } )
                     return M_fe->dofPerVertex();
-                else if constexpr ( requires( fe_ptrtype const& fe ) { fe->runtimeDofPerVertex(); } )
+                else if constexpr ( is_order_dynamic && requires( fe_ptrtype const& fe ) { fe->runtimeDofPerVertex(); } )
                     return M_fe->runtimeDofPerVertex();
-                else
-                    return 0;
             }
+            if constexpr ( is_order_dynamic )
+                return 0;
             else
                 return fe_type::nDofPerVertex;
         }
 
     [[nodiscard]] uint16_type runtimeDofPerEdge() const noexcept
         {
-            if constexpr ( is_order_dynamic )
+            if ( M_fe )
             {
-                if ( !M_fe )
-                    return 0;
                 if constexpr ( requires( fe_ptrtype const& fe ) { fe->dofPerEdge(); } )
                     return M_fe->dofPerEdge();
-                else if constexpr ( requires( fe_ptrtype const& fe ) { fe->runtimeDofPerEdge(); } )
+                else if constexpr ( is_order_dynamic && requires( fe_ptrtype const& fe ) { fe->runtimeDofPerEdge(); } )
                     return M_fe->runtimeDofPerEdge();
-                else
-                    return 0;
             }
+            if constexpr ( is_order_dynamic )
+                return 0;
             else
                 return fe_type::nDofPerEdge;
         }
 
     [[nodiscard]] uint16_type runtimeDofPerFace() const noexcept
         {
-            if constexpr ( is_order_dynamic )
+            if ( M_fe )
             {
-                if ( !M_fe )
-                    return 0;
                 if constexpr ( requires( fe_ptrtype const& fe ) { fe->dofPerFace(); } )
                     return M_fe->dofPerFace();
-                else if constexpr ( requires( fe_ptrtype const& fe ) { fe->runtimeDofPerFace(); } )
+                else if constexpr ( is_order_dynamic && requires( fe_ptrtype const& fe ) { fe->runtimeDofPerFace(); } )
                     return M_fe->runtimeDofPerFace();
-                else
-                    return 0;
             }
+            if constexpr ( is_order_dynamic )
+                return 0;
             else
                 return fe_type::nDofPerFace;
         }
 
     [[nodiscard]] uint16_type runtimeDofPerVolume() const noexcept
         {
-            if constexpr ( is_order_dynamic )
+            if ( M_fe )
             {
-                if ( !M_fe )
-                    return 0;
                 if constexpr ( requires( fe_ptrtype const& fe ) { fe->dofPerVolume(); } )
                     return M_fe->dofPerVolume();
-                else if constexpr ( requires( fe_ptrtype const& fe ) { fe->runtimeDofPerVolume(); } )
+                else if constexpr ( is_order_dynamic && requires( fe_ptrtype const& fe ) { fe->runtimeDofPerVolume(); } )
                     return M_fe->runtimeDofPerVolume();
-                else
-                    return 0;
             }
+            if constexpr ( is_order_dynamic )
+                return 0;
             else
                 return fe_type::nDofPerVolume;
         }
