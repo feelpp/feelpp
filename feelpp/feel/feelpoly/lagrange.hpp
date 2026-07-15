@@ -47,6 +47,7 @@
 #include <feel/feelpoly/functionalset.hpp>
 #include <feel/feelpoly/pointfunctionals.hpp>
 #include <feel/feelpoly/fe.hpp>
+#include <feel/feelpoly/fefamilyshell.hpp>
 #include <feel/feelpoly/isp0continuous.hpp>
 #include <feel/feelpoly/order.hpp>
 
@@ -1366,19 +1367,9 @@ template<int Order,
          typename ContinuityType = Continuous,
          template<class, int, class> class Pts = PointSetFekete,
          uint16_type TheTAG = 0>
-class Lagrange
+class Lagrange : public FiniteElementFamilyDescriptor<Order, TheTAG>
 {
 public:
-    //! @name Order type detection
-    //! @{
-    static constexpr bool is_order_static = (Order != Dynamic);
-    static constexpr bool is_order_dynamic = !is_order_static;
-    //! @}
-
-    //! Static order value (0 if dynamic, use runtime order in that case)
-    inline static const uint16_type nOrder = is_order_static ? static_cast<uint16_type>(Order) : 0;
-    inline static const uint16_type TAG = TheTAG;
-
     /**
      * @brief Apply metafunction to get concrete finite element type
      *

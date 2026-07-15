@@ -50,6 +50,7 @@
 #include <feel/feelmesh/pointset.hpp>
 
 #include <feel/feelpoly/fe.hpp>
+#include <feel/feelpoly/fefamilyshell.hpp>
 #include <feel/feelpoly/dualbasis.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
 #include <feel/feelpoly/functionalset.hpp>
@@ -580,14 +581,39 @@ private:
 
 };
 
+/**
+ * @brief Order-aware public shell for the Crouzeix--Raviart family.
+ *
+ * The current backend implements the classical order-one element.  Keeping
+ * the order in this shell makes that support boundary explicit and provides
+ * the common family API without pretending that higher orders exist yet.
+ */
+template<uint16_type Dim, uint16_type RealDim, int Order,
+         template<uint16_type> class PolySetType, typename T,
+         template<int, int, int> class Convex,
+         uint16_type Tag>
+class CrouzeixRaviartElement
+    : public CrouzeixRaviart<Dim, RealDim, PolySetType, T, Convex, Tag>
+{
+    static_assert( Order == 1,
+                   "only the classical order-one Crouzeix-Raviart element is currently implemented" );
+    using super = CrouzeixRaviart<Dim, RealDim, PolySetType, T, Convex, Tag>;
+
+public:
+    using super::super;
+    CrouzeixRaviartElement() = default;
+};
+
 } // fem
 
 template<int Order,
          template<uint16_type Dim> class PolySetType = Scalar,
          template<class, int, class> class Pts = PointSetEquiSpaced,
          uint16_type TheTAG=0 >
-class CrouzeixRaviart
+class CrouzeixRaviart : public FiniteElementFamilyDescriptor<Order, TheTAG>
 {
+    static_assert( Order == 1,
+                   "only the classical order-one Crouzeix-Raviart element is currently implemented" );
 public:
     template<uint16_type N,
              uint16_type RealDim,
@@ -595,9 +621,9 @@ public:
              typename Convex = Simplex<N> >
     struct apply
     {
-        typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
-                mpl::identity<fem::CrouzeixRaviart<N,RealDim,PolySetType,T,Simplex,TheTAG> >,
-                mpl::identity<fem::CrouzeixRaviart<N,RealDim,PolySetType,T,Hypercube,TheTAG> > >::type::type result_type;
+        using result_type = std::conditional_t<Convex::is_simplex,
+                fem::CrouzeixRaviartElement<N,RealDim,Order,PolySetType,T,Simplex,TheTAG>,
+                fem::CrouzeixRaviartElement<N,RealDim,Order,PolySetType,T,Hypercube,TheTAG>>;
         typedef result_type type;
     };
 
@@ -608,9 +634,6 @@ public:
     };
 
     typedef CrouzeixRaviart<Order,Scalar,Pts> component_basis_type;
-
-    static inline const uint16_type nOrder =  Order;
-    static inline const uint16_type TAG = TheTAG;
 
 };
 
