@@ -863,7 +863,6 @@ void MatrixPetsc<T>::set ( const size_type i,
     ierr = MatSetValues( M_mat, 1, &i_val, 1, &j_val,
                          &petsc_value, INSERT_VALUES );
     CHKERRABORT( this->comm(),ierr );
-    this->setIsClosed( false );
 }
 
 
@@ -884,7 +883,6 @@ void MatrixPetsc<T>::add ( const size_type i,
     ierr = MatSetValues( M_mat, 1, &i_val, 1, &j_val,
                          &petsc_value, ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );
-    this->setIsClosed( false );
 }
 /*                                   */
 
@@ -925,7 +923,6 @@ MatrixPetsc<T>::addMatrix( const ublas::matrix<value_type>& dm,
                          ( PetscScalar* ) dm.data().begin(),
                          ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );
-    this->setIsClosed( false );
 }
 template <typename T>
 void
@@ -946,7 +943,6 @@ MatrixPetsc<T>::addMatrix ( int* rows, int nrows,
                          ( PetscScalar* ) data,
                          ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );
-    this->setIsClosed( false );
 }
 
 template <typename T>
@@ -2814,7 +2810,6 @@ void MatrixPetscMPI<T>::set( const size_type i,
                               &petsc_value, INSERT_VALUES );
 
     CHKERRABORT( this->comm(),ierr );
-    this->setIsClosed( false );
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -2835,7 +2830,6 @@ void MatrixPetscMPI<T>::add ( const size_type i,
     ierr = MatSetValuesLocal( this->mat(), 1, &i_val, 1, &j_val,
                               &petsc_value, ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );
-    this->setIsClosed( false );
 }
 
 
@@ -2866,7 +2860,6 @@ MatrixPetscMPI<T>::addMatrix( const ublas::matrix<value_type>& dm,
 
 
     CHKERRABORT( this->comm(),ierr );
-    this->setIsClosed( false );
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -2897,7 +2890,6 @@ MatrixPetscMPI<T>::addMatrix( int* rows, int nrows,
                               ADD_VALUES );
 
     CHKERRABORT( this->comm(),ierr );
-    this->setIsClosed( false );
 }
 
 //----------------------------------------------------------------------------------------------------//
