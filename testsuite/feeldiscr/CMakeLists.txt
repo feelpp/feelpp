@@ -40,6 +40,8 @@ feelpp_add_test( continuity_h1 )
 feelpp_add_test( continuity_hdiv NO_MPI_TEST )
 feelpp_add_test( continuity_hcurl NO_MPI_TEST )
 feelpp_add_test( broken_fe )
+feelpp_add_test( de_rham )
+feelpp_add_test( de_rham_3d )
 
 feelpp_add_test( functionals NO_MPI_TEST )
 

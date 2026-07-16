@@ -409,7 +409,7 @@ composeDofPermutations( std::vector<uint16_type> const& lhs,
         return {};
     std::vector<uint16_type> result( lhs.size() );
     for ( uint16_type i = 0; i < lhs.size(); ++i )
-        result[i] = lhs[rhs[i]];
+        result[i] = rhs[lhs[i]];
     return result;
 }
 
