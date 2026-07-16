@@ -913,21 +913,15 @@ public:
         Ihloc.setZero();
         auto g = expr.geom();
 
-        for ( int f = 0; f < convex_type::numTopologicalFaces; ++f )
-        {
-            if ( g->faceId() == invalid_uint16_type_value )
-                expr.geom()->faceNormal( f, n, true );
-            else
-                expr.geom()->faceNormal( g->faceId(), n, true );
-
-            const uint16_type nFacetDof = ( nDim == 2 ) ? nDofPerEdge : nDofPerFace;
-            for ( int l = 0; l < nFacetDof; ++l )
+        const uint16_type nFacetDof = ( nDim == 2 ) ? nDofPerEdge : nDofPerFace;
+        Feel::detail::interpolateHDivFacetPointDofs(
+            expr, Ihloc, convex_type::numTopologicalFaces, nFacetDof, n,
+            [&expr, &g]( uint16_type facet, uint16_type point, auto& normal )
             {
-                const int q = f * nFacetDof + l;
-                for ( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                    Ihloc( q ) += expr.evalq( c1, 0, q ) * n( c1 );
-            }
-        }
+                const uint16_type elementFacet = g->faceId() == invalid_uint16_type_value
+                    ? facet : g->faceId();
+                expr.geom()->contravariantPiolaNormal( elementFacet, point, normal );
+            } );
 
         if constexpr ( nOrder > 1 )
         {
@@ -978,21 +972,15 @@ public:
         auto g = expr.geom();
         Ihloc.setZero();
 
-        int f = 0;
-        {
-            if ( g->faceId() == invalid_uint16_type_value )
-                expr.geom()->faceNormal( f, n, true );
-            else
-                expr.geom()->faceNormal( g->faceId(), n, true );
-
-            auto nLocalDof = ( nDim == 2 ) ? nDofPerEdge : nDofPerFace;
-            for ( int l = 0; l < nLocalDof; ++l )
+        const uint16_type nLocalDof = ( nDim == 2 ) ? nDofPerEdge : nDofPerFace;
+        Feel::detail::interpolateHDivFacetPointDofs(
+            expr, Ihloc, 1, nLocalDof, n,
+            [&expr, &g]( uint16_type facet, uint16_type point, auto& normal )
             {
-                int q = ( nDim == 2 ) ? f*nDofPerEdge + l : f*nDofPerFace + l;
-                for ( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                    Ihloc( q ) += expr.evalq( c1, 0, q ) * n( c1 );
-            }
-        }
+                const uint16_type elementFacet = g->faceId() == invalid_uint16_type_value
+                    ? facet : g->faceId();
+                expr.geom()->contravariantPiolaNormal( elementFacet, point, normal );
+            } );
     }
 
 protected:
@@ -1304,20 +1292,14 @@ public:
         auto g = expr.geom();
 
         const uint16_type nFacetDof = localFacetDof();
-        for ( int f = 0; f < convex_type::numTopologicalFaces; ++f )
-        {
-            if ( g->faceId() == invalid_uint16_type_value )
-                expr.geom()->faceNormal( f, n, true );
-            else
-                expr.geom()->faceNormal( g->faceId(), n, true );
-
-            for ( int l = 0; l < nFacetDof; ++l )
+        Feel::detail::interpolateHDivFacetPointDofs(
+            expr, Ihloc, convex_type::numTopologicalFaces, nFacetDof, n,
+            [&expr, &g]( uint16_type facet, uint16_type point, auto& normal )
             {
-                const int q = f * nFacetDof + l;
-                for ( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                    Ihloc( q ) += expr.evalq( c1, 0, q ) * n( c1 );
-            }
-        }
+                const uint16_type elementFacet = g->faceId() == invalid_uint16_type_value
+                    ? facet : g->faceId();
+                expr.geom()->contravariantPiolaNormal( elementFacet, point, normal );
+            } );
 
         if ( internalOrder() > 1 )
         {
@@ -1363,19 +1345,15 @@ public:
         auto g = expr.geom();
         Ihloc.setZero();
 
-        int f = 0;
-        if ( g->faceId() == invalid_uint16_type_value )
-            expr.geom()->faceNormal( f, n, true );
-        else
-            expr.geom()->faceNormal( g->faceId(), n, true );
-
-        auto nLocalDof = localFacetDof();
-        for ( int l = 0; l < nLocalDof; ++l )
-        {
-            int q = f*nLocalDof + l;
-            for ( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                Ihloc( q ) += expr.evalq( c1, 0, q ) * n( c1 );
-        }
+        const uint16_type nLocalDof = localFacetDof();
+        Feel::detail::interpolateHDivFacetPointDofs(
+            expr, Ihloc, 1, nLocalDof, n,
+            [&expr, &g]( uint16_type facet, uint16_type point, auto& normal )
+            {
+                const uint16_type elementFacet = g->faceId() == invalid_uint16_type_value
+                    ? facet : g->faceId();
+                expr.geom()->contravariantPiolaNormal( elementFacet, point, normal );
+            } );
     }
 
 protected:

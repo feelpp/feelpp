@@ -48,6 +48,7 @@
 #include <type_traits>
 #include <feel/feelcore/concepts.hpp>
 #include <feel/feeldiscr/doflayout.hpp>
+#include <feel/feelpoly/concepts.hpp>
 
 namespace Feel
 {
@@ -210,20 +211,13 @@ concept DofTableConcept = requires(T t) {
  * @brief A geometric mapping from reference to physical element
  */
 template <typename T>
-concept GeoMapConcept = requires {
-    typename T::gm_type;
-    { T::nDim } -> std::convertible_to<int>;
-    { T::nRealDim } -> std::convertible_to<int>;
-};
+concept GeoMapConcept = GeometricMappingConcept<T>;
 
 /**
  * @brief A geometric mapping context (evaluation at quadrature points)
  */
 template <typename T>
-concept GeoMapContextConcept = requires(T t) {
-    typename T::gm_type;
-    requires GeoMapConcept<typename T::gm_type>;
-};
+concept GeoMapContextConcept = GeometricMappingContextConcept<T>;
 
 //
 // Basis Function Concepts

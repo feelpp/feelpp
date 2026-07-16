@@ -264,6 +264,26 @@ concept NonLinearGeometricMappingConcept = GeometricMappingConcept<T> && require
     requires !std::remove_cvref_t<T>::is_linear;
 };
 
+/**
+ * @brief A pointwise geometric-mapping evaluation context.
+ *
+ * The contract exposes the physical point, Jacobian matrix, inverse Jacobian
+ * transpose, and integration Jacobian required by finite-element pullbacks.
+ */
+template <typename T>
+concept GeometricMappingContextConcept =
+    requires( std::remove_cvref_t<T> const& context, int q ) {
+        typename std::remove_cvref_t<T>::gm_type;
+        typename std::remove_cvref_t<T>::value_type;
+        requires GeometricMappingConcept<typename std::remove_cvref_t<T>::gm_type>;
+        { context.nPoints() } -> std::convertible_to<int>;
+        { context.J( q ) } ->
+            std::convertible_to<typename std::remove_cvref_t<T>::value_type>;
+        context.K( q );
+        context.B( q );
+        context.xReal( q );
+    };
+
 //
 // Polynomial space concepts
 //

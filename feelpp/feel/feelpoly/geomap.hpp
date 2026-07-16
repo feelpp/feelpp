@@ -41,6 +41,9 @@
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include <cmath>
+#include <limits>
+
 //#include <boost/numeric/bindings/traits/traits.hpp>
 //#include <boost/numeric/bindings/traits/ublas_vector.hpp>
 //#include <boost/numeric/bindings/traits/ublas_matrix.hpp>
@@ -943,26 +946,26 @@ class GeoMap
          *  where \f$G \f$ is the matrix representing the geometric nodes nDof x dim
          */
 
-        template<size_type CTX,int TheSubEntityCoDim = SubEntityCoDim>
-        void update( element_type const& __e,
-                     std::enable_if_t< TheSubEntityCoDim == 0 >* = nullptr )
+        template<size_type CTX>
+        void update( element_type const& __e )
+            requires ( SubEntityCoDim == 0 )
             {
                 this->setElement( __e );
                 this->updateImpl<CTX>();
             }
 
-        template<size_type CTX,int TheSubEntityCoDim = SubEntityCoDim>
-        void update( element_type const& __e, uint16_type __f,
-                     std::enable_if_t< TheSubEntityCoDim != 0 >* = nullptr)
+        template<size_type CTX>
+        void update( element_type const& __e, uint16_type __f )
+            requires ( SubEntityCoDim != 0 )
             {
                 this->setElement( __e );
                 this->setSubEntity( __f );
                 this->updateImpl<CTX>();
             }
 
-        template<size_type CTX,int TheSubEntityCoDim = SubEntityCoDim>
-        void update( element_type const& __e, uint16_type __f, permutation_type __perm,
-                     std::enable_if_t< TheSubEntityCoDim != 0 >* = nullptr)
+        template<size_type CTX>
+        void update( element_type const& __e, uint16_type __f, permutation_type __perm )
+            requires ( SubEntityCoDim != 0 )
             {
                 this->setElement( __e );
                 this->setSubEntity( __f,__perm );
@@ -1053,9 +1056,8 @@ class GeoMap
 
             }
 
-        template<int TheSubEntityCoDim = SubEntityCoDim >
-        void setSubEntity( uint16_type __f,
-                           std::enable_if_t< TheSubEntityCoDim != 0 >* = nullptr )
+        void setSubEntity( uint16_type __f )
+            requires ( SubEntityCoDim != 0 )
             {
                 M_face_id = __f;
                 CHECK( M_face_id != invalid_v<uint16_type> ) << "sub entity id not defined";
@@ -1063,9 +1065,8 @@ class GeoMap
                 M_pc = M_pc_faces[__f][M_perm];
                 M_f_markers = entityMarkers<subEntityCoDim>( this->element(), __f );
             }
-        template<int TheSubEntityCoDim = SubEntityCoDim >
-        void setSubEntity( uint16_type __f, permutation_type __perm,
-                           std::enable_if_t< TheSubEntityCoDim != 0 >* = nullptr )
+        void setSubEntity( uint16_type __f, permutation_type __perm )
+            requires ( SubEntityCoDim != 0 )
             {
                 M_face_id = __f;
                 CHECK( M_face_id != invalid_v<uint16_type> ) << "sub entity id not defined";
@@ -1199,15 +1200,12 @@ class GeoMap
          * \param q index of the point where the jacobian is requested
          * \return the jacobian of the transformation
          */
-        template<typename GeoMapT=gm_type>
-        value_type J( int q, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+        [[nodiscard]] value_type J( int q ) const
         {
+            if constexpr ( is_linear )
                 return M_J[0];
-        }
-        template<typename GeoMapT=gm_type>
-        value_type J( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
-        {
-            return M_J[q];
+            else
+                return M_J[q];
         }
         /**
          * \return the matrix associated with the geometric nodes
@@ -1225,127 +1223,92 @@ class GeoMap
          * \param i the index of point where the pseudo-inverse is requested
          * \return the pseudo inverse of the transformation
          */
-        template<typename GeoMapT=gm_type>
-        eigen_matrix_np_type const& B( int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
+        [[nodiscard]] eigen_matrix_np_type const& B( int q ) const
         {
-            return M_B[0];
+            if constexpr ( is_linear )
+                return M_B[0];
+            else
+                return M_B[q];
         }
-        template<typename GeoMapT=gm_type>
-        eigen_matrix_np_type const& B( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
+        [[nodiscard]] value_type const& B( int c1, int c2, int q ) const
         {
-            return M_B[q];
-        }
-        template<typename GeoMapT=gm_type>
-        eigen_matrix_np_type const& B( int c1, int c2, int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
-        {
-            return M_B[0](c1,c2);
-        }
-        template<typename GeoMapT=gm_type>
-        eigen_matrix_np_type const& B( int c1, int c2, int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
-        {
-            return M_B[q](c1,c2);
+            if constexpr ( is_linear )
+                return M_B[0]( c1, c2 );
+            else
+                return M_B[q]( c1, c2 );
         }
 
-        template<typename GeoMapT=gm_type>
-        eigen_matrix_np_type const& localBasis( int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
-            {
+        [[nodiscard]] eigen_matrix_np_type const& localBasis( int q ) const
+        {
+            if constexpr ( is_linear )
                 return M_local_basis_real[0];
-            }
-        template<typename GeoMapT=gm_type>
-        eigen_matrix_np_type const& localBasis( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
-            {
+            else
                 return M_local_basis_real[q];
-            }
-        template<typename GeoMapT=gm_type>
-        typename eigen_matrix_np_type::ColXpr const& basisN( int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
-            {
+        }
+        [[nodiscard]] typename eigen_matrix_np_type::ColXpr const& basisN( int q ) const
+        {
+            if constexpr ( is_linear )
                 return M_local_basis_real[0].col(0);
-            }
-        template<typename GeoMapT=gm_type>
-        typename eigen_matrix_np_type::ColXpr const& basisN( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
-            {
+            else
                 return M_local_basis_real[q].col(0);
-            }
+        }
 
-        template<typename GeoMapT=gm_type>
-        value_type const& localBasis( int c1, int c2, int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
-            {
+        [[nodiscard]] value_type const& localBasis( int c1, int c2, int q ) const
+        {
+            if constexpr ( is_linear )
                 return M_local_basis_real[0](c1,c2);
-            }
-        template<typename GeoMapT=gm_type>
-        value_type const& localBasis( int c1, int c2, int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
-            {
+            else
                 return M_local_basis_real[q](c1,c2);
-            }
-        template<typename GeoMapT=gm_type>
-        value_type const& basisN( int c1, int c2, int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
-            {
+        }
+        [[nodiscard]] value_type const& basisN( int c1, int c2, int q ) const
+        {
+            if constexpr ( is_linear )
                 return M_local_basis_real[0](c1,0);
-            }
-        template<typename GeoMapT=gm_type>
-        value_type const& basisN( int c1, int c2, int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
-            {
+            else
                 return M_local_basis_real[q](c1,0);
-            }
-        template<typename GeoMapT=gm_type>
-        eigen_matrix_nn_type const& projectorTangent( int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr   ) const
-        {
-            return M_Ptangent[0];
         }
-        template<typename GeoMapT=gm_type>
-        eigen_matrix_nn_type const& projectorTangent( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr   ) const
+        [[nodiscard]] eigen_matrix_nn_type const& projectorTangent( int q ) const
         {
-            return M_Ptangent[q];
+            if constexpr ( is_linear )
+                return M_Ptangent[0];
+            else
+                return M_Ptangent[q];
         }
-        template<typename GeoMapT=gm_type>
-        value_type const& projectorTangent( int c1, int c2, int i, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr   ) const
-            {
-                return M_Ptangent[0](c1,c2);
-            }
-        template<typename GeoMapT=gm_type>
-        value_type const& projectorTangent( int c1, int c2, int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr   ) const
-            {
-                return M_Ptangent[q](c1,c2);
-            }
+        [[nodiscard]] value_type const& projectorTangent( int c1, int c2, int q ) const
+        {
+            if constexpr ( is_linear )
+                return M_Ptangent[0]( c1, c2 );
+            else
+                return M_Ptangent[q]( c1, c2 );
+        }
 
-        template<typename GeoMapT=gm_type>
-        eigen_matrix_np_type const& K( int q,  std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+        [[nodiscard]] eigen_matrix_np_type const& K( int q ) const
         {
-            return M_K[0];
-        }
-        template<typename GeoMapT=gm_type>
-        eigen_matrix_np_type const& K( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
-            {
+            if constexpr ( is_linear )
+                return M_K[0];
+            else
                 return M_K[q];
-            }
-        template<typename GeoMapT=gm_type>
-        value_type const& K( int c1, int c2, int q, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
-        {
-            return M_K[q]( c1, c2 );
         }
-        template<typename GeoMapT=gm_type>
-        vector_eigen_matrix_np_type const& K( std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
-            {
-                return M_K;
-            }
-        template<typename GeoMapT=gm_type>
-        value_type const& K( int c1, int c2, int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
-            {
+        [[nodiscard]] vector_eigen_matrix_np_type const& K() const
+            requires ( !is_linear )
+        {
+            return M_K;
+        }
+        [[nodiscard]] value_type const& K( int c1, int c2, int q ) const
+        {
+            if constexpr ( is_linear )
+                return M_K[0]( c1, c2 );
+            else
                 return M_K[q]( c1, c2 );
-            }
-
-
-        template<typename GeoMapT=gm_type>
-        hessian_type const& hessian( int q, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
-        {
-            return M_hessian[0];
         }
 
-        template<typename GeoMapT=gm_type>
-        hessian_type const& hessian( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
-            {
+        [[nodiscard]] hessian_type const& hessian( int q ) const
+        {
+            if constexpr ( is_linear )
+                return M_hessian[0];
+            else
                 return M_hessian[q];
-            }
+        }
 
         /**
          * the tensor of rank 4 for the transformation of 2nd
@@ -1415,38 +1378,32 @@ class GeoMap
          *
          * @return the norm_2 of the normal of the real element
          */
-        template<typename GeoMapT=gm_type>
-        value_type normalNorm( int q, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr   ) const
-            {
+        [[nodiscard]] value_type normalNorm( int q ) const
+        {
+            if constexpr ( is_linear )
                 return M_normal_norms[0];
-            }
-        template<typename GeoMapT=gm_type>
-        value_type normalNorm( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr   ) const
-            {
+            else
                 return M_normal_norms[q];
-            }
+        }
 
         /**
          * get the normal of the real element
          *
          * @return the normal of the real element
          */
-        template<typename GeoMapT=gm_type>
-        eigen_vector_n_type const& normal( int q, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr   ) const
-            {
+        [[nodiscard]] eigen_vector_n_type const& normal( int q ) const
+        {
+            if constexpr ( is_linear )
                 return M_normals[0];
-            }
-        template<typename GeoMapT=gm_type>
-        eigen_vector_n_type const& normal( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr   ) const
-            {
+            else
                 return M_normals[q];
-            }
+        }
 
         //!
         //! @return the unit normal of the real element
         //!
-        template<typename GeoMapT=gm_type>
-        vector_eigen_vector_n_type const& unitNormal( std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+        [[nodiscard]] vector_eigen_vector_n_type const& unitNormal() const
+            requires ( is_linear )
         {
             return M_unit_normals;
         }
@@ -1454,41 +1411,29 @@ class GeoMap
         //!
         //! @return the unit_normal at point @c q
         //!
-        template<typename GeoMapT=gm_type>
-        eigen_vector_n_type const& unitNormal( int q, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+        [[nodiscard]] eigen_vector_n_type const& unitNormal( int q ) const
         {
-            return M_unit_normals[0];
+            if constexpr ( is_linear )
+                return M_unit_normals[0];
+            else
+                return M_unit_normals[q];
         }
 
-        //!
-        //! @return the unit_normal at point @c q
-        //!
-        template<typename GeoMapT=gm_type>
-        eigen_vector_n_type const& unitNormal( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+        [[nodiscard]] value_type const& unitNormal( int n, int q ) const
         {
-            return M_unit_normals[q];
-        }
-
-        template<typename GeoMapT=gm_type>
-        value_type const& unitNormal( int n, int q, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
-        {
-            return M_unit_normals[0]( n );
-        }
-
-        template<typename GeoMapT=gm_type>
-        value_type const& unitNormal( int n, int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr  ) const
-        {
-            return M_unit_normals[q]( n );
+            if constexpr ( is_linear )
+                return M_unit_normals[0]( n );
+            else
+                return M_unit_normals[q]( n );
         }
 
         //!
         //! @return the scaled tangent to the current face
         //!
-        template<typename GeoMapT=gm_type>
-        eigen_vector_n_type const& tangent(std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr) const
+        [[nodiscard]] eigen_vector_n_type const& tangent() const
+            requires ( is_linear )
         {
             DCHECK( nDim == 2 ) << "Tangent is available only in 2D";
-            DCHECK( is_linear ) << "Invalid call to unitTangent, the geometric mapping is not linear";
             return M_tangents[0];
         }
 
@@ -1498,42 +1443,30 @@ class GeoMap
          * @param q index of the point at which the tangent is evaluated
          * @return the scaled tamgent at the point
          */
-        template<typename GeoMapT=gm_type>
-        eigen_vector_n_type const& tangent( int q, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
+        [[nodiscard]] eigen_vector_n_type const& tangent( int q ) const
         {
             DCHECK( nDim == 2 ) << "Tangent is available only in 2D";
-            return M_tangents[0];
-        }
-        template<typename GeoMapT=gm_type>
-        eigen_vector_n_type const& tangent( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
-            {
-                DCHECK( nDim == 2 ) << "Tangent is available only in 2D";
+            if constexpr ( is_linear )
+                return M_tangents[0];
+            else
                 return M_tangents[q];
-            }
-        template<typename GeoMapT=gm_type>
-        eigen_vector_n_type const& unitTangent( int q, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
-            {
-                DCHECK( nDim == 2 ) << "Tangent is available only in 2D";
+        }
+        [[nodiscard]] eigen_vector_n_type const& unitTangent( int q ) const
+        {
+            DCHECK( nDim == 2 ) << "Tangent is available only in 2D";
+            if constexpr ( is_linear )
                 return M_unit_tangents[0];
-            }
-        template<typename GeoMapT=gm_type>
-        eigen_vector_n_type const& unitTangent( int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
-            {
-                DCHECK( nDim == 2 ) << "Tangent is available only in 2D";
+            else
                 return M_unit_tangents[q];
-            }
-        template<typename GeoMapT=gm_type>
-        eigen_vector_n_type const& unitTangent( int c1, int c2, int q, std::enable_if_t<is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
-            {
-                DCHECK( nDim == 2 ) << "Tangent is available only in 2D";
+        }
+        [[nodiscard]] value_type const& unitTangent( int c1, int c2, int q ) const
+        {
+            DCHECK( nDim == 2 ) << "Tangent is available only in 2D";
+            if constexpr ( is_linear )
                 return M_unit_tangents[0](c1, c2);
-            }
-        template<typename GeoMapT=gm_type>
-        value_type const& unitTangent( int c1, int c2, int q, std::enable_if_t<!is_linear_polynomial_v<GeoMapT>>* = nullptr ) const
-            {
-                DCHECK( nDim == 2 ) << "Tangent is available only in 2D";
+            else
                 return M_unit_tangents[q]( c1, c2 );
-            }
+        }
 
 
         /**
@@ -1782,52 +1715,190 @@ class GeoMap
             M_pc_faces = __pcfaces;
         }
 
+        /**
+         * @brief Compute an edge tangent at a geometric evaluation point.
+         *
+         * With `scaled == true`, this method returns the covariant-Piola test
+         * direction `K(q) t_hat`, where `t_hat` is the oriented reference-edge
+         * tangent.  Otherwise it returns the corresponding physical unit
+         * tangent.  The pointwise form is required on non-affine cells.
+         *
+         * @param edgeId local edge index in the element
+         * @param q geometric evaluation-point index
+         * @param t output tangent
+         * @param scaled preserve the reference-edge parametrization when true
+         */
+        void
+        edgeTangent( int edgeId, int q, ublas::vector<value_type>& t, bool scaled = false ) const
+        {
+            Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,1>> e_t( t.data().begin(), t.size() );
+            e_t = this->K( q ) * M_gm->referenceConvex().tangent( edgeId );
+            if ( !scaled )
+                e_t.normalize();
+        }
+
+        /**
+         * @brief Return the covariant-Piola edge test direction `K(q) t_hat`.
+         * @param edgeId local edge index in the element
+         * @param q geometric evaluation-point index
+         * @param tangent output tangent carrying the reference parametrization
+         */
+        void covariantPiolaTangent( int edgeId, int q,
+                                    ublas::vector<value_type>& tangent ) const
+        {
+            this->edgeTangent( edgeId, q, tangent, true );
+        }
+
+        /**
+         * @brief Compute an edge tangent using the first geometric point.
+         *
+         * This compatibility overload is exact for affine geometric maps.
+         * Point-supported finite-element functionals on curved cells must use
+         * the overload taking an explicit evaluation-point index.
+         *
+         * @param edgeId local edge index in the element
+         * @param t output tangent
+         * @param scaled preserve the reference-edge parametrization when true
+         */
         void
         edgeTangent( int edgeId, ublas::vector<value_type>& t, bool scaled = false ) const
         {
-#if 0
-            auto const& K = this->K( 0 );
-
-            ublas::axpy_prod( K,
-                              this->geometricMapping()->referenceConvex().tangent( edgeId ),
-                              t,
-                              true );
-            if ( scaled )
-                t *= this->element().hEdge( edgeId ) / ublas::norm_2( t );
-            else
-                t /= ublas::norm_2( t );
-#else
-            Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,1>> e_t( t.data().begin(), t.size() );
-            e_t=M_K[0] * M_gm->referenceConvex().tangent( edgeId );
-            e_t.normalize();
-            if (scaled)
-                e_t*=this->element().hEdge( edgeId );
-#endif
+            this->edgeTangent( edgeId, 0, t, scaled );
         }
 
+        /**
+         * @brief Compute a facet normal at a geometric evaluation point.
+         *
+         * With `scaled == true`, this method returns the contravariant-Piola
+         * test direction
+         *
+         * `J(q) K(q)^{-T} n_hat |f_hat|`,
+         *
+         * where `n_hat` is the unit reference normal and `|f_hat|` is the
+         * reference-facet measure.  Otherwise it returns the physical unit
+         * normal.  The pointwise cofactor is essential on curved cells.
+         *
+         * @param faceId local facet index in the element
+         * @param q geometric evaluation-point index
+         * @param n output normal
+         * @param scaled return the Piola-scaled normal when true
+         */
+        void
+        faceNormal( int faceId, int q, ublas::vector<value_type>& n, bool scaled = false ) const
+        {
+            Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,1>> e_n( n.data().begin(), n.size() );
+            e_n = this->B( q ) * M_gm->referenceConvex().normal( faceId );
+            if ( scaled )
+            {
+                const value_type jacobian = [&]()
+                {
+                    if constexpr ( NDim == PDim )
+                        return math::abs( this->K( q ).determinant() );
+                    else
+                        return this->J( q );
+                }();
+                auto const vertices = M_gm->referenceConvex().faceVertices( faceId );
+                if constexpr ( nDim == 2 )
+                {
+                    value_type squaredLength = 0;
+                    for ( uint16_type c = 0; c < nDim; ++c )
+                    {
+                        const value_type delta = vertices( c, 1 )-vertices( c, 0 );
+                        squaredLength += delta*delta;
+                    }
+                    e_n *= jacobian*std::sqrt( squaredLength );
+                }
+                else if constexpr ( nDim == 3 )
+                {
+                    Eigen::Matrix<value_type,3,1> a, b;
+                    for ( uint16_type c = 0; c < nDim; ++c )
+                    {
+                        a( c ) = vertices( c, 1 )-vertices( c, 0 );
+                        b( c ) = vertices( c, 2 )-vertices( c, 0 );
+                    }
+                    const value_type cx = a( 1 )*b( 2 )-a( 2 )*b( 1 );
+                    const value_type cy = a( 2 )*b( 0 )-a( 0 )*b( 2 );
+                    const value_type cz = a( 0 )*b( 1 )-a( 1 )*b( 0 );
+                    const value_type referenceMeasure = value_type( 0.5 )*
+                        std::sqrt( cx*cx+cy*cy+cz*cz );
+                    e_n *= jacobian*referenceMeasure;
+                }
+                else
+                    e_n *= jacobian;
+            }
+            else
+                e_n.normalize();
+        }
+
+        /**
+         * @brief Return the contravariant-Piola facet test direction.
+         *
+         * The result is `J(q) K(q)^{-T} n_hat |f_hat|`, matching the reference
+         * normal-flux functional without normalization or a cell-wide facet
+         * measure approximation.
+         *
+         * @param faceId local facet index in the element
+         * @param q geometric evaluation-point index
+         * @param normal output scaled normal
+         */
+        void contravariantPiolaNormal( int faceId, int q,
+                                       ublas::vector<value_type>& normal ) const
+        {
+            this->faceNormal( faceId, q, normal, true );
+        }
+
+        /**
+         * @brief Return the signed Jacobian determinant at a point.
+         *
+         * For full-dimensional maps this detects orientation reversal, unlike
+         * `J(q)`, which is the positive integration measure.  Embedded maps
+         * have no square determinant and return the positive metric Jacobian.
+         *
+         * @param q geometric evaluation-point index
+         * @return signed determinant or positive metric Jacobian
+         */
+        [[nodiscard]] value_type signedJacobian( int q ) const
+        {
+            if constexpr ( NDim == PDim )
+                return this->K( q ).determinant();
+            else
+                return this->J( q );
+        }
+
+        /**
+         * @brief Check whether the geometric map is finite and non-degenerate.
+         * @param q geometric evaluation-point index
+         * @param tolerance strictly positive Jacobian threshold
+         * @return true if `K`, `B`, `J`, and orientation are admissible
+         */
+        [[nodiscard]] bool isValid( int q,
+                                    value_type tolerance = std::numeric_limits<value_type>::epsilon() ) const
+        {
+            const value_type jacobian = this->J( q );
+            if ( !std::isfinite( jacobian ) || jacobian <= tolerance ||
+                 !this->K( q ).allFinite() || !this->B( q ).allFinite() )
+                return false;
+            if constexpr ( NDim == PDim )
+                return this->signedJacobian( q ) > tolerance;
+            else
+                return true;
+        }
+
+        /**
+         * @brief Compute a facet normal using the first geometric point.
+         *
+         * This compatibility overload is exact for affine geometric maps.
+         * Point-supported finite-element functionals on curved cells must use
+         * the overload taking an explicit evaluation-point index.
+         *
+         * @param faceId local facet index in the element
+         * @param n output normal
+         * @param scaled return the Piola-scaled normal when true
+         */
         void
         faceNormal( int faceId, ublas::vector<value_type>& n, bool scaled = false ) const
         {
-#if 0
-            auto const& K = this->K( 0 );
-            auto const& B = this->B( 0 );
-
-            ublas::axpy_prod( B,
-                              this->geometricMapping()->referenceConvex().normal( faceId ),
-                              n,
-                              true );
-            if ( scaled )
-                n *= this->element().faceMeasure( faceId ) / ublas::norm_2( n );
-            else
-                n /= ublas::norm_2( n );
-#else
-            Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,1>> e_n( n.data().begin(), n.size() );
-            e_n=M_B[0] * M_gm->referenceConvex().normal( faceId );
-            e_n.normalize();
-            if (scaled)
-                e_n*=this->element().faceMeasure( faceId );
-
-#endif
+            this->faceNormal( faceId, 0, n, scaled );
         }
 
         /**
@@ -1840,9 +1911,10 @@ class GeoMap
          * @return true if the permutation has been found and the geomap updated,
          * false otherwise.
          */
-        template <int CTX,typename EltType, typename NeighborGeoType,int TheSubEntityCoDim = SubEntityCoDim>
-        bool updateFromNeighborMatchingFace( EltType const& elt, uint16_type face_in_elt, std::shared_ptr<NeighborGeoType> const& gmc,
-                                             std::enable_if_t< TheSubEntityCoDim == 1 >* = nullptr )
+        template <int CTX,typename EltType, typename NeighborGeoType>
+        bool updateFromNeighborMatchingFace( EltType const& elt, uint16_type face_in_elt,
+                                             std::shared_ptr<NeighborGeoType> const& gmc )
+            requires ( SubEntityCoDim == 1 )
             {
                 if ( M_gm->hasPermutationWithNeighborFace( elt.id(), face_in_elt ) == false )
                 {
@@ -1857,9 +1929,11 @@ class GeoMap
                 return true;
             }
 
-        template <int CTX,typename EltType, typename MatchingGmcType,int TheSubEntityCoDim = SubEntityCoDim>
-        std::pair<bool,permutation_type> updateFromMatchingNodes( EltType const& elt, uint16_type subentity_in_elt, std::shared_ptr<MatchingGmcType> const& gmc,
-                                                                  std::enable_if_t< TheSubEntityCoDim != 0 >* = nullptr )
+        template <int CTX,typename EltType, typename MatchingGmcType>
+        std::pair<bool,permutation_type> updateFromMatchingNodes(
+            EltType const& elt, uint16_type subentity_in_elt,
+            std::shared_ptr<MatchingGmcType> const& gmc )
+            requires ( SubEntityCoDim != 0 )
             {
                 this->setElement( elt );
                 auto gmcptr = gmc.get();
@@ -1980,37 +2054,25 @@ class GeoMap
                 Xreal.noalias() = M_G * M_pc->phiEigen();
             }
 
-        template<typename ConvexType = ElementType>
-        void updateJacobian( eigen_matrix_np_type const & K, value_type& J,
-                             std::enable_if_t<dimension_v<ConvexType> == real_dimension_v<ConvexType>>* = nullptr )
+        void updateJacobian( eigen_matrix_np_type const& K, value_type& J )
         {
-            J = math::abs( K.determinant() );
+            if constexpr ( dimension_v<ElementType> == real_dimension_v<ElementType> )
+                J = math::abs( K.determinant() );
+            else
+                J = math::sqrt( math::abs( M_CSi.determinant() ) );
         }
-        template<typename ConvexType = ElementType>
-        void updateJacobian( eigen_matrix_np_type const& K, value_type& J,
-                             std::enable_if_t<dimension_v<ConvexType> != real_dimension_v<ConvexType>>* = nullptr )
+        void updateB( eigen_matrix_np_type const& K, eigen_matrix_np_type& B )
         {
-            // CS = K^T K
-            //M_CSi.noalias() = K.transpose()*K;
-            J = math::sqrt( math::abs( M_CSi.determinant() ) );
-        }
-        template<typename ConvexType = ElementType>
-        void updateB( eigen_matrix_np_type const & K, eigen_matrix_np_type& B,
-                      std::enable_if_t<dimension_v<ConvexType> == real_dimension_v<ConvexType>>* = nullptr )
-        {
-            M_CS.noalias() = K.inverse();
-            B.noalias() = M_CS.transpose();
-        }
-        template<typename ConvexType = ElementType>
-        void updateB( eigen_matrix_np_type const& K, eigen_matrix_np_type& B,
-                             std::enable_if_t<dimension_v<ConvexType> != real_dimension_v<ConvexType>>* = nullptr )
-        {
-            // CS = K^T K
-            // M_CSi.noalias() = K.transpose()*K;
-            M_CS=M_CSi.inverse();
-            // B = K CS
-            B.noalias() = K*M_CS;
-            //std::cout << "2.B=" << B << std::endl;
+            if constexpr ( dimension_v<ElementType> == real_dimension_v<ElementType> )
+            {
+                M_CS.noalias() = K.inverse();
+                B.noalias() = M_CS.transpose();
+            }
+            else
+            {
+                M_CS = M_CSi.inverse();
+                B.noalias() = K*M_CS;
+            }
         }
         //!
         //! update hessian information

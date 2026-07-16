@@ -16,6 +16,46 @@ namespace Feel::detail
 {
 
 /**
+ * @brief Apply facet-normal point DoFs to an expression.
+ *
+ * The normal provider is evaluated at every support point so that curved
+ * geometric maps use the pointwise contravariant-Piola cofactor.  This kernel
+ * is shared by RT and BDM, for both static and runtime orders.
+ *
+ * @tparam ExprType expression evaluated at functional support points
+ * @tparam LocalVectorType mutable local coefficient vector
+ * @tparam NormalType reusable normal-vector storage
+ * @tparam NormalProviderType callable providing the physical scaled normal
+ * @param expr expression to interpolate
+ * @param localValues destination local coefficients
+ * @param facetCount number of facets in the traversed entity
+ * @param dofPerFacet number of point DoFs per facet
+ * @param normal reusable normal workspace
+ * @param normalProvider geometry policy called for every facet point
+ */
+template<typename ExprType, typename LocalVectorType, typename NormalType, typename NormalProviderType>
+void
+interpolateHDivFacetPointDofs( ExprType const& expr,
+                               LocalVectorType& localValues,
+                               uint16_type facetCount,
+                               uint16_type dofPerFacet,
+                               NormalType& normal,
+                               NormalProviderType&& normalProvider )
+{
+    using shape_type = typename std::remove_cvref_t<ExprType>::shape;
+    for ( uint16_type facet = 0; facet < facetCount; ++facet )
+    {
+        for ( uint16_type ordinal = 0; ordinal < dofPerFacet; ++ordinal )
+        {
+            const uint16_type point = static_cast<uint16_type>( facet*dofPerFacet + ordinal );
+            normalProvider( facet, point, normal );
+            for ( uint16_type component = 0; component < shape_type::M; ++component )
+                localValues( point ) += expr.evalq( component, 0, point )*normal( component );
+        }
+    }
+}
+
+/**
  * Evaluate the reference-cell integrand used by an H(div) interior moment.
  *
  * For the contravariant Piola map

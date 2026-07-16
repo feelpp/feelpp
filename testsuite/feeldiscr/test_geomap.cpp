@@ -42,6 +42,7 @@
 #include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelfilters/gmshsimplexdomain.hpp>
 #include <feel/feelpoly/geomap.hpp>
+#include <feel/feelpoly/concepts.hpp>
 #include <feel/feelpoly/order.hpp>
 #include <feel/feelmesh/regiontree.hpp>
 
@@ -138,14 +139,24 @@ void compareGeomapContextStaticDynamicSimplex2D()
 
     BOOST_REQUIRE( gmc_static );
     BOOST_REQUIRE( gmc_dynamic );
+    static_assert( GeometricMappingContextConcept<decltype( *gmc_static )> );
+    static_assert( GeometricMappingContextConcept<decltype( *gmc_dynamic )> );
 
     const uint16_type npts = ref_pts.size2();
     double max_err_x = 0.0;
     double max_err_J = 0.0;
     double max_err_K = 0.0;
     double max_err_B = 0.0;
+    double max_inverse_identity_error = 0.0;
+    double max_curved_jacobian_variation = 0.0;
+    auto const firstK = gmc_static->K( 0 );
     for ( uint16_type q = 0; q < npts; ++q )
     {
+        BOOST_CHECK( gmc_static->isValid( q ) );
+        BOOST_CHECK( gmc_dynamic->isValid( q ) );
+        BOOST_CHECK_GT( gmc_static->signedJacobian( q ), 0.0 );
+        BOOST_CHECK_GT( gmc_dynamic->signedJacobian( q ), 0.0 );
+
         auto x_static = gmc_static->xReal( q );
         auto x_dynamic = gmc_dynamic->xReal( q );
         for ( int c = 0; c < 2; ++c )
@@ -157,6 +168,9 @@ void compareGeomapContextStaticDynamicSimplex2D()
         auto const& K_dynamic = gmc_dynamic->K( q );
         auto const& B_static = gmc_static->B( q );
         auto const& B_dynamic = gmc_dynamic->B( q );
+        const auto inverseIdentity = K_static.transpose()*B_static;
+        max_curved_jacobian_variation = std::max(
+            max_curved_jacobian_variation, ( K_static-firstK ).norm() );
 
         for ( int i = 0; i < 2; ++i )
         {
@@ -164,6 +178,11 @@ void compareGeomapContextStaticDynamicSimplex2D()
             {
                 max_err_K = std::max( max_err_K, std::abs( K_static( i, j ) - K_dynamic( i, j ) ) );
                 max_err_B = std::max( max_err_B, std::abs( B_static( i, j ) - B_dynamic( i, j ) ) );
+                max_inverse_identity_error = std::max(
+                    max_inverse_identity_error,
+                    std::abs( inverseIdentity( i, j )-( i == j ? 1.0 : 0.0 ) ) );
+                BOOST_CHECK_EQUAL( gmc_static->K( i, j, q ), K_static( i, j ) );
+                BOOST_CHECK_EQUAL( gmc_static->B( i, j, q ), B_static( i, j ) );
             }
         }
     }
@@ -172,6 +191,9 @@ void compareGeomapContextStaticDynamicSimplex2D()
     BOOST_CHECK_SMALL( max_err_J, tol );
     BOOST_CHECK_SMALL( max_err_K, tol );
     BOOST_CHECK_SMALL( max_err_B, tol );
+    BOOST_CHECK_SMALL( max_inverse_identity_error, tol );
+    if constexpr ( Order > 1 )
+        BOOST_CHECK_GT( max_curved_jacobian_variation, 1e-6 );
 }
 
 template<int Order>
@@ -723,12 +745,27 @@ BOOST_AUTO_TEST_CASE( test_hypercube_dynamic_entity )
 
 BOOST_AUTO_TEST_CASE( test_geomap_concepts )
 {
-    static_assert( GeoMapLike<GeoMap<1, 1, 1, double, Simplex>>, "1D P1 Simplex" );
-    static_assert( GeoMapLike<GeoMap<2, 1, 2, double, Simplex>>, "2D P1 Simplex" );
-    static_assert( GeoMapLike<GeoMap<3, 1, 3, double, Simplex>>, "3D P1 Simplex" );
-    static_assert( GeoMapLike<GeoMap<2, Dynamic, 2, double, Simplex>>, "2D Dynamic Simplex" );
-    static_assert( GeoMapLike<GeoMap<2, 1, 2, double, Hypercube>>, "2D Q1 Hypercube" );
-    static_assert( GeoMapLike<GeoMap<2, Dynamic, 2, double, Hypercube>>, "2D Dynamic Hypercube" );
+    using simplex1d_type = GeoMap<1, 1, 1, double, Simplex>;
+    using simplex2d_type = GeoMap<2, 1, 2, double, Simplex>;
+    using simplex3d_type = GeoMap<3, 1, 3, double, Simplex>;
+    using dynamic_simplex_type = GeoMap<2, Dynamic, 2, double, Simplex>;
+    using hypercube2d_type = GeoMap<2, 1, 2, double, Hypercube>;
+    using dynamic_hypercube_type = GeoMap<2, Dynamic, 2, double, Hypercube>;
+
+    static_assert( GeoMapLike<simplex1d_type>, "1D P1 Simplex" );
+    static_assert( GeoMapLike<simplex2d_type>, "2D P1 Simplex" );
+    static_assert( GeoMapLike<simplex3d_type>, "3D P1 Simplex" );
+    static_assert( GeoMapLike<dynamic_simplex_type>, "2D Dynamic Simplex" );
+    static_assert( GeoMapLike<hypercube2d_type>, "2D Q1 Hypercube" );
+    static_assert( GeoMapLike<dynamic_hypercube_type>, "2D Dynamic Hypercube" );
+    static_assert( GeometricMappingConcept<simplex1d_type> );
+    static_assert( GeometricMappingConcept<simplex2d_type> );
+    static_assert( GeometricMappingConcept<simplex3d_type> );
+    static_assert( LinearGeometricMappingConcept<simplex2d_type> );
+    static_assert( NonLinearGeometricMappingConcept<GeoMap<2, 2, 2, double, Simplex>> );
+    static_assert( GeometricMappingConcept<dynamic_simplex_type> );
+    static_assert( GeometricMappingConcept<hypercube2d_type> );
+    static_assert( GeometricMappingConcept<dynamic_hypercube_type> );
 
     BOOST_CHECK( true );
 }

@@ -40,7 +40,7 @@ namespace Feel::detail
  * @param edgeCount number of edges in the traversed entity
  * @param dofPerEdge number of ordered point DoFs per edge
  * @param tangent reusable tangent workspace
- * @param tangentProvider geometry policy called for each edge
+ * @param tangentProvider geometry policy called for every edge point
  */
 template<typename Expr, typename LocalVector, typename Tangent, typename TangentProvider>
 void
@@ -54,10 +54,10 @@ interpolateHCurlEdgePointDofs( Expr const& expression,
     using shape_type = typename std::remove_cvref_t<Expr>::shape;
     for ( uint16_type edge = 0; edge < edgeCount; ++edge )
     {
-        tangentProvider( edge, tangent );
         for ( uint16_type ordinal = 0; ordinal < dofPerEdge; ++ordinal )
         {
             const uint16_type point = static_cast<uint16_type>( edge*dofPerEdge + ordinal );
+            tangentProvider( edge, point, tangent );
             for ( uint16_type component = 0; component < shape_type::M; ++component )
                 localValues( point ) += expression.evalq( component, 0, point ) * tangent( component );
         }
@@ -218,6 +218,93 @@ interpolateHCurlTriangularFaceMoments(
     }
     CHECK_EQ( moment, expectedMomentCount )
         << "Invalid H(curl) triangular-face moment count";
+}
+
+/**
+ * Apply one NED2 triangular-face block of RT tangential moments.
+ *
+ * This is the interpolation counterpart of
+ * `appendHCurlTriangularFaceRTMoments`; both use the same intrinsic face RT
+ * basis, quadrature, ordering, and covariant-Piola inverse pullback.
+ */
+template<typename Expr, typename LocalVector, typename ReferenceConvexType,
+         typename FaceMomentSpace>
+void
+interpolateHCurlTriangularFaceRTMoments(
+    Expr const& expression,
+    LocalVector& localValues,
+    ReferenceConvexType const& referenceConvex,
+    FaceMomentSpace const& moments,
+    uint16_type face,
+    uint16_type firstDof,
+    uint32_type expressionPointOffset )
+{
+    using value_type = typename ReferenceConvexType::value_type;
+    const uint16_type quadratureOrder = static_cast<uint16_type>(
+        2*( moments.publicOrder()+4 ) );
+    IMGeneral<3, value_type, Simplex> quadrature( quadratureOrder );
+    const uint32_type pointCount = quadrature.nPointsOnFace( face );
+    if constexpr ( requires { expression.nPoints(); } )
+        CHECK( expression.nPoints() >= expressionPointOffset+pointCount );
+
+    auto const vertices = referenceConvex.faceVertices( face );
+    Eigen::Matrix<value_type,3,1> origin, tangent0, tangent1;
+    for ( int component = 0; component < 3; ++component )
+    {
+        origin( component ) = vertices( component, 0 );
+        tangent0( component ) = vertices( component, 1 )-vertices( component, 0 );
+        tangent1( component ) = vertices( component, 2 )-vertices( component, 0 );
+    }
+    const value_type g00 = tangent0.dot( tangent0 );
+    const value_type g01 = tangent0.dot( tangent1 );
+    const value_type g11 = tangent1.dot( tangent1 );
+    const value_type metricDeterminant = g00*g11-g01*g01;
+    const value_type inverseDeterminant = value_type( 1 )/metricDeterminant;
+    const value_type surfaceJacobian = std::sqrt( metricDeterminant );
+    auto const& points = quadrature.fpoints( face );
+    typename FaceMomentSpace::points_type intrinsicPoints( 2, pointCount );
+    for ( uint16_type q = 0; q < pointCount; ++q )
+    {
+        Eigen::Matrix<value_type,3,1> delta;
+        for ( int component = 0; component < 3; ++component )
+            delta( component ) = points( component, q )-origin( component );
+        const value_type rhs0 = tangent0.dot( delta );
+        const value_type rhs1 = tangent1.dot( delta );
+        const value_type a = ( g11*rhs0-g01*rhs1 )*inverseDeterminant;
+        const value_type b = ( g00*rhs1-g01*rhs0 )*inverseDeterminant;
+        // Keep interpolation in the same Feel++ triangle coordinates as the
+        // dual RT moment builder.
+        intrinsicPoints( 0, q ) = value_type( -1 )+value_type( 2 )*a;
+        intrinsicPoints( 1, q ) = value_type( -1 )+value_type( 2 )*b;
+    }
+    auto const momentValues = moments.evaluate( intrinsicPoints );
+
+    for ( uint16_type moment = 0; moment < moments.polynomialDimension(); ++moment )
+    {
+        const uint16_type dof = static_cast<uint16_type>( firstDof+moment );
+        for ( uint16_type q = 0; q < pointCount; ++q )
+        {
+            Eigen::Matrix<value_type,3,1> referenceMoment =
+                tangent0*momentValues( 2*moment, q )+
+                tangent1*momentValues( 2*moment+1, q );
+            Eigen::Matrix<value_type,3,1> physicalMoment = referenceMoment;
+            const uint32_type expressionPoint = expressionPointOffset+q;
+            if constexpr ( requires { expression.geom()->K( expressionPoint ); } )
+            {
+                auto const& jacobian = expression.geom()->K( expressionPoint );
+                physicalMoment.setZero();
+                for ( int physical = 0; physical < 3; ++physical )
+                    for ( int reference = 0; reference < 3; ++reference )
+                        physicalMoment( physical ) +=
+                            jacobian( physical, reference )*referenceMoment( reference );
+            }
+            value_type value = 0;
+            for ( int component = 0; component < 3; ++component )
+                value += expression.evalq( component, 0, expressionPoint )*
+                         physicalMoment( component );
+            localValues( dof ) += quadrature.weight( face, q )/surfaceJacobian*value;
+        }
+    }
 }
 
 /**

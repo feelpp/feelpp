@@ -47,7 +47,7 @@ struct FakeRtGeom2D
         return invalid_uint16_type_value;
     }
 
-    void faceNormal( int face, ublas::vector<double>& normal, bool ) const
+    void contravariantPiolaNormal( int face, int, ublas::vector<double>& normal ) const
     {
         normal.resize( 2, false );
         switch ( face )
@@ -105,7 +105,7 @@ struct ReferenceRtGeom
         return invalid_uint16_type_value;
     }
 
-    void faceNormal( int face, ublas::vector<value_type>& normal, bool ) const
+    void contravariantPiolaNormal( int face, int, ublas::vector<value_type>& normal ) const
     {
         normal.resize( RTType::nDim, false );
         em_node_type<value_type> mappedNormal( normal.data().begin(), normal.size() );
