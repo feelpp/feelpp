@@ -90,7 +90,9 @@ checkLowestOrderNedelec( std::string const& label, uint16_type expectedDof )
                     exact += primalCoefficients( j ) * primalValuesMap( FE::nComponents*j + c, q );
                     reconstructed += dofValues( j ) * nodalValuesMap( FE::nComponents*j + c, q );
                 }
-                BOOST_CHECK_SMALL( reconstructed - exact, typename FE::value_type( 1e-10 ) );
+                const auto tolerance = typename FE::value_type(
+                    expectedDof >= 100 ? 5e-10 : 1e-10 );
+                BOOST_CHECK_SMALL( reconstructed - exact, tolerance );
             }
         }
     }
@@ -134,16 +136,49 @@ checkReferenceFaceInterpolationKernel()
     {
         ReferenceExpression expression{ values, basis };
         auto interpolant = fe.localInterpolant();
-        for ( auto const& block : sampling.faces )
-            Feel::detail::interpolateHCurlTriangularFaceMoments(
-                expression, interpolant, fe.referenceConvex(), block.face,
-                static_cast<int>( FE::nOrder )-2, block.firstDof,
-                block.elementPointOffset, block.momentCount );
+        if constexpr ( FE::kind == NedelecKind::NED1 )
+        {
+            for ( auto const& block : sampling.faces )
+                Feel::detail::interpolateHCurlTriangularFaceMoments(
+                    expression, interpolant, fe.referenceConvex(), block.face,
+                    static_cast<int>( FE::nOrder )-2, block.firstDof,
+                    block.elementPointOffset, block.momentCount );
+        }
+        else
+        {
+            RaviartThomasDynamicPolynomialSet<2> moments(
+                RuntimeOrder{ static_cast<uint16_type>( FE::kind == NedelecKind::NED2
+                                                            ? FE::nOrder-2 : 0 ) } );
+            for ( auto const& block : sampling.faces )
+                Feel::detail::interpolateHCurlTriangularFaceRTMoments(
+                    expression, interpolant, fe.referenceConvex(), moments,
+                    block.face, block.firstDof, block.elementPointOffset );
+
+            if ( sampling.cellMomentCount > 0 )
+            {
+                RaviartThomasDynamicPolynomialSet<3> cellMoments(
+                    RuntimeOrder{ static_cast<uint16_type>( FE::nOrder-3 ) } );
+                Feel::detail::interpolateHCurlCellMoments<3>(
+                    expression, interpolant, cellMoments,
+                    static_cast<uint16_type>( FE::nOrder+1 ),
+                    sampling.cellFirstDof, sampling.cellPointOffset,
+                    sampling.cellMomentCount, FE::nComponents );
+            }
+        }
 
         for ( auto const& block : sampling.faces )
             for ( uint16_type ordinal = 0; ordinal < block.momentCount; ++ordinal )
             {
                 const uint16_type dof = static_cast<uint16_type>( block.firstDof+ordinal );
+                const double expected = dof == basis ? 1.0 : 0.0;
+                BOOST_CHECK_SMALL( interpolant( dof )-expected, 2e-10 );
+            }
+        if constexpr ( FE::kind == NedelecKind::NED2 )
+            for ( uint16_type ordinal = 0;
+                  ordinal < sampling.cellMomentCount; ++ordinal )
+            {
+                const uint16_type dof = static_cast<uint16_type>(
+                    sampling.cellFirstDof+ordinal );
                 const double expected = dof == basis ? 1.0 : 0.0;
                 BOOST_CHECK_SMALL( interpolant( dof )-expected, 2e-10 );
             }
@@ -185,6 +220,29 @@ checkVectorAffineContainment()
             BOOST_CHECK_SMALL( ( basisValues*coefficients-target ).norm(), 2e-10 );
         }
 }
+
+/** Check a guarded NED2 primal/dual pair before exposing its FE shell. */
+template<int Dim, int Order>
+void
+checkCandidateNed2CiarletPair( uint16_type expectedDof )
+{
+    using primal_type = Feel::detail::OrthonormalPolynomialSet<
+        Dim, Order+1, Dim, Vectorial, double, 0, Simplex>;
+    using dual_type = fem::detail::Nedelec2Dual<primal_type, PointSetEquiSpaced>;
+    primal_type primal;
+    dual_type dual( primal );
+    auto const matrix = dual( primal );
+    BOOST_REQUIRE_EQUAL( primal.polynomialDimension(), expectedDof );
+    BOOST_REQUIRE_EQUAL( matrix.size1(), expectedDof );
+    BOOST_REQUIRE_EQUAL( matrix.size2(), expectedDof );
+    Eigen::MatrixXd dense( expectedDof, expectedDof );
+    for ( uint16_type row = 0; row < expectedDof; ++row )
+        for ( uint16_type column = 0; column < expectedDof; ++column )
+            dense( row, column ) = matrix( row, column );
+    Eigen::FullPivLU<Eigen::MatrixXd> rank( dense );
+    rank.setThreshold( 1e-11 );
+    BOOST_CHECK_EQUAL( rank.rank(), expectedDof );
+}
 } // namespace
 
 BOOST_AUTO_TEST_SUITE( nedelec_static_suite )
@@ -213,8 +271,8 @@ BOOST_AUTO_TEST_CASE( lowest_order_ned1_is_unisolvent_and_reproducing )
     checkLowestOrderNedelec<ned1_3d>( "NED1 tetrahedron order 0", 6 );
 }
 
-/** @test Validate the supported lowest-order second-kind triangle. */
-BOOST_AUTO_TEST_CASE( lowest_order_ned2_is_unisolvent_and_reproducing )
+/** @test Validate second-kind FE shells on triangles/tetrahedra through order three. */
+BOOST_AUTO_TEST_CASE( ned2_is_unisolvent_and_reproducing_through_order_three )
 {
     static_assert( NedelecTraits<NedelecKind::NED2, 2, 0>::polynomialDegree == 1 );
     static_assert( NedelecTraits<NedelecKind::NED2, 2, 0>::edgeDof == 2 );
@@ -224,12 +282,41 @@ BOOST_AUTO_TEST_CASE( lowest_order_ned2_is_unisolvent_and_reproducing )
     static_assert( NedelecTraits<NedelecKind::NED2, 3, 2>::cellDof == 4 );
     static_assert( NedelecTraits<NedelecKind::NED2, 3, 2>::totalDof == 60 );
     static_assert( nedelecSimplexIsSupported<2, 0, NedelecKind::NED2> );
-    static_assert( !nedelecSimplexIsSupported<2, 1, NedelecKind::NED2> );
-    static_assert( !nedelecSimplexIsSupported<3, 0, NedelecKind::NED2> );
+    static_assert( nedelecSimplexIsSupported<2, 1, NedelecKind::NED2> );
+    static_assert( nedelecSimplexIsSupported<3, 0, NedelecKind::NED2> );
+    static_assert( nedelecSimplexIsSupported<3, 3, NedelecKind::NED2> );
 
-    using ned2_2d = typename Nedelec<0, NedelecKind::NED2>::template apply<2, 2, double, Simplex<2>>::type;
+    using ned2_2d_0 = typename Nedelec<0, NedelecKind::NED2>::template apply<2, 2, double, Simplex<2>>::type;
+    using ned2_2d_1 = typename Nedelec<1, NedelecKind::NED2>::template apply<2, 2, double, Simplex<2>>::type;
+    using ned2_2d_2 = typename Nedelec<2, NedelecKind::NED2>::template apply<2, 2, double, Simplex<2>>::type;
+    using ned2_2d_3 = typename Nedelec<3, NedelecKind::NED2>::template apply<2, 2, double, Simplex<2>>::type;
+    using ned2_3d_0 = typename Nedelec<0, NedelecKind::NED2>::template apply<3, 3, double, Simplex<3>>::type;
+    using ned2_3d_1 = typename Nedelec<1, NedelecKind::NED2>::template apply<3, 3, double, Simplex<3>>::type;
+    using ned2_3d_2 = typename Nedelec<2, NedelecKind::NED2>::template apply<3, 3, double, Simplex<3>>::type;
+    using ned2_3d_3 = typename Nedelec<3, NedelecKind::NED2>::template apply<3, 3, double, Simplex<3>>::type;
 
-    checkLowestOrderNedelec<ned2_2d>( "NED2 triangle order 0", 6 );
+    checkLowestOrderNedelec<ned2_2d_0>( "NED2 triangle order 0", 6 );
+    checkLowestOrderNedelec<ned2_2d_1>( "NED2 triangle order 1", 12 );
+    checkLowestOrderNedelec<ned2_2d_2>( "NED2 triangle order 2", 20 );
+    checkLowestOrderNedelec<ned2_2d_3>( "NED2 triangle order 3", 30 );
+    checkLowestOrderNedelec<ned2_3d_0>( "NED2 tetrahedron order 0", 12 );
+    checkLowestOrderNedelec<ned2_3d_1>( "NED2 tetrahedron order 1", 30 );
+    checkLowestOrderNedelec<ned2_3d_2>( "NED2 tetrahedron order 2", 60 );
+    checkLowestOrderNedelec<ned2_3d_3>( "NED2 tetrahedron order 3", 105 );
+}
+
+/**
+ * @test Audit candidate higher-order NED2 moments before lifting public guards.
+ */
+BOOST_AUTO_TEST_CASE( candidate_higher_order_ned2_moments_are_unisolvent )
+{
+    checkCandidateNed2CiarletPair<2, 1>( 12 );
+    checkCandidateNed2CiarletPair<2, 2>( 20 );
+    checkCandidateNed2CiarletPair<2, 3>( 30 );
+    checkCandidateNed2CiarletPair<3, 0>( 12 );
+    checkCandidateNed2CiarletPair<3, 1>( 30 );
+    checkCandidateNed2CiarletPair<3, 2>( 60 );
+    checkCandidateNed2CiarletPair<3, 3>( 105 );
 }
 
 /** @test Validate extracted moment kernels for higher-order first-kind triangles. */
@@ -275,6 +362,18 @@ BOOST_AUTO_TEST_CASE( ned1_tetrahedron_face_interpolation_matches_dual )
     checkReferenceFaceInterpolationKernel<ned1_order1>();
     checkReferenceFaceInterpolationKernel<ned1_order2>();
     checkReferenceFaceInterpolationKernel<ned1_order3>();
+}
+
+/** @test Match NED2 tetrahedral RT face interpolation to the static dual. */
+BOOST_AUTO_TEST_CASE( ned2_tetrahedron_face_interpolation_matches_dual )
+{
+    using ned2_order1 = typename Nedelec<1, NedelecKind::NED2>::template apply<3, 3, double, Simplex<3>>::type;
+    using ned2_order2 = typename Nedelec<2, NedelecKind::NED2>::template apply<3, 3, double, Simplex<3>>::type;
+    using ned2_order3 = typename Nedelec<3, NedelecKind::NED2>::template apply<3, 3, double, Simplex<3>>::type;
+
+    checkReferenceFaceInterpolationKernel<ned2_order1>();
+    checkReferenceFaceInterpolationKernel<ned2_order2>();
+    checkReferenceFaceInterpolationKernel<ned2_order3>();
 }
 
 /** @test Validate all six triangular-face actions and their group law. */
@@ -323,6 +422,113 @@ BOOST_AUTO_TEST_CASE( ned1_triangular_face_orientation_is_a_group_representation
                 auto const pq = permutationFromVertices( composition );
                 BOOST_REQUIRE_NE( pq, 0 );
                 BOOST_CHECK_SMALL( ( transforms[q] * transforms[p] - transforms[pq] ).norm(), 2e-10 );
+            }
+    }
+}
+
+/** @test Validate all six NED2 triangular-face RT moment actions. */
+BOOST_AUTO_TEST_CASE( ned2_triangular_face_orientation_is_a_group_representation )
+{
+    using matrix_type = Eigen::MatrixXd;
+    std::array<std::array<uint16_type,3>,6> const vertices{{
+        {{0,1,2}}, {{2,1,0}}, {{0,2,1}},
+        {{1,0,2}}, {{1,2,0}}, {{2,0,1}}
+    }};
+    auto permutationFromVertices = [&vertices]( std::array<uint16_type,3> const& candidate )
+    {
+        for ( uint16_type p = 0; p < vertices.size(); ++p )
+            if ( vertices[p] == candidate )
+                return p;
+        return static_cast<uint16_type>( vertices.size() );
+    };
+    auto dense = []( auto const& storage )
+    {
+        matrix_type result( storage->rows, storage->cols );
+        for ( uint16_type i = 0; i < storage->rows; ++i )
+            for ( uint16_type j = 0; j < storage->cols; ++j )
+                result( i, j ) = ( *storage )( i, j );
+        return result;
+    };
+
+    for ( uint16_type publicOrder = 1; publicOrder <= 3; ++publicOrder )
+    {
+        std::array<matrix_type,6> transforms;
+        for ( uint16_type p = 0; p < vertices.size(); ++p )
+        {
+            transforms[p] = dense(
+                Feel::detail::nedelecTriangularFaceRTMomentTransform(
+                    vertices[p], publicOrder ) );
+            BOOST_CHECK_EQUAL( transforms[p].fullPivLu().rank(),
+                               transforms[p].rows() );
+            auto const singularValues = transforms[p].jacobiSvd().singularValues();
+            BOOST_CHECK_LT( singularValues( 0 )/
+                            singularValues( singularValues.size()-1 ), 3. );
+
+            RaviartThomasDynamicPolynomialSet<2> moments(
+                RuntimeOrder{ static_cast<uint16_type>( publicOrder-1 ) } );
+            IMGeneral<2, double, Simplex> quadrature(
+                static_cast<uint16_type>( 2*( publicOrder+3 ) ) );
+            auto const momentValues = moments.evaluate( quadrature.points() );
+            Eigen::VectorXd canonicalMoments = Eigen::VectorXd::Zero(
+                moments.polynomialDimension() );
+            Eigen::VectorXd localMoments = Eigen::VectorXd::Zero(
+                moments.polynomialDimension() );
+            std::array<Eigen::Vector2d,3> const referenceVertices{{
+                Eigen::Vector2d( -1., -1. ), Eigen::Vector2d( 1., -1. ),
+                Eigen::Vector2d( -1., 1. ) }};
+            Eigen::Vector2d const referenceOrigin = referenceVertices[0];
+            Eigen::Vector2d const origin = referenceVertices[vertices[p][0]];
+            Eigen::Matrix2d jacobian;
+            jacobian.col( 0 ) =
+                ( referenceVertices[vertices[p][1]]-origin )/2.;
+            jacobian.col( 1 ) =
+                ( referenceVertices[vertices[p][2]]-origin )/2.;
+            for ( uint16_type q = 0; q < quadrature.nPoints(); ++q )
+            {
+                Eigen::Vector2d const localPoint(
+                    quadrature.points()( 0, q ), quadrature.points()( 1, q ) );
+                Eigen::Vector2d const canonicalPoint =
+                    origin+jacobian*( localPoint-referenceOrigin );
+                auto field = []( Eigen::Vector2d const& x )
+                {
+                    return Eigen::Vector2d(
+                        1.+x[0]+x[0]*x[1], 2.-x[1]+x[0]*x[0] );
+                };
+                Eigen::Vector2d const canonicalValue = field( localPoint );
+                Eigen::Vector2d const localValue =
+                    jacobian.transpose()*field( canonicalPoint );
+                for ( uint16_type moment = 0;
+                      moment < moments.polynomialDimension(); ++moment )
+                {
+                    Eigen::Vector2d const testValue(
+                        momentValues( 2*moment, q ),
+                        momentValues( 2*moment+1, q ) );
+                    canonicalMoments( moment ) += quadrature.weight( q )*
+                        canonicalValue.dot( testValue );
+                    localMoments( moment ) += quadrature.weight( q )*
+                        localValue.dot( testValue );
+                }
+            }
+            BOOST_CHECK_SMALL(
+                ( localMoments-transforms[p]*canonicalMoments ).norm(),
+                2e-10 );
+        }
+        BOOST_CHECK_SMALL(
+            ( transforms[0] - matrix_type::Identity(
+                  transforms[0].rows(), transforms[0].cols() ) ).norm(),
+            1e-11 );
+
+        for ( uint16_type p = 0; p < vertices.size(); ++p )
+            for ( uint16_type q = 0; q < vertices.size(); ++q )
+            {
+                std::array<uint16_type,3> composition{};
+                for ( uint16_type i = 0; i < 3; ++i )
+                    composition[i] = vertices[p][vertices[q][i]];
+                auto const pq = permutationFromVertices( composition );
+                BOOST_REQUIRE_LT( pq, vertices.size() );
+                BOOST_CHECK_SMALL(
+                    ( transforms[q]*transforms[p] - transforms[pq] ).norm(),
+                    2e-10 );
             }
     }
 }

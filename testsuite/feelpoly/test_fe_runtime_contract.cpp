@@ -74,11 +74,12 @@ void checkNedelec1DualStaticRuntimeParity()
             BOOST_CHECK_SMALL( staticMatrix( i, j )-runtimeMatrix( i, j ), 1e-11 );
 }
 
-template<uint16_type Dim, uint16_type Order>
-void checkNedelec1FiniteElementStaticRuntimeParity()
+template<uint16_type Dim, uint16_type Order,
+         NedelecKind Kind = NedelecKind::NED1>
+void checkNedelecFiniteElementStaticRuntimeParity()
 {
-    using static_fe_type = fem::NedelecElement<Dim, Order, NedelecKind::NED1>;
-    using runtime_fe_type = fem::NedelecElement<Dim, Dynamic, NedelecKind::NED1>;
+    using static_fe_type = fem::NedelecElement<Dim, Order, Kind>;
+    using runtime_fe_type = fem::NedelecElement<Dim, Dynamic, Kind>;
     static_fe_type staticFe;
     runtime_fe_type runtimeFe( RuntimeOrder{ Order } );
 
@@ -197,14 +198,27 @@ BOOST_AUTO_TEST_CASE( nedelec1_dynamic_dual_matches_static_functionals )
 /** @test The public runtime FE shell is identical to static NED1 through order three. */
 BOOST_AUTO_TEST_CASE( nedelec1_dynamic_finite_element_matches_static_shell )
 {
-    checkNedelec1FiniteElementStaticRuntimeParity<2,0>();
-    checkNedelec1FiniteElementStaticRuntimeParity<2,1>();
-    checkNedelec1FiniteElementStaticRuntimeParity<2,2>();
-    checkNedelec1FiniteElementStaticRuntimeParity<2,3>();
-    checkNedelec1FiniteElementStaticRuntimeParity<3,0>();
-    checkNedelec1FiniteElementStaticRuntimeParity<3,1>();
-    checkNedelec1FiniteElementStaticRuntimeParity<3,2>();
-    checkNedelec1FiniteElementStaticRuntimeParity<3,3>();
+    checkNedelecFiniteElementStaticRuntimeParity<2,0>();
+    checkNedelecFiniteElementStaticRuntimeParity<2,1>();
+    checkNedelecFiniteElementStaticRuntimeParity<2,2>();
+    checkNedelecFiniteElementStaticRuntimeParity<2,3>();
+    checkNedelecFiniteElementStaticRuntimeParity<3,0>();
+    checkNedelecFiniteElementStaticRuntimeParity<3,1>();
+    checkNedelecFiniteElementStaticRuntimeParity<3,2>();
+    checkNedelecFiniteElementStaticRuntimeParity<3,3>();
+}
+
+/** @test NED2 uses the same true runtime FE shell as its static instances. */
+BOOST_AUTO_TEST_CASE( nedelec2_dynamic_finite_element_matches_static_shell )
+{
+    checkNedelecFiniteElementStaticRuntimeParity<2,0,NedelecKind::NED2>();
+    checkNedelecFiniteElementStaticRuntimeParity<2,1,NedelecKind::NED2>();
+    checkNedelecFiniteElementStaticRuntimeParity<2,2,NedelecKind::NED2>();
+    checkNedelecFiniteElementStaticRuntimeParity<2,3,NedelecKind::NED2>();
+    checkNedelecFiniteElementStaticRuntimeParity<3,0,NedelecKind::NED2>();
+    checkNedelecFiniteElementStaticRuntimeParity<3,1,NedelecKind::NED2>();
+    checkNedelecFiniteElementStaticRuntimeParity<3,2,NedelecKind::NED2>();
+    checkNedelecFiniteElementStaticRuntimeParity<3,3,NedelecKind::NED2>();
 }
 
 BOOST_AUTO_TEST_CASE( public_fe_families_expose_static_and_dynamic_order_traits )

@@ -235,6 +235,132 @@ appendHCurlTriangularFaceMoments( Space const& space,
     }
 }
 
+/**
+ * Append canonical NED2 triangular-face moments against a two-dimensional
+ * Raviart--Thomas polynomial space.
+ *
+ * The RT basis is evaluated in intrinsic face coordinates and mapped to the
+ * tetrahedron face by its contravariant two-dimensional Piola map. The
+ * embedded surface Jacobian cancels between that map and the surface measure,
+ * leaving the intrinsic reference-triangle measure used by shared trace DoFs.
+ *
+ * @tparam Space tetrahedral NED2 primal polynomial space
+ * @tparam ReferenceConvexType reference tetrahedron type
+ * @tparam FaceMomentSpace two-dimensional RT polynomial space
+ * @param space tetrahedral primal space
+ * @param referenceConvex reference tetrahedron
+ * @param moments RT face test space
+ * @param functionals ordered destination dual block
+ */
+template<typename Space, typename ReferenceConvexType, typename FaceMomentSpace>
+void
+appendHCurlTriangularFaceRTMoments(
+    Space const& space,
+    ReferenceConvexType const& referenceConvex,
+    FaceMomentSpace const& moments,
+    std::vector<Functional<Space>>& functionals )
+{
+    static_assert( Space::nDim == 3 );
+    using value_type = typename Space::value_type;
+    const uint16_type quadratureOrder = static_cast<uint16_type>(
+        2*( moments.publicOrder()+4 ) );
+    IMGeneral<3, value_type, Simplex> quadrature( quadratureOrder );
+
+    for ( uint16_type face = 0; face < 4; ++face )
+    {
+        auto const vertices = referenceConvex.faceVertices( face );
+        Eigen::Matrix<value_type,3,1> origin, tangent0, tangent1;
+        for ( int component = 0; component < 3; ++component )
+        {
+            origin( component ) = vertices( component, 0 );
+            tangent0( component ) = vertices( component, 1 )-vertices( component, 0 );
+            tangent1( component ) = vertices( component, 2 )-vertices( component, 0 );
+        }
+        const value_type g00 = tangent0.dot( tangent0 );
+        const value_type g01 = tangent0.dot( tangent1 );
+        const value_type g11 = tangent1.dot( tangent1 );
+        const value_type metricDeterminant = g00*g11-g01*g01;
+        const value_type inverseDeterminant = value_type( 1 )/metricDeterminant;
+        const value_type surfaceJacobian = std::sqrt( metricDeterminant );
+        auto const& points = quadrature.fpoints( face );
+        typename FaceMomentSpace::points_type intrinsicPoints(
+            2, quadrature.nPointsOnFace( face ) );
+        for ( uint16_type q = 0; q < quadrature.nPointsOnFace( face ); ++q )
+        {
+            Eigen::Matrix<value_type,3,1> delta;
+            for ( int component = 0; component < 3; ++component )
+                delta( component ) = points( component, q )-origin( component );
+            const value_type rhs0 = tangent0.dot( delta );
+            const value_type rhs1 = tangent1.dot( delta );
+            const value_type a = ( g11*rhs0-g01*rhs1 )*inverseDeterminant;
+            const value_type b = ( g00*rhs1-g01*rhs0 )*inverseDeterminant;
+            // The tetrahedral face parameterization is unit barycentric,
+            // whereas Feel++ triangle polynomial sets use (-1,-1),
+            // (1,-1), (-1,1).
+            intrinsicPoints( 0, q ) = value_type( -1 )+value_type( 2 )*a;
+            intrinsicPoints( 1, q ) = value_type( -1 )+value_type( 2 )*b;
+        }
+
+        auto const momentValues = moments.evaluate( intrinsicPoints );
+        auto const basisAtPoints = functional::detail::basisEvaluateAtPoints( space, points );
+        for ( uint16_type moment = 0; moment < moments.polynomialDimension(); ++moment )
+        {
+            typename Space::matrix_type coefficients( Space::nComponents,
+                                                       basisAtPoints.size1() );
+            coefficients.clear();
+            for ( uint16_type q = 0; q < quadrature.nPointsOnFace( face ); ++q )
+            {
+                // Contravariant face Piola: J*q/det(J). The intrinsic
+                // integration weight contributes det(J), so only J*q remains.
+                Eigen::Matrix<value_type,3,1> mappedMoment =
+                    tangent0*momentValues( 2*moment, q )+
+                    tangent1*momentValues( 2*moment+1, q );
+                const value_type weight = quadrature.weight( face, q )/surfaceJacobian;
+                for ( uint16_type component = 0; component < 3; ++component )
+                    for ( uint16_type basis = 0; basis < basisAtPoints.size1(); ++basis )
+                        coefficients( component, basis ) += weight*mappedMoment( component )*
+                                                            basisAtPoints( basis, q );
+            }
+            functionals.emplace_back( space, coefficients );
+        }
+    }
+}
+
+/**
+ * Append cell moments against an arbitrary vector polynomial test space.
+ *
+ * Both spaces are tabulated at quadrature points, so the moment polynomial
+ * may use a different ambient orthonormal basis/order from the primal. This
+ * is required by NED2, whose interior RT test space has lower degree than the
+ * full-vector primal space.
+ */
+template<uint16_type Dim, typename Space, typename MomentSpace>
+void
+appendHCurlCellMoments( Space const& space,
+                        MomentSpace const& moments,
+                        uint16_type quadratureOrder,
+                        std::vector<Functional<Space>>& functionals )
+{
+    using value_type = typename Space::value_type;
+    IMGeneral<Dim, value_type, Simplex> quadrature( quadratureOrder );
+    auto const momentValues = moments.evaluate( quadrature.points() );
+    auto const basisAtPoints = functional::detail::basisEvaluateAtPoints(
+        space, quadrature.points() );
+    for ( uint16_type moment = 0; moment < moments.polynomialDimension(); ++moment )
+    {
+        typename Space::matrix_type coefficients( Space::nComponents,
+                                                   basisAtPoints.size1() );
+        coefficients.clear();
+        for ( uint16_type q = 0; q < quadrature.nPoints(); ++q )
+            for ( uint16_type component = 0; component < Space::nComponents; ++component )
+                for ( uint16_type basis = 0; basis < basisAtPoints.size1(); ++basis )
+                    coefficients( component, basis ) += quadrature.weight( q )*
+                        momentValues( Space::nComponents*moment+component, q )*
+                        basisAtPoints( basis, q );
+        functionals.emplace_back( space, coefficients );
+    }
+}
+
 } // namespace Feel::detail
 
 #endif // FEELPP_FEELPOLY_HCURLFUNCTIONALS_HPP

@@ -2628,7 +2628,12 @@ DofTable<MeshType, FEType, MortarType>::initDofMap( mesh_type& M )
         }
     }
 
+    // A dynamic FE exposes a placeholder compile-time order, so the static
+    // `nOrder > 2` predicate cannot decide whether tetrahedral face DoFs need
+    // permutation tables. Generate them from the runtime face cardinality;
+    // `generateFacePermutations()` is a no-op when that cardinality is <= 1.
     constexpr bool doperm = is_hdiv_conforming || is_hcurl_conforming ||
+                            ( is_order_dynamic && nDim == 3 ) ||
                             ( ( ( Shape == SHAPE_TETRA ) && ( nOrder > 2 ) ) ||
                               ( ( Shape == SHAPE_HEXA ) && ( nOrder > 1 ) ) );
     DVLOG(2) << "generateFacePermutations: " << doperm << "\n";
