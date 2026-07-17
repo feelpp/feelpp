@@ -1,26 +1,11 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
- This file is part of the Feel library
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
- Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- Date: 2026-01-02
+    SPDX-FileCopyrightText: 2026 University of Strasbourg
 
- Copyright (C) 2026 Feel++ Consortium
-
- This library is free software; you can redistribute it and/or
- modify it under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation; either
- version 2.1 of the License, or (at your option) any later version.
-
- This library is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
-
- You should have received a copy of the GNU Lesser General Public
- License along with this library; if not, write to the Free Software
- Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- */
+    SPDX-License-Identifier: LGPL-3.0-or-later
+*/
 /**
  * @file concepts.hpp
  * @brief C++20 concepts for Feel++ polynomial spaces and basis functions
@@ -32,6 +17,7 @@
 
 #include <concepts>
 #include <cstddef>
+#include <string_view>
 #include <type_traits>
 
 #include <Eigen/Core>
@@ -45,6 +31,7 @@
 
 #include <feel/feelpoly/traits.hpp>
 #include <feel/feelpoly/order.hpp>
+#include <feel/feelpoly/geometrycoefficients.hpp>
 
 namespace Feel
 {
@@ -236,39 +223,129 @@ concept Tensor2FieldConcept = std::derived_from<std::remove_cvref_t<T>, Tensor2B
 //
 
 /**
+ * @brief Polynomial representation of a geometric mapping.
+ *
+ * A representation defines coefficient semantics and evaluates a scalar
+ * reference basis and its first two derivatives. It is independent of the
+ * physical-space dimension and of consumers of the resulting map.
+ *
+ * @tparam T candidate representation type
+ */
+template <typename T>
+concept GeometryRepresentation =
+    requires( std::remove_cvref_t<T> const& representation,
+              typename std::remove_cvref_t<T>::points_type const& points ) {
+        typename std::remove_cvref_t<T>::value_type;
+        typename std::remove_cvref_t<T>::points_type;
+        typename std::remove_cvref_t<T>::basis_matrix_type;
+        { std::remove_cvref_t<T>::coefficientSemantics() } -> std::convertible_to<geometry::CoefficientSemantics>;
+        { std::remove_cvref_t<T>::dimension() } -> std::convertible_to<int>;
+        { std::remove_cvref_t<T>::supportsSubdivision() } -> std::convertible_to<bool>;
+        { std::remove_cvref_t<T>::supportsConvexHull() } -> std::convertible_to<bool>;
+        { std::remove_cvref_t<T>::name() } -> std::convertible_to<std::string_view>;
+        { representation.order() } -> std::convertible_to<uint16_type>;
+        { representation.coefficientCount() } -> std::convertible_to<size_type>;
+        { representation.basisValues( points ) } -> std::same_as<typename std::remove_cvref_t<T>::basis_matrix_type>;
+        representation.basisGradients( points );
+        representation.basisHessians( points );
+    };
+
+/**
+ * @brief Geometry coefficient table bound to a representation.
+ * @tparam T candidate coefficient-table type
+ */
+template <typename T>
+concept GeometryCoefficients =
+    requires( std::remove_cvref_t<T> const& coefficients ) {
+        typename std::remove_cvref_t<T>::representation_type;
+        typename std::remove_cvref_t<T>::value_type;
+        typename std::remove_cvref_t<T>::matrix_type;
+        requires GeometryRepresentation<
+            typename std::remove_cvref_t<T>::representation_type>;
+        { coefficients.representation() } -> std::same_as<typename std::remove_cvref_t<T>::representation_type const&>;
+        { coefficients.values() } -> std::same_as<typename std::remove_cvref_t<T>::matrix_type const&>;
+        { coefficients.size() } -> std::convertible_to<size_type>;
+    };
+
+/**
  * @brief A geometric mapping (GeoMap-like type).
  */
 template <typename T>
-concept GeometricMappingConcept = requires {
-    typename std::remove_cvref_t<T>::value_type;
-    typename std::remove_cvref_t<T>::convex_type;
-    { std::remove_cvref_t<T>::nDim } -> std::convertible_to<int>;
-    { std::remove_cvref_t<T>::nRealDim } -> std::convertible_to<int>;
-    { std::remove_cvref_t<T>::nOrder } -> std::convertible_to<int>;
-    { std::remove_cvref_t<T>::is_linear } -> std::convertible_to<bool>;
-} && ConvexConcept<typename std::remove_cvref_t<T>::convex_type>;
+concept GeometricMappingConcept =
+    requires( std::remove_cvref_t<T> const& mapping ) {
+        typename std::remove_cvref_t<T>::value_type;
+        typename std::remove_cvref_t<T>::convex_type;
+        { mapping.dim() } -> std::convertible_to<int>;
+        { mapping.realDim() } -> std::convertible_to<int>;
+        { mapping.order() } -> std::convertible_to<uint16_type>;
+        { mapping.isLinear() } -> std::convertible_to<bool>;
+    } && ConvexConcept<typename std::remove_cvref_t<T>::convex_type>;
+
+namespace detail
+{
+/** Return whether a geometric mapping is statically affine. */
+template <typename T>
+[[nodiscard]] consteval bool isStaticallyLinearGeometricMapping()
+{
+    using mapping_type = std::remove_cvref_t<T>;
+    if constexpr ( requires {
+                       mapping_type::is_order_static;
+                       mapping_type::is_linear;
+                   } )
+        return mapping_type::is_order_static && mapping_type::is_linear;
+    else if constexpr ( requires {
+                            mapping_type::isOrderStatic();
+                            mapping_type::isStaticallyLinear();
+                        } )
+        return mapping_type::isOrderStatic() && mapping_type::isStaticallyLinear();
+    else
+        return false;
+}
+
+/** Return whether a geometric mapping can be nonlinear. */
+template <typename T>
+[[nodiscard]] consteval bool isNonLinearGeometricMapping()
+{
+    using mapping_type = std::remove_cvref_t<T>;
+    if constexpr ( requires {
+                       mapping_type::is_order_dynamic;
+                       mapping_type::is_linear;
+                   } )
+        return mapping_type::is_order_dynamic || !mapping_type::is_linear;
+    else if constexpr ( requires {
+                            mapping_type::isOrderStatic();
+                            mapping_type::isStaticallyLinear();
+                        } )
+        return !mapping_type::isOrderStatic() || !mapping_type::isStaticallyLinear();
+    else
+        return false;
+}
+} // namespace detail
 
 /**
  * @brief A linear geometric mapping.
  */
 template <typename T>
-concept LinearGeometricMappingConcept = GeometricMappingConcept<T> && requires {
-    requires std::remove_cvref_t<T>::is_linear;
-};
+concept LinearGeometricMappingConcept =
+    GeometricMappingConcept<T> && detail::isStaticallyLinearGeometricMapping<T>();
 
 /**
  * @brief A nonlinear geometric mapping.
  */
 template <typename T>
-concept NonLinearGeometricMappingConcept = GeometricMappingConcept<T> && requires {
-    requires !std::remove_cvref_t<T>::is_linear;
-};
+concept NonLinearGeometricMappingConcept =
+    GeometricMappingConcept<T> && detail::isNonLinearGeometricMapping<T>();
 
 /**
  * @brief A pointwise geometric-mapping evaluation context.
  *
  * The contract exposes the physical point, Jacobian matrix, inverse Jacobian
  * transpose, and integration Jacobian required by finite-element pullbacks.
+ * It also requires opt-in quality diagnostics and a scale-aware validity
+ * predicate so algorithms can reject singular or inverted mappings without
+ * depending on a concrete context implementation.
+ *
+ * @tparam T geometric-mapping context type
  */
 template <typename T>
 concept GeometricMappingContextConcept =
@@ -277,11 +354,15 @@ concept GeometricMappingContextConcept =
         typename std::remove_cvref_t<T>::value_type;
         requires GeometricMappingConcept<typename std::remove_cvref_t<T>::gm_type>;
         { context.nPoints() } -> std::convertible_to<int>;
-        { context.J( q ) } ->
-            std::convertible_to<typename std::remove_cvref_t<T>::value_type>;
+        { context.J( q ) } -> std::convertible_to<typename std::remove_cvref_t<T>::value_type>;
+        { context.integrationJacobian( q ) } -> std::convertible_to<typename std::remove_cvref_t<T>::value_type>;
         context.K( q );
+        context.jacobianMatrix( q );
         context.B( q );
+        context.inverseJacobianTranspose( q );
         context.xReal( q );
+        context.mappingQuality( q );
+        { context.isValid( q ) } -> std::convertible_to<bool>;
     };
 
 //

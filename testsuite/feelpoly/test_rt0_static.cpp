@@ -374,7 +374,7 @@ checkRtSimplex2d()
 
     rt_t rt;
     BOOST_CHECK_EQUAL( rt.familyName(), "raviartthomas" );
-    BOOST_CHECK_EQUAL( rt.runtimeOrder(), Order + 1 );
+    BOOST_CHECK_EQUAL( rt.runtimeOrder(), Order );
     BOOST_CHECK_EQUAL( rt.localDofPerComponent(), rtSimplex2dDof<Order>() );
     if constexpr ( Order == 0 )
         BOOST_CHECK_EQUAL( rt.nbPoints(), rtSimplex2dDof<Order>() );
@@ -407,7 +407,7 @@ checkRtSimplex3d()
 
     rt_t rt;
     BOOST_CHECK_EQUAL( rt.familyName(), "raviartthomas" );
-    BOOST_CHECK_EQUAL( rt.runtimeOrder(), Order + 1 );
+    BOOST_CHECK_EQUAL( rt.runtimeOrder(), Order );
     BOOST_CHECK_EQUAL( rt.localDofPerComponent(), rtSimplex3dDof<Order>() );
     if constexpr ( Order == 0 )
         BOOST_CHECK_EQUAL( rt.nbPoints(), rtSimplex3dDof<Order>() );
@@ -522,7 +522,7 @@ BOOST_AUTO_TEST_CASE( rt0_2d_compile_time_sanity )
 
     rt0_2d_t rt0;
     BOOST_CHECK_EQUAL( rt0.familyName(), "raviartthomas" );
-    BOOST_CHECK_EQUAL( rt0.runtimeOrder(), 1 );
+    BOOST_CHECK_EQUAL( rt0.runtimeOrder(), 0 );
     BOOST_CHECK_EQUAL( rt0.localDofPerComponent(), 3 );
 
     checkFiniteEvaluationAtNodes( rt0 );
@@ -539,7 +539,7 @@ BOOST_AUTO_TEST_CASE( rt0_3d_compile_time_sanity )
 
     rt0_3d_t rt0;
     BOOST_CHECK_EQUAL( rt0.familyName(), "raviartthomas" );
-    BOOST_CHECK_EQUAL( rt0.runtimeOrder(), 1 );
+    BOOST_CHECK_EQUAL( rt0.runtimeOrder(), 0 );
     BOOST_CHECK_EQUAL( rt0.localDofPerComponent(), 4 );
 
     checkFiniteEvaluationAtNodes( rt0 );

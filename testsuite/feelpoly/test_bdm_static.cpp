@@ -442,7 +442,7 @@ BOOST_AUTO_TEST_CASE( bdm1_2d_compile_time_sanity )
 
     bdm1_2d_t bdm1;
     BOOST_CHECK_EQUAL( bdm1.familyName(), "brezzidouglasmarini" );
-    BOOST_CHECK_EQUAL( bdm1.runtimeOrder(), 1 );
+    BOOST_CHECK_EQUAL( bdm1.runtimeOrder(), 0 );
     BOOST_CHECK_EQUAL( bdm1.localDofPerComponent(), bdm1_2d_t::nLocalDof );
 
     checkFiniteEvaluationAtNodes( bdm1 );
@@ -464,7 +464,7 @@ BOOST_AUTO_TEST_CASE( bdm1_3d_compile_time_sanity )
 
     bdm1_3d_t bdm1;
     BOOST_CHECK_EQUAL( bdm1.familyName(), "brezzidouglasmarini" );
-    BOOST_CHECK_EQUAL( bdm1.runtimeOrder(), 1 );
+    BOOST_CHECK_EQUAL( bdm1.runtimeOrder(), 0 );
     BOOST_CHECK_EQUAL( bdm1.localDofPerComponent(), bdm1_3d_t::nLocalDof );
 
     checkFiniteEvaluationAtNodes( bdm1 );

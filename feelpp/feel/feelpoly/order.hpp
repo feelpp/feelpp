@@ -1,26 +1,11 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
- This file is part of the Feel library
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
- Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- Date: 2026-01-02
+    SPDX-FileCopyrightText: 2026 University of Strasbourg
 
- Copyright (C) 2026 Feel++ Consortium
-
- This library is free software; you can redistribute it and/or
- modify it under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation; either
- version 2.1 of the License, or (at your option) any later version.
-
- This library is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
-
- You should have received a copy of the GNU Lesser General Public
- License along with this library; if not, write to the Free Software
- Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- */
+    SPDX-License-Identifier: LGPL-3.0-or-later
+*/
 /**
  * @file order.hpp
  * @brief Order tags and DOF calculators for static/dynamic orders.
@@ -31,6 +16,7 @@
 #define FEELPP_FEELPOLY_ORDER_HPP 1
 
 #include <cstddef>
+#include <limits>
 #include <stdexcept>
 #include <type_traits>
 
@@ -51,12 +37,16 @@ inline constexpr int Dynamic = -1;
 
 /**
  * @brief Order tag with static value.
+ * @tparam N compile-time polynomial order, or `Dynamic` for runtime order
  */
 template <int N>
 struct order_t
 {
+    /** Compile-time order carried by the tag. */
     static constexpr int value = N;
+    /** Whether this tag denotes runtime order. */
     static constexpr bool is_dynamic = (N == Dynamic);
+    /** Whether this tag denotes compile-time order. */
     static constexpr bool is_static = !is_dynamic;
 };
 
@@ -71,23 +61,38 @@ struct order_t
  */
 struct RuntimeOrder
 {
+    /** Validated non-negative runtime order value. */
     uint16_type value;
 
-    /// Construct from uint16_type
+    /**
+     * @brief Construct from an unsigned order.
+     * @param v non-negative polynomial order
+     */
     constexpr explicit RuntimeOrder( uint16_type v ) noexcept : value( v ) {}
 
-    /// Construct from int (convenience)
-    constexpr explicit RuntimeOrder( int v ) noexcept : value( static_cast<uint16_type>( v ) ) {}
+    /**
+     * @brief Construct from a signed order with range validation.
+     * @param v polynomial order in the `uint16_type` range
+     * @throws std::invalid_argument if `v` is negative or exceeds the storage range
+     */
+    constexpr explicit RuntimeOrder( int v )
+        : value( v >= 0 && v <= std::numeric_limits<uint16_type>::max()
+                     ? static_cast<uint16_type>( v )
+                     : throw std::invalid_argument( "RuntimeOrder is outside uint16_type range" ) )
+    {}
 
-    /// Checked construction from int (rejects negative values)
+    /**
+     * @brief Construct a validated runtime-order tag from a signed integer.
+     * @param v polynomial order in the `uint16_type` range
+     * @return validated runtime-order tag
+     * @throws std::invalid_argument if `v` is outside the supported range
+     */
     [[nodiscard]] static RuntimeOrder checked( int v )
     {
-        if ( v < 0 )
-            throw std::invalid_argument( "RuntimeOrder must be >= 0" );
-        return RuntimeOrder( static_cast<uint16_type>( v ) );
+        return RuntimeOrder( v );
     }
 
-    /// Implicit conversion to uint16_type
+    /** @brief Return the stored order value. */
     [[nodiscard]] constexpr operator uint16_type() const noexcept { return value; }
 };
 
@@ -103,18 +108,31 @@ class OrderBase
     static_assert( Order >= 0, "OrderBase static order must be non-negative" );
 
   public:
+    /** Compile-time polynomial order. */
     static constexpr int nOrder = Order;
+    /** Static-order policies never carry runtime order. */
     static constexpr bool is_order_dynamic = false;
+    /** Static-order policies expose their order at compile time. */
     static constexpr bool is_order_static = true;
 
+    /** @brief Construct the compile-time order policy. */
     constexpr OrderBase() noexcept = default;
+    /**
+     * @brief Accept a runtime tag without changing a compile-time order.
+     *
+     * This overload permits generic policy-based construction while retaining
+     * the compile-time order as the single source of truth.
+     */
     constexpr explicit OrderBase( RuntimeOrder /*unused*/ ) noexcept {}
 
+    /** @brief Return the compile-time order as the common unsigned order type. */
     [[nodiscard]] static constexpr uint16_type staticOrder() noexcept
     {
         return static_cast<uint16_type>( Order );
     }
+    /** @brief Return the effective polynomial order. */
     [[nodiscard]] constexpr uint16_type order() const noexcept { return staticOrder(); }
+    /** @brief Return the effective order through the uniform runtime API. */
     [[nodiscard]] constexpr uint16_type runtimeOrder() const noexcept { return order(); }
 };
 
@@ -125,23 +143,39 @@ template <>
 class OrderBase<Dynamic>
 {
   public:
+    /** Dynamic-order sentinel. */
     static constexpr int nOrder = Dynamic;
+    /** Dynamic policies carry an order in each object. */
     static constexpr bool is_order_dynamic = true;
+    /** Dynamic policies do not expose a concrete compile-time order. */
     static constexpr bool is_order_static = false;
 
+    /** @brief Construct a dynamic policy with order zero. */
     constexpr OrderBase() noexcept = default;
+    /** @brief Construct a dynamic policy from a type-safe runtime order. */
     constexpr explicit OrderBase( RuntimeOrder order ) noexcept : M_runtimeOrder( order ) {}
+    /** @brief Construct a dynamic policy from an unsigned runtime order. */
     constexpr explicit OrderBase( uint16_type order ) noexcept : M_runtimeOrder( order ) {}
+    /**
+     * @brief Construct a dynamic policy from a checked signed order.
+     * @throws std::invalid_argument if `order` is outside the supported range
+     */
     explicit OrderBase( int order ) : M_runtimeOrder( RuntimeOrder::checked( order ) ) {}
 
+    /** @brief Return the effective polynomial order. */
     [[nodiscard]] constexpr uint16_type order() const noexcept { return M_runtimeOrder.value; }
+    /** @brief Return the effective order through the uniform runtime API. */
     [[nodiscard]] constexpr uint16_type runtimeOrder() const noexcept { return order(); }
 
   protected:
+    /** @brief Replace the stored runtime order with a validated tag. */
     constexpr void setOrder( RuntimeOrder order ) noexcept { M_runtimeOrder = order; }
+    /** @brief Replace the stored runtime order from an unsigned value. */
     constexpr void setOrder( uint16_type order ) noexcept { M_runtimeOrder = RuntimeOrder( order ); }
+    /** @brief Replace the stored runtime order from a checked signed value. */
     void setOrderChecked( int order ) { M_runtimeOrder = RuntimeOrder::checked( order ); }
 
+    /** Runtime order carried only by the dynamic specialization. */
     RuntimeOrder M_runtimeOrder{0};
 };
 

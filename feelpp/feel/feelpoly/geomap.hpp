@@ -10,7 +10,7 @@
 /**
  * @file geomap.hpp
  * @brief Geometric mappings, pointwise mapping contexts, and inverse maps.
-*/
+ */
 #ifndef _GEOMAP_H
 #define _GEOMAP_H
 
@@ -24,6 +24,7 @@
 
 #include <Eigen/src/Core/util/DisableStupidWarnings.h>
 #include <Eigen/Core>
+#include <Eigen/SVD>
 #include <Eigen/StdVector>
 #include <Eigen/src/Core/util/ReenableStupidWarnings.h>
 
@@ -33,6 +34,7 @@
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 
@@ -43,6 +45,7 @@
 
 #include <feel/feelcore/feel.hpp>
 
+#include <feel/feelalg/glas.hpp>
 #include <feel/feelalg/iteration.hpp>
 #include <feel/feelalg/lu.hpp>
 #include <feel/feelalg/solvernonlinear.hpp>
@@ -59,22 +62,37 @@
 #include <feel/feelmesh/traits.hpp>
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelpoly/lagrange.hpp>
+#include <feel/feelpoly/geometrynodallagrange.hpp>
 #include <feel/feelpoly/order.hpp>
+#include <feel/feelpoly/piolatransform.hpp>
 
 
 namespace Feel
 {
 /**
- * \enum type of geomap strategy
+ * @enum GeomapStrategyType
+ * @brief Select the geometric mapping used by an integration algorithm.
  */
 enum class GeomapStrategyType
 {
+    /** Let the consumer select its optimized mapping strategy. */
     GEOMAP_OPT = 0,
+    /** Force the affine order-one approximation of the geometry. */
     GEOMAP_O1 = 1,
+    /** Use the full high-order geometry. */
     GEOMAP_HO = 2
 };
 namespace detail
 {
+/**
+ * @brief Normalize a requested mapping strategy for an entity range.
+ * @tparam RangeType mesh-entity range type
+ * @param gs requested mapping strategy
+ * @return the strategy applicable to the range geometry
+ *
+ * An affine mesh has no distinct high-order approximation, so its effective
+ * strategy is normalized to `GEOMAP_HO`.
+ */
 template <typename RangeType>
 GeomapStrategyType
 geomapStrategy( RangeType const& /**/, GeomapStrategyType gs )
@@ -90,6 +108,7 @@ geomapStrategy( RangeType const& /**/, GeomapStrategyType gs )
 //namespace blas = boost::numeric::bindings::blas;
 //namespace traits = boost::numeric::bindings::traits;
 
+/** @brief Tag selecting inverse geometric-mapping operations. */
 struct GeomapInverse
 {
     //GeomapInverse
@@ -103,17 +122,27 @@ template <int O,
 class Lagrange;
 
 /**
- * \class GeoMap
- * \brief Structure for the geometrical mapping
- * \author C. Prud'homme
+ * @class GeoMap
+ * @brief Polynomial mapping from a reference entity to a physical entity.
+ * @author C. Prud'homme
  *
  * This class contains the geometrical transformation that maps the reference
- * element on the current element, and its values on integration points
+ * element on the current element, and its values on integration points.
+ * `Order` may be a positive compile-time order or `Dynamic`; the default is
+ * the affine order-one mapping used by most meshes.
+ *
+ * @tparam Dim topological dimension of the reference entity
+ * @tparam Order polynomial mapping order, defaulting to one
+ * @tparam RealDim dimension of the ambient physical space
+ * @tparam T scalar value type
+ * @tparam Entity reference-entity family, such as `Simplex` or `Hypercube`
+ * @tparam PP legacy scalar polynomial family customization point; the public
+ *            compatibility façade currently requires nodal Lagrange semantics
  *
  */
 template <int Dim,
-          int Order,
-          int RealDim,
+          int Order = 1,
+          int RealDim = Dim,
           typename T = double,
           template <int, int, int> class Entity = Simplex,
           template <int, template <uint16_type RDim> class PolySetType, typename ContinuityType,
@@ -123,6 +152,22 @@ class GeoMap
                                                                                                                                                              //public boost::enable_shared_from_this<GeoMap<Dim, Order, RealDim, T, Entity, PP > >
 //public PP<Order,Scalar, PointSetFekete>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type
 {
+    static_assert( Order == Dynamic || Order >= 1,
+                   "A geometric mapping polynomial order must be at least one" );
+
+    /**
+     * @brief Enforce the positive-order invariant of a geometric mapping.
+     * @param order requested runtime polynomial order
+     * @return the validated order tag
+     * @throws std::invalid_argument if the requested order is zero
+     */
+    [[nodiscard]] static RuntimeOrder validatedGeometryOrder( RuntimeOrder order )
+    {
+        if ( order.value < 1 )
+            throw std::invalid_argument( "GeoMap runtime polynomial order must be at least one" );
+        return order;
+    }
+
     //typedef typename PP<Order, Scalar, PointSetFekete>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type super;
     typedef typename PP<Order, Scalar, Continuous, PointSetEquiSpaced, 0>::template apply<Dim, RealDim /*Dim*/, T, Entity<Dim, Order, /*RealDim*/ Dim>>::result_type super;
 
@@ -165,6 +210,22 @@ class GeoMap
     static constexpr bool is_linear = is_order_dynamic ? false : ( trans == fem::LINEAR );
     
     typedef typename super::value_type value_type;
+
+    /**
+     * @brief Explicit mathematical representation used by the compatibility façade.
+     *
+     * Existing `GeoMap` coefficient tables are physical interpolation nodes;
+     * this alias makes that semantic contract visible to generic geometry code.
+     */
+    using representation_policy_type =
+        geometry::NodalLagrange<Dim,Order,Entity,value_type>;
+    /** Coefficient semantics of the current `GeoMap` compatibility façade. */
+    /** @brief Return the coefficient semantics of the compatibility façade. */
+    [[nodiscard]] static consteval geometry::CoefficientSemantics
+    coefficientSemantics() noexcept
+    {
+        return representation_policy_type::coefficientSemantics();
+    }
 
     typedef typename super::PreCompute precompute_type;
     typedef std::shared_ptr<precompute_type> precompute_ptrtype;
@@ -237,7 +298,7 @@ class GeoMap
 
     /** constructor with runtime order (dynamic order only) */
     explicit GeoMap( RuntimeOrder o ) requires( is_order_dynamic )
-        : super( o ),
+        : super( validatedGeometryOrder( o ) ),
           M_is_cached( false ),
           _elementMap(),
           _boundaryMap(),
@@ -335,6 +396,29 @@ class GeoMap
     ublas::vector<value_type> refNode( uint16_type i ) const
     {
         return ublas::column( this->points(), i );
+    }
+
+    /**
+     * @brief Return the explicit nodal representation policy of this map.
+     *
+     * The policy is constructed from the same reference nodes as the legacy
+     * finite-element base. It supplies representation-neutral evaluation and
+     * exact nodal/Bezier conversion without duplicating `Context` kernels.
+     *
+     * @return nodal-Lagrange representation bound to this map's effective order
+     */
+    [[nodiscard]] representation_policy_type geometryRepresentation() const
+    {
+        typename representation_policy_type::points_type referenceNodes(
+            nDim, this->points().size2() );
+        for ( Eigen::Index q = 0; q < referenceNodes.cols(); ++q )
+            for ( int d = 0; d < nDim; ++d )
+                referenceNodes( d, q ) = this->points()( d, q );
+        if constexpr ( is_order_dynamic )
+            return representation_policy_type(
+                RuntimeOrder{ this->order() }, std::move( referenceNodes ) );
+        else
+            return representation_policy_type( std::move( referenceNodes ) );
     }
 
     /**
@@ -844,6 +928,35 @@ class GeoMap
 
         using hessian_type = tensor3_fixed_size_t<NDim,PDim,PDim,value_type>;
         using vector_hessian_type = vector_tensor3_fixed_size_t<NDim,PDim,PDim,value_type>;
+
+        /**
+         * @brief Pointwise quality diagnostics for a geometric mapping.
+         *
+         * Diagnostics are computed only when explicitly requested and are not
+         * stored in the hot geometric context. Singular values refer to the
+         * physical Jacobian matrix, while `jacobian` is the positive
+         * integration measure and `signed_jacobian` detects orientation for
+         * full-dimensional maps.
+         */
+        struct mapping_quality_type
+        {
+            /** Positive integration measure, equal to `sqrt(det(K^T K))`. */
+            value_type jacobian = std::numeric_limits<value_type>::quiet_NaN();
+            /** Signed determinant for full-dimensional maps; measure otherwise. */
+            value_type signed_jacobian = std::numeric_limits<value_type>::quiet_NaN();
+            /** Smallest singular value of the physical Jacobian matrix. */
+            value_type minimum_singular_value = std::numeric_limits<value_type>::quiet_NaN();
+            /** Largest singular value of the physical Jacobian matrix. */
+            value_type maximum_singular_value = std::numeric_limits<value_type>::quiet_NaN();
+            /** Spectral condition number of the physical Jacobian matrix. */
+            value_type condition_number = std::numeric_limits<value_type>::infinity();
+            /** Whether all mapping inputs used by the diagnostic are finite. */
+            bool finite = false;
+            /** Whether the local map preserves orientation and positive measure. */
+            bool orientation_preserving = false;
+            /** Whether the local map is finite, full-rank, and orientation preserving. */
+            bool valid = false;
+        };
 
         static constexpr bool is_on_face = subEntityCoDim == 1;
 
@@ -1741,13 +1854,28 @@ class GeoMap
          * @param t output tangent
          * @param scaled preserve the reference-edge parametrization when true
          */
-        void
-        edgeTangent( int edgeId, int q, ublas::vector<value_type>& t, bool scaled = false ) const
+        void edgeTangent( int edgeId, int q, ublas::vector<value_type>& t,
+                          bool scaled = false ) const
         {
-            Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,1>> e_t( t.data().begin(), t.size() );
-            e_t = this->K( q ) * M_gm->referenceConvex().tangent( edgeId );
-            if ( !scaled )
-                e_t.normalize();
+            if ( scaled )
+                this->covariantPiolaTangent( edgeId, q, t );
+            else
+                this->physicalUnitEdgeTangent( edgeId, q, t );
+        }
+
+        /**
+         * @brief Return the physical unit tangent of an edge at a point.
+         * @param edgeId local edge index in the element
+         * @param q geometric evaluation-point index
+         * @param tangent output unit tangent
+         */
+        void physicalUnitEdgeTangent( int edgeId, int q,
+                                      ublas::vector<value_type>& tangent ) const
+        {
+            this->covariantPiolaTangent( edgeId, q, tangent );
+            Eigen::Map<Eigen::Matrix<value_type, Eigen::Dynamic, 1>> eigenTangent(
+                tangent.data().begin(), tangent.size() );
+            eigenTangent.normalize();
         }
 
         /**
@@ -1799,51 +1927,28 @@ class GeoMap
          * @param n output normal
          * @param scaled return the Piola-scaled normal when true
          */
-        void
-        faceNormal( int faceId, int q, ublas::vector<value_type>& n, bool scaled = false ) const
+        void faceNormal( int faceId, int q, ublas::vector<value_type>& n,
+                         bool scaled = false ) const
         {
-            Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,1>> e_n( n.data().begin(), n.size() );
-            e_n = this->B( q ) * M_gm->referenceConvex().normal( faceId );
             if ( scaled )
-            {
-                const value_type jacobian = [&]()
-                {
-                    if constexpr ( NDim == PDim )
-                        return math::abs( this->K( q ).determinant() );
-                    else
-                        return this->J( q );
-                }();
-                auto const vertices = M_gm->referenceConvex().faceVertices( faceId );
-                if constexpr ( nDim == 2 )
-                {
-                    value_type squaredLength = 0;
-                    for ( uint16_type c = 0; c < nDim; ++c )
-                    {
-                        const value_type delta = vertices( c, 1 )-vertices( c, 0 );
-                        squaredLength += delta*delta;
-                    }
-                    e_n *= jacobian*std::sqrt( squaredLength );
-                }
-                else if constexpr ( nDim == 3 )
-                {
-                    Eigen::Matrix<value_type,3,1> a, b;
-                    for ( uint16_type c = 0; c < nDim; ++c )
-                    {
-                        a( c ) = vertices( c, 1 )-vertices( c, 0 );
-                        b( c ) = vertices( c, 2 )-vertices( c, 0 );
-                    }
-                    const value_type cx = a( 1 )*b( 2 )-a( 2 )*b( 1 );
-                    const value_type cy = a( 2 )*b( 0 )-a( 0 )*b( 2 );
-                    const value_type cz = a( 0 )*b( 1 )-a( 1 )*b( 0 );
-                    const value_type referenceMeasure = value_type( 0.5 )*
-                        std::sqrt( cx*cx+cy*cy+cz*cz );
-                    e_n *= jacobian*referenceMeasure;
-                }
-                else
-                    e_n *= jacobian;
-            }
+                this->contravariantPiolaNormal( faceId, q, n );
             else
-                e_n.normalize();
+                this->physicalUnitFacetNormal( faceId, q, n );
+        }
+
+        /**
+         * @brief Return the physical unit normal of a facet at a point.
+         * @param faceId local facet index in the element
+         * @param q geometric evaluation-point index
+         * @param normal output unit normal
+         */
+        void physicalUnitFacetNormal( int faceId, int q,
+                                      ublas::vector<value_type>& normal ) const
+        {
+            Eigen::Map<Eigen::Matrix<value_type, Eigen::Dynamic, 1>> eigenNormal(
+                normal.data().begin(), normal.size() );
+            eigenNormal = this->B( q ) * M_gm->referenceConvex().normal( faceId );
+            eigenNormal.normalize();
         }
 
         /**
@@ -1926,22 +2031,123 @@ class GeoMap
         }
 
         /**
+         * @brief Compute pointwise rank, conditioning, orientation, and validity.
+         * @param q geometric evaluation-point index
+         * @param relativeTolerance relative singular-value and Jacobian tolerance
+         * @return opt-in pointwise mapping diagnostics
+         */
+        [[nodiscard]] mapping_quality_type
+        mappingQuality( int q,
+                        value_type relativeTolerance =
+                            value_type( 64 )*std::numeric_limits<value_type>::epsilon() ) const
+        {
+            mapping_quality_type result;
+            auto const& jacobianMatrix = this->K( q );
+            result.jacobian = this->J( q );
+            result.signed_jacobian = this->signedJacobian( q );
+            result.finite = jacobianMatrix.allFinite() &&
+                            std::isfinite( result.jacobian ) &&
+                            std::isfinite( result.signed_jacobian );
+            if ( !result.finite )
+                return result;
+
+            Eigen::JacobiSVD<eigen_matrix_np_type> svd( jacobianMatrix );
+            auto const& singularValues = svd.singularValues();
+            result.maximum_singular_value = singularValues.maxCoeff();
+            result.minimum_singular_value = singularValues.minCoeff();
+            if ( result.minimum_singular_value > value_type( 0 ) )
+                result.condition_number = result.maximum_singular_value/
+                                          result.minimum_singular_value;
+
+            const value_type singularTolerance = relativeTolerance*
+                result.maximum_singular_value;
+            const value_type jacobianScale = std::pow(
+                result.maximum_singular_value, static_cast<int>( PDim ) );
+            const value_type jacobianTolerance = relativeTolerance*jacobianScale;
+            if constexpr ( NDim == PDim )
+                result.orientation_preserving = result.signed_jacobian > jacobianTolerance;
+            else
+                result.orientation_preserving = result.jacobian > jacobianTolerance;
+            result.valid = result.minimum_singular_value > singularTolerance &&
+                           result.orientation_preserving;
+            return result;
+        }
+
+        /** @brief Return the smallest singular value of the Jacobian at `q`. */
+        [[nodiscard]] value_type minimumSingularValue( int q ) const
+        {
+            return this->mappingQuality( q ).minimum_singular_value;
+        }
+
+        /** @brief Return the Jacobian condition number at `q`. */
+        [[nodiscard]] value_type conditionNumber( int q ) const
+        {
+            return this->mappingQuality( q ).condition_number;
+        }
+
+        /** @brief Return the minimum positive integration Jacobian over all points. */
+        [[nodiscard]] value_type minimumJacobian() const
+        {
+            value_type result = std::numeric_limits<value_type>::infinity();
+            for ( int q = 0; q < this->nPoints(); ++q )
+                result = std::min( result, this->J( q ) );
+            return result;
+        }
+
+        /** @brief Return the minimum signed Jacobian over all points. */
+        [[nodiscard]] value_type minimumSignedJacobian() const
+        {
+            value_type result = std::numeric_limits<value_type>::infinity();
+            for ( int q = 0; q < this->nPoints(); ++q )
+                result = std::min( result, this->signedJacobian( q ) );
+            return result;
+        }
+
+        /** @brief Return the maximum signed Jacobian over all points. */
+        [[nodiscard]] value_type maximumSignedJacobian() const
+        {
+            value_type result = -std::numeric_limits<value_type>::infinity();
+            for ( int q = 0; q < this->nPoints(); ++q )
+                result = std::max( result, this->signedJacobian( q ) );
+            return result;
+        }
+
+        /** @brief Return the maximum Jacobian condition number over all points. */
+        [[nodiscard]] value_type maximumConditionNumber() const
+        {
+            value_type result = value_type( 0 );
+            for ( int q = 0; q < this->nPoints(); ++q )
+                result = std::max( result, this->conditionNumber( q ) );
+            return result;
+        }
+
+        /**
          * @brief Check whether the geometric map is finite and non-degenerate.
          * @param q geometric evaluation-point index
-         * @param tolerance strictly positive Jacobian threshold
-         * @return true if `K`, `B`, `J`, and orientation are admissible
+         * @param relativeTolerance scale-aware singular-value and Jacobian tolerance
+         * @return true if the Jacobian is finite, full rank, and orientation preserving
          */
-        [[nodiscard]] bool isValid( int q,
-                                    value_type tolerance = std::numeric_limits<value_type>::epsilon() ) const
+        [[nodiscard]] bool isValid(
+            int q,
+            value_type relativeTolerance =
+                value_type( 64 )*std::numeric_limits<value_type>::epsilon() ) const
         {
-            const value_type jacobian = this->J( q );
-            if ( !std::isfinite( jacobian ) || jacobian <= tolerance ||
-                 !this->K( q ).allFinite() || !this->B( q ).allFinite() )
-                return false;
-            if constexpr ( NDim == PDim )
-                return this->signedJacobian( q ) > tolerance;
-            else
-                return true;
+            return this->mappingQuality( q, relativeTolerance ).valid;
+        }
+
+        /**
+         * @brief Check every evaluation point with a scale-aware tolerance.
+         * @param relativeTolerance relative singular-value and Jacobian tolerance
+         * @return true if every point is finite, full rank, and orientation preserving
+         */
+        [[nodiscard]] bool isValid(
+            value_type relativeTolerance =
+                value_type( 64 )*std::numeric_limits<value_type>::epsilon() ) const
+        {
+            for ( int q = 0; q < this->nPoints(); ++q )
+                if ( !this->isValid( q, relativeTolerance ) )
+                    return false;
+            return this->nPoints() > 0;
         }
 
         /**
@@ -2111,7 +2317,7 @@ class GeoMap
                     M_hessian_basis_at_pt, contraction );
             }
             M_mapping_hessian_current = true;
-            }
+        }
 
         FEELPP_STRONG_INLINE
         void updateMeasures() noexcept
@@ -2530,7 +2736,6 @@ class GeoMap
                             }
                         }
                     }
-
 
                     if constexpr ( IsOnFace )
                     {
