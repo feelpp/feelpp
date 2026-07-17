@@ -1,29 +1,19 @@
-//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-//!
-//! This file is part of the Feel++ library
-//!
-//! This library is free software; you can redistribute it and/or
-//! modify it under the terms of the GNU Lesser General Public
-//! License as published by the Free Software Foundation; either
-//! version 2.1 of the License, or (at your option) any later version.
-//!
-//! This library is distributed in the hope that it will be useful,
-//! but WITHOUT ANY WARRANTY; without even the implied warranty of
-//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//! Lesser General Public License for more details.
-//!
-//! You should have received a copy of the GNU Lesser General Public
-//! License along with this library; if not, write to the Free Software
-//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-//!
-//! @file
-//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-//! @date 22 Oct 2017
-//! @copyright 2017 Feel++ Consortium
-//!
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+
+    SPDX-FileCopyrightText: 2026 University of Strasbourg
+
+    SPDX-License-Identifier: LGPL-3.0-or-later
+*/
+/**
+ * @file localization.hpp
+ * @brief Physical-to-reference point localization on finite-element meshes.
+ */
 #ifndef FEELPP_LOCALIZATION_HPP
 #define FEELPP_LOCALIZATION_HPP 1
 
+#include <type_traits>
 
 
 namespace Feel {
@@ -307,6 +297,27 @@ public:
                                                                 const size_type & eltHypothetical,
                                                                 const matrix_node_type & setPoints,
                                                                 mpl::int_<1> /**/);
+
+        /**
+         * @brief Localize points with a standard compile-time conformity tag.
+         *
+         * @tparam Conforming whether candidate vertices must belong to the
+         * localized element
+         *
+         * This C++20-facing overload preserves the established localization
+         * implementation while allowing clients to avoid Boost.MPL dispatch
+         * tags.
+         */
+        template <bool Conforming>
+        boost::tuple<std::vector<bool>, size_type>
+        run_analysis( const matrix_node_type& m,
+                      const size_type& eltHypothetical,
+                      const matrix_node_type& setPoints,
+                      std::bool_constant<Conforming> )
+        {
+            return run_analysis( m, eltHypothetical, setPoints,
+                                 mpl::int_<Conforming>{} );
+        }
 
         //! ---------------------------------------------------------------
          //!  Reset all data

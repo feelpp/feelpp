@@ -18,11 +18,57 @@
 #include <Eigen/Core>
 
 #include <feel/feelcore/feeltypes.hpp>
+#include <feel/feelpoly/piolatransform.hpp>
 #include <feel/feelpoly/pointsetquadrature.hpp>
 #include <feel/feelpoly/hcurlmomentpolicy.hpp>
 
 namespace Feel::detail
 {
+
+/**
+ * @brief Present one FE test-basis row as an ordinary interpolation expression.
+ *
+ * Finite-element dual kernels operate on `evalq`, whereas interpolation-matrix
+ * assembly evaluates every domain test basis through `evaliq`. This zero-copy
+ * adapter lets both operations share exactly the same edge/face/cell
+ * functional kernels for static and runtime cardinalities.
+ */
+template<typename BasisExpression>
+class HCurlBasisExpressionRow
+{
+public:
+    using expression_type = std::remove_reference_t<BasisExpression>;
+    using shape = typename expression_type::shape;
+
+    /** Construct a view of one flattened test-basis row. */
+    HCurlBasisExpressionRow( expression_type& expression, uint16_type row )
+        : M_expression( expression ), M_row( row )
+    {}
+
+    /** Return the mapped geometry context owned by the expression. */
+    [[nodiscard]] decltype(auto) geom() const { return M_expression.geom(); }
+    /** Return the number of functional support/quadrature samples. */
+    [[nodiscard]] int nPoints() const { return M_expression.nPoints(); }
+    /** Evaluate the selected test-basis row at one sample and component. */
+    [[nodiscard]] decltype(auto) evalq( uint16_type c1,
+                                        uint16_type c2,
+                                        uint16_type q ) const
+    {
+        return M_expression.evaliq( M_row, c1, c2, q );
+    }
+
+private:
+    expression_type& M_expression;
+    uint16_type M_row;
+};
+
+/** Construct a zero-copy H(curl) test-basis row expression. */
+template<typename BasisExpression>
+[[nodiscard]] auto
+hcurlBasisExpressionRow( BasisExpression& expression, uint16_type row )
+{
+    return HCurlBasisExpressionRow<BasisExpression>( expression, row );
+}
 
 /**
  * Apply edge-tangential point DoFs to an expression.
@@ -93,18 +139,18 @@ hcurlInteriorMomentIntegrand( Expr const& expression,
     using value_type = std::decay_t<decltype( expression.evalq( 0, 0, expressionPoint ) )>;
     value_type result = 0;
 
-    if constexpr ( requires { expression.geom()->K( expressionPoint ); } )
+    if constexpr ( requires { expression.geom()->jacobianMatrix( expressionPoint ); } )
     {
-        auto const& jacobian = expression.geom()->K( expressionPoint );
-        for ( int physicalComponent = 0; physicalComponent < componentCount; ++physicalComponent )
-        {
-            value_type transformedTest = 0;
-            for ( int referenceComponent = 0; referenceComponent < componentCount; ++referenceComponent )
-                transformedTest += jacobian( physicalComponent, referenceComponent ) *
-                                   polynomialValues( componentCount * polynomialIndex + referenceComponent,
-                                                     quadraturePoint );
-            result += expression.evalq( physicalComponent, 0, expressionPoint ) * transformedTest;
-        }
+        result = geometry::covariantPiolaDualPairing(
+            expression.geom()->jacobianMatrix( expressionPoint ),
+            [&]( int component )
+            { return expression.evalq( component, 0, expressionPoint ); },
+            [&]( int component )
+            {
+                return polynomialValues(
+                    componentCount * polynomialIndex + component, quadraturePoint );
+            },
+            componentCount, componentCount );
     }
     else
     {
@@ -197,14 +243,11 @@ interpolateHCurlTriangularFaceMoments(
                     const uint32_type expressionPoint = expressionPointOffset+q;
 
                     Eigen::Matrix<value_type,3,1> testTangent = referenceTangent;
-                    if constexpr ( requires { expression.geom()->K( expressionPoint ); } )
+                    if constexpr ( requires { expression.geom()->jacobianMatrix( expressionPoint ); } )
                     {
-                        auto const& jacobian = expression.geom()->K( expressionPoint );
-                        testTangent.setZero();
-                        for ( int physical = 0; physical < 3; ++physical )
-                            for ( int reference = 0; reference < 3; ++reference )
-                                testTangent( physical ) +=
-                                    jacobian( physical, reference )*referenceTangent( reference );
+                        testTangent = geometry::covariantPiolaTestDirection(
+                            expression.geom()->jacobianMatrix( expressionPoint ),
+                            referenceTangent );
                     }
                     value_type tangentialValue = 0;
                     for ( int component = 0; component < 3; ++component )
@@ -289,14 +332,11 @@ interpolateHCurlTriangularFaceRTMoments(
                 tangent1*momentValues( 2*moment+1, q );
             Eigen::Matrix<value_type,3,1> physicalMoment = referenceMoment;
             const uint32_type expressionPoint = expressionPointOffset+q;
-            if constexpr ( requires { expression.geom()->K( expressionPoint ); } )
+            if constexpr ( requires { expression.geom()->jacobianMatrix( expressionPoint ); } )
             {
-                auto const& jacobian = expression.geom()->K( expressionPoint );
-                physicalMoment.setZero();
-                for ( int physical = 0; physical < 3; ++physical )
-                    for ( int reference = 0; reference < 3; ++reference )
-                        physicalMoment( physical ) +=
-                            jacobian( physical, reference )*referenceMoment( reference );
+                physicalMoment = geometry::covariantPiolaTestDirection(
+                    expression.geom()->jacobianMatrix( expressionPoint ),
+                    referenceMoment );
             }
             value_type value = 0;
             for ( int component = 0; component < 3; ++component )

@@ -2417,40 +2417,20 @@ public:
 
         }
 
-    template<typename ExprType,
-             std::enable_if_t< std::decay_t<ExprType>::gmc_type::subEntityCoDim == 0 ,bool> = true >
+    template<typename ExprType>
+        requires ( std::remove_cvref_t<ExprType>::gmc_type::subEntityCoDim == 0 )
     void
     interpolateBasisFunction( ExprType&& expr, local_interpolants_type& Ihloc ) const
     {
-        using shape = typename std::decay_t<ExprType>::shape;
-        using expr_basis_t = typename std::decay_t<ExprType>::expr_type::test_basis;
         Ihloc.setZero();
-
-        int nPoints = expr.nPoints();
-
-
-        for( int e = 0; e < convex_type::numEdges; ++e )
+        const uint16_type rowCount = static_cast<uint16_type>( Ihloc.rows() );
+        CHECK_EQ( Ihloc.cols(), nLocalDof );
+        for ( uint16_type row = 0; row < rowCount; ++row )
         {
-            for ( int l = 0; l < nDofPerEdge; ++l )
-            {
-                int q = e*nDofPerEdge+l;
-                expr.geom()->covariantPiolaTangent( e, q, t );
-                CHECK( q < nPoints) << "worng point eval" << q << " vs " << nPoints;
-
-                for( int i = 0; i < expr_basis_t::nLocalDof; ++i )
-                {
-                    int ncomp= ( expr_basis_t::is_product?expr_basis_t::nComponents1:1 );
-
-                    for ( uint16_type c = 0; c < ncomp; ++c )
-                    {
-                        uint16_type I = expr_basis_t::nLocalDof*c + i;
-                        for( int c1 = 0; c1 < shape::M; ++c1 )
-                        {
-                            Ihloc(I,q) += expr.evaliq( I, c1, 0, q )*t(c1);
-                        }
-                    }
-                }
-            }
+            auto rowExpression = Feel::detail::hcurlBasisExpressionRow( expr, row );
+            auto rowValues = this->localInterpolant();
+            this->interpolate( rowExpression, rowValues );
+            Ihloc.row( row ) = rowValues.transpose();
         }
     }
 
@@ -2462,8 +2442,8 @@ public:
             return this->interpolateBasisFunction( std::forward<ExprType>( expr ), Ihloc );
         }
 
-    template<typename ExprType,
-             std::enable_if_t< std::decay_t<ExprType>::gmc_type::subEntityCoDim == 1 ,bool> = true >
+    template<typename ExprType>
+        requires ( std::remove_cvref_t<ExprType>::gmc_type::subEntityCoDim == 1 )
     void
     interpolateBasisFunction( ExprType&& expr, local_interpolants_type& Ihloc ) const
     {
@@ -2885,6 +2865,30 @@ public:
                     sampling.cellFirstDof, sampling.cellPointOffset,
                     sampling.cellMomentCount, nComponents );
             }
+        }
+    }
+
+    /**
+     * @brief Apply all runtime Nedelec dual functionals to domain basis rows.
+     *
+     * Matrix assembly and ordinary interpolation share `interpolate()`, so
+     * edge, face, and cell moments have one static/runtime implementation.
+     */
+    template<typename ExprType>
+        requires ( std::remove_cvref_t<ExprType>::gmc_type::subEntityCoDim == 0 )
+    void interpolateBasisFunction( ExprType&& expression,
+                                   local_interpolants_type& localMatrix ) const
+    {
+        localMatrix.setZero();
+        const uint16_type rowCount = static_cast<uint16_type>( localMatrix.rows() );
+        CHECK_EQ( localMatrix.cols(), runtimeLocalDof() );
+        for ( uint16_type row = 0; row < rowCount; ++row )
+        {
+            auto rowExpression =
+                Feel::detail::hcurlBasisExpressionRow( expression, row );
+            auto rowValues = this->localInterpolant();
+            this->interpolate( rowExpression, rowValues );
+            localMatrix.row( row ) = rowValues.transpose();
         }
     }
 

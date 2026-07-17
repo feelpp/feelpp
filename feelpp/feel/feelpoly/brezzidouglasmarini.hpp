@@ -1,25 +1,10 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-  This file is part of the Feel library
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2026-02-18
+    SPDX-FileCopyrightText: 2026 University of Strasbourg
 
-  Copyright (C) 2026 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    SPDX-License-Identifier: LGPL-3.0-or-later
 */
 /**
    \file brezzidouglasmarini.hpp
@@ -961,6 +946,26 @@ public:
         }
     }
 
+
+    /** Apply every static BDM dual functional to domain basis rows. */
+    template<typename ExprType>
+    void interpolateBasisFunction( ExprType&& expression,
+                                   local_interpolants_type& localMatrix ) const
+    {
+        localMatrix.setZero();
+        const uint16_type rowCount =
+            static_cast<uint16_type>( localMatrix.rows() );
+        CHECK_EQ( localMatrix.cols(), nLocalDof );
+        for ( uint16_type row = 0; row < rowCount; ++row )
+        {
+            auto rowExpression =
+                Feel::detail::hdivBasisExpressionRow( expression, row );
+            auto rowValues = this->localInterpolant();
+            this->interpolate( rowExpression, rowValues );
+            localMatrix.row( row ) = rowValues.transpose();
+        }
+    }
+
     local_interpolant_type faceLocalInterpolant() const
     {
         return local_interpolant_type::Zero( nLocalFaceDof, 1 );
@@ -1331,6 +1336,26 @@ public:
                     Ihloc( dof ) += im.weight( q ) * scal;
                 }
             }
+        }
+    }
+
+
+    /** Apply every runtime BDM dual functional to domain basis rows. */
+    template<typename ExprType>
+    void interpolateBasisFunction( ExprType&& expression,
+                                   local_interpolants_type& localMatrix ) const
+    {
+        localMatrix.setZero();
+        const uint16_type rowCount =
+            static_cast<uint16_type>( localMatrix.rows() );
+        CHECK_EQ( localMatrix.cols(), runtimeLocalDof() );
+        for ( uint16_type row = 0; row < rowCount; ++row )
+        {
+            auto rowExpression =
+                Feel::detail::hdivBasisExpressionRow( expression, row );
+            auto rowValues = this->localInterpolant();
+            this->interpolate( rowExpression, rowValues );
+            localMatrix.row( row ) = rowValues.transpose();
         }
     }
 

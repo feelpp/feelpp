@@ -10,10 +10,56 @@
 #ifndef FEELPP_FEELPOLY_HDIVINTERPOLATION_HPP
 #define FEELPP_FEELPOLY_HDIVINTERPOLATION_HPP 1
 
+#include <feel/feelpoly/piolatransform.hpp>
+
 #include <type_traits>
 
 namespace Feel::detail
 {
+
+/**
+ * @brief Present one FE test-basis row as an ordinary H(div) expression.
+ *
+ * This adapter lets interpolation-matrix assembly reuse the same normal and
+ * interior-moment kernels as ordinary RT/BDM interpolation, with runtime
+ * cardinalities taken from the destination Eigen matrix.
+ */
+template<typename BasisExpression>
+class HDivBasisExpressionRow
+{
+public:
+    using expression_type = std::remove_reference_t<BasisExpression>;
+    using shape = typename expression_type::shape;
+
+    /** Construct a view of one flattened test-basis row. */
+    HDivBasisExpressionRow( expression_type& expression, uint16_type row )
+        : M_expression( expression ), M_row( row )
+    {}
+
+    /** Return the mapped geometry context owned by the expression. */
+    [[nodiscard]] decltype(auto) geom() const { return M_expression.geom(); }
+    /** Return the number of functional support/quadrature samples. */
+    [[nodiscard]] int nPoints() const { return M_expression.nPoints(); }
+    /** Evaluate the selected test-basis row at one sample and component. */
+    [[nodiscard]] decltype(auto) evalq( uint16_type c1,
+                                        uint16_type c2,
+                                        uint16_type q ) const
+    {
+        return M_expression.evaliq( M_row, c1, c2, q );
+    }
+
+private:
+    expression_type& M_expression;
+    uint16_type M_row;
+};
+
+/** Construct a zero-copy H(div) test-basis row expression. */
+template<typename BasisExpression>
+[[nodiscard]] auto
+hdivBasisExpressionRow( BasisExpression& expression, uint16_type row )
+{
+    return HDivBasisExpressionRow<BasisExpression>( expression, row );
+}
 
 /**
  * @brief Apply facet-normal point DoFs to an expression.
@@ -25,7 +71,7 @@ namespace Feel::detail
  * @tparam ExprType expression evaluated at functional support points
  * @tparam LocalVectorType mutable local coefficient vector
  * @tparam NormalType reusable normal-vector storage
- * @tparam NormalProviderType callable providing the physical scaled normal
+ * @tparam NormalProviderType callable providing the physical Piola cofactor normal
  * @param expr expression to interpolate
  * @param localValues destination local coefficients
  * @param facetCount number of facets in the traversed entity
@@ -93,19 +139,22 @@ hdivInteriorMomentIntegrand( ExprType const& expr,
     using value_type = std::decay_t<decltype( expr.evalq( 0, 0, expressionPoint ) )>;
     value_type result = 0;
 
-    if constexpr ( requires { expr.geom()->B( expressionPoint ); expr.geom()->J( expressionPoint ); } )
+    if constexpr ( requires {
+                       expr.geom()->inverseJacobianTranspose( expressionPoint );
+                       expr.geom()->integrationJacobian( expressionPoint );
+                   } )
     {
-        auto const& inverseJacobianTranspose = expr.geom()->B( expressionPoint );
-        for ( int physicalComponent = 0; physicalComponent < nComponents; ++physicalComponent )
-        {
-            value_type transformedTest = 0;
-            for ( int referenceComponent = 0; referenceComponent < nComponents; ++referenceComponent )
-                transformedTest += inverseJacobianTranspose( physicalComponent, referenceComponent ) *
-                                   polynomialValues( nComponents * polynomialIndex + referenceComponent,
-                                                     quadraturePoint );
-            result += expr.evalq( physicalComponent, 0, expressionPoint ) * transformedTest;
-        }
-        result *= expr.geom()->J( expressionPoint );
+        result = geometry::contravariantPiolaDualPairing(
+            expr.geom()->inverseJacobianTranspose( expressionPoint ),
+            expr.geom()->integrationJacobian( expressionPoint ),
+            [&]( int component )
+            { return expr.evalq( component, 0, expressionPoint ); },
+            [&]( int component )
+            {
+                return polynomialValues(
+                    nComponents * polynomialIndex + component, quadraturePoint );
+            },
+            nComponents, nComponents );
     }
     else
     {

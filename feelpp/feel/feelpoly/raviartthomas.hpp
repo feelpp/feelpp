@@ -1,26 +1,10 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-  This file is part of the Feel library
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2006-01-14
+    SPDX-FileCopyrightText: 2026 University of Strasbourg
 
-  Copyright (C) 2006 EPFL
-  Copyright (C) 2008, 2009 Université de Grenoble 1 (Joseph Fourier)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    SPDX-License-Identifier: LGPL-3.0-or-later
 */
 /**
    \file raviartthomas.hpp
@@ -1122,38 +1106,16 @@ public:
     void
     interpolateBasisFunction( ExprType& expr, local_interpolants_type& Ihloc ) const
     {
-        using shape = typename std::decay_t<ExprType>::shape;
-        using expr_basis_t = typename std::decay_t<ExprType>::expr_type::test_basis;
-
         Ihloc.setZero();
-        auto g=expr.geom();
-
-        for( int f = 0; f < convex_type::numTopologicalFaces; ++f )
+        const uint16_type rowCount = static_cast<uint16_type>( Ihloc.rows() );
+        CHECK_EQ( Ihloc.cols(), nLocalDof );
+        for ( uint16_type row = 0; row < rowCount; ++row )
         {
-            auto nLocalDof = (nDim==2) ? nDofPerEdge : nDofPerFace;
-            for ( int l = 0; l < nLocalDof; ++l )
-            {
-                int q = (nDim == 2) ? f*nDofPerEdge+l : f*nDofPerFace+l;
-                const uint16_type elementFacet = g->faceId() == invalid_uint16_type_value
-                    ? f : g->faceId();
-                expr.geom()->contravariantPiolaNormal( elementFacet, q, n );
-                for( int i = 0; i < expr_basis_t::nLocalDof; ++i )
-                {
-                    int ncomp= ( expr_basis_t::is_product?expr_basis_t::nComponents1:1 );
-
-                    for ( uint16_type c = 0; c < ncomp; ++c )
-                    {
-                        uint16_type I = expr_basis_t::nLocalDof*c + i;
-
-                        for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                        {
-                            Ihloc(I,q) += expr.evaliq( I, c1, 0, q )*n(c1);
-                        }
-                    }
-                }
-            }
+            auto rowExpression = Feel::detail::hdivBasisExpressionRow( expr, row );
+            auto rowValues = this->localInterpolant();
+            this->interpolate( rowExpression, rowValues );
+            Ihloc.row( row ) = rowValues.transpose();
         }
-
     }
 
     template<typename ExprType>
@@ -1663,6 +1625,25 @@ public:
                     Ihloc( dof ) += im.weight( q ) * scal;
                 }
             }
+        }
+    }
+
+    /** Apply all runtime RT dual functionals to domain test-basis rows. */
+    template<typename ExprType>
+        requires ( std::remove_cvref_t<ExprType>::gmc_type::subEntityCoDim == 0 )
+    void interpolateBasisFunction( ExprType&& expression,
+                                   local_interpolants_type& localMatrix ) const
+    {
+        localMatrix.setZero();
+        const uint16_type rowCount = static_cast<uint16_type>( localMatrix.rows() );
+        CHECK_EQ( localMatrix.cols(), runtimeLocalDof() );
+        for ( uint16_type row = 0; row < rowCount; ++row )
+        {
+            auto rowExpression =
+                Feel::detail::hdivBasisExpressionRow( expression, row );
+            auto rowValues = this->localInterpolant();
+            this->interpolate( rowExpression, rowValues );
+            localMatrix.row( row ) = rowValues.transpose();
         }
     }
 
