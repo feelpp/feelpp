@@ -49,6 +49,7 @@
 #include <feel/feelpoly/quadmapped.hpp>
 #include <feel/feelpoly/hdivpolynomialset.hpp>
 #include <feel/feelpoly/hcurlpolynomialset.hpp>
+#include <feel/feelpoly/piolatransform.hpp>
 #include <feel/feelpoly/meta.hpp>
 #include <feel/feelpoly/order.hpp>
 #include <feel/feelpoly/traits.hpp>

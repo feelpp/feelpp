@@ -1,23 +1,15 @@
-/*
-  This file is part of the Feel library
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-  Copyright (C) 2001,2002,2003,2004 EPFL, INRIA and Politechnico di Milano
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2006-2010 Université Joseph Fourier Grenoble 1
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+    SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+    
+    SPDX-FileCopyrightText: 2026 University of Strasbourg
 
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    SPDX-License-Identifier: LGPL-3.0-or-later
+*/
+/**
+ * @file geomap.hpp
+ * @brief Geometric mappings, pointwise mapping contexts, and inverse maps.
 */
 #ifndef _GEOMAP_H
 #define _GEOMAP_H
@@ -777,10 +769,15 @@ class GeoMap
     }
 
     /**
-     * \class Context
+     * @class Context
+     * @brief Pointwise differential geometry of a mapped element or subentity.
      *
-     * Context for the geometric mapping depend on a node in the
-     * reference element
+     * A context combines an element geometry with precomputed reference basis
+     * data and evaluates the physical points and requested differential
+     * quantities used by integration and finite-element transformations.
+     *
+     * @tparam ElementType geometric entity supplying physical coefficients
+     * @tparam SubEntityCoDim codimension of the evaluated subentity
      */
     template <typename ElementType, int SubEntityCoDim = 0>
     class Context
@@ -1207,6 +1204,12 @@ class GeoMap
             else
                 return M_J[q];
         }
+
+        /** @brief Return the positive integration Jacobian at point `q`. */
+        [[nodiscard]] value_type integrationJacobian( int q ) const
+        {
+            return this->J( q );
+        }
         /**
          * \return the matrix associated with the geometric nodes
          */
@@ -1229,6 +1232,12 @@ class GeoMap
                 return M_B[0];
             else
                 return M_B[q];
+        }
+
+        /** @brief Return the inverse Jacobian transpose (or pseudoinverse transpose). */
+        [[nodiscard]] eigen_matrix_np_type const& inverseJacobianTranspose( int q ) const
+        {
+            return this->B( q );
         }
         [[nodiscard]] value_type const& B( int c1, int c2, int q ) const
         {
@@ -1289,6 +1298,12 @@ class GeoMap
             else
                 return M_K[q];
         }
+
+        /** @brief Return the physical Jacobian matrix at point `q`. */
+        [[nodiscard]] eigen_matrix_np_type const& jacobianMatrix( int q ) const
+        {
+            return this->K( q );
+        }
         [[nodiscard]] vector_eigen_matrix_np_type const& K() const
             requires ( !is_linear )
         {
@@ -1304,10 +1319,8 @@ class GeoMap
 
         [[nodiscard]] hessian_type const& hessian( int q ) const
         {
-            if constexpr ( is_linear )
-                return M_hessian[0];
-            else
-                return M_hessian[q];
+            this->ensureMappingHessian( q );
+            return M_hessian[is_linear ? 0 : q];
         }
 
         /**
@@ -1746,7 +1759,10 @@ class GeoMap
         void covariantPiolaTangent( int edgeId, int q,
                                     ublas::vector<value_type>& tangent ) const
         {
-            this->edgeTangent( edgeId, q, tangent, true );
+            Eigen::Map<Eigen::Matrix<value_type, Eigen::Dynamic, 1>> eigenTangent(
+                tangent.data().begin(), tangent.size() );
+            eigenTangent = geometry::covariantPiolaTestDirection(
+                this->K( q ), M_gm->referenceConvex().tangent( edgeId ) );
         }
 
         /**
@@ -1844,7 +1860,51 @@ class GeoMap
         void contravariantPiolaNormal( int faceId, int q,
                                        ublas::vector<value_type>& normal ) const
         {
-            this->faceNormal( faceId, q, normal, true );
+            value_type referenceMeasure = value_type( 1 );
+            auto const vertices = M_gm->referenceConvex().faceVertices( faceId );
+            if constexpr ( nDim == 2 )
+            {
+                value_type squaredLength = 0;
+                for ( uint16_type component = 0; component < nDim; ++component )
+                {
+                    value_type const delta =
+                        vertices( component, 1 ) - vertices( component, 0 );
+                    squaredLength += delta * delta;
+                }
+                referenceMeasure = std::sqrt( squaredLength );
+            }
+            else if constexpr ( nDim == 3 )
+            {
+                Eigen::Matrix<value_type, 3, 1> first, second;
+                for ( uint16_type component = 0; component < nDim; ++component )
+                {
+                    first( component ) = vertices( component, 1 ) -
+                                         vertices( component, 0 );
+                    second( component ) = vertices( component, 2 ) -
+                                          vertices( component, 0 );
+                }
+                value_type const crossX =
+                    first( 1 ) * second( 2 ) - first( 2 ) * second( 1 );
+                value_type const crossY =
+                    first( 2 ) * second( 0 ) - first( 0 ) * second( 2 );
+                value_type const crossZ =
+                    first( 0 ) * second( 1 ) - first( 1 ) * second( 0 );
+                referenceMeasure = value_type( 0.5 ) *
+                                   std::sqrt( crossX * crossX + crossY * crossY +
+                                              crossZ * crossZ );
+            }
+            value_type const jacobian = [&]()
+            {
+                if constexpr ( NDim == PDim )
+                    return math::abs( this->K( q ).determinant() );
+                else
+                    return this->J( q );
+            }();
+            Eigen::Map<Eigen::Matrix<value_type, Eigen::Dynamic, 1>> eigenNormal(
+                normal.data().begin(), normal.size() );
+            eigenNormal = geometry::contravariantPiolaTestDirection(
+                this->B( q ), jacobian,
+                M_gm->referenceConvex().normal( faceId ), referenceMeasure );
         }
 
         /**
@@ -1989,6 +2049,7 @@ class GeoMap
             {
                 DCHECK( M_G.cols() == M_gm->nbPoints()  ) << "Invalid number of points got " << M_G.cols() << " expected: " << M_gm->nbPoints();
                 DCHECK( M_pc ) << "invalid precompute data structure";
+                M_mapping_hessian_current = false;
 
                 if constexpr ( vm::has_point_v<CTX> )
                 {
@@ -2028,6 +2089,28 @@ class GeoMap
         void updateGradient( int q ) noexcept
             {
                 M_gm->gradient( q, M_g, M_pc.get() );
+            }
+
+        /** Compute and cache geometry Hessians independently of context bits. */
+        void ensureMappingHessian( int requestedPoint ) const
+        {
+            (void)requestedPoint;
+            if ( M_mapping_hessian_current )
+                return;
+
+            const uint16_type computedPoints = nComputedPoints();
+            M_hessian.resize( computedPoints );
+            tensor_map_t<2,value_type> geometryPoints(
+                M_G.data(), M_G.rows(), M_G.cols() );
+            Eigen::array<dimpair_t, 1> contraction = {{dimpair_t(1, 0)}};
+            for ( uint16_type q = 0; q < computedPoints; ++q )
+            {
+                M_gm->hessianBasisAtPoint(
+                    q, M_hessian_basis_at_pt, M_pc.get() );
+                M_hessian[q] = geometryPoints.contract(
+                    M_hessian_basis_at_pt, contraction );
+            }
+            M_mapping_hessian_current = true;
             }
 
         FEELPP_STRONG_INLINE
@@ -2577,13 +2660,14 @@ class GeoMap
 
         //matrix_type M_g_linear;
         matrix_type M_g;
-        hessian_basis_type M_hessian_basis_at_pt;
+        mutable hessian_basis_type M_hessian_basis_at_pt;
         
         vector_eigen_matrix_np_type M_K;
         eigen_matrix_pp_type M_CS;
         eigen_matrix_pp_type M_CSi;
         vector_eigen_matrix_np_type M_B;
-        vector_hessian_type M_hessian;
+        mutable vector_hessian_type M_hessian;
+        mutable bool M_mapping_hessian_current = false;
         vector_eigen_matrix_nn_type M_Ptangent;
         
         boost::multi_array<value_type, 4> M_B3;

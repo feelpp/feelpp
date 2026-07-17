@@ -521,13 +521,37 @@ updateGrad( geometric_mapping_context_type* thegmc, rank_t<1> )
 
             if constexpr ( is_hdiv_conforming )
             {
-                auto v = (*M_gradphi)[i][q].contract(B,dims1);
-                gradiq.reshape( tensorGradShapeAfterContract ) = K.contract(v,dims2)/thegmc->J(q);
+                Eigen::Map<const Eigen::Matrix<value_type, nComponents1, 1>>
+                    referenceValue( (*M_pc)->phi(i,q).data() );
+                Eigen::Map<const Eigen::Matrix<value_type, nComponents1, PDim>>
+                    referenceGradient( (*M_gradphi)[i][q].data() );
+                auto const physicalGradient = geometry::contravariantPiolaGradient(
+                    thegmc->K( q ), thegmc->B( q ), thegmc->J( q ),
+                    [&]( int component, int derivative1, int derivative2 )
+                    { return thegmc->hessian( q )( component, derivative1,
+                                                   derivative2 ); },
+                    referenceValue, referenceGradient );
+                for ( int component = 0; component < nComponents1; ++component )
+                    for ( int derivative = 0; derivative < nRealDim; ++derivative )
+                        gradiq( component, derivative, 0 ) =
+                            physicalGradient( component, derivative );
             }
             else if constexpr ( is_hcurl_conforming )
             {
-                //auto v = (*M_gradphi)[i][q].contract(B,dims1);
-                gradiq.reshape( tensorGradShapeAfterContract ) = B.contract((*M_gradphi)[i][q].contract(B,dims1),dims2);
+                Eigen::Map<const Eigen::Matrix<value_type, nComponents1, 1>>
+                    referenceValue( (*M_pc)->phi(i,q).data() );
+                Eigen::Map<const Eigen::Matrix<value_type, nComponents1, PDim>>
+                    referenceGradient( (*M_gradphi)[i][q].data() );
+                auto const physicalGradient = geometry::covariantPiolaGradient(
+                    thegmc->K( q ), thegmc->B( q ),
+                    [&]( int component, int derivative1, int derivative2 )
+                    { return thegmc->hessian( q )( component, derivative1,
+                                                   derivative2 ); },
+                    referenceValue, referenceGradient );
+                for ( int component = 0; component < nComponents1; ++component )
+                    for ( int derivative = 0; derivative < nRealDim; ++derivative )
+                        gradiq( component, derivative, 0 ) =
+                            physicalGradient( component, derivative );
             }
             else
             {
@@ -550,8 +574,13 @@ updateGrad( geometric_mapping_context_type* thegmc, rank_t<1> )
                 M_div[i][q].setZero();
                 if constexpr ( is_hdiv_conforming )
                 {
+                    value_type referenceDivergence = 0;
                     for( int c = 0; c < nRealDim; ++c )
-                        M_div[i][q]( 0,0 ) +=  (*M_gradphi)[i][q](c,c,0)/thegmc->J(q);
+                        referenceDivergence += (*M_gradphi)[i][q]( c, c, 0 );
+                    M_div[i][q]( 0, 0 ) =
+                        geometry::mappedContravariantDivergence(
+                            referenceDivergence,
+                            thegmc->integrationJacobian( q ) );
                 }
                 else if constexpr ( is_hcurl_conforming )
                     {
@@ -611,7 +640,7 @@ PolynomialSet<Poly,PolySetType,OrderSpec>::Context<context_v, Basis_t,Geo_t,Elem
 updateDiv( geometric_mapping_context_type* thegmc, rank_t<1> )
 {
     const uint16_type Q = this->nPointsFirstDerivative();
-    const uint16_type I = M_grad.shape()[0];
+    const uint16_type I = this->nDofs();
     for ( uint16_type q = 0; q < Q; ++q )
     {
         for ( uint16_type i = 0; i < I; ++i )
@@ -619,8 +648,13 @@ updateDiv( geometric_mapping_context_type* thegmc, rank_t<1> )
             M_div[i][q].setZero();
             if constexpr ( is_hdiv_conforming )
             {
+                value_type referenceDivergence = 0;
                 for( int c = 0; c < nRealDim; ++c )
-                    M_div[i][q]( 0,0 ) +=  (*M_gradphi)[i][q](c,c,0)/thegmc->J(q);
+                    referenceDivergence += (*M_gradphi)[i][q]( c, c, 0 );
+                M_div[i][q]( 0, 0 ) =
+                    geometry::mappedContravariantDivergence(
+                        referenceDivergence,
+                        thegmc->integrationJacobian( q ) );
             }
             else if constexpr ( is_hcurl_conforming )
             {
@@ -641,23 +675,47 @@ PolynomialSet<Poly,PolySetType,OrderSpec>::Context<context_v, Basis_t,Geo_t,Elem
 updateCurl( geometric_mapping_context_type* thegmc, rank_t<1> )
 {
     const uint16_type Q = this->nPointsFirstDerivative();
-    const uint16_type I = M_grad.shape()[0];
+    const uint16_type I = this->nDofs();
     for ( uint16_type q = 0; q < Q; ++q )
     {
         for ( uint16_type i = 0; i < I; ++i )
         {
-            auto const& gradiq = M_grad[i][q];
-            if constexpr ( NDim == 2 )
+            if constexpr ( is_hcurl_conforming && NDim == 2 )
             {
-                M_curl[i][q]( 0 ) =  gradiq( 1,0,0 ) - gradiq( 0,1,0 );
-                //M_curl[i][q]( 1 ) =  M_curl[i][q]( 0 );
-                //M_curl[i][q]( 2 ) =  M_curl[i][q]( 0 );
+                value_type const referenceCurl =
+                    (*M_gradphi)[i][q]( 1, 0, 0 ) -
+                    (*M_gradphi)[i][q]( 0, 1, 0 );
+                M_curl[i][q]( 0 ) = geometry::mappedCovariantCurl2D(
+                    referenceCurl, thegmc->integrationJacobian( q ) );
             }
-            else if constexpr ( NDim == 3 )
+            else if constexpr ( is_hcurl_conforming && NDim == 3 )
             {
-                M_curl[i][q]( 0 ) =  gradiq( 2,1,0 ) - gradiq( 1,2,0 );
-                M_curl[i][q]( 1 ) =  gradiq( 0,2,0 ) - gradiq( 2,0,0 );
-                M_curl[i][q]( 2 ) =  gradiq( 1,0,0 ) - gradiq( 0,1,0 );
+                Eigen::Matrix<value_type, 3, 1> referenceCurl;
+                referenceCurl <<
+                    (*M_gradphi)[i][q]( 2, 1, 0 ) -
+                        (*M_gradphi)[i][q]( 1, 2, 0 ),
+                    (*M_gradphi)[i][q]( 0, 2, 0 ) -
+                        (*M_gradphi)[i][q]( 2, 0, 0 ),
+                    (*M_gradphi)[i][q]( 1, 0, 0 ) -
+                        (*M_gradphi)[i][q]( 0, 1, 0 );
+                Eigen::Map<Eigen::Matrix<value_type, 3, 1>> physicalCurl(
+                    M_curl[i][q].data() );
+                physicalCurl = geometry::mappedCovariantCurl3D(
+                    thegmc->jacobianMatrix( q ),
+                    thegmc->integrationJacobian( q ), referenceCurl );
+            }
+            else
+            {
+                auto const& gradiq = M_grad[i][q];
+                if constexpr ( NDim == 2 )
+                    M_curl[i][q]( 0 ) = gradiq( 1, 0, 0 ) -
+                                        gradiq( 0, 1, 0 );
+                else if constexpr ( NDim == 3 )
+                {
+                    M_curl[i][q]( 0 ) = gradiq( 2, 1, 0 ) - gradiq( 1, 2, 0 );
+                    M_curl[i][q]( 1 ) = gradiq( 0, 2, 0 ) - gradiq( 2, 0, 0 );
+                    M_curl[i][q]( 2 ) = gradiq( 1, 0, 0 ) - gradiq( 0, 1, 0 );
+                }
             }
         }
     }
@@ -694,6 +752,10 @@ void
 PolynomialSet<Poly,PolySetType,OrderSpec>::Context<context_v, Basis_t,Geo_t,ElementType,context_g,SubEntityCoDim>::
 updateHessian( geometric_mapping_context_type* thegmc, rank_t<1> )
 {
+    if constexpr ( is_hdiv_conforming || is_hcurl_conforming )
+        throw std::logic_error(
+            "Hessians of Piola-mapped vector fields are not implemented" );
+
     precompute_type* __pc = M_pc.get().get();
     const uint16_type Q = this->nPointsSecondDerivative();
     const uint16_type I = M_hessian.shape()[0];
@@ -781,6 +843,17 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
     const int Qid = M_npoints;
     const int Q = this->nPointsFirstDerivative();
 
+    static constexpr bool hasMappedDirectOperator =
+        ( is_hdiv_conforming && vm::has_div_v<context> ) ||
+        ( is_hcurl_conforming && vm::has_curl_v<context> );
+    static constexpr bool hasExplicitFullDerivative =
+        vm::has_grad_v<context> || vm::has_symm_v<context> ||
+        vm::has_first_derivative_normal_v<context> ||
+        vm::has_hessian_v<context> || vm::has_second_derivative_v<context> ||
+        vm::has_laplacian_v<context>;
+    static constexpr bool mappedOperatorOnly =
+        hasMappedDirectOperator && !hasExplicitFullDerivative;
+
     Eigen::array<dimpair_t, 1> dims = {{dimpair_t(1, 0)}};
     if constexpr ( is_hdiv_conforming )
     {
@@ -827,17 +900,25 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
         }
     }
 
-    if constexpr ( vm::has_grad_v<context> || vm::has_first_derivative_v<context> ||
+    if constexpr ( !mappedOperatorOnly &&
+                   ( vm::has_grad_v<context> || vm::has_first_derivative_v<context> ||
                    ( second_derivative_require_grad && ( vm::has_hessian_v<context> || vm::has_second_derivative_v<context> || vm::has_laplacian_v<context> ) ) )
+                   )
     {
         this->updateGrad( thegmc, rank_t<1>{} );
     }
-    else if constexpr ( vm::has_dynamic_basis_function_v<context> )
+    else if constexpr ( !mappedOperatorOnly &&
+                        vm::has_dynamic_basis_function_v<context> )
     {
         if ( hasGRAD( this->dynamicContext() ) || hasFIRST_DERIVATIVE( this->dynamicContext() ) ||
              ( second_derivative_require_grad && ( hasHESSIAN( this->dynamicContext() ) || hasSECOND_DERIVATIVE( this->dynamicContext() ) || hasLAPLACIAN( this->dynamicContext() ) ) ) )
             this->updateGrad( thegmc, rank_t<1>{} );
     }
+
+    if constexpr ( vm::has_div_v<context> )
+        this->updateDiv( thegmc, rank_t<1>{} );
+    if constexpr ( vm::has_curl_v<context> )
+        this->updateCurl( thegmc, rank_t<1>{} );
 
     if constexpr ( vm::has_dynamic_basis_function_v<context> )
     {

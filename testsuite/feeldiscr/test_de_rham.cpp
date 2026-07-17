@@ -313,6 +313,17 @@ BOOST_AUTO_TEST_CASE( curved_simplex_piola_contracts )
     auto rtFluxRuntime = interpolate( rtRuntime, mesh, fluxExpr );
     auto bdmFlux = interpolate( bdm, mesh, fluxExpr );
     auto bdmFluxRuntime = interpolate( bdmRuntime, mesh, fluxExpr );
+    auto tangentExpr = vec( cst( 0.25 ) - Py() + Px() * Py(),
+                            cst( -0.75 ) + Px() + Px() * Px() );
+    auto ned1 = Ned1h<0>( mesh );
+    auto ned1Runtime = Ned1h<Dynamic>( mesh, RuntimeOrder{ 0 } );
+    auto ned1Field = interpolate( ned1, mesh, tangentExpr );
+    auto ned1FieldRuntime = interpolate( ned1Runtime, mesh, tangentExpr );
+    auto h1 = Pch<1>( mesh );
+    auto potential = interpolate(
+        h1, mesh, cst( 0.5 ) + Px() - 0.75 * Py() );
+    auto discreteGradient = interpolate(
+        ned1Runtime, mesh, trans( gradv( potential ) ) );
 
     BOOST_CHECK_SMALL( divergenceTheoremResidual( mesh, rtFlux ), 2e-8 );
     BOOST_CHECK_SMALL( divergenceTheoremResidual( mesh, rtFluxRuntime ), 2e-8 );
@@ -326,6 +337,42 @@ BOOST_AUTO_TEST_CASE( curved_simplex_piola_contracts )
                                _expr = idv( bdmFluxRuntime ) - idv( bdmFlux ),
                                _quad = _Q<16>(),
                                _geomap = GeomapStrategyType::GEOMAP_HO ), 2e-9 );
+    BOOST_CHECK_SMALL( normL2( _range = elements( mesh ),
+                               _expr = idv( ned1FieldRuntime ) - idv( ned1Field ),
+                               _quad = _Q<16>(),
+                               _geomap = GeomapStrategyType::GEOMAP_HO ), 2e-9 );
+    BOOST_CHECK_SMALL( normL2( _range = elements( mesh ),
+                               _expr = curlxv( ned1FieldRuntime ) -
+                                       curlxv( ned1Field ),
+                               _quad = _Q<16>(),
+                               _geomap = GeomapStrategyType::GEOMAP_HO ), 2e-9 );
+    BOOST_CHECK_SMALL( normL2( _range = elements( mesh ),
+                               _expr = curlxv( discreteGradient ),
+                               _quad = _Q<16>(),
+                               _geomap = GeomapStrategyType::GEOMAP_HO ), 2e-9 );
+
+    BOOST_CHECK_THROW(
+        ( [&]()
+          {
+              return integrate( _range = elements( mesh ),
+                                _expr = inner( gradv( ned1FieldRuntime ),
+                                               gradv( ned1FieldRuntime ) ),
+                                _quad = _Q<8>(),
+                                _geomap = GeomapStrategyType::GEOMAP_HO )
+                  .evaluate();
+          }() ),
+        std::logic_error );
+    BOOST_CHECK_THROW(
+        ( [&]()
+          {
+              return integrate( _range = elements( mesh ),
+                                _expr = inner( gradv( rtFluxRuntime ),
+                                               gradv( rtFluxRuntime ) ),
+                                _quad = _Q<8>(),
+                                _geomap = GeomapStrategyType::GEOMAP_HO )
+                  .evaluate();
+          }() ),
+        std::logic_error );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
