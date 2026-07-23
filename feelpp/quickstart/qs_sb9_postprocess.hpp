@@ -7,6 +7,36 @@
     SPDX-License-Identifier: LGPL-3.0-or-later
 */
 
+/**
+ * \file qs_sb9_postprocess.hpp
+ * \brief SB9 shell strain/stress postprocessing utilities for the quickstart applications.
+ *
+ * This header gathers the element-local SB9 evaluation code used by
+ * `qs_sb9.cpp` to build semantic symmetric tensor fields for strain and
+ * stress.  The output tensor fields can be exported normally or printed with
+ * \c printMatlab() in the component order used by the MATLAB validation data:
+ * `xx, yy, zz, xy, xz, yz`.
+ *
+ * \par Example
+ * \code{.cpp}
+ * auto tensorSpace = Pdhms<1>( mesh );
+ * auto epsilon = tensorSpace->element( "epsilon" );
+ * auto sigma = tensorSpace->element( "sigma" );
+ *
+ * Feel::Quickstart::SB9::fillSymmetricFields(
+ *     mesh, uh, alphah, epsilon, sigma,
+ *     lambda, mu, alphaScale, pinchingBpzScale, shellShearFactor );
+ *
+ * auto ctx = Feel::Quickstart::SB9::matlabFieldContext(
+ *     tensorSpace, caseConfig.referenceChecks, fallbackPoint );
+ * epsilon.printMatlab( "epsilon_matlab", ctx,
+ *                      Feel::Quickstart::SB9::matlabEpsilonFormat(),
+ *                      true, "epsilon" );
+ * sigma.printMatlab( "sigma_matlab", ctx,
+ *                    Feel::Quickstart::SB9::matlabSigmaFormat(),
+ *                    true, "sigma" );
+ * \endcode
+ */
 #ifndef FEELPP_QUICKSTART_QS_SB9_POSTPROCESS_HPP
 #define FEELPP_QUICKSTART_QS_SB9_POSTPROCESS_HPP 1
 
@@ -26,10 +56,31 @@
 #include <type_traits>
 #include <utility>
 
+/**
+ * \namespace Feel::Quickstart::SB9
+ * \brief Quickstart helpers for SB9 postprocessing and validation output.
+ *
+ * The functions in this namespace are intentionally kept outside the core
+ * variational-expression headers.  They are diagnostic/application utilities:
+ * they convert solved SB9 fields into discontinuous symmetric tensor fields,
+ * print those fields in MATLAB-compatible order, and compare them with JSON
+ * validation references.
+ */
 namespace Feel::Quickstart::SB9
 {
 namespace qsec = Feel::Quickstart::ElasticityChecks;
 
+/**
+ * \brief Return the MATLAB validation format for SB9 strain vectors.
+ *
+ * The validation files store strain as `xx, yy, zz, xy, xz, yz` and use
+ * engineering shear entries for the off-diagonal components.  This is the
+ * format expected by \c FunctionSpace::Element::printMatlab() when printing
+ * `epsilon`.
+ *
+ * \return Symmetric tensor format with diagonal-first order and engineering
+ *         shear scaling.
+ */
 inline SymmetricTensorFormat
 matlabEpsilonFormat()
 {
@@ -37,6 +88,15 @@ matlabEpsilonFormat()
              SymmetricTensorScaling::EngineeringShear };
 }
 
+/**
+ * \brief Return the MATLAB validation format for SB9 stress vectors.
+ *
+ * Stress uses the same diagonal-first component order as strain but keeps
+ * tensor shear values, i.e. off-diagonal components are not doubled.
+ *
+ * \return Symmetric tensor format with diagonal-first order and tensor shear
+ *         scaling.
+ */
 inline SymmetricTensorFormat
 matlabSigmaFormat()
 {
@@ -44,6 +104,12 @@ matlabSigmaFormat()
              SymmetricTensorScaling::Tensor };
 }
 
+/**
+ * \brief Convert an Eigen 3D point to a Feel++ node.
+ *
+ * \param p Three-dimensional physical point.
+ * \return Feel++ node containing the same coordinates.
+ */
 inline node_type
 toNode( qsec::point_type<3> const& p )
 {
@@ -54,6 +120,23 @@ toNode( qsec::point_type<3> const& p )
     return n;
 }
 
+/**
+ * \brief Materialize one SB9 coefficient cache as a 6-by-24 element matrix.
+ *
+ * The SB9 variational expressions operate through basis proxies.  For
+ * postprocessing we instead need explicit local matrices so that the solved
+ * displacement vector can be multiplied directly at a physical evaluation
+ * point.
+ *
+ * \tparam Kind Compile-time coefficient family selector, such as
+ *         \c SB9BendingKind::Bm0, \c SB9PinchingKind::Bpc, or
+ *         \c SB9ShearKind::Bc0.
+ * \tparam CacheType SB9 kernel cache type providing
+ *         \c fillVectorCoefficients().
+ * \param cache Element-local SB9 coefficient cache.
+ * \return Matrix with six symmetric-storage rows and 24 displacement columns
+ *         ordered by component block then node.
+ */
 template <auto Kind, typename CacheType>
 Eigen::Matrix<double, 6, 24>
 coefficientMatrix( CacheType const& cache )
@@ -75,6 +158,21 @@ coefficientMatrix( CacheType const& cache )
     return matrix;
 }
 
+/**
+ * \brief Evaluate a symmetric tensor field at one point in a requested format.
+ *
+ * This is the postprocessed-field counterpart of the validation checker:
+ * it samples a \c Pdhms field and returns the six components in the supplied
+ * \p format.
+ *
+ * \tparam SpaceType Symmetric tensor function-space pointer type.
+ * \tparam FieldElementType Element type of the symmetric tensor field.
+ * \param Sh Function space used to build the evaluation context.
+ * \param field Symmetric tensor element, typically `epsilon` or `sigma`.
+ * \param point Physical evaluation point.
+ * \param format Component order and scaling requested by the caller.
+ * \return Six-component vector in \p format.
+ */
 template <typename SpaceType, typename FieldElementType>
 qsec::voigt_type
 evaluateSymmetricFieldReference( SpaceType const& Sh,
@@ -94,16 +192,37 @@ evaluateSymmetricFieldReference( SpaceType const& Sh,
     return result;
 }
 
+/**
+ * \brief Physical symmetric tensor entries in diagonal-first notation.
+ *
+ * The helper stores true tensor entries.  When values come from an engineering
+ * shear vector, the off-diagonal components are converted back to tensor
+ * entries before assignment to the semantic tensor field.
+ */
 struct SymmetricTensorComponents
 {
+    /// Normal xx component.
     double xx = 0.0;
+    /// Normal yy component.
     double yy = 0.0;
+    /// Normal zz component.
     double zz = 0.0;
+    /// Tensor xy component.
     double xy = 0.0;
+    /// Tensor xz component.
     double xz = 0.0;
+    /// Tensor yz component.
     double yz = 0.0;
 };
 
+/**
+ * \brief Convert a validation-order vector to physical tensor entries.
+ *
+ * \param values Six values ordered as `xx, yy, zz, xy, xz, yz`.
+ * \param engineeringShear Whether the shear entries are engineering shear
+ *        values and must therefore be halved before tensor-field assignment.
+ * \return Physical symmetric tensor entries.
+ */
 inline SymmetricTensorComponents
 toSymmetricTensorComponents( qsec::voigt_type const& values, bool engineeringShear )
 {
@@ -116,6 +235,20 @@ toSymmetricTensorComponents( qsec::voigt_type const& values, bool engineeringShe
              shearScale * values( 5 ) };
 }
 
+/**
+ * \brief Assign one constant symmetric tensor value on one mesh element.
+ *
+ * The assignment uses the semantic tensor-component API so that symmetric
+ * aliases such as `(X,Y)` and `(Y,X)` stay consistent.
+ *
+ * \tparam FieldElementType Symmetric tensor field element type.
+ * \tparam MeshType Mesh type.
+ * \param field Tensor field to modify.
+ * \param mesh Mesh owning \p elementId.
+ * \param elementId Element identifier receiving the constant value.
+ * \param values Validation-order values `xx, yy, zz, xy, xz, yz`.
+ * \param engineeringShear Whether \p values stores engineering shear entries.
+ */
 template <typename FieldElementType, typename MeshType>
 void
 assignSymmetricTensorOnElement( FieldElementType& field,
@@ -133,6 +266,30 @@ assignSymmetricTensorOnElement( FieldElementType& field,
     field.tensorComponent( Component::Y, Component::Z ).on( _range=idedelements( mesh, elementId ), _expr=cst( tensor.yz ) );
 }
 
+/**
+ * \brief Evaluate SB9 strain and stress at a geometric mapping context.
+ *
+ * The function reconstructs the element-local SB9 operators at the supplied
+ * context, multiplies them by the solved displacement and internal scalar
+ * dofs, and returns the validation-order strain/stress vectors.
+ *
+ * The strain vector uses engineering shear components.  The stress vector uses
+ * tensor shear components and isotropic 3D Hooke law with Lamé coefficients
+ * \p lambda and \p mu.
+ *
+ * \tparam GmcPtrType Geometric mapping context pointer type.
+ * \tparam DisplacementElementType Displacement field element type.
+ * \tparam AlphaElementType Internal SB9 scalar field element type.
+ * \param gmc Geometric context at the physical point/reference coordinate.
+ * \param uh Solved displacement field.
+ * \param alphah Solved internal SB9 scalar field.
+ * \param lambda First Lamé coefficient.
+ * \param mu Shear modulus.
+ * \param alphaScale Scale applied to the internal scalar correction.
+ * \param pinchingBpzScale Scale applied to the `zeta*Bpz` pinching term.
+ * \param shellShearFactor Coefficient in the transverse shear shape function.
+ * \return Pair `(epsilon, sigma)` in MATLAB validation order.
+ */
 template <typename GmcPtrType, typename DisplacementElementType, typename AlphaElementType>
 std::pair<qsec::voigt_type, qsec::voigt_type>
 evaluateAtGmc( GmcPtrType const& gmc,
@@ -199,6 +356,31 @@ evaluateAtGmc( GmcPtrType const& gmc,
     return { epsilon, sigma };
 }
 
+/**
+ * \brief Fill Pdhms tensor fields with SB9 center-point strain and stress.
+ *
+ * Each element receives the SB9 value evaluated at its reference center.  This
+ * gives a compact discontinuous tensor field that can be exported and sampled
+ * with the same semantic tensor-field API used by the validation checks.
+ *
+ * \tparam MeshPtrType Mesh shared-pointer type.
+ * \tparam DisplacementElementType Displacement field element type.
+ * \tparam AlphaElementType Internal SB9 scalar field element type.
+ * \tparam EpsilonElementType Symmetric tensor field element type for strain.
+ * \tparam SigmaElementType Symmetric tensor field element type for stress.
+ * \param mesh Shell mesh.
+ * \param uh Solved displacement field.
+ * \param alphah Solved internal SB9 scalar field.
+ * \param epsilonh Output strain field. Values are assigned as tensor entries;
+ *        MATLAB printing should use \ref matlabEpsilonFormat().
+ * \param sigmah Output stress field. Values are assigned as tensor entries;
+ *        MATLAB printing should use \ref matlabSigmaFormat().
+ * \param lambda First Lamé coefficient.
+ * \param mu Shear modulus.
+ * \param alphaScale Scale applied to the internal scalar correction.
+ * \param pinchingBpzScale Scale applied to the `zeta*Bpz` pinching term.
+ * \param shellShearFactor Coefficient in the transverse shear shape function.
+ */
 template <typename MeshPtrType, typename DisplacementElementType, typename AlphaElementType,
           typename EpsilonElementType, typename SigmaElementType>
 void
@@ -230,6 +412,19 @@ fillSymmetricFields( MeshPtrType const& mesh,
     }
 }
 
+/**
+ * \brief Build the evaluation context used by MATLAB tensor diagnostics.
+ *
+ * If the case contains field-reference points, all of them are added in JSON
+ * order.  Otherwise the supplied fallback point is used.  The resulting
+ * context is suitable for `epsilon.printMatlab()` and `sigma.printMatlab()`.
+ *
+ * \tparam SpaceType Symmetric tensor function-space pointer type.
+ * \param Sh Function space used to create the context.
+ * \param config Parsed elasticity reference-check configuration.
+ * \param fallbackPoint Point used when no field references are configured.
+ * \return A Feel++ function-space context containing the diagnostic points.
+ */
 template <typename SpaceType>
 auto
 matlabFieldContext( SpaceType const& Sh,
@@ -248,6 +443,16 @@ matlabFieldContext( SpaceType const& Sh,
     return ctx;
 }
 
+/**
+ * \brief Test whether the reference configuration contains a named target.
+ *
+ * Both tensor field references and cantilever references are inspected because
+ * SB9 validation cases may use either reference family.
+ *
+ * \param config Parsed reference-check configuration.
+ * \param target Target name, for example `sb9g25`.
+ * \return true if at least one reference item has \p target.
+ */
 inline bool
 hasTarget( qsec::Config<3> const& config, std::string const& target )
 {
@@ -260,6 +465,18 @@ hasTarget( qsec::Config<3> const& config, std::string const& target )
     return false;
 }
 
+/**
+ * \brief Select the default validation target for the SB9 quickstart.
+ *
+ * Shared shell JSON files often default to `hexa8` because they are also used
+ * by the standard elasticity quickstart.  For the SB9 quickstart this helper
+ * prefers `sb9g25`, then `sb9`, unless the user explicitly set
+ * `--checks.target`.
+ *
+ * \param config Parsed reference-check configuration.
+ * \param explicitTarget Whether `--checks.target` was explicitly provided.
+ * \return Target name to use for reference checks.
+ */
 inline std::string
 preferredTarget( qsec::Config<3> const& config, bool explicitTarget )
 {
@@ -272,6 +489,26 @@ preferredTarget( qsec::Config<3> const& config, bool explicitTarget )
     return config.target;
 }
 
+/**
+ * \brief Compare postprocessed SB9 tensor fields against JSON references.
+ *
+ * The comparison samples the supplied `epsilon` and `sigma` fields at each
+ * configured field-reference point, using the MATLAB validation formats from
+ * \ref matlabEpsilonFormat() and \ref matlabSigmaFormat().
+ *
+ * \tparam SpaceType Symmetric tensor function-space pointer type.
+ * \tparam EpsilonElementType Strain field element type.
+ * \tparam SigmaElementType Stress field element type.
+ * \param config Parsed reference-check configuration.
+ * \param Sh Symmetric tensor function space.
+ * \param epsilonh Postprocessed SB9 strain field.
+ * \param sigmah Postprocessed SB9 stress field.
+ * \param target Reference target name.
+ * \param checkReference If true, throw when configured tolerances fail.  If
+ *        false, comparisons are printed in report-only mode.
+ * \param os Output stream for the comparison report.
+ * \return zero on success.
+ */
 template <typename SpaceType, typename EpsilonElementType, typename SigmaElementType>
 int
 checkFieldReferences( qsec::Config<3> const& config,
