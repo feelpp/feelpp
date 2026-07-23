@@ -23,6 +23,7 @@
 #include <feel/feelvf/sb9_quadrature.hpp>
 #include <feel/feelvf/sb9_shear.hpp>
 #include <feel/feelvf/sb9_strain.hpp>
+#include <feel/feelvf/sb9_stabilization.hpp>
 #include <feel/feelvf/vf.hpp>
 
 #include <boost/format.hpp>
@@ -55,7 +56,7 @@ makeAbout()
     AboutData about( "qs_sb9",
                      "qs_sb9",
                      "0.1",
-                     "Minimal SB9 mixed shell formulation without stabilization terms",
+                     "Minimal SB9 mixed shell formulation",
                      Feel::AboutData::License_GPL,
                      "Copyright (c) Feel++ Consortium" );
     about.addAuthor( "Feel++ Consortium", "developer", "feelpp-devel@feelpp.org", "" );
@@ -234,8 +235,6 @@ main( int argc, char** argv )
     // [ u     ]  displacement Q1 vector field, 24 element dofs
     // [ alpha ]  internal P0 scalar mode, one element dof
     //
-    // No Hallquist Bc1/Bc2 stabilization and no Bs1..Bs4 stabilization are
-    // assembled here. This file intentionally shows only the elastic blocks.
     a( 0_c, 0_c ) += integrate( _range=elements( mesh ),
                                 _quad=sb9Quad,
                                 _expr=ddot( C, epsShellTrial, epsShellTest ) );
@@ -260,6 +259,64 @@ main( int argc, char** argv )
                    _quad=massQuad,
                    _expr=cst( rho ) * inner( u, v ) );
 #endif
+
+    // Compact equivalent of the stabilization block used in
+    // qs_sb9_mixed_bending.cpp.
+    auto sb9Stabilization = [&]( auto const& trialField, auto const& testField )
+    {
+        double constexpr shearStabilizationScale = 1.0;
+        double constexpr bsStabilizationScale = 1.0;
+
+        auto invJ0 = inv( shellJacobian0() );
+        auto j11 = component<0, 0>( invJ0 );
+        auto j21 = component<1, 0>( invJ0 );
+        auto j22 = component<1, 1>( invJ0 );
+        auto j33 = component<2, 2>( invJ0 );
+
+        auto normalStiffness = cst( bsStabilizationScale * ( lambda + 2.0 * mu ) );
+        auto dz = normalStiffness * j33 * j33;
+        auto dx = normalStiffness * j11 * j11;
+        auto dy = normalStiffness * ( j21 * j21 + j22 * j22 );
+
+        auto c0 = []( auto const& Bu, auto const& Bv )
+        {
+            return component<0, 0>( Bu ) * component<0, 0>( Bv );
+        };
+        auto c1 = []( auto const& Bu, auto const& Bv )
+        {
+            return component<1, 0>( Bu ) * component<1, 0>( Bv );
+        };
+        auto c2 = []( auto const& Bu, auto const& Bv )
+        {
+            return component<2, 0>( Bu ) * component<2, 0>( Bv );
+        };
+
+        auto bs1u = sb9Bs1( trialField );
+        auto bs1v = sb9Bs1( testField );
+        auto bs2u = sb9Bs2( trialField );
+        auto bs2v = sb9Bs2( testField );
+        auto bs3u = sb9Bs3( trialField );
+        auto bs3v = sb9Bs3( testField );
+        auto bs4u = sb9Bs4( trialField );
+        auto bs4v = sb9Bs4( testField );
+
+        auto shearPart = cst( shearStabilizationScale * mu * 5.0 / 18.0 ) *
+                         ( inner( sb9Bc1( trialField ), sb9Bc1( testField ) ) +
+                           inner( sb9Bc2( trialField ), sb9Bc2( testField ) ) );
+
+        auto bsPart = cst( 1.0 / 3.0 ) * dz * ( c0( bs1u, bs1v ) + c0( bs2u, bs2v ) ) +
+                      cst( 1.0 / 3.0 ) * ( dx * c0( bs3u, bs3v ) + dy * c1( bs3u, bs3v ) ) +
+                      cst( 1.0 / 9.0 ) * ( cst( 1.0e-4 ) *
+                                           ( dx * c0( bs4u, bs4v ) + dy * c1( bs4u, bs4v ) ) +
+                                           dz * c2( bs4u, bs4v ) );
+
+        return shearPart + bsPart;
+    };
+
+    a( 0_c, 0_c ) += integrate( _range=elements( mesh ),
+                                _quad=sb9Quad,
+                                _expr=sb9Stabilization( u, v ) );
+
     l( 0_c ) += integrate( _range=markedfaces( mesh, "XPlus" ),
                            _expr=inner( vec( cst( 0.0 ), cst( 0.0 ), cst( doption( "load" ) ) ), v ) );
 
