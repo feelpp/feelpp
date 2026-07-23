@@ -215,7 +215,7 @@ computeShellCellGeometry( GMCType const* gmc )
         data.invJ0_11 = invMatJ0(1,1);
         data.invJ0_12 = invMatJ0(1,2);
         data.invJ0_20 = invMatJ0(2,0);
-        data.invJ0_22 = invMatJ0(2,2);
+        data.invJ0_21 = invMatJ0(2,1);
         data.invJ0_22 = invMatJ0(2,2);
 
         Eigen::Matrix<value_type, 3, 8> BKsi = Eigen::Matrix<value_type, 3, 8>::Zero();

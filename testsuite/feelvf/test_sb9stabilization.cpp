@@ -7,13 +7,21 @@
 
     SPDX-License-Identifier: LGPL-3.0-or-later
 */
+
 /**
  * \file test_sb9stabilization.cpp
- * \brief Unit tests for SB9 stabilization kinematic operators.
+ * \brief Unit tests for SB9 mode-stabilization operators.
+ *
+ * The tests verify the SB9 mode-stabilization row layout:
+ * `Bs1` and `Bs2` are one-row blocks, `Bs3` is a two-row block, and `Bs4` is a
+ * three-row block. Each block must preserve rigid translations and rigid
+ * rotations on flat and rotated shell patches.
  */
 
 #define BOOST_TEST_MODULE test_sb9stabilization
 #include <feel/feelcore/testsuite.hpp>
+
+#include <feel/feelvf/sb9_stabilization.hpp>
 
 #include "test_sb9_common.hpp"
 
@@ -24,85 +32,89 @@ using namespace Feel::Tests::SB9;
 namespace
 {
 /**
- * \brief Check that one field has zero SB9 stabilization energy.
+ * \brief Check that all SB9 `Bs*` stabilization blocks annihilate one rigid mode.
  *
- * These helpers assemble the different SB9 stabilization bilinear forms (mode
- * stabilization, transverse shear stabilization, and the sum of both) and
- * evaluates its energy on a given interpolated field. It is used for rigid
- * translation and rigid rotation fields, both of which must be in the kernel
- * of the stabilization strain operator.
+ * The helper assembles one quadratic form for each mode-stabilization block and
+ * evaluates it on a prescribed field interpolated in the displacement space.
+ * The compile-time row checks protect the documented MATLAB row layout:
+ * `Bs1,Bs2,Bs3,Bs4 = 1,1,2,3`.
  *
+ * \tparam SpaceType Feel++ displacement function space type.
+ * \tparam TrialType Trial basis proxy type.
+ * \tparam TestType Test basis proxy type.
  * \tparam FieldExprType Feel++ vector expression type for the checked field.
- * \param mesh Shell mesh used to build the Q1 vector displacement space.
- * \param fieldExpr Field interpolated in \p Uh before energy evaluation.
+ * \param Uh Displacement function space.
+ * \param u Trial basis proxy.
+ * \param v Test basis proxy.
+ * \param fieldExpr Rigid-mode field interpolated before energy evaluation.
  */
-template <typename FieldExprType>
+template <typename SpaceType, typename TrialType, typename TestType, typename FieldExprType>
 void
-checkSb9ModeStabilizationRigidMode( mesh_ptrtype const& mesh, FieldExprType const& fieldExpr )
+checkSb9StabilizationRigidMode( SpaceType const& Uh,
+                                TrialType const& u,
+                                TestType const& v,
+                                FieldExprType const& fieldExpr )
 {
-    auto Uh = Pchv<1>( mesh );
-    auto u = trial( Uh, "u" );
-    auto v = test( Uh, "v" );
+    static_assert( Feel::vf::detail::expression_rows_v<decltype( sb9Bs1( u ) )> == 1 );
+    static_assert( Feel::vf::detail::expression_rows_v<decltype( sb9Bs2( u ) )> == 1 );
+    static_assert( Feel::vf::detail::expression_rows_v<decltype( sb9Bs3( u ) )> == 2 );
+    static_assert( Feel::vf::detail::expression_rows_v<decltype( sb9Bs4( u ) )> == 3 );
 
-    constexpr double lambda = 2.3;
-    constexpr double mu = 1.1;
+    auto bs1 = form2( _trial=Uh, _test=Uh );
+    bs1 = integrate( _range=elements( Uh->mesh() ),
+                     _quad=sb9ThroughThicknessLobatto5(),
+                     _expr=component<0, 0>( sb9Bs1( u ) ) *
+                           component<0, 0>( sb9Bs1( v ) ) );
 
-    auto modeStabilization = form2( _trial=Uh, _test=Uh );
-    modeStabilization = integrate( _range=elements( mesh ),
-                                    _quad=sb9ThroughThicknessLobatto5(),
-                                    _expr=sb9ModeStabilization(u, v, lambda, mu ) );
+    auto bs2 = form2( _trial=Uh, _test=Uh );
+    bs2 = integrate( _range=elements( Uh->mesh() ),
+                     _quad=sb9ThroughThicknessLobatto5(),
+                     _expr=component<0, 0>( sb9Bs2( u ) ) *
+                           component<0, 0>( sb9Bs2( v ) ) );
+
+    auto bs3 = form2( _trial=Uh, _test=Uh );
+    bs3 = integrate( _range=elements( Uh->mesh() ),
+                     _quad=sb9ThroughThicknessLobatto5(),
+                     _expr=component<0, 0>( sb9Bs3( u ) ) *
+                           component<0, 0>( sb9Bs3( v ) ) +
+                           component<1, 0>( sb9Bs3( u ) ) *
+                           component<1, 0>( sb9Bs3( v ) ) );
+
+    auto bs4 = form2( _trial=Uh, _test=Uh );
+    bs4 = integrate( _range=elements( Uh->mesh() ),
+                     _quad=sb9ThroughThicknessLobatto5(),
+                     _expr=component<0, 0>( sb9Bs4( u ) ) *
+                           component<0, 0>( sb9Bs4( v ) ) +
+                           component<1, 0>( sb9Bs4( u ) ) *
+                           component<1, 0>( sb9Bs4( v ) ) +
+                           component<2, 0>( sb9Bs4( u ) ) *
+                           component<2, 0>( sb9Bs4( v ) ) );
 
     auto uh = Uh->element( "uh" );
     auto vh = Uh->element( "vh" );
-    uh.on( _range=elements( mesh ), _expr=fieldExpr, _close=true );
-    vh.on( _range=elements( mesh ), _expr=fieldExpr, _close=true );
+    uh.on( _range=elements( Uh->mesh() ), _expr=fieldExpr, _close=true );
+    vh.on( _range=elements( Uh->mesh() ), _expr=fieldExpr, _close=true );
 
-    BOOST_CHECK_SMALL( formEnergy( modeStabilization, vh, uh ), g_tol );
+    BOOST_CHECK_SMALL( formEnergy( bs1, vh, uh ), g_tol );
+    BOOST_CHECK_SMALL( formEnergy( bs2, vh, uh ), g_tol );
+    BOOST_CHECK_SMALL( formEnergy( bs3, vh, uh ), g_tol );
+    BOOST_CHECK_SMALL( formEnergy( bs4, vh, uh ), g_tol );
 }
-template <typename FieldExprType>
+
+/**
+ * \brief Check rigid translations and rotations on one shell patch.
+ *
+ * \param mesh Shell mesh used to build the Q1 vector displacement space.
+ */
 void
-checkSb9ShearingStabilizationRigidMode( mesh_ptrtype const& mesh, FieldExprType const& fieldExpr )
+checkSb9StabilizationRigidModesOnPatch( mesh_ptrtype const& mesh )
 {
     auto Uh = Pchv<1>( mesh );
     auto u = trial( Uh, "u" );
     auto v = test( Uh, "v" );
 
-    constexpr double mu = 1.1;
-
-    auto shearStabilization = form2( _trial=Uh, _test=Uh );
-    shearStabilization = integrate( _range=elements( mesh ),
-                                    _quad=sb9ThroughThicknessLobatto5(),
-                                    _expr=sb9ShearingStabilization(u, v, mu ) );
-
-    auto uh = Uh->element( "uh" );
-    auto vh = Uh->element( "vh" );
-    uh.on( _range=elements( mesh ), _expr=fieldExpr, _close=true );
-    vh.on( _range=elements( mesh ), _expr=fieldExpr, _close=true );
-
-    BOOST_CHECK_SMALL( formEnergy( shearStabilization, vh, uh ), g_tol );
-}
-template <typename FieldExprType>
-void
-checkSb9StabilizationRigidMode( mesh_ptrtype const& mesh, FieldExprType const& fieldExpr )
-{
-    auto Uh = Pchv<1>( mesh );
-    auto u = trial( Uh, "u" );
-    auto v = test( Uh, "v" );
-
-    constexpr double lambda = 2.3;
-    constexpr double mu = 1.1;
-
-    auto stabilization = form2( _trial=Uh, _test=Uh );
-    stabilization = integrate( _range=elements( mesh ),
-                               _quad=sb9ThroughThicknessLobatto5(),
-                               _expr=sb9Stabilization(u, v, lambda, mu ) );
-
-    auto uh = Uh->element( "uh" );
-    auto vh = Uh->element( "vh" );
-    uh.on( _range=elements( mesh ), _expr=fieldExpr, _close=true );
-    vh.on( _range=elements( mesh ), _expr=fieldExpr, _close=true );
-
-    BOOST_CHECK_SMALL( formEnergy( stabilization, vh, uh ), g_tol );
+    checkSb9StabilizationRigidMode( Uh, u, v, rigidTranslationField() );
+    checkSb9StabilizationRigidMode( Uh, u, v, rigidRotationField() );
 }
 } // namespace
 
@@ -111,47 +123,19 @@ FEELPP_ENVIRONMENT_NO_OPTIONS
 BOOST_AUTO_TEST_SUITE( sb9_stabilization_suite )
 
 /**
- * \test Verify that SB9 stabilization terms preserve rigid modes on a flat patch.
+ * \test Verify that `Bs1..Bs4` preserve rigid modes on a flat shell patch.
  */
-BOOST_AUTO_TEST_CASE( sb9_mode_stabilization_preserves_rigid_modes_on_flat_patch )
-{
-    auto mesh = createFlatShellPatch( "sb9_mode_stabilization_flat_patch" );
-    checkSb9ModeStabilizationRigidMode( mesh, rigidTranslationField() );
-    checkSb9ModeStabilizationRigidMode( mesh, rigidRotationField() );
-}
-BOOST_AUTO_TEST_CASE( sb9_shearing_stabilization_preserves_rigid_modes_on_flat_patch )
-{
-    auto mesh = createFlatShellPatch( "sb9_shearing_stabilization_flat_patch" );
-    checkSb9ShearingStabilizationRigidMode( mesh, rigidTranslationField() );
-    checkSb9ShearingStabilizationRigidMode( mesh, rigidRotationField() );
-}
 BOOST_AUTO_TEST_CASE( sb9_stabilization_preserves_rigid_modes_on_flat_patch )
 {
-    auto mesh = createFlatShellPatch( "sb9_stabilization_flat_patch" );
-    checkSb9StabilizationRigidMode( mesh, rigidTranslationField() );
-    checkSb9StabilizationRigidMode( mesh, rigidRotationField() );
+    checkSb9StabilizationRigidModesOnPatch( createFlatShellPatch( "sb9_stabilization_flat_patch" ) );
 }
 
 /**
- * \test Verify that SB9 stabilization terms preserve rigid modes after rotation.
+ * \test Verify that `Bs1..Bs4` preserve rigid modes after a patch rotation.
  */
-BOOST_AUTO_TEST_CASE( sb9_mode_stabilization_preserves_rigid_modes_on_rotated_patch )
-{
-    auto mesh = createRotatedShellPatch( "sb9_mode_stabilization_rotated_patch" );
-    checkSb9ModeStabilizationRigidMode( mesh, rigidTranslationField() );
-    checkSb9ModeStabilizationRigidMode( mesh, rigidRotationField() );
-}
-BOOST_AUTO_TEST_CASE( sb9_shearing_stabilization_preserves_rigid_modes_on_rotated_patch )
-{
-    auto mesh = createRotatedShellPatch( "sb9_shearing_stabilization_rotated_patch" );
-    checkSb9ShearingStabilizationRigidMode( mesh, rigidTranslationField() );
-    checkSb9ShearingStabilizationRigidMode( mesh, rigidRotationField() );
-}
 BOOST_AUTO_TEST_CASE( sb9_stabilization_preserves_rigid_modes_on_rotated_patch )
 {
-    auto mesh = createRotatedShellPatch( "sb9_stabilization_rotated_patch" );
-    checkSb9StabilizationRigidMode( mesh, rigidTranslationField() );
-    checkSb9StabilizationRigidMode( mesh, rigidRotationField() );
+    checkSb9StabilizationRigidModesOnPatch( createRotatedShellPatch( "sb9_stabilization_rotated_patch" ) );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
