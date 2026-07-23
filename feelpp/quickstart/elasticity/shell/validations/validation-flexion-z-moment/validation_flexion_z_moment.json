@@ -1,6 +1,6 @@
 {
   "name": "validation-flexion-z-moment",
-  "description": "Flexion case from validation.pdf page 13: clamp ZMoins and apply a unit resultant moment on ZPlus through an equivalent tangential traction field.",
+  "description": "Flexion case from validation.pdf page 13: clamp ZMoins and apply the MATLAB nodal force-couple on ZPlus.",
   "gmsh": {
     "filename": "validation_flexion_z_moment.geo"
   },
@@ -15,10 +15,38 @@
   },
   "loads": {
     "bodyForce": "{0,0,0}",
-    "tractions": [
+    "pointLoads": [
       {
-        "marker": "ZPlus",
-        "expr": "{-6*(y-0.5),6*(x-0.5),0}:x:y:z"
+        "marker": "P5",
+        "value": [
+          -0.6546666666666666,
+          -0.1645,
+          0.0
+        ]
+      },
+      {
+        "marker": "P6",
+        "value": [
+          0.6546666666666666,
+          -0.1645,
+          0.0
+        ]
+      },
+      {
+        "marker": "P7",
+        "value": [
+          -0.6546666666666666,
+          0.1645,
+          0.0
+        ]
+      },
+      {
+        "marker": "P8",
+        "value": [
+          0.6546666666666666,
+          0.1645,
+          0.0
+        ]
       }
     ]
   },
@@ -85,7 +113,6 @@
           }
         },
         "description": "PDF Epsilon/Sigma at element center; component order xx,yy,zz,xy,xz,yz.",
-        "check": false,
         "tolerance": {
           "absolute": 0.0005,
           "relative": 0.005

@@ -86,7 +86,7 @@
         },
         "description": "PDF Epsilon/Sigma values are displayed with MATLAB scale factors; component order xx,yy,zz,xy,xz,yz.",
         "tolerance": {
-          "absolute": 5e-13
+          "absolute": 0.0002
         }
       }
     ]

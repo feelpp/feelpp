@@ -8,7 +8,7 @@
 */
 
 #include <feel/feelcore/environment.hpp>
-#include <feel/feeldiscr/tensorformat.hpp>
+#include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feeldiscr/pdhm.hpp>
@@ -16,6 +16,7 @@
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelfilters/geo.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelmesh/hypercube.hpp>
 #include <feel/feelvf/blockforms.hpp>
 #include <feel/feelvf/sb9_bending.hpp>
@@ -24,29 +25,61 @@
 #include <feel/feelvf/sb9_shear.hpp>
 #include <feel/feelvf/sb9_strain.hpp>
 #include <feel/feelvf/sb9_stabilization.hpp>
+#include <feel/feelvf/shellgeometric.hpp>
 #include <feel/feelvf/vf.hpp>
 
+#include "qs_elasticity_case.hpp"
+#include "qs_elasticity_checks.hpp"
+#include "qs_sb9_postprocess.hpp"
+
 #include <boost/format.hpp>
+
+#include <iostream>
+#include <set>
+#include <stdexcept>
+#include <string>
 
 using namespace Feel;
 
 namespace
 {
+namespace qsec = Feel::Quickstart::ElasticityChecks;
+namespace qsecase = Feel::Quickstart::ElasticityCase;
+namespace qssb9 = Feel::Quickstart::SB9;
+
 using mesh_type = Mesh<Hypercube<3>>;
+using PointConstraintConfig = qsecase::PointConstraintConfig;
 
 po::options_description
 makeOptions()
 {
     po::options_description options( "qs_sb9 options" );
+    qsecase::addOptions( options, "{0,0,0}", "{0,0,0}" );
     options.add_options()
-        ( "E", po::value<double>()->default_value( 10.0 ), "Young modulus" )
-        ( "nu", po::value<double>()->default_value( 0.3 ), "Poisson ratio" )
-        ( "load", po::value<double>()->default_value( -1.0 ), "constant z traction on XPlus" )
-        ( "alpha-scale", po::value<double>()->default_value( 1.0 ), "scale applied to the internal SB9 scalar mode" )
-        ( "monolithic", po::value<bool>()->default_value( false ), "use the monolithic mixed solve instead of SB9 static condensation" )
+        ( "load", po::value<double>()->default_value( -1.0 ),
+          "fallback constant z traction on XPlus when no elasticity.case is provided" )
+        ( "alpha-scale", po::value<double>()->default_value( 1.0 ),
+          "scale applied to the shell-normal SB9 scalar correction" )
+        ( "pinching-bpz-scale", po::value<double>()->default_value( 1.0 ),
+          "scale applied to the zeta*Bpz pinching term; 1 enables the full SB9 pinching formulation" )
+        ( "shell-shear-factor", po::value<double>()->default_value( 1.25 ),
+          "Hallquist-like transverse shear shape factor coefficient" )
+        ( "shell-shear-stab", po::value<double>()->default_value( 0.25 ),
+          "scale applied to the Hallquist Bc1/Bc2 stabilization block" )
+        ( "shell-bs-stab", po::value<double>()->default_value( 1.0 ),
+          "scale applied to the additional SB9 Bs1..Bs4 stabilization block" )
+        ( "monolithic", po::value<bool>()->default_value( false ),
+          "use the monolithic mixed solve instead of the default SB9 static condensation" )
+        ( "check-reference", po::value<bool>()->default_value( true ),
+          "fail when a JSON reference value exceeds its configured tolerance" )
         ( "print-matlab-fields", po::value<bool>()->default_value( false ),
-          "print epsilon/sigma tensor fields in MATLAB validation order" )
-        ( "no-solve", po::value<bool>()->default_value( false ), "assemble only" );
+          "write u, alpha, epsilon, and sigma fields; tensor fields use the MATLAB validation order" )
+        ( "export-thickness", po::value<bool>()->default_value( true ),
+          "export shell thickness and mid-surface area diagnostics" )
+        ( "export-normal-displacement", po::value<bool>()->default_value( true ),
+          "export inner(u,shellNormal()) projected to a scalar field" )
+        ( "show-timings", po::value<bool>()->default_value( false ),
+          "print coarse assembly, solve, and postprocessing timings" );
     return options.add( feel_options() );
 }
 
@@ -56,7 +89,7 @@ makeAbout()
     AboutData about( "qs_sb9",
                      "qs_sb9",
                      "0.1",
-                     "Minimal SB9 mixed shell formulation",
+                     "SB9 mixed shell formulation",
                      Feel::AboutData::License_GPL,
                      "Copyright (c) Feel++ Consortium" );
     about.addAuthor( "Feel++ Consortium", "developer", "feelpp-devel@feelpp.org", "" );
@@ -142,6 +175,66 @@ createUnitShellMesh()
                                       _h=1.0 ),
                            _force_rebuild=boption( "gmsh.rebuild" ) );
 }
+
+std::shared_ptr<mesh_type>
+createMesh( qsecase::Config const& cfg )
+{
+    if ( cfg.meshFilename.empty() )
+        return createUnitShellMesh();
+    return loadMesh( _mesh=new mesh_type, _filename=cfg.meshFilename );
+}
+
+bool
+hasElasticityCase()
+{
+    return qsecase::optionExplicitlySet( "elasticity.case" ) && !soption( "elasticity.case" ).empty();
+}
+
+qsecase::Config
+caseConfigFromInput()
+{
+    auto cfg = qsecase::fromEnvironment( "{0,0,0}", "{0,0,0}" );
+    if ( !hasElasticityCase() )
+    {
+        cfg.dirichletMarkers = { "XMoins" };
+        cfg.faceTractions.push_back(
+            { { "XPlus" },
+              "{0,0," + qsecase::formatDouble( doption( "load" ) ) + "}" } );
+    }
+    cfg.referenceChecks.target =
+        qssb9::preferredTarget( cfg.referenceChecks,
+                                qsecase::optionExplicitlySet( "checks.target" ) &&
+                                !soption( "checks.target" ).empty() );
+    return cfg;
+}
+
+template<typename PointRangeType>
+double
+pointLoadScale( PointRangeType const& pointRange, std::string const& quantity, std::string const& label )
+{
+    if ( quantity == "per-point" || quantity == "per_point" || quantity == "point" )
+        return 1.0;
+    if ( quantity != "total" )
+        throw std::invalid_argument( label + " quantity must be 'per-point' or 'total'" );
+
+    size_type const nMarkedPoints = nelements( pointRange, true );
+    if ( nMarkedPoints == 0 )
+        throw std::invalid_argument( label + " uses quantity=total but selects no marked point" );
+    return 1.0 / nMarkedPoints;
+}
+
+qsec::point_type<3>
+fallbackPostprocessPoint( qsec::Config<3> const& checks )
+{
+    if ( !checks.fieldReferences.empty() )
+        return checks.fieldReferences.front().point;
+    for ( auto const& probe : checks.probes )
+        if ( probe.hasProbe )
+            return probe.point;
+    qsec::point_type<3> point;
+    point << 0.5, 0.5, 0.0;
+    return point;
+}
 } // namespace
 
 int
@@ -149,226 +242,359 @@ main( int argc, char** argv )
 {
     using namespace vf;
 
-    Environment env( _argc=argc, _argv=argv, _desc=makeOptions(), _about=makeAbout() );
-
-    auto mesh = createUnitShellMesh();
-
-    double const E = doption( "E" );
-    double const nu = doption( "nu" );
-    double const lambda = E * nu / ( ( 1.0 + nu ) * ( 1.0 - 2.0 * nu ) );
-    double const mu = E / ( 2.0 * ( 1.0 + nu ) );
-    double const alphaScale = doption( "alpha-scale" );
-
-    auto Uh = Pchv<1>( mesh );
-    auto Ah = Pdh<0>( mesh );
-    auto Xh = productPtr( Uh, Ah );
-    auto Th = Pdhms<1>( mesh );
-
-    auto epsilon = Th->element( "epsilon" );
-    auto sigma = Th->element( "sigma" );
-    [[maybe_unused]] auto epsilonXY = epsilon.tensorComponent( Component::X, Component::Y );
-    [[maybe_unused]] auto sigmaZZ = sigma.tensorComponent( Component::Z, Component::Z );
-
-    auto u = trial( Uh, "u" );
-    auto v = test( Uh, "v" );
-    auto alpha = trial( Ah, "alpha" );
-    auto beta = test( Ah, "beta" );
-
-    auto X = Xh->element();
-    auto uBc = X( 0_c );
-
-    auto backend = Feel::backend( _rebuild=true, _worldcomm=Uh->worldCommPtr() );
-    bool const useStaticCondensation = !boption( "monolithic" );
-    solve::strategy const strategy = useStaticCondensation
-                                         ? solve::strategy::static_condensation
-                                         : solve::strategy::monolithic;
-    auto a = blockform2( *Xh, strategy, backend );
-    auto l = blockform1( *Xh, strategy, backend );
-
-    auto zt = zeta();
-    auto C = isotropic_stiffness<3>( lambda, mu );
-    auto shearWeight = cst( 5.0 / 4.0 ) * ( cst( 1.0 ) - zt * zt );
-
-    auto epsU = sb9MembraneBending( u, zt );
-    auto epsV = sb9MembraneBending( v, zt );
-    auto epsP = sb9Pinching( u, zt );
-    auto epsQ = sb9Pinching( v, zt );
-    auto epsS = sb9Shear( u, shearWeight );
-    auto epsT = sb9Shear( v, shearWeight );
-    auto epsW = sb9W9( alpha, cst( alphaScale ) );
-    auto epsZ = sb9W9( beta, cst( alphaScale ) );
-
-    auto epsShellTrial = vec( component<0, 0>( epsU ),
-                              component<1, 0>( epsU ),
-                              component<2, 0>( epsS ),
-                              component<3, 0>( epsU ),
-                              component<4, 0>( epsS ),
-                              component<5, 0>( epsP ) );
-    auto epsShellTest = vec( component<0, 0>( epsV ),
-                             component<1, 0>( epsV ),
-                             component<2, 0>( epsT ),
-                             component<3, 0>( epsV ),
-                             component<4, 0>( epsT ),
-                             component<5, 0>( epsQ ) );
-
-    // SB9 assembly uses Feel++ compact symmetric storage in Mandel scaling:
-    //   Storage + Mandel = xx,xy,xz,yy,yz,zz with sqrt(2)-scaled shear slots.
-    // MATLAB validation tables use:
-    //   epsilon: xx,yy,zz,xy,xz,yz with engineering shear components,
-    //   sigma:   xx,yy,zz,xy,xz,yz with tensor shear components.
-    [[maybe_unused]] SymmetricTensorFormat const sb9AssemblyFormat{
-        SymmetricTensorOrder::Storage, SymmetricTensorScaling::Mandel };
-    [[maybe_unused]] SymmetricTensorFormat const matlabEpsilonFormat{
-        SymmetricTensorOrder::DiagonalFirst, SymmetricTensorScaling::EngineeringShear };
-    [[maybe_unused]] SymmetricTensorFormat const matlabSigmaFormat{
-        SymmetricTensorOrder::DiagonalFirst, SymmetricTensorScaling::Tensor };
-
-    // The tensor fields above are the semantic storage target for postprocessed
-    // SB9 strain/stress values. Use tensorComponent(i,j) to assign physical
-    // tensor entries, then evaluate/print with matlabEpsilonFormat or
-    // matlabSigmaFormat when comparing against the MATLAB validation order.
-
-    auto sb9Quad = sb9ThroughThicknessLobatto5();
-
-    // Minimal SB9 mixed elastic formulation:
-    //
-    // [ u     ]  displacement Q1 vector field, 24 element dofs
-    // [ alpha ]  internal P0 scalar mode, one element dof
-    //
-    a( 0_c, 0_c ) += integrate( _range=elements( mesh ),
-                                _quad=sb9Quad,
-                                _expr=ddot( C, epsShellTrial, epsShellTest ) );
-    a( 0_c, 1_c ) += integrate( _range=elements( mesh ),
-                                _quad=sb9Quad,
-                                _expr=ddot( C, epsW, epsShellTest ) );
-    a( 1_c, 0_c ) += integrate( _range=elements( mesh ),
-                                _quad=sb9Quad,
-                                _expr=ddot( C, epsShellTrial, epsZ ) );
-    a( 1_c, 1_c ) += integrate( _range=elements( mesh ),
-                                _quad=sb9Quad,
-                                _expr=ddot( C, epsW, epsZ ) );
-
-#if 0
-    // Transient extension: mass belongs only to the physical Q1 displacement
-    // field. The internal SB9 scalar alpha is an assumed-strain/static
-    // condensation variable and is intentionally not included in inertia.
-    double constexpr rho = 1.0;
-    auto massQuad = sb9LumpedMassLobatto();
-    auto m = form2( _trial=Uh, _test=Uh );
-    m = integrate( _range=elements( mesh ),
-                   _quad=massQuad,
-                   _expr=cst( rho ) * inner( u, v ) );
-#endif
-
-    // Compact equivalent of the stabilization block used in
-    // qs_sb9_mixed_bending.cpp.
-    auto sb9Stabilization = [&]( auto const& trialField, auto const& testField )
+    try
     {
-        double constexpr shearStabilizationScale = 1.0;
-        double constexpr bsStabilizationScale = 1.0;
+        Environment env( _argc=argc, _argv=argv, _desc=makeOptions(), _about=makeAbout() );
 
-        auto invJ0 = inv( shellJacobian0() );
-        auto j11 = component<0, 0>( invJ0 );
-        auto j21 = component<1, 0>( invJ0 );
-        auto j22 = component<1, 1>( invJ0 );
-        auto j33 = component<2, 2>( invJ0 );
-
-        auto normalStiffness = cst( bsStabilizationScale * ( lambda + 2.0 * mu ) );
-        auto dz = normalStiffness * j33 * j33;
-        auto dx = normalStiffness * j11 * j11;
-        auto dy = normalStiffness * ( j21 * j21 + j22 * j22 );
-
-        auto c0 = []( auto const& Bu, auto const& Bv )
+        auto cfg = caseConfigFromInput();
+        auto mesh = createMesh( cfg );
+        if ( cfg.expectedElements )
         {
-            return component<0, 0>( Bu ) * component<0, 0>( Bv );
-        };
-        auto c1 = []( auto const& Bu, auto const& Bv )
+            auto const nElements = nelements( elements( mesh ), true );
+            if ( nElements != *cfg.expectedElements )
+                throw std::runtime_error( "mesh element count check failed: expected " +
+                                          std::to_string( *cfg.expectedElements ) +
+                                          ", got " + std::to_string( nElements ) );
+        }
+
+        double const E = cfg.E;
+        double const nu = cfg.nu;
+        double const lambda = E * nu / ( ( 1.0 + nu ) * ( 1.0 - 2.0 * nu ) );
+        double const mu = E / ( 2.0 * ( 1.0 + nu ) );
+        double const alphaScale = doption( "alpha-scale" );
+        double const pinchingBpzScale = doption( "pinching-bpz-scale" );
+        double const shellShearFactor = doption( "shell-shear-factor" );
+        double const shellShearStab = doption( "shell-shear-stab" );
+        double const shellBsStab = doption( "shell-bs-stab" );
+        bool const useStaticCondensation = !boption( "monolithic" );
+        bool const solved = !boption( "no-solve" );
+
+        std::cout << "qs_sb9: E=" << E
+                  << ", nu=" << nu
+                  << ", pinching-bpz-scale=" << pinchingBpzScale
+                  << ", strategy=" << ( useStaticCondensation ? "static_condensation" : "monolithic" )
+                  << ", check-target=" << cfg.referenceChecks.target << "\n";
+
+        bool const showTimings = boption( "show-timings" );
+        auto ticIf = [showTimings]()
         {
-            return component<1, 0>( Bu ) * component<1, 0>( Bv );
+            if ( showTimings )
+                tic();
         };
-        auto c2 = []( auto const& Bu, auto const& Bv )
+        auto tocIf = [showTimings]( char const* label )
         {
-            return component<2, 0>( Bu ) * component<2, 0>( Bv );
+            if ( showTimings )
+                toc( label, true );
         };
 
-        auto bs1u = sb9Bs1( trialField );
-        auto bs1v = sb9Bs1( testField );
-        auto bs2u = sb9Bs2( trialField );
-        auto bs2v = sb9Bs2( testField );
-        auto bs3u = sb9Bs3( trialField );
-        auto bs3v = sb9Bs3( testField );
-        auto bs4u = sb9Bs4( trialField );
-        auto bs4v = sb9Bs4( testField );
+        ticIf();
+        auto Uh = Pchv<1>( mesh );
+        auto Ah = Pdh<0>( mesh );
+        auto Xh = productPtr( Uh, Ah );
+        auto algebraBackend = backend( _rebuild=true, _worldcomm=Uh->worldCommPtr() );
+        tocIf( "sb9.spaces" );
 
-        auto shearPart = cst( shearStabilizationScale * mu * 5.0 / 18.0 ) *
-                         ( inner( sb9Bc1( trialField ), sb9Bc1( testField ) ) +
-                           inner( sb9Bc2( trialField ), sb9Bc2( testField ) ) );
+        solve::strategy const strategy = useStaticCondensation
+                                             ? solve::strategy::static_condensation
+                                             : solve::strategy::monolithic;
+        auto a = blockform2( *Xh, strategy, algebraBackend );
+        auto l = blockform1( *Xh, strategy, algebraBackend );
 
-        auto bsPart = cst( 1.0 / 3.0 ) * dz * ( c0( bs1u, bs1v ) + c0( bs2u, bs2v ) ) +
-                      cst( 1.0 / 3.0 ) * ( dx * c0( bs3u, bs3v ) + dy * c1( bs3u, bs3v ) ) +
-                      cst( 1.0 / 9.0 ) * ( cst( 1.0e-4 ) *
-                                           ( dx * c0( bs4u, bs4v ) + dy * c1( bs4u, bs4v ) ) +
-                                           dz * c2( bs4u, bs4v ) );
+        auto u = trial( Uh, "u" );
+        auto v = test( Uh, "v" );
+        auto alpha = trial( Ah, "alpha" );
+        auto beta = test( Ah, "beta" );
+        auto X = Xh->element();
+        auto uBc = X( 0_c );
 
-        return shearPart + bsPart;
-    };
+        auto zt = zeta();
+        auto C = isotropic_stiffness<3>( lambda, mu );
+        auto shellShearWeight = cst( shellShearFactor ) * ( cst( 1.0 ) - zt * zt );
 
-    a( 0_c, 0_c ) += integrate( _range=elements( mesh ),
-                                _quad=sb9Quad,
-                                _expr=sb9Stabilization( u, v ) );
+        auto membraneTrial = sb9MembraneBending( u, zt );
+        auto membraneTest = sb9MembraneBending( v, zt );
+        auto pinchingTrial = sb9Pinching( u, zt, cst( pinchingBpzScale ) );
+        auto pinchingTest = sb9Pinching( v, zt, cst( pinchingBpzScale ) );
+        auto shearTrial = sb9Shear( u, shellShearWeight );
+        auto shearTest = sb9Shear( v, shellShearWeight );
+        auto alphaTrial = sb9W9( alpha, cst( alphaScale ) );
+        auto alphaTest = sb9W9( beta, cst( alphaScale ) );
 
-    l( 0_c ) += integrate( _range=markedfaces( mesh, "XPlus" ),
-                           _expr=inner( vec( cst( 0.0 ), cst( 0.0 ), cst( doption( "load" ) ) ), v ) );
+        auto epsShellTrialMandel = vec( component<0, 0>( membraneTrial ),
+                                        component<1, 0>( membraneTrial ),
+                                        component<2, 0>( shearTrial ),
+                                        component<3, 0>( membraneTrial ),
+                                        component<4, 0>( shearTrial ),
+                                        component<5, 0>( pinchingTrial ) );
+        auto epsShellTestMandel = vec( component<0, 0>( membraneTest ),
+                                       component<1, 0>( membraneTest ),
+                                       component<2, 0>( shearTest ),
+                                       component<3, 0>( membraneTest ),
+                                       component<4, 0>( shearTest ),
+                                       component<5, 0>( pinchingTest ) );
 
-    l.close();
-    a.close();
+        auto sb9Quad = sb9ThroughThicknessLobatto5();
 
-    a.row( 0_c ) += on( _range=markedfaces( mesh, "XMoins" ),
-                        _rhs=l( 0_c ),
-                        _element=uBc,
-                        _expr=zero<3, 1>(),
-                        _type="elimination" );
+        ticIf();
+        a( 0_c, 0_c ) += integrate( _range=elements( mesh ),
+                                    _quad=sb9Quad,
+                                    _expr=ddot( C, epsShellTrialMandel, epsShellTestMandel ) );
+        a( 0_c, 1_c ) += integrate( _range=elements( mesh ),
+                                    _quad=sb9Quad,
+                                    _expr=ddot( C, alphaTrial, epsShellTestMandel ) );
+        a( 1_c, 0_c ) += integrate( _range=elements( mesh ),
+                                    _quad=sb9Quad,
+                                    _expr=ddot( C, epsShellTrialMandel, alphaTest ) );
+        a( 1_c, 1_c ) += integrate( _range=elements( mesh ),
+                                    _quad=sb9Quad,
+                                    _expr=ddot( C, alphaTrial, alphaTest ) );
+        tocIf( "sb9.elastic" );
 
-    if ( !boption( "no-solve" ) )
-        a.solve( _rhs=l, _solution=X,
-                 _condense=useStaticCondensation,
-                 _condenser=condenser_sb9() );
+        auto sb9Stabilization = [&]( auto const& trialField, auto const& testField )
+        {
+            auto invJ0 = inv( shellJacobian0() );
+            auto j11 = component<0, 0>( invJ0 );
+            auto j21 = component<1, 0>( invJ0 );
+            auto j22 = component<1, 1>( invJ0 );
+            auto j33 = component<2, 2>( invJ0 );
 
-    auto uh = X( 0_c );
-    auto alphah = X( 1_c );
+            auto normalStiffness = cst( shellBsStab * ( lambda + 2.0 * mu ) );
+            auto dz = normalStiffness * j33 * j33;
+            auto dx = normalStiffness * j11 * j11;
+            auto dy = normalStiffness * ( j21 * j21 + j22 * j22 );
 
-    if ( boption( "print-matlab-fields" ) )
+            auto c0 = []( auto const& Bu, auto const& Bv )
+            {
+                return component<0, 0>( Bu ) * component<0, 0>( Bv );
+            };
+            auto c1 = []( auto const& Bu, auto const& Bv )
+            {
+                return component<1, 0>( Bu ) * component<1, 0>( Bv );
+            };
+            auto c2 = []( auto const& Bu, auto const& Bv )
+            {
+                return component<2, 0>( Bu ) * component<2, 0>( Bv );
+            };
+
+            auto bs1u = sb9Bs1( trialField );
+            auto bs1v = sb9Bs1( testField );
+            auto bs2u = sb9Bs2( trialField );
+            auto bs2v = sb9Bs2( testField );
+            auto bs3u = sb9Bs3( trialField );
+            auto bs3v = sb9Bs3( testField );
+            auto bs4u = sb9Bs4( trialField );
+            auto bs4v = sb9Bs4( testField );
+
+            auto shearPart = cst( shellShearStab * mu * 5.0 / 18.0 ) *
+                             ( inner( sb9Bc1( trialField ), sb9Bc1( testField ) ) +
+                               inner( sb9Bc2( trialField ), sb9Bc2( testField ) ) );
+
+            auto bsPart = cst( 1.0 / 3.0 ) * dz * ( c0( bs1u, bs1v ) + c0( bs2u, bs2v ) ) +
+                          cst( 1.0 / 3.0 ) * ( dx * c0( bs3u, bs3v ) + dy * c1( bs3u, bs3v ) ) +
+                          cst( 1.0 / 9.0 ) * ( cst( 1.0e-4 ) *
+                                               ( dx * c0( bs4u, bs4v ) + dy * c1( bs4u, bs4v ) ) +
+                                               dz * c2( bs4u, bs4v ) );
+
+            return shearPart + bsPart;
+        };
+
+        ticIf();
+        a( 0_c, 0_c ) += integrate( _range=elements( mesh ),
+                                    _quad=sb9Quad,
+                                    _expr=sb9Stabilization( u, v ) );
+        tocIf( "sb9.stabilization" );
+
+        auto lDisplacement = l( 0_c );
+        auto f = expr<3, 1>( cfg.bodyForceExpression, "f" );
+        lDisplacement += integrate( _range=elements( mesh ),
+                                    _expr=inner( f, v ) );
+
+        for ( auto const& load : cfg.facePressures )
+        {
+            auto pressure = expr( load.expression, "pressure" );
+            lDisplacement += integrate( _range=markedfaces( mesh, load.marker ),
+                                        _expr=inner( -pressure * N(), v ) );
+        }
+
+        for ( auto const& load : cfg.faceTractions )
+        {
+            auto traction = expr<3, 1>( load.expression, "traction" );
+            lDisplacement += integrate( _range=markedfaces( mesh, load.markers ),
+                                        _expr=inner( traction, v ) );
+        }
+
+        for ( auto const& load : cfg.faceTotalForces )
+        {
+            auto forceRange = markedfaces( mesh, load.markers );
+            double const area = integrate( _range=forceRange, _expr=cst( 1.0 ) ).evaluate()( 0, 0 );
+            if ( area <= 0.0 )
+                throw std::invalid_argument( "face total force selects no marked face" );
+
+            auto totalForce = expr<3, 1>( load.expression, "face_total_force" );
+            lDisplacement += integrate( _range=forceRange,
+                                        _expr=inner( cst( 1.0/area ) * totalForce, v ) );
+        }
+
+        for ( auto const& load : cfg.pointForces )
+        {
+            auto pointRange = markedpoints( mesh, load.markers );
+            double const scale = pointLoadScale( pointRange, load.quantity, "point force" );
+            auto pointForce = expr<3, 1>( load.expression, "point_force" );
+            lDisplacement += integrate( _range=pointRange,
+                                        _expr=cst( scale ) * inner( pointForce, id( v ) ) );
+        }
+
+        for ( auto const& load : cfg.pointMoments )
+        {
+            auto pointRange = markedpoints( mesh, load.markers );
+            double const scale = pointLoadScale( pointRange, load.quantity, "point moment" );
+            auto pointMoment = expr<3, 1>( load.expression, "point_moment" );
+            lDisplacement += integrate( _range=pointRange,
+                                        _expr=cst( scale ) * inner( pointMoment, omega( v ) ) );
+        }
+
+        l.close();
+        a.close();
+
+        auto g = expr<3, 1>( cfg.dirichletExpression, "g" );
+        for ( auto const& clampMarker : cfg.dirichletMarkers )
+        {
+            a.row( 0_c ) += on( _range=markedfaces( mesh, clampMarker ),
+                                _rhs=l( 0_c ),
+                                _element=uBc,
+                                _expr=g,
+                                _type="elimination" );
+        }
+
+        auto uBcX = uBc[ComponentType::X];
+        auto uBcY = uBc[ComponentType::Y];
+        auto uBcZ = uBc[ComponentType::Z];
+        auto applyPointConstraintComponent = [&]( PointConstraintConfig const& constraint, int component )
+        {
+            if ( !constraint.components[component] )
+                return;
+
+            auto value = expr( constraint.values[component], "point_constraint" );
+            switch ( component )
+            {
+            case 0:
+                a.row( 0_c ) += on( _range=markedpoints( mesh, constraint.marker ),
+                                    _rhs=l( 0_c ),
+                                    _element=uBcX,
+                                    _expr=value,
+                                    _type="elimination" );
+                break;
+            case 1:
+                a.row( 0_c ) += on( _range=markedpoints( mesh, constraint.marker ),
+                                    _rhs=l( 0_c ),
+                                    _element=uBcY,
+                                    _expr=value,
+                                    _type="elimination" );
+                break;
+            case 2:
+                a.row( 0_c ) += on( _range=markedpoints( mesh, constraint.marker ),
+                                    _rhs=l( 0_c ),
+                                    _element=uBcZ,
+                                    _expr=value,
+                                    _type="elimination" );
+                break;
+            default:
+                throw std::invalid_argument( "invalid point constraint component" );
+            }
+        };
+        for ( auto const& constraint : cfg.pointConstraints )
+            for ( int component = 0; component < 3; ++component )
+                applyPointConstraintComponent( constraint, component );
+
+        if ( solved )
+        {
+            ticIf();
+            a.solve( _rhs=l, _solution=X,
+                     _condense=useStaticCondensation,
+                     _condenser=condenser_sb9() );
+            tocIf( "sb9.solve" );
+        }
+
+        auto uh = X( 0_c );
+        auto alphah = X( 1_c );
+
+        ticIf();
+        auto scalarSpace = Pch<1>( mesh );
+        auto cellSpace = Pdh<0>( mesh );
+        auto tensorSpace = Pdhms<1>( mesh );
+        auto thickness = vf::project( _space=cellSpace, _range=elements( mesh ), _expr=shellThickness() );
+        auto area0 = vf::project( _space=cellSpace, _range=elements( mesh ), _expr=shellArea0() );
+        auto normalDisplacement = vf::project( _space=scalarSpace,
+                                               _range=elements( mesh ),
+                                               _expr=inner( idv( uh ), shellNormal() ) );
+        auto epsilon = tensorSpace->element( "epsilon" );
+        auto sigma = tensorSpace->element( "sigma" );
+        qssb9::fillSymmetricFields( mesh, uh, alphah, epsilon, sigma,
+                                    lambda, mu, alphaScale, pinchingBpzScale, shellShearFactor );
+        tocIf( "sb9.postprocess" );
+
+        if ( boption( "print-matlab-fields" ) )
+        {
+            uh.printMatlab( "u.m" );
+            alphah.printMatlab( "alpha.m" );
+
+            auto fieldContext = qssb9::matlabFieldContext( tensorSpace,
+                                                           cfg.referenceChecks,
+                                                           fallbackPostprocessPoint( cfg.referenceChecks ) );
+            epsilon.printMatlab( "epsilon_matlab",
+                                 fieldContext,
+                                 qssb9::matlabEpsilonFormat(),
+                                 true,
+                                 "epsilon" );
+            sigma.printMatlab( "sigma_matlab",
+                               fieldContext,
+                               qssb9::matlabSigmaFormat(),
+                               true,
+                               "sigma" );
+        }
+
+        auto dispNormMax = normLinf( _range=elements( mesh ), _pset=_Q<2>(), _expr=norm2( idv( uh ) ) );
+        std::cout << "max displacement norm = " << dispNormMax.value()
+                  << " at " << dispNormMax.arg().transpose() << "\n";
+
+        bool const runReferenceChecks = solved && boption( "check-reference" );
+        qsec::ElasticityReferenceChecker<3> checks( "qs_sb9" );
+        checks.setConfig( cfg.referenceChecks )
+              .setTarget( cfg.referenceChecks.target )
+              .addDisplacementProbe( Uh, uh, runReferenceChecks )
+              .addCantileverChecks( mesh, Uh, uh, E, runReferenceChecks );
+        checks.add( "SB9 field reference values",
+                    runReferenceChecks && cfg.referenceChecks.hasFieldReferences(),
+                    [&cfg,&tensorSpace,&epsilon,&sigma]() {
+                        return qssb9::checkFieldReferences( cfg.referenceChecks,
+                                                            tensorSpace,
+                                                            epsilon,
+                                                            sigma,
+                                                            cfg.referenceChecks.target,
+                                                            true );
+                    } );
+
+        auto e = exporter( _mesh=mesh );
+        e->addRegions();
+        e->add( "u", uh );
+        e->add( "alpha", alphah );
+        e->add( "epsilon", epsilon );
+        e->add( "sigma", sigma );
+        if ( boption( "export-thickness" ) )
+        {
+            e->add( "shell_thickness", thickness );
+            e->add( "shell_area0", area0 );
+        }
+        if ( boption( "export-normal-displacement" ) )
+            e->add( "u_normal", normalDisplacement );
+        e->save();
+
+        return checks.run();
+    }
+    catch ( ... )
     {
-        auto matlabContext = Th->context();
-        node_type center( 3 );
-        center( 0 ) = 0.5;
-        center( 1 ) = 0.5;
-        center( 2 ) = 0.0;
-        matlabContext.add( center );
-
-        epsilon.printMatlab( "epsilon_matlab",
-                             matlabContext,
-                             matlabEpsilonFormat,
-                             true,
-                             "epsilon" );
-        sigma.printMatlab( "sigma_matlab",
-                           matlabContext,
-                           matlabSigmaFormat,
-                           true,
-                           "sigma" );
+        handleExceptions();
     }
 
-    std::cout << "qs_sb9 minimal formulation assembled"
-              << " with E=" << E
-              << ", nu=" << nu
-              << ", load=" << doption( "load" )
-              << ", strategy=" << ( useStaticCondensation ? "static_condensation" : "monolithic" ) << "\n";
-
-    auto e = exporter( _mesh=mesh );
-    e->addRegions();
-    e->add( "u", uh );
-    e->add( "alpha", alphah );
-    e->save();
-
-    return 0;
+    return 1;
 }
