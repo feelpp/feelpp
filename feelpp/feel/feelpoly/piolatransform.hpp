@@ -14,12 +14,107 @@
 #define FEELPP_FEELPOLY_PIOLATRANSFORM_HPP 1
 
 #include <Eigen/Core>
+#include <Eigen/QR>
 
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 
 namespace Feel::geometry
 {
+/**
+ * @brief Return the orthogonal projector onto a tangent space.
+ *
+ * For a nonzero normal vector `n`, computes
+ * `P_T = I - n n^T / (n.n)`. The normalization is performed internally so
+ * callers may provide either a unit normal or a Piola-scaled normal.
+ *
+ * @param normal normal or conormal defining the tangent space
+ * @return symmetric idempotent tangent projector
+ * @throws std::invalid_argument if the normal is numerically zero
+ */
+template <typename VectorDerived>
+[[nodiscard]] auto tangentProjector(
+    Eigen::MatrixBase<VectorDerived> const& normal )
+{
+    using value_type = typename VectorDerived::Scalar;
+    constexpr int rows = VectorDerived::RowsAtCompileTime;
+    Eigen::Matrix<value_type,rows,rows> projector(
+        normal.rows(), normal.rows() );
+    value_type const squaredNorm = normal.squaredNorm();
+    if ( squaredNorm <= Eigen::NumTraits<value_type>::dummy_precision() )
+        throw std::invalid_argument(
+            "A tangent projector requires a nonzero normal" );
+    projector.setIdentity();
+    projector.noalias() -= normal*normal.transpose()/squaredNorm;
+    return projector;
+}
+
+/**
+ * @brief Return the orthogonal projector onto a column-vector subspace.
+ * @param orthonormalFrame orthonormal basis vectors stored by columns
+ * @return `Q Q^T`
+ */
+template <typename MatrixDerived>
+[[nodiscard]] auto subspaceProjector(
+    Eigen::MatrixBase<MatrixDerived> const& orthonormalFrame )
+{
+    return ( orthonormalFrame*orthonormalFrame.transpose() ).eval();
+}
+
+/**
+ * @brief Construct an oriented orthonormal frame with a prescribed normal.
+ *
+ * The first candidate is the supplied normal; subsequent candidates span the
+ * tangent space. A Householder QR factorization provides a stable frame. Each
+ * column sign follows its corresponding candidate after orthogonalization,
+ * and a square frame is made direct by adjusting its last tangent.
+ *
+ * @param normal prescribed nonzero normal or conormal
+ * @param tangentCandidates independent tangent candidates stored by columns
+ * @return orthonormal frame whose first column follows `normal`
+ */
+template <typename VectorDerived, typename TangentDerived>
+[[nodiscard]] auto orientedOrthonormalFrame(
+    Eigen::MatrixBase<VectorDerived> const& normal,
+    Eigen::MatrixBase<TangentDerived> const& tangentCandidates )
+{
+    using value_type = typename VectorDerived::Scalar;
+    constexpr int rows = VectorDerived::RowsAtCompileTime;
+    constexpr int tangentColumns = TangentDerived::ColsAtCompileTime;
+    constexpr int columns = tangentColumns == Eigen::Dynamic
+                                ? Eigen::Dynamic
+                                : tangentColumns+1;
+    Eigen::Matrix<value_type,rows,columns> candidates(
+        normal.rows(), tangentCandidates.cols()+1 );
+    candidates.col( 0 ) = normal;
+    candidates.rightCols( tangentCandidates.cols() ) = tangentCandidates;
+
+    Eigen::HouseholderQR<decltype( candidates )> factorization( candidates );
+    Eigen::Matrix<value_type,rows,columns> frame(
+        candidates.rows(), candidates.cols() );
+    frame = factorization.householderQ() *
+        Eigen::Matrix<value_type,rows,columns>::Identity(
+            candidates.rows(), candidates.cols() );
+
+    for ( int column = 0; column < frame.cols(); ++column )
+        if ( frame.col( column ).dot( candidates.col( column ) ) < value_type{} )
+            frame.col( column ) *= value_type( -1 );
+
+    if constexpr ( rows == Eigen::Dynamic || columns == Eigen::Dynamic )
+    {
+        if ( frame.rows() == frame.cols() && frame.rows() > 1 &&
+             frame.determinant() < value_type{} )
+            frame.col( frame.cols()-1 ) *= value_type( -1 );
+    }
+    else if constexpr ( rows == columns && rows > 1 )
+    {
+        if ( frame.determinant() < value_type{} )
+            frame.col( frame.cols()-1 ) *= value_type( -1 );
+    }
+    return frame;
+}
+
 //!
 //! \brief Push an H(curl) vector from reference to physical coordinates.
 //!
@@ -120,6 +215,49 @@ template <typename MatrixDerived, typename Scalar, typename VectorDerived>
     return ( integrationJacobian * referenceFacetMeasure *
              inverseJacobianTranspose * referenceNormal )
         .eval();
+}
+
+/**
+ * @brief Construct the mixed Piola frame of an oriented reference facet.
+ *
+ * Column zero is the contravariant normal-flux direction
+ * `J K^{-T} nHat |fHat|`; remaining columns are covariant tangential
+ * directions `K tHat_i`. Unlike an orthonormal convenience frame, this frame
+ * preserves the reference functional parametrization and must be used for
+ * H(div)/H(curl) trace pairings.
+ *
+ * @param jacobian physical Jacobian `K`
+ * @param inverseJacobianTranspose inverse Jacobian transpose `K^{-T}`
+ * @param integrationJacobian positive integration Jacobian `J`
+ * @param referenceNormal oriented reference unit normal
+ * @param referenceTangents oriented reference tangent vectors by columns
+ * @param referenceFacetMeasure measure of the reference facet
+ * @return pointwise Piola trace frame
+ */
+template <typename JacobianDerived, typename InverseDerived, typename Scalar,
+          typename NormalDerived, typename TangentDerived>
+[[nodiscard]] auto piolaTraceFrame(
+    Eigen::MatrixBase<JacobianDerived> const& jacobian,
+    Eigen::MatrixBase<InverseDerived> const& inverseJacobianTranspose,
+    Scalar const& integrationJacobian,
+    Eigen::MatrixBase<NormalDerived> const& referenceNormal,
+    Eigen::MatrixBase<TangentDerived> const& referenceTangents,
+    Scalar const& referenceFacetMeasure )
+{
+    using value_type = typename JacobianDerived::Scalar;
+    constexpr int rows = JacobianDerived::RowsAtCompileTime;
+    constexpr int tangentColumns = TangentDerived::ColsAtCompileTime;
+    constexpr int columns = tangentColumns == Eigen::Dynamic
+                                ? Eigen::Dynamic
+                                : tangentColumns+1;
+    Eigen::Matrix<value_type,rows,columns> frame(
+        jacobian.rows(), referenceTangents.cols()+1 );
+    frame.col( 0 ) = contravariantPiolaTestDirection(
+        inverseJacobianTranspose, integrationJacobian, referenceNormal,
+        referenceFacetMeasure );
+    frame.rightCols( referenceTangents.cols() ).noalias() =
+        jacobian*referenceTangents;
+    return frame;
 }
 
 //!

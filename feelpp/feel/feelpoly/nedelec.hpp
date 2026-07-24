@@ -2322,7 +2322,7 @@ public:
                 expr, Ihloc, convex_type::numEdges, nDofPerEdge, t,
                 [&expr]( uint16_type edge, uint16_type point, auto& tangent )
                 {
-                    expr.geom()->covariantPiolaTangent( edge, point, tangent );
+                    expr.geom()->piolaCovariantEdgeTangent( edge, point, tangent );
                 } );
             auto const& sampling = this->dual().samplingLayout();
             if constexpr ( nDim == 3 && nDofPerFace > 0 )
@@ -2389,7 +2389,7 @@ public:
                     const int elementEdge = nDim <= 2
                                                 ? g->element().fToE( g->faceId(), g->faceId() )
                                                 : g->element().fToE( g->faceId(), edge );
-                    expr.geom()->covariantPiolaTangent( elementEdge, point, tangent );
+                    expr.geom()->piolaCovariantEdgeTangent( elementEdge, point, tangent );
                 } );
 
             if constexpr ( nDim == 3 && nDofPerFace > 0 )
@@ -2471,7 +2471,7 @@ public:
             {
                 int q = e*nDofPerEdge+l;
                 int q2 = edgeid_in_element*nDofPerEdge+l;
-                expr.geom()->covariantPiolaTangent( edgeid_in_element, q, t );
+                expr.geom()->piolaCovariantEdgeTangent( edgeid_in_element, q, t );
                 CHECK( q < nPoints) << "wrong point eval" << q << " vs " << nPoints;
 
                 for( int i = 0; i < expr_basis_t::nLocalDof; ++i )
@@ -2815,7 +2815,7 @@ public:
         Feel::detail::interpolateHCurlEdgePointDofs(
             expr, localValues, convex_type::numEdges, dofPerEdge(), M_tangent,
             [&expr]( uint16_type edge, uint16_type point, auto& tangent )
-            { expr.geom()->covariantPiolaTangent( edge, point, tangent ); } );
+            { expr.geom()->piolaCovariantEdgeTangent( edge, point, tangent ); } );
 
         auto const& sampling = this->dual().samplingLayout();
         if constexpr ( nDim == 3 )
@@ -2905,7 +2905,7 @@ public:
                 const int elementEdge = nDim <= 2
                     ? geometry->element().fToE( geometry->faceId(), geometry->faceId() )
                     : geometry->element().fToE( geometry->faceId(), edge );
-                expr.geom()->covariantPiolaTangent( elementEdge, point, tangent );
+                expr.geom()->piolaCovariantEdgeTangent( elementEdge, point, tangent );
             } );
         if constexpr ( nDim == 3 )
         {

@@ -18,7 +18,9 @@
 #include <Eigen/Core>
 #include <Eigen/LU>
 
+#include <array>
 #include <cmath>
+#include <stdexcept>
 
 using namespace Feel;
 
@@ -240,6 +242,118 @@ BOOST_AUTO_TEST_CASE( curved_full_gradient_chain_rule )
         hdivReferenceDerivative*K.inverse();
     BOOST_CHECK_SMALL( ( hcurlGradient-expectedHcurl ).norm(), 2e-9 );
     BOOST_CHECK_SMALL( ( hdivGradient-expectedHdiv ).norm(), 2e-9 );
+}
+
+/** Verify tangent projectors and stable oriented QR frames. */
+BOOST_AUTO_TEST_CASE( tangent_projectors_and_oriented_frames )
+{
+    Eigen::Vector2d normal2( 0.6, 0.8 );
+    Eigen::Matrix<double,2,1> tangent2;
+    tangent2 << -0.8, 0.6;
+    auto const frame2 = geometry::orientedOrthonormalFrame(
+        normal2, tangent2 );
+    BOOST_CHECK_SMALL(
+        ( frame2.transpose()*frame2-Eigen::Matrix2d::Identity() ).norm(),
+        2e-13 );
+    BOOST_CHECK_GT( frame2.determinant(), 0.0 );
+    BOOST_CHECK_GT( frame2.col( 0 ).dot( normal2 ), 0.0 );
+
+    auto const projector2 = geometry::tangentProjector( normal2 );
+    auto const frameProjector2 = geometry::subspaceProjector(
+        frame2.rightCols<1>() );
+    BOOST_CHECK_SMALL( ( projector2-projector2.transpose() ).norm(), 2e-13 );
+    BOOST_CHECK_SMALL( ( projector2*projector2-projector2 ).norm(), 2e-13 );
+    BOOST_CHECK_SMALL( ( projector2*normal2 ).norm(), 2e-13 );
+    BOOST_CHECK_SMALL( ( projector2-frameProjector2 ).norm(), 2e-13 );
+
+    Eigen::Vector3d normal3( 0.3, -0.4, 0.5 );
+    Eigen::Matrix<double,3,2> tangentCandidates3;
+    tangentCandidates3 << 1.0, 0.2,
+        0.4, 0.9,
+        -0.28, 0.6;
+    auto const frame3 = geometry::orientedOrthonormalFrame(
+        normal3, tangentCandidates3 );
+    BOOST_CHECK_SMALL(
+        ( frame3.transpose()*frame3-Eigen::Matrix3d::Identity() ).norm(),
+        3e-13 );
+    BOOST_CHECK_GT( frame3.determinant(), 0.0 );
+    BOOST_CHECK_GT( frame3.col( 0 ).dot( normal3 ), 0.0 );
+    auto const tangentProjector3 = geometry::subspaceProjector(
+        frame3.rightCols<2>() );
+    BOOST_CHECK_SMALL( ( tangentProjector3*frame3.col( 0 ) ).norm(), 3e-13 );
+    BOOST_CHECK_SMALL(
+        ( tangentProjector3*tangentProjector3-tangentProjector3 ).norm(),
+        3e-13 );
+
+    Eigen::Matrix<double,3,1> embeddedTangent;
+    embeddedTangent << 0.8, 0.6, 0.2;
+    auto const embeddedFrame = geometry::orientedOrthonormalFrame(
+        Eigen::Vector3d( -0.6, 0.8, 0.0 ), embeddedTangent );
+    BOOST_CHECK_SMALL(
+        ( embeddedFrame.transpose()*embeddedFrame-
+          Eigen::Matrix2d::Identity() ).norm(), 3e-13 );
+    auto const embeddedProjector = geometry::subspaceProjector(
+        embeddedFrame.rightCols<1>() );
+    BOOST_CHECK_SMALL(
+        ( embeddedProjector*embeddedFrame.col( 0 ) ).norm(), 3e-13 );
+    BOOST_CHECK_CLOSE( embeddedProjector.trace(), 1.0, 1e-12 );
+
+    Eigen::Vector2d zero = Eigen::Vector2d::Zero();
+    BOOST_CHECK_THROW( static_cast<void>( geometry::tangentProjector( zero ) ),
+                       std::invalid_argument );
+}
+
+/** Verify mixed Piola frames for every direct tangent permutation. */
+BOOST_AUTO_TEST_CASE( piola_trace_frame_orientation_and_pairings )
+{
+    Eigen::Matrix3d K;
+    K << 1.4, 0.2, -0.1,
+        0.1, 1.2, 0.3,
+        -0.05, 0.15, 1.1;
+    Eigen::Matrix3d const B = K.inverse().transpose();
+    double const J = std::abs( K.determinant() );
+    double const referenceMeasure = 0.75;
+    Eigen::Vector3d const referenceNormal = Eigen::Vector3d::UnitX();
+    Eigen::Vector3d const hdivReference( 0.7, -0.2, 0.4 );
+    Eigen::Vector3d const hcurlReference( -0.3, 0.9, 0.5 );
+    auto const hdivPhysical = geometry::contravariantPiolaPushForward(
+        K, J, hdivReference );
+    auto const hcurlPhysical = geometry::covariantPiolaPushForward(
+        B, hcurlReference );
+
+    std::array<Eigen::Matrix<double,3,2>,4> tangentFrames;
+    tangentFrames[0] << 0, 0, 1, 0, 0, 1;
+    tangentFrames[1] << 0, 0, 0, -1, 1, 0;
+    tangentFrames[2] << 0, 0, -1, 0, 0, -1;
+    tangentFrames[3] << 0, 0, 0, 1, -1, 0;
+
+    for ( auto const& referenceTangents : tangentFrames )
+    {
+        Eigen::Matrix3d referenceFrame;
+        referenceFrame.col( 0 ) = referenceNormal;
+        referenceFrame.rightCols<2>() = referenceTangents;
+        BOOST_CHECK_GT( referenceFrame.determinant(), 0.0 );
+
+        auto const frame = geometry::piolaTraceFrame(
+            K, B, J, referenceNormal, referenceTangents,
+            referenceMeasure );
+        BOOST_CHECK_SMALL(
+            ( frame.col( 0 )-
+              geometry::contravariantPiolaTestDirection(
+                  B, J, referenceNormal, referenceMeasure ) ).norm(),
+            2e-13 );
+        BOOST_CHECK_SMALL(
+            ( frame.rightCols<2>()-K*referenceTangents ).norm(), 2e-13 );
+        BOOST_CHECK_SMALL(
+            hdivPhysical.dot( frame.col( 0 ) )-
+                referenceMeasure*hdivReference.dot( referenceNormal ),
+            2e-13 );
+        for ( int tangent = 0; tangent < 2; ++tangent )
+            BOOST_CHECK_SMALL(
+                hcurlPhysical.dot( frame.col( tangent+1 ) )-
+                    hcurlReference.dot( referenceTangents.col( tangent ) ),
+                2e-13 );
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

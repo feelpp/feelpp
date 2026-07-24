@@ -21,6 +21,7 @@ feelpp_add_test( fspace_context )
 feelpp_add_test( geomap )
 feelpp_add_test( geomap_order_validity )
 feelpp_add_test( geomap_representation )
+feelpp_add_test( geomap_frames )
 
 feelpp_add_test( spacefunc )
 

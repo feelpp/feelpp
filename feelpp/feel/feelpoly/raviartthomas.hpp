@@ -1037,7 +1037,7 @@ public:
                 {
                     const uint16_type elementFacet = g->faceId() == invalid_uint16_type_value
                         ? facet : g->faceId();
-                    expr.geom()->contravariantPiolaNormal( elementFacet, point, normal );
+                    expr.geom()->piolaContravariantFacetNormal( elementFacet, point, normal );
                 } );
 
             if constexpr ( nOrder > 1 )
@@ -1095,7 +1095,7 @@ public:
                 {
                     const uint16_type elementFacet = g->faceId() == invalid_uint16_type_value
                         ? facet : g->faceId();
-                    expr.geom()->contravariantPiolaNormal( elementFacet, point, normal );
+                    expr.geom()->piolaContravariantFacetNormal( elementFacet, point, normal );
                 } );
         }
 
@@ -1586,7 +1586,7 @@ public:
             {
                 const uint16_type elementFacet = g->faceId() == invalid_uint16_type_value
                     ? facet : g->faceId();
-                expr.geom()->contravariantPiolaNormal( elementFacet, point, normal );
+                expr.geom()->piolaContravariantFacetNormal( elementFacet, point, normal );
             } );
 
         if ( internalOrder() > 1 )
@@ -1665,7 +1665,7 @@ public:
             {
                 const uint16_type elementFacet = g->faceId() == invalid_uint16_type_value
                     ? facet : g->faceId();
-                expr.geom()->contravariantPiolaNormal( elementFacet, point, normal );
+                expr.geom()->piolaContravariantFacetNormal( elementFacet, point, normal );
             } );
     }
 
