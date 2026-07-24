@@ -575,7 +575,7 @@ void compile_ex(const ex& expr, const symbol& sym, FUNCP_1P& fp, const std::stri
 	std::string unique_filename = filename;
 
 	boost::mpi::communicator world;
-	bool doCompile = filename.empty() ? ( world.rank() == 0 ) : true;
+	bool doCompile = ( world.rank() == 0 );
 
 	if( doCompile )
 	{
@@ -598,8 +598,7 @@ void compile_ex(const ex& expr, const symbol& sym, FUNCP_1P& fp, const std::stri
 		unique_filename = global_excompiler.compile_src_file(unique_filename, filename.empty(), filename.empty());
 	}
 	world.barrier(); // Waiting for compilation steps to finish before linking.
-	if ( filename.empty() )
-		boost::mpi::broadcast( world, unique_filename, 0);
+	boost::mpi::broadcast( world, unique_filename, 0);
 
 	// This is not standard compliant! ... no conversion between
 	// pointer-to-functions and pointer-to-objects ...
@@ -615,7 +614,7 @@ void compile_ex(const ex& expr, const symbol& sym1, const symbol& sym2, FUNCP_2P
 	std::string unique_filename = filename;
 
 	boost::mpi::communicator world;
-	bool doCompile = filename.empty() ? ( world.rank() == 0 ) : true;
+	bool doCompile = ( world.rank() == 0 );
 
 	if( doCompile )
 	{
@@ -638,8 +637,7 @@ void compile_ex(const ex& expr, const symbol& sym1, const symbol& sym2, FUNCP_2P
 		unique_filename = global_excompiler.compile_src_file(unique_filename, filename.empty(), filename.empty());
 	}
 	world.barrier(); // Waiting for compilation steps to finish before linking.
-	if ( filename.empty() )
-		boost::mpi::broadcast( world, unique_filename, 0);
+	boost::mpi::broadcast( world, unique_filename, 0);
 
 	// This is not standard compliant! ... no conversion between
 	// pointer-to-functions and pointer-to-objects ...
@@ -665,7 +663,7 @@ void compile_ex(const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::st
 	std::string unique_filename = filename;
 
 	boost::mpi::communicator world;
-	bool doCompile = filename.empty() ? ( world.rank() == 0 ) : true;
+	bool doCompile = ( world.rank() == 0 );
 
 	if ( doCompile )
 	{
@@ -690,7 +688,7 @@ void compile_ex(const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::st
 	}
 
 	world.barrier(); // Waiting for compilation steps to finish before linking.
-	if ( filename.empty() )
+	if ( filename.empty() || !filename_is_content_addressed )
 		boost::mpi::broadcast( world, unique_filename, 0);
 	else
 		unique_filename = filename;
