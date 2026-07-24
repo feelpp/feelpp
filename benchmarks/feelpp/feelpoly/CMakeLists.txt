@@ -11,4 +11,14 @@ feelpp_add_application( geomap
     LINK_LIBRARIES benchmark
     EXEC B_FEELPOLY_GEOMAP )
 
+feelpp_add_application( geomap_inverse
+    SRCS 01_geomap_inverse.cpp
+    LINK_LIBRARIES benchmark
+    EXEC B_FEELPOLY_GEOMAP_INVERSE )
+
 add_dependencies( benchs-feelpoly ${B_FEELPOLY_GEOMAP} )
+
+add_dependencies( benchs-feelpoly
+    ${B_FEELPOLY_GEOMAP}
+    ${B_FEELPOLY_GEOMAP_INVERSE}
+    ${B_FEELPOLY_GEOMESH_STORAGE} )
