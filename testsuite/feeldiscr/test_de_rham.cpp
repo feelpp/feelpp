@@ -351,28 +351,16 @@ BOOST_AUTO_TEST_CASE( curved_simplex_piola_contracts )
                                _quad = _Q<16>(),
                                _geomap = GeomapStrategyType::GEOMAP_HO ), 2e-9 );
 
-    BOOST_CHECK_THROW(
-        ( [&]()
-          {
-              return integrate( _range = elements( mesh ),
-                                _expr = inner( gradv( ned1FieldRuntime ),
-                                               gradv( ned1FieldRuntime ) ),
-                                _quad = _Q<8>(),
-                                _geomap = GeomapStrategyType::GEOMAP_HO )
-                  .evaluate();
-          }() ),
-        std::logic_error );
-    BOOST_CHECK_THROW(
-        ( [&]()
-          {
-              return integrate( _range = elements( mesh ),
-                                _expr = inner( gradv( rtFluxRuntime ),
-                                               gradv( rtFluxRuntime ) ),
-                                _quad = _Q<8>(),
-                                _geomap = GeomapStrategyType::GEOMAP_HO )
-                  .evaluate();
-          }() ),
-        std::logic_error );
+    BOOST_CHECK_SMALL( normL2( _range = elements( mesh ),
+                               _expr = gradv( ned1FieldRuntime ) -
+                                       gradv( ned1Field ),
+                               _quad = _Q<16>(),
+                               _geomap = GeomapStrategyType::GEOMAP_HO ), 2e-8 );
+    BOOST_CHECK_SMALL( normL2( _range = elements( mesh ),
+                               _expr = gradv( rtFluxRuntime ) -
+                                       gradv( rtFlux ),
+                               _quad = _Q<16>(),
+                               _geomap = GeomapStrategyType::GEOMAP_HO ), 2e-8 );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
