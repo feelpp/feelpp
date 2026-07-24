@@ -1,32 +1,19 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-  This file is part of the Feel library
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+    SPDX-FileContributor: Gilles Steiner <gilles.steiner@epfl.ch>
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-             Gilles Steiner <gilles.steiner@epfl.ch>
-       Date: 2005-10-11
+    SPDX-FileCopyrightText: 2005, 2006 EPFL
+    SPDX-FileCopyrightText: 2006-2011 Université Joseph Fourier Grenoble 1
+    SPDX-FileCopyrightText: 2011-2026 University of Strasbourg
 
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2006-2011 Université Joseph Fourier Grenoble 1
-  Copyright (C) 2011-2016 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    SPDX-License-Identifier: LGPL-3.0-or-later
 */
 #ifndef FEELPP_POLYNOMIALSET_HPP
 #define FEELPP_POLYNOMIALSET_HPP 1
 
+#include <array>
+#include <stdexcept>
 #include <vector>
 #include <feel/feelcore/boostmultiarray.hpp>
 
@@ -211,7 +198,6 @@ public:
             set_order_value( nOrder );
         }
         setCoefficient( c, __as_is );
-        //FEELPP_ASSERT( c.size2() == p.coeff().size1() )( c.size2() )( p.coeff().size1() ).error( "invalid dimension\n" );
         //std::cout << "[PolynomialSet] dim = " << nDim << " order = " << nOrder << "\n";
         //std::cout << "[PolynomialSet] c = " << c << "\n";
         //std::cout << "[PolynomialSet] p.coeff = " << p.coeff() << "\n";
@@ -230,7 +216,6 @@ public:
     {
         set_order_value( nOrder );
         setCoefficient( c, __as_is );
-        //FEELPP_ASSERT( c.size2() == p.coeff().size1() )( c.size2() )( p.coeff().size1() ).error( "invalid dimension\n" );
         //std::cout << "[PolynomialSet] dim = " << nDim << " order = " << nOrder << "\n";
         //std::cout << "[PolynomialSet] c = " << c << "\n";
         //std::cout << "[PolynomialSet] p.coeff = " << p.coeff() << "\n";
@@ -274,12 +259,16 @@ public:
     /**
      * \brief extract the i-th component of a vectorial polynomial set
      *
+     * \param i component index in `[0,nComponents)`
      * \return the i-th component of the polynomial set
+     * \throws std::out_of_range if \p i is not a valid component
      */
     component_type operator[]( uint16_type i ) const
     {
         static_assert( is_vectorial, "PolynomialSet::operator[] requires a vectorial polynomial set" );
-        FEELPP_ASSERT( i < nComponents )( i )( nComponents ).error ( "invalid component index" );
+        if ( i >= nComponents )
+            throw std::out_of_range(
+                "PolynomialSet component index is outside the component range" );
         const int nrows = M_coeff.size1()/nComponents;
         const int ncols = M_coeff.size2();
         return component_type( Poly(), ublas::project( M_coeff,
@@ -636,12 +625,16 @@ public:
      * coordinates (in the columns).
      *
      * \return the matrix \f$A\f$
+     * \throws std::invalid_argument if the basis and coefficient dimensions
+     * do not match
      */
     template<typename AE>
     matrix_type evaluate( ublas::matrix_expression<AE> const& __pts ) const
     {
         matrix_type m = basisEvaluate( __pts );
-        FEELPP_ASSERT( M_coeff.size2() == m.size1() )( M_coeff.size2() )( m.size1() ).error( "invalid size" );
+        if ( M_coeff.size2() != m.size1() )
+            throw std::invalid_argument(
+                "PolynomialSet coefficient and basis dimensions are incompatible" );
         return ublas::prod( M_coeff, m );
     }
 
@@ -824,10 +817,15 @@ public:
 
     /**
      * insert the polynomial set \p p at the end of the set
+     * \param p polynomial set to append or assign
+     * \param erase replace the current coefficients when true
+     * \throws std::invalid_argument if the coefficient dimensions differ
      */
     void insert( self_type const& p, bool erase = false )
     {
-        FEELPP_ASSERT( p.coeff().size2() == coeff().size2() )( p.coeff().size2() )( coeff().size2() ).warn( "invalid polynomial set" );
+        if ( p.coeff().size2() != coeff().size2() )
+            throw std::invalid_argument(
+                "PolynomialSet insertion requires matching coefficient dimensions" );
 
 #if 0
         std::cout << "coeff = " << M_coeff << "\n"
@@ -918,6 +916,11 @@ public:
         typedef boost::multi_array<id_type,2> functionvalue_type;
         typedef boost::multi_array<g_type,2> grad_type;
         typedef boost::multi_array<h_type,2> hessian_type;
+        using derivative_matrix_type = eigen_matrix_xx_col_type<value_type>;
+        using gradient_component_matrices_type =
+            std::array<derivative_matrix_type, nDim>;
+        using hessian_component_matrices_type =
+            std::array<derivative_matrix_type, nDim * nDim>;
 
         PreCompute()  = default;
 
@@ -959,6 +962,7 @@ public:
             M_nodes = __pts;
             init( M_ref_ele, __pts, rank_t<rank>() );
             initPhiEigen( M_ref_ele, __pts );
+            M_derivative_eigen_current = false;
         }
 
         //! \return the finite element
@@ -1089,6 +1093,42 @@ public:
                 return &M_grad;
             }
 
+        /**
+         * @brief Return one reference-gradient component for all basis
+         * functions and evaluation points.
+         * @param direction reference-coordinate direction
+         * @return column-major matrix with shape `(nDof,nPoints)`
+         * @throws std::out_of_range if @p direction is invalid
+         */
+        derivative_matrix_type const& gradientEigen( uint16_type direction ) const
+            requires( rank == 0 )
+        {
+            if ( direction >= nDim )
+                throw std::out_of_range(
+                    "PolynomialSet gradient direction is outside the reference dimension" );
+            this->ensureDerivativeEigen();
+            return M_gradient_eigen[direction];
+        }
+
+        /**
+         * @brief Return one reference-Hessian component for all basis
+         * functions and evaluation points.
+         * @param firstDirection first reference-coordinate direction
+         * @param secondDirection second reference-coordinate direction
+         * @return column-major matrix with shape `(nDof,nPoints)`
+         * @throws std::out_of_range if either direction is invalid
+         */
+        derivative_matrix_type const& hessianEigen(
+            uint16_type firstDirection, uint16_type secondDirection ) const
+            requires( rank == 0 )
+        {
+            if ( firstDirection >= nDim || secondDirection >= nDim )
+                throw std::out_of_range(
+                    "PolynomialSet Hessian direction is outside the reference dimension" );
+            this->ensureDerivativeEigen();
+            return M_hessian_eigen[firstDirection * nDim + secondDirection];
+        }
+
         value_type grad( size_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             return M_grad[i][q]( c1,c2,0 );
@@ -1156,6 +1196,44 @@ public:
                     }
                 }
             }
+
+        /**
+         * @brief Build component-major derivative tables used by batched
+         * geometry evaluation.
+         *
+         * These tables are computed with the reference precomputation and are
+         * therefore reused by every physical element sharing it.
+         */
+        void ensureDerivativeEigen() const
+        {
+            if constexpr ( rank == 0 )
+            {
+                if ( M_derivative_eigen_current )
+                    return;
+                auto const dofCount = M_ref_ele->nbDof();
+                auto const pointCount = M_nodes.size2();
+                for ( auto& component : M_gradient_eigen )
+                    component.resize( dofCount, pointCount );
+                for ( auto& component : M_hessian_eigen )
+                    component.resize( dofCount, pointCount );
+
+                for ( int q = 0; q < pointCount; ++q )
+                {
+                    for ( int i = 0; i < dofCount; ++i )
+                    {
+                        for ( int first = 0; first < nDim; ++first )
+                        {
+                            M_gradient_eigen[first]( i, q ) =
+                                M_grad[i][q]( 0, first, 0 );
+                            for ( int second = 0; second < nDim; ++second )
+                                M_hessian_eigen[first * nDim + second]( i, q ) =
+                                    M_hessian[i][q]( first, second, 0 );
+                        }
+                    }
+                }
+                M_derivative_eigen_current = true;
+            }
+        }
         void
         init( reference_element_ptrtype const& M_ref_ele,
               matrix_node_t_type const& __pts,
@@ -1429,6 +1507,9 @@ public:
         eigen_matrix_xx_col_type<value_type> M_phi_eigen;
         grad_type M_grad;
         hessian_type M_hessian;
+        mutable gradient_component_matrices_type M_gradient_eigen;
+        mutable hessian_component_matrices_type M_hessian_eigen;
+        mutable bool M_derivative_eigen_current = false;
     }; /** class PreCompute **/
 
     typedef PreCompute precompute_type;
@@ -1464,7 +1545,6 @@ public:
             for ( permutation_type __p( permutation_type::IDENTITY );
                     __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
             {
-                //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
                 geopc[__f][__p] = precompute_ptrtype(  new precompute_type( p, P ) );
             }
         }
@@ -1489,7 +1569,6 @@ public:
             for ( permutation_type __p( permutation_type::IDENTITY );
                     __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
             {
-                //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
                 geopc[__f][__p] = precompute_ptrtype(  new precompute_type( p, P(__f) ) );
             }
         }
@@ -1635,6 +1714,12 @@ public:
         typedef Eigen::Matrix<value_type,nComponents1,NDim> matrix_eigen_grad_type;
         typedef typename Eigen::Map<const Eigen::Matrix<value_type,gmc_type::NDim,gmc_type::PDim,Eigen::ColMajor> > matrix_eigen_ublas_NP_type;
         typedef typename Eigen::Map<const Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::ColMajor> > matrix_eigen_ublas_type;
+        using quadrature_batch_table_type =
+            Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+        using quadrature_batch_row_type = typename quadrature_batch_table_type::ConstRowXpr;
+        using quadrature_batch_component_table_type =
+            Eigen::Map<quadrature_batch_table_type const, Eigen::Unaligned,
+                       Eigen::OuterStride<>>;
 
 
         Context( reference_element_ptrtype const& __RefEle,
@@ -1658,7 +1743,11 @@ public:
             M_symm_grad(),
             M_dx(),
             M_dy(),
-            M_dz()
+            M_dz(),
+            M_id_batch(),
+            M_grad_batch(),
+            M_div_batch(),
+            M_curl_batch()
         {
             std::iota( M_dofs.begin(), M_dofs.end(), 0 );
 
@@ -1684,7 +1773,15 @@ public:
             M_symm_grad( c.M_symm_grad ),
             M_dx( c.M_dx ),
             M_dy( c.M_dy ),
-            M_dz( c.M_dz )
+            M_dz( c.M_dz ),
+            M_id_batch( c.M_id_batch ),
+            M_grad_batch( c.M_grad_batch ),
+            M_div_batch( c.M_div_batch ),
+            M_curl_batch( c.M_curl_batch ),
+            M_id_batch_valid( c.M_id_batch_valid ),
+            M_grad_batch_valid( c.M_grad_batch_valid ),
+            M_div_batch_valid( c.M_div_batch_valid ),
+            M_curl_batch_valid( c.M_curl_batch_valid )
             {
 
             }
@@ -1726,6 +1823,7 @@ public:
 
         void update( geometric_mapping_context_ptrtype const& __gmc )
         {
+            this->invalidateQuadratureBatchTables();
             //M_phi = M_pc->get()->phi();
             //M_gradphi = M_pc->get()->grad();
             transformationEquivalence( __gmc, bool_t<Basis_t::isTransformationEquivalent>() );
@@ -2443,6 +2541,180 @@ public:
                 return M_laplacian[i][q](c1,c2);
             }
 
+        /**
+         * @brief Values of one basis-function component at all quadrature points.
+         *
+         * The returned row is a non-owning view of lazy component-major Eigen
+         * storage. It remains valid until the next context update.
+         *
+         * @param i local basis-function index
+         * @param c1 first value component
+         * @param c2 second value component
+         * @return row expression indexed by quadrature point
+         */
+        quadrature_batch_row_type idBatch( uint16_type i, uint16_type c1 = 0,
+                                           uint16_type c2 = 0 ) const
+        {
+            this->ensureIdBatchTable();
+            CHECK_LT( i, this->nDofs() );
+            CHECK_LT( c1, nComponents1 );
+            CHECK_LT( c2, nComponents2 );
+            auto const component = static_cast<Eigen::Index>( c1 + nComponents1*c2 );
+            return M_id_batch.row( static_cast<Eigen::Index>( i )*
+                                   nComponents1*nComponents2 + component );
+        }
+
+        /**
+         * @brief Complete component-major basis-value table.
+         *
+         * Rows are ordered by local basis function and value component;
+         * columns are quadrature points. The table is constructed lazily and
+         * remains valid until the next finite-element context update.
+         *
+         * @return read-only Eigen table of physical basis values
+         */
+        quadrature_batch_table_type const& valueBatchTable() const
+        {
+            this->ensureIdBatchTable();
+            return M_id_batch;
+        }
+
+        /**
+         * @brief One physical value component for every local DoF and point.
+         *
+         * The returned strided Eigen view has shape `(nDof,nPoint)` and avoids
+         * copying interleaved component rows before a local tensor product.
+         * It remains valid until the next context update.
+         *
+         * @param c1 first value component
+         * @param c2 second value component
+         * @return non-owning DoF-by-point Eigen view
+         */
+        quadrature_batch_component_table_type
+        valueComponentBatchTable( uint16_type c1 = 0,
+                                  uint16_type c2 = 0 ) const
+        {
+            this->ensureIdBatchTable();
+            CHECK_LT( c1, nComponents1 );
+            CHECK_LT( c2, nComponents2 );
+            auto const component = static_cast<Eigen::Index>(
+                c1 + nComponents1*c2 );
+            return this->componentBatchTable(
+                M_id_batch, nComponents1*nComponents2, component );
+        }
+
+        /**
+         * @brief Physical gradient component at all quadrature points.
+         *
+         * Affine compact derivative storage is broadcast into the batch table,
+         * so callers use the same row API for static/runtime and affine/curved
+         * mappings.
+         *
+         * @param i local basis-function index
+         * @param c1 first field component
+         * @param c2 second field or derivative component
+         * @param c3 third tensor component
+         * @return row expression indexed by quadrature point
+         */
+        quadrature_batch_row_type gradientBatch( uint16_type i, uint16_type c1,
+                                                 uint16_type c2,
+                                                 uint16_type c3 = 0 ) const
+        {
+            this->ensureGradientBatchTable();
+            CHECK_LT( i, this->nDofs() );
+            CHECK_LT( c1, nComponents1 );
+            CHECK_LT( c2, g_comp2 );
+            CHECK_LT( c3, g_comp3 );
+            auto const component = static_cast<Eigen::Index>(
+                ( c1*g_comp2 + c2 )*g_comp3 + c3 );
+            return M_grad_batch.row( static_cast<Eigen::Index>( i )*
+                                     nComponents1*g_comp2*g_comp3 + component );
+        }
+
+        /**
+         * @brief One physical gradient component for every DoF and point.
+         * @param c1 field component
+         * @param c2 physical derivative direction
+         * @param c3 third tensor component
+         * @return non-owning DoF-by-point Eigen view
+         */
+        quadrature_batch_component_table_type
+        gradientComponentBatchTable( uint16_type c1, uint16_type c2,
+                                     uint16_type c3 = 0 ) const
+        {
+            this->ensureGradientBatchTable();
+            CHECK_LT( c1, nComponents1 );
+            CHECK_LT( c2, g_comp2 );
+            CHECK_LT( c3, g_comp3 );
+            auto const component = static_cast<Eigen::Index>(
+                ( c1*g_comp2 + c2 )*g_comp3 + c3 );
+            return this->componentBatchTable(
+                M_grad_batch, nComponents1*g_comp2*g_comp3, component );
+        }
+
+        /**
+         * @brief Divergence component at all quadrature points.
+         * @param i local basis-function index
+         * @param component divergence component
+         * @return row expression indexed by quadrature point
+         */
+        quadrature_batch_row_type divergenceBatch( uint16_type i,
+                                                   uint16_type component = 0 ) const
+        {
+            this->ensureDivergenceBatchTable();
+            CHECK_LT( i, this->nDofs() );
+            CHECK_LT( component, nComponents2 );
+            return M_div_batch.row( static_cast<Eigen::Index>( i )*nComponents2 +
+                                    component );
+        }
+
+        /**
+         * @brief One divergence component for every local DoF and point.
+         * @param component divergence component
+         * @return non-owning DoF-by-point Eigen view
+         */
+        quadrature_batch_component_table_type
+        divergenceComponentBatchTable( uint16_type component = 0 ) const
+        {
+            this->ensureDivergenceBatchTable();
+            CHECK_LT( component, nComponents2 );
+            return this->componentBatchTable(
+                M_div_batch, nComponents2, component );
+        }
+
+        /**
+         * @brief Curl component at all quadrature points.
+         * @param i local basis-function index
+         * @param component curl component
+         * @return row expression indexed by quadrature point
+         */
+        quadrature_batch_row_type curlBatch( uint16_type i,
+                                             uint16_type component = 0 ) const
+        {
+            constexpr uint16_type curlComponents = ( nComponents1 == 3 ) ? nComponents1 : 1;
+            this->ensureCurlBatchTable();
+            CHECK_LT( i, this->nDofs() );
+            CHECK_LT( component, curlComponents );
+            return M_curl_batch.row( static_cast<Eigen::Index>( i )*curlComponents +
+                                     component );
+        }
+
+        /**
+         * @brief One curl component for every local DoF and point.
+         * @param component physical curl component
+         * @return non-owning DoF-by-point Eigen view
+         */
+        quadrature_batch_component_table_type
+        curlComponentBatchTable( uint16_type component = 0 ) const
+        {
+            constexpr uint16_type curlComponents =
+                ( nComponents1 == 3 ) ? nComponents1 : 1;
+            this->ensureCurlBatchTable();
+            CHECK_LT( component, curlComponents );
+            return this->componentBatchTable(
+                M_curl_batch, curlComponents, component );
+        }
+
         void resizeAndSet( rank_t<0> );
         void resizeAndSet( rank_t<1> );
         void resizeAndSet( rank_t<2> );
@@ -2463,6 +2735,19 @@ public:
 
             }
     private :
+        /** @brief Build a strided DoF-by-point view of one component table. */
+        quadrature_batch_component_table_type
+        componentBatchTable( quadrature_batch_table_type const& table,
+                             Eigen::Index componentCount,
+                             Eigen::Index component ) const
+        {
+            auto const points = static_cast<Eigen::Index>( M_npoints );
+            return quadrature_batch_component_table_type(
+                table.data() + component*points,
+                static_cast<Eigen::Index>( this->nDofs() ), points,
+                Eigen::OuterStride<>( componentCount*points ) );
+        }
+
         FEELPP_STRONG_INLINE void updateGrad( geometric_mapping_context_type* thegmc, rank_t<0> );
         FEELPP_STRONG_INLINE void updateFirstDerivativeNormal( geometric_mapping_context_type* thegmc, rank_t<0> );
         FEELPP_STRONG_INLINE void updateHessian( geometric_mapping_context_type* thegmc, rank_t<0> );
@@ -2481,6 +2766,103 @@ public:
         FEELPP_STRONG_INLINE void updateTrace( geometric_mapping_context_type* thegmc, rank_t<2> );
         FEELPP_STRONG_INLINE void updateGrad( geometric_mapping_context_type* thegmc, rank_t<2> );
         FEELPP_STRONG_INLINE void updateDiv( geometric_mapping_context_type* thegmc, rank_t<2> );
+
+        /** @brief Invalidate lazy quadrature-component tables after an update. */
+        void invalidateQuadratureBatchTables() noexcept
+        {
+            M_id_batch_valid = false;
+            M_grad_batch_valid = false;
+            M_div_batch_valid = false;
+            M_curl_batch_valid = false;
+        }
+
+        /** @brief Build the lazy component-major value table. */
+        void ensureIdBatchTable() const
+        {
+            if ( M_id_batch_valid )
+                return;
+            auto const rows = static_cast<Eigen::Index>( this->nDofs() )*
+                              nComponents1*nComponents2;
+            M_id_batch.resize( rows, M_npoints );
+            for ( uint16_type i = 0; i < this->nDofs(); ++i )
+                for ( uint16_type q = 0; q < M_npoints; ++q )
+                    for ( uint16_type c2 = 0; c2 < nComponents2; ++c2 )
+                        for ( uint16_type c1 = 0; c1 < nComponents1; ++c1 )
+                            M_id_batch( static_cast<Eigen::Index>( i )*
+                                            nComponents1*nComponents2 +
+                                        c1 + nComponents1*c2,
+                                        q ) = M_phi[i][q]( c1, c2 );
+            M_id_batch_valid = true;
+        }
+
+        /** @brief Build the lazy component-major physical-gradient table. */
+        void ensureGradientBatchTable() const
+        {
+            if ( M_grad_batch_valid )
+                return;
+            CHECK_GT( M_grad.num_elements(), 0 )
+                << "gradient batch requested without a gradient context";
+            auto const rows = static_cast<Eigen::Index>( this->nDofs() )*
+                              nComponents1*g_comp2*g_comp3;
+            M_grad_batch.resize( rows, M_npoints );
+            for ( uint16_type i = 0; i < this->nDofs(); ++i )
+                for ( uint16_type q = 0; q < M_npoints; ++q )
+                {
+                    auto const storedQ = this->runtimeDoOptimizationP1() ? 0 : q;
+                    for ( uint16_type c1 = 0; c1 < nComponents1; ++c1 )
+                        for ( uint16_type c2 = 0; c2 < g_comp2; ++c2 )
+                            for ( uint16_type c3 = 0; c3 < g_comp3; ++c3 )
+                                M_grad_batch(
+                                    static_cast<Eigen::Index>( i )*
+                                            nComponents1*g_comp2*g_comp3 +
+                                        ( c1*g_comp2 + c2 )*g_comp3 + c3,
+                                    q ) = M_grad[i][storedQ]( c1, c2, c3 );
+                }
+            M_grad_batch_valid = true;
+        }
+
+        /** @brief Build the lazy component-major divergence table. */
+        void ensureDivergenceBatchTable() const
+        {
+            if ( M_div_batch_valid )
+                return;
+            CHECK_GT( M_div.num_elements(), 0 )
+                << "divergence batch requested without a divergence context";
+            M_div_batch.resize( static_cast<Eigen::Index>( this->nDofs() )*
+                                    nComponents2,
+                                M_npoints );
+            for ( uint16_type i = 0; i < this->nDofs(); ++i )
+                for ( uint16_type q = 0; q < M_npoints; ++q )
+                {
+                    auto const storedQ = this->runtimeDoOptimizationP1() ? 0 : q;
+                    for ( uint16_type c = 0; c < nComponents2; ++c )
+                        M_div_batch( static_cast<Eigen::Index>( i )*nComponents2 + c,
+                                     q ) = M_div[i][storedQ]( c, 0 );
+                }
+            M_div_batch_valid = true;
+        }
+
+        /** @brief Build the lazy component-major curl table. */
+        void ensureCurlBatchTable() const
+        {
+            if ( M_curl_batch_valid )
+                return;
+            CHECK_GT( M_curl.num_elements(), 0 )
+                << "curl batch requested without a curl context";
+            constexpr uint16_type curlComponents = ( nComponents1 == 3 ) ? nComponents1 : 1;
+            M_curl_batch.resize( static_cast<Eigen::Index>( this->nDofs() )*
+                                     curlComponents,
+                                 M_npoints );
+            for ( uint16_type i = 0; i < this->nDofs(); ++i )
+                for ( uint16_type q = 0; q < M_npoints; ++q )
+                {
+                    auto const storedQ = this->runtimeDoOptimizationP1() ? 0 : q;
+                    for ( uint16_type c = 0; c < curlComponents; ++c )
+                        M_curl_batch( static_cast<Eigen::Index>( i )*curlComponents + c,
+                                      q ) = M_curl[i][storedQ]( c, 0 );
+                }
+            M_curl_batch_valid = true;
+        }
     private:
 
         boost::optional<precompute_ptrtype> M_pc;
@@ -2512,6 +2894,14 @@ public:
         boost::multi_array<curl_type,2> M_curl;
         boost::multi_array<hess_type,2> M_hessian;
         boost::multi_array<id_type,2> M_laplacian;
+        mutable quadrature_batch_table_type M_id_batch;
+        mutable quadrature_batch_table_type M_grad_batch;
+        mutable quadrature_batch_table_type M_div_batch;
+        mutable quadrature_batch_table_type M_curl_batch;
+        mutable bool M_id_batch_valid = false;
+        mutable bool M_grad_batch_valid = false;
+        mutable bool M_div_batch_valid = false;
+        mutable bool M_curl_batch_valid = false;
     };
 
     template<size_type context_v, typename BasisType, typename GeoType, typename ElementType>
