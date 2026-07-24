@@ -17,8 +17,15 @@
 
 #include <map>
 #include <memory>
+#include <string>
 
 using namespace Feel;
+
+using simplex2_g1_mesh_type = Mesh<Simplex<2>>;
+using simplex2_g2_mesh_type = Mesh<Simplex<2, 2, 2>>;
+using simplex2_static_g1_type = GeoMap<2, 1>;
+using simplex2_runtime_type = GeoMap<2, Dynamic>;
+using simplex2_static_g2_type = GeoMap<2, 2>;
 
 /**
  * @brief Benchmark a geometric-mapping context update over a complete mesh.
@@ -29,15 +36,32 @@ using namespace Feel;
  *
  * @tparam MeshType mesh type supplying the geometric mapping
  * @tparam ContextFlags compile-time geometric context mask
+ * @tparam GeomapType geometric mapping type used by the context
+ * @tparam EffectiveOrder runtime order when `GeomapType` is dynamic
+ * @tparam EvaluationStrategy pointwise, batched, or automatic derivative kernel
  * @param state Google Benchmark state and integer arguments
  */
-template <typename MeshType, size_type ContextFlags>
+template <typename MeshType, size_type ContextFlags,
+          typename GeomapType = typename MeshType::gm_type,
+          int EffectiveOrder = GeomapType::nOrder,
+          geometry::geometry_evaluation_strategy EvaluationStrategy =
+              geometry::geometry_evaluation_strategy::automatic>
 void BM_GeoMapContextUpdate( benchmark::State& state )
 {
     using mesh_type = MeshType;
+    using geomap_type = GeomapType;
     using integration_method_type = im_t<typename mesh_type::element_type, double>;
     using context_type =
-        typename mesh_type::gm_type::template Context<typename mesh_type::element_type>;
+        typename geomap_type::template Context<typename mesh_type::element_type>;
+
+    auto geomap = []()
+    {
+        if constexpr ( geomap_type::is_order_dynamic )
+            return std::make_shared<geomap_type>(
+                RuntimeOrder{ EffectiveOrder } );
+        else
+            return std::make_shared<geomap_type>();
+    }();
 
     std::map<int, std::shared_ptr<mesh_type>> meshes;
     std::map<int, std::shared_ptr<context_type>> contexts;
@@ -48,22 +72,31 @@ void BM_GeoMapContextUpdate( benchmark::State& state )
         state.PauseTiming();
         if ( !meshes.contains( state.range( 0 ) ) )
         {
-            meshes[state.range( 0 )] = loadMesh(
+            auto const meshSize = 1. / state.range( 0 );
+            meshes[state.range( 0 )] = createGMSHMesh(
                 _mesh = new mesh_type,
-                _savehdf5 = false,
+                _desc = domain(
+                    _name = "geomap-context-simplex2-g" +
+                            std::to_string( mesh_type::shape_type::nOrder ),
+                    _shape = "simplex", _dim = mesh_type::nDim,
+                    _order = mesh_type::shape_type::nOrder, _h = meshSize ),
                 _verbose = false,
+                _straighten = false,
                 _update = 1,
-                _h = 1. / state.range( 0 ) );
+                _h = meshSize );
         }
         auto const& mesh = meshes.at( state.range( 0 ) );
 
         if ( !contexts.contains( state.range( 1 ) ) )
         {
-            auto precompute = mesh->gm()->preCompute(
+            auto precompute = geomap->preCompute(
                 integration_method_type( state.range( 1 ) ).points() );
             auto const& initialElement = mesh->beginElement()->second;
             contexts[state.range( 1 )] =
-                mesh->gm()->template context<ContextFlags>( initialElement, precompute );
+                geomap->template context<ContextFlags>( initialElement,
+                                                        precompute );
+            contexts[state.range( 1 )]->setGeometryEvaluationStrategy(
+                EvaluationStrategy );
         }
         auto const& context = contexts.at( state.range( 1 ) );
         state.ResumeTiming();
@@ -72,6 +105,9 @@ void BM_GeoMapContextUpdate( benchmark::State& state )
             context->template update<ContextFlags>( element.second );
         itemCount = mesh->numElements() * context->pc()->nPoints();
     }
+    if ( !contexts.empty() )
+        state.counters["computed-points"] =
+            contexts.begin()->second->nComputedPoints();
     state.SetItemsProcessed( state.iterations() * itemCount );
 }
 
@@ -168,6 +204,57 @@ BENCHMARK_TEMPLATE( BM_GeoMapContextUpdate, Mesh<Simplex<2>>,
     ->Args( { 4, 4 } )
     ->Args( { 8, 1 } )
     ->Args( { 8, 2 } )
+    ->Args( { 8, 4 } );
+
+BENCHMARK_TEMPLATE(
+    BM_GeoMapContextUpdate, simplex2_g1_mesh_type,
+    vm::JACOBIAN | vm::KB, simplex2_static_g1_type, 1,
+    geometry::geometry_evaluation_strategy::automatic )
+    ->Name( "geomap/context/2d/g1/static/automatic" )
+    ->Unit( benchmark::kMillisecond )
+    ->Args( { 8, 4 } );
+BENCHMARK_TEMPLATE(
+    BM_GeoMapContextUpdate, simplex2_g1_mesh_type,
+    vm::JACOBIAN | vm::KB, simplex2_runtime_type, 1,
+    geometry::geometry_evaluation_strategy::automatic )
+    ->Name( "geomap/context/2d/g1/runtime/automatic" )
+    ->Unit( benchmark::kMillisecond )
+    ->Args( { 8, 4 } );
+BENCHMARK_TEMPLATE(
+    BM_GeoMapContextUpdate, simplex2_g2_mesh_type,
+    vm::JACOBIAN | vm::KB | vm::SECOND_DERIVATIVE,
+    simplex2_static_g2_type, 2,
+    geometry::geometry_evaluation_strategy::automatic )
+    ->Name( "geomap/context/2d/g2/static/automatic" )
+    ->Unit( benchmark::kMillisecond )
+    ->Args( { 4, 4 } )
+    ->Args( { 8, 4 } );
+BENCHMARK_TEMPLATE(
+    BM_GeoMapContextUpdate, simplex2_g2_mesh_type,
+    vm::JACOBIAN | vm::KB | vm::SECOND_DERIVATIVE,
+    simplex2_runtime_type, 2,
+    geometry::geometry_evaluation_strategy::automatic )
+    ->Name( "geomap/context/2d/g2/runtime/automatic" )
+    ->Unit( benchmark::kMillisecond )
+    ->Args( { 4, 4 } )
+    ->Args( { 8, 4 } );
+BENCHMARK_TEMPLATE(
+    BM_GeoMapContextUpdate, simplex2_g2_mesh_type,
+    vm::JACOBIAN | vm::KB | vm::SECOND_DERIVATIVE,
+    simplex2_runtime_type, 2,
+    geometry::geometry_evaluation_strategy::pointwise )
+    ->Name( "geomap/context/2d/g2/runtime/pointwise" )
+    ->Unit( benchmark::kMillisecond )
+    ->Args( { 4, 4 } )
+    ->Args( { 8, 4 } );
+BENCHMARK_TEMPLATE(
+    BM_GeoMapContextUpdate, simplex2_g2_mesh_type,
+    vm::JACOBIAN | vm::KB | vm::SECOND_DERIVATIVE,
+    simplex2_runtime_type, 2,
+    geometry::geometry_evaluation_strategy::batched )
+    ->Name( "geomap/context/2d/g2/runtime/batched" )
+    ->Unit( benchmark::kMillisecond )
+    ->Args( { 4, 4 } )
     ->Args( { 8, 4 } );
 
 BENCHMARK_TEMPLATE( BM_NodalRepresentationConstruction, 1 );
