@@ -222,6 +222,12 @@ MatrixPetsc<T>::clone () const
         MatDuplicate( m->mat(), MAT_COPY_VALUES, &M );
         cloned_matrix.reset( new MatrixPetsc<T>( M, this->mapRowPtr(), this->mapColPtr(), true ) );
     }
+    // preconditioners (e.g. PCFIELDSPLIT) rely on indexSplit() being set on the
+    // matrix actually handed to PETSc; clone() must carry it over or a matrix
+    // materialized via clone() (e.g. BlockBilinearForm's constrained-system path)
+    // silently loses it and crashes null-dereferencing IndexSplit::applyFieldsDef
+    if ( cloned_matrix )
+        cloned_matrix->setIndexSplit( this->indexSplit() );
     return cloned_matrix;
 }
 
