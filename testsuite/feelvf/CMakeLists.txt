@@ -15,6 +15,7 @@ set(FEELPP_VF_SIMPLE_TESTS
     idf_functor
     idf2_functor
     localform_lowering
+    quadrature_batch
     divergence
     productspace_dofs
     expr_evaluate
