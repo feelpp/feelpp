@@ -1,5 +1,5 @@
 set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testalg")
-foreach(TEST petsc umfpack ublas graph sub_matrix eigen3_tensor)
+foreach(TEST petsc umfpack ublas graph sub_matrix eigen3_tensor eigenmap)
   feelpp_add_test( ${TEST}  NO_MPI_TEST )
 endforeach()
 
