@@ -1,26 +1,11 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-  This file is part of the Feel library
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2007-08-07
+    SPDX-FileCopyrightText: 2007-2010 Université Joseph Fourier (Grenoble I)
+    SPDX-FileCopyrightText: 2011-2026 University of Strasbourg
 
-  Copyright (C) 2007-2010 Université Joseph Fourier (Grenoble I)
-  Copyright (C) 2011-2016 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    SPDX-License-Identifier: LGPL-3.0-or-later
 */
 /**
    \file meshimpl.hpp
@@ -32,6 +17,8 @@
 
 #include <boost/preprocessor/comparison/greater_equal.hpp>
 #include <boost/preprocessor/list/first_n.hpp>
+#include <cmath>
+#include <limits>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -1290,8 +1277,8 @@ void
                             elt.setFace( j, *facePtr );
                             if ( updateComponentAddElements )
                                 facePtr->addElement( eltId );
-                            // fix duplication of point in connection1 with 3d mesh at order 3 and 4
-                            this->fixPointDuplicationInHOMesh( elt, *facePtr, mpl::bool_ < nDim == 3 && nOrder >= 3 > () );
+                            // Canonicalize face-interior geometric nodes.
+                            this->fixPointDuplicationInHOMesh( elt, *facePtr );
 
                             // force processId equal to M_comm.rank() if face on interprocessfaces
                             if ( facePtr->processId() != currentPid )
@@ -1511,8 +1498,8 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensi
                             elt.setFace( j, *facePtr );
                             if ( updateComponentAddElements )
                                 facePtr->addElement( eltId );
-                            // fix duplication of point in connection1 with 3d mesh at order 3 and 4
-                            this->fixPointDuplicationInHOMesh( elt, *facePtr, mpl::bool_ < nDim == 3 && nOrder >= 3 > () );
+                            // Canonicalize face-interior geometric nodes.
+                            this->fixPointDuplicationInHOMesh( elt, *facePtr );
                         }
                         else //maybe a new face to build
                         {
@@ -1558,8 +1545,8 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensi
                                     elt0->setFace( posElt0, faceInserted );
                                     elt.setFace( j, faceInserted );
                                     std::get<2>( _faceit->second ) = &faceInserted;
-                                    // fix duplication of point in connection1 with 3d mesh at order 3 and 4
-                                    this->fixPointDuplicationInHOMesh( elt, faceInserted, mpl::bool_ < nDim == 3 && nOrder >= 3 > () );
+                                    // Canonicalize face-interior geometric nodes.
+                                    this->fixPointDuplicationInHOMesh( elt, faceInserted );
                                 }
                             } // numPartition > 1
                         }
@@ -1762,80 +1749,80 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateAdjacencyElements
 #endif
 
 template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
-void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::fixPointDuplicationInHOMesh( element_type& elt, face_type const& face, mpl::true_ )
+void Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::
+    fixPointDuplicationInHOMesh( element_type& elt, face_type const& face )
 {
-#if 0
-    CHECK( nOrder == 3 || nOrder == 4 ) << "this fix with nOrder " << nOrder << " not implement, only order 3 and 4\n";
-    if ( nOrder == 3 )
+    if constexpr ( nDim != 3 || nOrder < 3 )
+        return;
+    else
     {
-        uint16_type startPt = face_type::numVertices*face_type::nbPtsPerVertex + face_type::numEdges*face_type::nbPtsPerEdge;
-        CHECK( startPt == 9 && face_type::numPoints==10 ) << "invalid case\n";
+        constexpr uint16_type firstFaceInteriorPoint =
+            face_type::numVertices * face_type::nbPtsPerVertex +
+            face_type::numEdges * face_type::nbPtsPerEdge;
+        static_assert( firstFaceInteriorPoint < face_type::numPoints,
+                       "a three-dimensional order >= 3 cell must have "
+                       "face-interior geometric nodes" );
 
-        // easy case : only one point in face
-        uint16_type idx = element_type::fToP( face.pos_second(), startPt );
-        auto const& ptOnFace = face.point( startPt );
-        size_type ptIdToCheck = elt.point( idx ).id();
-        if ( ptIdToCheck != ptOnFace.id() )
+        auto const localFace = face.pos_second();
+        std::array<bool, face_type::numPoints> facePointMatched{};
+        double const faceScale = std::max( 1.0, elt.hFace( localFace ) );
+        double const matchingTolerance =
+            128.0 * std::numeric_limits<double>::epsilon() * faceScale;
+        double const matchingToleranceSquared =
+            matchingTolerance * matchingTolerance;
+
+        for ( uint16_type k = firstFaceInteriorPoint;
+              k < face_type::numPoints; ++k )
         {
-            // erase duplicate point
-            this->erasePoint( this->pointIterator( ptIdToCheck ) );
-            // fix point coordinate
-            elt.setPoint( idx, ptOnFace );
-        }
-    }
-    else if ( nOrder == 4 )
-    {
-        const uint16_type startPt = face_type::numVertices*face_type::nbPtsPerVertex + face_type::numEdges*face_type::nbPtsPerEdge;
-        CHECK( startPt == 12 && face_type::numPoints==15 ) << "invalid case\n";
+            auto const elementPointIndex =
+                element_type::fToP( localFace, k );
+            auto const& elementPoint = elt.point( elementPointIndex );
 
-        // get a correspondence between the face and elt point numbering
-        std::set<uint16_type> idxDone;
-        std::vector<uint16_type> idxDistribution(3,invalid_uint16_type_value);
-        for ( uint16_type k = startPt; k < face_type::numPoints; ++k )
-        {
-            auto const& ptOnFaceElt = elt.point( element_type::fToP( face.pos_second(), k ) );
-
-            double dist=0, distMin= 1000*elt.hFace( face.pos_second() );// INT_MAX;
-            uint16_type idxFaceNear = invalid_uint16_type_value;
-
-            for ( uint16_type idxV = startPt ; idxV < face_type::numPoints ; ++idxV )
+            uint16_type nearestFacePoint = invalid_uint16_type_value;
+            double nearestDistanceSquared =
+                std::numeric_limits<double>::max();
+            for ( uint16_type candidate = firstFaceInteriorPoint;
+                  candidate < face_type::numPoints; ++candidate )
             {
-                auto const& ptOnFace = face.point( idxV );
-                dist=0;
-                for ( uint16_type d=0 ; d< nRealDim ; ++d )
-                    dist += std::pow( ptOnFace(d)- ptOnFaceElt(d),2);
-                if ( dist<distMin ) { distMin=dist; idxFaceNear=idxV; }
+                if ( facePointMatched[candidate] )
+                    continue;
+
+                auto const& facePoint = face.point( candidate );
+                double distanceSquared = 0.0;
+                for ( uint16_type d = 0; d < nRealDim; ++d )
+                {
+                    double const delta =
+                        facePoint( d ) - elementPoint( d );
+                    distanceSquared += delta * delta;
+                }
+                if ( distanceSquared < nearestDistanceSquared )
+                {
+                    nearestDistanceSquared = distanceSquared;
+                    nearestFacePoint = candidate;
+                }
             }
 
-            CHECK( idxDone.find( idxFaceNear ) == idxDone.end() ) << " idxVSearch is already done\n";
-            idxDone.insert( idxFaceNear );
-            idxDistribution[k-12] = idxFaceNear;
-        }
+            CHECK_NE( nearestFacePoint, invalid_uint16_type_value )
+                << "no unmatched high-order face point is available";
+            CHECK_LE( nearestDistanceSquared, matchingToleranceSquared )
+                << "cannot match high-order face point " << k
+                << " on local face " << localFace
+                << ": distance=" << std::sqrt( nearestDistanceSquared )
+                << ", tolerance=" << matchingTolerance;
+            facePointMatched[nearestFacePoint] = true;
 
-        // fix point if necessary
-        for ( uint16_type i = 0;i<3;++i)
-        {
-            // point index in element
-            uint16_type idx = element_type::fToP( face.pos_second(), startPt + i );
-            size_type ptIdToCheck = elt.point( idx ).id();
-            auto const& ptOnFace = face.point( idxDistribution[i] );
+            auto const duplicatePointId = elementPoint.id();
+            auto const canonicalPointId =
+                face.point( nearestFacePoint ).id();
+            if ( duplicatePointId == canonicalPointId )
+                continue;
 
-            if ( ptIdToCheck != ptOnFace.id() )
-            {
-                // erase duplicate point
-                this->erasePoint( this->pointIterator( ptIdToCheck ) );
-                // fix point coordinate
-                elt.setPoint( idx, ptOnFace );
-            }
+            this->erasePoint( this->pointIterator( duplicatePointId ) );
+            auto& canonicalPoint =
+                this->pointIterator( canonicalPointId )->second;
+            elt.setPoint( elementPointIndex, canonicalPoint );
         }
     }
-#else
-    CHECK( 0 ) << "fixPointDuplicationInHOMesh not implemented yet ";
-#endif
-}
-template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
-void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::fixPointDuplicationInHOMesh( element_type& elt, face_type const& face, mpl::false_ )
-{
 }
 
 template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>

@@ -23,6 +23,7 @@ feelpp_add_test( geomap_order_validity )
 feelpp_add_test( geomap_representation )
 feelpp_add_test( geomap_frames )
 feelpp_add_test( geomap_inverse )
+feelpp_add_test( curved_geomap_mesh )
 
 feelpp_add_test( spacefunc )
 
@@ -46,6 +47,8 @@ feelpp_add_test( continuity_hcurl NO_MPI_TEST )
 feelpp_add_test( broken_fe )
 feelpp_add_test( de_rham )
 feelpp_add_test( de_rham_3d )
+feelpp_add_test( curved_piola_2d )
+feelpp_add_test( curved_piola_3d )
 
 feelpp_add_test( functionals NO_MPI_TEST )
 

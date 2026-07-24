@@ -1,26 +1,15 @@
-//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-//!
-//! This file is part of the Feel++ library
-//!
-//! This library is free software; you can redistribute it and/or
-//! modify it under the terms of the GNU Lesser General Public
-//! License as published by the Free Software Foundation; either
-//! version 2.1 of the License, or (at your option) any later version.
-//!
-//! This library is distributed in the hope that it will be useful,
-//! but WITHOUT ANY WARRANTY; without even the implied warranty of
-//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//! Lesser General Public License for more details.
-//!
-//! You should have received a copy of the GNU Lesser General Public
-//! License along with this library; if not, write to the Free Software
-//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-//!
-//! @file
-//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-//! @date 21 May 2011
-//! @copyright 2011-2017 Feel++ Consortium
-//!
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+
+    SPDX-FileCopyrightText: 2011-2026 University of Strasbourg
+
+    SPDX-License-Identifier: LGPL-3.0-or-later
+*/
+/**
+ * @file mesh.hpp
+ * @brief Distributed finite-element mesh container and topology services.
+ */
 #ifndef FEELPP_MESH_HPP
 #define FEELPP_MESH_HPP 1
 
@@ -1934,10 +1923,18 @@ public:
     FEELPP_NO_EXPORT void updateOnBoundary();
 
     /**
-     * fix duplication of point in connection1 with 3d mesh at order 3 and 4
+     * @brief Canonicalize interior high-order face points shared by two cells.
+     *
+     * Mesh importers may create one copy of a face-interior geometric node per
+     * adjacent three-dimensional cell. This operation replaces the copy owned
+     * by @p elt with the canonical point already stored by @p face. It is a
+     * compile-time no-op for cells that cannot have face-interior nodes.
+     *
+     * @param elt second cell connected to the shared face
+     * @param face canonical mesh face
      */
-    FEELPP_NO_EXPORT void fixPointDuplicationInHOMesh( element_type& elt, face_type const& face, mpl::true_ );
-    FEELPP_NO_EXPORT void fixPointDuplicationInHOMesh( element_type& elt, face_type const& face, mpl::false_ );
+    FEELPP_NO_EXPORT void fixPointDuplicationInHOMesh(
+        element_type& elt, face_type const& face );
 
     void invalidatePeriodicCanonicalMaps();
     void buildPeriodicCanonicalMaps();
