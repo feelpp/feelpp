@@ -365,6 +365,29 @@ concept GeometricMappingContextConcept =
         { context.isValid( q ) } -> std::convertible_to<bool>;
     };
 
+/**
+ * @brief A geometric context for a cell embedded in a higher-dimensional space.
+ *
+ * This extends the common mapping contract with the intrinsic metric and the
+ * orthogonal tangent/normal decomposition. It intentionally does not require
+ * a single normal, which is not canonical beyond codimension one.
+ *
+ * @tparam T embedded geometric-mapping context type
+ */
+template <typename T>
+concept EmbeddedGeometricMappingContextConcept =
+    GeometricMappingContextConcept<T> &&
+    ( std::remove_cvref_t<T>::PDim < std::remove_cvref_t<T>::NDim ) &&
+    requires( std::remove_cvref_t<T> const& context, int q ) {
+        context.metricTensor( q );
+        context.inverseMetricTensor( q );
+        { context.manifoldJacobian( q ) } ->
+            std::convertible_to<typename std::remove_cvref_t<T>::value_type>;
+        context.tangentProjector( q );
+        context.normalProjector( q );
+        context.normalFrame( q );
+    };
+
 //
 // Polynomial space concepts
 //
