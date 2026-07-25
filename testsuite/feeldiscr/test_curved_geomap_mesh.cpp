@@ -53,7 +53,11 @@ void checkMappingValidity(
     for ( auto const& elementWrap : elements( mesh ) )
     {
         auto const& element = unwrap_ref( elementWrap );
-        auto gmc = gm->template context<context>( element, precompute );
+        auto const elementView =
+            mesh->elementView( element.id() );
+        auto gmc =
+            gm->template context<context>(
+                elementView, precompute );
         for ( int q = 0; q < gmc->nPoints(); ++q )
         {
             BOOST_CHECK( gmc->isValid( q ) );
@@ -64,8 +68,9 @@ void checkMappingValidity(
         for ( uint16_type face = 0;
               face < element_type::numTopologicalFaces; ++face )
         {
-            auto faceContext = gm->template context<context>(
-                element, facePrecompute, face );
+            auto faceContext =
+                gm->template context<context>(
+                    elementView, facePrecompute, face );
             for ( int q = 0; q < faceContext->nPoints(); ++q )
             {
                 BOOST_CHECK( faceContext->isValid( q ) );

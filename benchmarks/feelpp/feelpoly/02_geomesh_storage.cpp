@@ -46,10 +46,10 @@
 namespace geomesh_allocation_probe
 {
 /**
- * @struct snapshot
+ * @struct AllocationSnapshot
  * @brief Cumulative C++ allocation activity captured by the benchmark.
  */
-struct snapshot
+struct AllocationSnapshot
 {
     /** Number of calls to the global C++ allocation functions. */
     std::uint64_t calls = 0;
@@ -88,7 +88,7 @@ inline void begin() noexcept
  * @brief Disable allocation recording and return the cumulative snapshot.
  * @return recorded C++ allocation calls and requested bytes
  */
-[[nodiscard]] inline snapshot end() noexcept
+[[nodiscard]] inline AllocationSnapshot end() noexcept
 {
     enabled.store( false, std::memory_order_release );
     return { calls.load( std::memory_order_relaxed ),
@@ -265,10 +265,10 @@ using namespace Feel;
 namespace
 {
 /**
- * @struct mesh_storage_statistics
+ * @struct MeshStorageStatistics
  * @brief Entity counts and conservative storage lower bounds for one mesh.
  */
-struct mesh_storage_statistics
+struct MeshStorageStatistics
 {
     /** Local point count. */
     std::uint64_t points = 0;
@@ -294,6 +294,28 @@ struct mesh_storage_statistics
     std::uint64_t faceInlineBytes = 0;
     /** Inline bytes in one stored cell record. */
     std::uint64_t cellInlineBytes = 0;
+    /** Populated remote-partition-ID sidecar payloads. */
+    std::uint64_t remoteIdPayloads = 0;
+    /** Populated incidence sidecar payloads. */
+    std::uint64_t incidencePayloads = 0;
+    /** Populated marker sidecar payloads. */
+    std::uint64_t markerPayloads = 0;
+    /** Populated cached-measure sidecar payloads. */
+    std::uint64_t measurePayloads = 0;
+    /** Bytes in the compact trivially copyable entity core. */
+    std::uint64_t entityCoreBytes = 0;
+    /** Allocated compact local-index connectivity entries. */
+    std::uint64_t compactConnectivityEntries = 0;
+    /** Connectivity entries belonging to live entities. */
+    std::uint64_t activeCompactConnectivityEntries = 0;
+    /** Released connectivity entries available for reuse. */
+    std::uint64_t reusableCompactConnectivityEntries = 0;
+    /** Scalars in aligned mesh-owned coordinate storage. */
+    std::uint64_t compactCoordinateScalars = 0;
+    /** Bytes in aligned mesh-owned coordinate storage. */
+    std::uint64_t compactCoordinateBytes = 0;
+    /** Entries in the sparse external-point-ID lookup. */
+    std::uint64_t externalPointLookupEntries = 0;
 
     /**
      * @brief Return the total number of stored topological entities.
@@ -304,6 +326,38 @@ struct mesh_storage_statistics
         return points + edges + faces + cells;
     }
 };
+
+/**
+ * @brief Accumulate one entity-dimension's sparse-sidecar statistics.
+ * @param source source statistics
+ * @param destination aggregate benchmark statistics
+ */
+void accumulateSparseMetadataStatistics(
+    GeoEntitySparseMetadataStatistics const& source,
+    MeshStorageStatistics& destination )
+{
+    destination.remoteIdPayloads += source.remoteIdEntries;
+    destination.incidencePayloads += source.incidenceEntries;
+    destination.markerPayloads += source.markerEntries;
+    destination.measurePayloads += source.measureEntries;
+}
+
+/**
+ * @brief Accumulate one entity-dimension's compact connectivity counters.
+ * @param source source connectivity statistics
+ * @param destination aggregate benchmark statistics
+ */
+void accumulateConnectivityStatistics(
+    GeoEntityConnectivityStatistics const& source,
+    MeshStorageStatistics& destination )
+{
+    destination.compactConnectivityEntries +=
+        source.allocatedEntries;
+    destination.activeCompactConnectivityEntries +=
+        source.activeEntries;
+    destination.reusableCompactConnectivityEntries +=
+        source.reusableEntries;
+}
 
 /**
  * @brief Return the current process resident set size on Linux.
@@ -400,19 +454,19 @@ makeBenchmarkMesh( int resolution )
 }
 
 /**
- * @brief Accumulate point-vector payload for a `GeoND` entity.
+ * @brief Accumulate canonical connectivity and lazy compatibility payload.
  * @tparam EntityType geometric entity type
  * @param entity geometric entity
  * @param statistics output statistics
  */
 template <typename EntityType>
 void accumulateEntityPointStorage(
-    EntityType const& entity, mesh_storage_statistics& statistics )
+    EntityType const& entity, MeshStorageStatistics& statistics )
 {
-    statistics.geometricPointReferences += entity.points().size();
+    statistics.geometricPointReferences +=
+        entity.pointIds().size();
     statistics.pointPointerCapacityBytes +=
-        entity.points().capacity() *
-        sizeof( typename EntityType::point_type* );
+        entity.pointPointerCacheCapacityBytes();
 }
 
 /**
@@ -422,10 +476,10 @@ void accumulateEntityPointStorage(
  * @return collected storage statistics
  */
 template <typename MeshType>
-[[nodiscard]] mesh_storage_statistics
+[[nodiscard]] MeshStorageStatistics
 inspectMeshStorage( std::shared_ptr<MeshType> const& mesh )
 {
-    mesh_storage_statistics statistics;
+    MeshStorageStatistics statistics;
     statistics.points = mesh->numPoints();
     statistics.edges = mesh->numEdges();
     statistics.faces = mesh->numFaces();
@@ -447,6 +501,39 @@ inspectMeshStorage( std::shared_ptr<MeshType> const& mesh )
         sizeof( typename MeshType::face_type );
     statistics.cellInlineBytes =
         sizeof( typename MeshType::element_type );
+    statistics.entityCoreBytes =
+        sizeof( typename MeshType::element_type::core_type );
+    auto const coordinateStatistics =
+        mesh->pointCoordinateStorageStatistics();
+    statistics.compactCoordinateScalars =
+        coordinateStatistics.scalarEntries;
+    statistics.compactCoordinateBytes =
+        coordinateStatistics.scalarEntries *
+        sizeof( typename MeshType::value_type );
+    statistics.externalPointLookupEntries =
+        coordinateStatistics.externalLookupEntries;
+
+    accumulateSparseMetadataStatistics(
+        mesh->pointSparseMetadataStatistics(), statistics );
+    accumulateSparseMetadataStatistics(
+        mesh->faceSparseMetadataStatistics(), statistics );
+    accumulateSparseMetadataStatistics(
+        mesh->elementSparseMetadataStatistics(), statistics );
+    accumulateConnectivityStatistics(
+        mesh->pointConnectivityStatistics(), statistics );
+    accumulateConnectivityStatistics(
+        mesh->faceConnectivityStatistics(), statistics );
+    accumulateConnectivityStatistics(
+        mesh->elementConnectivityStatistics(), statistics );
+    if constexpr ( requires {
+                       mesh->edgeSparseMetadataStatistics();
+                   } )
+    {
+        accumulateSparseMetadataStatistics(
+            mesh->edgeSparseMetadataStatistics(), statistics );
+        accumulateConnectivityStatistics(
+            mesh->edgeConnectivityStatistics(), statistics );
+    }
 
     for ( auto const& [id, element] : mesh->elements() )
     {
@@ -473,7 +560,7 @@ inspectMeshStorage( std::shared_ptr<MeshType> const& mesh )
  */
 void publishStorageCounters(
     benchmark::State& state,
-    mesh_storage_statistics const& statistics )
+    MeshStorageStatistics const& statistics )
 {
     state.counters["points"] =
         static_cast<double>( statistics.points );
@@ -501,6 +588,38 @@ void publishStorageCounters(
         static_cast<double>( statistics.faceInlineBytes );
     state.counters["inline-bytes-per-cell"] =
         static_cast<double>( statistics.cellInlineBytes );
+    state.counters["compact-entity-core-bytes"] =
+        static_cast<double>( statistics.entityCoreBytes );
+    state.counters["remote-id-sidecar-payloads"] =
+        static_cast<double>( statistics.remoteIdPayloads );
+    state.counters["incidence-sidecar-payloads"] =
+        static_cast<double>( statistics.incidencePayloads );
+    state.counters["marker-sidecar-payloads"] =
+        static_cast<double>( statistics.markerPayloads );
+    state.counters["measure-sidecar-payloads"] =
+        static_cast<double>( statistics.measurePayloads );
+    state.counters["compact-connectivity-entries"] =
+        static_cast<double>(
+            statistics.compactConnectivityEntries );
+    state.counters["active-compact-connectivity-entries"] =
+        static_cast<double>(
+            statistics.activeCompactConnectivityEntries );
+    state.counters["reusable-compact-connectivity-entries"] =
+        static_cast<double>(
+            statistics.reusableCompactConnectivityEntries );
+    state.counters["compact-connectivity-bytes"] =
+        static_cast<double>(
+            statistics.compactConnectivityEntries *
+            sizeof( std::uint32_t ) );
+    state.counters["compact-coordinate-scalars"] =
+        static_cast<double>(
+            statistics.compactCoordinateScalars );
+    state.counters["compact-coordinate-bytes"] =
+        static_cast<double>(
+            statistics.compactCoordinateBytes );
+    state.counters["external-point-lookup-entries"] =
+        static_cast<double>(
+            statistics.externalPointLookupEntries );
 }
 
 /**
@@ -509,7 +628,7 @@ void publishStorageCounters(
  * @param state Google Benchmark state; first argument is mesh resolution
  */
 template <typename MeshType>
-void BM_MeshFootprint( benchmark::State& state )
+void benchmarkMeshFootprint( benchmark::State& state )
 {
     auto const heapBefore = liveHeapBytes();
     auto const rssBefore = residentBytes();
@@ -558,7 +677,7 @@ void BM_MeshFootprint( benchmark::State& state )
  * @param state Google Benchmark state; first argument is mesh resolution
  */
 template <typename MeshType>
-void BM_MeshImportAndUpdate( benchmark::State& state )
+void benchmarkMeshImportAndUpdate( benchmark::State& state )
 {
     auto warmup = makeBenchmarkMesh<MeshType>(
         static_cast<int>( state.range( 0 ) ) );
@@ -593,7 +712,7 @@ void BM_MeshImportAndUpdate( benchmark::State& state )
  * @param state Google Benchmark state; first argument is mesh resolution
  */
 template <typename MeshType>
-void BM_ElementTraversal( benchmark::State& state )
+void benchmarkElementTraversal( benchmark::State& state )
 {
     auto mesh = makeBenchmarkMesh<MeshType>(
         static_cast<int>( state.range( 0 ) ) );
@@ -620,7 +739,7 @@ void BM_ElementTraversal( benchmark::State& state )
  * @param state Google Benchmark state; first argument is mesh resolution
  */
 template <typename MeshType>
-void BM_FacetTraversal( benchmark::State& state )
+void benchmarkFacetTraversal( benchmark::State& state )
 {
     auto mesh = makeBenchmarkMesh<MeshType>(
         static_cast<int>( state.range( 0 ) ) );
@@ -648,7 +767,7 @@ void BM_FacetTraversal( benchmark::State& state )
  * @param state Google Benchmark state; first argument is mesh resolution
  */
 template <typename MeshType>
-void BM_CoordinateGather( benchmark::State& state )
+void benchmarkCoordinateGather( benchmark::State& state )
 {
     auto mesh = makeBenchmarkMesh<MeshType>(
         static_cast<int>( state.range( 0 ) ) );
@@ -678,12 +797,102 @@ void BM_CoordinateGather( benchmark::State& state )
 }
 
 /**
+ * @brief Benchmark compact-ID gathering from the aligned Eigen coordinate map.
+ * @tparam MeshType Feel++ mesh type
+ * @param state Google Benchmark state; first argument is mesh resolution
+ */
+template <typename MeshType>
+void benchmarkCompactCoordinateGather( benchmark::State& state )
+{
+    auto mesh = makeBenchmarkMesh<MeshType>(
+        static_cast<int>( state.range( 0 ) ) );
+    auto const& constMesh = *mesh;
+    auto coordinates = constMesh.pointCoordinates();
+    Eigen::Matrix<
+        typename MeshType::value_type, MeshType::nRealDim,
+        Eigen::Dynamic, Eigen::ColMajor>
+        localCoordinates(
+            MeshType::nRealDim,
+            MeshType::element_type::numPoints );
+
+    geomesh_allocation_probe::begin();
+    for ( [[maybe_unused]] auto iteration : state )
+    {
+        for ( auto const& [id, element] : mesh->elements() )
+        {
+            benchmark::DoNotOptimize( id );
+            auto const pointIds = element.pointIds();
+            for ( uint16_type localPoint = 0;
+                  localPoint < pointIds.size(); ++localPoint )
+                localCoordinates.col( localPoint ) =
+                    coordinates.col(
+                        mesh->pointLocalIndex(
+                            pointIds[localPoint] ) );
+            benchmark::DoNotOptimize( localCoordinates.data() );
+        }
+    }
+    auto const allocations = geomesh_allocation_probe::end();
+
+    state.counters["cpp-allocation-calls"] =
+        benchmark::Counter(
+            static_cast<double>( allocations.calls ),
+            benchmark::Counter::kAvgIterations );
+    state.counters["cpp-requested-bytes"] =
+        benchmark::Counter(
+            static_cast<double>( allocations.bytes ),
+            benchmark::Counter::kAvgIterations );
+    state.SetItemsProcessed(
+        state.iterations() * mesh->numElements() );
+}
+
+/**
+ * @brief Benchmark compact gathering through mathematical entity views.
+ * @tparam MeshType Feel++ mesh type
+ * @param state Google Benchmark state; first argument is mesh resolution
+ */
+template <typename MeshType>
+void benchmarkEntityViewCoordinateGather( benchmark::State& state )
+{
+    auto mesh = makeBenchmarkMesh<MeshType>(
+        static_cast<int>( state.range( 0 ) ) );
+    Eigen::Matrix<
+        typename MeshType::value_type, MeshType::nRealDim,
+        Eigen::Dynamic, Eigen::ColMajor>
+        localCoordinates(
+            MeshType::nRealDim,
+            MeshType::element_type::numPoints );
+
+    geomesh_allocation_probe::begin();
+    for ( [[maybe_unused]] auto iteration : state )
+    {
+        for ( auto const cell : mesh->elementViews() )
+        {
+            cell.updateCoordinates( localCoordinates );
+            benchmark::DoNotOptimize(
+                localCoordinates.data() );
+        }
+    }
+    auto const allocations = geomesh_allocation_probe::end();
+
+    state.counters["cpp-allocation-calls"] =
+        benchmark::Counter(
+            static_cast<double>( allocations.calls ),
+            benchmark::Counter::kAvgIterations );
+    state.counters["cpp-requested-bytes"] =
+        benchmark::Counter(
+            static_cast<double>( allocations.bytes ),
+            benchmark::Counter::kAvgIterations );
+    state.SetItemsProcessed(
+        state.iterations() * mesh->numElements() );
+}
+
+/**
  * @brief Benchmark binary serialization of the current owning mesh graph.
  * @tparam MeshType Feel++ mesh type
  * @param state Google Benchmark state; first argument is mesh resolution
  */
 template <typename MeshType>
-void BM_MeshSerialization( benchmark::State& state )
+void benchmarkMeshSerialization( benchmark::State& state )
 {
     auto mesh = makeBenchmarkMesh<MeshType>(
         static_cast<int>( state.range( 0 ) ) );
@@ -713,7 +922,7 @@ void BM_MeshSerialization( benchmark::State& state )
  * @param state Google Benchmark state; arguments are resolution and partitions
  */
 template <typename MeshType>
-void BM_MeshPartitioning( benchmark::State& state )
+void benchmarkMeshPartitioning( benchmark::State& state )
 {
     if ( Environment::worldComm().globalSize() != 1 )
     {
@@ -755,39 +964,49 @@ void registerMeshStorageBenchmarks(
     {
         benchmark::RegisterBenchmark(
             ( name + "/footprint" ).c_str(),
-            &BM_MeshFootprint<MeshType> )
+            &benchmarkMeshFootprint<MeshType> )
             ->Arg( resolution )
             ->Iterations( 1 );
         benchmark::RegisterBenchmark(
             ( name + "/import-update" ).c_str(),
-            &BM_MeshImportAndUpdate<MeshType> )
+            &benchmarkMeshImportAndUpdate<MeshType> )
             ->Arg( resolution )
             ->Unit( benchmark::kMillisecond )
             ->Iterations( 3 );
         benchmark::RegisterBenchmark(
             ( name + "/element-traversal" ).c_str(),
-            &BM_ElementTraversal<MeshType> )
+            &benchmarkElementTraversal<MeshType> )
             ->Arg( resolution )
             ->Unit( benchmark::kMicrosecond );
         benchmark::RegisterBenchmark(
             ( name + "/facet-traversal" ).c_str(),
-            &BM_FacetTraversal<MeshType> )
+            &benchmarkFacetTraversal<MeshType> )
             ->Arg( resolution )
             ->Unit( benchmark::kMicrosecond );
         benchmark::RegisterBenchmark(
             ( name + "/coordinate-gather" ).c_str(),
-            &BM_CoordinateGather<MeshType> )
+            &benchmarkCoordinateGather<MeshType> )
+            ->Arg( resolution )
+            ->Unit( benchmark::kMicrosecond );
+        benchmark::RegisterBenchmark(
+            ( name + "/compact-coordinate-gather" ).c_str(),
+            &benchmarkCompactCoordinateGather<MeshType> )
+            ->Arg( resolution )
+            ->Unit( benchmark::kMicrosecond );
+        benchmark::RegisterBenchmark(
+            ( name + "/entity-view-coordinate-gather" ).c_str(),
+            &benchmarkEntityViewCoordinateGather<MeshType> )
             ->Arg( resolution )
             ->Unit( benchmark::kMicrosecond );
         benchmark::RegisterBenchmark(
             ( name + "/serialization" ).c_str(),
-            &BM_MeshSerialization<MeshType> )
+            &benchmarkMeshSerialization<MeshType> )
             ->Arg( resolution )
             ->Unit( benchmark::kMillisecond );
 #if defined( FEELPP_HAS_METIS )
         benchmark::RegisterBenchmark(
             ( name + "/partition" ).c_str(),
-            &BM_MeshPartitioning<MeshType> )
+            &benchmarkMeshPartitioning<MeshType> )
             ->Args( { resolution, 2 } )
             ->Unit( benchmark::kMillisecond )
             ->Iterations( 3 );
@@ -796,7 +1015,7 @@ void registerMeshStorageBenchmarks(
 }
 
 /**
- * @brief Register the complete statically instantiated G.10a baseline matrix.
+ * @brief Register the complete static mesh-storage benchmark matrix.
  * @return true after registration
  */
 [[nodiscard]] bool registerStorageMatrix()

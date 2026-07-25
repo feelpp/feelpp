@@ -53,6 +53,7 @@
 #include <feel/feelalg/svd.hpp>
 
 #include <feel/feelmesh/marker.hpp>
+#include <feel/feelmesh/concepts.hpp>
 #include <feel/feelmesh/traits.hpp>
 #include <feel/feelmesh/entitymarkers.hpp>
 #include <feel/feelmesh/filters.hpp>
@@ -1109,6 +1110,24 @@ class GeoMap
             this->updateImpl<CTX>();
         }
 
+        /**
+         * @brief Update from a compact mathematical entity view.
+         * @tparam CTX compile-time geometric context flags
+         * @tparam View view satisfying the geometric entity contract
+         * @param view entity view supplying compact connectivity and coordinates
+         */
+        template <size_type CTX, GeometricEntityViewType View>
+        void update( View const& view )
+            requires(
+                SubEntityCoDim == 0 &&
+                std::same_as<
+                    typename std::remove_cvref_t<View>::entity_type,
+                    element_type> )
+        {
+            this->setElement( view );
+            this->updateImpl<CTX>();
+        }
+
         template <size_type CTX>
         void update( element_type const& __e, uint16_type __f )
             requires( SubEntityCoDim != 0 )
@@ -1118,11 +1137,53 @@ class GeoMap
             this->updateImpl<CTX>();
         }
 
+        /**
+         * @brief Update a mapped subentity from a compact cell view.
+         * @tparam CTX compile-time geometric context flags
+         * @tparam View view satisfying the geometric entity contract
+         * @param view cell view supplying compact geometry
+         * @param __f local subentity number
+         */
+        template <size_type CTX, GeometricEntityViewType View>
+        void update( View const& view, uint16_type __f )
+            requires(
+                SubEntityCoDim != 0 &&
+                std::same_as<
+                    typename std::remove_cvref_t<View>::entity_type,
+                    element_type> )
+        {
+            this->setElement( view );
+            this->setSubEntity( __f );
+            this->updateImpl<CTX>();
+        }
+
         template <size_type CTX>
         void update( element_type const& __e, uint16_type __f, permutation_type __perm )
             requires( SubEntityCoDim != 0 )
         {
             this->setElement( __e );
+            this->setSubEntity( __f, __perm );
+            this->updateImpl<CTX>();
+        }
+
+        /**
+         * @brief Update a permuted subentity from a compact cell view.
+         * @tparam CTX compile-time geometric context flags
+         * @tparam View view satisfying the geometric entity contract
+         * @param view cell view supplying compact geometry
+         * @param __f local subentity number
+         * @param __perm subentity permutation
+         */
+        template <size_type CTX, GeometricEntityViewType View>
+        void update( View const& view, uint16_type __f,
+                     permutation_type __perm )
+            requires(
+                SubEntityCoDim != 0 &&
+                std::same_as<
+                    typename std::remove_cvref_t<View>::entity_type,
+                    element_type> )
+        {
+            this->setElement( view );
             this->setSubEntity( __f, __perm );
             this->updateImpl<CTX>();
         }
@@ -1206,6 +1267,30 @@ class GeoMap
                 M_id = __e.id();
                 M_e_markers = __e.markers();
             }
+        }
+
+        /**
+         * @brief Bind a compact entity view and gather its geometric nodes.
+         * @tparam View view satisfying the geometric entity contract
+         * @param view cell view backed by compact mesh storage
+         */
+        template <GeometricEntityViewType View>
+        FEELPP_STRONG_INLINE void setElement( View const& view )
+            requires std::same_as<
+                typename std::remove_cvref_t<View>::entity_type,
+                element_type>
+        {
+            auto const& element = view.entity();
+            M_context_updated = 0;
+            M_element = std::addressof( element );
+            bool const useVertices =
+                M_G.cols() == element_type::numVertices;
+            if ( useVertices )
+                view.updateVertexCoordinates( M_G );
+            else
+                view.updateCoordinates( M_G );
+            M_id = view.id();
+            M_e_markers = view.markers();
         }
 
         void setSubEntity( uint16_type __f )
@@ -1706,10 +1791,53 @@ class GeoMap
                 return geometry::canonicalUnitNormal( this->K( q ) );
         }
 
+        /**
+         * @brief Reject a normal evaluation when a cell has no unique normal.
+         *
+         * Generic DSEL tensors compile the normal-symbol evaluation path even
+         * when an expression contains no normal symbol. Keeping this overload
+         * in the cell-context interface preserves that generic compilation
+         * path while reporting an immediate mathematical error if a normal is
+         * actually requested on a full-dimensional cell or an embedded cell
+         * of codimension greater than one.
+         *
+         * @param q geometric evaluation-point index
+         * @return unreachable zero vector used only to satisfy the return type
+         */
+        [[nodiscard]] eigen_vector_n_type const&
+        unitNormal( int q ) const
+            requires(
+                subEntityCoDim == 0 &&
+                !( NDim == PDim + 1 && NDim <= 3 ) )
+        {
+            CHECK( false )
+                << "this geometric cell has no unique canonical unit normal; "
+                   "evaluate on a codimension-one range or use the normal "
+                   "frame/projector for higher-codimension geometry";
+            static eigen_vector_n_type const unreachableNormal =
+                eigen_vector_n_type::Zero();
+            (void)q;
+            return unreachableNormal;
+        }
+
         [[nodiscard]] value_type unitNormal( int n, int q ) const
             requires( subEntityCoDim == 1 ||
                       ( subEntityCoDim == 0 && NDim == PDim+1 &&
                         NDim <= 3 ) )
+        {
+            return this->unitNormal( q )( n );
+        }
+
+        /**
+         * @brief Reject a normal-component evaluation on a cell interior.
+         * @param n ambient component
+         * @param q geometric evaluation-point index
+         * @return unreachable scalar used only to satisfy the return type
+         */
+        [[nodiscard]] value_type unitNormal( int n, int q ) const
+            requires(
+                subEntityCoDim == 0 &&
+                !( NDim == PDim + 1 && NDim <= 3 ) )
         {
             return this->unitNormal( q )( n );
         }
@@ -1815,11 +1943,45 @@ class GeoMap
         {
             return M_tangents[this->computedPointIndex( q )];
         }
+
+        /**
+         * @brief Return the mapped tangent of a one-dimensional cell.
+         *
+         * The reference line has one canonical coordinate direction, so the
+         * first Jacobian column is its oriented physical tangent. This covers
+         * both ordinary 1D meshes and curves embedded in a higher-dimensional
+         * ambient space.
+         *
+         * @param q geometric evaluation-point index
+         * @return oriented scaled tangent
+         */
+        [[nodiscard]] eigen_vector_n_type tangent( int q ) const
+            requires( subEntityCoDim == 0 && PDim == 1 )
+        {
+            return this->K( q ).col( 0 );
+        }
+
         [[nodiscard]] eigen_vector_n_type const& unitTangent( int q ) const
             requires( subEntityCoDim == 1 && PDim == 2 )
         {
             return M_unit_tangents[this->computedPointIndex( q )];
         }
+
+        /**
+         * @brief Return the oriented unit tangent of a one-dimensional cell.
+         * @param q geometric evaluation-point index
+         * @return normalized first Jacobian column
+         */
+        [[nodiscard]] eigen_vector_n_type unitTangent( int q ) const
+            requires( subEntityCoDim == 0 && PDim == 1 )
+        {
+            auto mappedTangent = this->tangent( q );
+            auto const tangentNorm = mappedTangent.norm();
+            CHECK_GT( tangentNorm, value_type{} )
+                << "degenerate one-dimensional geometric mapping";
+            return mappedTangent / tangentNorm;
+        }
+
         [[nodiscard]] value_type const& unitTangent( int c1, int c2, int q ) const
             requires( subEntityCoDim == 1 && PDim == 2 )
         {
@@ -3079,17 +3241,17 @@ class GeoMap
             if constexpr ( is_linear )
             {
                 this->template updateJKBNKernel<
-                    CTX, geometry::affine_geometry_order>();
+                    CTX, geometry::AffineGeometryOrder>();
             }
             else if ( M_gm->isLinear() )
             {
                 this->template updateJKBNKernel<
-                    CTX, geometry::affine_geometry_order>();
+                    CTX, geometry::AffineGeometryOrder>();
             }
             else
             {
                 this->template updateJKBNKernel<
-                    CTX, geometry::high_order_geometry>();
+                    CTX, geometry::HighOrderGeometry>();
             }
         }
 
@@ -3099,7 +3261,7 @@ class GeoMap
          * @tparam OrderStrategy affine or high-order evaluation Strategy
          */
         template <int CTX,
-                  geometry::geometric_order_strategy OrderStrategy>
+                  geometry::GeometricOrderStrategy OrderStrategy>
         void updateJKBNKernel() noexcept
         {
             constexpr bool IsOnFace = subEntityCoDim == 1;
@@ -3414,12 +3576,44 @@ class GeoMap
     template <size_type Context_v, int SubEntityCoDim_v = 0, typename ElementType_t>
     std::shared_ptr<Context<ElementType_t, SubEntityCoDim_v>>
     context( ElementType_t const& e, precompute_ptrtype const& pc, size_type dynctx = 0 )
+        requires( !GeometricEntityViewType<ElementType_t> )
     {
         return std::make_shared<Context<ElementType_t, SubEntityCoDim_v>>(
             // super_enable_this::shared_from_this(),
             std::dynamic_pointer_cast<GeoMap<Dim, Order, RealDim, T, Entity, PP>>( this->shared_from_this() ),
             e, std::integral_constant<int, Context_v>{},
             pc, invalid_uint16_type_value, dynctx );
+    }
+
+    /**
+     * @brief Create a geometric context from a compact entity view.
+     * @tparam Context_v compile-time geometric context flags
+     * @tparam SubEntityCoDim_v mapped subentity codimension
+     * @tparam View geometric entity view type
+     * @param view compact mathematical entity view
+     * @param pc precomputed reference-basis values
+     * @param dynctx runtime geometric context flags
+     * @return initialized geometric context
+     */
+    template <size_type Context_v, int SubEntityCoDim_v = 0,
+              GeometricEntityViewType View>
+    auto context( View const& view,
+                  precompute_ptrtype const& pc,
+                  size_type dynctx = 0 )
+    {
+        using entity_type =
+            typename std::remove_cvref_t<View>::entity_type;
+        auto result =
+            std::make_shared<Context<
+                entity_type, SubEntityCoDim_v>>(
+                std::dynamic_pointer_cast<
+                    GeoMap<Dim, Order, RealDim, T, Entity, PP>>(
+                    this->shared_from_this() ),
+                view.entity(),
+                std::integral_constant<int, Context_v>{},
+                pc, invalid_uint16_type_value, dynctx );
+        result->template update<Context_v>( view );
+        return result;
     }
 
     template <size_type Context_v, int SubEntityCoDim_v = 1, typename ElementType_t>
@@ -3440,6 +3634,7 @@ class GeoMap
     context( ElementType_t const& e,
              std::vector<std::map<typename ElementType_t::template PermutationSubEntity<SubEntityCoDim_v>, precompute_ptrtype>>& pc,
              uint16_type f, size_type dynctx = 0 )
+        requires( !GeometricEntityViewType<ElementType_t> )
     {
         return std::make_shared<Context<ElementType_t, SubEntityCoDim_v>>(
             // super_enable_this::shared_from_this(),
@@ -3447,6 +3642,42 @@ class GeoMap
             e, std::integral_constant<int, Context_v>{},
             pc,
             f, dynctx );
+    }
+
+    /**
+     * @brief Create a mapped-subentity context from a compact cell view.
+     * @tparam Context_v compile-time geometric context flags
+     * @tparam SubEntityCoDim_v mapped subentity codimension
+     * @tparam View geometric cell-view type
+     * @param view compact mathematical cell view
+     * @param pc permutation-indexed subentity precomputes
+     * @param f local subentity number
+     * @param dynctx runtime geometric context flags
+     * @return initialized mapped-subentity context
+     */
+    template <size_type Context_v, int SubEntityCoDim_v = 1,
+              GeometricEntityViewType View>
+    auto context(
+        View const& view,
+        std::vector<std::map<
+            typename std::remove_cvref_t<View>::entity_type::
+                template PermutationSubEntity<SubEntityCoDim_v>,
+            precompute_ptrtype>>& pc,
+        uint16_type f, size_type dynctx = 0 )
+    {
+        using entity_type =
+            typename std::remove_cvref_t<View>::entity_type;
+        auto result =
+            std::make_shared<Context<
+                entity_type, SubEntityCoDim_v>>(
+                std::dynamic_pointer_cast<
+                    GeoMap<Dim, Order, RealDim, T, Entity, PP>>(
+                    this->shared_from_this() ),
+                view.entity(),
+                std::integral_constant<int, Context_v>{},
+                pc, f, dynctx );
+        result->template update<Context_v>( view, f );
+        return result;
     }
 
     /**
@@ -3498,6 +3729,7 @@ class GeoMap
         Inverse( geometric_mapping_ptrtype gm, GeoElem const& ge,
                  [[maybe_unused]] worldcomm_ptr_t const& worldComm =
                      Environment::worldCommSeqPtr() )
+            requires( !GeometricEntityViewType<GeoElem> )
             : M_gm( std::move( gm ) ),
               M_xref( Dim ),
               M_xreal( RealDim ),
@@ -3510,6 +3742,29 @@ class GeoMap
         }
 
         /**
+         * @brief Construct an inverse facade from a compact entity view.
+         * @tparam View geometric entity view type
+         * @param gm geometric mapping
+         * @param view entity view supplying compact coordinates
+         * @param worldComm retained compatibility communicator; no solver is built
+         */
+        template <GeometricEntityViewType View>
+        Inverse( geometric_mapping_ptrtype gm, View const& view,
+                 [[maybe_unused]] worldcomm_ptr_t const& worldComm =
+                     Environment::worldCommSeqPtr() )
+            : M_gm( std::move( gm ) ),
+              M_xref( Dim ),
+              M_xreal( RealDim ),
+              M_G( RealDim, M_gm->nbPoints() ),
+              M_K( RealDim, Dim ),
+              M_B( RealDim, Dim ),
+              M_g( M_gm->nbPoints(), Dim )
+        {
+            view.updateCoordinates( M_G );
+            this->init();
+        }
+
+        /**
          * @brief Construct the affine compatibility facade from entity vertices.
          * @tparam GeoElem geometric entity type
          * @param gm order-one geometric mapping
@@ -3518,9 +3773,10 @@ class GeoMap
          */
         template <typename GeoElem>
         Inverse( geometric_mapping_ptrtype gm, GeoElem const& ge,
-                 mpl::int_<1> /**/,
+                 geometry::AffineGeometryOrder,
                  [[maybe_unused]] worldcomm_ptr_t const& worldComm =
                      Environment::worldCommSeqPtr() )
+            requires( !GeometricEntityViewType<GeoElem> )
             : M_gm( std::move( gm ) ),
               M_xref( Dim ),
               M_xreal( RealDim ),
@@ -3532,20 +3788,112 @@ class GeoMap
             this->init();
         }
 
+        /**
+         * @brief Compatibility constructor for the legacy MPL affine tag.
+         * @tparam GeoElem geometric entity type
+         */
+        template <typename GeoElem>
+        Inverse( geometric_mapping_ptrtype gm, GeoElem const& ge,
+                 mpl::int_<1>,
+                 worldcomm_ptr_t const& worldComm =
+                     Environment::worldCommSeqPtr() )
+            requires( !GeometricEntityViewType<GeoElem> )
+            : Inverse( std::move( gm ), ge,
+                       geometry::AffineGeometryOrder{}, worldComm )
+        {}
+
+        /**
+         * @brief Construct an affine inverse facade from compact vertices.
+         * @tparam View geometric entity view type
+         * @param gm order-one geometric mapping
+         * @param view entity view supplying compact vertex coordinates
+         * @param worldComm retained compatibility communicator; no solver is built
+         */
+        template <GeometricEntityViewType View>
+        Inverse( geometric_mapping_ptrtype gm, View const& view,
+                 geometry::AffineGeometryOrder,
+                 [[maybe_unused]] worldcomm_ptr_t const& worldComm =
+                     Environment::worldCommSeqPtr() )
+            : M_gm( std::move( gm ) ),
+              M_xref( Dim ),
+              M_xreal( RealDim ),
+              M_G( RealDim, M_gm->nbPoints() ),
+              M_K( RealDim, Dim ),
+              M_B( RealDim, Dim ),
+              M_g( M_gm->nbPoints(), Dim )
+        {
+            view.updateVertexCoordinates( M_G );
+            this->init();
+        }
+
+        /**
+         * @brief Compatibility view constructor for the legacy MPL affine tag.
+         * @tparam View geometric entity view type
+         */
+        template <GeometricEntityViewType View>
+        Inverse( geometric_mapping_ptrtype gm, View const& view,
+                 mpl::int_<1>,
+                 worldcomm_ptr_t const& worldComm =
+                     Environment::worldCommSeqPtr() )
+            : Inverse( std::move( gm ), view,
+                       geometry::AffineGeometryOrder{}, worldComm )
+        {}
+
         /** @brief Replace the geometric coefficients from an entity. */
         template <typename GeoElem>
         void update( GeoElem const& ge )
+            requires( !GeometricEntityViewType<GeoElem> )
         {
             M_G = ge.G();
             this->init();
         }
 
+        /**
+         * @brief Replace geometric coefficients from a compact entity view.
+         * @tparam View geometric entity view type
+         * @param view entity view supplying compact coordinates
+         */
+        template <GeometricEntityViewType View>
+        void update( View const& view )
+        {
+            view.updateCoordinates( M_G );
+            this->init();
+        }
+
         /** @brief Replace the order-one geometric coefficients by vertices. */
         template <typename GeoElem>
-        void update( GeoElem const& ge, mpl::int_<1> /**/ )
+        void update( GeoElem const& ge, geometry::AffineGeometryOrder )
+            requires( !GeometricEntityViewType<GeoElem> )
         {
             M_G = ge.vertices();
             this->init();
+        }
+
+        /** @brief Compatibility update using the legacy MPL affine tag. */
+        template <typename GeoElem>
+        void update( GeoElem const& ge, mpl::int_<1> )
+            requires( !GeometricEntityViewType<GeoElem> )
+        {
+            this->update( ge, geometry::AffineGeometryOrder{} );
+        }
+
+        /**
+         * @brief Replace affine coefficients from compact entity vertices.
+         * @tparam View geometric entity view type
+         * @param view entity view supplying compact vertex coordinates
+         */
+        template <GeometricEntityViewType View>
+        void update( View const& view, geometry::AffineGeometryOrder )
+        {
+            view.updateVertexCoordinates( M_G );
+            this->init();
+        }
+
+        /** @brief Compatibility view update using the legacy MPL affine tag. */
+        template <GeometricEntityViewType View>
+        void update( View const& view, mpl::int_<1> )
+        {
+            this->update( view, geometry::AffineGeometryOrder{} );
         }
 
         /** @brief Return the associated geometric mapping. */

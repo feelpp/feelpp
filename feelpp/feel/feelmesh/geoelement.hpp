@@ -1,23 +1,12 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-   This file is part of the Feel library
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
-   Copyright (C) 2001,2002,2003,2004 EPFL, INRIA and Politechnico di Milano
-   Copyright (C) 2006-2010 Université Joseph Fourier (Grenoble I)
+    SPDX-FileCopyrightText: 2001-2004 EPFL, INRIA and Politecnico di Milano
+    SPDX-FileCopyrightText: 2006-2010 Université Joseph Fourier
+    SPDX-FileCopyrightText: 2026 University of Strasbourg
 
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 3.0 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    SPDX-License-Identifier: LGPL-3.0-or-later
 */
 /*!
   @file geoElement.hpp
@@ -28,6 +17,7 @@
 #ifndef _GEOELEMENT_HH_
 #define _GEOELEMENT_HH_
 
+#include <array>
 #include <concepts>
 #include <type_traits>
 
@@ -1020,7 +1010,8 @@ public:
      */
     void setFace( uint16_type const i, point_type const & p )
     {
-        FEELPP_ASSERT( i < numLocalVertices )( i ).error( "invalid local point index" );
+        CHECK( i < numLocalVertices )
+            << "invalid local point index " << i;
         M_vertices[i] = const_cast<point_type*>( boost::addressof( p ) );
     }
 
@@ -1051,12 +1042,16 @@ public:
     }
     point_type const* facePtr( uint16_type i ) const
     {
-        FEELPP_ASSERT( i < numLocalVertices )( this->id() )( i ).error( "invalid local vertex index" );
+        CHECK( i < numLocalVertices )
+            << "invalid local vertex index " << i
+            << " in element " << this->id();
         return M_vertices[i];
     }
     point_type* facePtr( uint16_type i )
     {
-        FEELPP_ASSERT( i < numLocalVertices )( this->id() )( i ).error( "invalid local vertex index" );
+        CHECK( i < numLocalVertices )
+            << "invalid local vertex index " << i
+            << " in element " << this->id();
         return M_vertices[i];
     }
 
@@ -1093,9 +1088,6 @@ public:
     vertex_permutation_type facePermutation( uint16_type /*i*/ ) const
     {
         return edge_permutation_type();
-
-        //FEELPP_ASSERT( i < numLocalVertices )( i )( numLocalVertices ).error( "invalid local vertex index" );
-        //return M_vertex_permutation[i];
     }
     vertex_permutation_type permutation( uint16_type, mpl::int_<1> ) const override
     {
@@ -1201,8 +1193,10 @@ public:
         super( id ),
         super2(),
         M_edges( numLocalEdges, nullptr ),
-        M_edge_permutation( numLocalEdges, edge_permutation_type( edge_permutation_type::IDENTITY ) )
+        M_edge_permutation()
     {
+        M_edge_permutation.fill(
+            edge_permutation_type( edge_permutation_type::IDENTITY ) );
     }
 
     /**
@@ -1489,7 +1483,7 @@ private:
 private:
 
     std::vector<edge_type*> M_edges;
-    std::vector<edge_permutation_type> M_edge_permutation;
+    std::array<edge_permutation_type, numLocalEdges> M_edge_permutation;
 };
 
 /*-------------------------------------------------------------------------
@@ -1567,11 +1561,13 @@ public:
         super2(),
         M_edges( numLocalEdges, nullptr ),
         M_faces( numLocalFaces, nullptr ),
-        M_edge_permutation( numLocalEdges, edge_permutation_type( edge_permutation_type::IDENTITY ) ),
-        M_face_permutation( numLocalFaces, face_permutation_type( face_permutation_type::IDENTITY ) )
+        M_edge_permutation(),
+        M_face_permutation()
     {
-        //std::fill( M_faces.begin(), M_faces.end(), ( face_type* )0 );
-        //std::fill( M_face_permutation.begin(), M_face_permutation.end(), face_permutation_type( face_permutation_type::IDENTITY ) );
+        M_edge_permutation.fill(
+            edge_permutation_type( edge_permutation_type::IDENTITY ) );
+        M_face_permutation.fill(
+            face_permutation_type( face_permutation_type::IDENTITY ) );
     }
 
     /**
@@ -1782,7 +1778,6 @@ public:
     face_type const* facePtr( uint16_type i ) const
     {
         DCHECK( i < numLocalFaces ) << "invalid local edge index elt " << this->id() << " face " << i;
-        //FEELPP_ASSERT( M_faces[i] )( i ).error( "invalid edge (null pointer)" );
         return M_faces[i];
     }
 
@@ -1821,7 +1816,9 @@ public:
 
     void setFacePermutation( uint16_type i, face_permutation_type o )
     {
-        FEELPP_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local face index" );
+        CHECK( i < numLocalFaces )
+            << "invalid local face index " << i
+            << " in element " << this->id();
         M_face_permutation[i] = o;
     }
 
@@ -1867,8 +1864,8 @@ private:
     ublas::bounded_array<edge_type*, numLocalEdges> M_edges;
     ublas::bounded_array<face_type*, numLocalFaces> M_faces;
 
-    ublas::bounded_array<edge_permutation_type, numLocalEdges> M_edge_permutation;
-    ublas::bounded_array<face_permutation_type, numLocalFaces> M_face_permutation;
+    std::array<edge_permutation_type, numLocalEdges> M_edge_permutation;
+    std::array<face_permutation_type, numLocalFaces> M_face_permutation;
 };
 /*@}*/
 

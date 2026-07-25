@@ -1,27 +1,12 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-  This file is part of the Feel library
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-09-03
+    SPDX-FileCopyrightText: 2005-2006 EPFL
+    SPDX-FileCopyrightText: 2007, 2010 Université Joseph Fourier
+    SPDX-FileCopyrightText: 2026 University of Strasbourg
 
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2007,2010 Université Joseph Fourier
-  Copyright (C) 2026 Feel++ Consortium - C++20/23 modernization
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    SPDX-License-Identifier: LGPL-3.0-or-later
 */
 /**
    @file faces.hpp
@@ -98,6 +83,9 @@ private:
 public:
     //! @brief Face type - determined by dimension and co-dimension using C++20 type selection
     using face_type = std::conditional_t<is_codim_one, subface_of_type, subface_of_many_type>;
+    /** Mesh-owned sparse metadata storage for faces. */
+    using sparse_metadata_storage_type =
+        typename face_type::sparse_metadata_storage_type;
 
     using faces_type = std::unordered_map<index_type, face_type, std::hash<index_type>>;
 
@@ -157,6 +145,7 @@ public:
         :
         M_worldComm( worldComm ),
         M_faces(),
+        M_sparseMetadata(),
         M_needToOrderFaces( false )
     {}
 
@@ -164,8 +153,10 @@ public:
         :
         M_worldComm( f.M_worldComm ),
         M_faces( f.M_faces ),
+        M_sparseMetadata(),
         M_needToOrderFaces( false )
     {
+        this->bindSparseMetadata();
         this->buildOrderedFaces();
     }
 
@@ -176,6 +167,7 @@ public:
         DVLOG(1) << "deleting faces...\n";
         M_orderedFaces.clear();
         M_faces.clear();
+        M_sparseMetadata.clear();
         M_needToOrderFaces = false;
     }
     //@}
@@ -189,7 +181,9 @@ public:
         if ( this != &e )
         {
             M_worldComm = e.M_worldComm;
+            M_sparseMetadata.clear();
             M_faces = e.M_faces;
+            this->bindSparseMetadata();
             this->buildOrderedFaces();
         }
 
@@ -216,6 +210,22 @@ public:
     faces_type const& faces() const noexcept
     {
         return M_faces;
+    }
+
+    /**
+     * @brief Return populated face sparse-sidecar counts.
+     */
+    [[nodiscard]] GeoEntitySparseMetadataStatistics
+    faceSparseMetadataStatistics() const noexcept
+    {
+        return M_sparseMetadata.statistics();
+    }
+
+    /** @brief Return compact face-point connectivity occupancy counters. */
+    [[nodiscard]] GeoEntityConnectivityStatistics
+    faceConnectivityStatistics() const noexcept
+    {
+        return M_sparseMetadata.connectivityStatistics();
     }
 
     [[nodiscard]] WorldComm const& worldCommFaces() const noexcept
@@ -627,6 +637,8 @@ public:
         if ( ret.second )
         {
             auto& newFace = ret.first->second;
+            newFace.attachSparseMetadataStorage( M_sparseMetadata );
+            newFace.synchronizePointConnectivity();
             if ( !M_needToOrderFaces && !M_orderedFaces.empty() && unwrap_ref( M_orderedFaces.back() ).id() > newFace.id() )
                 M_needToOrderFaces = true;
             M_orderedFaces.push_back( boost::ref( newFace ) );
@@ -642,7 +654,9 @@ public:
     //!
     std::pair<face_iterator, bool> addFace( face_type&& f )
     {
-        std::pair<face_iterator, bool> ret = M_faces.emplace( std::make_pair( f.id(), f ) );
+        std::pair<face_iterator, bool> ret =
+            M_faces.emplace(
+                std::make_pair( f.id(), std::move( f ) ) );
         DLOG_IF( WARNING, ret.second == false )
             << "addFace failed, face not added to container : "
             << ret.first->second.id() << " face id:"
@@ -651,6 +665,8 @@ public:
         if ( ret.second )
         {
             auto& newFace = ret.first->second;
+            newFace.attachSparseMetadataStorage( M_sparseMetadata );
+            newFace.synchronizePointConnectivity();
             if ( !M_needToOrderFaces && !M_orderedFaces.empty() && unwrap_ref( M_orderedFaces.back() ).id() > newFace.id() )
                 M_needToOrderFaces = true;
             M_orderedFaces.push_back( boost::ref( newFace ) );
@@ -673,6 +689,7 @@ public:
         size_type erasedId = it->first;
         auto itOrdered = std::find_if( M_orderedFaces.begin(), M_orderedFaces.end(),
                                        [&erasedId]( auto& faceWrap ) { return unwrap_ref( faceWrap ).id() == erasedId; } );
+        it->second.clearEntityStorage();
         auto itret = M_faces.erase( it );
         M_orderedFaces.erase( itOrdered );
         return itret;
@@ -819,6 +836,15 @@ public:
 
 private:
 
+    void bindSparseMetadata()
+    {
+        for ( auto& [id, face] : M_faces )
+        {
+            (void)id;
+            face.attachSparseMetadataStorage( M_sparseMetadata );
+        }
+    }
+
     void buildOrderedFaces()
     {
         M_orderedFaces.clear();
@@ -838,6 +864,7 @@ private:
         if constexpr ( Archive::is_loading::value )
         {
             M_faces.clear();
+            M_sparseMetadata.clear();
             M_orderedFaces.clear();
             M_needToOrderFaces = false;
             size_type nFaces = 0;
@@ -862,6 +889,7 @@ private:
 private:
     worldcomm_ptr_t M_worldComm;
     faces_type M_faces;
+    sparse_metadata_storage_type M_sparseMetadata;
     ordered_faces_reference_wrapper_type M_orderedFaces;
     bool M_needToOrderFaces;
 };

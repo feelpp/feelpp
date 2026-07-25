@@ -492,11 +492,12 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::idInterpolate( matrix_node_type 
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
+        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
+                         std::true_type{} );
     else
-        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
-    auto it = __loc->result_analysis_begin();
-    auto it_end = __loc->result_analysis_end();
+        __loc->localize( __ptsReal, invalid_v<index_type> );
+    auto it = __loc->resultAnalysisBegin();
+    auto it_end = __loc->resultAnalysisEnd();
 
     //geomap
     gm_ptrtype __gm = this->functionSpace()->gm();
@@ -777,11 +778,12 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::gradInterpolate(  matrix_node_ty
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
+        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
+                         std::true_type{} );
     else
-        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
-    auto it = __loc->result_analysis_begin();
-    auto it_end = __loc->result_analysis_end();
+        __loc->localize( __ptsReal, invalid_v<index_type> );
+    auto it = __loc->resultAnalysisBegin();
+    auto it_end = __loc->resultAnalysisEnd();
 
     gm_ptrtype __gm = this->functionSpace()->gm();
 
@@ -948,11 +950,12 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::divInterpolate( matrix_node_type
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
+        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
+                         std::true_type{} );
     else
-        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
-    auto it = __loc->result_analysis_begin();
-    auto it_end = __loc->result_analysis_end();
+        __loc->localize( __ptsReal, invalid_v<index_type> );
+    auto it = __loc->resultAnalysisBegin();
+    auto it_end = __loc->resultAnalysisEnd();
 
     //geomap
     gm_ptrtype __gm = this->functionSpace()->gm();
@@ -1141,11 +1144,12 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::curlInterpolate( matrix_node_typ
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
+        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
+                         std::true_type{} );
     else
-        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
-    auto it = __loc->result_analysis_begin();
-    auto it_end = __loc->result_analysis_end();
+        __loc->localize( __ptsReal, invalid_v<index_type> );
+    auto it = __loc->resultAnalysisBegin();
+    auto it_end = __loc->resultAnalysisEnd();
 
     //geomap
     gm_ptrtype __gm = this->functionSpace()->gm();
@@ -1228,11 +1232,12 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::curlxInterpolate( matrix_node_ty
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
+        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
+                         std::true_type{} );
     else
-        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
-    auto it = __loc->result_analysis_begin();
-    auto it_end = __loc->result_analysis_end();
+        __loc->localize( __ptsReal, invalid_v<index_type> );
+    auto it = __loc->resultAnalysisBegin();
+    auto it_end = __loc->resultAnalysisEnd();
 
     //geomap
     gm_ptrtype __gm = this->functionSpace()->gm();
@@ -1314,11 +1319,12 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::curlyInterpolate( matrix_node_ty
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
+        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
+                         std::true_type{} );
     else
-        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
-    auto it = __loc->result_analysis_begin();
-    auto it_end = __loc->result_analysis_end();
+        __loc->localize( __ptsReal, invalid_v<index_type> );
+    auto it = __loc->resultAnalysisBegin();
+    auto it_end = __loc->resultAnalysisEnd();
 
     //geomap
     gm_ptrtype __gm = this->functionSpace()->gm();
@@ -1400,11 +1406,12 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::curlzInterpolate( matrix_node_ty
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
+        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
+                         std::true_type{} );
     else
-        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
-    auto it = __loc->result_analysis_begin();
-    auto it_end = __loc->result_analysis_end();
+        __loc->localize( __ptsReal, invalid_v<index_type> );
+    auto it = __loc->resultAnalysisBegin();
+    auto it_end = __loc->resultAnalysisEnd();
 
     //geomap
     gm_ptrtype __gm = this->functionSpace()->gm();
@@ -1526,11 +1533,12 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::dxInterpolate( matrix_node_type 
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
+        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
+                         std::true_type{} );
     else
-        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
-    auto it = __loc->result_analysis_begin();
-    auto it_end = __loc->result_analysis_end();
+        __loc->localize( __ptsReal, invalid_v<index_type> );
+    auto it = __loc->resultAnalysisBegin();
+    auto it_end = __loc->resultAnalysisEnd();
 
     //geomap
     gm_ptrtype __gm = this->functionSpace()->gm();
@@ -1602,11 +1610,12 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::dyInterpolate( matrix_node_type 
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
+        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
+                         std::true_type{} );
     else
-        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
-    analysis_iterator_type it = __loc->result_analysis_begin();
-    analysis_iterator_type it_end = __loc->result_analysis_end();
+        __loc->localize( __ptsReal, invalid_v<index_type> );
+    analysis_iterator_type it = __loc->resultAnalysisBegin();
+    analysis_iterator_type it_end = __loc->resultAnalysisEnd();
     analysis_output_iterator_type itL,itL_end;
 
     //geomap
@@ -1680,11 +1689,12 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::dzInterpolate( matrix_node_type 
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
+        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
+                         std::true_type{} );
     else
-        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
-    analysis_iterator_type it = __loc->result_analysis_begin();
-    analysis_iterator_type it_end = __loc->result_analysis_end();
+        __loc->localize( __ptsReal, invalid_v<index_type> );
+    analysis_iterator_type it = __loc->resultAnalysisBegin();
+    analysis_iterator_type it_end = __loc->resultAnalysisEnd();
     analysis_output_iterator_type itL,itL_end;
 
     //geomap
@@ -1809,11 +1819,12 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::hessInterpolate( matrix_node_typ
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
+        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
+                         std::true_type{} );
     else
-        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
-    analysis_iterator_type it = __loc->result_analysis_begin();
-    analysis_iterator_type it_end = __loc->result_analysis_end();
+        __loc->localize( __ptsReal, invalid_v<index_type> );
+    analysis_iterator_type it = __loc->resultAnalysisBegin();
+    analysis_iterator_type it_end = __loc->resultAnalysisEnd();
     analysis_output_iterator_type itL,itL_end;
 
     //geomap
@@ -1975,11 +1986,12 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::laplacianInterpolate( matrix_nod
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
+        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
+                         std::true_type{} );
     else
-        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
-    analysis_iterator_type it = __loc->result_analysis_begin();
-    analysis_iterator_type it_end = __loc->result_analysis_end();
+        __loc->localize( __ptsReal, invalid_v<index_type> );
+    analysis_iterator_type it = __loc->resultAnalysisBegin();
+    analysis_iterator_type it_end = __loc->resultAnalysisEnd();
     analysis_output_iterator_type itL,itL_end;
 
     //geomap

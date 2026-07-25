@@ -35,27 +35,32 @@ enum class geometry_evaluation_strategy
 };
 
 /** @brief Compile-time strategy for an affine geometric mapping. */
-struct affine_geometry_order
+struct AffineGeometryOrder
 {
     /** Affine maps have constant first derivatives and zero second derivatives. */
     static constexpr bool is_affine = true;
 };
 
 /** @brief Compile-time strategy for a non-affine geometric mapping. */
-struct high_order_geometry
+struct HighOrderGeometry
 {
     /** High-order maps may vary at every evaluation point. */
     static constexpr bool is_affine = false;
 };
 
 /**
- * @concept geometric_order_strategy
+ * @concept GeometricOrderStrategy
  * @brief Strategy accepted by a geometric context update kernel.
  */
 template <typename Strategy>
-concept geometric_order_strategy = requires {
+concept GeometricOrderStrategy = requires {
     { Strategy::is_affine } -> std::convertible_to<bool>;
 };
+
+/** @brief Compatibility alias for `AffineGeometryOrder`. */
+using affine_geometry_order = AffineGeometryOrder;
+/** @brief Compatibility alias for `HighOrderGeometry`. */
+using high_order_geometry = HighOrderGeometry;
 
 } // namespace Feel::geometry
 

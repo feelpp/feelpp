@@ -272,15 +272,18 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUse()
                 // if not we skip this element
                 if ( eltModified.hasPointWithMarker() )
                 {
-                    int index_pt = 0;
-                    std::for_each( std::begin( eltModified.points() ), std::end( eltModified.points() ),
-                                   [&eltModified, &index_pt]( auto* p ) {
-                                       if ( p->hasMarker() )
-                                       {
-                                           p->addElement( eltModified.id(), index_pt );
-                                       }
-                                       ++index_pt;
-                                   } );
+                    for ( uint16_type localPoint = 0;
+                          localPoint <
+                              eltModified.nPointsRuntime();
+                          ++localPoint )
+                    {
+                        auto& point =
+                            eltModified.point( localPoint );
+                        if ( point.hasMarker() )
+                            point.addElement(
+                                eltModified.id(),
+                                localPoint );
+                    }
                 }
             }
 #if 0
@@ -367,6 +370,10 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUse()
 
     } // isUpdatedForUse
 
+    // Importers and legacy mesh tools may still mutate Geo0D nodes directly;
+    // rebuild the compact coordinate owner before Geomap consumes it.
+    this->synchronizePointCoordinates();
+
     if ( !this->components().test( MESH_GEOMAP_NOT_CACHED ) && !M_is_gm_cached )
     {
         tic();
@@ -391,6 +398,8 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUse()
 template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUseAfterMovingNodes( bool upMeasures )
 {
+    this->synchronizePointCoordinates();
+
     // reset geomap cache
     if ( this->gm()->isCached() )
     {
@@ -716,6 +725,7 @@ void
 {
     //M_geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
     M_geondFaceCommon = std::make_shared<GeoNDCommon<typename face_type::super>>( this /*,this->gm(), this->gm1()*/ );
+    M_geondFaceCommon->bindPointResolver( *this );
     //for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
     // iv->second.setCommonData( M_geondEltCommon.get() );
     for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++itf )
@@ -731,7 +741,9 @@ void
 {
     //M_geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
     M_geondFaceCommon = std::make_shared<GeoNDCommon<typename face_type::super>>( this /*,this->gm(), this->gm1()*/ );
+    M_geondFaceCommon->bindPointResolver( *this );
     M_geondEdgeCommon = std::make_shared<GeoNDCommon<typename edge_type::super>>( this /*,this->gm(), this->gm1()*/ );
+    M_geondEdgeCommon->bindPointResolver( *this );
     //for ( auto iv = this->beginElement(), en = this->endElement(); iv != en; ++iv )
     //    iv->second.setCommonData( M_geondEltCommon.get() );
     for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++itf )
@@ -835,16 +847,23 @@ void
     VLOG(2) << "[mesh::renumber] done collecting ids\n";
 #if !defined( NDEBUG )
     std::vector<size_type> check_id( node_map );
-    std::unique( check_id.begin(), check_id.end() );
-
-    FEELPP_ASSERT( check_id.size() == node_map.size() )( node_map.size() )( check_id.size() ).error( "all ids must be unique" );
+    std::sort( check_id.begin(), check_id.end() );
+    auto const uniqueEnd =
+        std::unique( check_id.begin(), check_id.end() );
+    CHECK( uniqueEnd == check_id.end() )
+        << "all point ids must be unique";
 
     // in parallel this will generate a lot of warning since all the points are
     //loaded into the mesh data structure including the ones not belonging to
     //the current processor. Do the test only in sequential
     if ( Environment::numberOfProcessors() == 1 )
     {
-        FEELPP_ASSERT( std::find( node_map.begin(),node_map.end(), invalid_v<size_type> ) == node_map.end() ).warn("invalid size_type value found as id " );
+        LOG_IF(
+            WARNING,
+            std::find(
+                node_map.begin(), node_map.end(),
+                invalid_v<size_type> ) != node_map.end() )
+            << "invalid size_type value found as point id";
     }
 
 #endif /* NDEBUG */
@@ -862,7 +881,9 @@ void
                       <<  " with " << ptmapit->second.id() << "\n";
 #endif
         bool __rep1 = this->points().replace( ptit, ptmapit->second );
-        FEELPP_ASSERT( __rep1 )( __rep1 )( ptit->id() )( ptmapit->second.id() ) .warn( "invalid point replacement" );
+        LOG_IF( WARNING, !__rep1 )
+            << "invalid point replacement: old id=" << ptit->id()
+            << ", new id=" << ptmapit->second.id();
 
     }
 
@@ -1222,9 +1243,13 @@ void
                     if ( cface.isConnectedTo0() && cface.isConnectedTo1() )
                     {
                         DVLOG(2) << "internal face, fixing process id if necessary\n";
-                        FEELPP_ASSERT( __element.facePtr( j ) )( j )( __element.id() ).warn( "invalid element face error" );
-                        FEELPP_ASSERT( cface.isConnectedTo0() && cface.isConnectedTo1() )
-                            ( cface.isConnectedTo0() )( cface.isConnectedTo1() ).error ("inconsistent data structure" );
+                        LOG_IF( WARNING, !__element.facePtr( j ) )
+                            << "invalid face " << j
+                            << " for element " << __element.id();
+                        CHECK(
+                            cface.isConnectedTo0() &&
+                            cface.isConnectedTo1() )
+                            << "inconsistent face connectivity";
                         if ( cface.processId()!=MeshBase<IndexT>::worldComm().localRank() )
                         {
                             if ( ( cface.element0().processId()==MeshBase<IndexT>::worldComm().localRank() ) ||
@@ -2498,7 +2523,6 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::check() const
         {
             for ( size_type j = 0; j < this->numLocalFaces(); j++ )
             {
-                //FEELPP_ASSERT( elt.facePtr( j ) )( j )( elt.id() ).error( "invalid element face check" );
                 VLOG( 2 ) << "------------------------------------------------------------\n";
                 if ( elt.hasFace( j ) )
                 {
@@ -2524,7 +2548,8 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::check() const
             VLOG( 2 ) << "[Mesh::check] element " << elt.id() << " number of neighbors: " << counter << "\n";
             if ( elt.nNeighbors() > 0 )
             {
-                //FEELPP_ASSERT( counter >= 1 || nEltInMesh==1 )( elt.id() )( elt.nNeighbors() )( counter ).warn( "invalid neighboring data" );
+                // A single isolated element may legitimately have no
+                // neighbor; other cases are diagnosed by the mesh checks.
             }
         }
 
@@ -2532,7 +2557,9 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::check() const
 
         for ( size_type j = 0; j < ( size_type )element_type::numEdges; ++j )
         {
-            FEELPP_ASSERT( elt.edgePtr( j ) )( j )( elt.id() ).error( "invalid element edge check" );
+            CHECK( elt.edgePtr( j ) )
+                << "invalid edge " << j
+                << " for element " << elt.id();
             VLOG(2) << "------------------------------------------------------------\n";
             VLOG(2) << "Element : " << elt.id() << " edge lid: " << j << " edge gid:  " << elt.edge( j ).id() << "\n";
 
@@ -2694,10 +2721,9 @@ void
         bool is_anticlockwise = __element.isAnticlockwiseOriented();
         // --verbose
 #if 0
-        FEELPP_ASSERT( is_anticlockwise == true )
-        ( is_anticlockwise )
-        ( __element.id() )
-        ( __element.G() ).warn( "invalid element permutation, will fix it" );
+        LOG_IF( WARNING, !is_anticlockwise )
+            << "invalid permutation for element "
+            << __element.id() << "; it will be repaired";
 #endif // 0
 
         // fix permutation
@@ -2711,17 +2737,13 @@ void
 
             else
             {
-                FEELPP_ASSERT( 0 )
-                ( __element.id() )
-                ( __element.G() ).error( "invalid element type" );
                 throw std::logic_error( "invalid element type" );
             }
 
             is_anticlockwise = __element.isAnticlockwiseOriented();
-            FEELPP_ASSERT( is_anticlockwise == true )
-            ( is_anticlockwise )
-            ( __element.id() )
-            ( __element.G() ).error( "invalid element permutation" );
+            CHECK( is_anticlockwise )
+                << "failed to repair orientation of element "
+                << __element.id();
 
             this->elements().replace( elt, __element );
         }
@@ -2871,6 +2893,24 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::encode()
             elts.push_back(-pid);
         for ( uint16_type p = 0; p < element_type::numPoints; ++p )
             elts.push_back( curelt.point( ordering.fromGmshId( p ) ).id() + 1 );
+        elts.push_back( curelt.nNeighbors() );
+        for ( uint16_type localFace = 0;
+              localFace < curelt.nNeighbors(); ++localFace )
+        {
+            auto const neighborId = curelt.neighbor( localFace );
+            if ( neighborId == invalid_v<size_type> )
+            {
+                elts.push_back( -1 );
+                continue;
+            }
+            CHECK_LE(
+                neighborId,
+                static_cast<size_type>(
+                    std::numeric_limits<int>::max() ) )
+                << "mesh restart neighbor identifier exceeds the "
+                   "legacy compact archive range";
+            elts.push_back( static_cast<int>( neighborId ) );
+        }
 
         M_enc_elts[curelt.id()] = elts;
     } // elements
@@ -2920,8 +2960,8 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::decode()
     {
         face_type pf;
         GmshOrdering<face_type> ordering;
-        FEELPP_ASSERT( ordering.type() == face_it->second[0] )
-        ( ordering.type() )( face_it->second[0] ).error( "invalid mesh face type" );
+        CHECK_EQ( ordering.type(), face_it->second[0] )
+            << "invalid mesh face type";
         std::vector<int> tags( face_it->second[1] );
         for ( int i = 0; i < tags.size(); ++i )
             tags[i] = face_it->second[2 + i];
@@ -2944,8 +2984,8 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::decode()
     {
         element_type pv;
         GmshOrdering<element_type> ordering;
-        FEELPP_ASSERT( ordering.type() == elt_it->second[0] )
-        ( ordering.type() )( elt_it->second[0] ).error( "invalid mesh element type" );
+        CHECK_EQ( ordering.type(), elt_it->second[0] )
+            << "invalid mesh element type";
         std::vector<int> tags( elt_it->second[1] );
         for ( int i = 0; i < tags.size(); ++i )
             tags[i] = elt_it->second[2 + i];
@@ -2958,6 +2998,33 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::decode()
         for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
         {
             pv.setPoint( ordering.fromGmshId( jj ), this->point( elt_it->second[shift + jj] - 1 ) );
+        }
+        auto const neighborOffset =
+            static_cast<size_type>( shift ) + npoints_per_element;
+        if ( neighborOffset < elt_it->second.size() )
+        {
+            auto const neighborCount =
+                static_cast<uint16_type>(
+                    elt_it->second[neighborOffset] );
+            CHECK_LE( neighborCount, element_type::numNeighbors )
+                << "invalid neighbor count in mesh archive";
+            CHECK_LE(
+                neighborOffset + 1 + neighborCount,
+                elt_it->second.size() )
+                << "truncated neighbor connectivity in mesh archive";
+            for ( uint16_type localFace = 0;
+                  localFace < neighborCount; ++localFace )
+            {
+                auto const encodedNeighbor =
+                    elt_it->second[
+                        neighborOffset + 1 + localFace];
+                pv.setNeighbor(
+                    localFace,
+                    encodedNeighbor < 0
+                        ? invalid_v<size_type>
+                        : static_cast<size_type>(
+                              encodedNeighbor ) );
+            }
         }
         this->addElement( pv );
 #if 0

@@ -1101,8 +1101,8 @@ public:
                 m(i,0) = t(i);
             auto loc =  M_Xh->mesh()->tool_localization();
             loc->setExtrapolation( false );
-            auto analysis = loc->run_analysis( m, invalid_v<index_type> );
-            auto found_points = analysis.template get<0>();
+            auto analysis = loc->localize( m, invalid_v<index_type> );
+            auto const& found_points = analysis.found;
             bool found = found_points[0];
 
             std::vector<uint8_type> found_pt( nprocs, 0 );

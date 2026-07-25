@@ -18,6 +18,7 @@
 #include <bitset>
 #include <concepts>
 #include <numeric>
+#include <ranges>
 #include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
@@ -50,6 +51,7 @@
 
 #include <feel/feeldiscr/traits.hpp>
 #include <feel/feelmesh/enums.hpp>
+#include <feel/feelmesh/entityview.hpp>
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelmesh/mesh0d.hpp>
 #include <feel/feelmesh/mesh1d.hpp>
@@ -237,11 +239,35 @@ class Mesh
     typedef typename super::face_const_iterator face_const_iterator;
 
     typedef typename super::edge_type edge_type;
+    /** Mathematical edge entity type for every mesh dimension. */
+    using edge_entity_type =
+        std::conditional_t<nDim == 1, element_type,
+                           std::conditional_t<nDim == 2, face_type,
+                                              edge_type>>;
 
     typedef typename super::points_type points_type;
     typedef typename super::point_type point_type;
     typedef typename super::point_iterator point_iterator;
     typedef typename super::point_const_iterator point_const_iterator;
+
+    /** Non-owning mathematical point view type. */
+    using point_view_type = GeometricPointView<
+        Mesh<GeoShape, T, Tag, IndexT, _EnableSharedFromThis>>;
+    /** Non-owning mathematical edge view type. */
+    using edge_view_type =
+        GeometricEntityView<
+            Mesh<GeoShape, T, Tag, IndexT, _EnableSharedFromThis>,
+            edge_entity_type>;
+    /** Non-owning mathematical face view type. */
+    using face_view_type =
+        GeometricEntityView<
+            Mesh<GeoShape, T, Tag, IndexT, _EnableSharedFromThis>,
+            face_type>;
+    /** Non-owning mathematical cell view type. */
+    using element_view_type =
+        GeometricEntityView<
+            Mesh<GeoShape, T, Tag, IndexT, _EnableSharedFromThis>,
+            element_type>;
 
     typedef typename element_type::gm_type gm_type;
     typedef std::shared_ptr<gm_type> gm_ptrtype;
@@ -385,6 +411,152 @@ class Mesh
     //!  @name Accessors
     //!
     //! @{
+
+    /**
+     * @brief Return a non-owning mathematical point view.
+     * @param id external point identifier
+     */
+    [[nodiscard]] point_view_type pointView( index_type id ) const
+    {
+        return point_view_type( *this, id );
+    }
+
+    /**
+     * @brief Return a non-owning mathematical edge view.
+     * @param id external edge identifier
+     */
+    [[nodiscard]] edge_view_type edgeView( index_type id ) const
+        requires( nDim == 1 )
+    {
+        return edge_view_type( *this, this->element( id ) );
+    }
+
+    /** @copydoc edgeView(index_type) const */
+    [[nodiscard]] edge_view_type edgeView( index_type id ) const
+        requires( nDim == 2 )
+    {
+        return edge_view_type( *this, this->face( id ) );
+    }
+
+    /** @copydoc edgeView(index_type) const */
+    [[nodiscard]] edge_view_type edgeView( index_type id ) const
+        requires( nDim == 3 )
+    {
+        return edge_view_type( *this, this->edge( id ) );
+    }
+
+    /**
+     * @brief Return a non-owning mathematical face view.
+     * @param id external face identifier
+     */
+    [[nodiscard]] face_view_type faceView( index_type id ) const
+        requires( nDim >= 1 )
+    {
+        return face_view_type( *this, this->face( id ) );
+    }
+
+    /**
+     * @brief Return a non-owning mathematical cell view.
+     * @param id external element identifier
+     */
+    [[nodiscard]] element_view_type
+    elementView( index_type id ) const
+    {
+        return element_view_type(
+            *this, this->element( id ) );
+    }
+
+    /**
+     * @brief Return a lazy value-semantic range of point views.
+     *
+     * The range and its elements are invalidated by point erasure or mesh
+     * destruction.
+     */
+    [[nodiscard]] auto pointViews() const
+    {
+        auto const* mesh = this;
+        return std::views::all( this->points() ) |
+               std::views::transform(
+                   [mesh]( auto const& entry )
+                   {
+                       return mesh->pointView( entry.first );
+                   } );
+    }
+
+    /**
+     * @brief Return a lazy value-semantic range of edge views.
+     */
+    [[nodiscard]] auto edgeViews() const
+        requires( nDim == 1 )
+    {
+        auto const* mesh = this;
+        return std::views::all( this->elements() ) |
+               std::views::transform(
+                   [mesh]( auto const& entry )
+                   {
+                       return edge_view_type(
+                           *mesh, entry.second );
+                   } );
+    }
+
+    /** @copydoc edgeViews() const */
+    [[nodiscard]] auto edgeViews() const
+        requires( nDim == 2 )
+    {
+        auto const* mesh = this;
+        return std::views::all( this->faces() ) |
+               std::views::transform(
+                   [mesh]( auto const& entry )
+                   {
+                       return edge_view_type(
+                           *mesh, entry.second );
+                   } );
+    }
+
+    /** @copydoc edgeViews() const */
+    [[nodiscard]] auto edgeViews() const
+        requires( nDim == 3 )
+    {
+        auto const* mesh = this;
+        return std::views::all( this->edges() ) |
+               std::views::transform(
+                   [mesh]( auto const& entry )
+                   {
+                       return edge_view_type(
+                           *mesh, entry.second );
+                   } );
+    }
+
+    /**
+     * @brief Return a lazy value-semantic range of face views.
+     */
+    [[nodiscard]] auto faceViews() const
+        requires( nDim >= 1 )
+    {
+        auto const* mesh = this;
+        return std::views::all( this->faces() ) |
+               std::views::transform(
+                   [mesh]( auto const& entry )
+                   {
+                       return face_view_type(
+                           *mesh, entry.second );
+                   } );
+    }
+
+    /**
+     * @brief Return a lazy value-semantic range of cell views.
+     */
+    [[nodiscard]] auto elementViews() const
+    {
+        auto const* mesh = this;
+        return std::views::all( this->elements() ) |
+               std::views::transform(
+                   [mesh]( auto const& entry )
+                   {
+                       return element_view_type(
+                           *mesh, entry.second );
+                   } );
+    }
 
     //!
     //!  @brief get the number of active elements,faces,edges,points for each partition
@@ -1296,7 +1468,10 @@ public:
         if ( ret.second )
         {
             if ( !M_geondEltCommon )
+            {
                 M_geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
+                M_geondEltCommon->bindPointResolver( *this );
+            }
             auto & eltInserted = ret.first->second;
             eltInserted.setCommonData( M_geondEltCommon.get() );
         }
@@ -1314,7 +1489,10 @@ public:
         if ( ret.second )
         {
             if ( !M_geondEltCommon )
+            {
                 M_geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
+                M_geondEltCommon->bindPointResolver( *this );
+            }
             auto & eltInserted = ret.first->second;
             eltInserted.setCommonData( M_geondEltCommon.get() );
         }
@@ -2095,7 +2273,9 @@ void Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::createSubmesh( self_type
         //!  Loop over the nodes on this element.
         for ( unsigned int n = 0; n < old_elem.nPoints(); n++ )
         {
-            FEELPP_ASSERT( old_elem.point( n ).id() < new_node_numbers.size() ).error( "invalid point id()" );
+            CHECK_LT( old_elem.point( n ).id(),
+                      new_node_numbers.size() )
+                << "invalid point id()";
 
             if ( new_node_numbers[old_elem.point( n ).id()] == invalid_v<size_type> )
             {
@@ -2116,13 +2296,19 @@ void Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::createSubmesh( self_type
 
                 if ( n < element_type::numVertices )
                 {
-                    FEELPP_ASSERT( new_vertex[old_elem.point( n ).id()] == 0 ).error( "already seen this point?" );
+                    CHECK_EQ(
+                        new_vertex[old_elem.point( n ).id()],
+                        0 )
+                        << "already seen this point?";
                     new_vertex[old_elem.point( n ).id()] = 1;
                 }
             }
 
             //!  Define this element's connectivity on the new mesh
-            FEELPP_ASSERT( new_node_numbers[old_elem.point( n ).id()] < new_mesh.numPoints() ).error( "invalid connectivity" );
+            CHECK_LT(
+                new_node_numbers[old_elem.point( n ).id()],
+                new_mesh.numPoints() )
+                << "invalid connectivity";
 
             DVLOG( 2 ) << "[Mesh<Shape,T>::createSubmesh] adding point old(" << old_elem.point( n ).id()
                        << ") as point new(" << new_node_numbers[old_elem.point( n ).id()]

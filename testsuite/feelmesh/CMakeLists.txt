@@ -15,6 +15,11 @@ endforeach()
 
 feelpp_add_test( meshadaptation_header SRCS test_meshadaptation_header.cpp NO_MPI_TEST )
 feelpp_add_test( periodic_mesh SRCS test_periodic_mesh.cpp NO_MPI_TEST )
+feelpp_add_test( geoentity_sparse_storage
+  SRCS test_geoentity_sparse_storage.cpp
+  NO_MPI_TEST )
+feelpp_add_test( geoentity_views
+  SRCS test_geoentity_views.cpp )
 
 feelpp_add_test( meshmarker CFG test_meshmarker.cfg GEO test_meshmarker_square_4mat.geo )
 feelpp_add_test( mesh_filters_operations SRCS test_mesh_filters_operations.cpp CFG test_mesh_filters_operations.cfg GEO test_mesh_filters_operations.geo )

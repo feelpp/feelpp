@@ -15,60 +15,114 @@
 
 #include <type_traits>
 
+namespace Feel
+{
 
-namespace Feel {
+/**
+ * @enum LocalizationPolicy
+ * @brief Compile-time acceptance strategy for localized points.
+ */
+enum class LocalizationPolicy
+{
+    /** Accept every point contained by the candidate element. */
+    Unconstrained,
+    /** Require supplied geometric points to belong to the candidate. */
+    RequireContainedPoints
+};
 
 template<typename MeshType>
 class Localization
 {
-public:    
-    typedef Localization localization_type;
-    typedef std::shared_ptr<localization_type> localization_ptrtype;
-
-    
-        
+public:
+    using localization_type = Localization;
+    using localization_ptrtype = std::shared_ptr<localization_type>;
 
     using mesh_type = MeshType;
-    typedef std::weak_ptr<mesh_type> mesh_ptrtype;
+    using mesh_ptrtype = std::weak_ptr<mesh_type>;
     using range_elements_type = Range<mesh_type,MESH_ELEMENTS>;
 
     using index_type = typename MeshType::index_type;
     using size_type = typename MeshType::size_type;
     using node_type = typename MeshType::node_type;
-    typedef typename matrix_node<typename node_type::value_type>::type matrix_node_type;
+    using matrix_node_type = typename matrix_node<typename node_type::value_type>::type;
     
     static inline const uint16_type nDim = mesh_type::nDim;
     static inline const uint16_type nRealDim = mesh_type::nRealDim;
     static inline const uint16_type nOrder = mesh_type::nOrder;
     using value_type = typename mesh_type::value_type;
-    typedef KDTree kdtree_type;
-    typedef typename std::shared_ptr<KDTree> kdtree_ptrtype;
+    using kdtree_type = KDTree;
+    using kdtree_ptrtype = std::shared_ptr<KDTree>;
 
     //!  a node x => a list of id elt which contain the node x
-    typedef boost::tuple<node_type, std::list<size_type> > node_elem_type;
+    using node_elem_type = boost::tuple<node_type, std::list<size_type>>;
     
-    typedef typename std::list<boost::tuple<size_type,node_type> > container_output_type;
-    typedef typename std::list<boost::tuple<size_type,node_type> >::iterator container_output_iterator_type;
+    using container_output_type = std::list<boost::tuple<size_type,node_type>>;
+    using container_output_iterator_type = typename container_output_type::iterator;
     //! map between element id and list of node described in the reference elt
     //! typedef std::map<size_type, std::list<boost::tuple<size_type,node_type> > > container_search_type
-    typedef std::map<size_type, container_output_type > container_search_type;
-    typedef typename container_search_type::const_iterator container_search_const_iterator_type;
-    typedef typename container_search_type::iterator container_search_iterator_type;
+    using container_search_type = std::map<size_type, container_output_type>;
+    using container_search_const_iterator_type = typename container_search_type::const_iterator;
+    using container_search_iterator_type = typename container_search_type::iterator;
     
     //!  geomap inverse
-    typedef typename mpl::if_<mpl::bool_<mesh_type::element_type::is_simplex>,
-                              mpl::identity<GeoMapInverse<nDim,nOrder,nRealDim,value_type,Simplex> >,
-                              mpl::identity<GeoMapInverse<nDim,nOrder,nRealDim,value_type,Hypercube> > >::type::type gm_inverse_type;
-    typedef typename gm_inverse_type::gic_type gmc_inverse_type;
+    using gm_inverse_type = std::conditional_t<
+        mesh_type::element_type::is_simplex,
+        GeoMapInverse<nDim,nOrder,nRealDim,value_type,Simplex>,
+        GeoMapInverse<nDim,nOrder,nRealDim,value_type,Hypercube>>;
+    using gmc_inverse_type = typename gm_inverse_type::gic_type;
     
-    typedef typename mpl::if_<mpl::bool_<mesh_type::element_type::is_simplex>,
-                              mpl::identity<GeoMapInverse<nDim,1,nRealDim,value_type,Simplex> >,
-                              mpl::identity<GeoMapInverse<nDim,1,nRealDim,value_type,Hypercube> > >::type::type gm1_inverse_type;
-    typedef typename gm1_inverse_type::gic_type gmc1_inverse_type;
+    using gm1_inverse_type = std::conditional_t<
+        mesh_type::element_type::is_simplex,
+        GeoMapInverse<nDim,1,nRealDim,value_type,Simplex>,
+        GeoMapInverse<nDim,1,nRealDim,value_type,Hypercube>>;
+    using gmc1_inverse_type = typename gm1_inverse_type::gic_type;
     
     //!  reference convex
-    typedef typename mesh_type::gm_type::reference_convex_type ref_convex_type;
-    typedef typename mesh_type::gm1_type::reference_convex_type ref_convex1_type;
+    using ref_convex_type = typename mesh_type::gm_type::reference_convex_type;
+    using ref_convex1_type = typename mesh_type::gm1_type::reference_convex_type;
+
+    /**
+     * @struct PointLocation
+     * @brief Result of mapping one physical point into a specified element.
+     */
+    struct PointLocation
+    {
+        /** Whether the point satisfies the selected localization policy. */
+        bool found = false;
+        /** Reference coordinates produced by the inverse geometric mapping. */
+        node_type referencePoint;
+        /** Distance returned by the reference-convex containment check. */
+        value_type distance = value_type{};
+    };
+
+    /**
+     * @struct ElementLocation
+     * @brief Result of searching the mesh for one physical point.
+     */
+    struct ElementLocation
+    {
+        /** Whether a containing or extrapolation element was selected. */
+        bool found = false;
+        /** Identifier of the selected element. */
+        size_type elementId = invalid_v<size_type>;
+        /** Reference coordinates in the selected element. */
+        node_type referencePoint;
+    };
+
+    /**
+     * @struct BatchLocation
+     * @brief Summary of a batch localization operation.
+     *
+     * Detailed per-element reference coordinates remain available through
+     * `resultAnalysis()` while the compatibility cache is retained.
+     */
+    struct BatchLocation
+    {
+        /** Per-input-point localization status. */
+        std::vector<bool> found;
+        /** Last element selected by the batch-localization walk. */
+        size_type lastElementId = invalid_v<size_type>;
+    };
     
     //! --------------------------------------------------------------
     //!  Constructors
@@ -226,44 +280,219 @@ public:
 
         void computeBarycentersWorld();
 
-        container_search_type const & result_analysis() const { return M_resultAnalysis;}
+        /**
+         * @brief Return reference points grouped by containing element.
+         *
+         * @return compatibility result cache populated by `localize()`
+         */
+        [[nodiscard]] container_search_type const& resultAnalysis() const
+        {
+            return M_resultAnalysis;
+        }
 
-        container_search_iterator_type result_analysis_begin()
+        /** @brief Compatibility spelling for `resultAnalysis()`. */
+        [[nodiscard]] container_search_type const& result_analysis() const
+        {
+            return this->resultAnalysis();
+        }
+
+        /** @brief Return the beginning of the compatibility result cache. */
+        container_search_iterator_type resultAnalysisBegin()
         {
             return M_resultAnalysis.begin();
         }
-        container_search_iterator_type result_analysis_end()
+
+        /** @brief Return the end of the compatibility result cache. */
+        container_search_iterator_type resultAnalysisEnd()
         {
             return M_resultAnalysis.end();
         }
 
-        //! ---------------------------------------------------------------
-         //!  True if the node p is in mesh->element(id)
-         //!
-        boost::tuple<bool,node_type,double> isIn( size_type _id, const node_type & _pt ) const;
-        boost::tuple<bool,node_type,double> isIn( size_type _id, const node_type & _pt, const matrix_node_type & setPoints, mpl::int_<1> /**/ ) const;
-        boost::tuple<uint16_type,std::vector<bool> > isIn( std::vector<size_type> _ids, const node_type & _pt );
-
-        //! ---------------------------------------------------------------
-         //!  Research only one element which contains the node p
-         //!
-        boost::tuple<bool, size_type,node_type> searchElement(const node_type & p);
-        //! ---------------------------------------------------------------
-         //!  Research only one element which contains the node p
-         //!
-        boost::tuple<bool, size_type,node_type> searchElement(const node_type & p,
-                                                              const matrix_node_type & setPoints,
-                                                              mpl::int_<0> /**/ )
+        /** @brief Compatibility spelling for `resultAnalysisBegin()`. */
+        container_search_iterator_type result_analysis_begin()
         {
-            return searchElement( p );
+            return this->resultAnalysisBegin();
         }
 
-        //! ---------------------------------------------------------------
-         //!  Research only one element which contains the node p and which this elt have as geometric point contain setPoints
-         //!
-        boost::tuple<bool, size_type,node_type> searchElement( const node_type & p,
-                                                               const matrix_node_type & setPoints,
-                                                               mpl::int_<1> /**/ );
+        /** @brief Compatibility spelling for `resultAnalysisEnd()`. */
+        container_search_iterator_type result_analysis_end()
+        {
+            return this->resultAnalysisEnd();
+        }
+
+        /**
+         * @brief Locate a physical point in a specified mesh element.
+         * @param elementId candidate element identifier
+         * @param point physical point
+         * @return point localization result
+         */
+        [[nodiscard]] PointLocation
+        locateInElement( size_type elementId, node_type const& point ) const
+        {
+            return this->locateInElementImpl( elementId, point );
+        }
+
+        /**
+         * @brief Locate a point using a compile-time conformity strategy.
+         * @tparam Policy point-set acceptance policy
+         * @param elementId candidate element identifier
+         * @param point physical point
+         * @param requiredPoints points that must belong to a conforming candidate
+         * @return point localization result
+         */
+        template <LocalizationPolicy Policy>
+        [[nodiscard]] PointLocation
+        locateInElement( size_type elementId,
+                         node_type const& point,
+                         matrix_node_type const& requiredPoints ) const
+        {
+            if constexpr ( Policy == LocalizationPolicy::RequireContainedPoints )
+                return this->locateInElementConformingImpl(
+                    elementId, point, requiredPoints );
+            else
+                return this->locateInElementImpl( elementId, point );
+        }
+
+        /**
+         * @brief Search the mesh for an element containing a physical point.
+         * @param point physical point
+         * @return element localization result
+         */
+        [[nodiscard]] ElementLocation locateElement( node_type const& point )
+        {
+            return this->locateElementImpl( point );
+        }
+
+        /**
+         * @brief Search using a compile-time conformity strategy.
+         * @tparam Policy point-set acceptance policy
+         * @param point physical point
+         * @param requiredPoints points that must belong to a conforming candidate
+         * @return element localization result
+         */
+        template <LocalizationPolicy Policy>
+        [[nodiscard]] ElementLocation
+        locateElement( node_type const& point,
+                       matrix_node_type const& requiredPoints )
+        {
+            if constexpr ( Policy == LocalizationPolicy::RequireContainedPoints )
+                return this->locateElementConformingImpl( point, requiredPoints );
+            else
+                return this->locateElementImpl( point );
+        }
+
+        /**
+         * @brief Localize a batch of physical points.
+         * @param points physical points stored by column
+         * @param hypotheticalElement first candidate element, or `invalid_v`
+         * @return batch-localization summary
+         */
+        BatchLocation
+        localize( matrix_node_type const& points,
+                  size_type hypotheticalElement )
+        {
+            return this->localizeImpl( points, hypotheticalElement );
+        }
+
+        /**
+         * @brief Localize a batch using a compile-time conformity strategy.
+         * @tparam Policy point-set acceptance policy
+         * @param points physical points stored by column
+         * @param hypotheticalElement first candidate element, or `invalid_v`
+         * @param requiredPoints points that must belong to a conforming candidate
+         * @return batch-localization summary
+         */
+        template <LocalizationPolicy Policy>
+        BatchLocation
+        localize( matrix_node_type const& points,
+                  size_type hypotheticalElement,
+                  matrix_node_type const& requiredPoints )
+        {
+            if constexpr ( Policy == LocalizationPolicy::RequireContainedPoints )
+                return this->localizeConformingImpl(
+                    points, hypotheticalElement, requiredPoints );
+            else
+                return this->localizeImpl( points, hypotheticalElement );
+        }
+
+        /**
+         * @brief Localize using a standard compile-time Boolean policy.
+         * @tparam Conforming whether required points constrain candidates
+         * @param points physical points stored by column
+         * @param hypotheticalElement first candidate element, or `invalid_v`
+         * @param requiredPoints points required by conforming localization
+         * @return batch-localization summary
+         */
+        template <bool Conforming>
+        BatchLocation
+        localize( matrix_node_type const& points,
+                  size_type hypotheticalElement,
+                  matrix_node_type const& requiredPoints,
+                  std::bool_constant<Conforming> )
+        {
+            constexpr auto policy =
+                Conforming
+                    ? LocalizationPolicy::RequireContainedPoints
+                    : LocalizationPolicy::Unconstrained;
+            return this->template localize<policy>(
+                points, hypotheticalElement, requiredPoints );
+        }
+
+        /** @brief Legacy tuple adapter for `locateInElement()`. */
+        boost::tuple<bool,node_type,double>
+        isIn( size_type elementId, node_type const& point ) const
+        {
+            auto location = this->locateInElement( elementId, point );
+            return boost::make_tuple(
+                location.found, location.referencePoint, location.distance );
+        }
+
+        /** @brief Legacy MPL adapter for conforming `locateInElement()`. */
+        boost::tuple<bool,node_type,double>
+        isIn( size_type elementId,
+              node_type const& point,
+              matrix_node_type const& requiredPoints,
+              mpl::int_<1> ) const
+        {
+            auto location = this->template locateInElement<
+                LocalizationPolicy::RequireContainedPoints>(
+                    elementId, point, requiredPoints );
+            return boost::make_tuple(
+                location.found, location.referencePoint, location.distance );
+        }
+
+        boost::tuple<uint16_type,std::vector<bool> > isIn( std::vector<size_type> _ids, const node_type & _pt );
+
+        /** @brief Legacy tuple adapter for `locateElement()`. */
+        boost::tuple<bool, size_type,node_type>
+        searchElement( node_type const& point )
+        {
+            auto location = this->locateElement( point );
+            return boost::make_tuple(
+                location.found, location.elementId, location.referencePoint );
+        }
+
+        /** @brief Legacy MPL adapter for unconstrained `locateElement()`. */
+        boost::tuple<bool, size_type,node_type>
+        searchElement( node_type const& point,
+                       matrix_node_type const&,
+                       mpl::int_<0> )
+        {
+            return this->searchElement( point );
+        }
+
+        /** @brief Legacy MPL adapter for conforming `locateElement()`. */
+        boost::tuple<bool, size_type,node_type>
+        searchElement( node_type const& point,
+                       matrix_node_type const& requiredPoints,
+                       mpl::int_<1> )
+        {
+            auto location = this->template locateElement<
+                LocalizationPolicy::RequireContainedPoints>(
+                    point, requiredPoints );
+            return boost::make_tuple(
+                location.found, location.elementId, location.referencePoint );
+        }
 
         //! ---------------------------------------------------------------
          //!  Research all elements which contains the node p
@@ -274,29 +503,44 @@ public:
          //!  Research the element which contains the node p, forall p in the
          //!  matrix_node_type m. The result is save by this object
          //!
-        boost::tuple<std::vector<bool>, size_type> run_analysis(const matrix_node_type & m,
-                                                                const size_type & eltHypothetical);
-
-        //! ---------------------------------------------------------------
-         //!  Research the element which contains the node p, forall p in the
-         //!  matrix_node_type m. The result is save by this object
-         //!
-        boost::tuple<std::vector<bool>, size_type>  run_analysis(const matrix_node_type & m,
-                                                                 const size_type & eltHypothetical,
-                                                                 const matrix_node_type & setPoints,
-                                                                 mpl::int_<0> /**/)
+        boost::tuple<std::vector<bool>, size_type>
+        run_analysis( matrix_node_type const& points,
+                      size_type const& hypotheticalElement )
         {
-            return run_analysis( m,eltHypothetical );
+            auto result = this->localize( points, hypotheticalElement );
+            return boost::make_tuple(
+                std::move( result.found ), result.lastElementId );
         }
 
         //! ---------------------------------------------------------------
          //!  Research the element which contains the node p, forall p in the
          //!  matrix_node_type m. The result is save by this object
          //!
-        boost::tuple<std::vector<bool>, size_type> run_analysis(const matrix_node_type & m,
-                                                                const size_type & eltHypothetical,
-                                                                const matrix_node_type & setPoints,
-                                                                mpl::int_<1> /**/);
+        boost::tuple<std::vector<bool>, size_type>
+        run_analysis( matrix_node_type const& points,
+                      size_type const& hypotheticalElement,
+                      matrix_node_type const&,
+                      mpl::int_<0> )
+        {
+            return this->run_analysis( points, hypotheticalElement );
+        }
+
+        //! ---------------------------------------------------------------
+         //!  Research the element which contains the node p, forall p in the
+         //!  matrix_node_type m. The result is save by this object
+         //!
+        boost::tuple<std::vector<bool>, size_type>
+        run_analysis( matrix_node_type const& points,
+                      size_type const& hypotheticalElement,
+                      matrix_node_type const& requiredPoints,
+                      mpl::int_<1> )
+        {
+            auto result = this->template localize<
+                LocalizationPolicy::RequireContainedPoints>(
+                    points, hypotheticalElement, requiredPoints );
+            return boost::make_tuple(
+                std::move( result.found ), result.lastElementId );
+        }
 
         /**
          * @brief Localize points with a standard compile-time conformity tag.
@@ -310,13 +554,16 @@ public:
          */
         template <bool Conforming>
         boost::tuple<std::vector<bool>, size_type>
-        run_analysis( const matrix_node_type& m,
-                      const size_type& eltHypothetical,
-                      const matrix_node_type& setPoints,
+        run_analysis( matrix_node_type const& points,
+                      size_type const& hypotheticalElement,
+                      matrix_node_type const& requiredPoints,
                       std::bool_constant<Conforming> )
         {
-            return run_analysis( m, eltHypothetical, setPoints,
-                                 mpl::int_<Conforming>{} );
+            auto result = this->localize(
+                points, hypotheticalElement, requiredPoints,
+                std::bool_constant<Conforming>{} );
+            return boost::make_tuple(
+                std::move( result.found ), result.lastElementId );
         }
 
         //! ---------------------------------------------------------------
@@ -359,12 +606,42 @@ public:
         FEELPP_NO_EXPORT void searchInKdTree( const node_type & p,
                                               std::list< std::pair<size_type, uint> > & listTri );
 
-        //! ---------------------------------------------------------------
-        //!  computed barycenter
-        //!
-        FEELPP_NO_EXPORT node_type computeBarycenter(mpl::int_<1> /**/) const;
-        FEELPP_NO_EXPORT node_type computeBarycenter(mpl::int_<2> /**/) const;
-        FEELPP_NO_EXPORT node_type computeBarycenter(mpl::int_<3> /**/) const;
+        /** @brief Implement unconstrained localization in one element. */
+        FEELPP_NO_EXPORT PointLocation
+        locateInElementImpl( size_type elementId,
+                             node_type const& point ) const;
+
+        /** @brief Implement conforming localization in one element. */
+        FEELPP_NO_EXPORT PointLocation
+        locateInElementConformingImpl(
+            size_type elementId,
+            node_type const& point,
+            matrix_node_type const& requiredPoints ) const;
+
+        /** @brief Implement unconstrained single-element search. */
+        FEELPP_NO_EXPORT ElementLocation
+        locateElementImpl( node_type const& point );
+
+        /** @brief Implement conforming single-element search. */
+        FEELPP_NO_EXPORT ElementLocation
+        locateElementConformingImpl(
+            node_type const& point,
+            matrix_node_type const& requiredPoints );
+
+        /** @brief Implement unconstrained batch localization. */
+        FEELPP_NO_EXPORT BatchLocation
+        localizeImpl( matrix_node_type const& points,
+                      size_type hypotheticalElement );
+
+        /** @brief Implement conforming batch localization. */
+        FEELPP_NO_EXPORT BatchLocation
+        localizeConformingImpl(
+            matrix_node_type const& points,
+            size_type hypotheticalElement,
+            matrix_node_type const& requiredPoints );
+
+        /** @brief Compute the KD-tree barycenter in any physical dimension. */
+        FEELPP_NO_EXPORT node_type computeBarycenterImpl() const;
 
     private:
 
@@ -403,7 +680,9 @@ Localization<MeshType>::init( range_elements_type const& range )
     {
         auto const& elt = unwrap_ref( eltWrap );
         M_gic.reset( new gmc_inverse_type( mesh->gm(), elt, mesh->worldComm().subWorldCommSeqPtr() ) );
-        M_gic1.reset( new gmc1_inverse_type( mesh->gm1(), elt, mpl::int_<1>(), mesh->worldComm().subWorldCommSeqPtr() ) );
+        M_gic1.reset( new gmc1_inverse_type(
+            mesh->gm1(), elt, geometry::AffineGeometryOrder{},
+            mesh->worldComm().subWorldCommSeqPtr() ) );
         break;
     }
     for ( auto const& eltWrap : range )
@@ -469,7 +748,10 @@ Localization<MeshType>::initBoundaryFaces()
                     if ( !hasInitGic )
                     {
                         M_gic.reset( new gmc_inverse_type( mesh->gm(), face.element( 0 ), mesh->worldComm().subWorldCommSeqPtr() ) );
-                        M_gic1.reset( new gmc1_inverse_type( mesh->gm1(), face.element( 0 ), mpl::int_<1>(), mesh->worldComm().subWorldCommSeqPtr() ) );
+                        M_gic1.reset( new gmc1_inverse_type(
+                            mesh->gm1(), face.element( 0 ),
+                            geometry::AffineGeometryOrder{},
+                            mesh->worldComm().subWorldCommSeqPtr() ) );
                         hasInitGic=true;
                     }
                 }
@@ -486,8 +768,9 @@ Localization<MeshType>::initBoundaryFaces()
 
 
 template<typename MeshType>
-boost::tuple<bool,typename MeshType::node_type,double>
-Localization<MeshType>::isIn( size_type _id, const node_type & _pt ) const
+typename Localization<MeshType>::PointLocation
+Localization<MeshType>::locateInElementImpl(
+    size_type elementId, node_type const& point ) const
 {
     bool isin=false;
     double dmin=0;
@@ -495,7 +778,8 @@ Localization<MeshType>::isIn( size_type _id, const node_type & _pt ) const
 
     auto mesh = M_mesh.lock();
     //get element with the id
-    auto const& elt = mesh->element( _id );
+    auto const& elt = mesh->element( elementId );
+    auto const eltView = mesh->elementView( elementId );
 
     if ( elt.isOnBoundary() || nDim != nRealDim )
         {
@@ -503,13 +787,13 @@ Localization<MeshType>::isIn( size_type _id, const node_type & _pt ) const
             // get inverse geometric transformation
             gmc_inverse_type gic( mesh->gm(), elt, mesh->worldComm().subWorldCommSeqPtr() );
             //apply the inverse geometric transformation for the point p
-            gic.setXReal( _pt);
+            gic.setXReal( point);
             x_ref=gic.xRef();
             // the point is in the reference element ?
             boost::tie( isin, dmin ) = M_refelem.isIn( gic.xRef() );
 #else
-            M_gic->update( elt );
-            M_gic->setXReal( _pt);
+            M_gic->update( eltView );
+            M_gic->setXReal( point);
             x_ref=M_gic->xRef();
             if ( nDim == nRealDim )
                 isin = M_gic->isIn();
@@ -521,15 +805,17 @@ Localization<MeshType>::isIn( size_type _id, const node_type & _pt ) const
         {
 #if 0
             // get inverse geometric transformation
-            gmc1_inverse_type gic( mesh->gm1(), elt, mpl::int_<1>(), mesh->worldComm().subWorldCommSeqPtr() );
+            gmc1_inverse_type gic(
+                mesh->gm1(), elt, geometry::AffineGeometryOrder{},
+                mesh->worldComm().subWorldCommSeqPtr() );
             //apply the inverse geometric transformation for the point p
-            gic.setXReal( _pt);
+            gic.setXReal( point);
             x_ref=gic.xRef();
             // the point is in the reference element ?
             boost::tie( isin, dmin ) = M_refelem1.isIn( gic.xRef() );
 #else
-            M_gic1->update( elt, mpl::int_<1>() );
-            M_gic1->setXReal( _pt);
+            M_gic1->update( eltView, geometry::AffineGeometryOrder{} );
+            M_gic1->setXReal( point);
             x_ref=M_gic1->xRef();
             if ( nDim == nRealDim )
                 isin = M_gic1->isIn();
@@ -538,7 +824,7 @@ Localization<MeshType>::isIn( size_type _id, const node_type & _pt ) const
 #endif
         }
 
-    return boost::make_tuple(isin,x_ref,dmin);
+    return PointLocation{ isin, std::move( x_ref ), dmin };
 }
 
 template<typename MeshType>
@@ -561,6 +847,7 @@ Localization<MeshType>::isIn( std::vector<size_type> _ids, const node_type & _pt
     {
         //get element with the id
         auto const& elt = mesh->element( _ids[i] );
+        auto const eltView = mesh->elementView( _ids[i] );
 
         if ( elt.isOnBoundary() || nDim != nRealDim )
             {
@@ -573,7 +860,7 @@ Localization<MeshType>::isIn( std::vector<size_type> _ids, const node_type & _pt
                 // the point is in the reference element ?
                 boost::tie( isin2, dmin ) = M_refelem.isIn( gic.xRef() );
 #else
-                M_gic->update( elt );
+                M_gic->update( eltView );
                 M_gic->setXReal( _pt);
                 __x_ref=M_gic->xRef();
                 if ( nDim == nRealDim )
@@ -587,14 +874,15 @@ Localization<MeshType>::isIn( std::vector<size_type> _ids, const node_type & _pt
             {
 #if 0
                 // get inverse geometric transformation
-                gmc1_inverse_type gic( mesh->gm1(), elt, mpl::int_<1>() );
+                gmc1_inverse_type gic(
+                    mesh->gm1(), elt, geometry::AffineGeometryOrder{} );
                 //apply the inverse geometric transformation for the point p
                 gic.setXReal( _pt);
                 __x_ref=gic.xRef();
                 // the point is in the reference element ?
                 boost::tie( isin2, dmin ) = M_refelem1.isIn( gic.xRef() );
 #else
-                M_gic1->update( elt, mpl::int_<1>() );
+                M_gic1->update( eltView, geometry::AffineGeometryOrder{} );
                 M_gic1->setXReal( _pt);
                 __x_ref=M_gic1->xRef();
                 if ( nDim == nRealDim )
@@ -612,8 +900,8 @@ Localization<MeshType>::isIn( std::vector<size_type> _ids, const node_type & _pt
 
 
 template<typename MeshType>
-boost::tuple<bool, typename Localization<MeshType>::size_type, typename MeshType::node_type>
-Localization<MeshType>::searchElement( const node_type & p )
+typename Localization<MeshType>::ElementLocation
+Localization<MeshType>::locateElementImpl( node_type const& point )
 {
 
     DCHECK( this->isInit() || this->isInitBoundaryFaces() ) << "You don't have initialized the tool of localization\n";
@@ -621,10 +909,10 @@ Localization<MeshType>::searchElement( const node_type & p )
     auto mesh = M_mesh.lock();
     bool isin=false;double dmin=0;
     node_type x_ref;
-    size_type idEltFound = 0;//mesh->beginElementWithId(mesh->worldComm().localRank())->id();
+    size_type idEltFound = invalid_v<size_type>;
 
     std::list< std::pair<size_type, uint> > ListTri;
-    this->searchInKdTree(p,ListTri);
+    this->searchInKdTree(point,ListTri);
 
     //research the element which contains the point p
     auto itLT=ListTri.begin();
@@ -638,7 +926,10 @@ Localization<MeshType>::searchElement( const node_type & p )
         //elt = M_mesh->element( itLT->first );
 
         // search point in this elt
-        boost::tie(isin,x_ref,dmin) = this->isIn(itLT->first,p);
+        auto location = this->locateInElement( itLT->first, point );
+        isin = location.found;
+        x_ref = std::move( location.referencePoint );
+        dmin = location.distance;
         // if not inside, continue the research with an other element
         if (!isin) ++itLT;
         else idEltFound=itLT->first;
@@ -650,33 +941,36 @@ Localization<MeshType>::searchElement( const node_type & p )
             // first elt
             idEltFound = ListTri.begin()->first;
             auto const& eltUsedForExtrapolation = mesh->element(idEltFound);
-            DVLOG(1) << "localisation tool use extrapolation for the point" << p
+            DVLOG(1) << "localisation tool use extrapolation for the point" << point
                      << " with elt.id() " << eltUsedForExtrapolation.id()
                      << " and elt.G() " << eltUsedForExtrapolation.G()
                      << "\n";
             gmc_inverse_type gic( mesh->gm(), eltUsedForExtrapolation, mesh->worldComm().subWorldCommSeqPtr() );
             //apply the inverse geometric transformation for the point p
-            gic.setXReal( p);
-            boost::tie(isin,idEltFound,x_ref) = boost::make_tuple(true,eltUsedForExtrapolation.id(),gic.xRef());
+            gic.setXReal( point);
+            isin = true;
+            idEltFound = eltUsedForExtrapolation.id();
+            x_ref = gic.xRef();
         }
 
-    return boost::make_tuple( isin, idEltFound, x_ref);
+    return ElementLocation{ isin, idEltFound, std::move( x_ref ) };
 
 }
 
 template<typename MeshType>
-boost::tuple<std::vector<bool>, typename Localization<MeshType>::size_type>
-Localization<MeshType>::run_analysis( const matrix_node_type & m,
-                                      const size_type & eltHypothetical )
+typename Localization<MeshType>::BatchLocation
+Localization<MeshType>::localizeImpl(
+    matrix_node_type const& points,
+    size_type hypotheticalElement )
 {
     // if no init then init with all geo point
     if ( !( this->isInit() || this->isInitBoundaryFaces() ) )
         this->updateForUse();
 
     bool find_x;
-    size_type cv_id=eltHypothetical;
+    size_type cv_id=hypotheticalElement;
     node_type x_ref;double dmin=0;
-    std::vector<bool> hasFindPts(m.size2(),false);
+    std::vector<bool> hasFindPts(points.size2(),false);
 
     M_resultAnalysis.clear();
 
@@ -688,21 +982,25 @@ Localization<MeshType>::run_analysis( const matrix_node_type & m,
     if ( doExtrapolationAtStart ) this->setExtrapolation( false );
 
     // first currentEltHypothetical
-    auto currentEltHypothetical = eltHypothetical;//this->mesh()->beginElement()->id();//eltHypothetical;
-    for ( size_type i=0; i< m.size2(); ++i )
+    auto currentEltHypothetical = hypotheticalElement;
+    for ( size_type i=0; i< points.size2(); ++i )
         {
             bool testHypothetical_find = false;
 
-            if ( eltHypothetical!=invalid_v<size_type> )
+            if ( hypotheticalElement!=invalid_v<size_type> )
                 {
-                    boost::tie( testHypothetical_find,x_ref,dmin ) = this->isIn( currentEltHypothetical,ublas::column( m, i ) );
+                    auto location = this->locateInElement(
+                        currentEltHypothetical, ublas::column( points, i ) );
+                    testHypothetical_find = location.found;
+                    x_ref = std::move( location.referencePoint );
+                    dmin = location.distance;
                 }
             if ( testHypothetical_find )
                 {
                     cv_id = currentEltHypothetical;
                     M_resultAnalysis[cv_id].push_back( boost::make_tuple(i,x_ref) );
                     hasFindPts[i]=true;
-                    DVLOG(1) << "localisation tool (hypthetical elt) : has found pt " << ublas::column( m, i )
+                    DVLOG(1) << "localisation tool (hypthetical elt) : has found pt " << ublas::column( points, i )
                              << "in elt id " << cv_id
                              << "with G() " << M_mesh.lock()->element(cv_id).G()
                              << "\n";
@@ -710,14 +1008,18 @@ Localization<MeshType>::run_analysis( const matrix_node_type & m,
             else // search kdtree
                 {
                     // kdtree call
-                    boost::tie( find_x, cv_id, x_ref ) = this->searchElement(ublas::column( m, i ));
+                    auto location = this->locateElement(
+                        ublas::column( points, i ) );
+                    find_x = location.found;
+                    cv_id = location.elementId;
+                    x_ref = std::move( location.referencePoint );
                     // traitement
                     if (find_x) // if find : OK
                         {
                             M_resultAnalysis[cv_id].push_back( boost::make_tuple(i,x_ref) );
                             currentEltHypothetical = cv_id;
                             hasFindPts[i]=true;
-                            DVLOG(1)  << "localisation tool (first pass) : has found pt " << ublas::column( m, i )
+                            DVLOG(1)  << "localisation tool (first pass) : has found pt " << ublas::column( points, i )
                                       << " in elt id " << cv_id
                                       << " with G() " << M_mesh.lock()->element(cv_id).G()
                                       << " and ref point " << x_ref
@@ -728,7 +1030,11 @@ Localization<MeshType>::run_analysis( const matrix_node_type & m,
                             // search in all element
                             this->kdtree()->nbNearNeighbor(2*nPtMaxNearNeighborAtStart /*15*/ /*this->mesh()->numElements()*/);
 
-                            boost::tie( find_x, cv_id, x_ref ) = this->searchElement(ublas::column( m, i ));
+                            location = this->locateElement(
+                                ublas::column( points, i ) );
+                            find_x = location.found;
+                            cv_id = location.elementId;
+                            x_ref = std::move( location.referencePoint );
                             //revert parameter
                             this->kdtree()->nbNearNeighbor(nPtMaxNearNeighborAtStart);
                             // if find : OK (but strange!)
@@ -737,7 +1043,7 @@ Localization<MeshType>::run_analysis( const matrix_node_type & m,
                                     M_resultAnalysis[cv_id].push_back( boost::make_tuple(i,x_ref) );
                                     currentEltHypothetical = cv_id;
                                     hasFindPts[i]=true;
-                                    DVLOG(1)  << "localisation tool (second pass) : has found pt " << ublas::column( m, i )
+                                    DVLOG(1)  << "localisation tool (second pass) : has found pt " << ublas::column( points, i )
                                               << " in elt id " << cv_id
                                               << " with G() " << M_mesh.lock()->element(cv_id).G()
                                               << " and ref point " << x_ref
@@ -747,7 +1053,11 @@ Localization<MeshType>::run_analysis( const matrix_node_type & m,
                                 {
                                     this->setExtrapolation(true);
 
-                                    boost::tie( find_x, cv_id, x_ref ) = this->searchElement(ublas::column( m, i ));
+                                    location = this->locateElement(
+                                        ublas::column( points, i ) );
+                                    find_x = location.found;
+                                    cv_id = location.elementId;
+                                    x_ref = std::move( location.referencePoint );
 
                                     CHECK( find_x ) << "localisation tool : invalid extrapolation \n";
 
@@ -760,16 +1070,16 @@ Localization<MeshType>::run_analysis( const matrix_node_type & m,
                         }
                 } // search kdtree
 
-            DLOG_IF(WARNING, !hasFindPts[i]) << "the localisation tool fails to find the point " << ublas::column( m, i ) << "\n";
+            DLOG_IF(WARNING, !hasFindPts[i]) << "the localisation tool fails to find the point " << ublas::column( points, i ) << "\n";
 
         } // for (size_type i=0;i< m.size2();++i)
 
     //revert parameter
     this->setExtrapolation(doExtrapolationAtStart);
 
-    return boost::make_tuple(hasFindPts,cv_id);
+    return BatchLocation{ std::move( hasFindPts ), cv_id };
 
-} //run_analysis
+} // localizeImpl
 
 
 
@@ -799,7 +1109,8 @@ Localization<MeshType>::searchElements( const node_type & p )
 
 #if !defined( NDEBUG )
     //if(std::distance(itLT,itLT_end)==0) std::cout<<"\nListTri vide\n";
-    FEELPP_ASSERT( std::distance( itLT,itLT_end )>0 ).error( " problem in list localization : is empty" );
+    CHECK( std::distance( itLT,itLT_end ) > 0 )
+        << "problem in list localization: empty candidate list";
 #endif
 
     std::list<boost::tuple<size_type,node_type> > newlistelts;
@@ -828,7 +1139,8 @@ Localization<MeshType>::searchElements( const node_type & p )
         else
         {
             // get inverse geometric transformation
-            typename mesh_type::Inverse::gic1_type gic( M_mesh->gm1(), elt,mpl::int_<1>() );
+            typename mesh_type::Inverse::gic1_type gic(
+                M_mesh->gm1(), elt, geometry::AffineGeometryOrder{} );
 
             //apply the inverse geometric transformation for the point p
             gic.setXReal( p );
@@ -898,7 +1210,8 @@ Localization<MeshType>::searchInKdTree( const node_type & p,
     typename KDTree::points_search_const_iterator itNN_end = ptsNN.end();
 
 #if !defined( NDEBUG )
-    FEELPP_ASSERT( std::distance( itNN,itNN_end )>0 ).error( "none Near Neighbor Points are find" );
+    CHECK( std::distance( itNN, itNN_end ) > 0 )
+        << "no near-neighbor point found";
 #endif
 
     //iterator on a l(ist index element
@@ -958,98 +1271,86 @@ Localization<MeshType>::searchInKdTree( const node_type & p,
 }
 
 template<typename MeshType>
-boost::tuple<bool,typename MeshType::node_type,double>
-Localization<MeshType>::isIn( size_type _id,
-                                         const node_type & _pt,
-                                         const matrix_node_type & setPoints,
-                                         mpl::int_<1> /**/ ) const
+typename Localization<MeshType>::PointLocation
+Localization<MeshType>::locateInElementConformingImpl(
+    size_type elementId,
+    node_type const& point,
+    matrix_node_type const& requiredPoints ) const
 {
-    bool isin=true; // warning : start with true
-    double dmin=0.;
-    node_type x_ref;
+    constexpr value_type pointTolerance = static_cast<value_type>( 1e-8 );
     auto mesh = M_mesh.lock();
-    //get element with the id
-    auto const& elt= mesh->element( _id );
+    auto const& elt= mesh->element( elementId );
     auto const& eltG = elt.G();
 
-    // check conformity between setPoints (given) and eltG (localize)
-    std::vector<bool> find( setPoints.size2(),false );
-    for ( size_type i=0; i< setPoints.size2() && isin; ++i )
+    for ( size_type i = 0; i < requiredPoints.size2(); ++i )
     {
-        auto const& thePt = ublas::column( setPoints,i );
-
-        for ( size_type j=0; j<eltG.size2(); ++j )
+        auto const requiredPoint = ublas::column( requiredPoints, i );
+        bool pointFound = false;
+        for ( size_type j = 0; j < eltG.size2() && !pointFound; ++j )
         {
-            auto ptjeltG = ublas::column( eltG,j );
+            auto const candidatePoint = ublas::column( eltG, j );
+            if ( requiredPoint.size() != candidatePoint.size() )
+                continue;
 
-            if ( ptjeltG.size()==1 )
+            pointFound = true;
+            for ( size_type component = 0;
+                  component < requiredPoint.size();
+                  ++component )
             {
-                if ( std::abs( thePt( 0 )-ptjeltG( 0 ) )<1e-8 )
-                    find[i]=true;
-            }
-            else if ( ptjeltG.size()==2 )
-            {
-                if ( std::abs( thePt( 0 )-ptjeltG( 0 ) )<1e-8 &&
-                     std::abs( thePt( 1 )-ptjeltG( 1 ) )<1e-8 )
-                    find[i]=true;
-            }
-            else if ( ptjeltG.size()==3 )
-            {
-                if ( std::abs( thePt( 0 )-ptjeltG( 0 ) )<1e-8 &&
-                     std::abs( thePt( 1 )-ptjeltG( 1 ) )<1e-8 &&
-                     std::abs( thePt( 2 )-ptjeltG( 2 ) )<1e-8 )
-                    find[i]=true;
+                if ( std::abs( requiredPoint( component ) -
+                              candidatePoint( component ) ) >= pointTolerance )
+                {
+                    pointFound = false;
+                    break;
+                }
             }
         }
-        // up checking
-        isin &= find[i];
+
+        if ( !pointFound )
+            return PointLocation{};
     }
 
-    // if find -> get ref point and check
-    if ( isin )
-    {
-        bool isin2=false;
-        boost::tie(isin2,x_ref,dmin) = this->isIn(_id,_pt);
-        LOG_IF(ERROR, !isin2) << "Mesh::Localization::isIn<Conformal> : check fail -> maybe x_ref is not correct";
-    }
-
-    return boost::make_tuple(isin,x_ref,dmin);
+    auto location = this->locateInElement( elementId, point );
+    LOG_IF( ERROR, !location.found )
+        << "Localization conforming point-set check succeeded but inverse "
+           "geometric localization failed";
+    return location;
 }
 
 
 
 template<typename MeshType>
-boost::tuple<bool, typename Localization<MeshType>::size_type, typename MeshType::node_type>
-Localization<MeshType>::searchElement( const node_type & p,
-        const matrix_node_type & setPoints,
-        mpl::int_<1> /**/ )
+typename Localization<MeshType>::ElementLocation
+Localization<MeshType>::locateElementConformingImpl(
+    node_type const& point,
+    matrix_node_type const& requiredPoints )
 {
-    typename mesh_type::element_type elt;
-    typename mesh_type::gm_type::reference_convex_type refelem;
-    typename mesh_type::gm1_type::reference_convex_type refelem1;
-
-    bool isin=false,isin2=false;
-    double dmin=0.;
+    bool isin=false;
     node_type x_ref;
     auto mesh=this->mesh().lock();
-    size_type idEltFound = invalid_v<size_type>;//mesh->beginElementWithId(mesh->worldComm().localRank())->id();
+    size_type idEltFound = invalid_v<size_type>;
 
     std::list< std::pair<size_type, uint> > ListTri;
-    searchInKdTree( p,ListTri );
+    searchInKdTree( point,ListTri );
 
     auto itLT=ListTri.begin();
     auto itLT_end=ListTri.end();
 
 #if !defined( NDEBUG )
     //if(std::distance(itLT,itLT_end)==0) std::cout<<"\nListTri vide\n";
-    FEELPP_ASSERT( std::distance( itLT,itLT_end )>0 ).error( " problem in list localization : is empty" );
+    CHECK( std::distance( itLT,itLT_end ) > 0 )
+        << "problem in list localization: empty candidate list";
 #endif
 
 
     //research the element which contains the point p
     while ( itLT != itLT_end && !isin  )
     {
-        boost::tie(isin,x_ref,dmin) = this->isIn(itLT->first,p,setPoints,mpl::int_<1>());
+        auto location = this->template locateInElement<
+            LocalizationPolicy::RequireContainedPoints>(
+                itLT->first, point, requiredPoints );
+        isin = location.found;
+        x_ref = std::move( location.referencePoint );
 
         //if not inside, continue the research with an other element
         if ( !isin ) ++itLT;
@@ -1060,13 +1361,15 @@ Localization<MeshType>::searchElement( const node_type & p,
         {
             if( this->doExtrapolation() )
                 {
-                    LOG(WARNING) << "WARNING EXTRAPOLATION for the point" << p;
+                    LOG(WARNING) << "WARNING EXTRAPOLATION for the point" << point;
                     //std::cout << "W";
                     auto const& eltUsedForExtrapolation = mesh->element(ListTri.begin()->first);
                     gmc_inverse_type gic( mesh->gm(), eltUsedForExtrapolation, mesh->worldComm().subWorldCommSeqPtr() );
                     //apply the inverse geometric transformation for the point p
-                    gic.setXReal( p);
-                    boost::tie(isin,idEltFound,x_ref) = boost::make_tuple(true,eltUsedForExtrapolation.id(),gic.xRef());
+                    gic.setXReal( point);
+                    isin = true;
+                    idEltFound = eltUsedForExtrapolation.id();
+                    x_ref = gic.xRef();
                 }
             else
                 {
@@ -1076,36 +1379,41 @@ Localization<MeshType>::searchElement( const node_type & p,
                 }
         }
 
-    return boost::make_tuple( isin, idEltFound, x_ref);
+    return ElementLocation{ isin, idEltFound, std::move( x_ref ) };
 
-} //searchElement
+} // locateElementConformingImpl
 
 
 template<typename MeshType>
-boost::tuple<std::vector<bool>, typename Localization<MeshType>::size_type>
-Localization<MeshType>::run_analysis( const matrix_node_type & m,
-        const size_type & eltHypothetical,
-        const matrix_node_type & setPoints,
-        mpl::int_<1> /**/ )
+typename Localization<MeshType>::BatchLocation
+Localization<MeshType>::localizeConformingImpl(
+    matrix_node_type const& points,
+    size_type hypotheticalElement,
+    matrix_node_type const& requiredPoints )
 {
 
     DCHECK( this->isInit() || this->isInitBoundaryFaces() ) << "You don't have initialized the tool of localization\n";
 
     bool find_x=false;
-    size_type cv_id=eltHypothetical;
+    size_type cv_id=hypotheticalElement;
     node_type x_ref;
-    double dmin;
-    std::vector<bool> hasFindPts(m.size2(),false);
+    std::vector<bool> hasFindPts(points.size2(),false);
 
     M_resultAnalysis.clear();
-    auto currentEltHypothetical = eltHypothetical;
-    for ( size_type i=0; i< m.size2(); ++i )
+    auto currentEltHypothetical = hypotheticalElement;
+    for ( size_type i=0; i< points.size2(); ++i )
     {
 
         bool testHypothetical_find = false;
-        if ( eltHypothetical!=invalid_v<size_type> )
+        if ( hypotheticalElement!=invalid_v<size_type> )
         {
-            boost::tie( testHypothetical_find,x_ref,dmin ) = this->isIn( currentEltHypothetical,ublas::column( m, i ),setPoints,mpl::int_<1>() );
+            auto location = this->template locateInElement<
+                LocalizationPolicy::RequireContainedPoints>(
+                    currentEltHypothetical,
+                    ublas::column( points, i ),
+                    requiredPoints );
+            testHypothetical_find = location.found;
+            x_ref = std::move( location.referencePoint );
         }
         if ( testHypothetical_find )
         {
@@ -1115,7 +1423,12 @@ Localization<MeshType>::run_analysis( const matrix_node_type & m,
         }
         else
         {
-            boost::tie( find_x, cv_id, x_ref ) = this->searchElement( ublas::column( m, i ),setPoints,mpl::int_<1>() );
+            auto location = this->template locateElement<
+                LocalizationPolicy::RequireContainedPoints>(
+                    ublas::column( points, i ), requiredPoints );
+            find_x = location.found;
+            cv_id = location.elementId;
+            x_ref = std::move( location.referencePoint );
 
             if ( find_x )
             {
@@ -1127,64 +1440,40 @@ Localization<MeshType>::run_analysis( const matrix_node_type & m,
         //else std::cout<<"\nNew Probleme Localization\n" << std::endl;
     }
 
-    return boost::make_tuple(hasFindPts,cv_id);
+    return BatchLocation{ std::move( hasFindPts ), cv_id };
 
-} // run_analysis
+} // localizeConformingImpl
 
 
 template<typename MeshType>
 void
 Localization<MeshType>::computeBarycenter()
 {
-    M_barycenter = this->computeBarycenter(mpl::int_<nRealDim>());
+    M_barycenter = this->computeBarycenterImpl();
 }
 
 template<typename MeshType>
 typename MeshType::node_type
-Localization<MeshType>::computeBarycenter(mpl::int_<1> /**/) const
+Localization<MeshType>::computeBarycenterImpl() const
 {
-    node_type res(1);
-    res(0)=0;
-    if ( this->kdtree()->nPoints()==0 ) return res;
-    for (size_type i = 0 ; i<this->kdtree()->nPoints() ; ++i)
-        {
-            auto const& pt = this->kdtree()->points()[i].template get<0>();
-            res(0)+=pt(0);
-        }
-    res(0)/=this->kdtree()->nPoints();
-    return res;
-}
-template<typename MeshType>
-typename MeshType::node_type
-Localization<MeshType>::computeBarycenter(mpl::int_<2> /**/) const
-{
-    node_type res(2);
-    res(0)=0;res(1)=0;
-    if ( this->kdtree()->nPoints()==0 )
-        return res;
-    for (size_type i = 0 ; i<this->kdtree()->nPoints() ; ++i)
-        {
-            auto const& pt = this->kdtree()->points()[i].template get<0>();
-            res(0)+=pt(0);res(1)+=pt(1);
-        }
-    res(0)/=this->kdtree()->nPoints();res(1)/=this->kdtree()->nPoints();
-    return res;
-}
-template<typename MeshType>
-typename MeshType::node_type
-Localization<MeshType>::computeBarycenter(mpl::int_<3> /**/) const
-{
-    node_type res(3);
-    res(0)=0;res(1)=0;res(2)=0;
-    if ( this->kdtree()->nPoints()==0 )
-        return res;
-    for (size_type i = 0 ; i<this->kdtree()->nPoints() ; ++i)
-        {
-            auto const& pt = this->kdtree()->points()[i].template get<0>();
-            res(0)+=pt(0);res(1)+=pt(1);res(2)+=pt(2);
-        }
-    res(0)/=this->kdtree()->nPoints();res(1)/=this->kdtree()->nPoints();res(2)/=this->kdtree()->nPoints();
-    return res;
+    node_type result( nRealDim );
+    result.clear();
+
+    auto const pointCount = this->kdtree()->nPoints();
+    if ( pointCount == 0 )
+        return result;
+
+    for ( size_type pointIndex = 0; pointIndex < pointCount; ++pointIndex )
+    {
+        auto const& point =
+            this->kdtree()->points()[pointIndex].template get<0>();
+        for ( uint16_type component = 0; component < nRealDim; ++component )
+            result( component ) += point( component );
+    }
+
+    for ( uint16_type component = 0; component < nRealDim; ++component )
+        result( component ) /= pointCount;
+    return result;
 }
 
 

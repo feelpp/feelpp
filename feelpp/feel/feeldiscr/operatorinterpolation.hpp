@@ -958,14 +958,26 @@ private:
  * Values come from localized domain FE contexts, while `geom()` deliberately
  * returns the image geometry: the former defines the mapped field and the
  * latter defines the mathematical image functional.
+ *
+ * @tparam ShapeType tensor shape of the sampled operand
+ * @tparam GeometryContextType image geometric context defining the functional
+ * @tparam ValueType sampled scalar type
+ * @tparam TestBasisType domain basis whose rows are being sampled
  */
-template<typename ShapeType, typename GeometryContextType, typename ValueType>
+template<typename ShapeType, typename GeometryContextType, typename ValueType,
+         typename TestBasisType>
 class LocalizedBasisSampleTable
 {
 public:
     using shape = ShapeType;
     using gmc_type = GeometryContextType;
     using value_type = ValueType;
+    /** Expression metadata required by finite-element face interpolators. */
+    struct ExpressionTraits
+    {
+        using test_basis = TestBasisType;
+    };
+    using expr_type = ExpressionTraits;
 
     LocalizedBasisSampleTable( std::shared_ptr<gmc_type> geometry,
                                uint16_type rows, uint16_type points )
@@ -2586,16 +2598,16 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                 ublas::column( ptsReal, 0 ) =
                     imagedof->dofPoint( i ).template get<0>();
                 size_type localizedElement = invalid_v<size_type>;
-                auto localization = locTool->run_analysis(
+                auto localization = locTool->localize(
                     ptsReal, localizedElement, imageEntity.vertices(),
                     std::bool_constant<interpolation_type::isConforming()>{} );
-                for ( bool found : localization.template get<0>() )
+                for ( bool found : localization.found )
                     if ( !found )
                         throw std::runtime_error(
                             "OperatorInterpolation could not localize an image DoF point" );
 
                 for ( auto const& [domainElementId, localizedPoints] :
-                      locTool->result_analysis() )
+                      locTool->resultAnalysis() )
                 {
                     if ( localizedPoints.empty() )
                         continue;
@@ -2644,9 +2656,6 @@ template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRang
 void
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::updateNoRelationMeshMoments()
 {
-    static_assert( idim_type::value == MESH_ELEMENTS,
-                   "Unrelated moment interpolation currently requires an element range" );
-
     graph_ptrtype sparsityGraph(
         new graph_type( this->dualImageSpace()->dof(),
                         this->domainSpace()->dof() ) );
@@ -2676,10 +2685,42 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     localized_evaluator_type localizedEvaluation( this->domainSpace(), operand );
     using operand_shape = typename localized_evaluator_type::tensor_type::shape;
     using image_gm_type = typename image_mesh_type::gm_type;
+    static constexpr int imageSubEntityCoDim =
+        idim_type::value == MESH_FACES ? 1 : 0;
     using image_gmc_type = typename image_gm_type::template Context<
-        typename image_mesh_type::element_type, 0>;
+        typename image_mesh_type::element_type, imageSubEntityCoDim>;
+    using image_precompute_ptrtype =
+        typename image_gm_type::precompute_ptrtype;
+    using image_face_permutation_type =
+        typename image_mesh_type::element_type::template PermutationSubEntity<1>;
     static constexpr size_type imageContext =
         vm::POINT | vm::JACOBIAN | vm::KB;
+
+    std::vector<std::map<image_face_permutation_type,
+                         image_precompute_ptrtype>>
+        imageFacePrecomputes;
+    if constexpr ( idim_type::value == MESH_FACES )
+    {
+        imageFacePrecomputes.resize(
+            image_mesh_type::element_type::numTopologicalFaces );
+        for ( uint16_type face = 0;
+              face < image_mesh_type::element_type::numTopologicalFaces;
+              ++face )
+        {
+            for ( image_face_permutation_type permutation(
+                      image_face_permutation_type::IDENTITY );
+                  permutation <
+                      image_face_permutation_type(
+                          image_face_permutation_type::N_PERMUTATIONS );
+                  ++permutation )
+            {
+                imageFacePrecomputes[face][permutation] =
+                    this->dualImageSpace()->gm()->preCompute(
+                        this->dualImageSpace()->gm(),
+                        imageFe.points( face ) );
+            }
+        }
+    }
 
     std::vector<bool> imageDofDone(
         this->dualImageSpace()->nLocalDof(), false );
@@ -2693,31 +2734,67 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     {
         for ( auto const& imageEntityWrap : imageRange )
         {
-            auto const& imageElement = boost::unwrap_ref( imageEntityWrap );
-            auto const imageReferencePoints = imageFe.dual().points();
-            auto imagePrecompute = this->dualImageSpace()->gm()->preCompute(
-                this->dualImageSpace()->gm(), imageReferencePoints );
-            auto imageGeometry = this->dualImageSpace()->gm()->template context<imageContext>(
-                imageElement, imagePrecompute );
+            auto const& imageEntity = boost::unwrap_ref( imageEntityWrap );
+            const uint16_type imageFaceId = [&]()
+            {
+                if constexpr ( idim_type::value == MESH_FACES )
+                {
+                    CHECK( imageEntity.isConnectedTo0() )
+                        << "OperatorInterpolation requires a parent element "
+                           "for an image face";
+                    return static_cast<uint16_type>(
+                        imageEntity.idInElement0() );
+                }
+                else
+                    return invalid_v<uint16_type>;
+            }();
+            auto const imageReferencePoints = [&]()
+            {
+                if constexpr ( idim_type::value == MESH_FACES )
+                    return imageFe.points( imageFaceId );
+                else
+                    return imageFe.dual().points();
+            }();
+            std::shared_ptr<image_gmc_type> imageGeometry;
+            if constexpr ( idim_type::value == MESH_FACES )
+            {
+                imageGeometry =
+                    this->dualImageSpace()->gm()
+                        ->template context<imageContext>(
+                            imageEntity.element( 0 ),
+                            imageFacePrecomputes, imageFaceId );
+            }
+            else
+            {
+                auto imagePrecompute =
+                    this->dualImageSpace()->gm()->preCompute(
+                        this->dualImageSpace()->gm(),
+                        imageReferencePoints );
+                imageGeometry =
+                    this->dualImageSpace()->gm()
+                        ->template context<imageContext>(
+                            imageEntity, imagePrecompute );
+            }
             const uint16_type pointCount = static_cast<uint16_type>(
                 imageReferencePoints.size2() );
 
             using sample_table_type = Feel::detail::LocalizedBasisSampleTable<
-                operand_shape, image_gmc_type, value_type>;
+                operand_shape, image_gmc_type, value_type,
+                domain_basis_type>;
             std::map<size_type, sample_table_type> samplesByDomainElement;
 
             for ( uint16_type point = 0; point < pointCount; ++point )
             {
                 ublas::column( physicalPoint, 0 ) = imageGeometry->xReal( point );
                 size_type localizedElement = invalid_v<size_type>;
-                auto result = localization->run_analysis(
-                    physicalPoint, localizedElement, imageElement.vertices(),
+                auto result = localization->localize(
+                    physicalPoint, localizedElement, imageEntity.vertices(),
                     std::bool_constant<interpolation_type::isConforming()>{} );
-                if ( !result.template get<0>()[0] )
+                if ( !result.found[0] )
                     throw std::runtime_error(
                         "OperatorInterpolation could not localize an image functional sample" );
 
-                auto const analysis = localization->result_analysis();
+                auto const& analysis = localization->resultAnalysis();
                 auto selected = std::find_if(
                     analysis.begin(), analysis.end(),
                     []( auto const& entry ) { return !entry.second.empty(); } );
@@ -2750,7 +2827,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                     domainDof->localToGlobalSigns( domainElementId );
 
                 for ( auto const& imageLocalDof :
-                      imageDof->localDof( imageElement.id() ) )
+                      imageDof->localDof( imageEntity.id() ) )
                 {
                     const auto imageGlobalDof = imageLocalDof.second.index();
                     const uint16_type imageLocalId =
@@ -2786,7 +2863,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
             }
 
             for ( auto const& imageLocalDof :
-                  imageDof->localDof( imageElement.id() ) )
+                  imageDof->localDof( imageEntity.id() ) )
                 imageDofDone[imageLocalDof.second.index()] = true;
         }
     }
@@ -3408,9 +3485,10 @@ OperatorInterpolation<DomainSpaceType,
 
                     // localisation process
                     if (notUseOptLocTest) eltIdLocalised=invalid_v<size_type>;
-                    auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,verticesOfEltSearched,
-                                                                 std::bool_constant<interpolation_type::isConforming()>{});
-                    if (!resLocalisation.template get<0>()[0]) // not find
+                    auto resLocalisation = locTool->localize(
+                        ptsReal, eltIdLocalised, verticesOfEltSearched,
+                        std::bool_constant<interpolation_type::isConforming()>{} );
+                    if ( !resLocalisation.found[0] ) // not find
                         {
                             for ( uint16_type comp = 0;comp < image_basis_type::nComponents;++comp )
                                 {
@@ -3421,7 +3499,7 @@ OperatorInterpolation<DomainSpaceType,
                         }
                     else // point found
                         {
-                            eltIdLocalised = resLocalisation.template get<1>();
+                            eltIdLocalised = resLocalisation.lastElementId;
 
                             if (extrapolation_mode)
                                 {
@@ -3438,7 +3516,7 @@ OperatorInterpolation<DomainSpaceType,
                                     /**/                              bary(0) /= verticesExtrapoled.size2();
                                     if (verticesExtrapoled.size1()>1) bary(1) /= verticesExtrapoled.size2();
                                     if (verticesExtrapoled.size1()>2) bary(2) /= verticesExtrapoled.size2();
-                                    typename image_mesh_type::node_type theRefPtExtrap = locTool->result_analysis().begin()->second.begin()->template get<1>();
+                                    typename image_mesh_type::node_type theRefPtExtrap = locTool->resultAnalysis().begin()->second.begin()->template get<1>();
                                     std::vector<std::pair<size_type,size_type> > j_gdofs(domain_basis_type::nLocalDof);
                                     for ( uint16_type comp = 0;comp < image_basis_type::nComponents;++comp )
                                         {
@@ -3463,8 +3541,8 @@ OperatorInterpolation<DomainSpaceType,
                                             row.template get<0>() = theproc;
                                             row.template get<1>() = ig1 - imagedof->firstDofGlobalCluster(theproc);
                                             // for each localised points
-                                            auto itanal = locTool->result_analysis().begin();//  result_analysis_begin();
-                                            auto const itanal_end = locTool->result_analysis().end();//result_analysis_end();
+                                            auto itanal = locTool->resultAnalysis().begin();
+                                            auto const itanal_end = locTool->resultAnalysis().end();
                                             for ( ;itanal!=itanal_end;++itanal)
                                                 {
                                                     const auto itL=itanal->second.begin();
@@ -3513,15 +3591,17 @@ OperatorInterpolation<DomainSpaceType,
 
                     // localisation process
                     if (notUseOptLocTest) eltIdLocalised=invalid_v<size_type>;
-                    auto resLocalisation = locTool->run_analysis(ptsReal, eltIdLocalised, verticesOfEltSearched, std::bool_constant<interpolation_type::isConforming()>{});
-                    if (!resLocalisation.template get<0>()[0]) // not find
+                    auto resLocalisation = locTool->localize(
+                        ptsReal, eltIdLocalised, verticesOfEltSearched,
+                        std::bool_constant<interpolation_type::isConforming()>{} );
+                    if ( !resLocalisation.found[0] ) // not find
                         {
                             memory_localisationFail.push_back(boost::make_tuple(gdof,comp) );
                             dof_searchWithProc[gdof].insert(proc_id);
                         }
                     else // point found
                         {
-                            eltIdLocalised = resLocalisation.template get<1>();
+                            eltIdLocalised = resLocalisation.lastElementId;
                             if (extrapolation_mode)
                                 {
                                     auto const& eltExtrapoled = this->domainSpace()->mesh()->element(eltIdLocalised);
@@ -3537,7 +3617,7 @@ OperatorInterpolation<DomainSpaceType,
                                     /**/                              bary(0) /= verticesExtrapoled.size2();
                                     if (verticesExtrapoled.size1()>1) bary(1) /= verticesExtrapoled.size2();
                                     if (verticesExtrapoled.size1()>2) bary(2) /= verticesExtrapoled.size2();
-                                    typename image_mesh_type::node_type theRefPtExtrap = locTool->result_analysis().begin()->second.begin()->template get<1>();
+                                    typename image_mesh_type::node_type theRefPtExtrap = locTool->resultAnalysis().begin()->second.begin()->template get<1>();
                                     std::vector<std::pair<size_type,size_type> > j_gdofs(domain_basis_type::nLocalDof);
                                     for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
                                         {
@@ -3555,8 +3635,8 @@ OperatorInterpolation<DomainSpaceType,
                                     row.template get<0>() = theproc;
                                     row.template get<1>() = ig1 - imagedof->firstDofGlobalCluster(theproc);
                                     // for each localised points
-                                    auto itanal = locTool->result_analysis().begin();//  result_analysis_begin();
-                                    auto const itanal_end = locTool->result_analysis().end();//result_analysis_end();
+                                    auto itanal = locTool->resultAnalysis().begin();
+                                    auto const itanal_end = locTool->resultAnalysis().end();
                                     for ( ;itanal!=itanal_end;++itanal)
                                         {
                                             const auto itL=itanal->second.begin();
@@ -3844,10 +3924,13 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                                                 verticesOfEltSearched = eltRandom.vertices();
                                             // search process
                                             if (notUseOptLocTest) eltIdLocalised=invalid_v<size_type>;
-                                            auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,verticesOfEltSearched,std::bool_constant<interpolation_type::isConforming()>{});
-                                            if (resLocalisation.template get<0>()[0]) // is find
+                                            auto resLocalisation = locTool->localize(
+                                                ptsReal, eltIdLocalised,
+                                                verticesOfEltSearched,
+                                                std::bool_constant<interpolation_type::isConforming()>{} );
+                                            if ( resLocalisation.found[0] ) // is find
                                                 {
-                                                    eltIdLocalised = resLocalisation.template get<1>();
+                                                    eltIdLocalised = resLocalisation.lastElementId;
                                                     //-------------------------------------------------------------------------
                                                     if (!this->interpolationType().componentsAreSamePoint() )// all component
                                                     //-------------------------------------------------------------------------
@@ -4261,10 +4344,12 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
 
             // search process
             if (notUseOptLocTest) eltIdLocalised=invalid_v<size_type>;
-            auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,verticesOfEltSearched,std::bool_constant<interpolation_type::isConforming()>{});
-            if (resLocalisation.template get<0>()[0]) // is find
+            auto resLocalisation = locTool->localize(
+                ptsReal, eltIdLocalised, verticesOfEltSearched,
+                std::bool_constant<interpolation_type::isConforming()>{} );
+            if ( resLocalisation.found[0] ) // is find
             {
-                eltIdLocalised = resLocalisation.template get<1>();
+                eltIdLocalised = resLocalisation.lastElementId;
                 //-------------------------------------------------------------------------
                 if (!this->interpolationType().componentsAreSamePoint() )// all component
                     //-------------------------------------------------------------------------

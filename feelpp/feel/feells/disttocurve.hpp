@@ -580,10 +580,10 @@ private :
                 m(i,0) = t(i);
             auto loc =  M_spaceP0->mesh()->tool_localization();
             loc->setExtrapolation( false );
-            auto analysis = loc->run_analysis( m, invalid_v<size_type> );
-            auto found_points = analysis.template get<0>();
+            auto analysis = loc->localize( m, invalid_v<size_type> );
+            auto const& found_points = analysis.found;
             const bool found = found_points[0];
-            size_type elt = found ? analysis.template get<1>() : invalid_v<size_type>;
+            size_type elt = found ? analysis.lastElementId : invalid_v<size_type>;
             return elt;
         }
 

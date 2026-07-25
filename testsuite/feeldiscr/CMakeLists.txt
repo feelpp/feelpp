@@ -24,6 +24,7 @@ feelpp_add_test( geomap_representation )
 feelpp_add_test( geomap_frames )
 feelpp_add_test( geomap_inverse )
 feelpp_add_test( curved_geomap_mesh )
+feelpp_add_test( localization )
 
 feelpp_add_test( spacefunc )
 
