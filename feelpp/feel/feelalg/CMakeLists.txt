@@ -41,7 +41,8 @@ set( SRC
   graphcsr.cpp  solvereigen.cpp
   matrixeigendense.cpp backendeigen.cpp vectoreigen.cpp matrixeigensparse.cpp
   staticcondensation.cpp matrixcondensed.cpp vectorcondensed.cpp
-  solvernonlinear.cpp matrixblock.cpp vectorblock.cpp nullspace.cpp
+  solvernonlinear.cpp
+  matrixblock.cpp vectorblock.cpp nullspace.cpp
   ${FEELPP_PETSC_SRCS}
   ${FEELPP_SLEPC_SRCS}
   ${FEELPP_TRILINOS_SRCS}

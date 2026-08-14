@@ -1,21 +1,11 @@
-// $Id: numeric_vector.h,v 1.11 2005/02/22 22:17:34 jwpeterson Exp $
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-// The libMesh Finite Element Library.
-// Copyright (C) 2002-2005  Benjamin S. Kirk, John W. Peterson
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3.0 of the License, or (at your option) any later version.
+    SPDX-FileCopyrightText: 2026 University of Strasbourg
 
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Lesser General Public License for more details.
-
-// You should have received a copy of the GNU Lesser General Public
-// License along with this library; if not, write to the Free Software
-// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    SPDX-License-Identifier: LGPL-3.0-or-later
+*/
 
 #ifndef __numeric_vector_h__
 #define __numeric_vector_h__
@@ -382,7 +372,7 @@ public:
      */
     virtual size_type lastLocalIndex() const
     {
-        return M_map->lastDof();
+        return this->firstLocalIndex() + this->localSize();
     }
 
     virtual bool localIndexIsGhost(size_type localDof) const
