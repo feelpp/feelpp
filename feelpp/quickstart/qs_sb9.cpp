@@ -64,10 +64,16 @@ makeOptions()
           "scale applied to the zeta*Bpz pinching term; 1 enables the full SB9 pinching formulation" )
         ( "shell-shear-factor", po::value<double>()->default_value( 1.25 ),
           "Hallquist-like transverse shear shape factor coefficient" )
-        ( "shell-shear-stab", po::value<double>()->default_value( 0.25 ),
+        ( "shell-shear-stab", po::value<double>()->default_value( 0.25 ),   // 1
           "scale applied to the Hallquist Bc1/Bc2 stabilization block" )
-        ( "shell-bs-stab", po::value<double>()->default_value( 1.0 ),
+        ( "shell-bs-stab", po::value<double>()->default_value( 1.0 ),  // ?
           "scale applied to the additional SB9 Bs1..Bs4 stabilization block" )
+        ( "shell-membrane-stab", po::value<double>()->default_value( 1.0 ),
+          "membrane stablization coefficient applied to the stabilization matrix" )
+        ( "shell-bending-stab", po::value<double>()->default_value( 1.0 ),
+          "bending stablization coefficient applied to the stabilization matrix" )
+        ( "shell-pinching-stab", po::value<double>()->default_value( 1.0 ),
+          "pinching applied to the stabilization matrix" )
         ( "monolithic", po::value<bool>()->default_value( false ),
           "use the monolithic mixed solve instead of the default SB9 static condensation" )
         ( "check-reference", po::value<bool>()->default_value( true ),
@@ -266,6 +272,9 @@ main( int argc, char** argv )
         double const shellShearFactor = doption( "shell-shear-factor" );
         double const shellShearStab = doption( "shell-shear-stab" );
         double const shellBsStab = doption( "shell-bs-stab" );
+        double const shellMembraneStab = doption( "shell-membrane-stab" );
+        double const shellBendingStab = doption( "shell-bending-stab" );
+        double const shellPinchingStab = doption( "shell-pinching-stab" );
         bool const useStaticCondensation = !boption( "monolithic" );
         bool const solved = !boption( "no-solve" );
 
@@ -320,18 +329,20 @@ main( int argc, char** argv )
         auto alphaTrial = sb9W9( alpha, cst( alphaScale ) );
         auto alphaTest = sb9W9( beta, cst( alphaScale ) );
 
+        double coef = 1/std::sqrt(2);
         auto epsShellTrialMandel = vec( component<0, 0>( membraneTrial ),
-                                        component<1, 0>( membraneTrial ),
-                                        component<2, 0>( shearTrial ),
+                                        cst( coef ) * component<1, 0>( membraneTrial ),
+                                        cst( coef ) * component<2, 0>( shearTrial ),
                                         component<3, 0>( membraneTrial ),
-                                        component<4, 0>( shearTrial ),
+                                        cst( coef ) * component<4, 0>( shearTrial ),
                                         component<5, 0>( pinchingTrial ) );
         auto epsShellTestMandel = vec( component<0, 0>( membraneTest ),
-                                       component<1, 0>( membraneTest ),
-                                       component<2, 0>( shearTest ),
+                                       cst( coef ) * component<1, 0>( membraneTest ),
+                                       cst( coef ) * component<2, 0>( shearTest ),
                                        component<3, 0>( membraneTest ),
-                                       component<4, 0>( shearTest ),
+                                       cst( coef ) * component<4, 0>( shearTest ),
                                        component<5, 0>( pinchingTest ) );
+
 
         auto sb9Quad = sb9ThroughThicknessLobatto5();
 
@@ -385,15 +396,14 @@ main( int argc, char** argv )
             auto bs4u = sb9Bs4( trialField );
             auto bs4v = sb9Bs4( testField );
 
-            auto shearPart = cst( shellShearStab * mu * 5.0 / 18.0 ) *
+            auto shearPart = cst( 2.0 * 5.0/18.0 * mu ) *
                              ( inner( sb9Bc1( trialField ), sb9Bc1( testField ) ) +
                                inner( sb9Bc2( trialField ), sb9Bc2( testField ) ) );
 
-            auto bsPart = cst( 1.0 / 3.0 ) * dz * ( c0( bs1u, bs1v ) + c0( bs2u, bs2v ) ) +
-                          cst( 1.0 / 3.0 ) * ( dx * c0( bs3u, bs3v ) + dy * c1( bs3u, bs3v ) ) +
-                          cst( 1.0 / 9.0 ) * ( cst( 1.0e-4 ) *
-                                               ( dx * c0( bs4u, bs4v ) + dy * c1( bs4u, bs4v ) ) +
-                                               dz * c2( bs4u, bs4v ) );
+            auto bsPart = cst( 1.0 / 3.0 ) * shellPinchingStab * dz * ( c0( bs1u, bs1v ) + c0( bs2u, bs2v ) ) +
+                          cst( 1.0 / 3.0 ) * shellMembraneStab * ( dx * c0( bs3u, bs3v ) + dy * c1( bs3u, bs3v ) ) +
+                          cst( 1.0 / 9.0 ) * ( ( shellBendingStab * dx * c0( bs4u, bs4v ) + shellBendingStab * dy * c1( bs4u, bs4v ) ) +
+                                                 shellPinchingStab * dz * c2( bs4u, bs4v ) );
 
             return shearPart + bsPart;
         };
@@ -505,6 +515,44 @@ main( int argc, char** argv )
         for ( auto const& constraint : cfg.pointConstraints )
             for ( int component = 0; component < 3; ++component )
                 applyPointConstraintComponent( constraint, component );
+
+        auto applyFaceConstraintComponent = [&]( PointConstraintConfig const& constraint, int component )
+        {
+            if ( !constraint.components[component] )
+                return;
+
+            auto value = expr( constraint.values[component], "face_constraint" );
+            switch ( component )
+            {
+            case 0:
+                a.row( 0_c ) += on( _range=markedfaces( mesh, constraint.marker ),
+                                    _rhs=l( 0_c ),
+                                    _element=uBcX,
+                                    _expr=value,
+                                    _type="elimination" );
+                break;
+            case 1:
+                a.row( 0_c ) += on( _range=markedfaces( mesh, constraint.marker ),
+                                    _rhs=l( 0_c ),
+                                    _element=uBcY,
+                                    _expr=value,
+                                    _type="elimination" );
+                break;
+            case 2:
+                a.row( 0_c ) += on( _range=markedfaces( mesh, constraint.marker ),
+                                    _rhs=l( 0_c ),
+                                    _element=uBcZ,
+                                    _expr=value,
+                                    _type="elimination" );
+                break;
+            default:
+                throw std::invalid_argument( "invalid face constraint component" );
+            }
+        };
+        for ( auto const& constraint : cfg.faceConstraints )
+            for ( int component = 0; component < 3; ++component )
+                applyFaceConstraintComponent( constraint, component );
+
 
         if ( solved )
         {
