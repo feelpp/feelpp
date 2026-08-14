@@ -1,38 +1,77 @@
 {
   "name": "circular-plate",
-  "description": "Clamped circular plate inspired case, approximated with a five-block O-grid hexa mesh.",
+  "description": "Circular clamped plate case from Implementation_SB9g25.pdf page 28: impose clamping on the circular edge, symmetry contraints on the straight edges and uniform pressure normal to the plane p = 0.01172.",
   "gmsh": {
-    "filename": "circular_plate.geo"
+    "filename": "circular_plate.msh"
   },
   "material": {
-    "E": 1000000.0,
+    "E": 200000,
     "nu": 0.3
-  },
+  },  
   "boundaryConditions": {
     "clampMarkers": [
-      "Outer"
+      "clamping"
+    ],
+    "faceConstraints": [
+      {
+        "marker": "symmetry_x",
+        "components": [
+          false,
+          true,
+          false
+        ],
+        "value": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "marker": "symmetry_y",
+        "components": [
+          true,
+          false,
+          false
+        ],
+        "value": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
     ]
   },
   "loads": {
     "bodyForce": "{0,0,0}",
     "pressures": [
       {
-        "marker": "ZPlus",
-        "value": 1.0
+        "marker": "pressure",
+        "value": "-0.01172"
       }
     ]
   },
-  "probe": {
-    "point": [
-      0.0,
-      0.0,
-      0.0
-    ],
-    "direction": [
-      0.0,
-      0.0,
-      1.0
-    ],
-    "label": "center z displacement"
+  "checks": {
+    "target": "sb9g25",
+    "items": [
+      {
+        "type": "probe",
+        "name": "central node z displacement",
+        "point": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "direction": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "reference": 1.0,
+        "description": "displacement at the theoretical central node as given by Mindlin and Kirchhoff's theory",
+        "tolerance": {
+          "absolute": 1e-2
+        }
+      }
+    ]
   }
 }
