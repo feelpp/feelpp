@@ -15,78 +15,61 @@
   },
   "loads": {
     "bodyForce": "{0,0,0}",
-    "tractions": [
+    "pointLoads": [
       {
-        "marker": "YPlus",
-        "expr": "{6*z,0,-6*(x-0.5)}:x:y:z"
+        "marker": "P3",
+        "value": [
+          0.0,
+          0.25,
+          0.0
+        ]
+      },
+      {
+        "marker": "P4",
+        "value": [
+          0.0,
+          0.25,
+          0.0
+        ]
+      },
+      {
+        "marker": "P7",
+        "value": [
+          0.0,
+          -0.25,
+          0.0
+        ]
+      },
+      {
+        "marker": "P8",
+        "value": [
+          0.0,
+          -0.25,
+          0.0
+        ]
       }
     ]
   },
-  "probe": {
-    "point": [
-      1.0,
-      1.0,
-      0.5
-    ],
-    "direction": [
-      0.0,
-      0.0,
-      1.0
-    ],
-    "label": "diagnostic z displacement"
-  },
   "checks": {
-    "target": "hexa8",
+    "target": "sb9g25",
     "items": [
       {
-        "type": "elasticity-point-fields",
-        "name": "validation-pdf-page-10-center",
+        "type": "probe",
+        "name": "node 3 z displacement",
         "point": [
-          0.5,
-          0.5,
+          0.0,
+          1.0,
           0.0
         ],
-        "references": {
-          "hexa8": {
-            "epsilon": [
-              1.03e-18,
-              -1.388e-17,
-              1.388e-17,
-              -6.94e-18,
-              6.94e-18,
-              5.551e-17
-            ],
-            "sigma": [
-              1.03e-17,
-              -1.388e-16,
-              1.388e-16,
-              -3.47e-17,
-              3.47e-17,
-              2.776e-16
-            ]
-          },
-          "sb9g25": {
-            "epsilon": [
-              -1.5e-19,
-              -1.388e-17,
-              1.388e-17,
-              0.0,
-              0.0,
-              0.0
-            ],
-            "sigma": [
-              -1.5e-18,
-              -1.388e-16,
-              1.388e-16,
-              0.0,
-              0.0,
-              0.0
-            ]
-          }
-        },
-        "description": "PDF Epsilon/Sigma values are displayed with MATLAB scale factors; component order xx,yy,zz,xy,xz,yz.",
+        "direction": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "reference": 0.3,
+        "description": "Node 3 z displacement calculated with Matlab code",
         "tolerance": {
-          "absolute": 0.0002
+          "absolute": 1e-15
         }
       }
     ]
