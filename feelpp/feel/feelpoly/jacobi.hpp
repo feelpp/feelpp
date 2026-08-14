@@ -4,7 +4,7 @@
 
     SPDX-FileCopyrightText: 2005-2006 EPFL
     SPDX-FileCopyrightText: 2006-2012 Joseph Fourier University
-    SPDX-FileCopyrightText: 2026 University of Strasbourg
+    SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
 
     SPDX-License-Identifier: LGPL-3.0-or-later
 */
