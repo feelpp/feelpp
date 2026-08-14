@@ -2,7 +2,7 @@
 
     SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
-    SPDX-FileCopyrightText: 2026 University of Strasbourg
+    SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
 
     SPDX-License-Identifier: LGPL-3.0-or-later
 */
