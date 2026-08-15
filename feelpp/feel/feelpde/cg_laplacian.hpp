@@ -5,7 +5,7 @@
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  Date: 08 Jan 2020
 
- Copyright (C) 2020 Feel++ Consortium
+ Copyright (C) 2020-2026 University of Strasbourg
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -160,10 +160,14 @@ cgLaplacian( Ts && ... ts  )
     // end::forms[]
 
     // tag::solve[]
-    tic();
     //! solve the linear system, find u s.t. a(u,v)=l(v) for all v
     if ( dosolve )
+    {
+        // This phase includes preconditioner setup and Krylov iterations.
+        tic();
         a.solve( _rhs = l, _solution = u );
+        toc( "a.solve" );
+    }
     // end::solve[]
     return dosolve ? std::optional{ u } : std::nullopt;
 }

@@ -55,6 +55,8 @@ std::ostream& operator<<( std::ostream& os, DirichletStrategyCase const& strateg
 auto const monolithicDirichletStrategies = std::array{
     DirichletStrategyCase{ .label = "elimination", .type = "elimination", .tolerance = 1e-10 },
     DirichletStrategyCase{ .label = "elimination_symmetric", .type = "elimination_symmetric", .tolerance = 1e-10 },
+    DirichletStrategyCase{ .label = "elimination_keep_diagonal", .type = "elimination_keep_diagonal", .tolerance = 1e-10 },
+    DirichletStrategyCase{ .label = "elimination_symmetric_keep_diagonal", .type = "elimination_symmetric_keep_diagonal", .tolerance = 1e-10 },
     DirichletStrategyCase{ .label = "penalisation", .type = "penalisation", .tolerance = 1e-8 }
 };
 
@@ -65,11 +67,13 @@ struct DeferredDirichletMaterializationCounters
 {
     int baseCloseCalls = 0;
     int zeroRowsCalls = 0;
+    int cloneCalls = 0;
 
     void reset() noexcept
     {
         baseCloseCalls = 0;
         zeroRowsCalls = 0;
+        cloneCalls = 0;
     }
 };
 
@@ -99,6 +103,7 @@ public:
 
     clone_ptrtype clone() const override
     {
+        ++M_counters->cloneCalls;
         return std::make_shared<CountingMatrixSparse>( M_inner->clone(), M_counters, false );
     }
 
@@ -1280,6 +1285,7 @@ BOOST_DATA_TEST_CASE( test_row_dirichlet_manual_apply_blockform,
     auto a = blockform2( ps, solve::strategy::monolithic, backend() );
     auto l = blockform1( ps, solve::strategy::monolithic, backend() );
     a.deferDirichlet();
+    a.setDirichletInPlace( false );
 
     a( 0_c, 0_c ) += integrate( _range=elements( mesh ),
                                 _expr=inner( gradt( u ), grad( v ) ) + idt( u ) * id( v ) );
@@ -1452,6 +1458,7 @@ BOOST_AUTO_TEST_CASE( test_row_dirichlet_call_count_target_blockform_monolithic 
     BOOST_CHECK( !a.hasMaterializedConstrainedOperator() );
 
     counters->reset();
+    auto rhsSnapshot = vf::cloneVectorWithValues( l.vectorPtr()->getVector() );
     auto constrainedMatrix = a.activeMatrixPtr( l );
     auto constrainedVector = a.activeVectorPtr( l );
     auto constrainedMatrixAgain = a.activeMatrixPtr( l );
@@ -1460,11 +1467,19 @@ BOOST_AUTO_TEST_CASE( test_row_dirichlet_call_count_target_blockform_monolithic 
     BOOST_CHECK( constrainedMatrix );
     BOOST_CHECK( constrainedVector );
     BOOST_CHECK( a.hasMaterializedConstrainedOperator() );
-    BOOST_CHECK( constrainedMatrix != baseMatrix );
+    BOOST_CHECK( constrainedMatrix == baseMatrix );
+    BOOST_CHECK( !a.hasUnconstrainedMatrix() );
     BOOST_CHECK( dynamic_cast<CountingMatrixSparse<double>*>( constrainedMatrix.get() ) != nullptr );
-    BOOST_CHECK_EQUAL( counters->baseCloseCalls, 1 );
+    BOOST_CHECK_EQUAL( counters->baseCloseCalls, 2 );
+    BOOST_CHECK_EQUAL( counters->cloneCalls, 0 );
+    BOOST_CHECK_EQUAL( counters->zeroRowsCalls, 1 );
     BOOST_CHECK_EQUAL( constrainedMatrix.get(), constrainedMatrixAgain.get() );
     BOOST_CHECK_EQUAL( constrainedVector.get(), constrainedVectorAgain.get() );
+    auto rhsDelta = vf::cloneVectorWithValues( l.vectorPtr()->getVector() );
+    rhsDelta->add( -1.0, *rhsSnapshot );
+    if ( !rhsDelta->closed() )
+        rhsDelta->close();
+    BOOST_CHECK_SMALL( rhsDelta->linftyNorm(), 1e-14 );
 }
 
 BOOST_AUTO_TEST_CASE( test_row_dirichlet_single_apply_zero_rows_count_blockform_monolithic )
