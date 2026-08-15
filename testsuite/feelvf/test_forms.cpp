@@ -59,6 +59,8 @@ std::ostream& operator<<( std::ostream& os, DeferredDirichletStrategyCase const&
 auto const deferred_dirichlet_strategies = std::array{
     DeferredDirichletStrategyCase{ .label = "elimination", .type = "elimination", .tolerance = 1e-10 },
     DeferredDirichletStrategyCase{ .label = "elimination_symmetric", .type = "elimination_symmetric", .tolerance = 1e-10 },
+    DeferredDirichletStrategyCase{ .label = "elimination_keep_diagonal", .type = "elimination_keep_diagonal", .tolerance = 1e-10 },
+    DeferredDirichletStrategyCase{ .label = "elimination_symmetric_keep_diagonal", .type = "elimination_symmetric_keep_diagonal", .tolerance = 1e-10 },
     DeferredDirichletStrategyCase{ .label = "penalisation", .type = "penalisation", .tolerance = 1e-8 }
 };
 
@@ -69,11 +71,13 @@ struct DeferredDirichletMaterializationCounters
 {
     int baseCloseCalls = 0;
     int zeroRowsCalls = 0;
+    int cloneCalls = 0;
 
     void reset() noexcept
     {
         baseCloseCalls = 0;
         zeroRowsCalls = 0;
+        cloneCalls = 0;
     }
 };
 
@@ -103,6 +107,7 @@ public:
 
     clone_ptrtype clone() const override
     {
+        ++M_counters->cloneCalls;
         return std::make_shared<CountingMatrixSparse>( M_inner->clone(), M_counters, false );
     }
 
@@ -403,6 +408,7 @@ void runManualApplyDeferredDirichletOnForm2( DeferredDirichletStrategyCase const
     withScalarForm2System<Dim>( [&]( auto const& mesh, auto const& Vh, auto& u, auto&, auto& a, auto& l )
     {
         enableDeferredDirichlet( a );
+        a.setDirichletInPlace( false );
         applyBoundaryPair( a, l, mesh, u, strategy, 1.0 );
 
         BOOST_CHECK( a.hasPendingDirichletConstraints() );
@@ -539,6 +545,8 @@ void runDeferredDirichletCallCountTargetOnForm2()
 
     BOOST_CHECK( !a.hasMaterializedConstrainedOperator() );
     counters->reset();
+    auto const baseMatrix = a.baseMatrixPtr();
+    auto rhsSnapshot = vf::cloneVectorWithValues( l.vectorPtr() );
     auto constrainedMatrix = a.activeMatrixPtr( l );
     auto constrainedVector = a.activeVectorPtr( l );
     auto constrainedMatrixAgain = a.activeMatrixPtr( l );
@@ -547,11 +555,93 @@ void runDeferredDirichletCallCountTargetOnForm2()
     BOOST_CHECK( constrainedMatrix );
     BOOST_CHECK( constrainedVector );
     BOOST_CHECK( a.hasMaterializedConstrainedOperator() );
-    BOOST_CHECK( constrainedMatrix != a.baseMatrixPtr() );
+    BOOST_CHECK( constrainedMatrix == baseMatrix );
+    BOOST_CHECK( !a.hasUnconstrainedMatrix() );
     BOOST_CHECK( dynamic_cast<CountingMatrixSparse<double>*>( constrainedMatrix.get() ) != nullptr );
     BOOST_CHECK_EQUAL( counters->baseCloseCalls, 1 );
+    BOOST_CHECK_EQUAL( counters->cloneCalls, 0 );
+    BOOST_CHECK_EQUAL( counters->zeroRowsCalls, 1 );
     BOOST_CHECK_EQUAL( constrainedMatrix.get(), constrainedMatrixAgain.get() );
     BOOST_CHECK_EQUAL( constrainedVector.get(), constrainedVectorAgain.get() );
+    auto rhsDelta = vf::cloneVectorWithValues( l.vectorPtr() );
+    rhsDelta->add( -1.0, *rhsSnapshot );
+    if ( !rhsDelta->closed() )
+        rhsDelta->close();
+    BOOST_CHECK_SMALL( rhsDelta->linftyNorm(), 1e-14 );
+}
+
+template<int Dim>
+void runDeferredDirichletDistinctRhsAndResetOnForm2()
+{
+    withScalarForm2System<Dim>( [&]( auto const& mesh, auto const& Vh, auto& u, auto& v, auto& a, auto& l )
+    {
+        enableDeferredDirichlet( a );
+        applyBoundaryPair( a, l, mesh, u, elimination_strategy, 1.0 );
+
+        auto firstSolution = Vh->element();
+        a.solve( _solution=firstSolution, _rhs=l );
+        checkBoundaryPair( mesh, firstSolution, 1.0, elimination_strategy.tolerance );
+
+        auto secondRhs = form1( _test=Vh );
+        secondRhs += integrate( _range=elements( mesh ), _expr=cst( 4.0 ) * id( v ) );
+        auto secondSnapshot = vf::cloneVectorWithValues( secondRhs.vectorPtr() );
+        auto secondSolution = Vh->element();
+        a.solve( _solution=secondSolution, _rhs=secondRhs );
+        checkBoundaryPair( mesh, secondSolution, 1.0, elimination_strategy.tolerance );
+        auto secondDelta = vf::cloneVectorWithValues( secondRhs.vectorPtr() );
+        secondDelta->add( -1.0, *secondSnapshot );
+        if ( !secondDelta->closed() )
+            secondDelta->close();
+        BOOST_CHECK_SMALL( secondDelta->linftyNorm(), 1e-14 );
+
+        a.zero();
+        l.zero();
+        assembleScalarForm2System( mesh, u, v, a, l );
+        applyBoundaryPair( a, l, mesh, u, elimination_strategy, 2.0 );
+        BOOST_CHECK( a.hasUnconstrainedMatrix() );
+        auto resetSolution = Vh->element();
+        a.solve( _solution=resetSolution, _rhs=l );
+        checkBoundaryPair( mesh, resetSolution, 2.0, elimination_strategy.tolerance );
+    } );
+}
+
+template<int Dim>
+void runDeferredDirichletCopiedFormState()
+{
+    withScalarForm2System<Dim>( [&]( auto const& mesh, auto const&, auto& u, auto&, auto& a, auto& l )
+    {
+        enableDeferredDirichlet( a );
+        applyBoundaryPair( a, l, mesh, u, elimination_strategy, 1.0 );
+        auto copy = a;
+        auto const originalBaseMatrix = a.baseMatrixPtr();
+        auto const copiedBaseMatrix = copy.baseMatrixPtr();
+        BOOST_CHECK_NE( copiedBaseMatrix.get(), originalBaseMatrix.get() );
+
+        auto constrainedMatrix = copy.constrainedMatrixPtr( l );
+        BOOST_CHECK_EQUAL( constrainedMatrix.get(), copiedBaseMatrix.get() );
+        BOOST_CHECK( !a.hasMaterializedConstrainedOperator() );
+        BOOST_CHECK( copy.hasMaterializedConstrainedOperator() );
+        BOOST_CHECK( a.hasUnconstrainedMatrix() );
+        BOOST_CHECK( !copy.hasUnconstrainedMatrix() );
+        BOOST_CHECK( a.hasPendingDirichletConstraints() );
+        BOOST_CHECK( !copy.hasPendingDirichletConstraints() );
+    } );
+}
+
+template<int Dim>
+void runDeferredDirichletOutOfPlaceNamedFlag()
+{
+    withScalarForm2System<Dim>( [&]( auto const& mesh, auto const& Vh, auto& u, auto&, auto& a, auto& l )
+    {
+        enableDeferredDirichlet( a );
+        applyBoundaryPair( a, l, mesh, u, elimination_strategy, 1.0 );
+        auto const baseMatrix = a.baseMatrixPtr();
+        auto solution = Vh->element();
+        a.solve( _solution=solution, _rhs=l, _dirichlet_inplace=false );
+        BOOST_CHECK( a.hasUnconstrainedMatrix() );
+        BOOST_CHECK_NE( a.activeMatrixPtr( l ).get(), baseMatrix.get() );
+        checkBoundaryPair( mesh, solution, 1.0, elimination_strategy.tolerance );
+    } );
 }
 
 template<int Dim>
@@ -1014,6 +1104,39 @@ BOOST_DATA_TEST_CASE( test_deferred_dirichlet_single_apply_zero_rows_count,
                         [&]<int Dim>()
                         {
                             runDeferredDirichletSingleApplyZeroRowsCount<Dim>();
+                        } );
+}
+
+BOOST_DATA_TEST_CASE( test_deferred_dirichlet_distinct_rhs_and_reset_on_form2,
+                      bdata::make( form2_test_dims ),
+                      dim )
+{
+    withScalarForm2Dim( dim,
+                        [&]<int Dim>()
+                        {
+                            runDeferredDirichletDistinctRhsAndResetOnForm2<Dim>();
+                        } );
+}
+
+BOOST_DATA_TEST_CASE( test_deferred_dirichlet_copied_form_state,
+                      bdata::make( form2_test_dims ),
+                      dim )
+{
+    withScalarForm2Dim( dim,
+                        [&]<int Dim>()
+                        {
+                            runDeferredDirichletCopiedFormState<Dim>();
+                        } );
+}
+
+BOOST_DATA_TEST_CASE( test_deferred_dirichlet_out_of_place_named_flag,
+                      bdata::make( form2_test_dims ),
+                      dim )
+{
+    withScalarForm2Dim( dim,
+                        [&]<int Dim>()
+                        {
+                            runDeferredDirichletOutOfPlaceNamedFlag<Dim>();
                         } );
 }
 
