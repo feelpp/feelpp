@@ -37,13 +37,13 @@ spack:
             cxx: /usr/bin/clang++
     mpi:
       require:
-      - openmpi@:4.1 fabrics=cma,ucx
+      - openmpi@:4.1 fabrics=cma,ucx schedulers=slurm
     mesa:
       require:
       - ~llvm
 
   specs:
-  - "openmpi fabrics=cma,ucx ^ucx~rocm+cma+thread_multiple"
+  - "openmpi fabrics=cma,ucx schedulers=slurm ^ucx~rocm+cma+thread_multiple+verbs+rc+ud+rdmacm+mlx5_dv"
   - "cmake"
   - "ninja"
   - "bison"
