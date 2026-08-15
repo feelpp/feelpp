@@ -175,7 +175,6 @@ BOOST_AUTO_TEST_CASE( test_hpddm_petsc_pc_type )
     ierr = PetscObjectGetReference( reinterpret_cast<PetscObject>( pp->hpddmAuxiliaryIS().get() ), &auxiliaryIsRefAfterClear );
     CHKERRABORT( Environment::worldComm().globalComm(), ierr );
     BOOST_CHECK_LT( auxiliaryIsRefAfterClear, auxiliaryIsRefAfterInit );
-
     p->init();
     pc = pp->pc();
     BOOST_REQUIRE( pc );
@@ -199,23 +198,29 @@ BOOST_AUTO_TEST_CASE( test_hpddm_auxiliary_attachment_api )
     auto A = b->newMatrix( _trial=Xh, _test=Xh );
     A->close();
 
+    auto Aaux = b->newMatrix( _trial=Xh, _test=Xh );
+    Aaux->close();
+    Preconditioner<double>::auxiliary_sparse_matrix_map_type auxiliaryMatrices{
+        { "hpddm-auxiliary-matrix", Aaux }
+    };
+
     auto p = Feel::preconditioner( _prefix="test-hpddm-aux",
                                    _matrix=A,
+                                   _auxiliary_matrices=auxiliaryMatrices,
                                    _pc=HPDDM_PRECOND,
                                    _backend=b,
                                    _worldcomm=Environment::worldCommPtr() );
     auto pp = toPETSc( p );
     BOOST_REQUIRE( pp );
 
-    auto Aaux = b->newMatrix( _trial=Xh, _test=Xh );
-    Aaux->close();
+    BOOST_CHECK_EQUAL( pp->hpddmAuxiliaryMatrix().get(), Aaux.get() );
 
     PetscInt index = 0;
     IS is = nullptr;
     int ierr = ISCreateGeneral( Environment::worldComm().globalComm(), 1, &index, PETSC_COPY_VALUES, &is );
     CHKERRABORT( Environment::worldComm().globalComm(), ierr );
 
-    pp->attachHpddmAuxiliaryData( is, Aaux );
+    pp->attachHpddmAuxiliaryIS( is );
 
     BOOST_CHECK( pp->hasHpddmAuxiliaryMatrix() );
     BOOST_CHECK( pp->hasHpddmAuxiliaryIS() );

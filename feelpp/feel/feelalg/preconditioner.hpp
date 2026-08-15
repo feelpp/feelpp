@@ -89,6 +89,7 @@ public:
 
     typedef std::shared_ptr<MatrixSparse<T> > sparse_matrix_ptrtype;
     typedef std::shared_ptr<Vector<T,size_type> > vector_ptrtype;
+    using auxiliary_sparse_matrix_map_type = std::map<std::string,sparse_matrix_ptrtype>;
 
     typedef std::shared_ptr<OperatorPCDBase<T> > operator_pcdbase_ptrtype;
     typedef std::shared_ptr<OperatorPMMBase<T> > operator_pmmbase_ptrtype;
@@ -266,6 +267,10 @@ public:
         CHECK( this->hasAuxiliarySparseMatrix( key ) ) << " auxiliary sparse matrix not given for this key : " << key ;
         return M_auxiliarySparseMatrix.find( key )->second;
     }
+    auxiliary_sparse_matrix_map_type const& auxiliarySparseMatrices() const
+    {
+        return M_auxiliarySparseMatrix;
+    }
 
     bool hasInHousePreconditioners( std::string const& key ) const { return M_inHousePreconditioners.find( key ) != M_inHousePreconditioners.end(); }
     preconditioner_ptrtype const& inHousePreconditioners( std::string const& key ) const
@@ -351,6 +356,19 @@ public:
         M_auxiliarySparseMatrix[key] = mat;
     }
 
+    /**
+     * \brief Attach explicitly assembled auxiliary operators by purpose-specific key.
+     *
+     * Auxiliary operators are never inferred from or constructed by restricting
+     * the system matrix. Each entry must therefore satisfy the contract of the
+     * preconditioner that consumes its key. This permits preconditioners such as
+     * AMS and HPDDM to receive multiple independently assembled operators.
+     */
+    void attachAuxiliarySparseMatrices( auxiliary_sparse_matrix_map_type const& matrices )
+    {
+        M_auxiliarySparseMatrix.insert( matrices.begin(), matrices.end() );
+    }
+
     void attachInHousePreconditioners( std::string const& key, preconditioner_ptrtype const& pc )
     {
         M_inHousePreconditioners[key] = pc;
@@ -419,7 +437,7 @@ protected:
      */
     std::map<std::string, std::map<std::set<int>,std::shared_ptr<NullSpace<value_type> > > >  M_nearNullSpace;
 
-    std::map<std::string,sparse_matrix_ptrtype> M_auxiliarySparseMatrix;
+    auxiliary_sparse_matrix_map_type M_auxiliarySparseMatrix;
     std::map<std::string,vector_ptrtype> M_auxiliaryVector;
 
     std::map<std::string,preconditioner_ptrtype> M_inHousePreconditioners;
@@ -473,6 +491,8 @@ std::shared_ptr<Preconditioner<double>> preconditioner( Ts && ... v )
     auto && backend = args.get(_backend );
     std::string const& prefix = args.get_else( _prefix, "" );
     d_sparse_matrix_ptrtype matrix = args.get_else( _matrix, d_sparse_matrix_ptrtype{} );
+    auto auxiliaryMatrices = args.get_else( _auxiliary_matrices,
+                                            typename Preconditioner<double>::auxiliary_sparse_matrix_map_type{} );
     MatSolverPackageType pcfactormatsolverpackage = args.get_else( _pcfactormatsolverpackage, MATSOLVER_DEFAULT );
     bool rebuild = args.get_else( _rebuild, false );
 
@@ -485,6 +505,7 @@ std::shared_ptr<Preconditioner<double>> preconditioner( Ts && ... v )
     {
         p->setMatrix( matrix );
     }
+    p->attachAuxiliarySparseMatrices( auxiliaryMatrices );
     return p;
 }
 
