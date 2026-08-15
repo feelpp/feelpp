@@ -46,6 +46,20 @@ enum class DeferredDirichletPolicy : std::uint8_t
     immediate = 2
 };
 
+/**
+ * \brief Storage policy used when deferred Dirichlet constraints are materialized.
+ *
+ * `in_place` applies the constraints directly to the assembled operator and
+ * retains only the vector contribution required to constrain subsequent right
+ * hand sides. `preserve_unconstrained` leaves the assembled operator untouched
+ * and materializes a separate constrained matrix.
+ */
+enum class DeferredDirichletMaterialization : std::uint8_t
+{
+    in_place = 0,
+    preserve_unconstrained = 1
+};
+
 constexpr bool usesDeferredDirichlet( DeferredDirichletPolicy policy ) noexcept
 {
     return policy != DeferredDirichletPolicy::immediate;
@@ -328,6 +342,43 @@ void copyVectorValues( VectorPtrType const& destination,
     destination->add( typename std::decay_t<decltype( *destination )>::value_type( 1 ), *source );
     if ( !destination->closed() )
         destination->close();
+}
+
+/**
+ * \brief Return the process-local union of constrained degrees of freedom.
+ *
+ * The returned indices use the same process numbering as the deferred entries
+ * and can therefore be passed to `Vector::set()` and `MatrixSparse::zeroRows()`.
+ */
+template<typename EntryRange>
+std::vector<int> deferredDirichletDofs( EntryRange const& entries )
+{
+    std::set<int> dofs;
+    for ( auto const& entry : entries )
+        dofs.insert( entry.dofs.begin(), entry.dofs.end() );
+    return { dofs.begin(), dofs.end() };
+}
+
+/**
+ * \brief Build a constrained right hand side from reusable in-place data.
+ *
+ * `rhsContribution` contains `-A_FD g_D` on free rows and the prescribed
+ * diagonal contribution on constrained rows. The source right hand side is
+ * never modified.
+ */
+template<typename VectorPtrType>
+VectorPtrType makeInPlaceConstrainedVector( VectorPtrType const& rhs,
+                                            VectorPtrType const& rhsContribution,
+                                            std::vector<int> const& constrainedDofs )
+{
+    auto constrained = cloneVectorWithValues( rhs );
+    constrained->add( typename std::decay_t<decltype( *constrained )>::value_type( 1 ),
+                      *rhsContribution );
+    for ( int dof : constrainedDofs )
+        constrained->set( dof, rhsContribution->operator()( dof ) );
+    if ( !constrained->closed() )
+        constrained->close();
+    return constrained;
 }
 
 template<typename VectorPtrType, typename CandidateMapType>
