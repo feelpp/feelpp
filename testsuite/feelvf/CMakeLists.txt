@@ -1,6 +1,11 @@
 set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testvf")
 
-feelpp_add_test( expr CFG test_expr.cfg PYTHON test_expr.py )
+feelpp_add_test(
+  expr
+  CFG test_expr.cfg
+  PYTHON test_expr.py
+  CLI "--repository.prefix=${CMAKE_CURRENT_BINARY_DIR}/test_expr_repository_np_$np"
+)
 
 feelpp_add_test( ginac )
 feelpp_add_test( ginac_jit_cache NO_MPI_TEST TIMEOUT 180 )
