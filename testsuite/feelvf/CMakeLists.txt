@@ -9,6 +9,7 @@ feelpp_add_test(
 
 feelpp_add_test( ginac )
 feelpp_add_test( ginac_jit_cache NO_MPI_TEST TIMEOUT 180 )
+feelpp_add_test( ginac_jit_mpi TIMEOUT 180 )
 feelpp_add_test( inner CFG test_inner.cfg )
 feelpp_add_test( vf_operators )
 feelpp_add_test( laplacianv CFG test_laplacianv.cfg )
@@ -38,4 +39,5 @@ feelpp_add_test( divergence )
 feelpp_add_test(productspace_dofs)
 feelpp_add_test( expr_evaluate )
 feelpp_add_test( symbolic_diff )
+feelpp_add_test( symbolic_ad_expr )
 feelpp_add_test( functionexpr )

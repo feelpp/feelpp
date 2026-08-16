@@ -57,7 +57,7 @@ ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::string 
                    std::shared_ptr<GiNaC::FUNCP_CUBA> & cfun );
 
 /**
- * @brief get a filename for ginac lib define by use a singleton counter
+ * @brief get a deterministic filename for a GiNaC expression library
  */
 FEELPP_EXPORT std::string
 ginacGetDefaultFileName( std::string const& exprDesc, std::string const& dirLibExpr = Environment::exprRepository() );
