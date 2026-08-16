@@ -203,6 +203,7 @@ public :
         sparse_matrix_ptrtype constrainedMatrix;
         vector_ptrtype constrainedVector;
         vector_ptrtype inPlaceRhsContribution;
+        std::vector<vf::DeferredDirichletColumnGroup<value_type>> inPlaceDirichletColumnGroups;
         std::vector<int> inPlaceConstrainedDofs;
         void const* constrainedVectorSource = nullptr;
         std::size_t constrainedVectorSourceRevision = 0;
@@ -556,7 +557,6 @@ public :
         requires Feel::detail::BlockformStaticProductSpaces<test_product_space_t>
         {
             this->checkSameTestTrialFunctionSpace( "BlockBilinearForm::row" );
-            this->invalidateMaterializedDeferredDirichlet();
             auto&& spaces = remove_shared_ptr_f( M_test_ps );
             auto space = hana::at( spaces.tupleSpaces(), n1 );
             int const rowIndex = Feel::detail::blockformFlattenedBlockIndex( spaces, n1, s1 );
@@ -680,7 +680,14 @@ public :
                         double value_on_diagonal,
                         std::uint8_t entity_priority = vf::deferredDirichletEntityPriority( vf::DeferredDirichletEntity::unspecified ) )
         {
-            this->invalidateMaterializedDeferredDirichlet();
+            if ( !M_dirichletState->baseOperatorConstrainedInPlace )
+                this->invalidateMaterializedDeferredDirichlet();
+            else
+            {
+                M_dirichletState->constrainedVector.reset();
+                M_dirichletState->constrainedVectorSource = nullptr;
+                M_dirichletState->constrainedVectorSourceRevision = 0;
+            }
             M_dirichletState->pendingConstraints.append( dofs, values, on_context, value_on_diagonal, entity_priority );
         }
     vf::DeferredDirichletPolicy dirichletPolicy() const noexcept
@@ -743,13 +750,22 @@ public :
             return M_dirichletState->baseOperatorConstrainedInPlace ||
                    static_cast<bool>( M_dirichletState->constrainedMatrix );
         }
+    /** \return number of sparse Dirichlet-column entries retained on this rank. */
+    std::size_t localStoredDirichletColumnEntryCount() const noexcept
+        {
+            std::size_t count = 0;
+            for ( auto const& group : M_dirichletState->inPlaceDirichletColumnGroups )
+                count += group.entries.size();
+            return count;
+        }
 
     /**
      * \brief Select in-place (`true`, default) or two-matrix Dirichlet materialization.
      *
-     * In-place mode retains only the reusable Dirichlet RHS contribution. The
-     * compatibility mode preserves the unconstrained matrix and clones the
-     * complete sparse matrix. The policy must be selected before materialization.
+     * Ordinary row elimination needs no auxiliary matrix data. Symmetric
+     * elimination retains only the sparse Dirichlet-column entries required
+     * to refresh the RHS when prescribed values change. Compatibility mode
+     * preserves the unconstrained matrix and clones the complete sparse matrix.
      */
     void setDirichletInPlace( bool value )
         {
@@ -1481,6 +1497,47 @@ private:
             M_dirichletState->pendingConstraints.clear();
         }
 
+        template<typename EntryRange, typename VectorPtrType>
+        void materializeInPlaceDeferredDirichlet( EntryRange const& entries,
+                                                   VectorPtrType const& rhsContribution )
+        {
+            auto matrix = M_matrix->getSparseMatrix();
+            auto groups = vf::makeDeferredDirichletGroups( entries, rhsContribution );
+            rhsContribution->zero();
+            rhsContribution->setIsClosed( false );
+            std::decay_t<VectorPtrType> columnVectorTemplate;
+            if ( std::ranges::any_of( groups, []( auto const& group ) {
+                     return group.onContext.test( ContextOn::SYMMETRIC );
+                 } ) )
+            {
+                columnVectorTemplate = Feel::backend( _worldcomm=matrix->worldCommPtr() )
+                                           ->newVector( matrix->mapColPtr() );
+            }
+
+            if ( !M_dirichletState->baseOperatorConstrainedInPlace )
+            {
+                M_dirichletState->inPlaceDirichletColumnGroups =
+                    vf::captureDeferredDirichletColumns( groups, matrix, columnVectorTemplate );
+            }
+            else
+            {
+                vf::addDeferredDirichletColumnContributions(
+                    groups, M_dirichletState->inPlaceDirichletColumnGroups,
+                    matrix, columnVectorTemplate, rhsContribution );
+            }
+
+            vf::applyDeferredDirichletGroups( groups, matrix, rhsContribution );
+            matrix->close();
+            if ( !rhsContribution->closed() )
+                rhsContribution->close();
+
+            M_dirichletState->inPlaceRhsContribution = rhsContribution;
+            M_dirichletState->inPlaceConstrainedDofs = vf::deferredDirichletDofs( entries );
+            M_dirichletState->baseOperatorConstrainedInPlace = true;
+            M_dirichletState->appliedConstraints = vf::deferredDirichletSetFromGroups( groups );
+            M_dirichletState->pendingConstraints.clear();
+        }
+
         template<typename VectorPtrType>
         auto materializeConstrainedSystem( VectorPtrType const& rhsVector )
         {
@@ -1510,20 +1567,11 @@ private:
             auto const deferredEntries = this->allDeferredDirichletConstraints().entries();
             if ( M_dirichletState->materialization == vf::DeferredDirichletMaterialization::in_place )
             {
-                if ( !M_dirichletState->baseOperatorConstrainedInPlace )
+                if ( !M_dirichletState->baseOperatorConstrainedInPlace ||
+                     !M_dirichletState->pendingConstraints.empty() )
                 {
                     auto rhsContribution = rhsVector->clone();
-                    rhsContribution->zero();
-                    rhsContribution->close();
-                    auto matrix = M_matrix->getSparseMatrix();
-                    vf::applyDeferredDirichletEntries( deferredEntries, matrix, rhsContribution );
-                    matrix->close();
-                    if ( !rhsContribution->closed() )
-                        rhsContribution->close();
-                    M_dirichletState->inPlaceRhsContribution = rhsContribution;
-                    M_dirichletState->inPlaceConstrainedDofs = vf::deferredDirichletDofs( deferredEntries );
-                    M_dirichletState->baseOperatorConstrainedInPlace = true;
-                    this->promotePendingDeferredDirichlet();
+                    this->materializeInPlaceDeferredDirichlet( deferredEntries, rhsContribution );
                 }
                 M_dirichletState->constrainedVector = vf::makeInPlaceConstrainedVector(
                     rhsVector, M_dirichletState->inPlaceRhsContribution,
@@ -1570,11 +1618,7 @@ private:
             auto const deferredEntries = this->allDeferredDirichletConstraints().entries();
             if ( M_dirichletState->materialization == vf::DeferredDirichletMaterialization::in_place )
             {
-                vf::applyDeferredDirichletEntries( deferredEntries, baseMatrix, dummyRhs );
-                baseMatrix->close();
-                M_dirichletState->inPlaceRhsContribution = dummyRhs;
-                M_dirichletState->inPlaceConstrainedDofs = vf::deferredDirichletDofs( deferredEntries );
-                M_dirichletState->baseOperatorConstrainedInPlace = true;
+                this->materializeInPlaceDeferredDirichlet( deferredEntries, dummyRhs );
                 M_dirichletState->constrainedMatrix.reset();
             }
             else

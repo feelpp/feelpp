@@ -3254,7 +3254,7 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
     MatSetOption( this->mat(),MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE );
 #endif
 
-    int start=0, stop=this->mapRow().nLocalDofWithGhost(), ierr=0;
+    int ierr=0;
     VectorPetscMPI<T>* prhs = dynamic_cast<VectorPetscMPI<T>*> ( &rhs );
     CHECK( prhs != 0 ) << "dynamic cast from Vector to VectorPetscMPI failed for rhs";
     const VectorPetscMPI<T>* pvalues = dynamic_cast<const VectorPetscMPI<T>*> ( &values );
@@ -3284,12 +3284,12 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
         if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
         {
             MatDiagonalSet( this->M_mat, diag->vec(), INSERT_VALUES );
+            auto const rhsMap = rhs.mapPtr();
             for ( size_type i = 0; i < rows.size(); ++i )
             {
-                // warning: a row index may belong to another
-                // processor, so make sure that we access only the
-                // rows that belong to this processor
-                if ( rows[i] >= start && rows[i] < stop )
+                // Only the owner has an authoritative diagonal value. Ghost
+                // INSERT_VALUES would race with the owner's constrained RHS.
+                if ( !rhsMap || !rhsMap->dofGlobalProcessIsGhost( rows[i] ) )
                     rhs.set( rows[i], values(rows[i])*diag->operator()( rows[i] ) );
             }
         }
@@ -3299,12 +3299,8 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
 
         for ( size_type i = 0; i < rows.size(); ++i )
         {
-            // eliminate column
-
-            // warning: a row index may belong to another
-            // processor, so make sure that we access only the
-            // rows that belong to this processor
-            if ( rows[i] >= start && rows[i] < stop )
+            auto const rhsMap = rhs.mapPtr();
+            if ( !rhsMap || !rhsMap->dofGlobalProcessIsGhost( rows[i] ) )
                 rhs.set( rows[i], values(rows[i]) );
         }
 #endif
