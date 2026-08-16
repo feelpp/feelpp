@@ -305,6 +305,9 @@ set(FEELPP_MPI_TEST_LAUNCHER "auto" CACHE STRING
 set_property(CACHE FEELPP_MPI_TEST_LAUNCHER PROPERTY STRINGS auto srun mpiexec)
 set(FEELPP_MPI_TEST_SRUN_ADDITIONAL_FLAGS "" CACHE STRING
     "Additional space-separated srun flags for MPI tests (for example --partition=public --exclude=node2)")
+set(FEELPP_MPI_TEST_OPENMPI_PML "auto" CACHE STRING
+    "Open MPI PML for tests: auto (UCX with native Slurm when available), default, or ucx")
+set_property(CACHE FEELPP_MPI_TEST_OPENMPI_PML PROPERTY STRINGS auto default ucx)
 
 function(_feelpp_check_launcher_version result executable)
   if(NOT executable)
@@ -321,6 +324,53 @@ function(_feelpp_check_launcher_version result executable)
     set(${result} TRUE PARENT_SCOPE)
   else()
     set(${result} FALSE PARENT_SCOPE)
+  endif()
+endfunction()
+
+# Check the Open MPI installation selected by FindMPI, rather than an
+# unrelated ompi_info that may appear earlier in PATH.  Open MPI compiler
+# wrappers support --showme:version; other MPI implementations simply fail
+# this probe and are left untouched.
+function(_feelpp_check_openmpi_pml result component)
+  set(${result} FALSE PARENT_SCOPE)
+  if(MPI_C_COMPILER)
+    set(_feelpp_mpi_wrapper "${MPI_C_COMPILER}")
+  elseif(MPI_CXX_COMPILER)
+    set(_feelpp_mpi_wrapper "${MPI_CXX_COMPILER}")
+  else()
+    return()
+  endif()
+
+  execute_process(
+    COMMAND "${_feelpp_mpi_wrapper}" --showme:version
+    RESULT_VARIABLE _feelpp_openmpi_wrapper_result
+    OUTPUT_VARIABLE _feelpp_openmpi_wrapper_output
+    ERROR_VARIABLE _feelpp_openmpi_wrapper_error
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    TIMEOUT 5)
+  string(APPEND _feelpp_openmpi_wrapper_output "${_feelpp_openmpi_wrapper_error}")
+  string(TOLOWER "${_feelpp_openmpi_wrapper_output}" _feelpp_openmpi_wrapper_output_lower)
+  if(NOT _feelpp_openmpi_wrapper_result EQUAL 0 OR
+     NOT _feelpp_openmpi_wrapper_output_lower MATCHES "open mpi")
+    return()
+  endif()
+
+  get_filename_component(_feelpp_mpi_bindir "${_feelpp_mpi_wrapper}" DIRECTORY)
+  set(_feelpp_ompi_info "${_feelpp_mpi_bindir}/ompi_info")
+  if(NOT EXISTS "${_feelpp_ompi_info}")
+    return()
+  endif()
+
+  execute_process(
+    COMMAND "${_feelpp_ompi_info}" --parsable --param pml "${component}"
+    RESULT_VARIABLE _feelpp_ompi_info_result
+    OUTPUT_VARIABLE _feelpp_ompi_info_output
+    ERROR_QUIET
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    TIMEOUT 5)
+  if(_feelpp_ompi_info_result EQUAL 0 AND
+     _feelpp_ompi_info_output MATCHES "mca:pml:${component}:")
+    set(${result} TRUE PARENT_SCOPE)
   endif()
 endfunction()
 
@@ -424,6 +474,34 @@ if(MPI_FOUND)
     message(STATUS
       "[feelpp] MPI tests: using MPI launcher '${_feelpp_mpi_command_display}'")
   endif()
+
+  string(TOLOWER "${FEELPP_MPI_TEST_OPENMPI_PML}" _feelpp_openmpi_pml_policy)
+  if(NOT _feelpp_openmpi_pml_policy MATCHES "^(auto|default|ucx)$")
+    message(FATAL_ERROR
+      "FEELPP_MPI_TEST_OPENMPI_PML must be one of auto, default, or ucx "
+      "(got '${FEELPP_MPI_TEST_OPENMPI_PML}')")
+  endif()
+
+  set(_feelpp_mpi_test_environment)
+  if(DEFINED ENV{OMPI_MCA_pml} AND NOT "$ENV{OMPI_MCA_pml}" STREQUAL "")
+    message(STATUS
+      "[feelpp] MPI tests: preserving OMPI_MCA_pml='$ENV{OMPI_MCA_pml}' from the environment")
+  elseif(_feelpp_openmpi_pml_policy STREQUAL "ucx" OR
+         (_feelpp_openmpi_pml_policy STREQUAL "auto" AND _feelpp_use_srun))
+    _feelpp_check_openmpi_pml(_feelpp_has_openmpi_ucx_pml ucx)
+    if(_feelpp_has_openmpi_ucx_pml)
+      list(APPEND _feelpp_mpi_test_environment "OMPI_MCA_pml=ucx")
+      message(STATUS "[feelpp] MPI tests: Open MPI UCX PML detected; setting OMPI_MCA_pml=ucx")
+    elseif(_feelpp_openmpi_pml_policy STREQUAL "ucx")
+      message(FATAL_ERROR
+        "FEELPP_MPI_TEST_OPENMPI_PML=ucx, but FindMPI's Open MPI does not provide the UCX PML")
+    else()
+      message(STATUS
+        "[feelpp] MPI tests: Open MPI UCX PML not detected; keeping the MPI default")
+    endif()
+  endif()
+  set(FEELPP_MPI_TEST_ENVIRONMENT "${_feelpp_mpi_test_environment}" CACHE INTERNAL
+      "Environment entries automatically added to Feel++ MPI tests" FORCE)
 
   # FindMPI's compatibility variable MPIEXEC is recreated from this cache
   # entry.  Updating it keeps subsequent nested find_package(MPI) calls and
