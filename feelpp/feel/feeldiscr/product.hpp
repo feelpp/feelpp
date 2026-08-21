@@ -1,25 +1,10 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-  This file is part of the Feel library
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2014-03-23
+    SPDX-FileCopyrightText: 2026 University of Strasbourg
 
-  Copyright (C) 2014-2016 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    SPDX-License-Identifier: LGPL-3.0-or-later
 */
 /**
    \file product.hpp
@@ -34,12 +19,40 @@
 
 #include <boost/fusion/view/joint_view.hpp>
 
+#include <concepts>
+#include <numeric>
+
 
 namespace Feel {
 
 constexpr auto is_void = hana::integral(hana::metafunction<std::is_void>);
 
 struct product_space_tag {};
+
+namespace detail
+{
+template<typename SpaceT>
+concept ProductSpaceDofEntry =
+    requires( SpaceT const& space )
+    {
+        { space->nDof() } -> std::convertible_to<size_type>;
+        { space->nLocalDof() } -> std::convertible_to<size_type>;
+    };
+
+template<ProductSpaceDofEntry SpaceT>
+size_type
+productSpaceEntryNDof( SpaceT const& space )
+{
+    return space->nDof();
+}
+
+template<ProductSpaceDofEntry SpaceT>
+size_type
+productSpaceEntryNLocalDof( SpaceT const& space )
+{
+    return space->nLocalDof();
+}
+}
 
 template<typename T, bool same_mesh = false>
 class ProductSpace : public std::vector<std::shared_ptr<decay_type<T>>>, ProductSpaceBase
@@ -113,21 +126,25 @@ public:
 
     //! \return the total number of degrees of freedom
     size_type nDof() const
+        requires Feel::detail::ProductSpaceDofEntry<underlying_functionspace_ptrtype>
         {
             if ( same_mesh )
-                return M_nspaces*this->front()->nDof();
+                return M_nspaces*Feel::detail::productSpaceEntryNDof( this->front() );
             else
-                return std::accumulate( this->begin(), this->end(), size_type(0), []( auto i, auto const& e ) { return i+e.nDof(); } );
+                return std::accumulate( this->begin(), this->end(), size_type(0),
+                                        []( auto i, auto const& e ) { return i + Feel::detail::productSpaceEntryNDof( e ); } );
 
         }
 
     //! \return the number of degrees of freedom owned by the process
     size_type nLocalDof() const
+        requires Feel::detail::ProductSpaceDofEntry<underlying_functionspace_ptrtype>
         {
             if ( same_mesh )
-                return M_nspaces*this->front()->nLocalDof();
+                return M_nspaces*Feel::detail::productSpaceEntryNLocalDof( this->front() );
             else
-                return std::accumulate( this->begin(), this->end(), size_type(0), []( auto i, auto const& e ) { return i+e.nLocalDof(); } );
+                return std::accumulate( this->begin(), this->end(), size_type(0),
+                                        []( auto i, auto const& e ) { return i + Feel::detail::productSpaceEntryNLocalDof( e ); } );
 
         }
 
@@ -250,9 +267,13 @@ public:
     tuple_spaces_type & tupleSpaces() { return M_tupleSpaces; }
 
     //! \return the total number of degrees of freedom
-    size_type nDof() const { return hana::fold_left( M_tupleSpaces, 0, [&](size_type s, auto& e ) { return s + e->nDof(); } ); }
+    size_type nDof() const
+        requires ( Feel::detail::ProductSpaceDofEntry<SpaceList> && ... )
+        { return hana::fold_left( M_tupleSpaces, size_type(0), []( size_type s, auto const& e ) { return s + Feel::detail::productSpaceEntryNDof( e ); } ); }
     //! \return the number of degrees of freedom owned by the process
-    size_type nLocalDof() const { return hana::fold_left( M_tupleSpaces, 0, [&](size_type s, auto& e ) { return s + e->nLocalDof(); } ); }
+    size_type nLocalDof() const
+        requires ( Feel::detail::ProductSpaceDofEntry<SpaceList> && ... )
+        { return hana::fold_left( M_tupleSpaces, size_type(0), []( size_type s, auto const& e ) { return s + Feel::detail::productSpaceEntryNLocalDof( e ); } ); }
 
     template<typename N>
     decltype(auto)
@@ -369,9 +390,15 @@ public:
     tuple_spaces_type & tupleSpaces() { return M_tupleSpaces; }
 
     //! \return the total number of degrees of freedom
-    //size_type nDof() const { return hana::fold_left( *this, 0, [&](size_type s, auto& e ) { return s + e->nDof(); } ); }
+    size_type nDof() const
+        requires ( ( Feel::detail::ProductSpaceDofEntry<SpaceList> && ... ) &&
+                   Feel::detail::ProductSpaceDofEntry<std::shared_ptr<ProductSpace<T,true>>> )
+        { return hana::fold_left( M_tupleSpaces, size_type(0), []( size_type s, auto const& e ) { return s + Feel::detail::productSpaceEntryNDof( e ); } ); }
     //! \return the number of degrees of freedom owned by the process
-    //size_type nLocalDof() const { return hana::fold_left( *this, 0, [&](size_type s, auto& e ) { return s + e->nLocalDof(); } ); }
+    size_type nLocalDof() const
+        requires ( ( Feel::detail::ProductSpaceDofEntry<SpaceList> && ... ) &&
+                   Feel::detail::ProductSpaceDofEntry<std::shared_ptr<ProductSpace<T,true>>> )
+        { return hana::fold_left( M_tupleSpaces, size_type(0), []( size_type s, auto const& e ) { return s + Feel::detail::productSpaceEntryNLocalDof( e ); } ); }
 
     template<typename N>
     decltype(auto)

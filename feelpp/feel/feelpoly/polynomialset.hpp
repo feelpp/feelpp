@@ -28,8 +28,7 @@
 #define FEELPP_POLYNOMIALSET_HPP 1
 
 #include <vector>
-#include <boost/multi_array.hpp>
-#include <boost/multi_array/extent_gen.hpp>
+#include <feel/feelcore/boostmultiarray.hpp>
 
 #include <boost/optional.hpp>
 #include <boost/mpl/min_max.hpp>

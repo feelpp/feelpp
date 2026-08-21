@@ -141,6 +141,17 @@ namespace detail
 {
 
 /**
+ * Build an owned PETSc vector copy from any Feel++ vector.
+ *
+ * This is the safe conversion path for source/read-only vectors: the returned
+ * PETSc object does not alias the input storage, so temporary conversions do
+ * not affect the lifetime of the source vector.
+ */
+template<typename T>
+std::shared_ptr<VectorPetsc<T>>
+toOwnedPETScCopy( Vector<T> const& vec );
+
+/**
  * returns a pair of  (c++ pointer VectorPetsc, shared_ptr VectorPetsc )
  * from input vector vec (with ref).
  * - vec is a VectorPetsc, return the pointer of &vec and null shared_ptr

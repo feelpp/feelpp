@@ -41,6 +41,7 @@
 
 #include<feel/feelalg/backend.hpp>
 #include<feel/feelalg/backendpetsc.hpp>
+#include <feel/feelalg/topetsc.hpp>
 #include<feel/feelalg/vectorublas.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
@@ -372,8 +373,13 @@ PYBIND11_MODULE(_alg, m )
         .def( "l1Norm", &VectorUblas<double>::l1Norm, "l1 norm of entries" )
         .def( "l2Norm", &VectorUblas<double>::l2Norm, "l2 norm of entries" )
         .def( "linftyNorm", &VectorUblas<double>::linftyNorm, "linfty norm of entries" )
-        .def( "to_petsc", [](VectorUblas<double> &v){ return toPETSc( v );
-}, "c s ba VectorDouble to a VectorPetscDouble" )
+        .def(
+            "to_petsc",
+            []( VectorUblas<double> &v ) -> std::shared_ptr<VectorPetsc<double>>
+            {
+                return Feel::detail::toOwnedPETScCopy( static_cast<Vector<double> const&>( v ) );
+            },
+            "convert a VectorDouble to an owned VectorPetscDouble" )
         .def_static( "createFromPETSc", &VectorUblas<double>::createView, "create a VectorUblas<double> from a VectorPETScDouble", py::arg("vec") );
 
 

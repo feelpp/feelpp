@@ -1,26 +1,12 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-  This file is part of the Feel library
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2006-12-30
+    SPDX-FileCopyrightText: 2006 Joseph Fourier University
+    SPDX-FileCopyrightText: 2011-2017 Feel++ Consortium
+    SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
 
-  Copyright (C) 2006 Universite Joseph Fourier (Grenoble)
-  Copyright (C) 2011-2017 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    SPDX-License-Identifier: LGPL-3.0-or-later
 */
 /**
    \file gauss.hpp
@@ -116,7 +102,7 @@ public :
     {
         ublas::vector<T> px( Npoints );
 
-        details::gaussjacobi<Npoints, T, ublas::vector<T>, ublas::vector<T> >( this->M_w, px );
+        Feel::details::gaussjacobi<Npoints, T, ublas::vector<T>, ublas::vector<T> >( this->M_w, px );
         ublas::row( this->M_points, 0 ) = px;
 
         std::shared_ptr<GT_Lagrange<1,1,1,Simplex,T> > gm( new GT_Lagrange<1, 1, 1, Simplex, T> );
@@ -160,11 +146,11 @@ public :
         // build rules in x and y direction
         weights_type wx( Degree );
         weights_type px( Degree );
-        details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
+        Feel::details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
 
         weights_type wy( Degree );
         weights_type py( Degree );
-        details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wy, py, 1.0, 0.0 );
+        Feel::details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wy, py, 1.0, 0.0 );
 
         // coordinate in cartesian space
 
@@ -175,7 +161,7 @@ public :
 #endif
 
         node_type eta( 2 );
-        details::xi<TRIANGLE, value_type> to_xi;
+        Feel::details::xi<TRIANGLE, value_type> to_xi;
 
         for ( int i = 0,  k = 0; i < Degree; ++i )
         {
@@ -240,19 +226,19 @@ public :
         // build rules in x and y direction
         weights_type wx( Degree );
         weights_type px( Degree );
-        details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
+        Feel::details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
 
         weights_type wy( Degree );
         weights_type py( Degree );
-        details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wy, py, 1.0, 0.0 );
+        Feel::details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wy, py, 1.0, 0.0 );
 
         weights_type wz( Degree );
         weights_type pz( Degree );
-        details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wz, pz, 2.0, 0.0 );
+        Feel::details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wz, pz, 2.0, 0.0 );
 
         // coordinate in cartesian space
         node_type eta( 3 );
-        details::xi<TETRAHEDRON, value_type> to_xi;
+        Feel::details::xi<TETRAHEDRON, value_type> to_xi;
 
         for ( int i = 0,  k = 0; i < Degree; ++i )
         {
@@ -311,7 +297,7 @@ public :
         // build rules in x and y direction
         weights_type wx( Degree );
         weights_type px( Degree );
-        details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
+        Feel::details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
 #if 0
         VLOG(1) << "[gauss<SP<2,1>] jacobi p = " << px << "\n";
         VLOG(1) << "[gauss<SP<2,1>] jacobi w = " << wx << "\n";
@@ -370,7 +356,7 @@ public :
         // build rules in x and y direction
         weights_type wx( Degree );
         weights_type px( Degree );
-        details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
+        Feel::details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
 #if 0
         VLOG(1) << "[gauss<SP<2,1>] jacobi p = " << px << "\n";
         VLOG(1) << "[gauss<SP<2,1>] jacobi w = " << wx << "\n";
@@ -429,7 +415,7 @@ public :
         // build rules in x and y direction
         weights_type wx( Degree );
         weights_type px( Degree );
-        details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
+        Feel::details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
 
         for ( int i = 0,  k = 0; i < Degree; ++i )
         {
@@ -483,7 +469,7 @@ public :
         // build rules in x and y direction
         weights_type wx( Degree );
         weights_type px( Degree );
-        details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
+        Feel::details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
 
         for ( int i = 0,  k = 0; i < Degree; ++i )
         {
@@ -535,7 +521,7 @@ public :
         // build rules in x and y direction
         weights_type wx( Degree );
         weights_type px( Degree );
-        details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
+        Feel::details::gaussjacobi<Degree,T, ublas::vector<T>, ublas::vector<T> >( wx, px, 0.0, 0.0 );
 
         for ( int i = 0,  k = 0; i < Degree; ++i )
         {

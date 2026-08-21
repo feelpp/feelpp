@@ -314,6 +314,11 @@ public:
     void close () const override;
 
     /**
+     * Close the matrix when the local wrapper state says assembly is pending.
+     */
+    void closeIfNeeded() const override;
+
+    /**
      * see if Petsc matrix has been closed
      * and fully assembled yet
      */

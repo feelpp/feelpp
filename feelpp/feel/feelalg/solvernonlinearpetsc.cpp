@@ -96,6 +96,37 @@ extern "C"
         return 0;
     }
 
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 24, 0 )
+    PetscErrorCode feel_petsc_snes_linesearch_precheck_maxstep( SNESLineSearch, Vec, Vec y, PetscBool* changed_y, void* ctx )
+    {
+        auto* b = static_cast<Feel::SolverNonLinearPetsc<double>*>( ctx );
+        if ( changed_y )
+            *changed_y = PETSC_FALSE;
+        if ( !b )
+            return 0;
+
+        PetscReal maxStep = static_cast<PetscReal>( Feel::doption( Feel::_prefix=b->prefix(), Feel::_name="snes-line-search-maxstep" ) );
+        if ( maxStep <= 0 )
+            return 0;
+
+        PetscReal ynorm = 0;
+        PetscErrorCode ierr = VecNorm( y, NORM_2, &ynorm );
+        if ( ierr )
+            return ierr;
+
+        if ( ynorm > maxStep )
+        {
+            ierr = VecScale( y, maxStep/ynorm );
+            if ( ierr )
+                return ierr;
+            if ( changed_y )
+                *changed_y = PETSC_TRUE;
+        }
+
+        return 0;
+    }
+#endif
+
     PetscErrorCode feel_petsc_post_nlsolve(KSP ksp,Vec x,Vec y,void* ctx)
     {
         Feel::SolverNonLinearPetsc<double>* b =
@@ -327,10 +358,11 @@ extern "C"
 
         int size;
         VecGetSize( r,&size );
-        double *xa;
-        VecGetArray( x, &xa );
+        const PetscScalar *xa;
+        VecGetArrayRead( x, &xa );
         boost::numeric::ublas::vector<double> xx( size );
         std::copy( xa, xa+size, xx.begin() );
+        VecRestoreArrayRead( x, &xa );
 
         //LOG(INFO) << "dense_residual before xx= " << xx << "\n";
 
@@ -345,7 +377,6 @@ extern "C"
             VecSetValues( r,1,&i,&rr[i],INSERT_VALUES );
         }
 
-        VecRestoreArray( x, &xa );
         //LOG(INFO) << "dense_residual rr= " << rr << "\n";
 
         return ierr;
@@ -370,10 +401,11 @@ extern "C"
 
         int size;
         VecGetSize( x,&size );
-        double *xa;
-        VecGetArray( x, &xa );
+        const PetscScalar *xa;
+        VecGetArrayRead( x, &xa );
         boost::numeric::ublas::vector<double> xx( size );
         std::copy( xa, xa+size, xx.begin() );
+        VecRestoreArrayRead( x, &xa );
 
         ///LOG(INFO) << "dense_jacobian xx= " << xx << "\n";
 
@@ -410,8 +442,6 @@ extern "C"
         MatAssemblyBegin( jac,MAT_FINAL_ASSEMBLY );
         MatAssemblyEnd( jac,MAT_FINAL_ASSEMBLY );
 #endif
-
-        VecRestoreArray( x, &xa );
 
 #if PETSC_VERSION_LESS_THAN(3,5,0)
         *msflag = MatStructure::SAME_NONZERO_PATTERN;
@@ -508,8 +538,6 @@ extern "C"
         if ( solver->map_dense_jacobian != NULL ) solver->map_dense_jacobian ( map_x, map_jac );
 
         //LOG(INFO) << "dense_jacobian map_jac = \n" << map_jac << "\n";
-
-
         VecRestoreArray( x, &xa );
 #if PETSC_VERSION_LESS_THAN(3,4,0)
         MatRestoreArray(*jac, &ja);
@@ -628,6 +656,10 @@ void SolverNonLinearPetsc<T>::init ()
 
             ierr = SNESLineSearchSetType( snesLineSearch,  toPetscName( this->nlSolverLineSearchType() ) );
             CHKERRABORT( this->worldComm().globalComm(), ierr );
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 24, 0 )
+            ierr = SNESLineSearchSetPreCheck( snesLineSearch, feel_petsc_snes_linesearch_precheck_maxstep, this );
+            CHKERRABORT( this->worldComm().globalComm(), ierr );
+#endif
         }
         break;
 
@@ -981,6 +1013,15 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
 
     ierr = SNESSetFromOptions( M_snes );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 24, 0 )
+    {
+        SNESLineSearch snesLineSearch;
+        ierr = SNESGetLineSearch( M_snes, &snesLineSearch );
+        CHKERRABORT( this->worldComm().globalComm(), ierr );
+        ierr = SNESLineSearchSetPreCheck( snesLineSearch, feel_petsc_snes_linesearch_precheck_maxstep, this );
+        CHKERRABORT( this->worldComm().globalComm(), ierr );
+    }
+#endif
 
     //Set the preconditioning matrix
     //if ( this->M_preconditioner )

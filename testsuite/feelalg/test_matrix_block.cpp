@@ -118,16 +118,20 @@ void run()
 #endif
 
     // extract submatrix : each block
-    auto const& indiceExtract_u = A->mapRow().dofIdToContainerId( indexStart_u );
-    auto const& indiceExtract_p = A->mapRow().dofIdToContainerId( indexStart_p );
-    auto const& indiceExtract_l = A->mapRow().dofIdToContainerId( indexStart_l );
-    auto const& indiceExtract_t = A->mapRow().dofIdToContainerId( indexStart_t );
-    auto A_uu = A->createSubMatrix(indiceExtract_u,indiceExtract_u);
-    auto A_up = A->createSubMatrix(indiceExtract_u,indiceExtract_p);
-    auto A_pu = A->createSubMatrix(indiceExtract_p,indiceExtract_u);
-    auto A_pl = A->createSubMatrix(indiceExtract_p,indiceExtract_l);
-    auto A_lp = A->createSubMatrix(indiceExtract_l,indiceExtract_p);
-    auto A_tt = A->createSubMatrix(indiceExtract_t,indiceExtract_t);
+    auto const& indiceExtract_u_row = A->mapRow().dofIdToContainerId( indexStart_u );
+    auto const& indiceExtract_p_row = A->mapRow().dofIdToContainerId( indexStart_p );
+    auto const& indiceExtract_l_row = A->mapRow().dofIdToContainerId( indexStart_l );
+    auto const& indiceExtract_t_row = A->mapRow().dofIdToContainerId( indexStart_t );
+    auto const& indiceExtract_u_col = A->mapCol().dofIdToContainerId( indexStart_u );
+    auto const& indiceExtract_p_col = A->mapCol().dofIdToContainerId( indexStart_p );
+    auto const& indiceExtract_l_col = A->mapCol().dofIdToContainerId( indexStart_l );
+    auto const& indiceExtract_t_col = A->mapCol().dofIdToContainerId( indexStart_t );
+    auto A_uu = A->createSubMatrix(indiceExtract_u_row,indiceExtract_u_col);
+    auto A_up = A->createSubMatrix(indiceExtract_u_row,indiceExtract_p_col);
+    auto A_pu = A->createSubMatrix(indiceExtract_p_row,indiceExtract_u_col);
+    auto A_pl = A->createSubMatrix(indiceExtract_p_row,indiceExtract_l_col);
+    auto A_lp = A->createSubMatrix(indiceExtract_l_row,indiceExtract_p_col);
+    auto A_tt = A->createSubMatrix(indiceExtract_t_row,indiceExtract_t_col);
     // check
 #if USE_BOOST_TEST
     BOOST_CHECK_CLOSE( A_uu->l1Norm(), a_uu.matrixPtr()->l1Norm(), 1e-9 );
@@ -161,37 +165,50 @@ void run()
     CHECK( std::abs( Afromsubmat->l1Norm() - A->l1Norm() ) < 1e-9 ) << "must be identicaly";
 #endif
 
-    A_uu->addMatrix(-1.0, a_uu.matrixPtr() );
-    A_up->addMatrix(-1.0, a_up.matrixPtr() );
-    A_pu->addMatrix(-1.0, a_pu.matrixPtr() );
-    A_pl->addMatrix(-1.0, a_pl.matrixPtr() );
-    A_lp->addMatrix(-1.0, a_lp.matrixPtr() );
-    A_tt->addMatrix(-1.0, a_tt.matrixPtr() );
+    if ( Environment::worldComm().globalSize() == 1 )
+    {
+        A_uu->addMatrix(-1.0, a_uu.matrixPtr() );
+        A_up->addMatrix(-1.0, a_up.matrixPtr() );
+        A_pu->addMatrix(-1.0, a_pu.matrixPtr() );
+        A_pl->addMatrix(-1.0, a_pl.matrixPtr() );
+        A_lp->addMatrix(-1.0, a_lp.matrixPtr() );
+        A_tt->addMatrix(-1.0, a_tt.matrixPtr() );
 #if USE_BOOST_TEST
-    BOOST_CHECK_SMALL( A_uu->l1Norm(), 1e-9 );
-    BOOST_CHECK_SMALL( A_up->l1Norm(), 1e-9 );
-    BOOST_CHECK_SMALL( A_pu->l1Norm(), 1e-9 );
-    BOOST_CHECK_SMALL( A_pl->l1Norm(), 1e-9 );
-    BOOST_CHECK_SMALL( A_lp->l1Norm(), 1e-9 );
-    BOOST_CHECK_SMALL( A_tt->l1Norm(), 1e-9 );
+        BOOST_CHECK_SMALL( A_uu->l1Norm(), 1e-9 );
+        BOOST_CHECK_SMALL( A_up->l1Norm(), 1e-9 );
+        BOOST_CHECK_SMALL( A_pu->l1Norm(), 1e-9 );
+        BOOST_CHECK_SMALL( A_pl->l1Norm(), 1e-9 );
+        BOOST_CHECK_SMALL( A_lp->l1Norm(), 1e-9 );
+        BOOST_CHECK_SMALL( A_tt->l1Norm(), 1e-9 );
 #else
-    CHECK( std::abs( A_uu->l1Norm() ) < 1e-9 ) << "must be zero";
-    CHECK( std::abs( A_up->l1Norm() ) < 1e-9 ) << "must be zero";
-    CHECK( std::abs( A_pu->l1Norm() ) < 1e-9 ) << "must be zero";
-    CHECK( std::abs( A_pl->l1Norm() ) < 1e-9 ) << "must be zero";
-    CHECK( std::abs( A_lp->l1Norm() ) < 1e-9 ) << "must be zero";
-    CHECK( std::abs( A_tt->l1Norm() ) < 1e-9 ) << "must be zero";
+        CHECK( std::abs( A_uu->l1Norm() ) < 1e-9 ) << "must be zero";
+        CHECK( std::abs( A_up->l1Norm() ) < 1e-9 ) << "must be zero";
+        CHECK( std::abs( A_pu->l1Norm() ) < 1e-9 ) << "must be zero";
+        CHECK( std::abs( A_pl->l1Norm() ) < 1e-9 ) << "must be zero";
+        CHECK( std::abs( A_lp->l1Norm() ) < 1e-9 ) << "must be zero";
+        CHECK( std::abs( A_tt->l1Norm() ) < 1e-9 ) << "must be zero";
 #endif
+    }
 
     // extract another submatrix : a set of block
-    std::vector<uint32_type> indiceExtract_upl;
+    std::vector<uint32_type> indiceExtract_upl_row;
+    std::vector<uint32_type> indiceExtract_upl_col;
     for ( size_type k=0;k<Vhu->nLocalDofWithGhost();++k)
-        indiceExtract_upl.push_back( A->mapRow().dofIdToContainerId(indexStart_u,k) );
+    {
+        indiceExtract_upl_row.push_back( A->mapRow().dofIdToContainerId(indexStart_u,k) );
+        indiceExtract_upl_col.push_back( A->mapCol().dofIdToContainerId(indexStart_u,k) );
+    }
     for ( size_type k=0;k<Vhp->nLocalDofWithGhost();++k)
-        indiceExtract_upl.push_back( A->mapRow().dofIdToContainerId(indexStart_p,k) );
+    {
+        indiceExtract_upl_row.push_back( A->mapRow().dofIdToContainerId(indexStart_p,k) );
+        indiceExtract_upl_col.push_back( A->mapCol().dofIdToContainerId(indexStart_p,k) );
+    }
     for ( size_type k=0;k<Vhl->nLocalDofWithGhost();++k)
-        indiceExtract_upl.push_back( A->mapRow().dofIdToContainerId(indexStart_l,k) );
-    auto A_uplupl = A->createSubMatrix(indiceExtract_upl,indiceExtract_upl);
+    {
+        indiceExtract_upl_row.push_back( A->mapRow().dofIdToContainerId(indexStart_l,k) );
+        indiceExtract_upl_col.push_back( A->mapCol().dofIdToContainerId(indexStart_l,k) );
+    }
+    auto A_uplupl = A->createSubMatrix(indiceExtract_upl_row,indiceExtract_upl_col);
     // build another block matrix for compare with extracted matrix
     BlocksBaseSparseMatrix<double> myblockMat2(3,3);
     myblockMat2(0,0) = a_uu.matrixPtr();
@@ -206,12 +223,15 @@ void run()
 #else
     CHECK( std::abs( A_uplupl->l1Norm() - A_upluplbis->l1Norm() ) < 1e-9 ) << "must be identicaly";
 #endif
-    A_upluplbis->addMatrix(-1.0, A_uplupl );
+    if ( Environment::worldComm().globalSize() == 1 )
+    {
+        A_upluplbis->addMatrix(-1.0, A_uplupl );
 #if USE_BOOST_TEST
-    BOOST_CHECK_SMALL( A_upluplbis->l1Norm(), 1e-9 );
+        BOOST_CHECK_SMALL( A_upluplbis->l1Norm(), 1e-9 );
 #else
-    CHECK( std::abs( A_upluplbis->l1Norm() ) < 1e-9 ) << "must be zero";
+        CHECK( std::abs( A_upluplbis->l1Norm() ) < 1e-9 ) << "must be zero";
 #endif
+    }
 
 }
 
