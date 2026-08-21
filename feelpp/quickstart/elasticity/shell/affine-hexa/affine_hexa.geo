@@ -4,6 +4,15 @@ h = DefineNumber[ h, Name "Parameters/h" ];
 L = 2;
 W = 1;
 T = 0.1;
+nx = Ceil( L/h );
+ny = Ceil( W/h );
+nz = 1;
+If ( nx < 4 )
+  nx = 4;
+EndIf
+If ( ny < 3 )
+  ny = 3;
+EndIf
 
 Mesh.RecombineAll = 1;
 
@@ -45,9 +54,9 @@ Plane Surface(6) = {6};
 Surface Loop(1) = {1, 2, 3, 4, 5, 6};
 Volume(1) = {1};
 
-Transfinite Line {1, 3, 5, 7} = 5;
-Transfinite Line {2, 4, 6, 8} = 4;
-Transfinite Line {9, 10, 11, 12} = 2;
+Transfinite Line {1, 3, 5, 7} = nx + 1;
+Transfinite Line {2, 4, 6, 8} = ny + 1;
+Transfinite Line {9, 10, 11, 12} = nz + 1;
 Transfinite Surface {1} = {1, 2, 3, 4};
 Transfinite Surface {2} = {5, 6, 7, 8};
 Transfinite Surface {3} = {1, 2, 6, 5};

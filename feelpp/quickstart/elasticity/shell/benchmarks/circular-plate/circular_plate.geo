@@ -1,14 +1,29 @@
+h = 10.0;
+h = DefineNumber[ h, Name "Parameters/h" ];
+R = 5.0;
+Ri = R/3.0;
+T = 0.2;
+ntheta = Ceil( Pi*R/(2.0*h) );
+nr = Ceil( (R - Ri)/h );
+nz = 1;
+If ( ntheta < 6 )
+  ntheta = 6;
+EndIf
+If ( nr < 4 )
+  nr = 4;
+EndIf
+
 Mesh.RecombineAll = 1;
 
-Point(1) = {1.6666666666666667, 0, -0.1, 1};
-Point(2) = {0, 1.6666666666666667, -0.1, 1};
-Point(3) = {-1.6666666666666667, 0, -0.1, 1};
-Point(4) = {0, -1.6666666666666667, -0.1, 1};
-Point(5) = {5.0, 0, -0.1, 1};
-Point(6) = {0, 5.0, -0.1, 1};
-Point(7) = {-5.0, 0, -0.1, 1};
-Point(8) = {0, -5.0, -0.1, 1};
-Point(9) = {0, 0, -0.1, 1};
+Point(1) = {Ri, 0, -T/2, h};
+Point(2) = {0, Ri, -T/2, h};
+Point(3) = {-Ri, 0, -T/2, h};
+Point(4) = {0, -Ri, -T/2, h};
+Point(5) = {R, 0, -T/2, h};
+Point(6) = {0, R, -T/2, h};
+Point(7) = {-R, 0, -T/2, h};
+Point(8) = {0, -R, -T/2, h};
+Point(9) = {0, 0, -T/2, h};
 
 Circle(1) = {5, 9, 6};
 Circle(2) = {6, 9, 7};
@@ -34,8 +49,8 @@ Plane Surface(3) = {3};
 Plane Surface(4) = {4};
 Plane Surface(5) = {5};
 
-Transfinite Line {1, 2, 3, 4, 9, 10, 11, 12} = 7;
-Transfinite Line {5, 6, 7, 8} = 5;
+Transfinite Line {1, 2, 3, 4, 9, 10, 11, 12} = ntheta + 1;
+Transfinite Line {5, 6, 7, 8} = nr + 1;
 Transfinite Surface {1} = {1, 2, 3, 4};
 Transfinite Surface {2};
 Transfinite Surface {3};
@@ -43,29 +58,29 @@ Transfinite Surface {4};
 Transfinite Surface {5};
 Recombine Surface {1, 2, 3, 4, 5};
 
-center[] = Extrude {0, 0, 0.2} {
+center[] = Extrude {0, 0, T} {
   Surface{1};
-  Layers{1};
+  Layers{nz};
   Recombine;
 };
-s1[] = Extrude {0, 0, 0.2} {
+s1[] = Extrude {0, 0, T} {
   Surface{2};
-  Layers{1};
+  Layers{nz};
   Recombine;
 };
-s2[] = Extrude {0, 0, 0.2} {
+s2[] = Extrude {0, 0, T} {
   Surface{3};
-  Layers{1};
+  Layers{nz};
   Recombine;
 };
-s3[] = Extrude {0, 0, 0.2} {
+s3[] = Extrude {0, 0, T} {
   Surface{4};
-  Layers{1};
+  Layers{nz};
   Recombine;
 };
-s4[] = Extrude {0, 0, 0.2} {
+s4[] = Extrude {0, 0, T} {
   Surface{5};
-  Layers{1};
+  Layers{nz};
   Recombine;
 };
 

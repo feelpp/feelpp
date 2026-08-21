@@ -1,13 +1,19 @@
+h = 0.17;
+h = DefineNumber[ h, Name "Parameters/h" ];
+nx = Ceil( 1.0/h );
+ny = Ceil( 1.0/h );
+nz = 1;
+
 Mesh.RecombineAll = 1;
 
-Point(1) = {0, 0, -0.05, 1};
-Point(2) = {1.0, 0, -0.05, 1};
-Point(3) = {0, 1.0, -0.05, 1};
-Point(4) = {1.0, 1.0, -0.05, 1};
-Point(5) = {0, 0, 0.05, 1};
-Point(6) = {1.0, 0, 0.05, 1};
-Point(7) = {0, 1.0, 0.05, 1};
-Point(8) = {1.0, 1.0, 0.05, 1};
+Point(1) = {0, 0, -0.05, h};
+Point(2) = {1.0, 0, -0.05, h};
+Point(3) = {0, 1.0, -0.05, h};
+Point(4) = {1.0, 1.0, -0.05, h};
+Point(5) = {0, 0, 0.05, h};
+Point(6) = {1.0, 0, 0.05, h};
+Point(7) = {0, 1.0, 0.05, h};
+Point(8) = {1.0, 1.0, 0.05, h};
 
 Line(1) = {1, 2};
 Line(2) = {2, 4};
@@ -38,9 +44,9 @@ Plane Surface(6) = {6};
 Surface Loop(1) = {1, 2, 3, 4, 5, 6};
 Volume(1) = {1};
 
-Transfinite Line {1, 3, 5, 7} = 7;
-Transfinite Line {2, 4, 6, 8} = 7;
-Transfinite Line {9, 10, 11, 12} = 1 + 1;
+Transfinite Line {1, 3, 5, 7} = nx + 1;
+Transfinite Line {2, 4, 6, 8} = ny + 1;
+Transfinite Line {9, 10, 11, 12} = nz + 1;
 Transfinite Surface {1} = {1, 2, 4, 3};
 Transfinite Surface {2} = {5, 6, 8, 7};
 Transfinite Surface {3} = {1, 2, 6, 5};
