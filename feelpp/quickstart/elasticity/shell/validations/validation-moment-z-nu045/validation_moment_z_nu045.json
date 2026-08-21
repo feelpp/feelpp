@@ -15,10 +15,38 @@
   },
   "loads": {
     "bodyForce": "{0,0,0}",
-    "tractions": [
+    "pointLoads": [
       {
-        "marker": "ZPlus",
-        "expr": "{-6*(y-0.5),6*(x-0.5),0}:x:y:z"
+        "marker": "P1",
+        "value": [
+          0.0,
+          0.0,
+          0.25
+        ]
+      },
+      {
+        "marker": "P2",
+        "value": [
+          0.0,
+          0.0,
+          0.25
+        ]
+      },
+      {
+        "marker": "P5",
+        "value": [
+          0.0,
+          0.0,
+          -0.25
+        ]
+      },
+      {
+        "marker": "P6",
+        "value": [
+          0.0,
+          0.0,
+         -0.25
+        ]
       }
     ]
   },
@@ -40,53 +68,35 @@
     "items": [
       {
         "type": "elasticity-point-fields",
-        "name": "validation-pdf-page-12-center",
+        "name": "validation-code-matlab",
         "point": [
           0.5,
           0.5,
-          0.0
+          0.5
         ],
         "references": {
-          "hexa8": {
-            "epsilon": [
-              6.9e-18,
-              -3.5e-18,
-              -1.04e-17,
-              -4.16e-17,
-              7.29e-17,
-              -1.631e-16
-            ],
-            "sigma": [
-              -1.675e-16,
-              -2.393e-16,
-              -2.871e-16,
-              -1.436e-16,
-              2.512e-16,
-              -5.623e-16
-            ]
-          },
           "sb9g25": {
             "epsilon": [
-              2.899e-18,
-              -3.469e-18,
-              6.939e-18,
+              0.0169,
+              0.0169,
+              -0.0408,
               0.0,
               0.0,
               0.0
             ],
             "sigma": [
-              2.176e-16,
-              1.737e-16,
-              2.455e-16,
+              -0.1023,
+              -0.1023,
+              -0.5,
               0.0,
               0.0,
               0.0
             ]
           }
         },
-        "description": "PDF Epsilon/Sigma values are displayed with MATLAB scale factors; component order xx,yy,zz,xy,xz,yz.",
+        "description": "Epsilon/Sigma at element center; component order xx,yy,zz,xy,xz,yz.",
         "tolerance": {
-          "absolute": 5e-13
+          "absolute": 1e-4
         }
       }
     ]

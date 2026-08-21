@@ -329,10 +329,10 @@ evaluateAtGmc( GmcPtrType const& gmc,
     Eigen::Matrix<double, 6, 1> epsilonMandel;
     epsilonMandel.setZero();
     epsilonMandel( 0 ) = membrane( 0 );
-    epsilonMandel( 1 ) = std::numbers::sqrt2_v<double> * membrane( 3 );
-    epsilonMandel( 2 ) = std::numbers::sqrt2_v<double> * shearWeight * shear( 4 );
+    epsilonMandel( 1 ) = membrane( 3 );
+    epsilonMandel( 2 ) = shearWeight * shear( 4 );
     epsilonMandel( 3 ) = membrane( 1 );
-    epsilonMandel( 4 ) = std::numbers::sqrt2_v<double> * shearWeight * shear( 5 );
+    epsilonMandel( 4 ) = shearWeight * shear( 5 );
     epsilonMandel( 5 ) = pinching( 2 ) +
                          alphaScale * ( -4.0*zetaValue/data.thickness ) * alphah.localToGlobal( elementId, 0, 0 );
 

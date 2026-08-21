@@ -382,12 +382,14 @@ template <detail::BasisProxyType ProxyType, typename ShearWeightExprT>
 sb9Shear( ProxyType const& proxy, ShearWeightExprT const& shearWeight )
 {
     auto bc0 = sb9Bc0( proxy );
-    return mandel_vec<3>( cst( 0.0 ),
-                          cst( 0.0 ),
-                          cst( 0.0 ),
-                          cst( 0.0 ),
-                          shearWeight * component<4, 0>( bc0 ),
-                          shearWeight * component<5, 0>( bc0 ) );
+    // Bc0 shear coefficients are already Mandel-scaled. Only reorder the SB9
+    // diagonal-first slots into Feel++ storage order (00,01,02,11,12,22).
+    return vec( cst( 0.0 ),
+                cst( 0.0 ),
+                shearWeight * component<4, 0>( bc0 ),
+                cst( 0.0 ),
+                shearWeight * component<5, 0>( bc0 ),
+                cst( 0.0 ) );
 }
 } // namespace vf
 } // namespace Feel

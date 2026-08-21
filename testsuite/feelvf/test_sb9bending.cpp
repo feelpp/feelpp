@@ -159,4 +159,17 @@ BOOST_AUTO_TEST_CASE( sb9_bending_linear_x_and_y_have_expected_energy_on_axis_al
     BOOST_CHECK_CLOSE( energyY, 1.0, 1e-8 );
 }
 
+/**
+ * \test Verify that engineering in-plane shear is converted to Mandel storage once.
+ */
+BOOST_AUTO_TEST_CASE( sb9_bending_engineering_shear_has_expected_energy_on_axis_aligned_patch )
+{
+    auto mesh = createAxisAlignedUnitPatch( "sb9_bending_axis_aligned_shear_patch" );
+
+    double const energyXY = sb9BendingLinearEnergy( mesh, Py(), cst( 0.0 ), cst( 0.0 ) );
+
+    BOOST_TEST_MESSAGE( "sb9 bending unit engineering shear energy: " << energyXY );
+    BOOST_CHECK_CLOSE( energyXY, 0.5, 1e-8 );
+}
+
 BOOST_AUTO_TEST_SUITE_END()

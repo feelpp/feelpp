@@ -1,6 +1,6 @@
 {
   "name": "validation-flexion-corner",
-  "description": "Plate flexion case from validation.pdf page 15: impose the PDF node constraints on P1,P6,P8 and apply a 1 N point load on P3.",
+  "description": "Plate flexion case from validation.pdf page 15: impose the PDF node constraints on P1,P6,P7 and apply a 1 N point load on P4.",
   "gmsh": {
     "filename": "validation_flexion_corner.geo"
   },
@@ -38,7 +38,7 @@
         ]
       },
       {
-        "marker": "P8",
+        "marker": "P7",
         "components": [
           false,
           false,
@@ -56,7 +56,7 @@
     "bodyForce": "{0,0,0}",
     "pointLoads": [
       {
-        "marker": "P3",
+        "marker": "P4",
         "value": [
           0.0,
           0.0,
@@ -70,9 +70,9 @@
     "items": [
       {
         "type": "probe",
-        "name": "node 3 z displacement",
+        "name": "node 4 z displacement",
         "point": [
-          0.0,
+          100.0,
           100.0,
           -0.5
         ],
@@ -81,8 +81,11 @@
           0.0,
           1.0
         ],
-        "reference": 0.39,
-        "description": "Node 3 z displacement reported in validation.pdf and attributed there to the Bassa reference"
+        "reference": 0.390094,
+        "description": "Node 4 z displacement reported in validation.pdf and attributed there to the Bassa reference",
+        "tolerance": {
+          "absolute": 1e-6
+        }
       }
     ]
   }

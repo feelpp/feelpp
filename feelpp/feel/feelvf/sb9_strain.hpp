@@ -22,14 +22,27 @@ namespace Feel
 {
 namespace vf
 {
-template <detail::BasisProxyType ProxyType, typename ZetaExprT, typename ShearWeightExprT>
+/**
+ * \brief Compose the complete displacement-driven SB9 strain in Mandel storage.
+ *
+ * \param proxy Trial or test displacement basis proxy.
+ * \param zetaExpr Through-thickness coordinate expression.
+ * \param shearWeight Reissner transverse-shear weight.
+ * \param pinchingBpzScale Scale applied to the linear pinching contribution.
+ * \return SB9 strain in Feel++ storage order `(00,01,02,11,12,22)`.
+ */
+template <detail::BasisProxyType ProxyType,
+          typename ZetaExprT,
+          typename ShearWeightExprT,
+          typename PinchingScaleExprT>
 [[nodiscard]] inline auto
 sb9ShellStrain( ProxyType const& proxy,
                 ZetaExprT const& zetaExpr,
-                ShearWeightExprT const& shearWeight )
+                ShearWeightExprT const& shearWeight,
+                PinchingScaleExprT const& pinchingBpzScale )
 {
     auto membraneBending = sb9MembraneBending( proxy, zetaExpr );
-    auto pinching = sb9Pinching( proxy, zetaExpr );
+    auto pinching = sb9Pinching( proxy, zetaExpr, pinchingBpzScale );
     auto shear = sb9Shear( proxy, shearWeight );
 
     // Rebuild the final symmetric-storage vector explicitly in Feel's
@@ -40,6 +53,18 @@ sb9ShellStrain( ProxyType const& proxy,
                 component<3, 0>( membraneBending ),
                 component<4, 0>( shear ),
                 component<5, 0>( pinching ) );
+}
+
+/**
+ * \brief Compose the complete SB9 strain with the full `zeta*Bpz` contribution.
+ */
+template <detail::BasisProxyType ProxyType, typename ZetaExprT, typename ShearWeightExprT>
+[[nodiscard]] inline auto
+sb9ShellStrain( ProxyType const& proxy,
+                ZetaExprT const& zetaExpr,
+                ShearWeightExprT const& shearWeight )
+{
+    return sb9ShellStrain( proxy, zetaExpr, shearWeight, cst( 1.0 ) );
 }
 
 template <detail::BasisProxyType ProxyType>

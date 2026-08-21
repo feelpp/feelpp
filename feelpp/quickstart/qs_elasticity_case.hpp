@@ -117,6 +117,7 @@ struct Config
     std::vector<PointLoadConfig> pointForces;
     std::vector<PointLoadConfig> pointMoments;
     std::vector<PointConstraintConfig> pointConstraints;
+    std::vector<PointConstraintConfig> faceConstraints;
     CheckerConfig checker;
     qsec::Config<FEELPP_DIM> referenceChecks;
 };
@@ -402,6 +403,16 @@ applyJson( Config& cfg,
             for ( auto const& constraint : boundary.at( "pointConstraints" ) )
             {
                 cfg.pointConstraints.push_back(
+                    { constraint.at( "marker" ).get<std::string>(),
+                      jsonComponentMask( constraint, "components", true ),
+                      jsonComponentExpressions( constraint, "value" ) } );
+            }
+        }
+        if ( boundary.contains( "faceConstraints" ) )
+        {
+            for ( auto const& constraint : boundary.at( "faceConstraints" ) )
+            {
+                cfg.faceConstraints.push_back(
                     { constraint.at( "marker" ).get<std::string>(),
                       jsonComponentMask( constraint, "components", true ),
                       jsonComponentExpressions( constraint, "value" ) } );

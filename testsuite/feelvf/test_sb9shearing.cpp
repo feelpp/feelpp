@@ -158,8 +158,9 @@ BOOST_AUTO_TEST_CASE( sb9_shearing_properties_on_axis_aligned_patch )
  * \test Verify simple axis-aligned in-plane extension energies.
  *
  * On the unit patch and with the chosen material constants, unit transverse shear
- * deformation would have unit energy. Due to the shear correction factor embedded 
- * in the SB9 transverse-shearing formulation, the expected reference energy is 5/6.
+ * deformation has energy `mu*gamma^2 = 1/2`. Due to the shear correction factor
+ * embedded in the SB9 transverse-shearing formulation, the expected reference
+ * energy is therefore `5/12`.
  *
  * This test also verifies that in-plane membrane modes do not contribute to the SB9 
  * transverse-shearing energy.
@@ -171,7 +172,7 @@ BOOST_AUTO_TEST_CASE( sb9_shearing_linear_have_expected_energy_on_axis_aligned_p
     double const energyX = sb9ShearingLinearEnergy( mesh, cst( 0.0 ), cst( 0.0 ), Px() );
     double const energyMem = sb9ShearingLinearEnergy( mesh, Px(), Py(), cst( 0.0 ) );
 
-    BOOST_CHECK_CLOSE( energyX, 5.0/6.0, g_tol );
+    BOOST_CHECK_CLOSE( energyX, 5.0/12.0, g_tol );
     BOOST_CHECK_SMALL( energyMem, g_tol );
 }
 

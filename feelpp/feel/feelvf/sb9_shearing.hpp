@@ -234,12 +234,12 @@ sb9Shearing( ProxyType const& proxy, ZetaExprT const& zetaExpr )
     auto bts0 = sb9Bts0( proxy );
     auto reissner_func = cst( 1.25 ) * ( cst( 1 ) - zetaExpr * zetaExpr );
 
-    return mandel_vec<3>( cst( 0.0 ),
-                          cst( 0.0 ),
-                          cst( 0.0 ),
-                          cst( 0.0 ),
-                          component<4, 0>( bts0 ) * reissner_func,
-                          component<5, 0>( bts0 ) * reissner_func );
+    return vec( cst( 0.0 ),
+                cst( 0.0 ),
+                component<4, 0>( bts0 ) * reissner_func,
+                cst( 0.0 ),
+                component<5, 0>( bts0 ) * reissner_func,
+                cst( 0.0 ) );
 }
 } // namespace vf
 } // namespace Feel
