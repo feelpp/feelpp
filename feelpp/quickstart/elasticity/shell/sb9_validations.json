@@ -1,0 +1,912 @@
+{
+  "validations": {
+    "validation-traction-x-nu0": {
+      "description": "Pure traction case from validation.pdf page 2: clamp XMoins and apply a total 1 N load on XPlus, with nu=0.",
+      "geometry": {
+        "kind": "rectangular",
+        "template": "$top_srcdir/feelpp/quickstart/meshes/sb9_rectangular_shell.geo.tmpl",
+        "length": 1.0,
+        "width": 1.0,
+        "thickness": 1.0,
+        "nx": 1,
+        "ny": 1,
+        "nz": 1
+      },
+      "material": {
+        "E": 1.0,
+        "nu": 0.0
+      },
+      "boundaryConditions": {
+        "clampMarkers": [ "XMoins" ]
+      },
+      "loads": {
+        "bodyForce": "{0,0,0}",
+        "totalForces": [
+          {
+            "marker": "XPlus",
+            "value": [ 1.0, 0.0, 0.0 ]
+          }
+        ]
+      },
+      "probe": {
+        "point": [ 1.0, 0.5, 0.5 ],
+        "direction": [ 1.0, 0.0, 0.0 ],
+        "label": "tip x displacement"
+      },
+      "fieldReferences": [
+        {
+          "name": "validation-pdf-page-2-center",
+          "description": "PDF Epsilon/Sigma at element center; component order xx,yy,zz,xy,xz,yz.",
+          "point": [ 0.5, 0.5, 0.0 ],
+          "absoluteTolerance": 5.0e-4,
+          "relativeTolerance": 5.0e-3,
+          "targets": {
+            "hexa8": {
+              "epsilon": [ 1.0, 0.0, 0.0, 0.0, 0.0, 0.0 ],
+              "sigma": [ 1.0, 0.0, 0.0, 0.0, 0.0, 0.0 ]
+            },
+            "sb9g25": {
+              "epsilon": [ 1.0, 0.0, 0.0, 0.0, 0.0, 0.0 ],
+              "sigma": [ 1.0, 0.0, 0.0, 0.0, 0.0, 0.0 ]
+            }
+          }
+        }
+      ]
+    },
+    "validation-traction-y-nu0": {
+      "description": "Pure traction case inferred from validation.pdf page 2 note: clamp YMoins and apply a total 1 N load on YPlus, with nu=0.",
+      "geometry": {
+        "kind": "rectangular",
+        "template": "$top_srcdir/feelpp/quickstart/meshes/sb9_rectangular_shell.geo.tmpl",
+        "length": 1.0,
+        "width": 1.0,
+        "thickness": 1.0,
+        "nx": 1,
+        "ny": 1,
+        "nz": 1
+      },
+      "material": {
+        "E": 1.0,
+        "nu": 0.0
+      },
+      "boundaryConditions": {
+        "clampMarkers": [ "YMoins" ]
+      },
+      "loads": {
+        "bodyForce": "{0,0,0}",
+        "totalForces": [
+          {
+            "marker": "YPlus",
+            "value": [ 0.0, 1.0, 0.0 ]
+          }
+        ]
+      },
+      "probe": {
+        "point": [ 0.5, 1.0, 0.5 ],
+        "direction": [ 0.0, 1.0, 0.0 ],
+        "label": "tip y displacement"
+      },
+      "fieldReferences": [
+        {
+          "name": "validation-pdf-page-2-analog-center",
+          "description": "Analogous nu=0 result stated by the PDF; component order xx,yy,zz,xy,xz,yz.",
+          "point": [ 0.5, 0.5, 0.0 ],
+          "absoluteTolerance": 5.0e-4,
+          "relativeTolerance": 5.0e-3,
+          "targets": {
+            "hexa8": {
+              "epsilon": [ 0.0, 1.0, 0.0, 0.0, 0.0, 0.0 ],
+              "sigma": [ 0.0, 1.0, 0.0, 0.0, 0.0, 0.0 ]
+            },
+            "sb9g25": {
+              "epsilon": [ 0.0, 1.0, 0.0, 0.0, 0.0, 0.0 ],
+              "sigma": [ 0.0, 1.0, 0.0, 0.0, 0.0, 0.0 ]
+            }
+          }
+        }
+      ]
+    },
+    "validation-traction-z-nu0": {
+      "description": "Pure traction case inferred from validation.pdf page 2 note: clamp ZMoins and apply a total 1 N load on ZPlus, with nu=0.",
+      "geometry": {
+        "kind": "rectangular",
+        "template": "$top_srcdir/feelpp/quickstart/meshes/sb9_rectangular_shell.geo.tmpl",
+        "length": 1.0,
+        "width": 1.0,
+        "thickness": 1.0,
+        "nx": 1,
+        "ny": 1,
+        "nz": 1
+      },
+      "material": {
+        "E": 1.0,
+        "nu": 0.0
+      },
+      "boundaryConditions": {
+        "clampMarkers": [ "ZMoins" ]
+      },
+      "loads": {
+        "bodyForce": "{0,0,0}",
+        "totalForces": [
+          {
+            "marker": "ZPlus",
+            "value": [ 0.0, 0.0, 1.0 ]
+          }
+        ]
+      },
+      "probe": {
+        "point": [ 0.5, 0.5, 0.5 ],
+        "direction": [ 0.0, 0.0, 1.0 ],
+        "label": "tip z displacement"
+      },
+      "fieldReferences": [
+        {
+          "name": "validation-pdf-page-2-analog-center",
+          "description": "Analogous nu=0 result stated by the PDF; component order xx,yy,zz,xy,xz,yz.",
+          "point": [ 0.5, 0.5, 0.0 ],
+          "absoluteTolerance": 5.0e-4,
+          "relativeTolerance": 5.0e-3,
+          "targets": {
+            "hexa8": {
+              "epsilon": [ 0.0, 0.0, 1.0, 0.0, 0.0, 0.0 ],
+              "sigma": [ 0.0, 0.0, 1.0, 0.0, 0.0, 0.0 ]
+            },
+            "sb9g25": {
+              "epsilon": [ 0.0, 0.0, 1.0, 0.0, 0.0, 0.0 ],
+              "sigma": [ 0.0, 0.0, 1.0, 0.0, 0.0, 0.0 ]
+            }
+          }
+        }
+      ]
+    },
+    "validation-traction-x": {
+      "description": "Pure traction case from validation.pdf page 3: clamp XMoins and apply a total 1 N load on XPlus.",
+      "geometry": {
+        "kind": "rectangular",
+        "template": "$top_srcdir/feelpp/quickstart/meshes/sb9_rectangular_shell.geo.tmpl",
+        "length": 1.0,
+        "width": 1.0,
+        "thickness": 1.0,
+        "nx": 1,
+        "ny": 1,
+        "nz": 1
+      },
+      "material": {
+        "E": 1.0,
+        "nu": 0.45
+      },
+      "boundaryConditions": {
+        "clampMarkers": [ "XMoins" ]
+      },
+      "loads": {
+        "bodyForce": "{0,0,0}",
+        "totalForces": [
+          {
+            "marker": "XPlus",
+            "value": [ 1.0, 0.0, 0.0 ]
+          }
+        ]
+      },
+      "probe": {
+        "point": [ 1.0, 0.5, 0.5 ],
+        "direction": [ 1.0, 0.0, 0.0 ],
+        "label": "tip x displacement"
+      },
+      "fieldReferences": [
+        {
+          "name": "validation-pdf-page-3-center",
+          "description": "PDF Epsilon/Sigma at element center; component order xx,yy,zz,xy,xz,yz.",
+          "point": [ 0.5, 0.5, 0.0 ],
+          "absoluteTolerance": 5.0e-4,
+          "relativeTolerance": 5.0e-3,
+          "targets": {
+            "hexa8": {
+              "epsilon": [ 0.58, -0.1933, -0.1933, 0.0, 0.0, 0.0 ],
+              "sigma": [ 1.0, 0.4667, 0.4667, 0.0, 0.0, 0.0 ]
+            },
+            "sb9g25": {
+              "epsilon": [ 0.698, -0.2654, -0.2654, 0.0, 0.0, 0.0 ],
+              "sigma": [ 1.0, 0.3356, 0.3356, 0.0, 0.0, 0.0 ]
+            }
+          }
+        }
+      ]
+    },
+    "validation-traction-y": {
+      "description": "Pure traction case from validation.pdf page 4: clamp YMoins and apply a total 1 N load on YPlus.",
+      "geometry": {
+        "kind": "rectangular",
+        "template": "$top_srcdir/feelpp/quickstart/meshes/sb9_rectangular_shell.geo.tmpl",
+        "length": 1.0,
+        "width": 1.0,
+        "thickness": 1.0,
+        "nx": 1,
+        "ny": 1,
+        "nz": 1
+      },
+      "material": {
+        "E": 1.0,
+        "nu": 0.45
+      },
+      "boundaryConditions": {
+        "clampMarkers": [ "YMoins" ]
+      },
+      "loads": {
+        "bodyForce": "{0,0,0}",
+        "totalForces": [
+          {
+            "marker": "YPlus",
+            "value": [ 0.0, 1.0, 0.0 ]
+          }
+        ]
+      },
+      "probe": {
+        "point": [ 0.5, 1.0, 0.5 ],
+        "direction": [ 0.0, 1.0, 0.0 ],
+        "label": "tip y displacement"
+      },
+      "fieldReferences": [
+        {
+          "name": "validation-pdf-page-4-center",
+          "description": "PDF Epsilon/Sigma at element center; component order xx,yy,zz,xy,xz,yz.",
+          "point": [ 0.5, 0.5, 0.0 ],
+          "absoluteTolerance": 5.0e-4,
+          "relativeTolerance": 5.0e-3,
+          "targets": {
+            "hexa8": {
+              "epsilon": [ -0.1933, 0.58, -0.1933, 0.0, 0.0, 0.0 ],
+              "sigma": [ 0.4667, 1.0, 0.4667, 0.0, 0.0, 0.0 ]
+            },
+            "sb9g25": {
+              "epsilon": [ -0.2654, 0.698, -0.2654, 0.0, 0.0, 0.0 ],
+              "sigma": [ 0.3356, 1.0, 0.3356, 0.0, 0.0, 0.0 ]
+            }
+          }
+        }
+      ]
+    },
+    "validation-traction-z": {
+      "description": "Pure traction case from validation.pdf page 5: clamp ZMoins and apply a total 1 N load on ZPlus.",
+      "geometry": {
+        "kind": "rectangular",
+        "template": "$top_srcdir/feelpp/quickstart/meshes/sb9_rectangular_shell.geo.tmpl",
+        "length": 1.0,
+        "width": 1.0,
+        "thickness": 1.0,
+        "nx": 1,
+        "ny": 1,
+        "nz": 1
+      },
+      "material": {
+        "E": 1.0,
+        "nu": 0.45
+      },
+      "boundaryConditions": {
+        "clampMarkers": [ "ZMoins" ]
+      },
+      "loads": {
+        "bodyForce": "{0,0,0}",
+        "totalForces": [
+          {
+            "marker": "ZPlus",
+            "value": [ 0.0, 0.0, 1.0 ]
+          }
+        ]
+      },
+      "probe": {
+        "point": [ 0.5, 0.5, 0.5 ],
+        "direction": [ 0.0, 0.0, 1.0 ],
+        "label": "tip z displacement"
+      },
+      "fieldReferences": [
+        {
+          "name": "validation-pdf-page-5-center",
+          "description": "PDF Epsilon/Sigma at element center; component order xx,yy,zz,xy,xz,yz.",
+          "point": [ 0.5, 0.5, 0.0 ],
+          "absoluteTolerance": 5.0e-4,
+          "relativeTolerance": 5.0e-3,
+          "targets": {
+            "hexa8": {
+              "epsilon": [ -0.1933, -0.1933, 0.58, 0.0, 0.0, 0.0 ],
+              "sigma": [ 0.4667, 0.4667, 1.0, 0.0, 0.0, 0.0 ]
+            },
+            "sb9g25": {
+              "epsilon": [ -0.3375, -0.3375, 0.8159, 0.0, 0.0, 0.0 ],
+              "sigma": [ 0.2045, 0.2045, 1.0, 0.0, 0.0, 0.0 ]
+            }
+          }
+        }
+      ]
+    },
+    "validation-traction-x-partial": {
+      "description": "Pure traction case from validation.pdf page 6: impose the PDF node constraints on P1,P3,P7,P5 and apply a total 1 N load on XPlus.",
+      "geometry": {
+        "kind": "rectangular",
+        "template": "$top_srcdir/feelpp/quickstart/meshes/sb9_rectangular_shell.geo.tmpl",
+        "length": 1.0,
+        "width": 1.0,
+        "thickness": 1.0,
+        "nx": 1,
+        "ny": 1,
+        "nz": 1
+      },
+      "material": {
+        "E": 1.0,
+        "nu": 0.45
+      },
+      "boundaryConditions": {
+        "clampMarkers": [],
+        "pointConstraints": [
+          { "marker": "P1", "components": [ true, true, true ], "value": [ 0.0, 0.0, 0.0 ] },
+          { "marker": "P3", "components": [ true, false, true ], "value": [ 0.0, 0.0, 0.0 ] },
+          { "marker": "P7", "components": [ true, false, false ], "value": [ 0.0, 0.0, 0.0 ] },
+          { "marker": "P5", "components": [ true, true, false ], "value": [ 0.0, 0.0, 0.0 ] }
+        ]
+      },
+      "loads": {
+        "bodyForce": "{0,0,0}",
+        "totalForces": [
+          {
+            "marker": "XPlus",
+            "value": [ 1.0, 0.0, 0.0 ]
+          }
+        ]
+      },
+      "probe": {
+        "point": [ 1.0, 0.5, 0.5 ],
+        "direction": [ 1.0, 0.0, 0.0 ],
+        "label": "tip x displacement"
+      },
+      "reference": {
+        "probeValue": 1.0,
+        "absoluteTolerance": 1.0e-12,
+        "relativeTolerance": 1.0e-12,
+        "description": "Exact axial elongation FL/(EA) from validation.pdf setup with partial PDF node constraints"
+      },
+      "fieldReferences": [
+        {
+          "name": "validation-pdf-page-6-center",
+          "description": "PDF Epsilon/Sigma at element center; component order xx,yy,zz,xy,xz,yz.",
+          "point": [ 0.5, 0.5, 0.0 ],
+          "absoluteTolerance": 5.0e-4,
+          "relativeTolerance": 5.0e-3,
+          "targets": {
+            "hexa8": {
+              "epsilon": [ 1.0, -0.45, -0.45, 0.0, 0.0, 0.0 ],
+              "sigma": [ 1.0, 0.0, 0.0, 0.0, 0.0, 0.0 ]
+            },
+            "sb9g25": {
+              "epsilon": [ 1.0, -0.45, -0.45, 0.0, 0.0, 0.0 ],
+              "sigma": [ 1.0, 0.0, 0.0, 0.0, 0.0, 0.0 ]
+            }
+          }
+        }
+      ]
+    },
+    "validation-traction-y-partial": {
+      "description": "Pure traction case from validation.pdf page 7: impose the PDF node constraints on P2,P6,P5,P1 and apply a total 1 N load on YPlus.",
+      "geometry": {
+        "kind": "rectangular",
+        "template": "$top_srcdir/feelpp/quickstart/meshes/sb9_rectangular_shell.geo.tmpl",
+        "length": 1.0,
+        "width": 1.0,
+        "thickness": 1.0,
+        "nx": 1,
+        "ny": 1,
+        "nz": 1
+      },
+      "material": {
+        "E": 1.0,
+        "nu": 0.45
+      },
+      "boundaryConditions": {
+        "clampMarkers": [],
+        "pointConstraints": [
+          { "marker": "P2", "components": [ true, true, true ], "value": [ 0.0, 0.0, 0.0 ] },
+          { "marker": "P6", "components": [ true, true, false ], "value": [ 0.0, 0.0, 0.0 ] },
+          { "marker": "P5", "components": [ false, true, false ], "value": [ 0.0, 0.0, 0.0 ] },
+          { "marker": "P1", "components": [ false, true, false ], "value": [ 0.0, 0.0, 0.0 ] }
+        ]
+      },
+      "loads": {
+        "bodyForce": "{0,0,0}",
+        "totalForces": [
+          {
+            "marker": "YPlus",
+            "value": [ 0.0, 1.0, 0.0 ]
+          }
+        ]
+      },
+      "probe": {
+        "point": [ 0.5, 1.0, 0.5 ],
+        "direction": [ 0.0, 1.0, 0.0 ],
+        "label": "tip y displacement"
+      },
+      "reference": {
+        "probeValue": 1.0,
+        "absoluteTolerance": 1.0e-12,
+        "relativeTolerance": 1.0e-12,
+        "description": "Exact axial elongation FL/(EA) from validation.pdf setup with partial PDF node constraints"
+      },
+      "fieldReferences": [
+        {
+          "name": "validation-pdf-page-7-center",
+          "description": "PDF Epsilon/Sigma at element center; component order xx,yy,zz,xy,xz,yz.",
+          "point": [ 0.5, 0.5, 0.0 ],
+          "absoluteTolerance": 5.0e-4,
+          "relativeTolerance": 5.0e-3,
+          "targets": {
+            "hexa8": {
+              "epsilon": [ -0.45, 1.0, -0.45, 0.0, 0.0, 0.0 ],
+              "sigma": [ 0.0, 1.0, 0.0, 0.0, 0.0, 0.0 ]
+            },
+            "sb9g25": {
+              "epsilon": [ -0.45, 1.0, -0.45, 0.0, 0.0, 0.0 ],
+              "sigma": [ 0.0, 1.0, 0.0, 0.0, 0.0, 0.0 ]
+            }
+          }
+        }
+      ]
+    },
+    "validation-traction-z-partial": {
+      "description": "Pure traction case from validation.pdf page 8: impose the visible PDF MATLAB matrix on P1,P2,P4,P3 and apply a total 1 N load on ZPlus.",
+      "geometry": {
+        "kind": "rectangular",
+        "template": "$top_srcdir/feelpp/quickstart/meshes/sb9_rectangular_shell.geo.tmpl",
+        "length": 1.0,
+        "width": 1.0,
+        "thickness": 1.0,
+        "nx": 1,
+        "ny": 1,
+        "nz": 1
+      },
+      "material": {
+        "E": 1.0,
+        "nu": 0.45
+      },
+      "boundaryConditions": {
+        "clampMarkers": [],
+        "pointConstraints": [
+          { "marker": "P1", "components": [ true, true, true ], "value": [ 0.0, 0.0, 0.0 ] },
+          { "marker": "P2", "components": [ false, true, true ], "value": [ 0.0, 0.0, 0.0 ] },
+          { "marker": "P4", "components": [ false, false, true ], "value": [ 0.0, 0.0, 0.0 ] },
+          { "marker": "P3", "components": [ true, false, true ], "value": [ 0.0, 0.0, 0.0 ] }
+        ]
+      },
+      "loads": {
+        "bodyForce": "{0,0,0}",
+        "totalForces": [
+          {
+            "marker": "ZPlus",
+            "value": [ 0.0, 0.0, 1.0 ]
+          }
+        ]
+      },
+      "probe": {
+        "point": [ 0.5, 0.5, 0.5 ],
+        "direction": [ 0.0, 0.0, 1.0 ],
+        "label": "tip z displacement"
+      },
+      "reference": {
+        "probeValue": 1.0,
+        "absoluteTolerance": 1.0e-12,
+        "relativeTolerance": 1.0e-12,
+        "description": "Exact axial elongation FL/(EA) from validation.pdf setup with partial PDF node constraints"
+      },
+      "fieldReferences": [
+        {
+          "name": "validation-pdf-page-8-center",
+          "description": "PDF Epsilon/Sigma at element center; component order xx,yy,zz,xy,xz,yz.",
+          "point": [ 0.5, 0.5, 0.0 ],
+          "absoluteTolerance": 5.0e-4,
+          "relativeTolerance": 5.0e-3,
+          "targets": {
+            "hexa8": {
+              "epsilon": [ -0.45, -0.45, 1.0, 0.0, 0.0, 0.0 ],
+              "sigma": [ 0.0, 0.0, 1.0, 0.0, 0.0, 0.0 ]
+            },
+            "sb9g25": {
+              "epsilon": [ -0.45, -0.45, 1.0, 0.0, 0.0, 0.0 ],
+              "sigma": [ 0.0, 0.0, 1.0, 0.0, 0.0, 0.0 ]
+            }
+          }
+        }
+      ]
+    },
+    "validation-moment-x": {
+      "description": "Moment case from validation.pdf page 9: clamp XMoins and apply a unit resultant moment on XPlus through an equivalent tangential traction field.",
+      "geometry": {
+        "kind": "rectangular",
+        "template": "$top_srcdir/feelpp/quickstart/meshes/sb9_rectangular_shell.geo.tmpl",
+        "length": 1.0,
+        "width": 1.0,
+        "thickness": 1.0,
+        "nx": 1,
+        "ny": 1,
+        "nz": 1
+      },
+      "material": {
+        "E": 10.0,
+        "nu": 0.0
+      },
+      "boundaryConditions": {
+        "clampMarkers": [ "XMoins" ]
+      },
+      "loads": {
+        "bodyForce": "{0,0,0}",
+        "tractions": [
+          {
+            "marker": "XPlus",
+            "expr": "{0,-6*z,6*(y-0.5)}:x:y:z"
+          }
+        ]
+      },
+      "probe": {
+        "point": [ 1.0, 1.0, 0.5 ],
+        "direction": [ 0.0, 0.0, 1.0 ],
+        "label": "diagnostic z displacement"
+      },
+      "fieldReferences": [
+        {
+          "name": "validation-pdf-page-9-center",
+          "description": "PDF Epsilon/Sigma values are displayed with MATLAB scale factors; component order xx,yy,zz,xy,xz,yz.",
+          "point": [ 0.5, 0.5, 0.0 ],
+          "absoluteTolerance": 5.0e-13,
+          "epsilonAbsoluteTolerances": [ 5.0e-13, 5.0e-13, 5.0e-13, 5.0e-13, 5.0e-13, 4.0e-5 ],
+          "sigmaAbsoluteTolerances": [ 5.0e-13, 5.0e-13, 5.0e-13, 5.0e-13, 5.0e-13, 2.0e-4 ],
+          "targets": {
+            "hexa8": {
+              "epsilon": [ -3.5e-18, -1.2e-18, -1.39e-17, -2.55e-17, 1.249e-16, -4.16e-17 ],
+              "sigma": [ -3.47e-17, -1.16e-17, -1.388e-16, -1.277e-16, 6.245e-16, -2.082e-16 ]
+            },
+            "sb9g25": {
+              "epsilon": [ 0.0, 2.2e-19, -1.388e-17, 0.0, 0.0, 0.0 ],
+              "sigma": [ 0.0, 2.2e-18, -1.388e-16, 0.0, 0.0, 0.0 ]
+            }
+          }
+        }
+      ]
+    },
+    "validation-moment-y": {
+      "description": "Moment case from validation.pdf page 10: clamp YMoins and apply a unit resultant moment on YPlus through an equivalent tangential traction field.",
+      "geometry": {
+        "kind": "rectangular",
+        "template": "$top_srcdir/feelpp/quickstart/meshes/sb9_rectangular_shell.geo.tmpl",
+        "length": 1.0,
+        "width": 1.0,
+        "thickness": 1.0,
+        "nx": 1,
+        "ny": 1,
+        "nz": 1
+      },
+      "material": {
+        "E": 10.0,
+        "nu": 0.0
+      },
+      "boundaryConditions": {
+        "clampMarkers": [ "YMoins" ]
+      },
+      "loads": {
+        "bodyForce": "{0,0,0}",
+        "tractions": [
+          {
+            "marker": "YPlus",
+            "expr": "{6*z,0,-6*(x-0.5)}:x:y:z"
+          }
+        ]
+      },
+      "probe": {
+        "point": [ 1.0, 1.0, 0.5 ],
+        "direction": [ 0.0, 0.0, 1.0 ],
+        "label": "diagnostic z displacement"
+      },
+      "fieldReferences": [
+        {
+          "name": "validation-pdf-page-10-center",
+          "description": "PDF Epsilon/Sigma values are displayed with MATLAB scale factors; component order xx,yy,zz,xy,xz,yz.",
+          "point": [ 0.5, 0.5, 0.0 ],
+          "absoluteTolerance": 5.0e-13,
+          "epsilonAbsoluteTolerances": [ 5.0e-13, 5.0e-13, 5.0e-13, 5.0e-13, 4.0e-5, 5.0e-13 ],
+          "sigmaAbsoluteTolerances": [ 5.0e-13, 5.0e-13, 5.0e-13, 5.0e-13, 2.0e-4, 5.0e-13 ],
+          "targets": {
+            "hexa8": {
+              "epsilon": [ 1.03e-18, -1.388e-17, 1.388e-17, -6.94e-18, 6.94e-18, 5.551e-17 ],
+              "sigma": [ 1.03e-17, -1.388e-16, 1.388e-16, -3.47e-17, 3.47e-17, 2.776e-16 ]
+            },
+            "sb9g25": {
+              "epsilon": [ -1.5e-19, -1.388e-17, 1.388e-17, 0.0, 0.0, 0.0 ],
+              "sigma": [ -1.5e-18, -1.388e-16, 1.388e-16, 0.0, 0.0, 0.0 ]
+            }
+          }
+        }
+      ]
+    },
+    "validation-moment-z": {
+      "description": "Moment case from validation.pdf page 11: clamp ZMoins and apply a unit resultant moment on ZPlus through an equivalent tangential traction field.",
+      "geometry": {
+        "kind": "rectangular",
+        "template": "$top_srcdir/feelpp/quickstart/meshes/sb9_rectangular_shell.geo.tmpl",
+        "length": 1.0,
+        "width": 1.0,
+        "thickness": 1.0,
+        "nx": 1,
+        "ny": 1,
+        "nz": 1
+      },
+      "material": {
+        "E": 10.0,
+        "nu": 0.0
+      },
+      "boundaryConditions": {
+        "clampMarkers": [ "ZMoins" ]
+      },
+      "loads": {
+        "bodyForce": "{0,0,0}",
+        "tractions": [
+          {
+            "marker": "ZPlus",
+            "expr": "{-6*(y-0.5),6*(x-0.5),0}:x:y:z"
+          }
+        ]
+      },
+      "probe": {
+        "point": [ 1.0, 1.0, 0.5 ],
+        "direction": [ 1.0, 0.0, 0.0 ],
+        "label": "diagnostic x displacement"
+      },
+      "fieldReferences": [
+        {
+          "name": "validation-pdf-page-11-center",
+          "description": "PDF Epsilon/Sigma values are displayed with MATLAB scale factors; component order xx,yy,zz,xy,xz,yz.",
+          "point": [ 0.5, 0.5, 0.0 ],
+          "absoluteTolerance": 5.0e-13,
+          "targets": {
+            "hexa8": {
+              "epsilon": [ 3.65e-18, 2.082e-17, 1.388e-17, -6.94e-18, -1.388e-17, 6.939e-17 ],
+              "sigma": [ 3.65e-17, 2.082e-16, 1.388e-16, -3.47e-17, -6.94e-17, 3.469e-16 ]
+            },
+            "sb9g25": {
+              "epsilon": [ 1.31e-18, 1.388e-17, 2.776e-17, 0.0, 0.0, 0.0 ],
+              "sigma": [ 1.31e-17, 1.388e-16, 2.776e-16, 0.0, 0.0, 0.0 ]
+            }
+          }
+        }
+      ]
+    },
+    "validation-moment-z-nu045": {
+      "description": "Moment case from validation.pdf page 12: clamp ZMoins and apply a unit resultant moment on ZPlus with nu=0.45.",
+      "geometry": {
+        "kind": "rectangular",
+        "template": "$top_srcdir/feelpp/quickstart/meshes/sb9_rectangular_shell.geo.tmpl",
+        "length": 1.0,
+        "width": 1.0,
+        "thickness": 1.0,
+        "nx": 1,
+        "ny": 1,
+        "nz": 1
+      },
+      "material": {
+        "E": 10.0,
+        "nu": 0.45
+      },
+      "boundaryConditions": {
+        "clampMarkers": [ "ZMoins" ]
+      },
+      "loads": {
+        "bodyForce": "{0,0,0}",
+        "tractions": [
+          {
+            "marker": "ZPlus",
+            "expr": "{-6*(y-0.5),6*(x-0.5),0}:x:y:z"
+          }
+        ]
+      },
+      "probe": {
+        "point": [ 1.0, 1.0, 0.5 ],
+        "direction": [ 1.0, 0.0, 0.0 ],
+        "label": "diagnostic x displacement"
+      },
+      "fieldReferences": [
+        {
+          "name": "validation-pdf-page-12-center",
+          "description": "PDF Epsilon/Sigma values are displayed with MATLAB scale factors; component order xx,yy,zz,xy,xz,yz.",
+          "point": [ 0.5, 0.5, 0.0 ],
+          "absoluteTolerance": 5.0e-13,
+          "targets": {
+            "hexa8": {
+              "epsilon": [ 6.9e-18, -3.5e-18, -1.04e-17, -4.16e-17, 7.29e-17, -1.631e-16 ],
+              "sigma": [ -1.675e-16, -2.393e-16, -2.871e-16, -1.436e-16, 2.512e-16, -5.623e-16 ]
+            },
+            "sb9g25": {
+              "epsilon": [ 2.899e-18, -3.469e-18, 6.939e-18, 0.0, 0.0, 0.0 ],
+              "sigma": [ 2.176e-16, 1.737e-16, 2.455e-16, 0.0, 0.0, 0.0 ]
+            }
+          }
+        }
+      ]
+    },
+    "validation-flexion-z-moment": {
+      "description": "Flexion case from validation.pdf page 13: clamp ZMoins and apply the MATLAB nodal force-couple on ZPlus.",
+      "geometry": {
+        "kind": "rectangular",
+        "template": "$top_srcdir/feelpp/quickstart/meshes/sb9_rectangular_shell.geo.tmpl",
+        "length": 1.0,
+        "width": 1.0,
+        "thickness": 1.0,
+        "nx": 1,
+        "ny": 1,
+        "nz": 1
+      },
+      "material": {
+        "E": 10.0,
+        "nu": 0.45
+      },
+      "boundaryConditions": {
+        "clampMarkers": [ "ZMoins" ]
+      },
+      "loads": {
+        "bodyForce": "{0,0,0}",
+        "pointLoads": [
+          {
+            "marker": "P5",
+            "value": [ -0.6546666666666666, -0.1645, 0.0 ]
+          },
+          {
+            "marker": "P6",
+            "value": [ 0.6546666666666666, -0.1645, 0.0 ]
+          },
+          {
+            "marker": "P7",
+            "value": [ -0.6546666666666666, 0.1645, 0.0 ]
+          },
+          {
+            "marker": "P8",
+            "value": [ 0.6546666666666666, 0.1645, 0.0 ]
+          }
+        ]
+      },
+      "probe": {
+        "point": [ 1.0, 1.0, 0.5 ],
+        "direction": [ 1.0, 0.0, 0.0 ],
+        "label": "diagnostic x displacement"
+      },
+      "fieldReferences": [
+        {
+          "name": "validation-pdf-page-13-center",
+          "description": "PDF Epsilon/Sigma at element center; component order xx,yy,zz,xy,xz,yz.",
+          "point": [ 0.5, 0.5, 0.0 ],
+          "absoluteTolerance": 5.0e-4,
+          "relativeTolerance": 5.0e-3,
+          "targets": {
+            "hexa8": {
+              "epsilon": [ 0.0809, -0.0446, 0.0, 0.0, -0.29, 0.0 ],
+              "sigma": [ 1.685, 0.8197, 1.1271, 0.0, -1.0, 0.0 ]
+            },
+            "sb9g25": {
+              "epsilon": [ 0.1742, -0.039, -0.1106, 0.0, 0.0, 0.0 ],
+              "sigma": [ 1.964, 0.4935, 0.0, 0.0, 0.0, 0.0 ]
+            }
+          }
+        }
+      ]
+    },
+    "validation-point-moment-z": {
+      "description": "Point moment smoke case: clamp ZMoins and apply a unit point moment around z on P8 through the marked-point DSEL.",
+      "geometry": {
+        "kind": "rectangular",
+        "template": "$top_srcdir/feelpp/quickstart/meshes/sb9_rectangular_shell.geo.tmpl",
+        "length": 1.0,
+        "width": 1.0,
+        "thickness": 1.0,
+        "nx": 1,
+        "ny": 1,
+        "nz": 1
+      },
+      "material": {
+        "E": 10.0,
+        "nu": 0.0
+      },
+      "boundaryConditions": {
+        "clampMarkers": [ "ZMoins" ]
+      },
+      "loads": {
+        "bodyForce": "{0,0,0}",
+        "pointMoments": [
+          {
+            "marker": "P8",
+            "value": [ 0.0, 0.0, 1.0 ],
+            "quantity": "total"
+          }
+        ]
+      },
+      "probe": {
+        "point": [ 1.0, 1.0, 0.5 ],
+        "direction": [ 1.0, 0.0, 0.0 ],
+        "label": "diagnostic x displacement"
+      }
+    },
+    "validation-cantilever-z": {
+      "description": "Plate bending case from validation.pdf page 14: clamp XMoins and apply a total -10 N load on XPlus in the Z direction, using the current one-layer shell benchmark adaptation.",
+      "geometry": {
+        "kind": "rectangular",
+        "template": "$top_srcdir/feelpp/quickstart/meshes/sb9_rectangular_shell.geo.tmpl",
+        "length": 1.0,
+        "width": 1.0,
+        "thickness": 0.1,
+        "nx": 6,
+        "ny": 6,
+        "nz": 1
+      },
+      "material": {
+        "E": 2.1e11,
+        "nu": 0.0
+      },
+      "boundaryConditions": {
+        "clampMarkers": [ "XMoins" ]
+      },
+      "loads": {
+        "bodyForce": "{0,0,0}",
+        "totalForces": [
+          {
+            "marker": "XPlus",
+            "value": [ 0.0, 0.0, -10.0 ]
+          }
+        ]
+      },
+      "probe": {
+        "point": [ 1.0, 0.5, 0.0 ],
+        "direction": [ 0.0, 0.0, 1.0 ],
+        "label": "tip z displacement"
+      },
+      "reference": {
+        "probeValue": -1.9048e-7,
+        "absoluteTolerance": 1.0e-9,
+        "relativeTolerance": 5.0e-3,
+        "description": "Euler-Bernoulli cantilever value quoted in validation.pdf; accepted here on the 6x6x1 shell adaptation within 0.5%"
+      }
+    },
+    "validation-flexion-corner": {
+      "description": "Plate flexion case from validation.pdf page 15: impose the PDF node constraints on P1,P6,P8 and apply a 1 N point load on P3.",
+      "geometry": {
+        "kind": "rectangular",
+        "template": "$top_srcdir/feelpp/quickstart/meshes/sb9_rectangular_shell.geo.tmpl",
+        "length": 100.0,
+        "width": 100.0,
+        "thickness": 1.0,
+        "nx": 1,
+        "ny": 1,
+        "nz": 1
+      },
+      "material": {
+        "E": 200000.0,
+        "nu": 0.3
+      },
+      "boundaryConditions": {
+        "clampMarkers": [],
+        "pointConstraints": [
+          { "marker": "P1", "components": [ true, true, true ], "value": [ 0.0, 0.0, 0.0 ] },
+          { "marker": "P6", "components": [ false, true, true ], "value": [ 0.0, 0.0, 0.0 ] },
+          { "marker": "P8", "components": [ false, false, true ], "value": [ 0.0, 0.0, 0.0 ] }
+        ]
+      },
+      "loads": {
+        "bodyForce": "{0,0,0}",
+        "pointLoads": [
+          {
+            "marker": "P3",
+            "value": [ 0.0, 0.0, 1.0 ]
+          }
+        ]
+      },
+      "probe": {
+        "point": [ 0.0, 100.0, -0.5 ],
+        "direction": [ 0.0, 0.0, 1.0 ],
+        "label": "node 3 z displacement"
+      },
+      "reference": {
+        "probeValue": 0.39,
+        "description": "Node 3 z displacement reported in validation.pdf and attributed there to the Bassa reference"
+      }
+    }
+  }
+}

@@ -1,0 +1,99 @@
+{
+    "Name": "Turek-Hron cfd2 turbulence liquid lead",
+    "ShortName": "cfd2_turbulence_liquid_lead",
+    "Models":
+    {
+        "fluid":
+        {
+            "setup":
+            {
+                "equations": "Navier-Stokes",
+                "turbulence":
+                {
+                    "enable": 1,
+                    "model": "k-epsilon"
+                }
+            }
+        }
+    },
+    "Meshes":
+    {
+        "fluid":
+        {
+            "Import":
+            {
+                "filename": "$cfgdir/cfd.geo",
+                "hsize": 0.02
+            }
+        }
+    },
+    "Parameters":
+    {
+        "uinlet_max": "1.5",
+        "rho_liquid_lead": "10650",
+        "mu_liquid_lead": "0.0027",
+        "H": "0.41",
+        "tfix": "0.5",
+        "chi": "t<tfix:t:tfix",
+        "inlet_ramp": "((1-cos(pi*t/tfix))/2)*chi + (1-chi):t:tfix:chi",
+        "nu": "mu_liquid_lead/rho_liquid_lead:mu_liquid_lead:rho_liquid_lead",
+        "Re_pipe": "rho_liquid_lead*uinlet_max*H/mu_liquid_lead:rho_liquid_lead:uinlet_max:H:mu_liquid_lead"
+    },
+    "Materials":
+    {
+        "Fluid":
+        {
+            "rho": "rho_liquid_lead:rho_liquid_lead",
+            "mu": "mu_liquid_lead:mu_liquid_lead"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "fluid":
+        {
+            "velocity":
+            {
+                "inlet":
+                {
+                    "expr": "{ uinlet_max*(4./0.1681)*y*(0.41-y)*inlet_ramp,0}:uinlet_max:y:inlet_ramp",
+                    "turbulence_bc": "inlet"
+                },
+                "wall1":
+                {
+                    "expr": "{0,0}",
+                    "turbulence_bc": "wall"
+                },
+                "wall2":
+                {
+                    "expr": "{0,0}",
+                    "turbulence_bc": "wall"
+                }
+            },
+            "normal_stress":
+            {
+                "outlet":
+                {
+                    "expr": "0"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "fluid":
+        {
+            "Exports":
+            {
+                "fields": [ "velocity", "pressure", "pid" ],
+                "expr":
+                {
+                    "nu": "nu:nu",
+                    "Re_pipe": "Re_pipe:Re_pipe",
+                    "mu_t": "materials_mu_t:materials_mu_t",
+                    "sol_k": "fluid_turbulence_k_k:fluid_turbulence_k_k",
+                    "sol_epsilon": "fluid_turbulence_epsilon_epsilon:fluid_turbulence_epsilon_epsilon"
+                }
+            }
+        }
+    }
+}

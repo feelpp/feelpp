@@ -1,0 +1,63 @@
+{
+    "Name": "Solid Point Force",
+    "ShortName": "SolidPointForce",
+    "Models":
+    {
+        "solid":
+        {
+            "equations": "Elasticity"
+        }
+    },
+    "Meshes":
+    {
+        "solid":
+        {
+            "Import":
+            {
+                "filename": "$cfgdir/point_force.geo",
+                "hsize": 0.25
+            }
+        }
+    },
+    "Materials":
+    {
+        "solid":
+        {
+            "E": "1e5",
+            "nu": "0.3",
+            "rho": "1"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "solid":
+        {
+            "displacement":
+            {
+                "fixed":
+                {
+                    "expr": "{0,0}"
+                }
+            },
+            "point_force":
+            {
+                "tip-load":
+                {
+                    "markers": ["tip"],
+                    "expr": "{0,-10}",
+                    "quantity": "total"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "solid":
+        {
+            "Exports":
+            {
+                "fields": ["displacement"]
+            }
+        }
+    }
+}
