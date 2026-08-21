@@ -126,13 +126,16 @@ public:
     typedef typename primal_space_type::value_type value_type;
     typedef typename primal_space_type::points_type points_type;
     typedef typename primal_space_type::matrix_type matrix_type;
-    typedef typename primal_space_type::template convex<2>::type convex_type;
-    typedef Reference<convex_type, nDim, 2, nDim, value_type> reference_convex_type;
+    // CR dofs are facet barycenters: edge midpoints in 2D and triangular
+    // face barycenters in 3D, hence the reference point-set order is nDim.
+    static constexpr uint16_type crPointOrder = nDim;
+    typedef typename primal_space_type::template convex<crPointOrder>::type convex_type;
+    typedef Reference<convex_type, nDim, crPointOrder, nDim, value_type> reference_convex_type;
     typedef typename reference_convex_type::node_type node_type;
 
     // point set type associated with the functionals
     typedef PointSet<convex_type, value_type> pointset_type;
-    typedef PointSetType<convex_type, 2, value_type> equispaced_pointset_type;
+    typedef PointSetType<convex_type, crPointOrder, value_type> equispaced_pointset_type;
 
     static inline const uint16_type nVertices = reference_convex_type::numVertices;
     static inline const uint16_type nFaces = reference_convex_type::numFaces;
@@ -182,16 +185,14 @@ public:
         M_points_face( nFacesInConvex ),
         M_fset( primal )
     {
-#if 1
-        std::cout << "Lagrange finite element: \n";
-        std::cout << " o- dim   = " << nDim << "\n";
-        std::cout << " o- order = " << nOrder << "\n";
-        std::cout << " o- numPoints      = " << numPoints << "\n";
-        std::cout << " o- nbPtsPerVertex = " << ( int )nbPtsPerVertex << "\n";
-        std::cout << " o- nbPtsPerEdge   = " << ( int )nbPtsPerEdge << "\n";
-        std::cout << " o- nbPtsPerFace   = " << ( int )nbPtsPerFace << "\n";
-        std::cout << " o- nbPtsPerVolume = " << ( int )nbPtsPerVolume << "\n";
-#endif
+        VLOG(1) << "Crouzeix-Raviart finite element(dual): \n";
+        VLOG(1) << " o- dim   = " << nDim << "\n";
+        VLOG(1) << " o- order = " << nOrder << "\n";
+        VLOG(1) << " o- numPoints      = " << numPoints << "\n";
+        VLOG(1) << " o- nbPtsPerVertex = " << ( int )nbPtsPerVertex << "\n";
+        VLOG(1) << " o- nbPtsPerEdge   = " << ( int )nbPtsPerEdge << "\n";
+        VLOG(1) << " o- nbPtsPerFace   = " << ( int )nbPtsPerFace << "\n";
+        VLOG(1) << " o- nbPtsPerVolume = " << ( int )nbPtsPerVolume << "\n";
         equispaced_pointset_type epts;
         // in d-dimension, consider only the d-1 entity mid-points
         int d = M_convex_ref.topologicalDimension()-1;

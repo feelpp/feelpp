@@ -40,8 +40,13 @@
 #define FEELPP_VF_CONCEPTS_HPP 1
 
 #include <concepts>
+#include <map>
+#include <string>
 #include <type_traits>
+#include <utility>
+
 #include <Eigen/Core>
+
 #include <feel/feelcore/concepts.hpp>
 
 namespace Feel
@@ -125,6 +130,44 @@ concept ParametricExpr = VfExpr<T> && requires(T t, std::map<std::string, double
 template <typename T, typename SymbolExprType = T>
 concept DifferentiableExpr = VfExpr<T> && requires(T t, std::string varname, SymbolExprType se) {
     { t.hasSymbolDependency(varname, se) } -> std::convertible_to<bool>;
+};
+
+/**
+ * @brief A VfExpr that can answer dependency queries for symbolic variables.
+ */
+template <typename T>
+concept HasSymbolDependency = VfExpr<T> && requires(T const& t, std::string varname) {
+    { t.hasSymbolDependency(varname) } -> std::convertible_to<bool>;
+};
+
+/**
+ * @brief A VfExpr that can answer dependency queries with an explicit symbol map.
+ */
+template <typename T, typename SymbolExprType>
+concept HasSymbolDependencyWith = VfExpr<T> && requires(T const& t, std::string varname, SymbolExprType const& se) {
+    { t.hasSymbolDependency(varname, se) } -> std::convertible_to<bool>;
+};
+
+/**
+ * @brief A VfExpr that can apply a symbol-expression substitution map.
+ */
+template <typename T, typename SymbolExprType>
+concept AppliesSymbolExpr = VfExpr<T> && requires(T const& t, SymbolExprType const& se) {
+    t.applySymbolsExpr(se);
+};
+
+/**
+ * @brief A parametric symbolic expression whose parameter values can be updated.
+ */
+template <typename T>
+concept ParametricSymbolExpr = ParametricExpr<T>;
+
+/**
+ * @brief A VfExpr exposing the public symbolic differentiation API.
+ */
+template <typename T>
+concept SymbolicallyDifferentiableExpr = VfExpr<T> && requires(T const& t, std::string varname) {
+    t.template diff<1>(varname);
 };
 
 //

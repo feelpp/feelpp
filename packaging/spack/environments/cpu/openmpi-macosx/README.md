@@ -27,21 +27,23 @@ It differs from `cpu/openmpi/` in a few deliberate ways:
 - The standalone Spack `py-gmsh` package is not included because the recipe is
   pinned to a Linux wheel. The `gmsh` package itself installs `gmsh.py`.
 
-Activate it with:
+Activate and install it through the Feel++ helper:
 
 ```sh
-export FEELPP_REPO_ROOT=$(pwd)
-spacktivate packaging/spack/environments/cpu/openmpi-macosx
+source .venv/bin/activate
+fpp-spack init
+fpp-spack install openmpi-macosx -- -j4 -p2 --fail-fast --show-log-on-error
 ```
 
-or through the Feel++ helper:
+For an interactive shell, activate the same environment with:
 
 ```sh
 eval "$(fpp-spack activate openmpi-macosx)"
 ```
 
-Then install with:
+After activation, plain Spack commands also use the repository environment:
 
 ```sh
-spack install --fail-fast --show-log-on-error
+spack spec
+spack install -j4 -p2 --fail-fast --show-log-on-error
 ```

@@ -863,7 +863,6 @@ void MatrixPetsc<T>::set ( const size_type i,
     ierr = MatSetValues( M_mat, 1, &i_val, 1, &j_val,
                          &petsc_value, INSERT_VALUES );
     CHKERRABORT( this->comm(),ierr );
-    this->setIsClosed( false );
 }
 
 
@@ -884,7 +883,6 @@ void MatrixPetsc<T>::add ( const size_type i,
     ierr = MatSetValues( M_mat, 1, &i_val, 1, &j_val,
                          &petsc_value, ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );
-    this->setIsClosed( false );
 }
 /*                                   */
 
@@ -925,7 +923,6 @@ MatrixPetsc<T>::addMatrix( const ublas::matrix<value_type>& dm,
                          ( PetscScalar* ) dm.data().begin(),
                          ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );
-    this->setIsClosed( false );
 }
 template <typename T>
 void
@@ -946,7 +943,6 @@ MatrixPetsc<T>::addMatrix ( int* rows, int nrows,
                          ( PetscScalar* ) data,
                          ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );
-    this->setIsClosed( false );
 }
 
 template <typename T>
@@ -2814,7 +2810,6 @@ void MatrixPetscMPI<T>::set( const size_type i,
                               &petsc_value, INSERT_VALUES );
 
     CHKERRABORT( this->comm(),ierr );
-    this->setIsClosed( false );
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -2835,7 +2830,6 @@ void MatrixPetscMPI<T>::add ( const size_type i,
     ierr = MatSetValuesLocal( this->mat(), 1, &i_val, 1, &j_val,
                               &petsc_value, ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );
-    this->setIsClosed( false );
 }
 
 
@@ -2866,7 +2860,6 @@ MatrixPetscMPI<T>::addMatrix( const ublas::matrix<value_type>& dm,
 
 
     CHKERRABORT( this->comm(),ierr );
-    this->setIsClosed( false );
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -2897,7 +2890,6 @@ MatrixPetscMPI<T>::addMatrix( int* rows, int nrows,
                               ADD_VALUES );
 
     CHKERRABORT( this->comm(),ierr );
-    this->setIsClosed( false );
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -3262,7 +3254,7 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
     MatSetOption( this->mat(),MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE );
 #endif
 
-    int start=0, stop=this->mapRow().nLocalDofWithGhost(), ierr=0;
+    int ierr=0;
     VectorPetscMPI<T>* prhs = dynamic_cast<VectorPetscMPI<T>*> ( &rhs );
     CHECK( prhs != 0 ) << "dynamic cast from Vector to VectorPetscMPI failed for rhs";
     const VectorPetscMPI<T>* pvalues = dynamic_cast<const VectorPetscMPI<T>*> ( &values );
@@ -3292,12 +3284,12 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
         if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
         {
             MatDiagonalSet( this->M_mat, diag->vec(), INSERT_VALUES );
+            auto const rhsMap = rhs.mapPtr();
             for ( size_type i = 0; i < rows.size(); ++i )
             {
-                // warning: a row index may belong to another
-                // processor, so make sure that we access only the
-                // rows that belong to this processor
-                if ( rows[i] >= start && rows[i] < stop )
+                // Only the owner has an authoritative diagonal value. Ghost
+                // INSERT_VALUES would race with the owner's constrained RHS.
+                if ( !rhsMap || !rhsMap->dofGlobalProcessIsGhost( rows[i] ) )
                     rhs.set( rows[i], values(rows[i])*diag->operator()( rows[i] ) );
             }
         }
@@ -3307,12 +3299,8 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
 
         for ( size_type i = 0; i < rows.size(); ++i )
         {
-            // eliminate column
-
-            // warning: a row index may belong to another
-            // processor, so make sure that we access only the
-            // rows that belong to this processor
-            if ( rows[i] >= start && rows[i] < stop )
+            auto const rhsMap = rhs.mapPtr();
+            if ( !rhsMap || !rhsMap->dofGlobalProcessIsGhost( rows[i] ) )
                 rhs.set( rows[i], values(rows[i]) );
         }
 #endif

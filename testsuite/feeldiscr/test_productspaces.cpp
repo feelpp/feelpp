@@ -1,43 +1,39 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
- This file is part of the Feel++ library
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
- Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- Date: 24 Jul 2016
+    SPDX-FileCopyrightText: 2026 University of Strasbourg
 
- Copyright (C) 2016 Feel++ Consortium
-
- This library is free software; you can redistribute it and/or
- modify it under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation; either
- version 2.1 of the License, or (at your option) any later version.
-
- This library is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
-
- You should have received a copy of the GNU Lesser General Public
- License along with this library; if not, write to the Free Software
- Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- */
+    SPDX-License-Identifier: LGPL-3.0-or-later
+*/
 #define BOOST_TEST_MODULE test_product
 #include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/dh.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/pdh.hpp>
+#include <feel/feeldiscr/pdhv.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/product.hpp>
 #include <feel/feelalg/backendpetsc.hpp>
 #include <feel/feelvf/blockforms.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelfilters/exporter.hpp>
+#include <feel/feelpoly/crouzeixraviart.hpp>
 #include <boost/test/data/test_case.hpp>
 #include <boost/test/data/monomorphic.hpp>
 #include <array>
+#include <cstdlib>
+
+#if defined( __unix__ )
+#include <sys/wait.h>
+#include <unistd.h>
+#endif
 
 /** use Feel namespace */
 using namespace Feel;
@@ -50,6 +46,7 @@ struct DirichletStrategyCase
     std::string label;
     std::string type;
     double tolerance;
+    bool storesColumns;
 };
 
 std::ostream& operator<<( std::ostream& os, DirichletStrategyCase const& strategy )
@@ -59,9 +56,11 @@ std::ostream& operator<<( std::ostream& os, DirichletStrategyCase const& strateg
 }
 
 auto const monolithicDirichletStrategies = std::array{
-    DirichletStrategyCase{ .label = "elimination", .type = "elimination", .tolerance = 1e-10 },
-    DirichletStrategyCase{ .label = "elimination_symmetric", .type = "elimination_symmetric", .tolerance = 1e-10 },
-    DirichletStrategyCase{ .label = "penalisation", .type = "penalisation", .tolerance = 1e-8 }
+    DirichletStrategyCase{ .label = "elimination", .type = "elimination", .tolerance = 1e-10, .storesColumns = false },
+    DirichletStrategyCase{ .label = "elimination_symmetric", .type = "elimination_symmetric", .tolerance = 1e-10, .storesColumns = true },
+    DirichletStrategyCase{ .label = "elimination_keep_diagonal", .type = "elimination_keep_diagonal", .tolerance = 1e-10, .storesColumns = false },
+    DirichletStrategyCase{ .label = "elimination_symmetric_keep_diagonal", .type = "elimination_symmetric_keep_diagonal", .tolerance = 1e-10, .storesColumns = true },
+    DirichletStrategyCase{ .label = "penalisation", .type = "penalisation", .tolerance = 1e-8, .storesColumns = false }
 };
 
 auto const eliminationStrategy = monolithicDirichletStrategies.front();
@@ -71,11 +70,13 @@ struct DeferredDirichletMaterializationCounters
 {
     int baseCloseCalls = 0;
     int zeroRowsCalls = 0;
+    int cloneCalls = 0;
 
     void reset() noexcept
     {
         baseCloseCalls = 0;
         zeroRowsCalls = 0;
+        cloneCalls = 0;
     }
 };
 
@@ -105,6 +106,7 @@ public:
 
     clone_ptrtype clone() const override
     {
+        ++M_counters->cloneCalls;
         return std::make_shared<CountingMatrixSparse>( M_inner->clone(), M_counters, false );
     }
 
@@ -455,7 +457,7 @@ makeAbout()
                      "0.2",
                      "test product of spaces",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2016 Feel++ Consortium" );
+                     "Copyright (c) 2016-2026 University of Strasbourg" );
 
     about.addAuthor( "C Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
@@ -516,6 +518,515 @@ makeAbout()
      ex->add("v",U(1_c));
      ex->save();
  }
+
+BOOST_AUTO_TEST_CASE( test_productspace_dof_counts )
+{
+    using namespace Feel;
+
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<2>> );
+    auto Vh0 = Pdh<0>( mesh );
+    auto Uh1 = Pch<1>( mesh );
+
+    auto staticProduct = product( Vh0, Uh1 );
+    BOOST_CHECK_EQUAL( staticProduct.nDof(), Vh0->nDof() + Uh1->nDof() );
+    BOOST_CHECK_EQUAL( staticProduct.nLocalDof(), Vh0->nLocalDof() + Uh1->nLocalDof() );
+
+    std::vector<decltype( Uh1 )> dynamicEntries = { Uh1, Uh1 };
+    ProductSpace<decltype( Uh1 ), false> dynamicProduct( dynamicEntries );
+    BOOST_CHECK_EQUAL( dynamicProduct.numberOfSpaces(), 2 );
+    BOOST_CHECK_EQUAL( dynamicProduct.nDof(), 2*Uh1->nDof() );
+    BOOST_CHECK_EQUAL( dynamicProduct.nLocalDof(), 2*Uh1->nLocalDof() );
+
+    auto repeatedUh1 = std::make_shared<ProductSpace<decltype( Uh1 ), true>>( 2, mesh );
+    auto mixedProduct = product2( repeatedUh1, Vh0 );
+    BOOST_CHECK_EQUAL( mixedProduct.numberOfSpaces(), 3 );
+    BOOST_CHECK_EQUAL( mixedProduct.nDof(), Vh0->nDof() + 2*Uh1->nDof() );
+    BOOST_CHECK_EQUAL( mixedProduct.nLocalDof(), Vh0->nLocalDof() + 2*Uh1->nLocalDof() );
+}
+
+BOOST_AUTO_TEST_CASE( test_blockform2_square_api_compatibility )
+{
+    using namespace Feel;
+
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<2>> );
+    auto Xh = Pch<1>( mesh );
+    auto Yh = Pdh<0>( mesh );
+    auto ps = product( Xh, Yh );
+
+    backend( _rebuild=true );
+
+    auto checkBlockMap = [&ps]( auto const& a )
+    {
+        BOOST_CHECK_EQUAL( a.matrixPtr()->mapRow().nDof(), ps.nDof() );
+        BOOST_CHECK_EQUAL( a.matrixPtr()->mapCol().nDof(), ps.nDof() );
+    };
+
+    auto aDefault = blockform2( ps );
+    checkBlockMap( aDefault );
+
+    auto aBackend = blockform2( ps, backend() );
+    checkBlockMap( aBackend );
+
+    auto aMonolithic = blockform2( ps, solve::strategy::monolithic, backend(), Pattern::COUPLED );
+    checkBlockMap( aMonolithic );
+    BOOST_CHECK( aMonolithic.matrix().monolithic() );
+
+    std::vector<size_type> patterns = {
+        Pattern::COUPLED, Pattern::ZERO,
+        Pattern::ZERO, Pattern::COUPLED
+    };
+    auto aPatterns = blockform2( ps, solve::strategy::monolithic, backend(), patterns );
+    checkBlockMap( aPatterns );
+    BOOST_CHECK( aPatterns.matrix().monolithic() );
+
+    auto const& cps = ps;
+    auto aConst = blockform2( cps, solve::strategy::monolithic, backend(), Pattern::COUPLED );
+    checkBlockMap( aConst );
+}
+
+BOOST_AUTO_TEST_CASE( test_csrgraphblocks_rectangular_productspaces )
+{
+    using namespace Feel;
+
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<2>> );
+    auto Vh0 = Pdh<0>( mesh );
+    auto Vh1 = Pdh<1>( mesh );
+    auto Uh1 = Pch<1>( mesh );
+    auto Uh2 = Pch<2>( mesh );
+
+    backend( _rebuild=true );
+
+    auto test = product( Vh0, Vh1 );
+    auto trial = product( Uh1, Uh2 );
+
+    std::vector<size_type> patterns = {
+        Pattern::COUPLED, Pattern::ZERO,
+        Pattern::ZERO, Pattern::COUPLED
+    };
+    auto graph = csrGraphBlocks( test, trial, patterns );
+    MatrixCondensed<double> matrix( solve::strategy::monolithic, graph, backend(), false );
+
+    BOOST_CHECK_EQUAL( matrix.mapRow().nDof(), test.nDof() );
+    BOOST_CHECK_EQUAL( matrix.mapCol().nDof(), trial.nDof() );
+
+    auto repeatedTrial = std::make_shared<ProductSpace<decltype( Uh1 ), true>>( 2, mesh );
+    auto nestedTrial = product2( repeatedTrial, Vh0 );
+    auto nestedGraph = csrGraphBlocks( test, nestedTrial, Pattern::COUPLED );
+    MatrixCondensed<double> nestedMatrix( solve::strategy::monolithic, nestedGraph, backend(), false );
+
+    BOOST_CHECK_EQUAL( nestedMatrix.mapRow().nDof(), test.nDof() );
+    BOOST_CHECK_EQUAL( nestedMatrix.mapCol().nDof(), Vh0->nDof() + 2*Uh1->nDof() );
+}
+
+BOOST_AUTO_TEST_CASE( test_blockform2_rectangular_core_allocation )
+{
+    using namespace Feel;
+
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<2>> );
+    auto Vh0 = Pdh<0>( mesh );
+    auto Vh1 = Pdh<1>( mesh );
+    auto Uh1 = Pch<1>( mesh );
+    auto Uh2 = Pch<2>( mesh );
+
+    backend( _rebuild=true );
+
+    auto test = product( Vh0, Vh1 );
+    auto trial = product( Uh1, Uh2 );
+
+    BlockBilinearForm<decltype( test ), decltype( trial )> a( test, trial, solve::strategy::monolithic, backend(), Pattern::COUPLED );
+
+    BOOST_CHECK( a.isRectangular() );
+    BOOST_CHECK_EQUAL( a.testFunctionSpace().nDof(), test.nDof() );
+    BOOST_CHECK_EQUAL( a.trialFunctionSpace().nDof(), trial.nDof() );
+    BOOST_CHECK_EQUAL( a.matrixPtr()->mapRow().nDof(), test.nDof() );
+    BOOST_CHECK_EQUAL( a.matrixPtr()->mapCol().nDof(), trial.nDof() );
+    BOOST_CHECK( a.matrix().monolithic() );
+
+    a.allocateMatrix( solve::strategy::monolithic, backend() );
+    BOOST_CHECK_EQUAL( a.matrixPtr()->mapRow().nDof(), test.nDof() );
+    BOOST_CHECK_EQUAL( a.matrixPtr()->mapCol().nDof(), trial.nDof() );
+    BOOST_CHECK( a.matrix().monolithic() );
+}
+
+BOOST_AUTO_TEST_CASE( test_blockform2_named_argument_api )
+{
+    using namespace Feel;
+
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<2>> );
+    auto Xh = Pch<1>( mesh );
+    auto Yh = Pdh<0>( mesh );
+    auto Vh0 = Pdh<0>( mesh );
+    auto Vh1 = Pdh<1>( mesh );
+    auto Uh1 = Pch<1>( mesh );
+    auto Uh2 = Pch<2>( mesh );
+
+    backend( _rebuild=true );
+
+    auto squarePs = product( Xh, Yh );
+    auto squareNamed = blockform2( _test=squarePs );
+
+    BOOST_CHECK( !squareNamed.isRectangular() );
+    BOOST_CHECK_EQUAL( squareNamed.testFunctionSpace().nDof(), squarePs.nDof() );
+    BOOST_CHECK_EQUAL( squareNamed.trialFunctionSpace().nDof(), squarePs.nDof() );
+    BOOST_CHECK_EQUAL( squareNamed.matrixPtr()->mapRow().nDof(), squarePs.nDof() );
+    BOOST_CHECK_EQUAL( squareNamed.matrixPtr()->mapCol().nDof(), squarePs.nDof() );
+
+    auto squareShapeTrial = product( Yh, Xh );
+    auto squareShapeNamed = blockform2( _test=squarePs,
+                                        _trial=squareShapeTrial,
+                                        _strategy=solve::strategy::monolithic,
+                                        _backend=backend(),
+                                        _pattern=Pattern::COUPLED );
+
+    BOOST_CHECK( !squareShapeNamed.isRectangular() );
+    BOOST_CHECK_EQUAL( squareShapeNamed.testFunctionSpace().nDof(), squarePs.nDof() );
+    BOOST_CHECK_EQUAL( squareShapeNamed.trialFunctionSpace().nDof(), squareShapeTrial.nDof() );
+    BOOST_CHECK_EQUAL( squareShapeNamed.matrixPtr()->mapRow().nDof(), squarePs.nDof() );
+    BOOST_CHECK_EQUAL( squareShapeNamed.matrixPtr()->mapCol().nDof(), squareShapeTrial.nDof() );
+
+    auto test = product( Vh0, Vh1 );
+    auto trial = product( Uh1, Uh2 );
+
+    auto rectNamed = blockform2( _test=test,
+                                 _trial=trial,
+                                 _backend=backend(),
+                                 _pattern=Pattern::COUPLED );
+
+    BOOST_CHECK( rectNamed.isRectangular() );
+    BOOST_CHECK_EQUAL( rectNamed.testFunctionSpace().nDof(), test.nDof() );
+    BOOST_CHECK_EQUAL( rectNamed.trialFunctionSpace().nDof(), trial.nDof() );
+    BOOST_CHECK_EQUAL( rectNamed.matrixPtr()->mapRow().nDof(), test.nDof() );
+    BOOST_CHECK_EQUAL( rectNamed.matrixPtr()->mapCol().nDof(), trial.nDof() );
+    BOOST_CHECK( rectNamed.matrix().monolithic() );
+
+    auto rectStrategy = blockform2( _test=test,
+                                    _trial=trial,
+                                    _strategy=solve::strategy::monolithic,
+                                    _backend=backend(),
+                                    _pattern=Pattern::COUPLED );
+
+    BOOST_CHECK_EQUAL( rectStrategy.matrixPtr()->mapRow().nDof(), test.nDof() );
+    BOOST_CHECK_EQUAL( rectStrategy.matrixPtr()->mapCol().nDof(), trial.nDof() );
+    BOOST_CHECK( rectStrategy.matrix().monolithic() );
+
+    std::vector<size_type> patterns = {
+        Pattern::COUPLED, Pattern::ZERO,
+        Pattern::ZERO, Pattern::COUPLED
+    };
+    auto rectPatterns = blockform2( _test=test,
+                                    _trial=trial,
+                                    _strategy=solve::strategy::monolithic,
+                                    _backend=backend(),
+                                    _pattern=patterns );
+
+    BOOST_CHECK_EQUAL( rectPatterns.matrixPtr()->mapRow().nDof(), test.nDof() );
+    BOOST_CHECK_EQUAL( rectPatterns.matrixPtr()->mapCol().nDof(), trial.nDof() );
+    BOOST_CHECK( rectPatterns.matrix().monolithic() );
+}
+
+BOOST_AUTO_TEST_CASE( test_blockform2_rectangular_monolithic_assembly )
+{
+    using namespace Feel;
+    using namespace boost::hana::literals;
+
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<2>> );
+    auto Vh0 = Pdh<0>( mesh );
+    auto Vh1 = Pdh<1>( mesh );
+    auto Uh1 = Pch<1>( mesh );
+    auto Uh2 = Pch<2>( mesh );
+
+    backend( _rebuild=true );
+
+    auto test = product( Vh0, Vh1 );
+    auto trial = product( Uh1, Uh2 );
+    auto A = blockform2( _test=test,
+                         _trial=trial,
+                         _strategy=solve::strategy::monolithic,
+                         _backend=backend(),
+                         _pattern=Pattern::COUPLED );
+
+    auto v0 = Vh0->element();
+    auto v1 = Vh1->element();
+    auto u1 = Uh1->element();
+    auto u2 = Uh2->element();
+
+    A( 0_c, 0_c ) += integrate( _range=elements( mesh ), _expr=id( v0 )*idt( u1 ) );
+    A( 0_c, 1_c ) += integrate( _range=elements( mesh ), _expr=id( v0 )*idt( u2 ) );
+    A( 1_c, 0_c ) += integrate( _range=elements( mesh ), _expr=id( v1 )*idt( u1 ) );
+    A( 1_c, 1_c ) += integrate( _range=elements( mesh ), _expr=id( v1 )*idt( u2 ) );
+    A.close();
+
+    BOOST_CHECK_EQUAL( A.matrixPtr()->mapRow().nDof(), test.nDof() );
+    BOOST_CHECK_EQUAL( A.matrixPtr()->mapCol().nDof(), trial.nDof() );
+    BOOST_CHECK( A.matrix().monolithic() );
+    BOOST_CHECK_GT( A.nnz(), 0 );
+}
+
+BOOST_AUTO_TEST_CASE( test_blockform2_box_scheme_rt_cr_trial_p0_test_quarter_turn_3d )
+{
+    using namespace Feel;
+    using namespace boost::hana::literals;
+
+    using mesh_type = Mesh<Simplex<3>>;
+    using cr_space_type = FunctionSpace<mesh_type, bases<CrouzeixRaviart<1>>>;
+
+    auto mesh = loadMesh( _mesh=new mesh_type,
+                          _filename=Environment::expand( "${top_srcdir}/feelpp/quickstart/laplacian/cases/quarter-turn/quarter-turn3D.geo" ) );
+    auto XhRT = Dh<0>( mesh );
+    auto XhCR = cr_space_type::New( _mesh=mesh,
+                                    _worldscomm=makeWorldsComm( 1, mesh->worldComm() ) );
+    auto VhP0v = Pdhv<0>( mesh );
+    auto VhP0s = Pdh<0>( mesh );
+
+    backend( _rebuild=true );
+
+    auto trial = product( XhRT, XhCR );
+    auto test = product( VhP0v, VhP0s );
+    auto A = blockform2( _test=test,
+                         _trial=trial,
+                         _strategy=solve::strategy::monolithic,
+                         _backend=backend(),
+                         _pattern=Pattern::COUPLED );
+
+    auto sigma = XhRT->element( "sigma" );
+    auto phi = XhCR->element( "phi" );
+    auto v = VhP0v->element( "v" );
+    auto q = VhP0s->element( "q" );
+
+    A( 0_c, 0_c ) += integrate( _range=elements( mesh ),
+                                _expr=inner( idt( sigma ), id( v ) ) );
+    A( 0_c, 1_c ) += integrate( _range=elements( mesh ),
+                                _expr=gradt( phi )*id( v ) );
+    A( 1_c, 0_c ) += integrate( _range=elements( mesh ),
+                                _expr=divt( sigma )*id( q ) );
+    A( 1_c, 1_c ) += integrate( _range=elements( mesh ),
+                                _expr=idt( phi )*id( q ) );
+    A.close();
+
+    BOOST_CHECK( A.isRectangular() );
+    BOOST_CHECK_EQUAL( A.testFunctionSpace().nDof(), test.nDof() );
+    BOOST_CHECK_EQUAL( A.trialFunctionSpace().nDof(), trial.nDof() );
+    BOOST_CHECK_EQUAL( A.matrixPtr()->mapRow().nDof(), test.nDof() );
+    BOOST_CHECK_EQUAL( A.matrixPtr()->mapCol().nDof(), trial.nDof() );
+    BOOST_CHECK_GT( A.nnz(), 0 );
+    BOOST_CHECK_GT( A.l1Norm(), 0.0 );
+    BOOST_CHECK_GT( A.linftyNorm(), 0.0 );
+}
+
+BOOST_AUTO_TEST_CASE( test_blockform2_row_uses_flattened_test_space_index )
+{
+    using namespace Feel;
+    using namespace boost::hana::literals;
+
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<2>> );
+    auto Xh = Pch<1>( mesh );
+    auto repeatedXh = std::make_shared<ProductSpace<decltype( Xh ), true>>( 2, mesh );
+    auto ps = product2( repeatedXh, Xh );
+
+    backend( _rebuild=true );
+
+    auto A = blockform2( ps, solve::strategy::monolithic, backend(), Pattern::COUPLED );
+
+    auto staticRow = A.row( 0_c );
+    auto const& staticActual = staticRow.dofIdToContainerIdTest();
+    auto const& staticExpected = A.matrix().mapRowPtr()->dofIdToContainerId( 0 );
+    BOOST_REQUIRE_EQUAL( staticActual.size(), staticExpected.size() );
+    BOOST_CHECK_EQUAL_COLLECTIONS( staticActual.begin(), staticActual.end(),
+                                   staticExpected.begin(), staticExpected.end() );
+
+    auto nestedFirstRow = A.row( 1_c );
+    auto const& nestedFirstActual = nestedFirstRow.dofIdToContainerIdTest();
+    auto const& nestedFirstExpected = A.matrix().mapRowPtr()->dofIdToContainerId( 1 );
+    BOOST_REQUIRE_EQUAL( nestedFirstActual.size(), nestedFirstExpected.size() );
+    BOOST_CHECK_EQUAL_COLLECTIONS( nestedFirstActual.begin(), nestedFirstActual.end(),
+                                   nestedFirstExpected.begin(), nestedFirstExpected.end() );
+
+    auto nestedRow = A.row( 1_c, 1 );
+    auto const& nestedActual = nestedRow.dofIdToContainerIdTest();
+    auto const& nestedExpected = A.matrix().mapRowPtr()->dofIdToContainerId( 2 );
+    BOOST_REQUIRE_EQUAL( nestedActual.size(), nestedExpected.size() );
+    BOOST_CHECK_EQUAL_COLLECTIONS( nestedActual.begin(), nestedActual.end(),
+                                   nestedExpected.begin(), nestedExpected.end() );
+}
+
+BOOST_AUTO_TEST_CASE( test_blockform2_rectangular_row_dirichlet_worker )
+{
+    if ( !std::getenv( "FEELPP_BLOCKFORM2_RECTANGULAR_ROW_DIRICHLET_WORKER" ) )
+        return;
+
+    using namespace Feel;
+    using namespace boost::hana::literals;
+
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<2>> );
+    auto Vh0 = Pdh<0>( mesh );
+    auto Vh1 = Pdh<1>( mesh );
+    auto Uh1 = Pch<1>( mesh );
+    auto Uh2 = Pch<2>( mesh );
+
+    backend( _rebuild=true );
+
+    auto test = product( Vh0, Vh1 );
+    auto trial = product( Uh1, Uh2 );
+    auto A = blockform2( _test=test,
+                         _trial=trial,
+                         _strategy=solve::strategy::monolithic,
+                         _backend=backend(),
+                         _pattern=Pattern::COUPLED );
+
+    (void)A.row( 0_c );
+}
+
+BOOST_AUTO_TEST_CASE( test_blockform2_rectangular_row_dirichlet_rejected )
+{
+#if defined( __unix__ )
+    if ( Environment::worldComm().globalSize() != 1 )
+    {
+        BOOST_TEST_MESSAGE( "rectangular row Dirichlet rejection death test is exercised only in sequential runs" );
+        BOOST_CHECK( true );
+        return;
+    }
+
+    std::string const executable = boost::unit_test::framework::master_test_suite().argv[0];
+    pid_t pid = fork();
+    BOOST_REQUIRE_NE( pid, -1 );
+
+    if ( pid == 0 )
+    {
+        setenv( "FEELPP_BLOCKFORM2_RECTANGULAR_ROW_DIRICHLET_WORKER", "1", 1 );
+        execl( executable.c_str(), executable.c_str(),
+               "--run_test=productspace_suite/test_blockform2_rectangular_row_dirichlet_worker",
+               "--log_level=test_suite",
+               "--",
+               "--directory=testsuite/test_productspaces_rectangular_row_dirichlet_worker",
+               static_cast<char*>( nullptr ) );
+        _exit( 127 );
+    }
+
+    int status = 0;
+    BOOST_REQUIRE_EQUAL( waitpid( pid, &status, 0 ), pid );
+    BOOST_CHECK_MESSAGE( WIFSIGNALED( status ) || ( WIFEXITED( status ) && WEXITSTATUS( status ) != 0 ),
+                         "rectangular row Dirichlet worker exited successfully; expected same-space CHECK failure" );
+#else
+    BOOST_TEST_MESSAGE( "rectangular row Dirichlet rejection death test requires fork/exec support" );
+#endif
+}
+
+BOOST_AUTO_TEST_CASE( test_blockform2_unsupported_solve_policy_worker )
+{
+    char const* mode = std::getenv( "FEELPP_BLOCKFORM2_UNSUPPORTED_SOLVE_POLICY_WORKER" );
+    if ( !mode )
+        return;
+
+    BOOST_CHECK( true );
+
+    using namespace Feel;
+    using namespace boost::hana::literals;
+
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<2>> );
+    auto Vh0 = Pdh<0>( mesh );
+    auto Vh1 = Pdh<1>( mesh );
+    auto Uh1 = Pch<1>( mesh );
+    auto Uh2 = Pch<2>( mesh );
+
+    backend( _rebuild=true );
+
+    std::string const modeValue = mode;
+    if ( modeValue == "solve_rectangular" )
+    {
+        auto test = product( Vh0, Vh1 );
+        auto trial = product( Uh1, Uh2 );
+        auto A = blockform2( _test=test,
+                             _trial=trial,
+                             _strategy=solve::strategy::monolithic,
+                             _backend=backend(),
+                             _pattern=Pattern::COUPLED );
+        auto rhs = blockform1( test, solve::strategy::monolithic, backend() );
+        auto solution = trial.element();
+        A.solve( _solution=solution, _rhs=rhs );
+        return;
+    }
+
+    if ( modeValue == "solve_condense_distinct_square" ||
+         modeValue == "solve_local_distinct_square" )
+    {
+        auto Xh = Pch<1>( mesh );
+        auto Yh = Pdh<0>( mesh );
+        auto test = product( Xh, Yh );
+        auto trial = product( Yh, Xh );
+        auto A = blockform2( _test=test,
+                             _trial=trial,
+                             _strategy=solve::strategy::monolithic,
+                             _backend=backend(),
+                             _pattern=Pattern::COUPLED );
+        auto rhs = blockform1( test, solve::strategy::monolithic, backend() );
+        auto solution = trial.element();
+        if ( modeValue == "solve_condense_distinct_square" )
+            A.solve( _solution=solution, _rhs=rhs, _condense=true );
+        else
+            A.solve( _solution=solution, _rhs=rhs, _local=true );
+        return;
+    }
+
+    if ( modeValue == "static_condensation_strategy_rectangular" )
+    {
+        auto test = product( Vh0, Vh1 );
+        auto trial = product( Uh1, Uh2 );
+        auto A = blockform2( _test=test,
+                             _trial=trial,
+                             _strategy=solve::strategy::static_condensation,
+                             _backend=backend(),
+                             _pattern=Pattern::COUPLED );
+        (void)A;
+        return;
+    }
+
+    BOOST_FAIL( "unknown unsupported solve policy worker mode: " << modeValue );
+}
+
+BOOST_AUTO_TEST_CASE( test_blockform2_unsupported_solve_paths_rejected )
+{
+#if defined( __unix__ )
+    if ( Environment::worldComm().globalSize() != 1 )
+    {
+        BOOST_TEST_MESSAGE( "unsupported solve policy death tests are exercised only in sequential runs" );
+        BOOST_CHECK( true );
+        return;
+    }
+
+    std::array<std::string, 4> const modes = {
+        "solve_rectangular",
+        "solve_condense_distinct_square",
+        "solve_local_distinct_square",
+        "static_condensation_strategy_rectangular"
+    };
+
+    std::string const executable = boost::unit_test::framework::master_test_suite().argv[0];
+    for ( auto const& mode : modes )
+    {
+        pid_t pid = fork();
+        BOOST_REQUIRE_NE( pid, -1 );
+
+        if ( pid == 0 )
+        {
+            setenv( "FEELPP_BLOCKFORM2_UNSUPPORTED_SOLVE_POLICY_WORKER", mode.c_str(), 1 );
+            execl( executable.c_str(), executable.c_str(),
+                   "--run_test=productspace_suite/test_blockform2_unsupported_solve_policy_worker",
+                   "--log_level=test_suite",
+                   "--",
+                   "--directory=testsuite/test_productspaces_unsupported_solve_policy_worker",
+                   static_cast<char*>( nullptr ) );
+            _exit( 127 );
+        }
+
+        int status = 0;
+        BOOST_REQUIRE_EQUAL( waitpid( pid, &status, 0 ), pid );
+        BOOST_CHECK_MESSAGE( WIFSIGNALED( status ) || ( WIFEXITED( status ) && WEXITSTATUS( status ) != 0 ),
+                             "unsupported solve policy worker mode " << mode << " exited successfully; expected CHECK failure" );
+    }
+#else
+    BOOST_TEST_MESSAGE( "unsupported solve policy death tests require fork/exec support" );
+#endif
+}
 
 BOOST_AUTO_TEST_CASE( test3 )
 {
@@ -777,6 +1288,7 @@ BOOST_DATA_TEST_CASE( test_row_dirichlet_manual_apply_blockform,
     auto a = blockform2( ps, solve::strategy::monolithic, backend() );
     auto l = blockform1( ps, solve::strategy::monolithic, backend() );
     a.deferDirichlet();
+    a.setDirichletInPlace( false );
 
     a( 0_c, 0_c ) += integrate( _range=elements( mesh ),
                                 _expr=inner( gradt( u ), grad( v ) ) + idt( u ) * id( v ) );
@@ -829,7 +1341,6 @@ BOOST_DATA_TEST_CASE( test_row_dirichlet_manual_apply_blockform,
                                      _expr=idv( solution( 0_c ) ) );
     double const eastError = normL2( _range=markedfaces( mesh, "EAST" ),
                                      _expr=idv( solution( 0_c ) ) - cst( 1.0 ) );
-
     BOOST_CHECK_SMALL( westError, strategy.tolerance );
     BOOST_CHECK_SMALL( eastError, strategy.tolerance );
 }
@@ -841,7 +1352,11 @@ BOOST_DATA_TEST_CASE( test_row_dirichlet_rhs_reuse_refresh_blockform,
     using namespace Feel;
     using namespace vf;
 
-    auto mesh = loadMesh( _mesh=new Mesh<Simplex<2>> );
+    auto mesh = createGMSHMesh(
+        _mesh=new Mesh<Simplex<2>>,
+        _desc=domain( _name="productspace-dirichlet-reuse",
+                      _shape="hypercube", _dim=2,
+                      _substructuring=true ) );
     auto Xh = Pch<1>( mesh );
     auto Yh = Pch<1>( mesh );
     auto ps = product( Xh, Yh );
@@ -883,6 +1398,7 @@ BOOST_DATA_TEST_CASE( test_row_dirichlet_rhs_reuse_refresh_blockform,
                         _expr=cst( 1.0 ),
                         _type=strategy.type );
 
+    auto const operatorMatrix = a.baseMatrixPtr();
     auto constrainedVector = a.constrainedVectorPtr( l );
     auto constrainedSnapshot = vf::cloneVectorWithValues( constrainedVector );
     auto rhsVector = l.vectorPtr()->getVector();
@@ -909,9 +1425,58 @@ BOOST_DATA_TEST_CASE( test_row_dirichlet_rhs_reuse_refresh_blockform,
                                      _expr=idv( solution( 0_c ) ) );
     double const eastError = normL2( _range=markedfaces( mesh, "EAST" ),
                                      _expr=idv( solution( 0_c ) ) - cst( 1.0 ) );
+    // The registered MPI test uses iterative GASM; keep the solution check
+    // consistent with its solve tolerance while the algebraic invariants
+    // above remain exact.
+    double const solveTolerance = std::max( strategy.tolerance, 1e-8 );
 
-    BOOST_CHECK_SMALL( westError, strategy.tolerance );
-    BOOST_CHECK_SMALL( eastError, strategy.tolerance );
+    BOOST_CHECK_SMALL( westError, solveTolerance );
+    BOOST_CHECK_SMALL( eastError, solveTolerance );
+
+    // Refresh both prescribed values without reassembling or cloning the
+    // operator. Only symmetric elimination may retain sparse column entries.
+    auto updatedRhs = blockform1( ps, solve::strategy::monolithic, backend() );
+    updatedRhs( 0_c ) += integrate( _range=elements( mesh ),
+                                    _expr=cst( 1.0 ) * id( v ) );
+    updatedRhs( 1_c ) += integrate( _range=elements( mesh ),
+                                    _expr=cst( 2.0 ) * id( q ) );
+    updatedRhs.close();
+    a.row( 0_c ) += on( _range=markedfaces( mesh, "WEST" ),
+                        _rhs=updatedRhs( 0_c ),
+                        _element=u,
+                        _expr=cst( 0.25 ),
+                        _type=strategy.type );
+    a.row( 0_c ) += on( _range=markedfaces( mesh, "EAST" ),
+                        _rhs=updatedRhs( 0_c ),
+                        _element=u,
+                        _expr=cst( 1.5 ),
+                        _type=strategy.type );
+
+    auto updatedSolution = ps.element();
+    a.solve( _solution=updatedSolution, _rhs=updatedRhs );
+    BOOST_CHECK( a.activeMatrixPtr( updatedRhs ) == operatorMatrix );
+    BOOST_CHECK( !a.hasUnconstrainedMatrix() );
+
+    auto globalStoredColumnEntries = a.localStoredDirichletColumnEntryCount();
+    mpi::all_reduce( Environment::worldComm(), mpi::inplace( globalStoredColumnEntries ),
+                     std::plus<std::size_t>() );
+    if ( strategy.storesColumns )
+    {
+        BOOST_CHECK_GT( globalStoredColumnEntries, 0 );
+    }
+    else
+    {
+        BOOST_CHECK_EQUAL( globalStoredColumnEntries, 0 );
+    }
+
+    double const updatedWestError = normL2(
+        _range=markedfaces( mesh, "WEST" ),
+        _expr=idv( updatedSolution( 0_c ) ) - cst( 0.25 ) );
+    double const updatedEastError = normL2(
+        _range=markedfaces( mesh, "EAST" ),
+        _expr=idv( updatedSolution( 0_c ) ) - cst( 1.5 ) );
+    BOOST_CHECK_SMALL( updatedWestError, solveTolerance );
+    BOOST_CHECK_SMALL( updatedEastError, solveTolerance );
 }
 
 #if defined( FEELPP_HAS_PETSC_H )
@@ -949,6 +1514,7 @@ BOOST_AUTO_TEST_CASE( test_row_dirichlet_call_count_target_blockform_monolithic 
     BOOST_CHECK( !a.hasMaterializedConstrainedOperator() );
 
     counters->reset();
+    auto rhsSnapshot = vf::cloneVectorWithValues( l.vectorPtr()->getVector() );
     auto constrainedMatrix = a.activeMatrixPtr( l );
     auto constrainedVector = a.activeVectorPtr( l );
     auto constrainedMatrixAgain = a.activeMatrixPtr( l );
@@ -957,11 +1523,19 @@ BOOST_AUTO_TEST_CASE( test_row_dirichlet_call_count_target_blockform_monolithic 
     BOOST_CHECK( constrainedMatrix );
     BOOST_CHECK( constrainedVector );
     BOOST_CHECK( a.hasMaterializedConstrainedOperator() );
-    BOOST_CHECK( constrainedMatrix != baseMatrix );
+    BOOST_CHECK( constrainedMatrix == baseMatrix );
+    BOOST_CHECK( !a.hasUnconstrainedMatrix() );
     BOOST_CHECK( dynamic_cast<CountingMatrixSparse<double>*>( constrainedMatrix.get() ) != nullptr );
-    BOOST_CHECK_EQUAL( counters->baseCloseCalls, 1 );
+    BOOST_CHECK_EQUAL( counters->baseCloseCalls, 2 );
+    BOOST_CHECK_EQUAL( counters->cloneCalls, 0 );
+    BOOST_CHECK_EQUAL( counters->zeroRowsCalls, 1 );
     BOOST_CHECK_EQUAL( constrainedMatrix.get(), constrainedMatrixAgain.get() );
     BOOST_CHECK_EQUAL( constrainedVector.get(), constrainedVectorAgain.get() );
+    auto rhsDelta = vf::cloneVectorWithValues( l.vectorPtr()->getVector() );
+    rhsDelta->add( -1.0, *rhsSnapshot );
+    if ( !rhsDelta->closed() )
+        rhsDelta->close();
+    BOOST_CHECK_SMALL( rhsDelta->linftyNorm(), 1e-14 );
 }
 
 BOOST_AUTO_TEST_CASE( test_row_dirichlet_single_apply_zero_rows_count_blockform_monolithic )

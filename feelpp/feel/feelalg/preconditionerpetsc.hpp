@@ -145,8 +145,6 @@ public:
     bool hasHpddmAuxiliaryIS() const { return this->hasAuxiliaryIndexSet( hpddmAuxiliaryISKey() ); }
     petsc_index_set_ptrtype const& hpddmAuxiliaryIS() const { return this->auxiliaryIndexSet( hpddmAuxiliaryISKey() ); }
 
-
-
     //@}
 
     /** @name  Mutators
@@ -201,8 +199,6 @@ public:
         auto const& rowMap = mat->mapRowPtr();
         CHECK( rowMap ) << "HPDDM auxiliary matrix row map is not available";
         auto const& gpToGc = rowMap->mapGlobalProcessToGlobalCluster();
-        CHECK( !gpToGc.empty() )
-            << "invalid row map for HPDDM auxiliary matrix: empty process-to-cluster map";
 
         std::vector<PetscInt> hpddmLocalRows( gpToGc.size() );
         std::transform( gpToGc.begin(), gpToGc.end(),
@@ -210,9 +206,9 @@ public:
                         []( auto dof ) { return static_cast<PetscInt>( dof ); } );
 
         IS is = nullptr;
-        this->check( ISCreateGeneral( this->worldComm().globalComm(),
+        this->check( ISCreateGeneral( PETSC_COMM_SELF,
                                       static_cast<PetscInt>( hpddmLocalRows.size() ),
-                                      hpddmLocalRows.data(),
+                                      hpddmLocalRows.empty() ? nullptr : hpddmLocalRows.data(),
                                       PETSC_COPY_VALUES, &is ) );
         this->attachHpddmAuxiliaryData( is, mat );
         this->check( ISDestroy( &is ) );
@@ -412,6 +408,14 @@ public :
         {
             std::istringstream & iss = std::get<1>( configFile );
             po::store(po::parse_config_file(iss, _options,true), M_vm);
+        }
+        for ( auto const& optionDescription : _options.options() )
+        {
+            if ( M_vm.count( optionDescription->long_name() ) )
+                continue;
+            auto const optionIt = Environment::vm().find( optionDescription->long_name() );
+            if ( optionIt != Environment::vm().end() )
+                M_vm.insert( *optionIt );
         }
         po::notify(M_vm);
     }
@@ -666,6 +670,7 @@ private :
     bool M_hasNeumann, M_defineSubdomains, M_shareSubKSP;
     std::string M_coarseCorrection;
     std::optional<int> M_levels1EpsNev;
+    std::optional<std::string> M_levels1StPcType;
     bool M_levels1EpsUseInertia;
     std::optional<double> M_levels1EpsThresholdAbsolute;
 };
