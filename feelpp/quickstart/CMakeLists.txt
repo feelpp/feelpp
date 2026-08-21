@@ -93,7 +93,7 @@ add_dependencies(check ${QS_ELASTICITY_2D} ${QS_ELASTICITY_3D} ${QS_ELASTICITY_S
 #
 feelpp_add_application( hdg_elasticity_2d SRCS qs_hdg_elasticity.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_HDG_ELASTICITY_2D INSTALL TESTS )
 feelpp_add_application( hdg_elasticity_3d SRCS qs_hdg_elasticity.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_HDG_ELASTICITY_3D INSTALL TESTS )
-feelpp_add_application( sb9 SRCS qs_sb9.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 FEELPP_HYPERCUBE=1 EXEC QS_SB9 INSTALL )
+feelpp_add_application( sb9 SRCS qs_sb9.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 FEELPP_HYPERCUBE=1 EXEC QS_SB9 INSTALL TESTS NO_MPI_TEST TIMEOUT 120 LABELS quickstart sb9 )
 
 add_dependencies(quickstart ${QS_HDG_ELASTICITY_2D} ${QS_HDG_ELASTICITY_3D})
 add_dependencies(check ${QS_HDG_ELASTICITY_2D} ${QS_HDG_ELASTICITY_3D})
