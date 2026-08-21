@@ -6,7 +6,7 @@
              Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-12-28
 
-  Copyright (C) 2011-2014 Feel++ Consortium
+  Copyright (C) 2011-2026 University of Strasbourg
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-//#define USE_BOOST_TEST 1
+#define USE_BOOST_TEST 1
 #if defined(USE_BOOST_TEST)
 #define BOOST_TEST_MODULE test_bdf3
 #include <feel/feelcore/testsuite.hpp>
@@ -47,7 +47,7 @@ makeAbout()
                      "0.2",
                      "nD(n=2,3) test bdf3",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2015 Feel++ Consortium" );
+                     "Copyright (c) 2015-2026 University of Strasbourg" );
 
     about.addAuthor( "Guillaume Dollé", "developer", "gdolle@unistra.fr", "" );
     return about;
@@ -105,7 +105,6 @@ public :
 
         //stiffness matrix
         auto a = form2( _test=Xh, _trial=Xh );
-        auto at = form2( _test=Xh, _trial=Xh ); // Time dependent.
         auto e = exporter( _mesh=mesh, _name="test_bdf" );
 
         a = integrate( _range = elements( mesh ),
@@ -119,6 +118,11 @@ public :
                  _rhs=l,
                  _element=u,
                  _expr=cst(0.) );
+
+        // The operator and its homogeneous Dirichlet constraints are constant.
+        // The first solve constrains this matrix in place; subsequent BDF steps
+        // reuse it and only materialize a constrained view of the current RHS.
+        auto const operatorMatrix = a.baseMatrixPtr();
 
         // Initialize bdf unknowns.
 
@@ -166,7 +170,6 @@ public :
 
             for( tsi->start();  tsi->isFinished() == false; tsi->next(U[i]) )
             {
-                at=a;
                 lt=l;
 
                 auto bdf_poly = tsi->polyDeriv();
@@ -174,13 +177,14 @@ public :
                 lt += integrate( _range=elements(mesh),
                                  _expr=c*idv(bdf_poly)*id(v) );
 
-                at += on( _range=boundaryfaces(mesh),
-                          _rhs=lt,
-                          _element=U[i],
-                          _expr=cst(0.) );
+                a.solve( _rhs=lt,
+                         _solution=U[i] );
 
-                at.solve( _rhs=lt,
-                          _solution=U[i] );
+                auto const& constrainedForm = a;
+                CHECK( constrainedForm.matrixPtr() == operatorMatrix )
+                    << "the BDF solve must reuse the same matrix";
+                CHECK( a.hasMaterializedConstrainedOperator() );
+                CHECK( !a.hasUnconstrainedMatrix() );
 
                 // -------------------------------------------------------------
                 LOG(INFO) << "Export source: " << i
@@ -203,7 +207,7 @@ public :
 
 
 #if defined(USE_BOOST_TEST)
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
 BOOST_AUTO_TEST_SUITE( bdf3 )
 
 // Test creation of different timeset (N timesets), keep default prefix.
@@ -246,4 +250,3 @@ int main(int argc, char** argv )
     //test.runtest(true, true);
 }
 #endif
-

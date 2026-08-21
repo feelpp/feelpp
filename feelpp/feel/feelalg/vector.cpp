@@ -36,7 +36,8 @@ template <typename T, typename SizeT>
 Vector<T,SizeT>::Vector( worldcomm_ptr_t const& _worldComm ) :
     M_is_closed( false ),
     M_is_initialized( false ),
-    M_map ( new datamap_type( _worldComm ) )
+    M_map ( new datamap_type( _worldComm ) ),
+    M_revision( 0 )
 {}
 
 
@@ -51,7 +52,8 @@ template <typename T, typename SizeT>
 Vector<T,SizeT>::Vector( datamap_ptrtype const& dm ) :
     M_is_closed( false ),
     M_is_initialized( false ),
-    M_map ( dm )
+    M_map ( dm ),
+    M_revision( 0 )
 {}
 
 
@@ -60,7 +62,8 @@ Vector<T,SizeT>::Vector ( const size_type n, worldcomm_ptr_t const& _worldComm )
     :
     M_is_closed( false ),
     M_is_initialized( false ),
-    M_map( new datamap_type(n, n, _worldComm) )
+    M_map( new datamap_type(n, n, _worldComm) ),
+    M_revision( 0 )
 {}
 
 
@@ -72,7 +75,8 @@ Vector<T,SizeT>::Vector ( const size_type n,
     :
     M_is_closed( false ),
     M_is_initialized( false ),
-    M_map( new datamap_type(n, n_local, _worldComm) )
+    M_map( new datamap_type(n, n_local, _worldComm) ),
+    M_revision( 0 )
 
 {}
 
@@ -81,7 +85,8 @@ Vector<T,SizeT>::Vector ( Vector const& v )
     :
     M_is_closed( v.M_is_closed ),
     M_is_initialized( v.M_is_initialized ),
-    M_map( v.M_map )
+    M_map( v.M_map ),
+    M_revision( v.M_revision )
 {
 }
 template <typename T, typename SizeT>
@@ -159,6 +164,7 @@ void Vector<T,SizeT>::clear ()
 {
     M_is_closed      = false;
     M_is_initialized = false;
+    ++M_revision;
 }
 template <typename T, typename SizeT>
 void

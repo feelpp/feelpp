@@ -1,25 +1,11 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-  This file is part of the Feel library
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2006-02-20
+    SPDX-FileCopyrightText: 2006 EPFL
+    SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
 
-  Copyright (C) 2006 EPFL
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    SPDX-License-Identifier: LGPL-3.0-or-later
 */
 /**
    \file simplex.hpp
@@ -84,11 +70,11 @@ private:
     typedef mpl::vector_c<uint16_type, 0, 0, 0, 1> volumes_t;
     typedef mpl::vector_c<uint16_type, 0, 2, 3, 4> normals_t;
 
-    typedef typename details::points<Order>::type points_t;
-    typedef typename details::points<Order>::interior_type points_interior_t;
-    typedef typename details::points<Order>::edge_type points_edge_t;
-    typedef typename details::points<Order>::face_type points_face_t;
-    typedef typename details::points<Order>::volume_type points_volume_t;
+    typedef typename Feel::details::points<Order>::type points_t;
+    typedef typename Feel::details::points<Order>::interior_type points_interior_t;
+    typedef typename Feel::details::points<Order>::edge_type points_edge_t;
+    typedef typename Feel::details::points<Order>::face_type points_face_t;
+    typedef typename Feel::details::points<Order>::volume_type points_volume_t;
 
     typedef mpl::vector_c<size_type, SHAPE_POINT, SHAPE_LINE, SHAPE_TRIANGLE, SHAPE_TETRA> shapes_t;
     typedef mpl::vector_c<size_type, GEOMETRY_POINT, GEOMETRY_LINE, GEOMETRY_SURFACE, GEOMETRY_VOLUME> geometries_t;
@@ -101,7 +87,7 @@ private:
         }
     inline static constexpr int orderTriangle = computeOrderTriangle();
 
-    typedef mpl::vector<details::point<orderTriangle>, details::line<orderTriangle>, details::triangle<orderTriangle>, details::tetra<orderTriangle> > map_entity_to_point_t;
+    typedef mpl::vector<Feel::details::point<orderTriangle>, Feel::details::line<orderTriangle>, Feel::details::triangle<orderTriangle>, Feel::details::tetra<orderTriangle> > map_entity_to_point_t;
 
     typedef mpl::vector_c<uint16_type, 0, 1, 2, 6> permutations_t;
 

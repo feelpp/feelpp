@@ -1,0 +1,35 @@
+{
+   "name": "Feel++ Debian Trixie (13)",
+   "image": "ghcr.io/feelpp/feelpp-env:debian-13",
+   "workspaceFolder": "/workspaces/feelpp-7",
+   "remoteUser": "feelpp",
+   "updateRemoteUserUID": true,
+   "init": true,
+   "containerEnv": {
+      "FEELPP_CMAKE_PRESET": "container-debian-trixie",
+      "DISTRIBUTION": "-debian-13"
+   },
+   "remoteEnv": {
+      "CMAKE_BUILD_PARALLEL_LEVEL": "25"
+   },
+   "postCreateCommand": "${containerWorkspaceFolder}/.devcontainer/feelppconfig.sh ${containerWorkspaceFolder}",
+   "customizations": {
+      "vscode": {
+         "settings": {
+            "cmake.configurePreset": "container-debian-trixie",
+            "cmake.buildPreset": "container-debian-trixie"
+         },
+         "extensions": [
+            "ms-vscode.cpptools",
+            "ms-vscode.cmake-tools",
+            "josetr.cmake-language-support-vscode",
+            "asciidoctor.asciidoctor-vscode",
+            "ms-python.python",
+            "ms-toolsai.jupyter",
+            "ms-vsliveshare.vsliveshare",
+            "shardulm94.trailing-spaces",
+            "redhat.vscode-yaml"
+         ]
+      }
+   }
+}

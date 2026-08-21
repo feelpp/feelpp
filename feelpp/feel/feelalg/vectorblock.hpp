@@ -30,6 +30,8 @@
 #ifndef __VectorBlock_H
 #define __VectorBlock_H 1
 
+#include <cmath>
+
 #include <feel/feelalg/vector.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelvf/block.hpp>
@@ -53,6 +55,8 @@ public :
     typedef Vector<T,SizeT> vector_type;
     typedef std::shared_ptr<vector_type> vector_ptrtype;
     typedef std::shared_ptr<Backend<T,SizeT> > backend_ptrtype;
+    using value_type = T;
+    using real_type = typename vector_type::real_type;
     //using local_vector_type = Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic>;
 
     BlocksBaseVector(uint16_type nr = 0,
@@ -164,6 +168,148 @@ public :
     vector_ptrtype& vectorMonolithic();
     //! return the monolithic vector
     vector_ptrtype const& vectorMonolithic() const;
+
+    bool closed() const
+    {
+        bool areBlocksClosed = true;
+        for ( uint16_type i = 0; i < this->nRow(); ++i )
+        {
+            auto const& block = this->operator()( i, 0 );
+            if ( block && !block->closed() )
+            {
+                areBlocksClosed = false;
+                break;
+            }
+        }
+        return M_vector ? ( areBlocksClosed && M_vector->closed() ) : areBlocksClosed;
+    }
+
+    void close()
+    {
+        for ( uint16_type i = 0; i < this->nRow(); ++i )
+        {
+            auto const& block = this->operator()( i, 0 );
+            if ( block && !block->closed() )
+                block->close();
+        }
+        if ( M_vector )
+            this->updateVectorFromSubVectors();
+    }
+
+    void zero()
+    {
+        for ( uint16_type i = 0; i < this->nRow(); ++i )
+        {
+            auto const& block = this->operator()( i, 0 );
+            if ( block )
+                block->zero();
+        }
+        if ( M_vector )
+            M_vector->zero();
+    }
+
+    void setConstant( value_type v )
+    {
+        for ( uint16_type i = 0; i < this->nRow(); ++i )
+        {
+            auto const& block = this->operator()( i, 0 );
+            if ( block )
+                block->setConstant( v );
+        }
+        if ( M_vector )
+            M_vector->setConstant( v );
+    }
+
+    value_type sum() const
+    {
+        value_type s = 0;
+        for ( uint16_type i = 0; i < this->nRow(); ++i )
+        {
+            auto const& block = this->operator()( i, 0 );
+            if ( block )
+                s += block->sum();
+        }
+        return s;
+    }
+
+    real_type min() const
+    {
+        bool hasValue = false;
+        real_type m = 0;
+        for ( uint16_type i = 0; i < this->nRow(); ++i )
+        {
+            auto const& block = this->operator()( i, 0 );
+            if ( !block )
+                continue;
+            auto blockMin = block->min();
+            if ( !hasValue || blockMin < m )
+            {
+                m = blockMin;
+                hasValue = true;
+            }
+        }
+        return m;
+    }
+
+    real_type max() const
+    {
+        bool hasValue = false;
+        real_type m = 0;
+        for ( uint16_type i = 0; i < this->nRow(); ++i )
+        {
+            auto const& block = this->operator()( i, 0 );
+            if ( !block )
+                continue;
+            auto blockMax = block->max();
+            if ( !hasValue || blockMax > m )
+            {
+                m = blockMax;
+                hasValue = true;
+            }
+        }
+        return m;
+    }
+
+    real_type l1Norm() const
+    {
+        real_type n = 0;
+        for ( uint16_type i = 0; i < this->nRow(); ++i )
+        {
+            auto const& block = this->operator()( i, 0 );
+            if ( block )
+                n += block->l1Norm();
+        }
+        return n;
+    }
+
+    real_type l2Norm() const
+    {
+        real_type n2 = 0;
+        for ( uint16_type i = 0; i < this->nRow(); ++i )
+        {
+            auto const& block = this->operator()( i, 0 );
+            if ( !block )
+                continue;
+            auto blockNorm = block->l2Norm();
+            n2 += blockNorm * blockNorm;
+        }
+        return std::sqrt( n2 );
+    }
+
+    real_type linftyNorm() const
+    {
+        real_type ninf = 0;
+        for ( uint16_type i = 0; i < this->nRow(); ++i )
+        {
+            auto const& block = this->operator()( i, 0 );
+            if ( !block )
+                continue;
+            auto blockNorm = block->linftyNorm();
+            if ( blockNorm > ninf )
+                ninf = blockNorm;
+        }
+        return ninf;
+    }
 
     /**
      * termination function to fill

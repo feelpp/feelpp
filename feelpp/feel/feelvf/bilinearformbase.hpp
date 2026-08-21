@@ -19,7 +19,7 @@
 //! @file
 //! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 //! @date 23 Sep 2017
-//! @copyright 2017 Feel++ Consortium
+//! @copyright 2017-2026 University of Strasbourg
 //!
 #ifndef FEELPP_VF_BILINEARFORMBASE_H
 #define FEELPP_VF_BILINEARFORMBASE_H
@@ -29,10 +29,12 @@
 
 #include <feel/feelconfig.h>
 
+#include <feel/feelalg/enums.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/vector.hpp>
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelvf/block.hpp>
+#include <feel/feelvf/dirichletconstraints.hpp>
 
 
 
@@ -57,7 +59,28 @@ public:
     //typedef ublas::compressed_matrix<value_type, ublas::row_major> csr_matrix_type;
     typedef MatrixSparse<value_type> matrix_type;
     typedef std::shared_ptr<matrix_type> matrix_ptrtype;
+    using vector_type = typename matrix_type::vector_type;
+    using vector_ptrtype = typename matrix_type::vector_ptrtype;
     static inline const bool is_row_major = true;//matrix_type::is_row_major;
+    using deferred_dirichlet_set_type = vf::DeferredDirichletSet<value_type>;
+
+    struct DeferredDirichletState
+    {
+        vf::DeferredDirichletPolicy dirichletPolicy = vf::DeferredDirichletPolicy::automatic;
+        vf::DeferredDirichletMaterialization materialization = vf::DeferredDirichletMaterialization::in_place;
+        deferred_dirichlet_set_type pendingConstraints;
+        deferred_dirichlet_set_type appliedConstraints;
+        matrix_ptrtype constrainedMatrix;
+        vector_ptrtype constrainedVector;
+        vector_ptrtype inPlaceRhsContribution;
+        std::vector<vf::DeferredDirichletColumnGroup<value_type>> inPlaceDirichletColumnGroups;
+        std::vector<int> inPlaceConstrainedDofs;
+        bool baseOperatorConstrainedInPlace = false;
+        void const* constrainedVectorSource = nullptr;
+        std::size_t constrainedVectorSourceRevision = 0;
+    };
+    using deferred_dirichlet_state_type = DeferredDirichletState;
+    using deferred_dirichlet_state_ptrtype = std::shared_ptr<deferred_dirichlet_state_type>;
 
     using size_type =  typename matrix_type::size_type;
     
@@ -104,6 +127,7 @@ public:
 
     BilinearFormBase& operator+=( BilinearFormBase const& a )
         {
+            this->invalidateMaterializedDeferredDirichlet();
             if ( this == &a )
             {
                 M_matrix->scale( 2.0 );
@@ -115,12 +139,14 @@ public:
 
     BilinearFormBase& add( double alpha, BilinearFormBase const&  a )
         {
+            this->invalidateMaterializedDeferredDirichlet();
             M_matrix->addMatrix( alpha, a.M_matrix );
             return *this;
         }
     
     BilinearFormBase& operator-=( BilinearFormBase const& a )
         {
+            this->invalidateMaterializedDeferredDirichlet();
             if ( this == &a )
             {
                 M_matrix->zero();
@@ -137,6 +163,7 @@ public:
      */
     BilinearFormBase& operator*=( value_type const& alpha )
         {
+            this->invalidateMaterializedDeferredDirichlet();
             M_matrix->scale( alpha );
             return *this;
         }
@@ -148,12 +175,14 @@ public:
      */
     BilinearFormBase& operator/=( value_type const& alpha )
         {
+            this->invalidateMaterializedDeferredDirichlet();
             M_matrix->scale( 1.0/alpha );
             return *this;
         }
     //! scale the form
     BilinearFormBase& scale( double alpha )
         {
+            this->invalidateMaterializedDeferredDirichlet();
             M_matrix->scale( alpha );
             return *this;
         }
@@ -234,6 +263,7 @@ public:
 
     matrix_type& matrix()
     {
+        this->invalidateMaterializedDeferredDirichlet();
         return *M_matrix;
     }
 
@@ -244,7 +274,18 @@ public:
 
     matrix_ptrtype& matrixPtr()
     {
+        this->invalidateMaterializedDeferredDirichlet();
         return M_matrix;
+    }
+
+    auto l1Norm() const
+    {
+        return M_matrix->l1Norm();
+    }
+
+    auto linftyNorm() const
+    {
+        return M_matrix->linftyNorm();
     }
 
     list_block_type const& blockList() const
@@ -276,6 +317,7 @@ public:
     void zero()
     {
         M_matrix->zero();
+        this->resetDeferredDirichletAfterOperatorReset();
     }
     /**
      * \return the threshold
@@ -349,16 +391,27 @@ public:
     //@{
 
 
-    // close matrix
+    // Close the assembled base operator only. Deferred Dirichlet constraints
+    // remain logical form state until materialized explicitly.
     void close()
         {
             this->get(); // futures
             M_matrix->close();
         }
 
+    void closeBaseOperator()
+        {
+            this->close();
+        }
+
     bool closed() const noexcept
         {
             return M_matrix->closed();
+        }
+
+    bool baseOperatorClosed() const noexcept
+        {
+            return this->closed();
         }
 
     /**
@@ -376,12 +429,596 @@ public:
                    Feel::Context const& on_context,
                    double value_on_diagonal );
 
+    bool useDeferredDirichlet() const noexcept
+        {
+            return vf::usesDeferredDirichlet( this->dirichletPolicy() );
+        }
+
+    vf::DeferredDirichletPolicy dirichletPolicy() const noexcept
+        {
+            return M_dirichletState ? M_dirichletState->dirichletPolicy :
+                vf::DeferredDirichletPolicy::automatic;
+        }
+
+    void setDirichletPolicy( vf::DeferredDirichletPolicy policy ) noexcept
+        {
+            if ( !M_dirichletState && policy == vf::DeferredDirichletPolicy::automatic )
+                return;
+            if ( !M_dirichletState )
+                M_dirichletState = std::make_shared<deferred_dirichlet_state_type>();
+            M_dirichletState->dirichletPolicy = policy;
+        }
+
+    /**
+     * \brief Select whether deferred Dirichlet constraints modify the matrix in place.
+     *
+     * The default (`true`) avoids cloning the complete sparse matrix. Ordinary
+     * row elimination needs no auxiliary matrix data. Symmetric elimination
+     * retains only the sparse Dirichlet-column entries needed to refresh the
+     * right-hand-side contribution when prescribed values change.
+     * Passing `false` preserves the unconstrained matrix and materializes a
+     * separate constrained matrix for compatibility or inspection purposes.
+     * The policy must be selected before constraints are materialized.
+     */
+    void setDirichletInPlace( bool value )
+        {
+            auto& state = this->ensureDeferredDirichletState();
+            auto const requested = value ? vf::DeferredDirichletMaterialization::in_place :
+                                           vf::DeferredDirichletMaterialization::preserve_unconstrained;
+            CHECK( ( !state.baseOperatorConstrainedInPlace && !state.constrainedMatrix ) ||
+                   state.materialization == requested )
+                << "Dirichlet materialization policy cannot be changed after materialization; "
+                   "call zero() and reassemble the operator first";
+            state.materialization = requested;
+        }
+
+    /** \return true when deferred constraints are materialized in place. */
+    bool dirichletInPlace() const noexcept
+        {
+            return !M_dirichletState ||
+                   M_dirichletState->materialization == vf::DeferredDirichletMaterialization::in_place;
+        }
+
+    /** \return true while the original unconstrained operator is still available. */
+    bool hasUnconstrainedMatrix() const noexcept
+        {
+            return !M_dirichletState || !M_dirichletState->baseOperatorConstrainedInPlace;
+        }
+
+    void setUseDeferredDirichlet( bool value ) noexcept
+        {
+            this->setDirichletPolicy( value ? vf::DeferredDirichletPolicy::deferred :
+                                             vf::DeferredDirichletPolicy::immediate );
+        }
+
+    BilinearFormBase& deferDirichlet() noexcept
+        {
+            this->setDirichletPolicy( vf::DeferredDirichletPolicy::deferred );
+            return *this;
+        }
+
+    BilinearFormBase& autoDirichlet() noexcept
+        {
+            this->setDirichletPolicy( vf::DeferredDirichletPolicy::automatic );
+            return *this;
+        }
+
+    BilinearFormBase& immediateDirichlet() noexcept
+        {
+            this->setDirichletPolicy( vf::DeferredDirichletPolicy::immediate );
+            return *this;
+        }
+
+    bool hasDeferredDirichlet() const noexcept
+        {
+            return M_dirichletState && !M_dirichletState->pendingConstraints.empty();
+        }
+
+    bool hasPendingDirichletConstraints() const noexcept
+        {
+            return this->hasDeferredDirichlet();
+        }
+
+    bool hasDirichletConstraints() const noexcept
+        {
+            return M_dirichletState &&
+                   ( !M_dirichletState->pendingConstraints.empty() ||
+                     !M_dirichletState->appliedConstraints.empty() );
+        }
+
+    bool supportsConstrainedOperatorView() const noexcept
+        {
+            return true;
+        }
+
+    bool hasMaterializedConstrainedOperator() const noexcept
+        {
+            return M_dirichletState &&
+                   ( M_dirichletState->baseOperatorConstrainedInPlace ||
+                     static_cast<bool>( M_dirichletState->constrainedMatrix ) );
+        }
+
+    /** \return number of sparse Dirichlet-column entries retained on this rank. */
+    std::size_t localStoredDirichletColumnEntryCount() const noexcept
+        {
+            if ( !M_dirichletState )
+                return 0;
+            std::size_t count = 0;
+            for ( auto const& group : M_dirichletState->inPlaceDirichletColumnGroups )
+                count += group.entries.size();
+            return count;
+        }
+
+    bool shouldDeferDirichlet( Feel::Context const& on_context ) const noexcept
+        {
+            return vf::shouldDeferDirichlet( this->dirichletPolicy(), on_context );
+        }
+
+    void deferZeroRows( std::vector<int> const& dofs,
+                        std::vector<value_type> const& values,
+                        Feel::Context const& on_context,
+                        double value_on_diagonal,
+                        std::uint8_t entity_priority = vf::deferredDirichletEntityPriority( vf::DeferredDirichletEntity::unspecified ) )
+        {
+            auto& state = this->ensureDeferredDirichletState();
+            if ( !state.baseOperatorConstrainedInPlace )
+                this->invalidateMaterializedDeferredDirichlet();
+            else
+            {
+                state.constrainedVector.reset();
+                state.constrainedVectorSource = nullptr;
+                state.constrainedVectorSourceRevision = 0;
+            }
+            state.pendingConstraints.append( dofs, values, on_context, value_on_diagonal, entity_priority );
+        }
+
+    /**
+     * \brief Remove deferred constraints while the operator is still unconstrained.
+     *
+     * Once in-place materialization has modified the matrix, `zero()` and a
+     * reassembly are required because clearing metadata cannot restore erased
+     * Dirichlet columns.
+     */
+    void clearDeferredDirichlet()
+        {
+            if ( M_dirichletState )
+            {
+                CHECK( !M_dirichletState->baseOperatorConstrainedInPlace )
+                    << "cannot clear Dirichlet constraints after in-place materialization; "
+                       "call zero() and reassemble the operator first";
+                M_dirichletState->pendingConstraints.clear();
+                M_dirichletState->appliedConstraints.clear();
+                M_dirichletState->constrainedMatrix.reset();
+                M_dirichletState->constrainedVector.reset();
+                M_dirichletState->inPlaceRhsContribution.reset();
+                M_dirichletState->inPlaceDirichletColumnGroups.clear();
+                M_dirichletState->inPlaceConstrainedDofs.clear();
+                M_dirichletState->constrainedVectorSource = nullptr;
+                M_dirichletState->constrainedVectorSourceRevision = 0;
+            }
+        }
+
+    deferred_dirichlet_state_ptrtype const& deferredDirichletStatePtr() const noexcept
+        {
+            return M_dirichletState;
+        }
+
+    void shareDeferredDirichletState( deferred_dirichlet_state_ptrtype state )
+        {
+            M_dirichletState = std::move( state );
+        }
+
+    /**
+     * \return the unconstrained matrix.
+     * \pre In-place Dirichlet materialization has not occurred.
+     */
+    matrix_ptrtype const& baseMatrixPtr() const
+        {
+            CHECK( this->hasUnconstrainedMatrix() )
+                << "the unconstrained matrix is no longer available after in-place Dirichlet materialization";
+            return M_matrix;
+        }
+
+    matrix_ptrtype& baseMatrixPtr()
+        {
+            this->invalidateMaterializedDeferredDirichlet();
+            return M_matrix;
+        }
+
+    template<typename RhsType>
+        requires requires( RhsType& rhs ) { rhs.vectorPtr(); }
+    auto constrainedSystem( RhsType& rhs )
+        {
+            return this->materializeConstrainedSystem( rhs.vectorPtr() );
+        }
+
+    template<typename RhsType>
+        requires requires( RhsType const& rhs ) { rhs.vectorPtr(); }
+    auto constrainedSystem( RhsType const& rhs )
+        {
+            return const_cast<BilinearFormBase*>( this )->materializeConstrainedSystem( rhs.vectorPtr() );
+        }
+
+    template<typename RhsType>
+        requires requires( RhsType& rhs ) { rhs.vectorPtr(); }
+    auto activeSystem( RhsType& rhs )
+        {
+            if ( this->hasDirichletConstraints() )
+                return this->constrainedSystem( rhs );
+            return std::pair{ M_matrix, rhs.vectorPtr() };
+        }
+
+    template<typename RhsType>
+        requires requires( RhsType const& rhs ) { rhs.vectorPtr(); }
+    auto activeSystem( RhsType const& rhs )
+        {
+            if ( this->hasDirichletConstraints() )
+                return const_cast<BilinearFormBase*>( this )->materializeConstrainedSystem( rhs.vectorPtr() );
+            return std::pair{ M_matrix, rhs.vectorPtr() };
+        }
+
+    matrix_ptrtype constrainedMatrixPtr()
+        {
+            return this->materializeConstrainedMatrix();
+        }
+
+    matrix_ptrtype constrainedMatrixPtr() const
+        {
+            return const_cast<BilinearFormBase*>( this )->constrainedMatrixPtr();
+        }
+
+    template<typename RhsType>
+        requires requires( RhsType& rhs ) { rhs.vectorPtr(); }
+    matrix_ptrtype constrainedMatrixPtr( RhsType& rhs )
+        {
+            return this->constrainedSystem( rhs ).first;
+        }
+
+    template<typename RhsType>
+        requires requires( RhsType const& rhs ) { rhs.vectorPtr(); }
+    matrix_ptrtype constrainedMatrixPtr( RhsType const& rhs )
+        {
+            return const_cast<BilinearFormBase*>( this )->constrainedMatrixPtr( rhs );
+        }
+
+    matrix_ptrtype activeMatrixPtr()
+        {
+            return this->hasDirichletConstraints() ? this->constrainedMatrixPtr() : this->baseMatrixPtr();
+        }
+
+    matrix_ptrtype activeMatrixPtr() const
+        {
+            return this->hasDirichletConstraints() ? this->constrainedMatrixPtr() : this->baseMatrixPtr();
+        }
+
+    template<typename RhsType>
+        requires requires( RhsType& rhs ) { rhs.vectorPtr(); }
+    matrix_ptrtype activeMatrixPtr( RhsType& rhs )
+        {
+            return this->activeSystem( rhs ).first;
+        }
+
+    template<typename RhsType>
+        requires requires( RhsType const& rhs ) { rhs.vectorPtr(); }
+    matrix_ptrtype activeMatrixPtr( RhsType const& rhs )
+        {
+            return const_cast<BilinearFormBase*>( this )->activeMatrixPtr( rhs );
+        }
+
+    void materializeConstrainedOperator()
+        {
+            if ( !this->hasDirichletConstraints() )
+                return;
+            (void)this->constrainedMatrixPtr();
+        }
+
+    template<typename RhsType>
+        requires requires( RhsType& rhs ) { rhs.vectorPtr(); }
+    void materializeConstrainedOperator( RhsType& rhs )
+        {
+            if ( !this->hasDirichletConstraints() )
+                return;
+            (void)this->constrainedSystem( rhs );
+        }
+
+    template<typename RhsType>
+        requires requires( RhsType const& rhs ) { rhs.vectorPtr(); }
+    void materializeConstrainedOperator( RhsType const& rhs )
+        {
+            if ( !this->hasDirichletConstraints() )
+                return;
+            (void)this->constrainedSystem( rhs );
+        }
+
+    template<typename RhsType>
+        requires requires( RhsType& rhs ) { rhs.vectorPtr(); }
+    auto constrainedVectorPtr( RhsType& rhs )
+        {
+            return this->constrainedSystem( rhs ).second;
+        }
+
+    template<typename RhsType>
+        requires requires( RhsType const& rhs ) { rhs.vectorPtr(); }
+    auto constrainedVectorPtr( RhsType const& rhs )
+        {
+            return this->constrainedSystem( rhs ).second;
+        }
+
+    template<typename RhsType>
+        requires requires( RhsType& rhs ) { rhs.vectorPtr(); }
+    auto activeVectorPtr( RhsType& rhs )
+        {
+            return this->activeSystem( rhs ).second;
+        }
+
+    template<typename RhsType>
+        requires requires( RhsType const& rhs ) { rhs.vectorPtr(); }
+    auto activeVectorPtr( RhsType const& rhs )
+        {
+            return this->activeSystem( rhs ).second;
+        }
+
+    template<typename RhsType>
+        requires requires( RhsType& rhs ) { rhs.vectorPtr(); }
+    void applyDeferredDirichlet( RhsType& rhs )
+        {
+            if ( !this->hasDirichletConstraints() )
+                return;
+
+            auto constrainedVector = this->constrainedVectorPtr( rhs );
+            vf::copyVectorValues( rhs.vectorPtr(), constrainedVector );
+            auto& state = this->ensureDeferredDirichletState();
+            state.constrainedVectorSource = static_cast<void const*>( rhs.vectorPtr().get() );
+            state.constrainedVectorSourceRevision = rhs.vectorPtr()->revision();
+        }
+
+    template<typename RhsType>
+        requires requires( RhsType const& rhs ) { rhs.vectorPtr(); }
+    void applyDeferredDirichlet( RhsType const& rhs )
+        {
+            if ( !this->hasDirichletConstraints() )
+                return;
+
+            auto constrainedVector = this->constrainedVectorPtr( rhs );
+            vf::copyVectorValues( rhs.vectorPtr(), constrainedVector );
+            auto& state = this->ensureDeferredDirichletState();
+            state.constrainedVectorSource = static_cast<void const*>( rhs.vectorPtr().get() );
+            state.constrainedVectorSourceRevision = rhs.vectorPtr()->revision();
+        }
+
+    template<typename RhsType>
+        requires requires( RhsType& rhs ) { rhs.vectorPtr(); }
+    void applyDeferredDirichletToBaseOperator( RhsType& rhs )
+        {
+            if ( !this->hasDirichletConstraints() )
+                return;
+
+            this->applyDeferredDirichletToBaseOperatorVector( rhs.vectorPtr() );
+        }
+
+    template<typename RhsType>
+        requires requires( RhsType const& rhs ) { rhs.vectorPtr(); }
+    void applyDeferredDirichletToBaseOperator( RhsType const& rhs )
+        {
+            if ( !this->hasDirichletConstraints() )
+                return;
+
+            this->applyDeferredDirichletToBaseOperatorVector( rhs.vectorPtr() );
+        }
+
+protected:
+    deferred_dirichlet_state_type& ensureDeferredDirichletState()
+        {
+            if ( !M_dirichletState )
+                M_dirichletState = std::make_shared<deferred_dirichlet_state_type>();
+            return *M_dirichletState;
+        }
+
+    void invalidateMaterializedDeferredDirichlet()
+        {
+            if ( M_dirichletState )
+            {
+                CHECK( !M_dirichletState->baseOperatorConstrainedInPlace )
+                    << "cannot modify an operator after in-place Dirichlet materialization; "
+                       "call zero() and reassemble it first";
+                M_dirichletState->constrainedMatrix.reset();
+                M_dirichletState->constrainedVector.reset();
+                M_dirichletState->constrainedVectorSource = nullptr;
+                M_dirichletState->constrainedVectorSourceRevision = 0;
+            }
+        }
+
+    void resetDeferredDirichletAfterOperatorReset() noexcept
+        {
+            if ( !M_dirichletState )
+                return;
+            auto const policy = M_dirichletState->dirichletPolicy;
+            auto const materialization = M_dirichletState->materialization;
+            *M_dirichletState = deferred_dirichlet_state_type{};
+            M_dirichletState->dirichletPolicy = policy;
+            M_dirichletState->materialization = materialization;
+        }
+
+    deferred_dirichlet_set_type allDeferredDirichletConstraints() const
+        {
+            deferred_dirichlet_set_type constraints;
+            if ( !M_dirichletState )
+                return constraints;
+
+            constraints.append( M_dirichletState->appliedConstraints );
+            constraints.append( M_dirichletState->pendingConstraints );
+            return constraints;
+        }
+
+    void promotePendingDeferredDirichlet()
+        {
+            auto& state = this->ensureDeferredDirichletState();
+            state.appliedConstraints.append( state.pendingConstraints );
+            state.pendingConstraints.clear();
+        }
+
+    template<typename EntryRange, typename VectorPtrType>
+    void materializeInPlaceDeferredDirichlet( EntryRange const& entries,
+                                               VectorPtrType const& rhsContribution )
+        {
+            auto& state = this->ensureDeferredDirichletState();
+            auto groups = vf::makeDeferredDirichletGroups( entries, rhsContribution );
+            rhsContribution->zero();
+            rhsContribution->setIsClosed( false );
+            std::decay_t<VectorPtrType> columnVectorTemplate;
+            if ( std::ranges::any_of( groups, []( auto const& group ) {
+                     return group.onContext.test( ContextOn::SYMMETRIC );
+                 } ) )
+            {
+                columnVectorTemplate = Feel::backend( _worldcomm=this->worldCommPtr() )
+                                           ->newVector( M_matrix->mapColPtr() );
+            }
+
+            if ( !state.baseOperatorConstrainedInPlace )
+            {
+                state.inPlaceDirichletColumnGroups =
+                    vf::captureDeferredDirichletColumns( groups, M_matrix, columnVectorTemplate );
+            }
+            else
+            {
+                vf::addDeferredDirichletColumnContributions(
+                    groups, state.inPlaceDirichletColumnGroups, M_matrix,
+                    columnVectorTemplate, rhsContribution );
+            }
+
+            vf::applyDeferredDirichletGroups( groups, M_matrix, rhsContribution );
+            M_matrix->close();
+            if ( !rhsContribution->closed() )
+                rhsContribution->close();
+
+            state.inPlaceRhsContribution = rhsContribution;
+            state.inPlaceConstrainedDofs = vf::deferredDirichletDofs( entries );
+            state.baseOperatorConstrainedInPlace = true;
+            state.appliedConstraints = vf::deferredDirichletSetFromGroups( groups );
+            state.pendingConstraints.clear();
+        }
+
+    template<typename VectorPtrType>
+    void applyDeferredDirichletToBaseOperatorVector( VectorPtrType const& rhsVector )
+        {
+            auto constrainedVector = this->materializeConstrainedVector( rhsVector );
+            vf::copyVectorValues( rhsVector, constrainedVector );
+            auto& state = this->ensureDeferredDirichletState();
+            state.constrainedVectorSource = static_cast<void const*>( rhsVector.get() );
+            state.constrainedVectorSourceRevision = rhsVector->revision();
+        }
+
+    template<typename VectorPtrType>
+    auto materializeConstrainedSystem( VectorPtrType const& rhsVector )
+    {
+        if ( !this->hasDirichletConstraints() )
+            return std::pair{ M_matrix, rhsVector };
+
+        auto& state = this->ensureDeferredDirichletState();
+        auto const rhsSource = static_cast<void const*>( rhsVector.get() );
+        auto const rhsRevision = rhsVector->revision();
+        if ( ( state.baseOperatorConstrainedInPlace || state.constrainedMatrix ) &&
+             state.constrainedVector &&
+             state.pendingConstraints.empty() &&
+             state.constrainedVectorSource == rhsSource &&
+             state.constrainedVectorSourceRevision == rhsRevision )
+        {
+            return std::pair{ state.baseOperatorConstrainedInPlace ? M_matrix : state.constrainedMatrix,
+                              state.constrainedVector };
+        }
+
+        this->get();
+        M_matrix->closeIfNeeded();
+        if ( !rhsVector->closed() )
+            rhsVector->close();
+
+        auto const deferredEntries = this->allDeferredDirichletConstraints().entries();
+        if ( state.materialization == vf::DeferredDirichletMaterialization::in_place )
+        {
+            if ( !state.baseOperatorConstrainedInPlace || !state.pendingConstraints.empty() )
+            {
+                auto rhsContribution = rhsVector->clone();
+                this->materializeInPlaceDeferredDirichlet( deferredEntries, rhsContribution );
+            }
+            state.constrainedVector = vf::makeInPlaceConstrainedVector( rhsVector,
+                                                                        state.inPlaceRhsContribution,
+                                                                        state.inPlaceConstrainedDofs );
+            state.constrainedMatrix.reset();
+        }
+        else
+        {
+            auto constrainedMatrix = M_matrix->clone();
+            auto constrainedVector = vf::cloneVectorWithValues( rhsVector );
+            vf::applyDeferredDirichletEntries( deferredEntries, constrainedMatrix, constrainedVector );
+            constrainedMatrix->close();
+            if ( !constrainedVector->closed() )
+                constrainedVector->close();
+            state.constrainedMatrix = constrainedMatrix;
+            state.constrainedVector = constrainedVector;
+            this->promotePendingDeferredDirichlet();
+        }
+        state.constrainedVectorSource = rhsSource;
+        state.constrainedVectorSourceRevision = rhsRevision;
+        return std::pair{ state.baseOperatorConstrainedInPlace ? M_matrix : state.constrainedMatrix,
+                          state.constrainedVector };
+    }
+
+    matrix_ptrtype materializeConstrainedMatrix()
+        {
+            if ( !this->hasDirichletConstraints() )
+                return M_matrix;
+
+            auto& state = this->ensureDeferredDirichletState();
+            if ( state.baseOperatorConstrainedInPlace && state.pendingConstraints.empty() )
+                return M_matrix;
+            if ( state.constrainedMatrix && state.pendingConstraints.empty() )
+                return state.constrainedMatrix;
+
+            this->get();
+            M_matrix->closeIfNeeded();
+
+            auto dummyRhs = Feel::backend( _worldcomm=this->worldCommPtr() )->newVector( M_matrix->mapRowPtr() );
+            dummyRhs->zero();
+            dummyRhs->close();
+
+            auto const deferredEntries = this->allDeferredDirichletConstraints().entries();
+            if ( state.materialization == vf::DeferredDirichletMaterialization::in_place )
+            {
+                this->materializeInPlaceDeferredDirichlet( deferredEntries, dummyRhs );
+                state.constrainedMatrix.reset();
+            }
+            else
+            {
+                auto constrainedMatrix = M_matrix->clone();
+                vf::applyDeferredDirichletEntries( deferredEntries, constrainedMatrix, dummyRhs );
+                constrainedMatrix->close();
+                state.constrainedMatrix = constrainedMatrix;
+            }
+            state.constrainedVector.reset();
+            state.constrainedVectorSource = nullptr;
+            state.constrainedVectorSourceRevision = 0;
+            this->promotePendingDeferredDirichlet();
+            return state.baseOperatorConstrainedInPlace ? M_matrix : state.constrainedMatrix;
+        }
+
+    template<typename VectorPtrType>
+    auto materializeConstrainedVector( VectorPtrType const& rhsVector )
+        {
+            if ( !this->hasDirichletConstraints() )
+                return rhsVector;
+            auto [constrainedMatrix, constrainedVector] = this->materializeConstrainedSystem( rhsVector );
+            return constrainedVector;
+        }
+
+public:
+
     /**
      * add value \p v at position (\p i, \p j) of the matrix
      * associated with the bilinear form
      */
     void add( size_type i,  size_type j,  value_type const& v )
     {
+        this->invalidateMaterializedDeferredDirichlet();
         if ( M_do_threshold )
         {
             if ( doThreshold( v ) )
@@ -413,6 +1050,7 @@ public:
      */
     void set( size_type i,  size_type j,  value_type const& v )
     {
+        this->invalidateMaterializedDeferredDirichlet();
         M_matrix->set( i, j, v );
     }
 
@@ -436,6 +1074,7 @@ public:
     template<typename X1, typename X2>
     void allocateMatrix( std::shared_ptr<X1> const& x1, std::shared_ptr<X2> const& x2 )
     {
+        this->invalidateMaterializedDeferredDirichlet();
         M_matrix = backend()->newMatrix( _test=x1, _trial=x2 );
     }
     bool isMatrixAllocated() const
@@ -454,15 +1093,19 @@ public:
             bool rebuild = args.get_else_invocable(_rebuild,[&name]() { return boption(_prefix=name,_name="backend.rebuild"); } );
             pre_solve_type pre = args.get_else(_pre,pre_solve_type());
             post_solve_type post = args.get_else(_post,post_solve_type());
+            bool const dirichletInPlace = args.get_else( _dirichlet_inplace, this->dirichletInPlace() );
+            this->setDirichletInPlace( dirichletInPlace );
 
-            this->close();
-            return Feel::backend( _name=name, _kind=kind, _rebuild=rebuild,
-                                  _worldcomm=this->worldCommPtr() )->solve( _matrix=this->matrixPtr(),
-                                                                            _rhs=rhs.vectorPtr(),
-                                                                            _solution=solution,
-                                                                            _pre=pre,
-                                                                            _post=post
-                                                                            );
+            this->closeBaseOperator();
+            auto [matrix, rhsVector] = this->activeSystem( rhs );
+            auto solveBackend = Feel::backend( _name=name, _kind=kind, _rebuild=rebuild,
+                                               _worldcomm=this->worldCommPtr() );
+            return solveBackend->solve( _matrix=matrix,
+                                        _rhs=rhsVector,
+                                        _solution=solution,
+                                        _pre=pre,
+                                        _post=post
+                                        );
         }
 
     template <typename ... Ts>
@@ -472,13 +1115,21 @@ public:
             auto && solution = args.get(_solution);
             auto && rhs = args.get(_rhs);
             auto && backend = args.get(_backend);
-            preconditioner_ptrtype prec = args.get_else_invocable(_prec, [&backend,this](){ return preconditioner( _prefix=backend->prefix(),
-                                                                                                                   _matrix=this->matrixPtr(),
-                                                                                                                   _pc=backend->pcEnumType()/*LU_PRECOND*/,
-                                                                                                                   _pcfactormatsolverpackage=backend->matSolverPackageEnumType(),
-                                                                                                                   _backend=backend ); } );
-            this->close();
-            return backend->solve( _matrix=this->matrixPtr(), _rhs=rhs.vectorPtr(),
+            bool const dirichletInPlace = args.get_else( _dirichlet_inplace, this->dirichletInPlace() );
+            this->setDirichletInPlace( dirichletInPlace );
+            this->closeBaseOperator();
+            auto [matrix, rhsVector] = this->activeSystem( rhs );
+            preconditioner_ptrtype prec = args.get_else_invocable(
+                _prec, [&backend,&matrix]()
+                {
+                    return preconditioner( _prefix=backend->prefix(),
+                                           _matrix=matrix,
+                                           _pc=backend->pcEnumType(),
+                                           _pcfactormatsolverpackage=backend->matSolverPackageEnumType(),
+                                           _backend=backend );
+                } );
+            prec->setMatrix( matrix );
+            return backend->solve( _matrix=matrix, _rhs=rhsVector,
                                    _solution=solution, _prec = prec );
         }
 
@@ -503,6 +1154,8 @@ protected:
 
     std::vector<size_type> const* M_dofIdToContainerIdTest;
     std::vector<size_type> const* M_dofIdToContainerIdTrial;
+
+    deferred_dirichlet_state_ptrtype M_dirichletState;
 
     std::vector<std::future<void>> M_fut_assign;
     std::mutex b_mutex;
@@ -530,7 +1183,8 @@ BilinearFormBase<T>::BilinearFormBase( std::string name,
     M_col_startInMatrix( colstart ),
     M_do_build( build ),
     M_do_threshold( do_threshold ),
-    M_threshold( threshold )
+    M_threshold( threshold ),
+    M_dirichletState( std::make_shared<deferred_dirichlet_state_type>() )
 {
     DVLOG(2) << "begin constructor with default listblock\n";
 
@@ -569,7 +1223,8 @@ BilinearFormBase<T>::BilinearFormBase( std::string name,
     M_col_startInMatrix( colstart ),
     M_do_build( false ),
     M_do_threshold( do_threshold ),
-    M_threshold( threshold )
+    M_threshold( threshold ),
+    M_dirichletState( std::make_shared<deferred_dirichlet_state_type>() )
 {
     if ( !Xh->worldComm().isActive() ) return;
 

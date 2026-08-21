@@ -39,13 +39,25 @@ feelpp_add_testcase( cases PREFIX qs CATEGORY quickstart )
 feelpp_add_application( laplacian_2d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_LAPLACIAN_2D INSTALL TESTS)
 feelpp_add_application( laplacian_2dh SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 FEELPP_HYPERCUBE=1 EXEC QS_LAPLACIAN_2DH INSTALL)
 feelpp_add_application( laplacian_3d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_LAPLACIAN_3D INSTALL TESTS)
+feelpp_add_application( laplacian_ibc_2d SRCS qs_laplacian_ibc.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_LAPLACIAN_IBC_2D INSTALL TESTS
+  TEST --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/quarter-turn/quarter-turn2D-ibc.cfg )
+feelpp_add_application( laplacian_ibc_3d SRCS qs_laplacian_ibc.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_LAPLACIAN_IBC_3D INSTALL TESTS
+  TEST --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/quarter-turn/quarter-turn3D-ibc.cfg )
 
 
 
 # CG laplacian using model properties
 feelpp_add_application( laplacian_model_2d SRCS qs_laplacian_model.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_MODEL_LAPLACIAN_2D )
 
-add_dependencies(qs_laplacian ${QS_LAPLACIAN_2D} ${QS_LAPLACIAN_2DH} ${QS_LAPLACIAN_3D} ${QS_MODEL_LAPLACIAN_2D} )
+#
+# Mixed Darcy/electrostatic formulation
+#
+feelpp_add_application( darcy_3d SRCS qs_darcy.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_DARCY_3D INSTALL TESTS
+  TEST --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/quarter-turn/darcy-quarter-turn3D.cfg
+       --no-export )
+feelpp_add_application( darcy_hybrid_3d SRCS qs_darcy_hybrid.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_DARCY_HYBRID_3D INSTALL TESTS )
+
+add_dependencies(qs_laplacian ${QS_LAPLACIAN_2D} ${QS_LAPLACIAN_2DH} ${QS_LAPLACIAN_3D} ${QS_LAPLACIAN_IBC_2D} ${QS_LAPLACIAN_IBC_3D} ${QS_MODEL_LAPLACIAN_2D} ${QS_DARCY_3D} ${QS_DARCY_HYBRID_3D} )
 
 #
 # HDG Laplacian

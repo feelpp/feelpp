@@ -1,0 +1,92 @@
+# Supported Feel++ CPU/OpenMPI environment for macOS.
+#
+# This environment mirrors the main CPU/OpenMPI development stack where it is
+# practical on macOS, but avoids Linux-only OpenMPI fabrics and packages that
+# are currently brittle with the Apple toolchain.
+spack:
+  config:
+    installer: new
+    build_jobs: 16
+    concurrent_packages: 2
+  packages:
+    gcc:
+      externals:
+      - spec: gcc@15.2.0 languages:='c,c++,fortran'
+        prefix: /opt/homebrew
+        extra_attributes:
+          compilers:
+            c: /opt/homebrew/bin/gcc-15
+            cxx: /opt/homebrew/bin/g++-15
+            fortran: /opt/homebrew/bin/gfortran
+    llvm:
+      externals:
+      - spec: llvm@22.1.0+clang~flang~lld+lldb
+        prefix: /opt/homebrew/opt/llvm@19
+        extra_attributes:
+          compilers:
+            c: /opt/homebrew/opt/llvm@19/bin/clang
+            cxx: /opt/homebrew/opt/llvm@19/bin/clang++
+    apple-clang:
+      externals:
+      - spec: apple-clang@15.0.0
+        prefix: /usr
+        extra_attributes:
+          compilers:
+            c: /usr/bin/clang
+            cxx: /usr/bin/clang++
+    mpi:
+      require:
+      - openmpi@:4.1 fabrics=none
+    blas:
+      require:
+      - openblas
+    lapack:
+      require:
+      - openblas
+    openblas:
+      externals:
+      - spec: openblas@0.3.32+fortran+shared threads=openmp
+        prefix: /opt/homebrew/opt/openblas
+      buildable: false
+      require:
+      - +fortran+shared threads=openmp
+    mesa:
+      require:
+      - ~llvm
+
+  specs:
+  - openmpi@:4.1 fabrics=none
+  - cmake
+  - ninja
+  - bison
+  - flex
+  - rsync
+  - boost+regex+date_time+filesystem+iostreams+mpi+multithreaded+program_options+serialization+shared+system+test
+  - fmt+shared cxxstd=20
+  - curl
+  - libzip
+  - pugixml
+  - hwloc
+  - openblas@0.3.32+fortran+shared threads=openmp
+  - cln
+  - eigen
+  - fftw precision=float,double,long_double +mpi
+  - glpk
+  - gmsh@4.13.1 +opencascade+mmg~fltk~cgns~med
+  - py-pybind11
+  - py-mpi4py
+  - py-petsc4py@3.25.0
+  - py-slepc4py@3.25.0
+  - py-sympy
+  - py-pytest
+  - petsc+hpddm+mumps+superlu-dist+hwloc+ptscotch+suite-sparse+hdf5+hypre
+  - slepc+hpddm
+
+  view: $user_cache_path/views/feelpp/cpu-openmpi-macosx
+
+  concretizer:
+    unify: when_possible
+
+  repos:
+    # Repository-owned local overrides to unblock shared environment installs.
+    feelpp: ${FEELPP_REPO_ROOT}/packaging/spack/repo/spack_repo/feelpp

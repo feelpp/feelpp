@@ -29,7 +29,8 @@ namespace Feel
     enum class condenser_type
     {
         poisson = 1,
-        stokes = 2
+        stokes = 2,
+        sb9 = 3
     };
     struct condenser_base
     {    
@@ -40,6 +41,7 @@ namespace Feel
     };
     using condenser_poisson = condenser<condenser_type, condenser_type::poisson>;
     using condenser_stokes = condenser<condenser_type, condenser_type::stokes>;
+    using condenser_sb9 = condenser<condenser_type, condenser_type::sb9>;
 
     template <typename T>
     using is_condenser = std::is_base_of<condenser_base, T>;
@@ -53,5 +55,8 @@ namespace Feel
     using is_condenser_stokes = std::is_same<condenser_stokes,T>;
     template <typename T>
     inline constexpr bool is_condenser_stokes_v = std::is_same_v<condenser_stokes,T>;
+    template<typename T>
+    using is_condenser_sb9 = std::is_same<condenser_sb9,T>;
+    template <typename T>
+    inline constexpr bool is_condenser_sb9_v = std::is_same_v<condenser_sb9,T>;
 } // namespace Feel
-

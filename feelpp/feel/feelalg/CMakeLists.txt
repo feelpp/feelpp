@@ -22,7 +22,7 @@
 #
 #
 if( PETSC_FOUND )
-  set( FEELPP_PETSC_SRCS vectorpetsc.cpp matrixpetsc.cpp solverlinearpetsc.cpp solvernonlinearpetsc.cpp functionspetsc.cpp preconditionerpetsc.cpp topetsc.cpp backendpetsc.cpp)
+  set( FEELPP_PETSC_SRCS vectorpetsc.cpp matrixpetsc.cpp solverlinearpetsc.cpp solvernonlinearpetsc.cpp functionspetsc.cpp preconditionerpetsc.cpp petschpddm.cpp topetsc.cpp backendpetsc.cpp)
 
   if ( FEELPP_HAS_SLEPC )
     set( FEELPP_SLEPC_SRCS solvereigenslepc.cpp )
@@ -41,7 +41,8 @@ set( SRC
   graphcsr.cpp  solvereigen.cpp
   matrixeigendense.cpp backendeigen.cpp vectoreigen.cpp matrixeigensparse.cpp
   staticcondensation.cpp matrixcondensed.cpp vectorcondensed.cpp
-  solvernonlinear.cpp matrixblock.cpp vectorblock.cpp nullspace.cpp
+  solvernonlinear.cpp
+  matrixblock.cpp vectorblock.cpp nullspace.cpp
   ${FEELPP_PETSC_SRCS}
   ${FEELPP_SLEPC_SRCS}
   ${FEELPP_TRILINOS_SRCS}

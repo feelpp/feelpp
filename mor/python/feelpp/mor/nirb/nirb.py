@@ -12,11 +12,31 @@ import numpy as np
 import feelpp.toolboxes.heat as heat
 import feelpp.toolboxes.fluid as fluid
 import feelpp.core.interpolation as fppci
-from tqdm import tqdm
+try:
+    from tqdm import tqdm
+except ModuleNotFoundError:
+    def tqdm(iterable=None, *args, **kwargs):
+        return iterable if iterable is not None else iter(())
 import random
 import math
 import pathlib
-from scipy.linalg import eigh
+try:
+    from scipy.linalg import eigh
+except ModuleNotFoundError:
+    def eigh(a, b=None):
+        if b is None:
+            return np.linalg.eigh(a)
+
+        try:
+            factor = np.linalg.cholesky(b)
+            transformed = np.linalg.solve(factor, a)
+            transformed = np.linalg.solve(factor, transformed.T).T
+            eigenvalues, eigenvectors = np.linalg.eigh(transformed)
+            eigenvectors = np.linalg.solve(factor.T, eigenvectors)
+            return eigenvalues, eigenvectors
+        except np.linalg.LinAlgError:
+            eigenvalues, eigenvectors = np.linalg.eig(np.linalg.solve(b, a))
+            return eigenvalues.real, eigenvectors.real
 from feelpp.core.timing import tic, toc
 
 

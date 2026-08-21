@@ -238,6 +238,25 @@ def gmshGenerate(dim, fname):
     Environment.worldComm().to_comm().barrier()
     return mshname
 
+def gmshGenerateFromGeo(dim, fname, geo):
+    mshname = '{}-{}.msh'.format(fname,
+                                 Environment.numberOfProcessors())
+    import shutil
+
+    gmsh_exe = shutil.which("gmsh")
+    if gmsh_exe is None:
+        raise RuntimeError("gmsh Python module is unavailable and no gmsh executable was found")
+
+    if Environment.isMasterRank():
+        from pathlib import Path
+        import subprocess
+
+        geoname = Path(f"{fname}.geo")
+        geoname.write_text(geo, encoding="utf-8")
+        subprocess.run([gmsh_exe, f"-{dim}", str(geoname), "-o", mshname, "-v", "1"], check=True)
+    Environment.worldComm().to_comm().barrier()
+    return mshname
+
 
 def create_rectangle(filename="rectangle"):
     """create the mesh of the rectangle [0,1]x[0,2] with z=0
@@ -249,21 +268,36 @@ def create_rectangle(filename="rectangle"):
         _type_: file name, dimension, length of Gamma_1, length of Gamma_2, total surface, total length
     """
     mshname = None
-    if Environment.isMasterRank():
+    try:
         import gmsh
-        gmsh.initialize()
-        gmsh.option.setNumber('General.Verbosity', 1)
-        gmsh.model.add("rectangle")
-        gmsh.logger.start()
-        rectangle = gmsh.model.occ.addRectangle(0, 0, 0, 1, 2)
-        gmsh.model.occ.synchronize()
-        omega = gmsh.model.addPhysicalGroup(2, [rectangle])
-        gmsh.model.setPhysicalName(2, omega, "Omega")
-        gamma_1 = gmsh.model.addPhysicalGroup(1, [1, 3])
-        gmsh.model.setPhysicalName(1, gamma_1, "Gamma_1")
-        gamma_2 = gmsh.model.addPhysicalGroup(1, [2, 4])
-        gmsh.model.setPhysicalName(1, gamma_2, "Gamma_2")
-    mshname = gmshGenerate(2, filename)
+    except ImportError:
+        gmsh = None
+    if Environment.isMasterRank():
+        if gmsh is not None:
+            gmsh.initialize()
+            gmsh.option.setNumber('General.Verbosity', 1)
+            gmsh.model.add("rectangle")
+            gmsh.logger.start()
+            rectangle = gmsh.model.occ.addRectangle(0, 0, 0, 1, 2)
+            gmsh.model.occ.synchronize()
+            omega = gmsh.model.addPhysicalGroup(2, [rectangle])
+            gmsh.model.setPhysicalName(2, omega, "Omega")
+            gamma_1 = gmsh.model.addPhysicalGroup(1, [1, 3])
+            gmsh.model.setPhysicalName(1, gamma_1, "Gamma_1")
+            gamma_2 = gmsh.model.addPhysicalGroup(1, [2, 4])
+            gmsh.model.setPhysicalName(1, gamma_2, "Gamma_2")
+    if gmsh is None:
+        mshname = gmshGenerateFromGeo(2, filename, """
+SetFactory("OpenCASCADE");
+Rectangle(1) = {0, 0, 0, 1, 2, 0};
+Physical Surface("Omega") = {1};
+Physical Curve("Gamma_1") = {1, 3};
+Physical Curve("Gamma_2") = {2, 4};
+Mesh.MeshSizeMin = 0.2;
+Mesh.MeshSizeMax = 0.2;
+""")
+    else:
+        mshname = gmshGenerate(2, filename)
     return mshname, 2, 2, 2, 4, 6
 
 
@@ -277,22 +311,38 @@ def create_box(filename="box"):
         _type_: file name, dimension, measure of Gamma_1, measure of Gamma_2
     """
     mshname = None
-    if Environment.isMasterRank():
+    try:
         import gmsh
-        gmsh.initialize()
-        gmsh.model.add("box")
-        gmsh.logger.start()
-        box = gmsh.model.occ.addBox(0, 0, 0, 1, 2, 0.5)
-        gmsh.model.occ.synchronize()
-        omega = gmsh.model.addPhysicalGroup(3, [box])
-        gmsh.model.setPhysicalName(3, omega, "Omega")
-        gamma_1 = gmsh.model.addPhysicalGroup(2, [1, 3])
-        gmsh.model.setPhysicalName(2, gamma_1, "Gamma_1")
-        gamma_2 = gmsh.model.addPhysicalGroup(2, [2, 4])
-        gmsh.model.setPhysicalName(2, gamma_2, "Gamma_2")
-        gamma_3 = gmsh.model.addPhysicalGroup(2, [5, 6])
-        gmsh.model.setPhysicalName(2, gamma_3, "Gamma_3")
-    mshname = gmshGenerate(3, filename)
+    except ImportError:
+        gmsh = None
+    if Environment.isMasterRank():
+        if gmsh is not None:
+            gmsh.initialize()
+            gmsh.model.add("box")
+            gmsh.logger.start()
+            box = gmsh.model.occ.addBox(0, 0, 0, 1, 2, 0.5)
+            gmsh.model.occ.synchronize()
+            omega = gmsh.model.addPhysicalGroup(3, [box])
+            gmsh.model.setPhysicalName(3, omega, "Omega")
+            gamma_1 = gmsh.model.addPhysicalGroup(2, [1, 3])
+            gmsh.model.setPhysicalName(2, gamma_1, "Gamma_1")
+            gamma_2 = gmsh.model.addPhysicalGroup(2, [2, 4])
+            gmsh.model.setPhysicalName(2, gamma_2, "Gamma_2")
+            gamma_3 = gmsh.model.addPhysicalGroup(2, [5, 6])
+            gmsh.model.setPhysicalName(2, gamma_3, "Gamma_3")
+    if gmsh is None:
+        mshname = gmshGenerateFromGeo(3, filename, """
+SetFactory("OpenCASCADE");
+Box(1) = {0, 0, 0, 1, 2, 0.5};
+Physical Volume("Omega") = {1};
+Physical Surface("Gamma_1") = {1, 3};
+Physical Surface("Gamma_2") = {2, 4};
+Physical Surface("Gamma_3") = {5, 6};
+Mesh.MeshSizeMin = 0.2;
+Mesh.MeshSizeMax = 0.2;
+""")
+    else:
+        mshname = gmshGenerate(3, filename)
     return mshname, 3, 1, 1.5, 1.5, 7
 
 

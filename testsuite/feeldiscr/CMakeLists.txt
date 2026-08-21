@@ -1,3 +1,11 @@
+#
+# SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+#
+# SPDX-FileCopyrightText: 2026 University of Strasbourg
+#
+# SPDX-License-Identifier: LGPL-3.0-or-later
+#
+
 set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testdiscr")
 
 feelpp_add_test( aitken NO_MPI_TEST )
@@ -57,6 +65,8 @@ feelpp_add_test( trace )
 feelpp_add_test( element_component )
 feelpp_add_test( element_component_3d )
 feelpp_add_test( matrixfield )
+feelpp_add_test( tensorformat NO_MPI_TEST )
+feelpp_add_test( tensorfield_evaluate NO_MPI_TEST )
 
 if ( FEELPP_HAS_FFTW )
   feelpp_add_test( multiscaleimage)
@@ -87,6 +97,7 @@ feelpp_add_test( upmarker_faces )
 feelpp_add_test( listofrange )
 
 feelpp_add_test( productspaces CLI "--pc-type=gasm --sub-pc-factor-mat-solver-package-type=umfpack" )
+feelpp_add_test( productspaces_dirichlet SRCS test_productspaces_dirichlet.cpp CFG test_productspaces_dirichlet.cfg GEO square_mmarked.geo CLI "--pc-type=gasm --sub-pc-factor-mat-solver-package-type=umfpack" )
 feelpp_add_test( space_cst )
 # feelpp_add_test( element0D )
 feelpp_add_test( space_on_range )

@@ -19,8 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       github.repository == 'feelpp/feelpp' &&
-      !startsWith(github.event.head_commit.message, 'Release ') &&
-      !contains(github.event.head_commit.message, 'ci skip')
+      !startsWith(github.event.head_commit.message || '', 'Release ') &&
+      !contains(github.event.head_commit.message || '', 'ci skip')
     steps:
     - run: echo ok go
 

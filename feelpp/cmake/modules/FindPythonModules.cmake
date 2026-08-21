@@ -4,8 +4,18 @@
 function(_find_python_module_internal module_name version )
   # Check for presence of the module.  Even though we don't use all the
   # variable names set here, assigning them suppresses their output in CMake.
-  
-  execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import ${module_name};import sys;sys.exit(not(str(${module_name}.__version__) >= str(${version})));"
+
+  set(_python_executable "${PYTHON_EXECUTABLE}")
+  if ( NOT _python_executable AND Python3_EXECUTABLE )
+    set(_python_executable "${Python3_EXECUTABLE}")
+  endif()
+
+  if ( NOT _python_executable )
+    set(PYTHON_MODULE_${module_name}_FOUND FALSE PARENT_SCOPE)
+    return()
+  endif()
+
+  execute_process(COMMAND "${_python_executable}" -c "import importlib, re, sys; m=importlib.import_module('${module_name}'); parse=lambda v: tuple(int(x) for x in re.findall(r'\\d+', str(v))[:3]); sys.exit(0 if parse(getattr(m, '__version__', '0')) >= parse('${version}') else 1);"
     RESULT_VARIABLE IMPORT_${module_name}_EXITCODE
     OUTPUT_VARIABLE IMPORT_${module_name}_OUTPUT
     ERROR_VARIABLE IMPORT_${module_name}_ERROR

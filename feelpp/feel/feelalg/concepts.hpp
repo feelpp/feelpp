@@ -32,7 +32,13 @@
 
 #include <concepts>
 #include <memory>
+#include <boost/hana/concept/foldable.hpp>
 #include <feel/feelcore/concepts.hpp>
+#include <feel/feelcore/traits.hpp>
+#include <feel/feelalg/condenser.hpp>
+#include <feel/feelalg/productspaceconcepts.hpp>
+#include <feel/feelalg/products.hpp>
+#include <feel/feeldiscr/traits.hpp>
 
 namespace Feel
 {

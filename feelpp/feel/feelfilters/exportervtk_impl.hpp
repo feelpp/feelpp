@@ -1,25 +1,10 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-   This file is part of the Feel library
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
-   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   Date: 2007-07-21
+    SPDX-FileCopyrightText: 2026 University of Strasbourg
 
-   Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
-
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 3.0 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    SPDX-License-Identifier: LGPL-3.0-or-later
 */
 /**
    \file exporterVTK_impl.cpp
@@ -28,6 +13,8 @@
 */
 #ifndef __EXPORTERVTK_CPP
 #define __EXPORTERVTK_CPP 1
+
+#include <feel/feeldiscr/tensorformat.hpp>
 
 namespace Feel
 {
@@ -595,8 +582,6 @@ ExporterVTK<MeshType,N>::saveFields( typename timeset_type::step_ptrtype step, m
 
 
         auto const& d = field00.functionSpace()->dof().get();
-        //int reorder_tensor2symm[6] = { 0,3,4,1,2,5 };
-        int reorder_tensor2symm[6] = { 0,3,5,1,4,2 };
 
         if constexpr ( IsNodal )
             {
@@ -623,7 +608,7 @@ ExporterVTK<MeshType,N>::saveFields( typename timeset_type::step_ptrtype step, m
                                 auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
                                 uint16_type cMap = c2*nComponents1+c1;
                                 if ( isTensor2Symm )
-                                    cMap = reorder_tensor2symm[Feel::detail::symmetricIndex( c1,c2, nComponents1 )];
+                                    cMap = symmetricTensorOutputSlot( c1, c2, nComponents1, SymmetricTensorOrder::VtkTensor6 );
                                 array[cMap] = fieldComp.globalValue( dof_id );
                             }
                         }
@@ -664,7 +649,7 @@ ExporterVTK<MeshType,N>::saveFields( typename timeset_type::step_ptrtype step, m
                         auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
                         uint16_type cMap = c2*nComponents1+c1;
                         if ( isTensor2Symm )
-                            cMap = reorder_tensor2symm[Feel::detail::symmetricIndex( c1,c2, nComponents1 )];
+                            cMap = symmetricTensorOutputSlot( c1, c2, nComponents1, SymmetricTensorOrder::VtkTensor6 );
                         size_type global_node_id = nComponents * e + cMap;
                         array[cMap] = fieldComp.globalValue( dof_id );
                     }

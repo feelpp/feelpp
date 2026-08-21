@@ -5,7 +5,7 @@
  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  Date: 08 Jan 2020
 
- Copyright (C) 2020 Feel++ Consortium
+ Copyright (C) 2020-2026 University of Strasbourg
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -128,20 +128,46 @@ cgLaplacian( Ts && ... ts  )
     a += integrate( _range = markedfaces( support( Vh ), "Robin" ), _expr = r_1 * idt( u ) * id( v ), _quad = 4 );
     toc( "a.robin" );
     tic();
-    a += on( _range = markedfaces( support( Vh ), "Dirichlet" ), _rhs = l, _element = u, _expr = g );
-    //! if no markers Robin Neumann or Dirichlet are present in the mesh then
-    //! impose Dirichlet boundary conditions over the entire boundary
-    if ( !support( Vh )->hasAnyMarker( {"Robin", "Neumann", "Dirichlet"} ) )
-        a += on( _range = boundaryfaces( support( Vh ) ), _rhs = l, _element = u, _expr = g );
+    if ( doweakbc )
+    {
+        if ( support( Vh )->hasAnyMarker( {"Dirichlet"} ) )
+        {
+            a += integrate( _range = markedfaces( support( Vh ), "Dirichlet" ),
+                            _expr = -inner( k * gradt( u ) * N(), id( v ) ) - inner( k * grad( v ) * N(), idt( u ) ) + 2 * k * idt( u ) * id( v ) / hFace() );
+            l += integrate( _range = markedfaces( support( Vh ), "Dirichlet" ),
+                            _expr = -inner( k * grad( v ) * N(), g ) + 2 * k * g * id( v ) / hFace() );
+        }
+        //! if no markers Robin Neumann or Dirichlet are present in the mesh then
+        //! impose Dirichlet boundary conditions over the entire boundary
+        else if ( !support( Vh )->hasAnyMarker( {"Robin", "Neumann", "Dirichlet"} ) )
+        {
+            a += integrate( _range = boundaryfaces( support( Vh ) ),
+                            _expr = -inner( k * gradt( u ) * N(), id( v ) ) - inner( k * grad( v ) * N(), idt( u ) ) + 2 * k * idt( u ) * id( v ) / hFace() );
+            l += integrate( _range = boundaryfaces( support( Vh ) ),
+                            _expr = -inner( k * grad( v ) * N(), g ) + 2 * k * g * id( v ) / hFace() );
+        }
+    }
+    else
+    {
+        a += on( _range = markedfaces( support( Vh ), "Dirichlet" ), _rhs = l, _element = u, _expr = g );
+        //! if no markers Robin Neumann or Dirichlet are present in the mesh then
+        //! impose Dirichlet boundary conditions over the entire boundary
+        if ( !support( Vh )->hasAnyMarker( {"Robin", "Neumann", "Dirichlet"} ) )
+            a += on( _range = boundaryfaces( support( Vh ) ), _rhs = l, _element = u, _expr = g );
+    }
     toc( "a.dirichlet" );
     toc( "a" );
     // end::forms[]
 
     // tag::solve[]
-    tic();
     //! solve the linear system, find u s.t. a(u,v)=l(v) for all v
     if ( dosolve )
+    {
+        // This phase includes preconditioner setup and Krylov iterations.
+        tic();
         a.solve( _rhs = l, _solution = u );
+        toc( "a.solve" );
+    }
     // end::solve[]
     return dosolve ? std::optional{ u } : std::nullopt;
 }

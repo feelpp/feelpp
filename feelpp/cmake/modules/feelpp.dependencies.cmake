@@ -158,6 +158,66 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
   message(STATUS "Linux ${LSB_RELEASE_ID_SHORT} ${LSB_RELEASE_VERSION_SHORT} ${LSB_RELEASE_CODENAME_SHORT}")
 endif()
 
+if(DEFINED ENV{SPACK_ENV} AND NOT "$ENV{SPACK_ENV}" STREQUAL "")
+  set(_feelpp_spack_prefixes ${CMAKE_PREFIX_PATH})
+  if(DEFINED ENV{CMAKE_PREFIX_PATH} AND NOT "$ENV{CMAKE_PREFIX_PATH}" STREQUAL "")
+    set(_feelpp_spack_env_prefixes "$ENV{CMAKE_PREFIX_PATH}")
+    if(NOT WIN32)
+      string(REPLACE ":" ";" _feelpp_spack_env_prefixes "${_feelpp_spack_env_prefixes}")
+    endif()
+    list(APPEND _feelpp_spack_prefixes ${_feelpp_spack_env_prefixes})
+  endif()
+
+  if(_feelpp_spack_prefixes)
+    list(FILTER _feelpp_spack_prefixes EXCLUDE REGEX "^$")
+    list(REMOVE_DUPLICATES _feelpp_spack_prefixes)
+  endif()
+
+  set(_feelpp_spack_real_prefixes)
+  foreach(_feelpp_spack_prefix IN LISTS _feelpp_spack_prefixes)
+    if(EXISTS "${_feelpp_spack_prefix}")
+      get_filename_component(_feelpp_spack_real_prefix "${_feelpp_spack_prefix}" REALPATH)
+      list(APPEND _feelpp_spack_real_prefixes "${_feelpp_spack_real_prefix}")
+    endif()
+  endforeach()
+  if(_feelpp_spack_real_prefixes)
+    list(REMOVE_DUPLICATES _feelpp_spack_real_prefixes)
+    list(SORT _feelpp_spack_real_prefixes)
+  endif()
+
+  set(_feelpp_spack_prefix_signature
+      "env=$ENV{SPACK_ENV};prefixes=${_feelpp_spack_prefixes};real=${_feelpp_spack_real_prefixes}")
+  if(NOT DEFINED FEELPP_SPACK_PREFIX_SIGNATURE OR
+     NOT "${FEELPP_SPACK_PREFIX_SIGNATURE}" STREQUAL "${_feelpp_spack_prefix_signature}")
+    message(STATUS "[feelpp] Active Spack view changed; clearing stale package cache entries")
+    get_cmake_property(_feelpp_cache_vars CACHE_VARIABLES)
+    foreach(_feelpp_cache_var IN LISTS _feelpp_cache_vars)
+      if(_feelpp_cache_var STREQUAL "FEELPP_SPACK_PREFIX_SIGNATURE")
+        continue()
+      endif()
+      if(_feelpp_cache_var MATCHES "^(CMAKE_|_CMAKE_)")
+        continue()
+      endif()
+
+      set(_feelpp_clear_cache_var FALSE)
+      if(_feelpp_cache_var MATCHES "^(__pkg_config_checked_|__pkg_config_arguments_|pkgcfg_lib_)")
+        set(_feelpp_clear_cache_var TRUE)
+      else()
+        get_property(_feelpp_cache_value CACHE "${_feelpp_cache_var}" PROPERTY VALUE)
+        if(_feelpp_cache_value MATCHES "/\\.spack/views/|/spack-user-cache/views/|/spack-store/")
+          set(_feelpp_clear_cache_var TRUE)
+        endif()
+      endif()
+
+      if(_feelpp_clear_cache_var)
+        unset(${_feelpp_cache_var} CACHE)
+      endif()
+    endforeach()
+    set(FEELPP_SPACK_PREFIX_SIGNATURE "${_feelpp_spack_prefix_signature}" CACHE INTERNAL
+        "Active Spack environment signature used to invalidate stale package cache entries")
+  endif()
+endif()
+
 find_package(PkgConfig REQUIRED)
 
 # enable mpi mode
@@ -233,6 +293,221 @@ endif()
 # Force the cache entry so CMake's FindMPI does not recreate it with FALSE.
 set(MPI_CXX_SKIP_MPICXX TRUE CACHE BOOL "Disable deprecated MPI C++ bindings" FORCE)
 FIND_PACKAGE(MPI REQUIRED)
+
+# Select the command used by CTest to launch MPI programs.  On a Slurm
+# installation, srun is the native launcher and is preferred even when an
+# mpiexec executable is present.  This also handles Spack OpenMPI builds with
+# schedulers=slurm and ~legacylaunchers, for which mpiexec is an explanatory
+# stub that always fails.  Users can force either launcher when auto-detection
+# is not appropriate for a particular site.
+set(FEELPP_MPI_TEST_LAUNCHER "auto" CACHE STRING
+    "MPI test launcher: auto (srun on Slurm, otherwise mpiexec), srun, or mpiexec")
+set_property(CACHE FEELPP_MPI_TEST_LAUNCHER PROPERTY STRINGS auto srun mpiexec)
+set(FEELPP_MPI_TEST_SRUN_ADDITIONAL_FLAGS "" CACHE STRING
+    "Additional space-separated srun flags for MPI tests (for example --partition=public --exclude=node2)")
+set(FEELPP_MPI_TEST_OPENMPI_PML "auto" CACHE STRING
+    "Open MPI PML for tests: auto (UCX with native Slurm when available), default, or ucx")
+set_property(CACHE FEELPP_MPI_TEST_OPENMPI_PML PROPERTY STRINGS auto default ucx)
+
+function(_feelpp_check_launcher_version result executable)
+  if(NOT executable)
+    set(${result} FALSE PARENT_SCOPE)
+    return()
+  endif()
+  execute_process(
+    COMMAND "${executable}" --version
+    RESULT_VARIABLE _feelpp_launcher_result
+    OUTPUT_QUIET
+    ERROR_QUIET
+    TIMEOUT 5)
+  if(_feelpp_launcher_result EQUAL 0)
+    set(${result} TRUE PARENT_SCOPE)
+  else()
+    set(${result} FALSE PARENT_SCOPE)
+  endif()
+endfunction()
+
+# Check the Open MPI installation selected by FindMPI, rather than an
+# unrelated ompi_info that may appear earlier in PATH.  Open MPI compiler
+# wrappers support --showme:version; other MPI implementations simply fail
+# this probe and are left untouched.
+function(_feelpp_check_openmpi_pml result component)
+  set(${result} FALSE PARENT_SCOPE)
+  if(MPI_C_COMPILER)
+    set(_feelpp_mpi_wrapper "${MPI_C_COMPILER}")
+  elseif(MPI_CXX_COMPILER)
+    set(_feelpp_mpi_wrapper "${MPI_CXX_COMPILER}")
+  else()
+    return()
+  endif()
+
+  execute_process(
+    COMMAND "${_feelpp_mpi_wrapper}" --showme:version
+    RESULT_VARIABLE _feelpp_openmpi_wrapper_result
+    OUTPUT_VARIABLE _feelpp_openmpi_wrapper_output
+    ERROR_VARIABLE _feelpp_openmpi_wrapper_error
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    TIMEOUT 5)
+  string(APPEND _feelpp_openmpi_wrapper_output "${_feelpp_openmpi_wrapper_error}")
+  string(TOLOWER "${_feelpp_openmpi_wrapper_output}" _feelpp_openmpi_wrapper_output_lower)
+  if(NOT _feelpp_openmpi_wrapper_result EQUAL 0 OR
+     NOT _feelpp_openmpi_wrapper_output_lower MATCHES "open mpi")
+    return()
+  endif()
+
+  get_filename_component(_feelpp_mpi_bindir "${_feelpp_mpi_wrapper}" DIRECTORY)
+  set(_feelpp_ompi_info "${_feelpp_mpi_bindir}/ompi_info")
+  if(NOT EXISTS "${_feelpp_ompi_info}")
+    return()
+  endif()
+
+  execute_process(
+    COMMAND "${_feelpp_ompi_info}" --parsable --param pml "${component}"
+    RESULT_VARIABLE _feelpp_ompi_info_result
+    OUTPUT_VARIABLE _feelpp_ompi_info_output
+    ERROR_QUIET
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    TIMEOUT 5)
+  if(_feelpp_ompi_info_result EQUAL 0 AND
+     _feelpp_ompi_info_output MATCHES "mca:pml:${component}:")
+    set(${result} TRUE PARENT_SCOPE)
+  endif()
+endfunction()
+
+if(MPI_FOUND)
+  string(TOLOWER "${FEELPP_MPI_TEST_LAUNCHER}" _feelpp_mpi_test_launcher)
+  if(NOT _feelpp_mpi_test_launcher MATCHES "^(auto|srun|mpiexec)$")
+    message(FATAL_ERROR
+      "FEELPP_MPI_TEST_LAUNCHER must be one of auto, srun, or mpiexec (got '${FEELPP_MPI_TEST_LAUNCHER}')")
+  endif()
+
+  # Keep FindMPI's original launcher separately because MPIEXEC_EXECUTABLE is
+  # updated below.  Some bundled projects call find_package(MPI) again and
+  # would otherwise restore MPIEXEC from the old cache entry.
+  set(FEELPP_MPI_TEST_MPIEXEC_EXECUTABLE "${MPIEXEC_EXECUTABLE}" CACHE FILEPATH
+      "mpiexec-compatible launcher used when FEELPP_MPI_TEST_LAUNCHER selects mpiexec")
+  mark_as_advanced(FEELPP_MPI_TEST_MPIEXEC_EXECUTABLE)
+  set(_feelpp_mpiexec_candidate "${FEELPP_MPI_TEST_MPIEXEC_EXECUTABLE}")
+  if(NOT _feelpp_mpiexec_candidate)
+    set(_feelpp_mpiexec_candidate "${MPIEXEC}")
+  endif()
+  _feelpp_check_launcher_version(_feelpp_mpiexec_usable "${_feelpp_mpiexec_candidate}")
+
+  find_program(FEELPP_SRUN_EXECUTABLE NAMES srun DOC "Slurm native parallel launcher")
+  _feelpp_check_launcher_version(_feelpp_srun_usable "${FEELPP_SRUN_EXECUTABLE}")
+
+  # In auto mode, require evidence of a working Slurm installation rather
+  # than selecting an unconfigured srun client that merely happens to exist.
+  set(_feelpp_slurm_available FALSE)
+  if(_feelpp_srun_usable)
+    if(DEFINED ENV{SLURM_JOB_ID})
+      set(_feelpp_slurm_available TRUE)
+    else()
+      find_program(FEELPP_SINFO_EXECUTABLE NAMES sinfo DOC "Slurm cluster information command")
+      if(FEELPP_SINFO_EXECUTABLE)
+        execute_process(
+          COMMAND "${FEELPP_SINFO_EXECUTABLE}" --noheader --format=%P
+          RESULT_VARIABLE _feelpp_sinfo_result
+          OUTPUT_VARIABLE _feelpp_sinfo_output
+          ERROR_QUIET
+          OUTPUT_STRIP_TRAILING_WHITESPACE
+          TIMEOUT 5)
+        if(_feelpp_sinfo_result EQUAL 0 AND NOT _feelpp_sinfo_output STREQUAL "")
+          set(_feelpp_slurm_available TRUE)
+        endif()
+      endif()
+    endif()
+  endif()
+
+  set(_feelpp_use_srun FALSE)
+  if(_feelpp_mpi_test_launcher STREQUAL "srun")
+    if(NOT _feelpp_srun_usable)
+      message(FATAL_ERROR "FEELPP_MPI_TEST_LAUNCHER=srun, but no usable srun executable was found")
+    endif()
+    set(_feelpp_use_srun TRUE)
+  elseif(_feelpp_mpi_test_launcher STREQUAL "mpiexec")
+    if(NOT _feelpp_mpiexec_usable)
+      message(FATAL_ERROR
+        "FEELPP_MPI_TEST_LAUNCHER=mpiexec, but '${_feelpp_mpiexec_candidate}' does not execute successfully")
+    endif()
+  elseif(_feelpp_slurm_available)
+    set(_feelpp_use_srun TRUE)
+  elseif(NOT _feelpp_mpiexec_usable)
+    message(FATAL_ERROR
+      "No usable MPI test launcher was found: srun is unavailable and '${_feelpp_mpiexec_candidate}' failed validation")
+  endif()
+
+  if(_feelpp_use_srun)
+    set(MPIEXEC "${FEELPP_SRUN_EXECUTABLE}")
+    set(MPIEXEC_NUMPROC_FLAG "-n")
+    set(MPIEXEC_PREFLAGS)
+    execute_process(
+      COMMAND "${FEELPP_SRUN_EXECUTABLE}" --mpi=list
+      RESULT_VARIABLE _feelpp_srun_mpi_result
+      OUTPUT_VARIABLE _feelpp_srun_mpi_output
+      ERROR_VARIABLE _feelpp_srun_mpi_error
+      TIMEOUT 5)
+    string(APPEND _feelpp_srun_mpi_output "${_feelpp_srun_mpi_error}")
+    if(_feelpp_srun_mpi_result EQUAL 0 AND _feelpp_srun_mpi_output MATCHES "pmix")
+      list(APPEND MPIEXEC_PREFLAGS "--mpi=pmix")
+    endif()
+    if(FEELPP_MPI_TEST_SRUN_ADDITIONAL_FLAGS)
+      separate_arguments(_feelpp_srun_additional_flags NATIVE_COMMAND
+                         "${FEELPP_MPI_TEST_SRUN_ADDITIONAL_FLAGS}")
+      list(APPEND MPIEXEC_PREFLAGS ${_feelpp_srun_additional_flags})
+    endif()
+    set(MPIEXEC_POSTFLAGS)
+    string(JOIN " " _feelpp_mpi_preflags_display ${MPIEXEC_PREFLAGS})
+    set(_feelpp_mpi_command_display "${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} <N>")
+    if(_feelpp_mpi_preflags_display)
+      string(APPEND _feelpp_mpi_command_display " ${_feelpp_mpi_preflags_display}")
+    endif()
+    message(STATUS
+      "[feelpp] MPI tests: using Slurm launcher '${_feelpp_mpi_command_display}'")
+  else()
+    set(MPIEXEC "${_feelpp_mpiexec_candidate}")
+    string(JOIN " " _feelpp_mpi_preflags_display ${MPIEXEC_PREFLAGS})
+    set(_feelpp_mpi_command_display "${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} <N>")
+    if(_feelpp_mpi_preflags_display)
+      string(APPEND _feelpp_mpi_command_display " ${_feelpp_mpi_preflags_display}")
+    endif()
+    message(STATUS
+      "[feelpp] MPI tests: using MPI launcher '${_feelpp_mpi_command_display}'")
+  endif()
+
+  string(TOLOWER "${FEELPP_MPI_TEST_OPENMPI_PML}" _feelpp_openmpi_pml_policy)
+  if(NOT _feelpp_openmpi_pml_policy MATCHES "^(auto|default|ucx)$")
+    message(FATAL_ERROR
+      "FEELPP_MPI_TEST_OPENMPI_PML must be one of auto, default, or ucx "
+      "(got '${FEELPP_MPI_TEST_OPENMPI_PML}')")
+  endif()
+
+  set(_feelpp_mpi_test_environment)
+  if(DEFINED ENV{OMPI_MCA_pml} AND NOT "$ENV{OMPI_MCA_pml}" STREQUAL "")
+    message(STATUS
+      "[feelpp] MPI tests: preserving OMPI_MCA_pml='$ENV{OMPI_MCA_pml}' from the environment")
+  elseif(_feelpp_openmpi_pml_policy STREQUAL "ucx" OR
+         (_feelpp_openmpi_pml_policy STREQUAL "auto" AND _feelpp_use_srun))
+    _feelpp_check_openmpi_pml(_feelpp_has_openmpi_ucx_pml ucx)
+    if(_feelpp_has_openmpi_ucx_pml)
+      list(APPEND _feelpp_mpi_test_environment "OMPI_MCA_pml=ucx")
+      message(STATUS "[feelpp] MPI tests: Open MPI UCX PML detected; setting OMPI_MCA_pml=ucx")
+    elseif(_feelpp_openmpi_pml_policy STREQUAL "ucx")
+      message(FATAL_ERROR
+        "FEELPP_MPI_TEST_OPENMPI_PML=ucx, but FindMPI's Open MPI does not provide the UCX PML")
+    else()
+      message(STATUS
+        "[feelpp] MPI tests: Open MPI UCX PML not detected; keeping the MPI default")
+    endif()
+  endif()
+  set(FEELPP_MPI_TEST_ENVIRONMENT "${_feelpp_mpi_test_environment}" CACHE INTERNAL
+      "Environment entries automatically added to Feel++ MPI tests" FORCE)
+
+  # FindMPI's compatibility variable MPIEXEC is recreated from this cache
+  # entry.  Updating it keeps subsequent nested find_package(MPI) calls and
+  # all Feel++ test-registration macros on the selected launcher.
+  set(MPIEXEC_EXECUTABLE "${MPIEXEC}" CACHE FILEPATH "Executable for running MPI programs" FORCE)
+endif()
 IF ( MPI_FOUND )
   #SET(CMAKE_REQUIRED_INCLUDES "${MPI_INCLUDE_PATH};${CMAKE_REQUIRED_INCLUDES}")
   SET( FEELPP_HAS_MPI 1 )
@@ -549,12 +824,40 @@ endif()
 
 # Python libs
 option( FEELPP_ENABLE_PYTHON "Enable Python Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+option( FEELPP_ALLOW_AMBIENT_PYTHON "Allow auto-detected non-system Python installations (Spack, Conda, virtualenvs)" OFF )
 option( FEELPP_ALLOW_AMBIENT_CONDA_PYTHON "Allow auto-detected Conda/Miniconda Python installations" OFF )
 if(FEELPP_ENABLE_PYTHON)
   #
   # Python
   #
-  if(NOT FEELPP_ALLOW_AMBIENT_CONDA_PYTHON AND EXISTS "/usr/bin/python3")
+  set(_feelpp_active_spack_env FALSE)
+  set(_feelpp_spack_view "")
+  if(DEFINED ENV{SPACK_ENV} AND NOT "$ENV{SPACK_ENV}" STREQUAL "")
+    set(_feelpp_active_spack_env TRUE)
+    set(_feelpp_spack_prefix_hints "$ENV{CMAKE_PREFIX_PATH}")
+    if(_feelpp_spack_prefix_hints)
+      if(UNIX)
+        string(REPLACE ":" ";" _feelpp_spack_prefix_hints "${_feelpp_spack_prefix_hints}")
+      endif()
+      list(GET _feelpp_spack_prefix_hints 0 _feelpp_spack_view)
+    endif()
+    find_program(_feelpp_spack_python
+      NAMES python3 python
+      HINTS "${_feelpp_spack_view}/bin"
+      NO_DEFAULT_PATH
+    )
+    if(_feelpp_spack_python)
+      message(STATUS "[feelpp] Active Spack environment detected; using ${_feelpp_spack_python}")
+      set(Python3_EXECUTABLE "${_feelpp_spack_python}" CACHE FILEPATH "Python3 executable" FORCE)
+    else()
+      message(STATUS "[feelpp] Active Spack environment detected; Python will be resolved from PATH")
+    endif()
+    if(_feelpp_spack_view)
+      set(Python3_ROOT_DIR "${_feelpp_spack_view}" CACHE PATH "Python3 root directory" FORCE)
+    endif()
+  endif()
+
+  if(NOT FEELPP_ALLOW_AMBIENT_PYTHON AND NOT FEELPP_ALLOW_AMBIENT_CONDA_PYTHON AND NOT _feelpp_active_spack_env AND EXISTS "/usr/bin/python3")
     if(DEFINED Python3_EXECUTABLE AND NOT "${Python3_EXECUTABLE}" STREQUAL "" AND NOT "${Python3_EXECUTABLE}" STREQUAL "/usr/bin/python3")
       message(STATUS "[feelpp] Ignoring ambient Python ${Python3_EXECUTABLE}; using /usr/bin/python3")
     else()

@@ -33,6 +33,7 @@
 #include <feel/feelalg/matrixpetsc.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
 #include <feel/feelalg/solverlinearpetsc.hpp>
+#include <feel/feelalg/petschpddm.hpp>
 #include <feel/feelpde/operatorpcdbase.hpp>
 #include <feel/feelpde/operatorpmmbase.hpp>
 //#include <petscsystypes.h>
@@ -56,19 +57,34 @@ extern "C" {
 #include <feel/feelalg/preconditionerpetscpcd.cpp>
 #include <feel/feelalg/preconditionerpetscfeelpp.cpp>
 
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,25,0 )
+PetscErrorCode __feel_destroy_petsc_prec_ksp_monitor(void* ctx)
+#elif PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,19,0 )
 PetscErrorCode __feel_destroy_petsc_prec_ksp_monitor(void** ctx)
+#else
+PetscErrorCode __feel_destroy_petsc_prec_ksp_monitor(PetscCtxRt ctx)
+#endif
 {
-
-    if ( ctx == nullptr )
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,25,0 )
+    Feel::ConfigureKSP* solver = reinterpret_cast<Feel::ConfigureKSP*>( ctx );
+    if ( !solver )
         return 0;
-    Feel::ConfigureKSP* solver = static_cast<Feel::ConfigureKSP*>( *ctx );
+    if ( solver->worldCommPtr()->isMasterRank() )
+        std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] ] KSP delete context", Feel::gmtimeNow(), solver->prefix(), 0.0 ) << std::endl;
+    delete solver;
+#else
+    auto* ctxPtr = reinterpret_cast<Feel::ConfigureKSP**>( ctx );
+    if ( ctxPtr == nullptr )
+        return 0;
+    Feel::ConfigureKSP* solver = *ctxPtr;
     if ( solver )
     {
         if ( solver->worldCommPtr()->isMasterRank() )
             std::cout << fmt::format( "[{:%Y-%m-%d :%H:%M:%S} - [{}] ] KSP delete context", Feel::gmtimeNow(), solver->prefix(), 0.0 ) << std::endl;
         delete solver;
     }
-    ctx = nullptr;
+    *ctxPtr = nullptr;
+#endif
     return 0;
 }
 
@@ -110,6 +126,37 @@ PetscErrorCode __feel_petsc_prec_ksp_monitor(KSP ksp,PetscInt it,PetscReal rnorm
 
 namespace Feel
 {
+namespace
+{
+#if defined(PCHPDDM)
+using hpddm_has_neumann_mat_t = PetscErrorCode (*)( PC, PetscBool );
+using hpddm_set_auxiliary_mat_t = PetscErrorCode (*)( PC, IS, Mat, PetscErrorCode (*)(Mat, PetscReal, Vec, Vec, PetscReal, IS, void *), void * );
+using hpddm_set_coarse_correction_type_t = PetscErrorCode (*)( PC, PCHPDDMCoarseCorrectionType );
+
+hpddm_set_auxiliary_mat_t
+hpddmSetAuxiliaryMatFn()
+{
+    static hpddm_set_auxiliary_mat_t fn = petscHpddmSymbol<hpddm_set_auxiliary_mat_t>( "PCHPDDMSetAuxiliaryMat" );
+    return fn;
+}
+
+hpddm_has_neumann_mat_t
+hpddmHasNeumannMatFn()
+{
+    static hpddm_has_neumann_mat_t fn = petscHpddmSymbol<hpddm_has_neumann_mat_t>( "PCHPDDMHasNeumannMat" );
+    return fn;
+}
+
+hpddm_set_coarse_correction_type_t
+hpddmSetCoarseCorrectionTypeFn()
+{
+    static hpddm_set_coarse_correction_type_t fn = petscHpddmSymbol<hpddm_set_coarse_correction_type_t>( "PCHPDDMSetCoarseCorrectionType" );
+    return fn;
+}
+
+#endif
+} // namespace
+
 template <typename T>
 void PreconditionerPetsc<T>::apply( const Vector<T> & x, Vector<T> & y ) const
 {
@@ -146,11 +193,10 @@ template <typename T>
 PreconditionerPetsc<T>::PreconditionerPetsc ( PreconditionerPetsc const& p )
     :
     Preconditioner<T>( p ),
-    M_indexSplitHasChanged( p.M_indexSplitHasChanged )
+    M_indexSplitHasChanged( p.M_indexSplitHasChanged ),
+    M_auxiliaryIndexSet( p.M_auxiliaryIndexSet )
 {
 }
-
-
 
 template <typename T>
 PreconditionerPetsc<T>::~PreconditionerPetsc ()
@@ -544,6 +590,15 @@ SetPCType( PC& pc, const PreconditionerType & preconditioner_type, const MatSolv
 #endif
         break;
 
+    case HPDDM_PRECOND:
+#if defined(PCHPDDM)
+        ierr = PCSetType( pc, (char*) PCHPDDM );
+        CHKERRABORT( worldComm->globalComm(), ierr );
+#else
+        LOG(ERROR) << "preconditioner HPDDM is not available with this PETSc build";
+#endif
+        break;
+
     case BOOMERAMG_PRECOND:
 #if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 ) // #ifdef FEELPP_HAS_PETSC_HYPRE
         ierr = PCSetType( pc,( char* ) PCHYPRE );
@@ -730,6 +785,10 @@ ConfigurePC::run( PC& pc )
     else if ( std::string(pctype) == "gamg" )
     {
         ConfigurePCGAMG( pc, this->precFeel(), this->worldCommPtr(), this->sub(), this->prefix() );
+    }
+    else if ( std::string(pctype) == "hpddm" )
+    {
+        ConfigurePCHPDDM( pc, this->precFeel(), this->worldCommPtr(), this->sub(), this->prefix() );
     }
     else if ( std::string(pctype) == "ml" )
     {
@@ -943,6 +1002,12 @@ updateOptionsDescLU( po::options_description & _options, std::string const& pref
             _options.add_options()
                 ( prefixvm( prefix,pcctx+mumpsOption ).c_str(),
                   Feel::po::value<int>()->default_value( 1 ),"configure mumps factorisation : controls the detection of “null pivot rows (see mumps ICNTL documentation)" );
+#if defined( MACOSX ) || defined( __APPLE__ )
+        else if ( icntl == 20 )
+            _options.add_options()
+                ( prefixvm( prefix,pcctx+mumpsOption ).c_str(),
+                  Feel::po::value<int>()->default_value( 0 ),"configure mumps factorisation : use centralized dense right-hand sides on macOS (safer on Apple Silicon; may use more memory on root)" );
+#endif
         else
             _options.add_options()
                 ( prefixvm( prefix,pcctx+mumpsOption ).c_str(),
@@ -1284,6 +1349,45 @@ getOptionsDescGAMG( std::string const& prefix, std::string const& sub )
 }
 
 po::options_description
+getOptionsDescHPDDM( std::string const& prefix, std::string const& sub )
+{
+    std::string pcctx = (sub.empty())? "pc-" : sub+"-pc-";
+
+    po::options_description _options( "options PC HPDDM", 200 );
+    _options.add_options()
+        ( prefixvm( prefix,pcctx+"hpddm-use-config-default-petsc" ).c_str(),
+          Feel::po::value<bool>()->default_value( false ),
+          "use PETSc defaults for HPDDM-specific configuration" )
+        ( prefixvm( prefix,pcctx+"hpddm-has-neumann" ).c_str(),
+          Feel::po::value<bool>()->default_value( false ),
+          "inform HPDDM that the auxiliary matrix is the local Neumann operator" )
+        ( prefixvm( prefix,pcctx+"hpddm-define-subdomains" ).c_str(),
+          Feel::po::value<bool>()->default_value( false ),
+          "ask PETSc HPDDM to define subdomains from the auxiliary IS" )
+        ( prefixvm( prefix,pcctx+"hpddm-share-sub-ksp" ).c_str(),
+          Feel::po::value<bool>()->default_value( false ),
+          "share the subdomain KSP with the SLEPc ST when supported by HPDDM; "
+          "requires defined subdomains and a MUMPS or MKL PARDISO LU/Cholesky local solver" )
+        ( prefixvm( prefix,pcctx+"hpddm-coarse-correction" ).c_str(),
+          Feel::po::value<std::string>()->default_value( "deflated" ),
+          "HPDDM coarse correction type: deflated, additive, balanced, none" )
+        ( prefixvm( prefix,pcctx+"hpddm-levels-1-eps-nev" ).c_str(),
+          Feel::po::value<int>(),
+          "enable the fine-level HPDDM eigensolver and request this many eigenpairs for the first coarse space" )
+        ( prefixvm( prefix,pcctx+"hpddm-levels-1-st-pc-type" ).c_str(),
+          Feel::po::value<std::string>(),
+          "HPDDM fine-level spectral transformation PC type; use mat for a fully algebraic two-level method" )
+        ( prefixvm( prefix,pcctx+"hpddm-levels-1-eps-use-inertia" ).c_str(),
+          Feel::po::value<bool>()->default_value( false ),
+          "ask the fine-level HPDDM eigensolver to use inertia when supported by PETSc/SLEPc" )
+        ( prefixvm( prefix,pcctx+"hpddm-levels-1-eps-threshold-absolute" ).c_str(),
+          Feel::po::value<double>(),
+          "set the absolute threshold that enables adaptive fine-level HPDDM eigenvector selection" );
+
+    return _options;
+}
+
+po::options_description
 getOptionsDescMultiGridLevels( int nLevel,std::string const& prefix, std::string const& sub )
 {
     std::string mgctx = (sub.empty())? "mg-" : sub+"-mg-";
@@ -1532,10 +1636,10 @@ ConfigureKSP::run( KSP& ksp ) const
 
  template <typename T>
 void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerType & preconditioner_type,
-                                                          const MatSolverPackageType & matSolverPackage_type,
-                                                          PC & pc,
-                                                          worldcomm_ptr_t const& worldComm,
-                                                          std::string const& name )
+                                                         const MatSolverPackageType & matSolverPackage_type,
+                                                         PC & pc,
+                                                         worldcomm_ptr_t const& worldComm,
+                                                         std::string const& name )
 {
     int ierr = 0;
     SetPCType( pc, preconditioner_type, matSolverPackage_type, worldComm );
@@ -2466,6 +2570,191 @@ ConfigurePCGAMG::run( PC& pc )
 
 #else // petsc version >= 3.3
     CHECK( false ) << "gamg supported only from petsc 3.3";
+#endif
+}
+
+ConfigurePCHPDDM::ConfigurePCHPDDM( PC& pc, PreconditionerPetsc<double> * precFeel, worldcomm_ptr_t const& worldComm,
+                                    std::string const& sub, std::string const& prefix )
+    :
+    ConfigurePCBase( precFeel, worldComm, sub, prefix, getOptionsDescHPDDM(prefix,sub) ),
+    M_useConfigDefaultPetsc( option(_name="pc-hpddm-use-config-default-petsc",_prefix=prefix,_sub=sub,_vm=this->vm()).as<bool>() ),
+    M_hasNeumann( option(_name="pc-hpddm-has-neumann",_prefix=prefix,_sub=sub,_vm=this->vm()).as<bool>() ),
+    M_defineSubdomains( option(_name="pc-hpddm-define-subdomains",_prefix=prefix,_sub=sub,_vm=this->vm()).as<bool>() ),
+    M_shareSubKSP( option(_name="pc-hpddm-share-sub-ksp",_prefix=prefix,_sub=sub,_vm=this->vm()).as<bool>() ),
+    M_coarseCorrection( option(_name="pc-hpddm-coarse-correction",_prefix=prefix,_sub=sub,_vm=this->vm()).as<std::string>() ),
+    M_levels1EpsNev( getOptionIfAvalaible<int>::apply(_name="pc-hpddm-levels-1-eps-nev",_prefix=prefix,_sub=sub,_vm=this->vm()) ),
+    M_levels1StPcType( getOptionIfAvalaible<std::string>::apply(_name="pc-hpddm-levels-1-st-pc-type",_prefix=prefix,_sub=sub,_vm=this->vm()) ),
+    M_levels1EpsUseInertia( option(_name="pc-hpddm-levels-1-eps-use-inertia",_prefix=prefix,_sub=sub,_vm=this->vm()).as<bool>() ),
+    M_levels1EpsThresholdAbsolute( getOptionIfAvalaible<double>::apply(_name="pc-hpddm-levels-1-eps-threshold-absolute",_prefix=prefix,_sub=sub,_vm=this->vm()) )
+{
+    VLOG(2) << "ConfigurePC : HPDDM\n"
+            << "  |->prefix : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
+            << "  |->coarse correction : " << M_coarseCorrection << "\n";
+    run( pc );
+}
+
+void
+ConfigurePCHPDDM::run( PC& pc )
+{
+#if defined(PCHPDDM)
+    std::optional<PCHPDDMCoarseCorrectionType> coarseCorrectionType;
+    if ( !M_useConfigDefaultPetsc )
+    {
+        coarseCorrectionType = [this]()
+            {
+                if ( M_coarseCorrection == "deflated" ) return PC_HPDDM_COARSE_CORRECTION_DEFLATED;
+                if ( M_coarseCorrection == "additive" ) return PC_HPDDM_COARSE_CORRECTION_ADDITIVE;
+                if ( M_coarseCorrection == "balanced" ) return PC_HPDDM_COARSE_CORRECTION_BALANCED;
+#if defined(PC_HPDDM_COARSE_CORRECTION_NONE)
+                if ( M_coarseCorrection == "none" ) return PC_HPDDM_COARSE_CORRECTION_NONE;
+#endif
+                CHECK( false ) << "invalid hpddm coarse correction type: " << M_coarseCorrection;
+                return PC_HPDDM_COARSE_CORRECTION_DEFLATED;
+            }();
+    }
+
+    std::string petscPrefixStr;
+    std::vector<std::string> petscOptionsValueAdded;
+    const char* petscPrefix = nullptr;
+    this->check( PCGetOptionsPrefix( pc, &petscPrefix ) );
+    if ( petscPrefix != nullptr )
+        petscPrefixStr = petscPrefix;
+
+    std::vector<std::pair<std::string,std::string>> petscOptionsValueToAdd;
+    if ( !M_useConfigDefaultPetsc )
+    {
+        if ( M_defineSubdomains )
+            petscOptionsValueToAdd.emplace_back( (boost::format("-%1%pc_hpddm_define_subdomains")%petscPrefixStr).str(), "true" );
+        if ( M_hasNeumann )
+            petscOptionsValueToAdd.emplace_back( (boost::format("-%1%pc_hpddm_has_neumann")%petscPrefixStr).str(), "true" );
+        if ( M_coarseCorrection != "deflated" )
+            petscOptionsValueToAdd.emplace_back( (boost::format("-%1%pc_hpddm_coarse_correction")%petscPrefixStr).str(), M_coarseCorrection );
+        if ( M_shareSubKSP )
+            petscOptionsValueToAdd.emplace_back( (boost::format("-%1%pc_hpddm_levels_1_st_share_sub_ksp")%petscPrefixStr).str(), "true" );
+        if ( M_levels1EpsNev && *M_levels1EpsNev > 0 )
+            petscOptionsValueToAdd.emplace_back( (boost::format("-%1%pc_hpddm_levels_1_eps_nev")%petscPrefixStr).str(),
+                                                 boost::lexical_cast<std::string>(*M_levels1EpsNev) );
+        if ( M_levels1StPcType && !M_levels1StPcType->empty() )
+            petscOptionsValueToAdd.emplace_back( (boost::format("-%1%pc_hpddm_levels_1_st_pc_type")%petscPrefixStr).str(),
+                                                 *M_levels1StPcType );
+        if ( M_levels1EpsUseInertia )
+            petscOptionsValueToAdd.emplace_back( (boost::format("-%1%pc_hpddm_levels_1_eps_use_inertia")%petscPrefixStr).str(), "true" );
+        if ( M_levels1EpsThresholdAbsolute )
+            petscOptionsValueToAdd.emplace_back( (boost::format("-%1%pc_hpddm_levels_1_eps_threshold_absolute")%petscPrefixStr).str(),
+                                                 boost::lexical_cast<std::string>(*M_levels1EpsThresholdAbsolute) );
+    }
+
+    for ( auto const& petscOpt : petscOptionsValueToAdd )
+    {
+        std::string const& key = petscOpt.first;
+        std::string const& value = petscOpt.second;
+        PetscBool hasOption = PETSC_FALSE;
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,7,0 )
+        this->check( PetscOptionsHasName( NULL, NULL, key.c_str(), &hasOption ) );
+#else
+        this->check( PetscOptionsHasName( NULL, key.c_str(), &hasOption ) );
+#endif
+        if ( !hasOption )
+        {
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,7,0 )
+            this->check( PetscOptionsSetValue( NULL, key.c_str(), value.c_str() ) );
+#else
+            this->check( PetscOptionsSetValue( key.c_str(), value.c_str() ) );
+#endif
+            petscOptionsValueAdded.push_back( key );
+        }
+    }
+
+    bool const hasHpddmAuxiliaryMatrix = this->precFeel()->hasHpddmAuxiliaryMatrix();
+    bool const hasHpddmAuxiliaryIS = this->precFeel()->hasHpddmAuxiliaryIS();
+    CHECK( !hasHpddmAuxiliaryIS || hasHpddmAuxiliaryMatrix )
+        << "HPDDM auxiliary configuration requires an auxiliary matrix when an auxiliary index set is provided";
+
+    if ( hasHpddmAuxiliaryMatrix )
+    {
+        auto hpddmAuxiliaryMatrixPetsc = std::dynamic_pointer_cast<MatrixPetsc<double>>( this->precFeel()->hpddmAuxiliaryMatrix() );
+        CHECK( hpddmAuxiliaryMatrixPetsc ) << "HPDDM auxiliary matrix must be a PETSc matrix";
+        auto const& rowMap = this->precFeel()->hpddmAuxiliaryMatrix()->mapRowPtr();
+        CHECK( rowMap ) << "HPDDM auxiliary matrix row map is not available";
+        auto const& gpToGc = rowMap->mapGlobalProcessToGlobalCluster();
+
+        IS hpddmAuxiliaryIS = nullptr;
+        if ( hasHpddmAuxiliaryIS )
+        {
+            hpddmAuxiliaryIS = reinterpret_cast<IS>( this->precFeel()->hpddmAuxiliaryIS().get() );
+            CHECK( hpddmAuxiliaryIS != nullptr ) << "HPDDM auxiliary index set is null";
+        }
+        else
+        {
+            std::vector<PetscInt> hpddmLocalRows( gpToGc.size() );
+            std::transform( gpToGc.begin(), gpToGc.end(),
+                            hpddmLocalRows.begin(),
+                            []( auto dof ) { return static_cast<PetscInt>( dof ); } );
+            this->check( ISCreateGeneral( PETSC_COMM_SELF,
+                                          static_cast<PetscInt>( hpddmLocalRows.size() ),
+                                          hpddmLocalRows.empty() ? nullptr : hpddmLocalRows.data(),
+                                          PETSC_COPY_VALUES, &hpddmAuxiliaryIS ) );
+        }
+
+        Mat hpddmAuxiliaryMat = hpddmAuxiliaryMatrixPetsc->mat();
+        Mat* hpddmAuxiliarySubMatrices = nullptr;
+        MPI_Comm auxComm = PetscObjectComm( reinterpret_cast<PetscObject>( hpddmAuxiliaryMat ) );
+        int auxCommSize = 0;
+        this->check( MPI_Comm_size( auxComm, &auxCommSize ) );
+        if ( auxCommSize != 1 )
+        {
+            this->check( MatSetOption( hpddmAuxiliaryMat, MAT_SUBMAT_SINGLEIS, PETSC_TRUE ) );
+            this->check( MatCreateSubMatrices( hpddmAuxiliaryMat, 1,
+                                               &hpddmAuxiliaryIS, &hpddmAuxiliaryIS,
+                                               MAT_INITIAL_MATRIX, &hpddmAuxiliarySubMatrices ) );
+            CHECK( hpddmAuxiliarySubMatrices && hpddmAuxiliarySubMatrices[0] )
+                << "failed to build local HPDDM auxiliary submatrix";
+            hpddmAuxiliaryMat = hpddmAuxiliarySubMatrices[0];
+        }
+
+        if ( auto fn = hpddmSetAuxiliaryMatFn() )
+            this->check( fn( pc, hpddmAuxiliaryIS, hpddmAuxiliaryMat, nullptr, nullptr ) );
+        else
+            CHECK( false ) << "PETSc advertises PCHPDDM but does not export PCHPDDMSetAuxiliaryMat";
+
+        if ( hpddmAuxiliarySubMatrices )
+            this->check( MatDestroySubMatrices( 1, &hpddmAuxiliarySubMatrices ) );
+        if ( !hasHpddmAuxiliaryIS )
+            this->check( ISDestroy( &hpddmAuxiliaryIS ) );
+    }
+
+    // Re-parse options after the auxiliary attachment because PETSc resets the
+    // HPDDM PC state when the overlap definition changes.
+    if ( hasHpddmAuxiliaryMatrix || !petscOptionsValueAdded.empty() )
+        this->check( PCSetFromOptions( pc ) );
+
+    if ( !M_useConfigDefaultPetsc )
+    {
+        if ( auto fn = hpddmHasNeumannMatFn() )
+            this->check( fn( pc, M_hasNeumann ? PETSC_TRUE : PETSC_FALSE ) );
+        else if ( M_hasNeumann )
+            LOG(WARNING) << "PETSc advertises PCHPDDM but does not export PCHPDDMHasNeumannMat; ignoring pc-hpddm-has-neumann";
+
+        if ( auto fn = hpddmSetCoarseCorrectionTypeFn() )
+            this->check( fn( pc, *coarseCorrectionType ) );
+        else if ( M_coarseCorrection != "deflated" )
+            LOG(WARNING) << "PETSc advertises PCHPDDM but does not export PCHPDDMSetCoarseCorrectionType; keeping PETSc default coarse correction";
+
+        // Do not call PCHPDDMSetSTShareSubKSP() after PCSetFromOptions().
+        // PETSc validates this request while parsing options and disables it
+        // when subdomains are not defined or the local factorization cannot be
+        // shared. Re-enabling the flag here bypasses those checks and leaves
+        // HPDDM with an invalid sub-KSP, which can segfault in PCSetUp().
+    }
+
+    // Keep injected HPDDM options alive for the lifetime of the solve. PETSc
+    // reads some of them again in PCSetUp() (notably levels_1_st_pc_type), and
+    // a later PCSetFromOptions() reparses the eigenpair selection. Clearing
+    // them here silently turns a requested algebraic two-level method back
+    // into a one-level method. The PETSc prefix keeps independent solver
+    // configurations isolated.
+#else
+    CHECK( false ) << "hpddm supported only when PETSc exposes PCHPDDM";
 #endif
 }
 
