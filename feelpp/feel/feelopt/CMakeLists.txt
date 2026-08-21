@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2011-05-25
 #
-#  Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2011 UniversitÃ© Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -30,10 +30,19 @@ if (FEELPP_HAS_GLPK)
   set(SRC_GLPK glpk.cpp )
 endif()
 
-set(SRC ${SRC_NLOPT} ${SRC_GLPK})
+if (FEELPP_HAS_PETSC_TAO)
+  set(SRC_PETSC_TAO solveroptimizationpetsc.cpp)
+endif()
+
+set(SRC
+  ${SRC_NLOPT}
+  ${SRC_GLPK}
+  solveroptimization.cpp
+  solveroptimizationoptions.cpp
+  ${SRC_PETSC_TAO})
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
-feel_append_src(feelopt "${SRC}")
+feel_append_src(feelopt "${SRC};${HDR}")
 
 if ( 0 )
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
