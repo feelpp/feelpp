@@ -1,0 +1,117 @@
+= Feel++ Coding Rules Audit
+:toc:
+
+This audit reconciles the documentation sets (`general`, `cpp20`, `hpc`) with the current repository tooling.
+External documentation links could not be fetched in this offline environment; items flagged with ⚠️ should be
+verified against the upstream docs before merging.
+
+== Summary Matrix
+
+[cols="1,1,1,1,1", options="header"]
+|===
+| Topic | Current Source | Proposed Canonical Rule | Rationale | Impact / Notes
+| Brace style & indentation | `.clang-format` (Allman + 4 spaces) vs docs (⚠️ verify) | Allman braces with 4-space indent and flush-left namespaces using the compact `namespace feelpp::foo {` form | Matches long-standing Feel++ style while avoiding diff noise | `.clang-format`, AGENTS, CONTRIBUTING
+| Column width | Historical `.clang-format` used `ColumnLimit: 0` vs docs (⚠️ verify) | Keep no hard column limit | Prevents unintentional reflow of legacy code | `.clang-format`, AGENTS guidance
+| Pointer alignment | `.clang-format` pins `PointerAlignment: Left` | Keep pointer aligned with the type | Consistent with HPC kernels and existing codebase | `.clang-format`
+| Short statements | Legacy config allowed compact `if`/function bodies | Allow short functions on a single line and permit one-line `if` statements | Preserves existing formatting expectations | `.clang-format`
+| Namespace formatting | Docs emphasise nested namespaces; repo historically used manual concatenation | Enable `modernize-concat-nested-namespaces` and require compact namespaces without indentation | Ensures C++17 nested namespace syntax while keeping layout stable | `.clang-format`, `.clang-tidy`, AGENTS
+| Member naming | Docs mention both `M_member` and `_member` (⚠️ verify) | Prefer `M_PascalCase` but allow `PascalCase_` legacy suffix | Captures Feel++ history without forcing churn | `.clang-tidy`, AGENTS examples
+| Modern C++ features | Docs encourage `constexpr`, `span`, `string_view`, concepts | Keep `modernize-*` suite enabled | Nudges contributors toward C++20 idioms | `.clang-tidy`, CONTRIBUTING reminders
+| Exceptions | Docs recommend `std::runtime_error` family (⚠️ verify) | Use `std::runtime_error` or derived project exceptions with clear messages | Aligns runtime handling with RAII philosophy | AGENTS, CONTRIBUTING
+| `using namespace std` | Docs forbid (⚠️ verify) | Continue forbidding and rely on reviewer + tidy checks | Prevents namespace pollution | AGENTS, code review checklist
+| HPC performance | HPC doc warns about allocations/IO in kernels (⚠️ verify) | Prohibit allocations, blocking IO, and hidden sync in hot kernels | Preserves performance-critical behaviour | AGENTS, audit examples
+| Tooling execution | Repo lacked enforced tidy/format workflow | Provide `.pre-commit-config.yaml` and CI checks; document usage | Keeps diffs consistent and automates verification | Pre-commit, GitHub Actions, CONTRIBUTING
+|===
+
+== Ambiguities & Resolutions
+
+=== Member variable naming
+*Ambiguity:* Documentation references both `M_member` and `_member` conventions (⚠️ verify).
+
+*Resolution:* Require `M_PascalCase` for new code while allowing existing `PascalCase_` members through the tidy ignore regex.
+
+*Impact:* `.clang-tidy` enforces the preference without flagging the legacy suffix style.
+
+=== Exception types
+*Ambiguity:* Guidance alternates between `std::runtime_error` and custom exception wrappers.
+
+*Resolution:* Default to `std::runtime_error` or project-specific subclasses that communicate context; avoid raw integers or `std::exception` bare throws.
+
+*Impact:* Documented for reviewers; no automated check yet.
+
+=== Include guards vs `#pragma once`
+*Ambiguity:* Older docs prefer include guards while newer files mix approaches.
+
+*Resolution:* Accept `#pragma once` for new headers. When touching legacy guarded headers, keep the guard.
+
+*Impact:* Communicated via docs only.
+
+=== `constexpr` and `noexcept`
+*Ambiguity:* Docs recommend them without explicit tooling enforcement.
+
+*Resolution:* Encourage usage when semantics allow. Leave final judgement to reviewers while modernize checks highlight obvious cases.
+
+*Impact:* No direct tooling change beyond existing `modernize-*` coverage.
+
+=== MPI and Kokkos synchronization
+*Ambiguity:* HPC guidance warns about implicit barriers but lacks actionable wording.
+
+*Resolution:* Document best practices: avoid global barriers inside hot loops, capture only required data in `KOKKOS_LAMBDA`, and state synchronisation choices explicitly.
+
+*Impact:* Awareness via AGENTS and CONTRIBUTING; no automated guard yet.
+
+== Tooling & Execution Plan
+
+. Update `.clang-format` to encode the canonical formatting rules (Allman, compact namespaces, no column limit).
+. Maintain `.clang-tidy` with bugprone/performance/modernize suites plus Feel++ naming allowances.
+. Keep `.editorconfig` aligned on LF endings, UTF-8, and four-space C++ indentation.
+. Refresh `AGENTS.md` as the LLM-friendly primer with explicit namespace and member naming notes.
+. Expand `.github/CONTRIBUTING.md` to cover formatting, tidy usage, pre-commit hooks, and CI requirements.
+. Provide `.pre-commit-config.yaml` for clang-format and codespell with vendor exclusions.
+. Ensure GitHub Actions enforce clang-format and clang-tidy against generated `compile_commands.json`.
+
+== Examples
+
+[cols="1,1,1", options="header"]
+|===
+| Scenario | ✅ Good | ❌ Bad
+| Formatting | [source,cpp]
+----
+void Foo()
+{
+    for (auto const & value : values)
+    {
+        DoSomething(value);
+    }
+}
+---- | [source,cpp]
+----
+void Foo(){ for(auto& value:values){DoSomething(value);} }
+----
+| Member naming | [source,cpp]
+----
+class Solver
+{
+  private:
+    double M_TimeStep{0.0};
+};
+---- | [source,cpp]
+----
+class Solver
+{
+  private:
+    double _timeStep;
+};
+----
+| HPC kernel | [source,cpp]
+----
+Kokkos::parallel_for("update", range, KOKKOS_LAMBDA(int i) {
+    state(i) = alpha * input(i);
+});
+---- | [source,cpp]
+----
+Kokkos::parallel_for("update", range, KOKKOS_LAMBDA(int i) {
+    state(i) = read_value_from_file(i);
+});
+----
+|===

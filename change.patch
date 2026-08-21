@@ -1,0 +1,662 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/.clang-format b/.clang-format
+index 92969bb48bf9dd5363f910edc720388341da232e..68dec4d6040c65de63e5385fb5f78f611d810edc 100644
+--- a/.clang-format
++++ b/.clang-format
+@@ -1,17 +1,30 @@
+ BasedOnStyle: LLVM
+ 
++# Feel++ style: Allman braces, 4 spaces, no tabs
+ BreakBeforeBraces: Allman
+ AlignTrailingComments: true
+ IndentWidth: 4
+ UseTab: Never
++
++# Parentheses and brackets
+ AlignAfterOpenBracket: true
+-# Force pointers to the type for C++.
++SpacesInParentheses: true
++
++# Pointer alignment stays on the type without deriving heuristics
+ DerivePointerAlignment: false
+ PointerAlignment: Left
++
++# Short statements remain compact as historically allowed
+ AllowShortFunctionsOnASingleLine: Inline
+ AllowShortIfStatementsOnASingleLine: true
++
++# Namespaces stay flush-left and use the compact C++17 form
+ NamespaceIndentation: None
++CompactNamespaces: true
++FixNamespaceComments: true
++
++# No hard column limit to avoid reflowing legacy code
+ ColumnLimit: 0
+-ReflowComments: true
+-SpacesInParentheses: true
+ 
++# Preserve comment/Doxygen wrapping
++ReflowComments: true
+diff --git a/.clang-tidy b/.clang-tidy
+new file mode 100644
+index 0000000000000000000000000000000000000000..f2f33b1902ff2d6b5e05e272627ac1b65b0f658f
+--- /dev/null
++++ b/.clang-tidy
+@@ -0,0 +1,24 @@
++Checks: >
++  -*,
++  bugprone-*,
++  performance-*,
++  modernize-*,
++  modernize-concat-nested-namespaces,
++  readability-identifier-naming
++
++WarningsAsErrors: 'bugprone-*,performance-*,modernize-*'
++
++CheckOptions:
++  # Baseline naming rules
++  - { key: readability-identifier-naming.ClassCase, value: CamelCase }
++  - { key: readability-identifier-naming.StructCase, value: CamelCase }
++  - { key: readability-identifier-naming.FunctionCase, value: CamelCase }
++  - { key: readability-identifier-naming.VariableCase, value: lower_case }
++
++  # Default member rule = M_ + CamelCase
++  - { key: readability-identifier-naming.MemberCase,   value: CamelCase }
++  - { key: readability-identifier-naming.MemberPrefix, value: 'M_' }
++
++  # Allow CamelCase_ suffix as a legacy alternative via an ignore whitelist
++  - { key: readability-identifier-naming.MemberIgnoredRegexp,
++      value: '^(?:M_[A-Z][A-Za-z0-9]*|[A-Z][A-Za-z0-9]*_)$' }
+diff --git a/.editorconfig b/.editorconfig
+new file mode 100644
+index 0000000000000000000000000000000000000000..4249191dba135ee2772db2690a4fb44c0040b72a
+--- /dev/null
++++ b/.editorconfig
+@@ -0,0 +1,19 @@
++root = true
++
++[*]
++charset = utf-8
++end_of_line = lf
++insert_final_newline = true
++trim_trailing_whitespace = true
++
++[*.{cpp,cxx,cc,h,hpp}]
++indent_style = space
++indent_size = 4
++
++[*.{py,pyi}]
++indent_style = space
++indent_size = 4
++
++[*.{yml,yaml,json,md}]
++indent_style = space
++indent_size = 2
+diff --git a/.github/CONTRIBUTING.md b/.github/CONTRIBUTING.md
+index 310f50f387cb48bd3dd7f4bdbf9d60a20f101197..214630fdd4b7b2e6f40117d06ef2ea64489ce525 100644
+--- a/.github/CONTRIBUTING.md
++++ b/.github/CONTRIBUTING.md
+@@ -1,30 +1,100 @@
+-# Contributing
++# Contributing to Feel++
++
++Thank you for improving Feel++! This guide aligns with the refreshed coding rules, tooling, and automation so that
++all contributions remain consistent across C++20, Python, and HPC workloads.
+ 
+ ## License Agreement
+ 
+-By contributing changes to this repository, you agree to license your contributions under the LGPL or GPL license. This ensures that your contributions have the same license as the project and that the community is free to use your contributions. You also assert that you are the original author of the work you are contributing and that any changes to your work will be contributed back to the community.
++By contributing, you agree to license your work under the LGPL or GPL, matching the project license. Only submit
++content you are authorized to share.
++
++## Code of Conduct
++
++We follow the [Feel++ Code of Conduct](../CODE_OF_CONDUCT.md). Treat fellow contributors with respect and kindness.
++
++## Getting Started
++
++1. Fork the repository and create a focused branch.
++2. Configure the project using the provided CMake preset:
++   ```bash
++   cmake --preset default -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
++   ```
++3. Build only what you need:
++   ```bash
++   cmake --build build/default -j
++   ```
++4. Enable the Python bindings when relevant: `cmake --build build/default -j --target _core`.
++5. Run focused tests (`ctest -R <regex>` or `pytest` in `python/pyfeelpp`).
++
++## Formatting & Style
++
++Feel++ enforces a single formatting profile stored in `.clang-format` (Allman braces, 4-space indentation,
++column limit 100, pointers aligned with the type). Before committing:
++
++```bash
++clang-format -i path/to/file.cpp
++```
++
++### Exclusions
++
++Do **not** format or tidy the vendor trees: `third_party/` and `external/`. The pre-commit hooks and CI configuration
++already skip those paths. If you need to exclude additional generated code, add patterns to `.pre-commit-config.yaml`.
++
++## Static Analysis
++
++Clang-Tidy is configured via `.clang-tidy` to run targeted checks:
++- `bugprone-*`, `performance-*`, `modernize-*` (treated as errors)
++- `readability-identifier-naming` enforcing the Feel++ naming conventions
++
++Run clang-tidy before sending a PR:
++
++```bash
++cmake --build build/default -j            # ensure the project is up-to-date
++ninja -C build/default clang-tidy        # if a tidy target exists
++# or fallback
++run-clang-tidy -p build/default path/to/file.cpp
++```
++
++If your generator does not emit a tidy target, create one in your local `CMakeLists.txt` using `clang-tidy` tooling.
++
++## Pre-Commit Hooks
++
++Install and run the bundled hooks for consistent results:
++
++```bash
++pip install pre-commit
++pre-commit install
++pre-commit run --all-files
++```
++
++Hooks executed:
++- `clang-format` (skips `third_party/` and `external/`)
++- `codespell` for lightweight spelling checks
++
++Expect pre-commit to block commits when formatting or spelling issues are present. Fix the reported files and rerun.
++
++## Continuous Integration
+ 
+-## Submitting an Issue
++GitHub Actions validates formatting and static analysis on every PR:
++- **clang-format-check**: ensures no diff is introduced by clang-format.
++- **clang-tidy**: runs targeted diagnostics using `compile_commands.json`.
+ 
+-We use the issue tracker on GitHub associated with this project to track bugs and features. Before submitting a bug report or feature request, please check if it has already been submitted. When submitting a bug report, please include a Gist that provides details to help reproduce the bug, including your C++ compiler and operating system.
++Your PR must pass these jobs in addition to any existing build/test pipelines.
+ 
+-Most importantly, since Feel++ provides a Domain Specific Embedded Language (DSEL) based on the embedded Galerkin type language, please provide a concise test case to replicate the issue using Feel++ mathematical concepts. An ideal bug report would include a pull request with failing specifications.
++## Commit & PR Etiquette
+ 
+-## Submitting a Pull Request
++- Use imperative commit subjects: `component: concise summary`.
++- Keep commits focused; avoid mixing tooling churn with feature changes.
++- Reference issues with `Fixes #123` or `Refs #123` in the PR description when applicable.
++- In the PR body, describe the testing performed and mention any skipped checks or TODOs.
+ 
+-1. Fork the repository.
+-2. Implement your feature or bug fix.
+-3. Run `ctest` to run the tests. If the tests fail, go back to step 2.
+-4. Add documentation for your feature or bug fix. If your changes are not 100% documented, go back to step 3.
+-5. Add, commit, and push your changes.
+-6. Submit a pull request.
++## Reporting Issues
+ 
+-For ideas on how to use pull requests, refer to the post [Useful GitHub Patterns](http://blog.quickpeople.co.uk/2013/07/10/useful-github-patterns).
++File issues on GitHub with clear reproduction steps, compiler/tool versions, and minimal Feel++ examples.
++Include build logs and relevant snippets; a failing test case earns priority.
+ 
+-## Background Knowledge
++## Need Help?
+ 
+-As Feel++ is built using C++, it requires some knowledge of C++ and the libraries and tools it uses, such as Boost, PETSc, or Gmsh. The following resources provide a good starting point for contributors who may not be completely comfortable with these tools:
++Reach out via GitHub Discussions or the Feel++ community channels. Provide context (OS, compiler, steps taken) so we can
++assist efficiently.
+ 
+-- [Feel++ document site](https://docs.feelpp.org): Provides a lot of information regarding Feel++.
+-- [Gmsh website](http://gmsh.info): Provides extensive documentation, tutorials, and screencasts on how to use Gmsh, including its graphical user interface.
+-- [PETSc website](https://www.mcs.anl.gov/petsc): Offers extensive documentation and tutorials on PETSc, which is the main library used by Feel++ for solving (non-)linear systems.
+\ No newline at end of file
+diff --git a/.github/workflows/coding-standards.yml b/.github/workflows/coding-standards.yml
+new file mode 100644
+index 0000000000000000000000000000000000000000..10400f8565651c06446fe28eaef0e0648d4efcb2
+--- /dev/null
++++ b/.github/workflows/coding-standards.yml
+@@ -0,0 +1,129 @@
++name: coding-standards
++
++on:
++  pull_request:
++  merge_group:
++
++permissions:
++  contents: read
++
++jobs:
++  clang-format-check:
++    name: clang-format (diff only)
++    runs-on: ubuntu-latest
++    steps:
++      - uses: actions/checkout@v4
++        with:
++          fetch-depth: 0
++      - name: Install clang-format
++        run: |
++          sudo apt-get update
++          sudo apt-get install -y clang-format-17
++      - name: Collect changed files
++        id: files
++        shell: bash
++        run: |
++          if [ "${{ github.event_name }}" = "pull_request" ]; then
++            BASE="${{ github.event.pull_request.base.sha }}"
++          else
++            BASE="${{ github.event.before }}"
++          fi
++          git fetch origin "$BASE" --depth=1 || true
++          FILES=$(git diff --diff-filter=AM --name-only "$BASE" HEAD -- '*.c' '*.cc' '*.cxx' '*.cpp' '*.h' '*.hh' '*.hpp')
++          FILTERED=""
++          for file in $FILES; do
++            if [[ "$file" =~ ^third_party/ ]] || [[ "$file" =~ ^external/ ]]; then
++              continue
++            fi
++            FILTERED+="$file\n"
++          done
++          if [ -z "$FILTERED" ]; then
++            echo "files=" >> "$GITHUB_OUTPUT"
++            exit 0
++          fi
++          echo -e "$FILTERED" | sed '/^$/d' > changed-files.txt
++          cat changed-files.txt
++          printf 'files=%s\n' "$(paste -sd ' ' changed-files.txt)" >> "$GITHUB_OUTPUT"
++      - name: Run clang-format diff
++        if: steps.files.outputs.files != ''
++        run: |
++          while read -r file; do
++            clang-format-17 --style=file "$file" | diff -u "$file" - || (
++              echo "clang-format suggested changes in $file" && exit 1
++            )
++          done < changed-files.txt
++      - name: No C/C++ changes detected
++        if: steps.files.outputs.files == ''
++        run: echo "No C/C++ files changed; skipping clang-format check."
++
++  clang-tidy:
++    name: clang-tidy (diff only)
++    runs-on: ubuntu-latest
++    steps:
++      - uses: actions/checkout@v4
++        with:
++          fetch-depth: 0
++      - name: Install clang-tidy
++        run: |
++          sudo apt-get update
++          sudo apt-get install -y clang-tidy-17
++      - name: Collect changed files
++        id: files
++        shell: bash
++        run: |
++          if [ "${{ github.event_name }}" = "pull_request" ]; then
++            BASE="${{ github.event.pull_request.base.sha }}"
++          else
++            BASE="${{ github.event.before }}"
++          fi
++          git fetch origin "$BASE" --depth=1 || true
++          FILES=$(git diff --diff-filter=AM --name-only "$BASE" HEAD -- '*.c' '*.cc' '*.cxx' '*.cpp' '*.h' '*.hh' '*.hpp')
++          FILTERED=""
++          for file in $FILES; do
++            if [[ "$file" =~ ^third_party/ ]] || [[ "$file" =~ ^external/ ]]; then
++              continue
++            fi
++            FILTERED+="$file\n"
++          done
++          if [ -z "$FILTERED" ]; then
++            echo "files=" >> "$GITHUB_OUTPUT"
++            exit 0
++          fi
++          echo -e "$FILTERED" | sed '/^$/d' > changed-files.txt
++          cat changed-files.txt
++          printf 'files=%s\n' "$(paste -sd ' ' changed-files.txt)" >> "$GITHUB_OUTPUT"
++      - name: Generate compile commands
++        if: steps.files.outputs.files != ''
++        shell: bash
++        run: |
++          mkdir -p build/clang-tidy
++          echo '[' > build/clang-tidy/compile_commands.json
++          first=1
++          while read -r file; do
++            if [ $first -eq 0 ]; then
++              echo ',' >> build/clang-tidy/compile_commands.json
++            fi
++            first=0
++            cat <<JSON >> build/clang-tidy/compile_commands.json
++  {
++    "directory": "${GITHUB_WORKSPACE}",
++    "command": "clang++ -std=c++20 -I${GITHUB_WORKSPACE} -I${GITHUB_WORKSPACE}/feelpp -I${GITHUB_WORKSPACE}/toolboxes -I${GITHUB_WORKSPACE}/testsuite -c ${file}",
++    "file": "${file}"
++  }
++JSON
++          done < changed-files.txt
++          echo ']' >> build/clang-tidy/compile_commands.json
++          cat build/clang-tidy/compile_commands.json
++      - name: Run clang-tidy
++        if: steps.files.outputs.files != ''
++        run: |
++          while read -r file; do
++            clang-tidy-17 "$file" \
++              --quiet \
++              --config-file=.clang-tidy \
++              -p build/clang-tidy || exit 1
++          done < changed-files.txt
++      - name: No C/C++ changes detected
++        if: steps.files.outputs.files == ''
++        run: echo "No C/C++ files changed; skipping clang-tidy."
++
+diff --git a/.pre-commit-config.yaml b/.pre-commit-config.yaml
+new file mode 100644
+index 0000000000000000000000000000000000000000..6379be8bfa88e42afff9e3bc5590177a183e5675
+--- /dev/null
++++ b/.pre-commit-config.yaml
+@@ -0,0 +1,13 @@
++repos:
++- repo: https://github.com/pre-commit/mirrors-clang-format
++  rev: v17.0.6
++  hooks:
++  - id: clang-format
++    args: [--style=file]
++    types_or: [c++, c]
++    exclude: ^(third_party/|external/)
++- repo: https://github.com/codespell-project/codespell
++  rev: v2.3.0
++  hooks:
++  - id: codespell
++    exclude: ^(third_party/|external/)
+diff --git a/AGENTS.md b/AGENTS.md
+index 6aa3a16826a9322afe0c9a72bc3bbe5cbd94ba26..65835b25e794a9b9de473793184ad157f5c04ecb 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -1,79 +1,91 @@
+-Purpose
+-- Provide a concise, repo-specific playbook for human and ai agents: how to build, test, patch, and validate across C++ core and Python bindings, with specific guidance for RemoteData/Girder/GitHub/CKAN.
++# Feel++ Coding & Tooling Primer
+ 
+-Repository Overview
+-- C++ core: under `feelpp/feel/...` builds a shared lib `feelpp` and related components.
+-- Python bindings: under `python/pyfeelpp/feelpp/*` producing `_core` and other py modules installed into `feelpp/core`.
+-- Tests:
+-  - Python tests: `python/pyfeelpp/tests/*.py` (includes RemoteData tests).
+-  - C++ tests: under `testsuite/**`.
+-  - Tools/CLI sources: `feelpp/tools/**` (includes RemoteData CLI).
++This primer keeps humans and LLMs aligned with the Feel++ coding rules. Follow it for any change unless a
++more specific directory guide overrides it.
+ 
+-Build
+-- Presets: defined in `CMakePresets.json`. Default build directory: `build/default`.
+-- Configure (if not already configured):
+-  - `cmake --preset default`
+-- Build the core lib and Python modules:
+-  - `cmake --build build/default -j`
+-  - Python core target (when needed): `cmake --build build/default -j --target _core`
+-- Environment hints:
+-  - Some CI/local sandboxes do not resolve passwd entries for the UID; set `HOME` to a writable temp if needed: `export HOME=$(mktemp -d)`.
++## Build & Test
++- Configure with `cmake --preset default`; build via `cmake --build build/default -j`.
++- Export `CMAKE_EXPORT_COMPILE_COMMANDS=ON` in presets or `cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON` to enable clang-tidy.
++- Run focused tests first (`ctest -R <target>` or `pytest` in `python/pyfeelpp`). Avoid rebuilding everything unless needed.
+ 
+-Python Tests
+-- From `python/pyfeelpp`:
+-  - `export PYTHONPATH=$(pwd)/../../build/default/python/pyfeelpp:$PYTHONPATH`
+-  - `export LD_LIBRARY_PATH=$(pwd)/../../build/default/feelpp/feel:$LD_LIBRARY_PATH`
+-  - Run all: `pytest -q -v -s`
+-  - Focused examples:
+-    - RemoteData Girder safe test: `pytest -q tests/test_remotedata.py -k girder_operations_safe -v -s`
+-    - RemoteData comprehensive: `pytest -q tests/test_remotedata.py -v -s`
+-- Diagnostics:
+-  - Log gflags/glog to stderr: `env GLOG_logtostderr=1 <pytest cmd>`
+-  - If `getpwuid()` errors: `export HOME=$(mktemp -d)` and rerun.
++## Formatting
++- Use `.clang-format` (Allman braces, 4-space indent, no hard column limit, pointers on the type).
++- Never reformat third_party/ or external/ trees.
++- Run `clang-format` only on modified files: `clang-format -i path/to/file.cpp`.
++- Namespaces stay flush-left and use the compact C++17 form: `namespace feelpp::mesh {`.
+ 
+-CLI (Tools) – RemoteData
+-- Sources under `feelpp/tools/remotedata/`.
+-- Typical scenarios covered by Python tests have CLI analogs (download, contents, path lookup, uploads).
+-- For CI safety, prefer unauthenticated operations by default; authenticated operations require env vars below.
++## Naming (clang-tidy enforced)
++- Namespaces: `lower_snake`
++- Classes/structs/enums/concepts: `PascalCase`
++- Functions/methods: `PascalCase`
++- Members (static or non-static): prefer `M_PascalCase`; legacy `PascalCase_` is also accepted.
++- Variables (locals, parameters): `lower_case`
++- Constants/macros: `UPPER_CASE`
+ 
+-Environment & Secrets
+-- RemoteData integrations (never log/print these):
+-  - Girder: `FEELPP_GIRDER_API_KEY`, `FEELPP_GIRDER_TOKEN`
+-  - CKAN: `FEELPP_CKAN_API_KEY`, `FEELPP_CKAN_URL`, `FEELPP_CKAN_ORGANIZATION`
+-  - GitHub: `FEELPP_GITHUB_TOKEN`
+-- Progress verbosity control (Python & CLI):
+-  - Support QUIET/NORMAL/VERBOSE/DEBUG. Default to QUIET in automated testing to avoid token exposure.
++> Namespaces flush-left + compact, member `M_PascalCase` or `PascalCase_`, no mass reformat.
+ 
+-Agent Operating Rules
+-- Scope changes narrowly to the task; match existing style.
+-- Fix root causes rather than masking failures.
+-- Use `apply_patch` for edits; do not `git commit` unless requested.
+-- Read files in ≤250 line chunks; prefer `rg` for code search.
+-- Use `update_plan` for multi-step work; exactly one step in progress.
+-- Send a short preamble before grouped tool calls.
++## C++20 Essentials
++- Prefer `constexpr`, `consteval`, `[[nodiscard]]`, `noexcept` when they express intent.
++- Use `std::span`/`std::string_view` instead of raw pointers where ownership stays external.
++- Concepts > SFINAE for new APIs; mark deleted/defaulted special members explicitly.
++- Use `std::filesystem` (not Boost) for paths.
++- Do **not** `using namespace std;`.
+ 
+-Validation Philosophy
+-- Rebuild only necessary targets (e.g., `feelpp`, `_core`).
+-- Start with the most focused tests that exercise the changes, then broaden.
+-- If network is restricted, limit to public/unauthed operations or skip and document.
++## Exceptions & RAII
++- Throw `std::runtime_error` or project-specific derived classes with clear messages.
++- Use RAII for resources (MPI communicators, Kokkos views, file handles). Avoid naked `new/delete`.
++- Prefer `std::unique_ptr`/`std::shared_ptr` when ownership is dynamic.
+ 
+-Troubleshooting
+-- Abort in RemoteData Girder parsing:
+-  - Ensure regex parsing doesn’t abort on valid descriptors; prefer safe parsing and graceful errors.
+-- Missing passwd/home:
+-  - If you see `getpwuid(): uid not found`, set `HOME` to a writable path (e.g., `/tmp` via `mktemp -d`).
+-- Token visibility in logs:
+-  - Use QUIET or ensure debug printing is gated behind DEBUG level; never print full tokens.
++## Logging & Diagnostics
++- Use Feel++ logging helpers/macros; avoid raw `std::cout` in libraries.
++- Keep debug output behind verbosity guards. Never print secrets or tokens.
+ 
+-Preferred Test Mix (Remotedata)
+-- Python: keep a few high-signal tests that mirror CLI functionality:
+-  - GitHub basic download/contents
+-  - URL download + invalid URL
+-  - Girder safe contents/path lookup
+-  - Progress control and token suppression (QUIET/NORMAL/VERBOSE/DEBUG)
+-- CLI: add 2–4 smoke tests executed in CI that do not require secrets (e.g., public GitHub/URL operations); keep authenticated CLI tests optional behind secrets.
++## HPC Performance Guardrails
++- No heap allocation, file I/O, or blocking synchronization inside hot kernels (`KOKKOS_LAMBDA`, OpenMP loops, MPI collectives).
++- Minimize MPI global barriers; state them explicitly if unavoidable.
++- Capture the smallest set of values in Kokkos lambdas.
++- Prefer `const`/`span` views to signal read-only data.
+ 
+-Commit & Branch Policy
+-- Do not create branches/commits unless explicitly requested by a maintainer.
+-- Provide a brief change summary with file paths and next steps after significant edits.
++## Git Hygiene
++- Keep diffs focused; do not refactor unrelated files.
++- Run pre-commit (`pre-commit run --all-files`) before pushing.
++- Commit messages: `component: concise summary`.
++- PRs must pass clang-format, clang-tidy, codespell, and relevant tests.
++
++## Good / Bad Examples
++````cpp
++// ✅ Good
++namespace feelpp::mesh
++{
++class MeshRefiner
++{
++  public:
++    void Refine(Mesh const & mesh, int levels);
++
++  private:
++    double M_TargetRatio{0.25};
++};
++}
++
++// ❌ Bad
++using namespace std;
++namespace FeelPP {
++class mesh_refiner {
++  double _targetratio;
++  void refine(mesh const& mesh,int levels){ cout << "refine" << endl; }
++};
++}
++````
++````cpp
++// ✅ Kokkos
++Kokkos::parallel_for("update", range, KOKKOS_LAMBDA(int i) {
++    state(i) = alpha * input(i);
++});
++
++// ❌ Kokkos
++Kokkos::parallel_for("update", range, KOKKOS_LAMBDA(int i) {
++    std::ofstream file("out.txt");
++    file << input(i);
++});
++````
+ 
+diff --git a/docs/coding-rules-audit.adoc b/docs/coding-rules-audit.adoc
+new file mode 100644
+index 0000000000000000000000000000000000000000..df736c91c58a3b7e1bc3d81f9d87086aebe31c35
+--- /dev/null
++++ b/docs/coding-rules-audit.adoc
+@@ -0,0 +1,117 @@
++= Feel++ Coding Rules Audit
++:toc:
++
++This audit reconciles the documentation sets (`general`, `cpp20`, `hpc`) with the current repository tooling.
++External documentation links could not be fetched in this offline environment; items flagged with ⚠️ should be
++verified against the upstream docs before merging.
++
++== Summary Matrix
++
++[cols="1,1,1,1,1", options="header"]
++|===
++| Topic | Current Source | Proposed Canonical Rule | Rationale | Impact / Notes
++| Brace style & indentation | `.clang-format` (Allman + 4 spaces) vs docs (⚠️ verify) | Allman braces with 4-space indent and flush-left namespaces using the compact `namespace feelpp::foo {` form | Matches long-standing Feel++ style while avoiding diff noise | `.clang-format`, AGENTS, CONTRIBUTING
++| Column width | Historical `.clang-format` used `ColumnLimit: 0` vs docs (⚠️ verify) | Keep no hard column limit | Prevents unintentional reflow of legacy code | `.clang-format`, AGENTS guidance
++| Pointer alignment | `.clang-format` pins `PointerAlignment: Left` | Keep pointer aligned with the type | Consistent with HPC kernels and existing codebase | `.clang-format`
++| Short statements | Legacy config allowed compact `if`/function bodies | Allow short functions on a single line and permit one-line `if` statements | Preserves existing formatting expectations | `.clang-format`
++| Namespace formatting | Docs emphasise nested namespaces; repo historically used manual concatenation | Enable `modernize-concat-nested-namespaces` and require compact namespaces without indentation | Ensures C++17 nested namespace syntax while keeping layout stable | `.clang-format`, `.clang-tidy`, AGENTS
++| Member naming | Docs mention both `M_member` and `_member` (⚠️ verify) | Prefer `M_PascalCase` but allow `PascalCase_` legacy suffix | Captures Feel++ history without forcing churn | `.clang-tidy`, AGENTS examples
++| Modern C++ features | Docs encourage `constexpr`, `span`, `string_view`, concepts | Keep `modernize-*` suite enabled | Nudges contributors toward C++20 idioms | `.clang-tidy`, CONTRIBUTING reminders
++| Exceptions | Docs recommend `std::runtime_error` family (⚠️ verify) | Use `std::runtime_error` or derived project exceptions with clear messages | Aligns runtime handling with RAII philosophy | AGENTS, CONTRIBUTING
++| `using namespace std` | Docs forbid (⚠️ verify) | Continue forbidding and rely on reviewer + tidy checks | Prevents namespace pollution | AGENTS, code review checklist
++| HPC performance | HPC doc warns about allocations/IO in kernels (⚠️ verify) | Prohibit allocations, blocking IO, and hidden sync in hot kernels | Preserves performance-critical behaviour | AGENTS, audit examples
++| Tooling execution | Repo lacked enforced tidy/format workflow | Provide `.pre-commit-config.yaml` and CI checks; document usage | Keeps diffs consistent and automates verification | Pre-commit, GitHub Actions, CONTRIBUTING
++|===
++
++== Ambiguities & Resolutions
++
++=== Member variable naming
++*Ambiguity:* Documentation references both `M_member` and `_member` conventions (⚠️ verify).
++
++*Resolution:* Require `M_PascalCase` for new code while allowing existing `PascalCase_` members through the tidy ignore regex.
++
++*Impact:* `.clang-tidy` enforces the preference without flagging the legacy suffix style.
++
++=== Exception types
++*Ambiguity:* Guidance alternates between `std::runtime_error` and custom exception wrappers.
++
++*Resolution:* Default to `std::runtime_error` or project-specific subclasses that communicate context; avoid raw integers or `std::exception` bare throws.
++
++*Impact:* Documented for reviewers; no automated check yet.
++
++=== Include guards vs `#pragma once`
++*Ambiguity:* Older docs prefer include guards while newer files mix approaches.
++
++*Resolution:* Accept `#pragma once` for new headers. When touching legacy guarded headers, keep the guard.
++
++*Impact:* Communicated via docs only.
++
++=== `constexpr` and `noexcept`
++*Ambiguity:* Docs recommend them without explicit tooling enforcement.
++
++*Resolution:* Encourage usage when semantics allow. Leave final judgement to reviewers while modernize checks highlight obvious cases.
++
++*Impact:* No direct tooling change beyond existing `modernize-*` coverage.
++
++=== MPI and Kokkos synchronization
++*Ambiguity:* HPC guidance warns about implicit barriers but lacks actionable wording.
++
++*Resolution:* Document best practices: avoid global barriers inside hot loops, capture only required data in `KOKKOS_LAMBDA`, and state synchronisation choices explicitly.
++
++*Impact:* Awareness via AGENTS and CONTRIBUTING; no automated guard yet.
++
++== Tooling & Execution Plan
++
++. Update `.clang-format` to encode the canonical formatting rules (Allman, compact namespaces, no column limit).
++. Maintain `.clang-tidy` with bugprone/performance/modernize suites plus Feel++ naming allowances.
++. Keep `.editorconfig` aligned on LF endings, UTF-8, and four-space C++ indentation.
++. Refresh `AGENTS.md` as the LLM-friendly primer with explicit namespace and member naming notes.
++. Expand `.github/CONTRIBUTING.md` to cover formatting, tidy usage, pre-commit hooks, and CI requirements.
++. Provide `.pre-commit-config.yaml` for clang-format and codespell with vendor exclusions.
++. Ensure GitHub Actions enforce clang-format and clang-tidy against generated `compile_commands.json`.
++
++== Examples
++
++[cols="1,1,1", options="header"]
++|===
++| Scenario | ✅ Good | ❌ Bad
++| Formatting | [source,cpp]
++----
++void Foo()
++{
++    for (auto const & value : values)
++    {
++        DoSomething(value);
++    }
++}
++---- | [source,cpp]
++----
++void Foo(){ for(auto& value:values){DoSomething(value);} }
++----
++| Member naming | [source,cpp]
++----
++class Solver
++{
++  private:
++    double M_TimeStep{0.0};
++};
++---- | [source,cpp]
++----
++class Solver
++{
++  private:
++    double _timeStep;
++};
++----
++| HPC kernel | [source,cpp]
++----
++Kokkos::parallel_for("update", range, KOKKOS_LAMBDA(int i) {
++    state(i) = alpha * input(i);
++});
++---- | [source,cpp]
++----
++Kokkos::parallel_for("update", range, KOKKOS_LAMBDA(int i) {
++    state(i) = read_value_from_file(i);
++});
++----
++|===
+ 
+EOF
+)
