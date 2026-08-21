@@ -1,0 +1,2 @@
+# Check optimization convergence and numerical correctness sequentially and with MPI.
+correctness
