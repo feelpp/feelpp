@@ -235,6 +235,43 @@ fallbackPostprocessPoint( qsec::Config<3> const& checks )
     point << 0.5, 0.5, 0.0;
     return point;
 }
+
+void
+printMeshInfo( std::shared_ptr<mesh_type> const& mesh )
+{
+    if ( !Environment::isMasterRank() )
+        return;
+
+    std::cout << "mesh: elements=" << mesh->numGlobalElements()
+              << ", faces=" << mesh->numGlobalFaces()
+              << ", nodes=" << mesh->numGlobalPoints() << "\n";
+}
+
+template<typename UhType, typename AhType, typename XhType>
+void
+printUnknownSpaceInfo( UhType const& Uh, AhType const& Ah, XhType const& Xh )
+{
+    if ( !Environment::isMasterRank() )
+        return;
+
+    std::cout << "spaces: Uh=Pchv<1> ndof=" << Uh->nDof()
+              << ", Ah=Pdh<0> ndof=" << Ah->nDof()
+              << ", Xh=Uh x Ah ndof=" << Xh->nDof() << "\n";
+}
+
+template<typename ScalarSpaceType, typename CellSpaceType, typename TensorSpaceType>
+void
+printPostprocessSpaceInfo( ScalarSpaceType const& scalarSpace,
+                           CellSpaceType const& cellSpace,
+                           TensorSpaceType const& tensorSpace )
+{
+    if ( !Environment::isMasterRank() )
+        return;
+
+    std::cout << "postprocess spaces: Pch<1> ndof=" << scalarSpace->nDof()
+              << ", Pdh<0> ndof=" << cellSpace->nDof()
+              << ", Pdhms<1> ndof=" << tensorSpace->nDof() << "\n";
+}
 } // namespace
 
 int
@@ -248,6 +285,7 @@ main( int argc, char** argv )
 
         auto cfg = caseConfigFromInput();
         auto mesh = createMesh( cfg );
+        printMeshInfo( mesh );
         if ( cfg.expectedElements )
         {
             auto const nElements = nelements( elements( mesh ), true );
@@ -292,6 +330,7 @@ main( int argc, char** argv )
         auto Ah = Pdh<0>( mesh );
         auto Xh = productPtr( Uh, Ah );
         auto algebraBackend = backend( _rebuild=true, _worldcomm=Uh->worldCommPtr() );
+        printUnknownSpaceInfo( Uh, Ah, Xh );
         tocIf( "sb9.spaces" );
 
         solve::strategy const strategy = useStaticCondensation
@@ -522,6 +561,7 @@ main( int argc, char** argv )
         auto scalarSpace = Pch<1>( mesh );
         auto cellSpace = Pdh<0>( mesh );
         auto tensorSpace = Pdhms<1>( mesh );
+        printPostprocessSpaceInfo( scalarSpace, cellSpace, tensorSpace );
         auto thickness = vf::project( _space=cellSpace, _range=elements( mesh ), _expr=shellThickness() );
         auto area0 = vf::project( _space=cellSpace, _range=elements( mesh ), _expr=shellArea0() );
         auto normalDisplacement = vf::project( _space=scalarSpace,
