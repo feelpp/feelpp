@@ -5,8 +5,6 @@
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/enums.hpp>
 #include <feel/feelalg/petschpddm.hpp>
-#include <feel/feelalg/preconditionerpetsc.hpp>
-#include <feel/feelalg/topetsc.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelvf/vf.hpp>

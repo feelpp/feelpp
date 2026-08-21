@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2014-06-08
 #
-#  Copyright (C) 2014-2016 Feel++ Consortium
+#  Copyright (C) 2014-2026 University of Strasbourg
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -24,7 +24,6 @@
 set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testts")
 feelpp_add_test( bdf )
 feelpp_add_test( bdf2 CFG test_bdf2.cfg INCLUDES ${CMAKE_SOURCE_DIR} )
-feelpp_add_test( bdf3 CFG test_bdf3.cfg NO_MPI_TEST SKIP_TEST )
+feelpp_add_test( bdf3 CFG test_bdf3.cfg )
 feelpp_add_test( bdf_reverse NO_MPI_TEST INCLUDES ${CMAKE_SOURCE_DIR} )
 feelpp_add_test( bdf_forward NO_MPI_TEST INCLUDES ${CMAKE_SOURCE_DIR} )
-

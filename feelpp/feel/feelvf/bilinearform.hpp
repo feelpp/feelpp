@@ -1345,7 +1345,7 @@ BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
     if ( init )
     {
         this->M_matrix->zero();
-        this->clearDeferredDirichlet();
+        this->resetDeferredDirichletAfterOperatorReset();
     }
 
     __expr.assemble( M_X1, M_X2, *this );
@@ -1369,7 +1369,7 @@ BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
     if ( init )
     {
         this->M_matrix->zero();
-        this->clearDeferredDirichlet();
+        this->resetDeferredDirichletAfterOperatorReset();
     }
 
     assign( __expr, mpl::bool_<true>(), mpl::bool_<( space_1_type::nSpaces > 1 && space_2_type::nSpaces > 1 )>() );

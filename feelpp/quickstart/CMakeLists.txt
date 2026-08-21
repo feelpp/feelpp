@@ -57,6 +57,11 @@ target_link_libraries(qs_shell_benchmark_framework PUBLIC Feelpp::feelpp)
 add_subdirectory( python )
 add_subdirectory( laplacian )
 
+feelpp_get_compile_definition(Feelpp::feelpp FEELPP_HAS_PETSC_TAO)
+if ( FEELPP_HAS_PETSC_TAO )
+  add_subdirectory( optimization )
+endif()
+
 #
 # ADR
 #

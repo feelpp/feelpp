@@ -6,7 +6,7 @@
 spack:
   config:
     installer: new
-    build_jobs: 16
+    build_jobs: 4
     concurrent_packages: 2
   packages:
     gcc:
@@ -37,6 +37,12 @@ spack:
     mpi:
       require:
       - openmpi@:4.1 fabrics=none
+    # TAO is part of PETSc itself; Spack intentionally has no +tao variant.
+    # Keep every root and transitive PETSc dependency on the API version used
+    # by the Feel++ TAO interface, with the real scalar configuration TAO needs.
+    petsc:
+      require:
+      - '@3.25.1 +double ~complex'
     blas:
       require:
       - openblas
@@ -79,7 +85,7 @@ spack:
   - py-slepc4py@3.25.0
   - py-sympy
   - py-pytest
-  - petsc+hpddm+mumps+superlu-dist+hwloc+ptscotch+suite-sparse+hdf5+hypre
+  - petsc@3.25.1+double~complex+hpddm+mumps+superlu-dist+hwloc+ptscotch+suite-sparse+hdf5+hypre
   - slepc+hpddm
 
   view: $user_cache_path/views/feelpp/cpu-openmpi-macosx
@@ -89,4 +95,4 @@ spack:
 
   repos:
     # Repository-owned local overrides to unblock shared environment installs.
-    feelpp: ${FEELPP_REPO_ROOT}/packaging/spack/repo/spack_repo/feelpp
+    feelpp: ../../../repo/spack_repo/feelpp

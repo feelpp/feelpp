@@ -44,8 +44,8 @@ BilinearFormBase<T>::BilinearFormBase( BilinearFormBase const& __vf )
     M_do_build( __vf.M_do_build ),
     M_do_threshold( __vf.M_do_threshold ),
     M_threshold( __vf.M_threshold ),
-    M_dirichletState( __vf.M_dirichletState ? std::make_shared<deferred_dirichlet_state_type>( *__vf.M_dirichletState )
-                                            : std::make_shared<deferred_dirichlet_state_type>() ),
+    M_dirichletState( __vf.M_dirichletState ? __vf.M_dirichletState :
+                                            std::make_shared<deferred_dirichlet_state_type>() ),
     b_mutex()
 {
     auto dmTest = M_matrix->mapRowPtr();
@@ -61,6 +61,7 @@ BilinearFormBase<T>::operator=( BilinearFormBase const& form )
 {
     if ( this != &form )
     {
+        this->invalidateMaterializedDeferredDirichlet();
         super::operator=( form );
         M_name = form.M_name;
         M_pattern = form.M_pattern;

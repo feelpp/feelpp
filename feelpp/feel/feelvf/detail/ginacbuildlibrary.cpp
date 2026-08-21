@@ -26,12 +26,55 @@
 
 #include <feel/feelcore/environment.hpp>
 
+#include <cstdint>
+#include <sstream>
+
 namespace Feel
 {
 namespace vf
 {
 namespace detail
 {
+namespace
+{
+std::string
+ginacExprDescHash( std::string const& exprDesc )
+{
+    std::uint64_t hash = 14695981039346656037ULL;
+    for ( unsigned char c : exprDesc )
+    {
+        hash ^= c;
+        hash *= 1099511628211ULL;
+    }
+
+    std::ostringstream ostr;
+    ostr << std::hex << hash;
+    return ostr.str();
+}
+
+bool
+endsWith( std::string const& value, std::string const& suffix )
+{
+    return value.size() >= suffix.size() && value.compare( value.size() - suffix.size(), suffix.size(), suffix ) == 0;
+}
+
+std::string
+ginacExprFileName( std::string const& filename, std::string const& exprDesc )
+{
+    if ( filename.empty() || exprDesc.empty() )
+        return filename;
+
+    std::string exprHash = ginacExprDescHash( exprDesc );
+    std::string defaultStem = "ginacExpr_" + exprHash;
+    fs::path filenamePath( filename );
+    std::string stem = filenamePath.filename().string();
+    if ( stem == defaultStem || endsWith( stem, "." + exprHash ) )
+        return filename;
+
+    return ( filenamePath.parent_path() / fs::path( stem + "." + exprHash ) ).string();
+}
+}
+
 FEELPP_EXPORT
 void ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::string const& exprDesc, std::string const& filename,
                         WorldComm const& world,
@@ -61,15 +104,14 @@ void ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::st
         fs::path filename_p = fs::path( filename );
         fs::path filename_parent_p = filename_p.parent_path();
         std::string filenameForCompile = filename;
-        std::string filenameDescExpr = filename + ".desc";
-        std::string filenameWithSuffix =  filename + ".so";
         if ( !filename.empty() && !fs::path(filename).is_absolute() && ( filename_parent_p != Environment::exprRepository() ) )
-        {
             filenameForCompile = (fs::path(Environment::exprRepository()) / filename_p).string();
-            filenameDescExpr = (fs::path(Environment::exprRepository()) / fs::path( filename + ".desc" )).string();
-            filenameWithSuffix =  (fs::path(Environment::exprRepository()) / fs::path(filename + ".so")).string();
-        }
+
+        filenameForCompile = ginacExprFileName( filenameForCompile, exprDesc );
+        std::string filenameDescExpr = filenameForCompile.empty() ? std::string() : filenameForCompile + ".desc";
+        std::string filenameWithSuffix = filenameForCompile.empty() ? std::string() : filenameForCompile + ".so";
         DVLOG(2) << "filename: " << filename << std::endl;
+        DVLOG(2) << "filenameForCompile: " << filenameForCompile << std::endl;
         DVLOG(2) << "filenameWithSuffix: " << filenameWithSuffix << std::endl;
 
         if ( !filenameForCompile.empty() )
@@ -85,14 +127,14 @@ void ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::st
         }
 
         DVLOG( 2 ) << "GiNaC::compile_ex with filename " << filenameForCompile << "\n";
-        GiNaC::compile_ex( exprs, syml, *cfun, filenameForCompile );
+        GiNaC::compile_ex( exprs, syml, *cfun, filenameForCompile, !exprDesc.empty() );
 
         hasLinked = true;
         if ( !filename.empty() )
         {
             GinacExprManager::instance().operator[]( keyExprManager /*exprDesc*/ /*filename*/ ) = cfun;
 
-            if ( world.isMasterRank() && !exprDesc.empty() )
+            if ( world.isMasterRank() && !exprDesc.empty() && !filenameDescExpr.empty() )
             {
                 std::ofstream file( filenameDescExpr, std::ios::out | std::ios::trunc );
                 file << exprDesc;
@@ -106,11 +148,12 @@ FEELPP_EXPORT std::string
 ginacGetDefaultFileName( std::string const& exprDesc, std::string const& dirLibExpr )
 {
     std::string res;
-    if ( GinacExprManagerDefaultFileName::instance().find( exprDesc ) != GinacExprManagerDefaultFileName::instance().end() )
-        res = GinacExprManagerDefaultFileName::instance().find( exprDesc )->second;
+    std::string managerKey = exprDesc + "\n" + dirLibExpr;
+    if ( GinacExprManagerDefaultFileName::instance().find( managerKey ) != GinacExprManagerDefaultFileName::instance().end() )
+        res = GinacExprManagerDefaultFileName::instance().find( managerKey )->second;
     else
     {
-        std::string defaultFileNameUsed = ( boost::format( "ginacExprDefaultFileName%1%" ) % GinacExprManagerDefaultFileName::instance().size() ).str();
+        std::string defaultFileNameUsed = "ginacExpr_" + ginacExprDescHash( exprDesc );
         if ( dirLibExpr.empty() )
             res = Environment::exprRepository() + "/" + defaultFileNameUsed;
         else
@@ -121,7 +164,7 @@ ginacGetDefaultFileName( std::string const& exprDesc, std::string const& dirLibE
             else
                 res = (fs::path(Environment::exprRepository()) / fsdir / defaultFileNameUsed ).string();
         }
-        GinacExprManagerDefaultFileName::instance().operator[]( exprDesc ) = res;
+        GinacExprManagerDefaultFileName::instance().operator[]( managerKey ) = res;
     }
     return res;
 }

@@ -81,8 +81,11 @@ void compile_ex(const ex& expr, const symbol& sym1, const symbol& sym2, FUNCP_2P
  * @param fp Returned function pointer
  * @param filename Name of the intermediate source code and so-file. If
  * supplied, these intermediate files will not be deleted
+ * @param filename_is_content_addressed Whether the supplied filename is already
+ * unique for the expression. If false, the generated source code is hashed to
+ * create a persistent module name.
  */
-void compile_ex(const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::string filename = "");
+void compile_ex(const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::string filename = "", bool filename_is_content_addressed = false);
 
 /** 
  * Opens an existing so-file and returns a function pointer of type FUNCP_1P to

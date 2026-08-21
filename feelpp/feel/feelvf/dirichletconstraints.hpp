@@ -1,3 +1,11 @@
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+
+    SPDX-FileCopyrightText: 2026 University of Strasbourg
+
+    SPDX-License-Identifier: LGPL-3.0-or-later
+*/
 #ifndef FEELPP_VF_DIRICHLETCONSTRAINTS_HPP
 #define FEELPP_VF_DIRICHLETCONSTRAINTS_HPP 1
 
@@ -44,6 +52,22 @@ enum class DeferredDirichletPolicy : std::uint8_t
     automatic = 0,
     deferred = 1,
     immediate = 2
+};
+
+/**
+ * \brief Storage policy used when deferred Dirichlet constraints are materialized.
+ *
+ * `in_place` applies constraints directly to the assembled operator. Ordinary
+ * row elimination needs no auxiliary matrix storage; symmetric elimination
+ * retains only the erased sparse Dirichlet-column entries so subsequent
+ * prescribed values can refresh the right hand side. `preserve_unconstrained`
+ * leaves the assembled operator untouched and materializes a separate
+ * constrained matrix.
+ */
+enum class DeferredDirichletMaterialization : std::uint8_t
+{
+    in_place = 0,
+    preserve_unconstrained = 1
 };
 
 constexpr bool usesDeferredDirichlet( DeferredDirichletPolicy policy ) noexcept
@@ -330,6 +354,43 @@ void copyVectorValues( VectorPtrType const& destination,
         destination->close();
 }
 
+/**
+ * \brief Return the process-local union of constrained degrees of freedom.
+ *
+ * The returned indices use the same process numbering as the deferred entries
+ * and can therefore be passed to `Vector::set()` and `MatrixSparse::zeroRows()`.
+ */
+template<typename EntryRange>
+std::vector<int> deferredDirichletDofs( EntryRange const& entries )
+{
+    std::set<int> dofs;
+    for ( auto const& entry : entries )
+        dofs.insert( entry.dofs.begin(), entry.dofs.end() );
+    return { dofs.begin(), dofs.end() };
+}
+
+/**
+ * \brief Build a constrained right hand side from reusable in-place data.
+ *
+ * `rhsContribution` contains `-A_FD g_D` on free rows and the prescribed
+ * diagonal contribution on constrained rows. The source right hand side is
+ * never modified.
+ */
+template<typename VectorPtrType>
+VectorPtrType makeInPlaceConstrainedVector( VectorPtrType const& rhs,
+                                            VectorPtrType const& rhsContribution,
+                                            std::vector<int> const& constrainedDofs )
+{
+    auto constrained = cloneVectorWithValues( rhs );
+    constrained->add( typename std::decay_t<decltype( *constrained )>::value_type( 1 ),
+                      *rhsContribution );
+    for ( int dof : constrainedDofs )
+        constrained->set( dof, rhsContribution->operator()( dof ) );
+    if ( !constrained->closed() )
+        constrained->close();
+    return constrained;
+}
+
 template<typename VectorPtrType, typename CandidateMapType>
 void synchronizeDeferredDirichletCandidates( VectorPtrType const& values,
                                              CandidateMapType const& localCandidates )
@@ -516,14 +577,57 @@ void synchronizeDeferredDirichletCandidates( VectorPtrType const& values,
     }
 }
 
-template<typename EntryRange, typename MatrixPtrType, typename VectorPtrType>
-void applyDeferredDirichletEntries( EntryRange const& entries,
-                                    MatrixPtrType const& matrix,
-                                    VectorPtrType const& rhsVector )
+/**
+ * \brief One synchronized set of constraints sharing an elimination policy.
+ *
+ * `values` contains the prescribed values and `marker` identifies constrained
+ * degrees of freedom, including locally visible ghosts.
+ */
+template<typename VectorPtrType>
+struct DeferredDirichletGroup
 {
-    using entry_type = std::ranges::range_value_t<EntryRange>;
+    Feel::Context onContext;
+    double valueOnDiagonal = 1.0;
+    std::vector<int> dofs;
+    VectorPtrType values;
+    VectorPtrType marker;
+};
+
+/** \brief One original matrix entry erased from a constrained column. */
+template<typename T>
+struct DeferredDirichletColumnEntry
+{
+    Feel::size_type row = 0;
+    Feel::size_type columnCluster = 0;
+    T value = T( 0 );
+};
+
+/**
+ * \brief Compact local storage for columns erased by one symmetric group.
+ *
+ * Row-only elimination and penalisation leave `entries` empty.
+ */
+template<typename T>
+struct DeferredDirichletColumnGroup
+{
+    Feel::size_type onContext = 0;
+    double valueOnDiagonal = 1.0;
+    std::vector<int> dofs;
+    std::vector<DeferredDirichletColumnEntry<T>> entries;
+};
+
+/**
+ * \brief Resolve and synchronize deferred constraints by elimination strategy.
+ *
+ * Each group owns both the prescribed values and a marker vector identifying
+ * constrained columns, including process-local ghost columns.
+ */
+template<typename EntryRange, typename VectorPtrType>
+auto makeDeferredDirichletGroups( EntryRange const& entries,
+                                  VectorPtrType const& vectorTemplate )
+{
     using key_type = std::pair<Feel::size_type, double>;
-    using vector_type = std::decay_t<decltype( *rhsVector )>;
+    using vector_type = std::decay_t<decltype( *vectorTemplate )>;
     using value_type = typename vector_type::value_type;
     using size_type = typename vector_type::size_type;
 
@@ -551,7 +655,7 @@ void applyDeferredDirichletEntries( EntryRange const& entries,
         {
             groupedStates.push_back( GroupState{
                 .key = key,
-                .values = rhsVector->clone(),
+                .values = vectorTemplate->clone(),
                 .dofSet = {}
             } );
             groupedStates.back().values->zero();
@@ -591,30 +695,248 @@ void applyDeferredDirichletEntries( EntryRange const& entries,
         ++entryIndex;
     }
 
+    std::vector<DeferredDirichletGroup<VectorPtrType>> groups;
+    groups.reserve( groupedStates.size() );
     for ( auto& groupState : groupedStates )
     {
-        // Even ranks with no local constrained rows must stay in lockstep with
-        // the deferred elimination materialization for this group.
         synchronizeDeferredDirichletCandidates( groupState.values, groupState.localCandidates );
 
-        std::vector<int> dofs( groupState.dofSet.begin(), groupState.dofSet.end() );
-        Feel::Context const onContext( groupState.key.first );
+        auto marker = vectorTemplate->clone();
+        marker->zero();
+        auto markerCandidates = groupState.localCandidates;
+        for ( auto& [dof, candidate] : markerCandidates )
+        {
+            (void)dof;
+            candidate.value = value_type( 1 );
+        }
+        synchronizeDeferredDirichletCandidates( marker, markerCandidates );
 
-        if ( isPenalisationDirichlet( onContext ) )
+        if ( !groupState.values->closed() )
+            groupState.values->close();
+        if ( !marker->closed() )
+            marker->close();
+
+        // A boundary degree of freedom may have been discovered only as a
+        // ghost on another rank. Ensure its owner also carries the local row
+        // index, which is required by owner-only operations such as
+        // penalisation.
+        if ( auto const dataMap = marker->mapPtr() )
+        {
+            for ( size_type dof = 0; dof < dataMap->nLocalDofWithoutGhost(); ++dof )
+            {
+                if ( math::abs( marker->operator()( dof ) ) > type_traits<value_type>::epsilon() )
+                    groupState.dofSet.insert( static_cast<int>( dof ) );
+            }
+        }
+        std::vector<int> dofs( groupState.dofSet.begin(), groupState.dofSet.end() );
+
+        groups.push_back( DeferredDirichletGroup<VectorPtrType>{
+            .onContext = Feel::Context( groupState.key.first ),
+            .valueOnDiagonal = groupState.key.second,
+            .dofs = std::move( dofs ),
+            .values = std::move( groupState.values ),
+            .marker = std::move( marker )
+        } );
+    }
+    return groups;
+}
+
+/** \brief Apply synchronized deferred constraint groups to a matrix and RHS. */
+template<typename GroupRange, typename MatrixPtrType, typename VectorPtrType>
+void applyDeferredDirichletGroups( GroupRange const& groups,
+                                   MatrixPtrType const& matrix,
+                                   VectorPtrType const& rhsVector )
+{
+    using vector_type = std::decay_t<decltype( *rhsVector )>;
+    using value_type = typename vector_type::value_type;
+
+    for ( auto const& group : groups )
+    {
+        // Even ranks with no local constrained rows must stay in lockstep with
+        // collective matrix elimination for every globally present group.
+        if ( isPenalisationDirichlet( group.onContext ) )
         {
             auto const penalty = deferredDirichletPenalty<value_type>();
-            for ( int dof : dofs )
+            auto const dataMap = rhsVector->mapPtr();
+            for ( int dof : group.dofs )
             {
+                if ( dataMap && dataMap->dofGlobalProcessIsGhost( dof ) )
+                    continue;
                 matrix->set( dof, dof, penalty );
-                rhsVector->set( dof, groupState.values->operator()( dof ) * penalty );
+                rhsVector->set( dof, group.values->operator()( dof ) * penalty );
             }
             continue;
         }
 
-        if ( !groupState.values->closed() )
-            groupState.values->close();
-        matrix->zeroRows( dofs, *groupState.values, *rhsVector, onContext, groupState.key.second );
+        matrix->zeroRows( group.dofs, *group.values, *rhsVector,
+                          group.onContext, group.valueOnDiagonal );
     }
+}
+
+/**
+ * \brief Capture the sparse columns erased by symmetric elimination.
+ *
+ * Only entries whose column is marked as constrained are retained. Rows use
+ * process-local RHS-vector numbering and columns use global cluster
+ * numbering. A temporary vector on the matrix column map supplies prescribed
+ * values because its ghost set and ordering need not match the RHS map.
+ */
+template<typename MatrixPtrType, typename VectorPtrType>
+auto makeDeferredDirichletMatrixColumnVector( MatrixPtrType const& matrix,
+                                               VectorPtrType const& vectorTemplate,
+                                               VectorPtrType const& source )
+{
+    using vector_type = std::decay_t<decltype( *vectorTemplate )>;
+    using size_type = typename vector_type::size_type;
+
+    auto result = vectorTemplate->clone();
+    result->zero();
+    result->setIsClosed( false );
+    auto const& columnMap = matrix->mapCol();
+    auto const sourceMap = source->mapPtr();
+    for ( size_type column = 0; column < columnMap.nLocalDofWithoutGhost(); ++column )
+    {
+        size_type const cluster = columnMap.mapGlobalProcessToGlobalCluster( column );
+        size_type const sourceDof = sourceMap->worldIndexToProcessIndex( cluster );
+        if ( sourceDof != invalid_v<size_type> )
+            result->set( column, source->operator()( sourceDof ) );
+    }
+    result->close();
+    return result;
+}
+
+template<typename GroupRange, typename MatrixPtrType, typename VectorPtrType>
+auto captureDeferredDirichletColumns( GroupRange const& groups,
+                                      MatrixPtrType const& matrix,
+                                      VectorPtrType const& columnVectorTemplate )
+{
+    using matrix_type = std::decay_t<decltype( *matrix )>;
+    using value_type = typename matrix_type::value_type;
+    using size_type = typename matrix_type::size_type;
+
+    std::vector<DeferredDirichletColumnGroup<value_type>> storedGroups;
+    storedGroups.reserve( groups.size() );
+    matrix->closeIfNeeded();
+
+    for ( auto const& group : groups )
+    {
+        DeferredDirichletColumnGroup<value_type> stored{
+            .onContext = group.onContext.context(),
+            .valueOnDiagonal = group.valueOnDiagonal,
+            .dofs = group.dofs,
+            .entries = {}
+        };
+
+        if ( group.onContext.test( ContextOn::SYMMETRIC ) )
+        {
+            CHECK( matrix->hasGraph() )
+                << "symmetric in-place Dirichlet updates require the matrix graph";
+            CHECK( columnVectorTemplate )
+                << "symmetric in-place Dirichlet updates require a column-map vector";
+            auto const& rowMap = matrix->mapRow();
+            auto const& colMap = matrix->mapCol();
+            auto const& vectorMap = *group.values->mapPtr();
+            auto columnMarker = makeDeferredDirichletMatrixColumnVector(
+                matrix, columnVectorTemplate, group.marker );
+            for ( auto const& [rowCluster, rowData] : matrix->graph()->storage() )
+            {
+                if ( !rowMap.dofGlobalClusterIsOnProc( rowCluster ) )
+                    continue;
+                size_type const row = vectorMap.worldIndexToProcessIndex( rowCluster );
+                size_type const matrixRow = rowMap.worldIndexToProcessIndex( rowCluster );
+                CHECK( row != invalid_v<size_type> );
+                CHECK( matrixRow != invalid_v<size_type> );
+                for ( size_type const columnCluster : boost::get<2>( rowData ) )
+                {
+                    size_type const matrixColumn = colMap.worldIndexToProcessIndex( columnCluster );
+                    if ( matrixColumn == invalid_v<size_type> ||
+                         math::abs( columnMarker->operator()( matrixColumn ) ) <= type_traits<value_type>::epsilon() )
+                        continue;
+                    value_type const value = matrix->operator()( matrixRow, matrixColumn );
+                    if ( math::abs( value ) > type_traits<value_type>::epsilon() )
+                        stored.entries.push_back( { row, columnCluster, value } );
+                }
+            }
+        }
+        storedGroups.push_back( std::move( stored ) );
+    }
+    return storedGroups;
+}
+
+/**
+ * \brief Rebuild symmetric-elimination RHS corrections from compact columns.
+ *
+ * The constraint topology and elimination strategy must match the first
+ * materialization; prescribed values may change between solves.
+ */
+template<typename GroupRange, typename StoredGroupRange, typename MatrixPtrType, typename VectorPtrType>
+void addDeferredDirichletColumnContributions( GroupRange const& groups,
+                                              StoredGroupRange const& storedGroups,
+                                              MatrixPtrType const& matrix,
+                                              VectorPtrType const& columnVectorTemplate,
+                                              VectorPtrType const& rhsContribution )
+{
+    CHECK_EQ( groups.size(), storedGroups.size() )
+        << "Dirichlet constraint groups changed after in-place materialization";
+    for ( std::size_t k = 0; k < groups.size(); ++k )
+    {
+        auto const& group = groups[k];
+        auto const& stored = storedGroups[k];
+        CHECK( group.onContext.context() == stored.onContext &&
+               group.valueOnDiagonal == stored.valueOnDiagonal &&
+               group.dofs == stored.dofs )
+            << "Dirichlet constraint topology changed after in-place materialization; "
+               "call zero() and reassemble the operator";
+        if ( !group.onContext.test( ContextOn::SYMMETRIC ) )
+        {
+            CHECK( stored.entries.empty() )
+                << "only symmetric elimination may retain Dirichlet columns";
+            continue;
+        }
+        CHECK( columnVectorTemplate )
+            << "symmetric in-place Dirichlet updates require a column-map vector";
+        // Vector construction and ghost synchronization are collective. Every
+        // rank in a symmetric group must participate even when it retains no
+        // process-local column entries.
+        auto columnValues = makeDeferredDirichletMatrixColumnVector(
+            matrix, columnVectorTemplate, group.values );
+        for ( auto const& entry : stored.entries )
+        {
+            auto const column = matrix->mapCol().worldIndexToProcessIndex( entry.columnCluster );
+            CHECK( column != invalid_v<typename std::decay_t<decltype( *columnValues )>::size_type> );
+            rhsContribution->add( entry.row, -entry.value * columnValues->operator()( column ) );
+        }
+    }
+}
+
+/** \brief Convert synchronized groups to the persistent applied-constraint set. */
+template<typename GroupRange>
+auto deferredDirichletSetFromGroups( GroupRange const& groups )
+{
+    using group_type = std::ranges::range_value_t<GroupRange>;
+    using vector_type = std::decay_t<decltype( *std::declval<group_type>().values )>;
+    using value_type = typename vector_type::value_type;
+    DeferredDirichletSet<value_type> constraints;
+    for ( auto const& group : groups )
+    {
+        std::vector<value_type> values;
+        values.reserve( group.dofs.size() );
+        for ( int dof : group.dofs )
+            values.push_back( group.values->operator()( dof ) );
+        constraints.append( group.dofs, std::move( values ), group.onContext,
+                            group.valueOnDiagonal );
+    }
+    return constraints;
+}
+
+/** \brief Resolve and apply deferred entries in one operation. */
+template<typename EntryRange, typename MatrixPtrType, typename VectorPtrType>
+void applyDeferredDirichletEntries( EntryRange const& entries,
+                                    MatrixPtrType const& matrix,
+                                    VectorPtrType const& rhsVector )
+{
+    auto groups = makeDeferredDirichletGroups( entries, rhsVector );
+    applyDeferredDirichletGroups( groups, matrix, rhsVector );
 }
 
 } // namespace Feel::vf

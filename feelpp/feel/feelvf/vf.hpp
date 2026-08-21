@@ -100,6 +100,7 @@
 
 
 #include <feel/feelvf/ginac.hpp>
+#include <feel/feelvf/symbolicdiagnostics.hpp>
 
 #include <boost/preprocessor/comparison/equal.hpp>
 

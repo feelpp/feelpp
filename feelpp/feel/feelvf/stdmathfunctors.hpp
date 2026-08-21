@@ -50,6 +50,7 @@
 #include <feel/feelvf/binaryfunctor.hpp>
 #include <feel/feelvf/arithmetic.hpp>
 #include <feel/feelvf/cst.hpp>
+#include <feel/feelvf/symbolicdiagnostics.hpp>
 
 namespace Feel
 {
@@ -78,37 +79,62 @@ namespace vf
 # /* Information about functions  */
 #
 # /* Accessors for the operator datatype. */
-# define VF_FUNC_SYMBOL(O)        BOOST_PP_TUPLE_ELEM(8, 0, O)
-# define VF_FUNC_NAME(O)          BOOST_PP_TUPLE_ELEM(8, 1, O)
-# define VF_FUNC_IMPL(O)          BOOST_PP_TUPLE_ELEM(8, 2, O)
-# define VF_FUNC_NAME_STRING(O)   BOOST_PP_TUPLE_ELEM(8, 3, O)
-# define VF_FUNC_DOMAIN(O)        BOOST_PP_TUPLE_ELEM(8, 4, O)
-# define VF_FUNC_IS_FLOATING(O )  BOOST_PP_TUPLE_ELEM(8, 5, O)
-# define VF_FUNC_IS_LOGICAL(O)    BOOST_PP_TUPLE_ELEM(8, 6, O)
-# define VF_FUNC_POLYNOMIALORDER_SCALING(O) BOOST_PP_TUPLE_ELEM(8, 7, O)
+# define VF_FUNC_SYMBOL(O)        BOOST_PP_TUPLE_ELEM(9, 0, O)
+# define VF_FUNC_NAME(O)          BOOST_PP_TUPLE_ELEM(9, 1, O)
+# define VF_FUNC_IMPL(O)          BOOST_PP_TUPLE_ELEM(9, 2, O)
+# define VF_FUNC_NAME_STRING(O)   BOOST_PP_TUPLE_ELEM(9, 3, O)
+# define VF_FUNC_DOMAIN(O)        BOOST_PP_TUPLE_ELEM(9, 4, O)
+# define VF_FUNC_IS_FLOATING(O )  BOOST_PP_TUPLE_ELEM(9, 5, O)
+# define VF_FUNC_IS_LOGICAL(O)    BOOST_PP_TUPLE_ELEM(9, 6, O)
+# define VF_FUNC_POLYNOMIALORDER_SCALING(O) BOOST_PP_TUPLE_ELEM(9, 7, O)
+# define VF_FUNC_DIFF(O)          BOOST_PP_TUPLE_ELEM(9, 8, O)
+#
+# define VF_UNARY_DIFF_UNSUPPORTED(EXPR, DIFF_EXPR, NAME)              \
+            throw details::unsupportedSymbolicDifferentiation( "native unary", NAME ); \
+            return *this
+# define VF_UNARY_DIFF_PIECEWISE(EXPR, DIFF_EXPR, NAME)                \
+            throw details::unsupportedPiecewiseDifferentiation( "native unary", NAME ); \
+            return *this
+# define VF_UNARY_DIFF_COS(EXPR, DIFF_EXPR, NAME) return -sin( EXPR )*( DIFF_EXPR )
+# define VF_UNARY_DIFF_SIN(EXPR, DIFF_EXPR, NAME) return cos( EXPR )*( DIFF_EXPR )
+# define VF_UNARY_DIFF_TAN(EXPR, DIFF_EXPR, NAME) return ( DIFF_EXPR )/( cos( EXPR )*cos( EXPR ) )
+# define VF_UNARY_DIFF_ACOS(EXPR, DIFF_EXPR, NAME) return -( DIFF_EXPR )/sqrt( cst( 1.0 ) - ( EXPR )*( EXPR ) )
+# define VF_UNARY_DIFF_ASIN(EXPR, DIFF_EXPR, NAME) return ( DIFF_EXPR )/sqrt( cst( 1.0 ) - ( EXPR )*( EXPR ) )
+# define VF_UNARY_DIFF_ATAN(EXPR, DIFF_EXPR, NAME) return ( DIFF_EXPR )/( cst( 1.0 ) + ( EXPR )*( EXPR ) )
+# define VF_UNARY_DIFF_COSH(EXPR, DIFF_EXPR, NAME) return sinh( EXPR )*( DIFF_EXPR )
+# define VF_UNARY_DIFF_SINH(EXPR, DIFF_EXPR, NAME) return cosh( EXPR )*( DIFF_EXPR )
+# define VF_UNARY_DIFF_TANH(EXPR, DIFF_EXPR, NAME) return ( DIFF_EXPR )/( cosh( EXPR )*cosh( EXPR ) )
+# define VF_UNARY_DIFF_EXP(EXPR, DIFF_EXPR, NAME) return exp( EXPR )*( DIFF_EXPR )
+# define VF_UNARY_DIFF_LOG(EXPR, DIFF_EXPR, NAME) return ( DIFF_EXPR )/( EXPR )
+# define VF_UNARY_DIFF_SQRT(EXPR, DIFF_EXPR, NAME) return ( DIFF_EXPR )/( cst( 2.0 )*sqrt( EXPR ) )
+# define VF_BINARY_DIFF_UNSUPPORTED(EXPR1, EXPR2, DIFF_EXPR1, DIFF_EXPR2, NAME) \
+            throw details::unsupportedSymbolicDifferentiation( "native binary", NAME ); \
+            return *this
+# define VF_BINARY_DIFF_ATAN2(EXPR1, EXPR2, DIFF_EXPR1, DIFF_EXPR2, NAME) \
+            return ( ( EXPR2 )*( DIFF_EXPR1 ) - ( EXPR1 )*( DIFF_EXPR2 ) )/( ( EXPR1 )*( EXPR1 ) + ( EXPR2 )*( EXPR2 ) )
 #
 # /* List of applicative unary functions. */
 # define VF_APPLICATIVE_UNARY_FUNCS \
    BOOST_PP_TUPLE_TO_LIST( \
       17, \
       ( \
-         ( abs  , __Abs__ , Feel::math::abs     ,"absolute value"      , UnboundedDomain<value_type>()      , 1, 0, 2), \
-         ( cos  , __Cos__ , Feel::math::cos     ,"cosine"              , UnboundedDomain<value_type>()      , 1, 0, 2), \
-         ( sin  , __Sin__ , Feel::math::sin     ,"sine"                , UnboundedDomain<value_type>()      , 1, 0, 2), \
-         ( tan  , __Tan__ , Feel::math::tan     ,"tangent"             , UnboundedDomain<value_type>()      , 1, 0, 2), \
-         ( acos , __ACos__, Feel::math::acos    ,"inverse cosine"      , BoundedDomain<value_type>(-1.0,1.0), 1, 0, 2), \
-         ( asin , __ASin__, Feel::math::asin    ,"inverse sine"        , BoundedDomain<value_type>(-1.0,1.0), 1, 0, 2), \
-         ( atan , __ATan__, Feel::math::atan    ,"inverse tangent"     , UnboundedDomain<value_type>()      , 1, 0, 2), \
-         ( cosh , __Cosh__, Feel::math::cosh    ,"hyperbolic cosine"   , UnboundedDomain<value_type>()      , 1, 0, 2), \
-         ( sinh , __Sinh__, Feel::math::sinh    ,"hyperbolic sine"     , UnboundedDomain<value_type>()      , 1, 0, 2), \
-         ( tanh , __Tanh__, Feel::math::tanh    ,"hyperbolic tangent"  , UnboundedDomain<value_type>()      , 1, 0, 2), \
-         ( exp  , __Exp__ , Feel::math::exp     ,"exponential"         , UnboundedDomain<value_type>()      , 1, 0, 2), \
-         ( loge  , __Log__ , Feel::math::log     ,"logarithm"           , PositiveDomain<value_type>()       , 1, 0, 2), \
-         ( sqrt , __Sqrt__, Feel::math::sqrt    ,"square root"         , PositiveDomain<value_type>()       , 1, 0, 2), \
-         ( floor, __Floor__, std::floor         ,"floor"               , UnboundedDomain<value_type>()      , 1, 0, 1), \
-         ( ceil , __Ceil__, std::ceil           ,"ceil"                , UnboundedDomain<value_type>()      , 1, 0, 1), \
-         ( sign , __Sign__, details::sign       ,"sign"                , UnboundedDomain<value_type>()      , 1, 0, 1), \
-         ( chi  , __Chi__ ,                     ,"chi"                 , UnboundedDomain<value_type>()      , 0, 1, 1) \
+         ( abs  , __Abs__ , Feel::math::abs     ,"absolute value"      , UnboundedDomain<value_type>()      , 1, 0, 2, VF_UNARY_DIFF_PIECEWISE), \
+         ( cos  , __Cos__ , Feel::math::cos     ,"cosine"              , UnboundedDomain<value_type>()      , 1, 0, 2, VF_UNARY_DIFF_COS), \
+         ( sin  , __Sin__ , Feel::math::sin     ,"sine"                , UnboundedDomain<value_type>()      , 1, 0, 2, VF_UNARY_DIFF_SIN), \
+         ( tan  , __Tan__ , Feel::math::tan     ,"tangent"             , UnboundedDomain<value_type>()      , 1, 0, 2, VF_UNARY_DIFF_TAN), \
+         ( acos , __ACos__, Feel::math::acos    ,"inverse cosine"      , BoundedDomain<value_type>(-1.0,1.0), 1, 0, 2, VF_UNARY_DIFF_ACOS), \
+         ( asin , __ASin__, Feel::math::asin    ,"inverse sine"        , BoundedDomain<value_type>(-1.0,1.0), 1, 0, 2, VF_UNARY_DIFF_ASIN), \
+         ( atan , __ATan__, Feel::math::atan    ,"inverse tangent"     , UnboundedDomain<value_type>()      , 1, 0, 2, VF_UNARY_DIFF_ATAN), \
+         ( cosh , __Cosh__, Feel::math::cosh    ,"hyperbolic cosine"   , UnboundedDomain<value_type>()      , 1, 0, 2, VF_UNARY_DIFF_COSH), \
+         ( sinh , __Sinh__, Feel::math::sinh    ,"hyperbolic sine"     , UnboundedDomain<value_type>()      , 1, 0, 2, VF_UNARY_DIFF_SINH), \
+         ( tanh , __Tanh__, Feel::math::tanh    ,"hyperbolic tangent"  , UnboundedDomain<value_type>()      , 1, 0, 2, VF_UNARY_DIFF_TANH), \
+         ( exp  , __Exp__ , Feel::math::exp     ,"exponential"         , UnboundedDomain<value_type>()      , 1, 0, 2, VF_UNARY_DIFF_EXP), \
+         ( loge , __Log__ , Feel::math::log     ,"logarithm"           , PositiveDomain<value_type>()       , 1, 0, 2, VF_UNARY_DIFF_LOG), \
+         ( sqrt , __Sqrt__, Feel::math::sqrt    ,"square root"         , PositiveDomain<value_type>()       , 1, 0, 2, VF_UNARY_DIFF_SQRT), \
+         ( floor, __Floor__, std::floor         ,"floor"               , UnboundedDomain<value_type>()      , 1, 0, 1, VF_UNARY_DIFF_PIECEWISE), \
+         ( ceil , __Ceil__, std::ceil           ,"ceil"                , UnboundedDomain<value_type>()      , 1, 0, 1, VF_UNARY_DIFF_PIECEWISE), \
+         ( sign , __Sign__, details::sign       ,"sign"                , UnboundedDomain<value_type>()      , 1, 0, 1, VF_UNARY_DIFF_PIECEWISE), \
+         ( chi  , __Chi__ ,                     ,"chi"                 , UnboundedDomain<value_type>()      , 0, 1, 1, VF_UNARY_DIFF_PIECEWISE) \
       ) \
    ) \
    /**/
@@ -117,7 +143,7 @@ namespace vf
    BOOST_PP_TUPLE_TO_LIST( \
       1, \
       ( \
-       ( atan2  , __ATan2__ , Feel::math::atan2 ,"arctan(y/x)" , std::make_pair(UnboundedDomain<value_type>(),UnboundedDomain<value_type>()) , 1, 0, 2) \
+       ( atan2  , __ATan2__ , Feel::math::atan2 ,"arctan(y/x)" , std::make_pair(UnboundedDomain<value_type>(),UnboundedDomain<value_type>()) , 1, 0, 2, VF_BINARY_DIFF_ATAN2) \
       ) \
    ) \
    /**/
@@ -254,8 +280,8 @@ namespace vf
             auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr, \
                        TheSymbolExprType const& se ) const              \
         {                                                               \
-            CHECK( false ) << "TODO";                                   \
-            return *this;                                               \
+            auto diffExpr1 = M_expr_1.template diff<diffOrder>( diffVariable, world, dirLibExpr, se ); \
+            VF_FUNC_DIFF( O )( M_expr_1, diffExpr1, VF_FUNC_NAME_STRING( O ) ); \
         }                                                               \
                                                                         \
         template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
@@ -510,8 +536,9 @@ namespace vf
             auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr, \
                        TheSymbolExprType const& se ) const              \
         {                                                               \
-            CHECK( false ) << "TODO";                                   \
-            return *this;                                               \
+            auto diffExpr1 = M_expr_1.template diff<diffOrder>( diffVariable, world, dirLibExpr, se ); \
+            auto diffExpr2 = M_expr_2.template diff<diffOrder>( diffVariable, world, dirLibExpr, se ); \
+            VF_FUNC_DIFF( O )( M_expr_1, M_expr_2, diffExpr1, diffExpr2, VF_FUNC_NAME_STRING( O ) ); \
         }                                                               \
                                                                         \
         template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
