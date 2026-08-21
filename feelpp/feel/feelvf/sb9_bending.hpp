@@ -174,12 +174,14 @@ sb9MembraneBending( ProxyType const& proxy, ZetaExprT const& zetaExpr )
     auto bm0 = sb9Bm0( proxy );
     auto bb0 = sb9Bb0( proxy );
 
-    return mandel_vec<3>( component<0, 0>( bm0 ) + zetaExpr * component<0, 0>( bb0 ),
-                          component<1, 0>( bm0 ) + zetaExpr * component<1, 0>( bb0 ),
-                          cst( 0.0 ),
-                          component<3, 0>( bm0 ) + zetaExpr * component<3, 0>( bb0 ),
-                          cst( 0.0 ),
-                          cst( 0.0 ) );
+    // Bm0/Bb0 shear coefficients are already Mandel-scaled. Only reorder the
+    // SB9 diagonal-first slots into Feel++ storage order (00,01,02,11,12,22).
+    return vec( component<0, 0>( bm0 ) + zetaExpr * component<0, 0>( bb0 ),
+                component<3, 0>( bm0 ) + zetaExpr * component<3, 0>( bb0 ),
+                cst( 0.0 ),
+                component<1, 0>( bm0 ) + zetaExpr * component<1, 0>( bb0 ),
+                cst( 0.0 ),
+                cst( 0.0 ) );
 }
 } // namespace vf
 } // namespace Feel

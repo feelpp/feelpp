@@ -63,6 +63,27 @@ checkSb9ShearRigidModesOnPatch( mesh_ptrtype const& mesh )
     checkSb9ShearRigidMode( Uh, u, v, rigidTranslationField() );
     checkSb9ShearRigidMode( Uh, u, v, rigidRotationField() );
 }
+
+double
+sb9ShearLinearEnergy( mesh_ptrtype const& mesh )
+{
+    auto Uh = Pchv<1>( mesh );
+    auto u = trial( Uh, "u" );
+    auto v = test( Uh, "v" );
+    auto C = isotropic_stiffness<3>( 0.0, 0.5 );
+
+    auto shear = form2( _trial=Uh, _test=Uh );
+    shear = integrate( _range=elements( mesh ),
+                       _expr=ddot( C,
+                                   sb9Shear( u, cst( 1.0 ) ),
+                                   sb9Shear( v, cst( 1.0 ) ) ) );
+
+    auto uh = Uh->element( "uh" );
+    uh.on( _range=elements( mesh ),
+           _expr=vec( cst( 0.0 ), cst( 0.0 ), Px() ),
+           _close=true );
+    return formEnergy( shear, uh, uh );
+}
 } // namespace
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
@@ -77,6 +98,15 @@ BOOST_AUTO_TEST_CASE( sb9_shear_preserves_rigid_modes_on_flat_patch )
 BOOST_AUTO_TEST_CASE( sb9_shear_preserves_rigid_modes_on_rotated_patch )
 {
     checkSb9ShearRigidModesOnPatch( createRotatedShellPatch( "sb9_shear_rotated_patch" ) );
+}
+
+BOOST_AUTO_TEST_CASE( sb9_shear_engineering_xz_has_expected_energy_on_axis_aligned_patch )
+{
+    auto mesh = createAxisAlignedUnitPatch( "sb9_shear_axis_aligned_unit_patch" );
+    double const energyXZ = sb9ShearLinearEnergy( mesh );
+
+    BOOST_TEST_MESSAGE( "sb9 shear unit engineering xz energy: " << energyXZ );
+    BOOST_CHECK_CLOSE( energyXZ, 0.5, 1e-8 );
 }
 
 BOOST_AUTO_TEST_SUITE_END()

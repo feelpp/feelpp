@@ -1,41 +1,145 @@
 {
   "name": "bending-patch",
-  "description": "Five-element bending patch inspired case, simplified here as a clamped rectangular patch.",
+  "description": "Bending patch case from Implementation_SB9g25.pdf page 25: impose the PDF node constraints on P5 and rotation on P6,P7,P8.",
   "gmsh": {
-    "filename": "bending_patch.geo"
+    "filename": "bending_patch.msh"
   },
   "material": {
-    "E": 1000000.0,
+    "E": 1e6,
     "nu": 0.25
-  },
+  },  
   "boundaryConditions": {
-    "clampMarkers": [
-      "XMoins",
-      "XPlus",
-      "YMoins",
-      "YPlus"
-    ]
-  },
-  "loads": {
-    "bodyForce": "{0,0,0}",
-    "pressures": [
+    "clampMarkers": [],
+    "pointConstraints": [
       {
-        "marker": "ZPlus",
-        "value": 1.0
+        "marker": "5b",
+        "components": [
+          true,
+          true,
+          true
+        ],
+        "value": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "marker": "5h",
+        "components": [
+          true,
+          true,
+          true
+        ],
+        "value": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+
+      {
+        "marker": "6b",
+        "components": [
+          true,
+          true,
+          false
+        ],
+        "value": [
+          0.012,
+          0.006,
+          0.0
+        ]
+      },
+      {
+        "marker": "6h",
+        "components": [
+          true,
+          true,
+          false
+        ],
+        "value": [
+          -0.012,
+          -0.006,
+          0.0
+        ]
+      },
+      {
+        "marker": "7b",
+        "components": [
+          true,
+          true,
+          false
+        ],
+        "value": [
+          0.015,
+          0.012,
+          0.0
+        ]
+      },
+      {
+        "marker": "7h",
+        "components": [
+          true,
+          true,
+          false
+        ],
+        "value": [
+          -0.015,
+          -0.012,
+          0.0
+        ]
+      },
+      {
+        "marker": "8b",
+        "components": [
+          true,
+          true,
+          false
+        ],
+        "value": [
+          0.003,
+          0.006,
+          0.0
+        ]
+      },
+      {
+        "marker": "8h",
+        "components": [
+          true,
+          true,
+          false
+        ],
+        "value": [
+          -0.003,
+          -0.006,
+          0.0
+        ]
       }
     ]
   },
-  "probe": {
-    "point": [
-      12.0,
-      6.0,
-      0.0
-    ],
-    "direction": [
-      0.0,
-      0.0,
-      1.0
-    ],
-    "label": "center z displacement"
+  "checks": {
+    "target": "sb9g25",
+    "items": [
+      {
+        "type": "probe",
+        "name": "node 8 z displacement",
+        "point": [
+          0.0,
+          12.0,
+          -0.5
+        ],
+        "direction": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "reference": 0.072,
+        "description": "Node 8 z displacement in Table 7 on page 27 of Implementation_SB9g25.pdf",
+        "tolerance": {
+          "absolute": 1e-7
+        }
+      }
+    ]
   }
 }
