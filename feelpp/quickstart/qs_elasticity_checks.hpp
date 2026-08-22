@@ -883,26 +883,9 @@ evaluateSymmetricFieldReference( SpaceType const& Sh,
                                  point_type<Dim> const& point,
                                  bool engineeringShear )
 {
-    auto componentValue = [&field,&point]( ComponentType c1, ComponentType c2 )
-    {
-        auto component = field.comp( c1, c2 );
-        auto ctx = component.functionSpace()->context();
-        ctx.add( toNode( point ) );
-        auto values = component.evaluate( ctx, true );
-        if ( values.size() < 1 )
-            throw std::runtime_error( "expected at least one scalar component value" );
-        return values( 0 );
-    };
-
-    double const shearScale = engineeringShear ? 2.0 : 1.0;
-    voigt_type result = voigt_type::Zero();
-    result << componentValue( ComponentType::X, ComponentType::X ),
-              componentValue( ComponentType::Y, ComponentType::Y ),
-              componentValue( ComponentType::Z, ComponentType::Z ),
-              shearScale*componentValue( ComponentType::X, ComponentType::Y ),
-              shearScale*componentValue( ComponentType::X, ComponentType::Z ),
-              shearScale*componentValue( ComponentType::Y, ComponentType::Z );
-    return result;
+    auto ctx = Sh->context();
+    ctx.add( toNode( point ) );
+    return toVoigtFromSymmetricStorage( field.evaluate( ctx, true ), engineeringShear );
 }
 
 template<int Dim, typename SpaceType, typename EpsilonElementType, typename SigmaElementType>
