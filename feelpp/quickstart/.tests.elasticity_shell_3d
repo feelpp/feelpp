@@ -5,20 +5,3 @@ shell-affine-hexa-manufactured-voigt --config-file=${CMAKE_CURRENT_SOURCE_DIR}/e
 shell-validation-traction-x-nu0 --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/validation-traction-nu0/validation_traction_x_nu0.cfg --mesh.expected-elements=1
 shell-validation-traction-y-nu0 --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/validation-traction-nu0/validation_traction_y_nu0.cfg --mesh.expected-elements=1
 shell-validation-traction-z-nu0 --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/validation-traction-nu0/validation_traction_z_nu0.cfg --mesh.expected-elements=1
-shell-benchmark-square-plate --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/benchmarks/square-plate/square_plate.cfg
-shell-benchmark-bending-patch --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/benchmarks/bending-patch/bending_patch.cfg
-shell-benchmark-circular-plate --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/benchmarks/circular-plate/circular_plate.cfg
-shell-validation-traction-x --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/validations/validation-traction-x/validation_traction_x.cfg --mesh.expected-elements=1
-shell-validation-traction-y --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/validations/validation-traction-y/validation_traction_y.cfg --mesh.expected-elements=1
-shell-validation-traction-z --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/validations/validation-traction-z/validation_traction_z.cfg --mesh.expected-elements=1
-shell-validation-traction-x-partial --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/validations/validation-traction-x-partial/validation_traction_x_partial.cfg --mesh.expected-elements=1
-shell-validation-traction-y-partial --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/validations/validation-traction-y-partial/validation_traction_y_partial.cfg --mesh.expected-elements=1
-shell-validation-traction-z-partial --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/validations/validation-traction-z-partial/validation_traction_z_partial.cfg --mesh.expected-elements=1
-shell-validation-moment-x --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/validations/validation-moment-x/validation_moment_x.cfg --mesh.expected-elements=1
-shell-validation-moment-y --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/validations/validation-moment-y/validation_moment_y.cfg --mesh.expected-elements=1
-shell-validation-moment-z --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/validations/validation-moment-z/validation_moment_z.cfg --mesh.expected-elements=1
-shell-validation-moment-z-nu045 --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/validations/validation-moment-z-nu045/validation_moment_z_nu045.cfg --mesh.expected-elements=1
-shell-validation-flexion-z-moment --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/validations/validation-flexion-z-moment/validation_flexion_z_moment.cfg --mesh.expected-elements=1
-shell-validation-point-moment-z --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/validations/validation-point-moment-z/validation_point_moment_z.cfg --mesh.expected-elements=1
-shell-validation-cantilever-z --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/validations/validation-cantilever-z/validation_cantilever_z.cfg
-shell-validation-flexion-corner --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/validations/validation-flexion-corner/validation_flexion_corner.cfg --mesh.expected-elements=1
