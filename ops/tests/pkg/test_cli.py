@@ -537,6 +537,32 @@ class CliTests(unittest.TestCase):
         self.assertIn('depends_on("libxinerama"', gmsh_overlay_contents)
         self.assertIn('depends_on("libxft"', gmsh_overlay_contents)
 
+    def test_repo_spack_openmpi5_environment_enables_ucx_and_ofi(self) -> None:
+        manifest_path = (
+            self.repo_root()
+            / "packaging"
+            / "spack"
+            / "environments"
+            / "cpu"
+            / "openmpi5"
+            / "spack.yaml"
+        )
+        payload = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+        spack = payload["spack"]
+        self.assertEqual(
+            spack["packages"]["mpi"]["require"],
+            ["openmpi@5 fabrics=cma,ofi,ucx schedulers=slurm"],
+        )
+        self.assertIn(
+            "openmpi@5 fabrics=cma,ofi,ucx schedulers=slurm "
+            "^ucx~rocm+cma+thread_multiple+verbs+rc+ud+rdmacm+mlx5_dv",
+            spack["specs"],
+        )
+        self.assertEqual(
+            spack["view"],
+            "$user_cache_path/views/feelpp/cpu-openmpi5",
+        )
+
     def test_spack_image_bake_writes_bake_ready_context(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             repo_root = Path(tmpdir)

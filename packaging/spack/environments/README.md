@@ -14,6 +14,9 @@ Environment status:
 - `cpu/openmpi/`
   - supported shared baseline
   - focuses on the immediate CPU/OpenMPI PETSc/HPDDM workflow
+- `cpu/openmpi5/`
+  - portable OpenMPI 5 validation environment for Gaya and LUMI-C
+  - enables UCX and OFI while keeping CXI/site externals out of the manifest
 - `cpu/openmpi-petsc-322/`
   - supported CPU/OpenMPI validation environment
   - mirrors `cpu/openmpi/` while pinning the PETSc/SLEPc stack to 3.22
