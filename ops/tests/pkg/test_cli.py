@@ -629,6 +629,10 @@ class CliTests(unittest.TestCase):
                 dockerfile.read_text(encoding="utf-8"),
             )
             self.assertIn(
+                "FEELPP_REPO_ROOT=/opt/feelpp",
+                dockerfile.read_text(encoding="utf-8"),
+            )
+            self.assertIn(
                 f"spack -e /opt/feelpp/packaging/spack/environments/cpu/openmpi concretize -f",
                 dockerfile.read_text(encoding="utf-8"),
             )
