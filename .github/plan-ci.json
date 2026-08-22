@@ -129,6 +129,21 @@
           "cmake_full_preset": "release-clang-spack",
           "spack_environment": "cpu/openmpi",
           "base_image": "ubuntu:24.04"
+        },
+        "spack:openmpi5": {
+          "flavor": "spack",
+          "dist": "openmpi5",
+          "version": "5",
+          "docker": "true",
+          "continue-on-error": "false",
+          "oci_dist": "spack-openmpi5",
+          "image_backend": "spack",
+          "image_strategy": "environment",
+          "ci_components": "false",
+          "ci_full": "true",
+          "cmake_full_preset": "release-clang-spack",
+          "spack_environment": "cpu/openmpi5",
+          "base_image": "ubuntu:24.04"
         }
       },
       "groups": {
@@ -151,9 +166,11 @@
         "sid": ["debian:sid"],
         "unstable": ["debian:sid"],
         "future": ["debian:testing", "debian:sid"],
-        "spack": ["spack:openmpi"],
+        "spack": ["spack:openmpi", "spack:openmpi5"],
         "openmpi": ["spack:openmpi"],
-        "spack-openmpi": ["spack:openmpi"]
+        "spack-openmpi": ["spack:openmpi"],
+        "openmpi5": ["spack:openmpi5"],
+        "spack-openmpi5": ["spack:openmpi5"]
       }
     },
     "packaging": {
