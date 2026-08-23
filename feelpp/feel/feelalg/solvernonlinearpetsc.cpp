@@ -467,13 +467,13 @@ extern "C"
         int size;
         VecGetSize( x,&size );
 
-        double *xa;
-        VecGetArray( x, &xa );
+        const PetscScalar *xa;
+        VecGetArrayRead( x, &xa );
 
         double *ra;
         VecGetArray( r, &ra );
 
-        Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic , 1> > map_x ( xa,size );
+        Feel::SolverNonLinearPetsc<double>::map_dense_const_vector_type map_x ( xa,size );
 
         Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic , 1> > map_r ( ra,size );
 
@@ -483,8 +483,8 @@ extern "C"
 
         //LOG(INFO) << "dense_residual after update map_r = \n" << map_r << "\n";
 
-        VecRestoreArray( x, &xa );
         VecRestoreArray( r, &ra );
+        VecRestoreArrayRead( x, &xa );
 
         return ierr;
     }
@@ -505,10 +505,10 @@ extern "C"
 
         int size;
         VecGetSize( x,&size );
-        double *xa;
-        VecGetArray( x, &xa );
+        const PetscScalar *xa;
+        VecGetArrayRead( x, &xa );
 
-        Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> > map_x ( xa,size );
+        Feel::SolverNonLinearPetsc<double>::map_dense_const_vector_type map_x ( xa,size );
 
 
         int size1;
@@ -538,7 +538,6 @@ extern "C"
         if ( solver->map_dense_jacobian != NULL ) solver->map_dense_jacobian ( map_x, map_jac );
 
         //LOG(INFO) << "dense_jacobian map_jac = \n" << map_jac << "\n";
-        VecRestoreArray( x, &xa );
 #if PETSC_VERSION_LESS_THAN(3,4,0)
         MatRestoreArray(*jac, &ja);
 #elif PETSC_VERSION_LESS_THAN(3,5,0)
@@ -546,6 +545,7 @@ extern "C"
 #else
         MatDenseRestoreArray(jac, &ja);
 #endif
+        VecRestoreArrayRead( x, &xa );
 
         /*
           Assemble matrix
@@ -1201,13 +1201,13 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
 
 #endif
 
-    double* a;
-    VecGetArray( petsc_x , &a );
+    const PetscScalar* a;
+    VecGetArrayRead( petsc_x , &a );
 
     for ( int i = 0; i < ( int )x_in.size(); ++i )
         x_in[i] = a[i];
 
-    VecRestoreArray( petsc_x , &a );
+    VecRestoreArrayRead( petsc_x , &a );
 
     PETSc::VecDestroy( petsc_x );
     PETSc::VecDestroy( petsc_r );
