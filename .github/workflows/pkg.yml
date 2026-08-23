@@ -1,8 +1,12 @@
 name: Feelpp PKG CI
-run-name: "Feelpp PKG CI | targets: ${{ inputs.pkg-targets || 'auto' }}"
+run-name: >-
+  Feelpp PKG CI |
+  ${{ github.event_name == 'workflow_dispatch' && format('requested: {0}', inputs.pkg-targets) || format('resolve packages for {0}', github.head_ref || github.ref_name) }}
 
 on:
   push:
+    # Keep the lightweight planner active so pkg= directives can opt any
+    # branch into packaging. Only configured default branches build by default.
     branches: ['*']
   pull_request:
     branches: ['*']
@@ -43,6 +47,7 @@ jobs:
       pkg_targets_json: ${{ steps.plan.outputs.pkg_targets_json }}
       pkg_matrix_json: ${{ steps.plan.outputs.pkg_matrix_json }}
       directive_source: ${{ steps.plan.outputs.directive_source }}
+      pkg_targets_display: ${{ steps.resolved.outputs.targets }}
     steps:
       - uses: actions/checkout@v4
 
@@ -92,7 +97,24 @@ jobs:
           echo "directive_source: ${{ steps.plan.outputs.directive_source }}"
           echo "raw_message: ${{ steps.plan.outputs.raw_message }}"
 
+      - name: Report resolved package targets
+        id: resolved
+        shell: bash
+        env:
+          PKG_ENABLED: ${{ steps.plan.outputs.pkg_enabled }}
+          PKG_TARGETS_JSON: ${{ steps.plan.outputs.pkg_targets_json }}
+        run: |
+          set -euo pipefail
+          targets="none"
+          if [ "${PKG_ENABLED}" = "true" ]; then
+            targets="$(jq -r 'map(split(":")[-1]) | if length == 0 then "none" else join(", ") end' <<< "${PKG_TARGETS_JSON}")"
+          fi
+          echo "targets=${targets}" >> "${GITHUB_OUTPUT}"
+          echo "### Packages: \`${targets}\`" >> "${GITHUB_STEP_SUMMARY}"
+          echo "::notice title=Packaging targets::${targets}"
+
   version:
+    name: "Packages: ${{ needs.plan_pkg.outputs.pkg_targets_display || 'none' }} | Resolve version"
     if: |
       needs.plan_pkg.outputs.pkg_enabled == 'true' &&
       (
