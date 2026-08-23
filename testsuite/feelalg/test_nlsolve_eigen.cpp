@@ -96,6 +96,7 @@ public:
     typedef Eigen::MatrixXd matrixN_type;
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> > map_dense_matrix_type;
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> > map_dense_vector_type;
+    typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> const > map_dense_const_vector_type;
 
     typedef linear self_type;
 
@@ -106,7 +107,7 @@ public:
         {
         }
 
-        void updateResidual(const map_dense_vector_type& map_X, map_dense_vector_type& map_R )
+        void updateResidual(const map_dense_const_vector_type& map_X, map_dense_vector_type& map_R )
         {
             int size=2;
 
@@ -119,7 +120,7 @@ public:
 
             map_R = A*map_X - F;
         }
-        void updateJacobian(const map_dense_vector_type& map_X, map_dense_matrix_type& map_J )
+        void updateJacobian(const map_dense_const_vector_type& map_X, map_dense_matrix_type& map_J )
         {
             map_J(0,0) = 2; map_J(0,1) = 1 ;
             map_J(1,0) = 0; map_J(1,1) = 3 ;
@@ -148,10 +149,11 @@ public:
             int size=2;
             Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic , 1> > map_R ( r_data, size );
             Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic , 1> > map_solution ( solution_data, size );
+            map_dense_const_vector_type map_solution_const ( solution_data, size );
             Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic , Eigen::Dynamic> > map_J ( j_data, size , size);
 
-            updateResidual( map_solution, map_R );
-            updateJacobian( map_solution, map_J );
+            updateResidual( map_solution_const, map_R );
+            updateJacobian( map_solution_const, map_J );
 
             M_nlsolver->solve( map_J, map_solution, map_R, 1e-10, 1 );
             BOOST_TEST_MESSAGE( "system solved" );
@@ -181,6 +183,7 @@ public:
     typedef Eigen::MatrixXd matrixN_type;
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> > map_dense_matrix_type;
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> > map_dense_vector_type;
+    typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> const > map_dense_const_vector_type;
 
     typedef NL22 self_type;
 
@@ -193,12 +196,12 @@ public:
         {
         }
 
-        void updateResidual(const map_dense_vector_type& map_X, map_dense_vector_type& map_R )
+        void updateResidual(const map_dense_const_vector_type& map_X, map_dense_vector_type& map_R )
         {
             map_R(0) = map_X(0)*map_X(0) - 2*map_X(0)*map_X(1) - 2 ;
             map_R(1) = map_X(0) + map_X(1)*map_X(1) + 1;
         }
-        void updateJacobian(const map_dense_vector_type& map_X, map_dense_matrix_type& map_J )
+        void updateJacobian(const map_dense_const_vector_type& map_X, map_dense_matrix_type& map_J )
         {
             map_J(0,0) = 2*map_X(0)-2*map_X(1); map_J(0,1) = -2*map_X(0) ;
             map_J(1,0) = 1;                     map_J(1,1) = 2*map_X(1) ;
@@ -227,10 +230,11 @@ public:
             int size=2;
             Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic , 1> > map_R ( r_data, size );
             Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic , 1> > map_solution ( solution_data, size );
+            map_dense_const_vector_type map_solution_const ( solution_data, size );
             Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic , Eigen::Dynamic> > map_J ( j_data, size , size);
 
-            updateResidual( map_solution, map_R );
-            updateJacobian( map_solution, map_J );
+            updateResidual( map_solution_const, map_R );
+            updateJacobian( map_solution_const, map_J );
 
             M_nlsolver->solve( map_J, map_solution, map_R, 1e-10, 10 );
             BOOST_TEST_MESSAGE( "system solved" );
