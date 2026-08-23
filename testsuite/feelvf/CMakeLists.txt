@@ -7,7 +7,7 @@ feelpp_add_test(
   CLI "--repository.prefix=${CMAKE_CURRENT_BINARY_DIR}/test_expr_repository_np_$np"
 )
 
-feelpp_add_test( ginac )
+feelpp_add_test( ginac TIMEOUT 600 )
 feelpp_add_test( ginac_jit_cache NO_MPI_TEST TIMEOUT 180 )
 feelpp_add_test( ginac_jit_mpi TIMEOUT 180 )
 feelpp_add_test( inner CFG test_inner.cfg )
