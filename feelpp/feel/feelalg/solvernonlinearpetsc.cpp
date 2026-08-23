@@ -1072,9 +1072,14 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     VecNorm( res, NORM_2, &valfnorm );
 #endif
 
-    for ( int i=0; i<50/*n_iterations+1*/; i++ )
+    PetscReal* recorded_history = nullptr;
+    PetscInt* recorded_hist_its = nullptr;
+    PetscInt history_size = 0;
+    ierr = SNESGetConvergenceHistory( M_snes, &recorded_history, &recorded_hist_its, &history_size );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+    for ( PetscInt i = 0; i < history_size; ++i )
     {
-        LOG(INFO) << "iteration " << i << ": Linear iterations : " << hist_its[i] << " Function norm = " << history[i] << "\n";
+        LOG(INFO) << "iteration " << i << ": Linear iterations : " << recorded_hist_its[i] << " Function norm = " << recorded_history[i] << "\n";
     }
 
     SNESConvergedReason reason;
