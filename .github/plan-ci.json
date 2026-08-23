@@ -1,6 +1,6 @@
 {
   "jobs": ["feelpp", "testsuite", "quickstart", "toolboxes", "mor"],
-  "targets": ["ubuntu:noble", "debian:trixie", "ubuntu:resolute"],
+  "targets": ["ubuntu:noble", "debian:trixie", "ubuntu:resolute", "spack:openmpi", "spack:openmpi5"],
   "defaults": {
     "mode": "components",
     "jobs": ["feelpp", "testsuite", "quickstart", "toolboxes", "mor"],
@@ -13,7 +13,7 @@
   "profiles": {
     "ci": {
       "jobs": ["feelpp", "testsuite", "quickstart", "toolboxes", "mor"],
-      "targets": ["ubuntu:noble", "debian:trixie", "ubuntu:resolute"],
+      "targets": ["ubuntu:noble", "debian:trixie", "ubuntu:resolute", "spack:openmpi", "spack:openmpi5"],
       "matrixCatalogProfile": "images",
       "defaults": {
         "mode": "components",
@@ -126,7 +126,7 @@
           "image_strategy": "environment",
           "ci_components": "false",
           "ci_full": "true",
-          "cmake_full_preset": "release-clang-spack",
+          "cmake_full_preset": "release-clang-spack-cpu-openmpi",
           "spack_environment": "cpu/openmpi",
           "base_image": "ubuntu:24.04"
         },
@@ -141,7 +141,7 @@
           "image_strategy": "environment",
           "ci_components": "false",
           "ci_full": "true",
-          "cmake_full_preset": "release-clang-spack",
+          "cmake_full_preset": "release-clang-spack-cpu-openmpi5",
           "spack_environment": "cpu/openmpi5",
           "base_image": "ubuntu:24.04"
         }

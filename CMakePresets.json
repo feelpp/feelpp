@@ -91,6 +91,16 @@
          "name": "release-clang-spack"
       },
       {
+         "configurePreset": "release-clang-spack-cpu-openmpi",
+         "jobs": 25,
+         "name": "release-clang-spack-cpu-openmpi"
+      },
+      {
+         "configurePreset": "release-clang-spack-cpu-openmpi5",
+         "jobs": 25,
+         "name": "release-clang-spack-cpu-openmpi5"
+      },
+      {
          "configurePreset": "release-clang-spack-macosx",
          "jobs": 25,
          "name": "release-clang-spack-macosx"
@@ -586,6 +596,18 @@
             "release-cmake"
          ],
          "name": "release-clang-spack"
+      },
+      {
+         "inherits": [
+            "release-clang-spack"
+         ],
+         "name": "release-clang-spack-cpu-openmpi"
+      },
+      {
+         "inherits": [
+            "release-clang-spack"
+         ],
+         "name": "release-clang-spack-cpu-openmpi5"
       },
       {
          "displayName": "Release | clang | spack package manager | macOS",
@@ -1165,6 +1187,22 @@
          "configurePreset": "release-clang-spack",
          "inherits": "default",
          "name": "release-clang-spack",
+         "output": {
+            "outputOnFailure": true
+         }
+      },
+      {
+         "configurePreset": "release-clang-spack-cpu-openmpi",
+         "inherits": "default",
+         "name": "release-clang-spack-cpu-openmpi",
+         "output": {
+            "outputOnFailure": true
+         }
+      },
+      {
+         "configurePreset": "release-clang-spack-cpu-openmpi5",
+         "inherits": "default",
+         "name": "release-clang-spack-cpu-openmpi5",
          "output": {
             "outputOnFailure": true
          }

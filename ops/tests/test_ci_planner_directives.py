@@ -16,6 +16,18 @@ class PlannerDirectiveTests(unittest.TestCase):
             "targets=spack:openmpi\nmode=full",
         )
 
+    def test_build_message_promotes_openmpi5_target_to_full_mode(self) -> None:
+        self.assertEqual(
+            build_planner_message(targets="spack:openmpi5"),
+            "targets=spack:openmpi5\nmode=full",
+        )
+
+    def test_build_message_normalizes_openmpi5_aliases(self) -> None:
+        self.assertEqual(
+            build_planner_message(targets="openmpi5 spack-openmpi5"),
+            "targets=spack:openmpi5\nmode=full",
+        )
+
     def test_build_message_normalizes_and_deduplicates_targets(self) -> None:
         self.assertEqual(
             build_planner_message(targets="Spack, openmpi spack-openmpi ubuntu:noble"),
@@ -53,10 +65,10 @@ class PlannerDirectiveTests(unittest.TestCase):
 
     def test_build_message_rejects_component_jobs_for_spack_target(self) -> None:
         with self.assertRaisesRegex(PlannerDirectiveError, "feelpp-full"):
-            build_planner_message(targets="spack:openmpi", only="feelpp")
+            build_planner_message(targets="spack:openmpi5", only="feelpp")
 
     def test_build_message_rejects_skip_filters_for_spack_target(self) -> None:
-        with self.assertRaisesRegex(PlannerDirectiveError, "does not support skip="):
+        with self.assertRaisesRegex(PlannerDirectiveError, "do not support skip="):
             build_planner_message(targets="spack:openmpi", skip="mor")
 
     def test_build_message_rejects_non_full_mode_for_spack_only_target(self) -> None:
@@ -113,7 +125,7 @@ class PlannerDirectiveTests(unittest.TestCase):
             rc = main(["--targets", "spack:openmpi", "--only", "feelpp"])
 
         self.assertEqual(rc, 1)
-        self.assertIn("spack:openmpi only supports the feelpp-full job", stderr.getvalue())
+        self.assertIn("Spack targets only support the feelpp-full job", stderr.getvalue())
 
 
 if __name__ == "__main__":

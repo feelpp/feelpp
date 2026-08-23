@@ -7,11 +7,13 @@ import re
 import sys
 import uuid
 
-SPACK_TARGET = "spack:openmpi"
+DEFAULT_SPACK_TARGET = "spack:openmpi"
 SPACK_TARGET_ALIASES = {
-    "spack": SPACK_TARGET,
-    "openmpi": SPACK_TARGET,
-    "spack-openmpi": SPACK_TARGET,
+    "spack": DEFAULT_SPACK_TARGET,
+    "openmpi": DEFAULT_SPACK_TARGET,
+    "spack-openmpi": DEFAULT_SPACK_TARGET,
+    "openmpi5": "spack:openmpi5",
+    "spack-openmpi5": "spack:openmpi5",
 }
 VALID_SPACK_ONLY_JOBS = {"feelpp-full"}
 INLINE_DIRECTIVE_KEYS = ("targets", "only", "skip", "mode")
@@ -44,6 +46,10 @@ def _normalize_token_list(raw: str, *, aliases: dict[str, str] | None = None) ->
 
 def normalize_targets(raw_targets: str) -> list[str]:
     return _normalize_token_list(raw_targets, aliases=SPACK_TARGET_ALIASES)
+
+
+def _is_spack_target(target: str) -> bool:
+    return target.startswith("spack:")
 
 
 def normalize_list_value(raw: str) -> str:
@@ -97,8 +103,10 @@ def build_planner_message(
     normalized_skip = normalize_list_value(" ".join([skip, *embedded_directives["skip"]]))
     raw_mode = mode.strip() or " ".join(embedded_directives["mode"]).strip()
     normalized_mode = raw_mode.lower()
-    contains_spack = SPACK_TARGET in normalized_targets
-    spack_only = bool(normalized_targets) and all(target == SPACK_TARGET for target in normalized_targets)
+    contains_spack = any(_is_spack_target(target) for target in normalized_targets)
+    spack_only = bool(normalized_targets) and all(
+        _is_spack_target(target) for target in normalized_targets
+    )
 
     if normalized_targets:
         lines.append(f"targets={','.join(normalized_targets)}")
@@ -112,16 +120,18 @@ def build_planner_message(
         if invalid_only:
             invalid_values = ", ".join(invalid_only)
             raise PlannerDirectiveError(
-                f"{SPACK_TARGET} only supports the feelpp-full job; invalid only= value(s): {invalid_values}"
+                "Spack targets only support the feelpp-full job; "
+                f"invalid only= value(s): {invalid_values}"
             )
 
         if normalized_skip:
             raise PlannerDirectiveError(
-                f"{SPACK_TARGET} does not support skip= filters; use mode=full without component job filters"
+                "Spack targets do not support skip= filters; "
+                "use mode=full without component job filters"
             )
 
         if spack_only and normalized_mode and normalized_mode != "full":
-            raise PlannerDirectiveError(f"{SPACK_TARGET} is only supported with mode=full")
+            raise PlannerDirectiveError("Spack targets are only supported with mode=full")
 
         if spack_only and not normalized_mode:
             normalized_mode = "full"

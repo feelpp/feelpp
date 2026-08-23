@@ -11,6 +11,8 @@ local buildTypes = {
 };
 local components = ['feelpp', 'testsuite', 'quickstart', 'toolboxes', 'mor', 'python'];
 local packageManagers = ['cmake', 'spack', 'conan', 'vcpkg'];
+local spackEnvironments = ['cpu/openmpi', 'cpu/openmpi5'];
+local spackPresetName(env) = 'release-clang-spack-' + std.strReplace(env, '/', '-');
 
 // ============================================================================
 // Helper Functions
@@ -661,6 +663,7 @@ local configurePresets =
   ]) +
   // Build type + compiler + spack
   [buildTypeCompilerSpackPreset('release', 'clang')] +
+  [{ name: spackPresetName(env), inherits: ['release-clang-spack'] } for env in spackEnvironments] +
   [buildTypeCompilerSpackMacosxPreset('release', 'clang')] +
   [buildTypeCompilerSpackPreset('debug', 'clang')] +
   [buildTypeCompilerSpackMacosxPreset('debug', 'clang')] +
@@ -714,6 +717,7 @@ std.flattenArrays([
 ]) +
 // Build type + compiler + spack
 [buildPreset('release-clang-spack')] +
+[buildPreset(spackPresetName(env)) for env in spackEnvironments] +
 [buildPreset('release-clang-spack-macosx')] +
 [buildPreset('debug-clang-spack')] +
 [buildPreset('debug-clang-spack-macosx')] +
@@ -871,6 +875,7 @@ std.flattenArrays([
 ]) +
 // Spack presets
 [testPreset('release-clang-spack', { inherits: 'default' })] +
+[testPreset(spackPresetName(env), { inherits: 'default' }) for env in spackEnvironments] +
 [testPreset('release-clang-spack-macosx', { inherits: 'default' })] +
 [testPreset('debug-clang-spack', { inherits: 'default' })] +
 [testPreset('debug-clang-spack-macosx', { inherits: 'default' })] +
