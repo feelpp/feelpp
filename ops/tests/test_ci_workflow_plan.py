@@ -49,9 +49,40 @@ class WorkflowPlanTests(unittest.TestCase):
         self.assertEqual(outputs["run_quickstart"], "false")
         self.assertEqual(outputs["run_toolboxes"], "false")
         self.assertEqual(outputs["run_full"], "true")
+        matrix = json.loads(outputs["full_matrix_json"])
+        self.assertEqual(matrix["include"][0]["spack_environment"], "cpu/openmpi")
+        self.assertEqual(
+            matrix["include"][0]["cmake_full_preset"],
+            "release-clang-spack-cpu-openmpi",
+        )
         warnings = json.loads(outputs["warnings_json"])
         self.assertEqual(len(warnings), 2)
         self.assertTrue(all("does not support full builds" in warning for warning in warnings))
+
+    def test_full_mode_uses_openmpi5_catalog_row(self) -> None:
+        outputs = compute_workflow_plan(
+            config=self.config,
+            mode="full",
+            targets=["spack:openmpi5"],
+            enabled_jobs=["feelpp-full"],
+        )
+
+        self.assertEqual(json.loads(outputs["full_targets_json"]), ["spack:openmpi5"])
+        matrix = json.loads(outputs["full_matrix_json"])
+        self.assertEqual(matrix["include"][0]["oci_dist"], "spack-openmpi5")
+        self.assertEqual(matrix["include"][0]["spack_environment"], "cpu/openmpi5")
+        self.assertEqual(
+            matrix["include"][0]["cmake_full_preset"],
+            "release-clang-spack-cpu-openmpi5",
+        )
+        self.assertEqual(outputs["run_full"], "true")
+        self.assertEqual(json.loads(outputs["warnings_json"]), [])
+
+    def test_ci_profile_allows_spack_targets(self) -> None:
+        ci_targets = self.config["profiles"]["ci"]["targets"]
+
+        self.assertIn("spack:openmpi", ci_targets)
+        self.assertIn("spack:openmpi5", ci_targets)
 
     def test_only_toolboxes_runs_toolboxes_without_feelpp(self) -> None:
         outputs = compute_workflow_plan(

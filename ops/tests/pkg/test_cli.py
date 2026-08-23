@@ -520,6 +520,18 @@ class CliTests(unittest.TestCase):
         presets_payload = json.loads(presets_path.read_text(encoding="utf-8"))
         spack_preset = next(p for p in presets_payload["configurePresets"] if p["name"] == "spack")
         self.assertEqual(spack_preset["cacheVariables"]["FEELPP_ENABLE_OMC"], "OFF")
+        configure_preset_names = {
+            preset["name"] for preset in presets_payload["configurePresets"]
+        }
+        build_preset_names = {preset["name"] for preset in presets_payload["buildPresets"]}
+        test_preset_names = {preset["name"] for preset in presets_payload["testPresets"]}
+        for name in (
+            "release-clang-spack-cpu-openmpi",
+            "release-clang-spack-cpu-openmpi5",
+        ):
+            self.assertIn(name, configure_preset_names)
+            self.assertIn(name, build_preset_names)
+            self.assertIn(name, test_preset_names)
         gmsh_overlay = (
             self.repo_root()
             / "packaging"
@@ -840,7 +852,7 @@ spack:
             )
             self.assertEqual(
                 bake_payload["target"]["feelpp-full"]["args"]["CMAKE_PRESET"],
-                "release-clang-spack",
+                "release-clang-spack-cpu-openmpi",
             )
             self.assertEqual(
                 bake_payload["target"]["feelpp-full"]["contexts"]["feelpp_source"],

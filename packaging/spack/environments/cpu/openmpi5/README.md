@@ -20,6 +20,14 @@ Activate the environment with:
 eval "$(fpp-spack activate openmpi5)"
 ```
 
+Configure, build, and test in an environment-specific tree with:
+
+```console
+cmake --preset release-clang-spack-cpu-openmpi5
+cmake --build --preset release-clang-spack-cpu-openmpi5
+ctest --preset release-clang-spack-cpu-openmpi5
+```
+
 Before installing on LUMI-C, verify that the site configuration exposes the
 CXI provider and that Spack selects the intended external libfabric. Runtime
 validation should include at least:
