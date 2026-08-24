@@ -130,6 +130,7 @@ public:
         super(),
         M_modelName( soption(_prefix=this->about().appName(),_name="model-name") ),
         M_mode( ( CRBModelMode )ioption(_name=_o( this->about().appName(),"run.mode" )) ),
+        M_timeData( {{ "crb", {} }} ),
         use_newton_( boption(_name="crb.use-newton") && !ModelType::is_linear )
         {
             this->init();
@@ -163,6 +164,11 @@ public:
         {
             this->init();
         }
+
+    ~OpusApp()
+    {
+        JournalManager::journalAdd( M_timeData );
+    }
 
 private:
     void init()
@@ -202,32 +208,29 @@ public:
 
     /* Get parameter space associated to model */
     auto getParameterSpace() const { return model->parameterSpace(); }
-    
+
     /* Returns CRB objects */
     crb_ptrtype getCRB() const { return this->crb; }
 
     void setMode( std::string const& mode )
-        {
-            if ( mode == "pfem" ) M_mode = CRBModelMode::PFEM;
+    {
+        if ( mode == "pfem" ) this->setMode( CRBModelMode::PFEM );
+        if ( mode == "crb" ) this->setMode( CRBModelMode::CRB );
+        if ( mode == "scm" ) this->setMode( CRBModelMode::SCM );
+        if ( mode == "scm_online" ) this->setMode( CRBModelMode::SCM_ONLINE );
+        if ( mode == "crb_online" ) this->setMode( CRBModelMode::CRB_ONLINE );
+    }
 
-            if ( mode == "crb" ) M_mode = CRBModelMode::CRB;
-
-            if ( mode == "scm" ) M_mode = CRBModelMode::SCM;
-
-            if ( mode == "scm_online" ) M_mode = CRBModelMode::SCM_ONLINE;
-
-            if ( mode == "crb_online" ) M_mode = CRBModelMode::CRB_ONLINE;
-        }
     void setMode( CRBModelMode mode )
-        {
-            M_mode = mode;
-        }
+    {
+        M_mode = mode;
+    }
 
     void loadDB()
         {
             int proc_number = Environment::worldComm().globalRank();
             int global_size = Environment::worldComm().globalSize();
-            std::string pslogfile = ( boost::format("PsLogCrbOffline-%1%_%2%") %global_size %proc_number ).str();
+            std::string pslogfile = ( fmt::format("PsLogCrbOffline-{}_{}", global_size, proc_number) );
 
             bool only_master=boption(_name="crb.system-memory-evolution");
             bool all_procs  =boption(_name="crb.system-memory-evolution-on-all-procs");
@@ -292,7 +295,7 @@ public:
                     crb->setOfflineStep( true );
                     do  // SER r-adaptation for RB
                     {
-                        crb->setAdaptationSER( false ); //re-init to false
+                    crb->setAdaptationSER( false ); //re-init to false
                         crb->offline();
                     }
                     while(crb->adaptationSER());
@@ -395,7 +398,7 @@ public:
 
     /**
      * @brief Compute the FEM solution for a given parameter \p mu
-     * 
+     *
      * @param mu parameter
      * @param use_newton use Newton method (default true)
      * @return element_type solution of the FEM problem
@@ -412,7 +415,7 @@ public:
 
     /**
      * @brief Compute the RB solution for a given parameter mu
-     * 
+     *
      * @param mu parameter
      * @param N size of the reduced basis (default -1, i.e. use the maximum size)
      * @return auto tuple composed of uN, output, errorBound
@@ -433,7 +436,7 @@ public:
 
     /**
      * @brief Compute the effectivity of the RB solution for a given parameter \p mu
-     * 
+     *
      * @param mu parameter
      * @param N size of the reduced basis (default -1, i.e. use the maximum size)
      * @return double effectivity $\eta_N^s(\mu) = \frac{\Delta_N^s(\mu)}{s(\mu) - s_N(\mu)}$
@@ -446,7 +449,7 @@ public:
         double output_fem = model->output( 1, mu, u_pfem, false );
         double error_bound = std::get<2>(sol_rbm);
 
-        return error_bound / math::abs( output_crb - output_fem );        
+        return error_bound / math::abs( output_crb - output_fem );
     }
 
 
@@ -953,6 +956,7 @@ private:
     std::string M_modelName;
     CRBModelMode M_mode;
     crbmodel_ptrtype model;
+    nl::json M_timeData;
     bool use_newton_;
 
     crb_ptrtype crb;

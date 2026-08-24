@@ -118,7 +118,7 @@ public :
 
 /**
  * @brief base class for finite element and reduced basis models
- * 
+ *
  * @tparam ParameterDefinition parameters definition type
  * @tparam FunctionSpaceDefinition function space definition type
  * @tparam _Options options
@@ -1927,16 +1927,16 @@ public :
             {
                 if( force )
                 {
-                    std::cout<<"statistics  for "<<name<<" (  was called "<< N << " times with "<<Neim<<" basis functions )"<<std::endl;
-                    file <<" statistics  for "<<name<<" (  was called "<< N << " times with "<<Neim<<" basis functions )\n";
+                    std::cout << "statistics for " << name << " (was called " << N << " times with " << Neim << " basis functions)" << std::endl;
+                    file << " statistics for " << name << " (was called " << N << " times with " << Neim << " basis functions)\n";
                 }
                 else
                 {
-                    std::cout<<" statistics  for "<<name<<" (  was called "<< N << " times )"<<std::endl;
-                    file <<" statistics  for "<<name<<" (  was called "<< N << " times )\n";
+                    std::cout << " statistics  for " << name << " (was called " << N << " times)" << std::endl;
+                    file << " statistics  for " << name <<" (was called " << N << " times)\n";
                 }
-                std::cout<<"min : "<<min<<" - max : "<<max<<" mean : "<<mean<<" standard deviation : "<<standard_deviation<<"  (see "<<filename<<")"<<std::endl;
-                file<<"min : "<<min<<" - max : "<<max<<" mean : "<<mean<<" standard deviation : "<<standard_deviation<<"\n";
+                std::cout << "min : " << min << " - max : " << max << " mean : " << mean << " standard deviation : " << standard_deviation << " (see " << filename << ")" << std::endl;
+                file << "min : " << min << " - max : " << max << " mean : " << mean << " standard deviation : " << standard_deviation << "\n";
             }
         }
         vectorN_type result(4);
@@ -1980,22 +1980,24 @@ public :
                 }
                 globaltotaltime += totaltime;
                 if( extra == "totaltime" )
-                    file <<n+1<<"\t"<<min<<"\t"<<max<<"\t"<<mean<<"\t"<<variance<<"\t"<<totaltime<<"\n";
+                    file << n+1 << "\t" << min << "\t" << max << "\t" << mean << "\t" << variance << "\t" << totaltime << "\n";
                 else
-                    file <<n+1<<"\t"<<min<<"\t"<<max<<"\t"<<mean<<"\t"<<variance<<"\n";
+                    file << n+1 << "\t" << min << "\t" << max << "\t" << mean << "\t" << variance << "\n";
                 nbruns[n]=vector[n].size();
             }
-
+        if (boption("crb.export-extra-info"))
+        {
             if( extra == "totaltime" )
             {
-                file << "#global total time : "<<globaltotaltime<<"\n";
+            file << "#global total time : " << globaltotaltime << "\n";
             }
 
-            //write information about number of runs
+            // write information about number of runs
             for(int n=0; n<Nmax; n++)
             {
-                file <<"#N = "<<n<<" -- number of runs : "<<nbruns[n]<<"\n";
+            file << "#N = " << n << " -- number of runs : " << nbruns[n] << "\n";
             }
+        }
 
         }
     }
@@ -2330,14 +2332,14 @@ public:
 
     /**
      * @brief get the plugin name
-     * 
+     *
      * @return std::string the name of the plugin
      */
     std::string pluginName() const { return M_pluginName; }
 
     /**
      * @brief get the plugin library name
-     * 
+     *
      * @return std::string the name of the plugin library
      */
     std::string pluginLibName() const { return M_pluginLibName; }
@@ -2346,15 +2348,15 @@ protected:
 
     /**
      * @brief Set the Plugin Name object
-     * 
-     * @param name 
+     *
+     * @param name
      */
     void setPluginName( std::string const& name ) { M_pluginName = name; }
 
     /**
      * @brief Set the Plugin Lib Name object
-     * 
-     * @param libname 
+     *
+     * @param libname
      */
     void setPluginLibName( std::string const& libname ) { M_pluginLibName = libname; }
 

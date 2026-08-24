@@ -35,19 +35,20 @@ OpusApp<ModelType,RM,Model>::run()
 {
     bool export_solution = boption(_name=_o( this->about().appName(),"export-solution" ));
     int proc_number =  Environment::worldComm().globalRank();
-    bool load_elements_db= boption(_name="crb.load-elements-database");
-    bool rebuild_db= boption(_name="crb.rebuild-database");
+    bool load_elements_db = boption(_name="crb.load-elements-database");
+    bool rebuild_db = boption(_name="crb.rebuild-database");
     int exportNameSize = ioption(_name="crb.export-name-max-size"); //paraview reads max 49 characters
 
     //check options (does it make sens ?)
     bool option_checked=true;
     if( !load_elements_db && rebuild_db )
         option_checked=false;
-    CHECK( option_checked )<<"options crb.load-elements-database : "<<load_elements_db<<" and crb.rebuild-database : "<<rebuild_db<<". If you don't want to load elements database maybe you want to apply RB approximation on a laptop wherease the RB was built on a super-computer ? If it's the case put crb.rebuild-database=false !! Else, you have to choose if you want to rebuild a RB database or to reload an existing one but not the elements database.\n";
+    CHECK( option_checked ) << "options crb.load-elements-database : " << load_elements_db << " and crb.rebuild-database : " << rebuild_db <<
+        ". If you don't want to load elements database maybe you want to apply RB approximation on a laptop wherease the RB was built on a super-computer ? If it's the case put crb.rebuild-database=false !! Else, you have to choose if you want to rebuild a RB database or to reload an existing one but not the elements database.\n";
 
-    if( ! load_elements_db  )
+    if( !load_elements_db  )
     {
-        M_mode = CRBModelMode::CRB_ONLINE;
+        this->setMode( CRBModelMode::CRB_ONLINE );
         if( Environment::worldComm().isMasterRank() )
         {
             std::cout<<"[OpusApp Information] You have choosen to reload an existing RB database without loading elments database. If the RB was built on an other computer make sure that database have been moved on in the right repositories.\n";
@@ -61,7 +62,8 @@ OpusApp<ModelType,RM,Model>::run()
         M_ser->run();
     }
     this->loadDB();
-    toc("Offline", Environment::logVerbosityLevel()>0);
+    double time_offline = toc("Offline", Environment::logVerbosityLevel()>0);
+    M_timeData["crb"]["offline_time"] = time_offline;
 
     int run_sampling_size = ioption(_name=_o( this->about().appName(),"run.sampling.size" ));
     SamplingMode run_sampling_type = ( SamplingMode )ioption(_name=_o( this->about().appName(),"run.sampling.mode" ));
@@ -140,7 +142,7 @@ OpusApp<ModelType,RM,Model>::run()
         if( number_str == 1 )
         {
             //user want only to make time vary
-            CHECK( str[0] == "t" )<<"Error ! option crb.vary-only-parameter-components = "<<str[0]<<" but should be only 't' in this format";
+            CHECK( str[0] == "t" ) << "Error ! option crb.vary-only-parameter-components = " << str[0] << " but should be only 't' in this format";
             vary_comp_time=true;
         }
         //here only one component vary
@@ -577,11 +579,6 @@ OpusApp<ModelType,RM,Model>::run()
 
                 this->run( X.data(), X.size(), Y.data(), Y.size() );
                 //std::cout << "output = " << Y[0] << std::endl;
-
-                std::string resultFileName = soption(_name="result-file");
-                std::ofstream res(resultFileName);
-                res << "output="<< Y[0] << "\n";
-                res.close();
             }
             else
             {
@@ -622,9 +619,6 @@ OpusApp<ModelType,RM,Model>::run()
                     h1_error_vector[curpar-1] = h1_error;
                     relative_error_vector[curpar-1] = output_error;
                     time_fem_vector[curpar-1] = ti.elapsed();
-
-                    std::ofstream res(soption(_name="result-file") );
-                    res << "output="<< o[0] << "\n";
 
                     if( this->vm().count("crb.minimization-func") && !soption("crb.minimization-func").empty() )
                     {
@@ -881,8 +875,6 @@ OpusApp<ModelType,RM,Model>::run()
                                 relative_estimated_error_vector[curpar-1] = relative_estimated_error;
 
                         }
-                        std::ofstream res(soption(_name="result-file") );
-                        res << "output = " << ocrb << "\n";
 
                         if( this->vm().count("crb.minimization-func") && !soption("crb.minimization-func").empty() )
                         {
@@ -978,9 +970,24 @@ OpusApp<ModelType,RM,Model>::run()
                         }
                         std::string str = "\t";
                         vectorN_type crb_time;
-                        for( int N = 1; N <= Nmax ; N++ )
+                        for( int N = 1; N <= Nmax ; ++N )
                         {
-                            auto o= crb->run( mu, crb_time, online_tol , N, print_rb_matrix);
+                            tic();
+                            auto o = crb->run( mu, crb_time, online_tol, N, print_rb_matrix);
+                            const std::string online_key = fmt::format("online_{}", N);
+                            double online_time = toc(online_key);
+
+                            // Export online time. Warning : this is measured for one parameter, at the end we need to make the average
+                            if (M_timeData["crb"].contains(online_key))
+                            {
+                                double new_time = (double) M_timeData["crb"][online_key] + online_time;
+                                M_timeData["crb"][online_key] = new_time;
+                            }
+                            else
+                            {
+                                M_timeData["crb"][online_key] = online_time;
+                            }
+
 
                             auto output_vector=o.template get<0>();
                             double output_vector_size=output_vector.size();
@@ -1277,8 +1284,8 @@ OpusApp<ModelType,RM,Model>::run()
                             //LOG(INFO) << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << " " <<condition_number<<"\n";
                             if ( proc_number == Environment::worldComm().masterRank() )
                             {
-                                std::cout << "N=" << N << " Output =  "<< output_fem <<" OutputError = "<<rel_err <<" OutputErrorEstimated = "<<relative_estimated_error
-                                          <<"  L2Error = "<< l2_error << "  H1Error = " << h1_error <<std::endl;
+                                std::cout << "N = " << N << " Output = " << output_fem << " OutputError = " << rel_err << " OutputErrorEstimated = " << relative_estimated_error
+                                          << " L2Error = " << l2_error << " H1Error = " << h1_error <<std::endl;
 
                                 if( N == Nmax )
                                     str="\n";
@@ -1485,6 +1492,18 @@ OpusApp<ModelType,RM,Model>::run()
                 }
 
                 LOG( INFO ) << "------------------------------------------------------------";
+            }
+        }
+
+        // If the online time has been calculated, then compute the average time
+        int Nmax = ioption("crb.dimension-max");
+        for( int N = 1; N <= Nmax ; ++N )
+        {
+            const std::string online_key = fmt::format("online_{}", N);
+            if (M_timeData["crb"].contains(online_key))
+            {
+                double avg = M_timeData["crb"][online_key].get<double>() / static_cast<double>(Sampling->size());
+                M_timeData["crb"][online_key] = avg;
             }
         }
 
