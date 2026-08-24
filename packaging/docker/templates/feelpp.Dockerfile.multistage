@@ -39,7 +39,8 @@ RUN git config --global user.name "Docker Robot" \
     && git config --global --add safe.directory /src/feelpp
 
 WORKDIR /src/feelpp
-RUN cmake --preset ${CMAKE_PRESET} \
+RUN feelpp/tools/scripts/ci/meshadapt-dependency-report.sh \
+    && cmake --preset ${CMAKE_PRESET} \
         -DCMAKE_INSTALL_PREFIX=/usr/local \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_CXX_COMPILER=${CXX} \
