@@ -37,6 +37,8 @@
 #include <feel/feelmor/eim.hpp>
 #include <feel/feelmor/ser.hpp>
 #include <feel/feelmor/crbmodel.hpp>
+#include <feel/feelvf/normh1.hpp>
+#include <feel/feelvf/norml2.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/range/join.hpp>
 #include <boost/regex.hpp>
@@ -546,7 +548,8 @@ private:
     }
     double l2Norm( element_type const& u, mpl::bool_<false> )
     {
-        return math::sqrt( integrate( _range=u.functionSpace()->template rangeElements<0>(), _expr=(vf::idv(u))*(vf::idv(u)) ).evaluate()(0,0) );
+        return normL2( _range=u.functionSpace()->template rangeElements<0>(),
+                       _expr=vf::idv( u ) );
     }
     double l2Norm( element_type const& u, mpl::bool_<true>)
     {
@@ -561,18 +564,16 @@ private:
     }
     double h1Norm( element_type const& u, mpl::bool_<false> )
     {
-        auto mesh = model->functionSpace()->mesh();
-        double l22 = integrate( _range=u.functionSpace()->template rangeElements<0>(), _expr=(vf::idv(u))*(vf::idv(u)) ).evaluate()(0,0);
-        double semih12 = integrate( _range=u.functionSpace()->template rangeElements<0>(), _expr=(vf::gradv(u))*trans(vf::gradv(u)) ).evaluate()(0,0);
-        return math::sqrt( l22+semih12 );
+        return normH1( _range=u.functionSpace()->template rangeElements<0>(),
+                       _expr=vf::idv( u ),
+                       _grad_expr=vf::gradv( u ) );
     }
     double h1Norm( element_type const& u, mpl::bool_<true>)
     {
-        auto mesh = model->functionSpace()->mesh();
         auto u_femT = u.template element<1>();
-        double l22 = integrate( _range=u.functionSpace()->template rangeElements<0>(), _expr=(vf::idv(u_femT))*(vf::idv(u_femT)) ).evaluate()(0,0);
-        double semih12 = integrate( _range=u_femT.functionSpace()->template rangeElements<0>(), _expr=(vf::gradv(u_femT))*trans(vf::gradv(u_femT))).evaluate()(0,0);
-        return math::sqrt( l22+semih12 );
+        return normH1( _range=u_femT.functionSpace()->template rangeElements<0>(),
+                       _expr=vf::idv( u_femT ),
+                       _grad_expr=vf::gradv( u_femT ) );
     }
 
     struct ComputeNormL2InCompositeCase

@@ -1,0 +1,24 @@
+Mesh.RecombineAll = 1;
+
+Point(1) = {0, 0, 0, 1};
+Point(2) = {@LENGTH@, 0, 0, 1};
+Point(3) = {@LENGTH@, @WIDTH@, 0, 1};
+Point(4) = {0, @WIDTH@, 0, 1};
+
+Line(1) = {1, 2};
+Line(2) = {2, 3};
+Line(3) = {3, 4};
+Line(4) = {4, 1};
+
+Line Loop(1) = {1, 2, 3, 4};
+Plane Surface(1) = {1};
+
+Transfinite Line {1, 3} = @NX@;
+Transfinite Line {2, 4} = @NY@;
+Transfinite Surface {1} = {1, 2, 3, 4};
+Recombine Surface {1};
+
+Physical Line("Free") = {1, 3};
+Physical Line("Neumann") = {2};
+Physical Line("Dirichlet") = {4};
+Physical Surface("Omega") = {1};

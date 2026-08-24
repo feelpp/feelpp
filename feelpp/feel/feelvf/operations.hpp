@@ -403,13 +403,10 @@
             static inline const bool has_test_basis = L_type::template HasTestFunction<Func>::result|R_type::template HasTestFunction<Func>::result; \
         template<typename Func>                                         \
             static inline const bool has_trial_basis = L_type::template HasTrialFunction<Func>::result|R_type::template HasTrialFunction<Func>::result; \
-        using test_basis =  typename mpl::if_< std::is_null_pointer<typename L_type::test_basis >, typename R_type::test_basis , typename L_type::test_basis >::type; \
+        using test_basis = std::conditional_t<std::is_null_pointer_v<typename L_type::test_basis>, typename R_type::test_basis, typename L_type::test_basis>; \
         using trial_basis = std::nullptr_t;                             \
                                                                         \
-        typedef typename mpl::if_<mpl::greater<mpl::sizeof_<value_left_type>, \
-            mpl::sizeof_<value_right_type> >,                           \
-                                  mpl::identity<value_left_type>,      \
-                                  mpl::identity<value_right_type> >::type::type value_type; \
+        using value_type = std::conditional_t<( sizeof( value_left_type ) > sizeof( value_right_type ) ), value_left_type, value_right_type>; \
         using evaluate_type = Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic >; \
                                                                         \
         VF_OP_NAME( O )( L_type const& left, R_type const& right )      \
@@ -584,41 +581,41 @@
             value_type                                                  \
                 evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const noexcept\
             {                                                           \
-                return evalijq(i,j,c1,c2,q,mpl::int_<shape_op>() );     \
+                return evalijq(i,j,c1,c2,q,std::integral_constant<int, shape_op>{} ); \
             }                                                           \
             template<int PatternContext> \
                 value_type                                              \
-                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<PatternContext> ) const noexcept \
+                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, std::integral_constant<int, PatternContext> ) const noexcept \
             {                                                           \
-                return evalijq(i,j,c1,c2,q,mpl::int_<PatternContext>(),mpl::int_<shape_op>() ); \
+                return evalijq(i,j,c1,c2,q,std::integral_constant<int, PatternContext>{},std::integral_constant<int, shape_op>{} ); \
             }                                                           \
                               \
                 value_type                                              \
-                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<0>  ) const noexcept \
+                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, std::integral_constant<int, 0> ) const noexcept \
             {                                                           \
-                return evalijq( i, j, c1, c2, q, mpl::bool_<is_zero::update_and_eval_left>(), mpl::bool_<is_zero::update_and_eval_right>() ); \
+                return evalijq( i, j, c1, c2, q, std::bool_constant<is_zero::update_and_eval_left>{}, std::bool_constant<is_zero::update_and_eval_right>{} ); \
             }                                                           \
                               \
                 value_type                                              \
-                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<false>, mpl::bool_<false>  ) const noexcept \
+                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, std::false_type, std::false_type ) const noexcept \
             {                                                           \
                 return value_type( 0 );                                 \
             }                                                           \
                               \
                 value_type                                              \
-                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<true>, mpl::bool_<false>  ) const noexcept \
+                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, std::true_type, std::false_type ) const noexcept \
             {                                                           \
                 return M_left.evalijq(i, j, c1, c2, q);                \
             }                                                           \
                               \
                 value_type                                              \
-                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<false>, mpl::bool_<true>  ) const noexcept \
+                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, std::false_type, std::true_type ) const noexcept \
             {                                                           \
                 return M_right.evalijq(i, j, c1, c2, q);               \
             }                                                           \
                               \
                 value_type                                              \
-                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<true>, mpl::bool_<true>  ) const noexcept \
+                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, std::true_type, std::true_type ) const noexcept \
             {                                                           \
                 if constexpr ( l_type::shape::is_scalar && !r_type::shape::is_scalar ) \
                      return M_left.evalijq(i, j, 0, 0, q) VF_OP_SYMBOL( O ) M_right.evalijq(i,j, c1, c2, q); \
@@ -629,7 +626,7 @@
             }                                                           \
                                                                         \
                 value_type                                              \
-                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1>  ) const noexcept \
+                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, std::integral_constant<int, 1> ) const noexcept \
             {                                                           \
                 if constexpr ( is_zero::value )                         \
                                  return value_type( 0 );                \
@@ -644,41 +641,41 @@
                                                                         \
             template<int PatternContext> \
                 value_type                                              \
-                evalijq__( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<PatternContext>, mpl::int_<0>  ) const noexcept \
+                evalijq__( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, std::integral_constant<int, PatternContext>, std::integral_constant<int, 0> ) const noexcept \
             {                                                           \
                 if ( is_zero::value )                                   \
                     return value_type( 0 );                             \
                 else if ( !is_zero::update_and_eval_left && is_zero::update_and_eval_right ) \
-                    return M_right.evalijq(i,j, c1, c2, q,mpl::int_<PatternContext>()); \
+                    return M_right.evalijq(i,j, c1, c2, q,std::integral_constant<int, PatternContext>{}); \
                 else if ( is_zero::update_and_eval_left && !is_zero::update_and_eval_right ) \
-                    return M_left.evalijq(i, j, c1, c2, q,mpl::int_<PatternContext>()); \
+                    return M_left.evalijq(i, j, c1, c2, q,std::integral_constant<int, PatternContext>{}); \
                 else                                                    \
-                    return M_left.evalijq(i, j, c1, c2, q,mpl::int_<PatternContext>()) VF_OP_SYMBOL( O ) M_right.evalijq(i,j, c1, c2, q,mpl::int_<PatternContext>()); \
+                    return M_left.evalijq(i, j, c1, c2, q,std::integral_constant<int, PatternContext>{}) VF_OP_SYMBOL( O ) M_right.evalijq(i,j, c1, c2, q,std::integral_constant<int, PatternContext>{}); \
             }                                                           \
             template<int PatternContext> \
                 value_type                                              \
-                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<PatternContext>, mpl::int_<0>  ) const noexcept \
+                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, std::integral_constant<int, PatternContext>, std::integral_constant<int, 0> ) const noexcept \
             {                                                           \
-                return M_left.evalijq(i, j, c1, c2, q,mpl::int_<PatternContext>()) VF_OP_SYMBOL( O ) M_right.evalijq(i,j, c1, c2, q,mpl::int_<PatternContext>()); \
+                return M_left.evalijq(i, j, c1, c2, q,std::integral_constant<int, PatternContext>{}) VF_OP_SYMBOL( O ) M_right.evalijq(i,j, c1, c2, q,std::integral_constant<int, PatternContext>{}); \
             }                                                           \
             template<int PatternContext> \
                 value_type                                              \
-                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<PatternContext>, mpl::int_<1>  ) const noexcept \
+                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, std::integral_constant<int, PatternContext>, std::integral_constant<int, 1> ) const noexcept \
             {                                                           \
                 value_type res( value_type( 0 ) );                      \
                 for(uint16_type ii = 0; ii < l_type::shape::N; ++ii ) \
-                    res += M_left.evalijq(i, j, c1, ii, q,mpl::int_<PatternContext>() ) VF_OP_SYMBOL( O ) M_right.evalijq(i, j, ii, c2, q,mpl::int_<PatternContext>() ); \
+                    res += M_left.evalijq(i, j, c1, ii, q,std::integral_constant<int, PatternContext>{} ) VF_OP_SYMBOL( O ) M_right.evalijq(i, j, ii, c2, q,std::integral_constant<int, PatternContext>{} ); \
                 return res;                                             \
             }                                                           \
                                                \
                 value_type                                              \
                 evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q  ) const noexcept \
             {                                                           \
-                return evaliq(i, c1, c2, q, mpl::int_<shape_op>() );    \
+                return evaliq(i, c1, c2, q, std::integral_constant<int, shape_op>{} ); \
             }                                                           \
                                                \
                 value_type                                              \
-                    evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<0>  ) const noexcept \
+                    evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, std::integral_constant<int, 0> ) const noexcept \
             {                                                           \
                 if constexpr ( is_zero::value )                         \
                     return value_type( 0 );                             \
@@ -695,7 +692,7 @@
             }                                                           \
                                                \
                 value_type                                              \
-                evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1>  ) const noexcept \
+                evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, std::integral_constant<int, 1> ) const noexcept \
             {                                                           \
                 if constexpr ( is_zero::value )                         \
                     return value_type( 0 );                             \
@@ -710,11 +707,11 @@
             value_type                                                  \
                 evalq( uint16_type c1, uint16_type c2, uint16_type q ) const noexcept \
             {                                                           \
-                return evalq( c1, c2, q, mpl::int_<shape_op>() );       \
+                return evalq( c1, c2, q, std::integral_constant<int, shape_op>{} ); \
             }                                                           \
                                                                         \
             value_type                                                  \
-                evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<0> ) const noexcept \
+                evalq( uint16_type c1, uint16_type c2, uint16_type q, std::integral_constant<int, 0> ) const noexcept \
             {                                                           \
                 if constexpr ( l_type::shape::is_scalar && !r_type::shape::is_scalar ) \
                     return M_left.evalq( 0, 0, q ) VF_OP_SYMBOL( O ) M_right.evalq( c1, c2, q ); \
@@ -724,7 +721,7 @@
                     return M_left.evalq( c1, c2, q ) VF_OP_SYMBOL( O ) M_right.evalq( c1, c2, q ); \
             }                                                           \
             value_type                                                  \
-                evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1> ) const noexcept \
+                evalq( uint16_type c1, uint16_type c2, uint16_type q, std::integral_constant<int, 1> ) const noexcept \
             {                                                           \
                 value_type res( value_type( 0 ) );                      \
                 for(uint16_type ii = 0; ii < l_type::shape::N; ++ii )   \
@@ -850,6 +847,338 @@ BOOST_PP_LIST_FOR_EACH_PRODUCT( VF_BINARY_ARRAY_OP_DECLARATION, 3, ( VF_APPLICAT
 BOOST_PP_LIST_FOR_EACH_PRODUCT( VF_BINARY_ARRAY_OP, 3, ( VF_APPLICATIVE_BINARY_OPS, VF_EXPRL_TYPES, VF_EXPRR_TYPES ) )
 BOOST_PP_LIST_FOR_EACH_PRODUCT( VF_BINARY_ARRAY_OP, 3, ( VF_APPLICATIVE_BINARY_OPS, VF_EXPRL_TYPES, VF_BUILTIN_TYPES ) )
 BOOST_PP_LIST_FOR_EACH_PRODUCT( VF_BINARY_ARRAY_OP, 3, ( VF_APPLICATIVE_BINARY_OPS, VF_BUILTIN_TYPES, VF_EXPRR_TYPES ) )
+
+template <typename LeftExprT, typename RightExprT>
+class vf_hadamard;
+
+template <VfExpr LeftExprT, VfExpr RightExprT>
+    requires ComponentwiseCompatibleExpr<Expr<LeftExprT>, Expr<RightExprT>>
+[[nodiscard]] inline Expr<vf_hadamard<LeftExprT, RightExprT>>
+hadamard( Expr<LeftExprT> const& left, Expr<RightExprT> const& right );
+
+template <typename LeftExprT, typename RightExprT>
+class vf_hadamard : public ExprDynamicBase
+{
+public:
+    using expression_type = vf_hadamard<LeftExprT, RightExprT>;
+    using this_type = expression_type;
+    using left_expression_type = Expr<LeftExprT>;
+    using right_expression_type = Expr<RightExprT>;
+    using value_left_type = typename left_expression_type::value_type;
+    using value_right_type = typename right_expression_type::value_type;
+
+    static const size_type context = left_expression_type::context | right_expression_type::context;
+    static inline const bool is_terminal = false;
+
+    template <typename Func>
+    struct HasTestFunction
+    {
+        static inline const bool result =
+            left_expression_type::template HasTestFunction<Func>::result |
+            right_expression_type::template HasTestFunction<Func>::result;
+    };
+
+    template <typename Func>
+    struct HasTrialFunction
+    {
+        static inline const bool result =
+            left_expression_type::template HasTrialFunction<Func>::result |
+            right_expression_type::template HasTrialFunction<Func>::result;
+    };
+
+    template <typename Func>
+    static inline const bool has_test_basis =
+        left_expression_type::template HasTestFunction<Func>::result |
+        right_expression_type::template HasTestFunction<Func>::result;
+    template <typename Func>
+    static inline const bool has_trial_basis =
+        left_expression_type::template HasTrialFunction<Func>::result |
+        right_expression_type::template HasTrialFunction<Func>::result;
+    using test_basis = std::conditional_t<std::is_null_pointer_v<typename left_expression_type::test_basis>,
+                                          typename right_expression_type::test_basis,
+                                          typename left_expression_type::test_basis>;
+    using trial_basis = std::nullptr_t;
+
+    using value_type = std::conditional_t<( sizeof( value_left_type ) > sizeof( value_right_type ) ),
+                                          value_left_type,
+                                          value_right_type>;
+    using evaluate_type = Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic>;
+
+    vf_hadamard( left_expression_type const& left, right_expression_type const& right )
+        :
+        M_left( left ),
+        M_right( right )
+    {
+    }
+
+    vf_hadamard( vf_hadamard const& ) = default;
+    vf_hadamard& operator=( vf_hadamard const& ) = default;
+
+    size_type dynamicContext() const
+    {
+        return vf::dynamicContext( M_left ) | vf::dynamicContext( M_right );
+    }
+
+    template <typename... TheExpr>
+    struct Lambda
+    {
+        using type = vf_hadamard<typename left_expression_type::template Lambda<TheExpr...>::type::expression_type,
+                                 typename right_expression_type::template Lambda<TheExpr...>::type::expression_type>;
+    };
+
+    template <typename... TheExpr>
+    [[nodiscard]] typename Lambda<TheExpr...>::type
+    operator()( TheExpr... e )
+    {
+        return typename Lambda<TheExpr...>::type( M_left( e... ), M_right( e... ) );
+    }
+
+    template <typename... TheExpr>
+    [[nodiscard]] typename Lambda<TheExpr...>::type
+    operator()( TheExpr... e ) const
+    {
+        return typename Lambda<TheExpr...>::type( M_left( e... ), M_right( e... ) );
+    }
+
+    uint16_type polynomialOrder() const
+    {
+        return M_left.polynomialOrder() + M_right.polynomialOrder();
+    }
+    bool isPolynomial() const { return M_left.isPolynomial() && M_right.isPolynomial(); }
+
+    left_expression_type const& left() const { return M_left; }
+    right_expression_type const& right() const { return M_right; }
+
+    void setParameterValues( std::map<std::string, double> const& mp )
+    {
+        M_left.setParameterValues( mp );
+        M_right.setParameterValues( mp );
+    }
+    void updateParameterValues( std::map<std::string, double>& pv ) const
+    {
+        M_left.updateParameterValues( pv );
+        M_right.updateParameterValues( pv );
+    }
+
+    template <typename SymbolsExprType>
+    auto applySymbolsExpr( SymbolsExprType const& se ) const
+    {
+        return hadamard( M_left.applySymbolsExpr( se ), M_right.applySymbolsExpr( se ) );
+    }
+
+    template <typename TheSymbolExprType>
+    bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
+    {
+        return M_left.hasSymbolDependency( symb, se ) || M_right.hasSymbolDependency( symb, se );
+    }
+
+    template <typename TheSymbolExprType>
+    void dependentSymbols( std::string const& symb,
+                           std::map<std::string, std::set<std::string>>& res,
+                           TheSymbolExprType const& se ) const
+    {
+        M_left.dependentSymbols( symb, res, se );
+        M_right.dependentSymbols( symb, res, se );
+    }
+
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const& diffVariable,
+               WorldComm const& world,
+               std::string const& dirLibExpr,
+               TheSymbolExprType const& se ) const
+    {
+        auto ldiff = M_left.template diff<diffOrder>( diffVariable, world, dirLibExpr, se );
+        auto rdiff = M_right.template diff<diffOrder>( diffVariable, world, dirLibExpr, se );
+        return hadamard( ldiff, M_right ) + hadamard( M_left, rdiff );
+    }
+
+    template <typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
+    struct tensor
+    {
+        using expression_type = this_type;
+        using l_type = typename left_expression_type::template tensor<Geo_t, Basis_i_t, Basis_j_t>;
+        using r_type = typename right_expression_type::template tensor<Geo_t, Basis_i_t, Basis_j_t>;
+        using value_type = strongest_numeric_type<typename l_type::value_type, typename r_type::value_type>;
+        using shape = typename shape_op_componentwise<typename l_type::shape, typename r_type::shape>::type;
+
+        struct is_zero
+        {
+            static inline const bool value =
+                shape_op_componentwise<typename l_type::shape, typename r_type::shape>::template is_zero<l_type::is_zero::value, r_type::is_zero::value>::value;
+            static inline const bool update_and_eval_left =
+                shape_op_componentwise<typename l_type::shape, typename r_type::shape>::template is_zero<l_type::is_zero::value, r_type::is_zero::value>::update_and_eval_left;
+            static inline const bool update_and_eval_right =
+                shape_op_componentwise<typename l_type::shape, typename r_type::shape>::template is_zero<l_type::is_zero::value, r_type::is_zero::value>::update_and_eval_right;
+        };
+
+        template <typename ExprT>
+        tensor( ExprT const& expr, Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
+            :
+            M_left( expr.left(), geom, fev, feu ),
+            M_right( expr.right(), geom, fev, feu )
+        {
+        }
+
+        template <typename ExprT>
+        tensor( ExprT const& expr, Geo_t const& geom, Basis_i_t const& fev )
+            :
+            M_left( expr.left(), geom, fev ),
+            M_right( expr.right(), geom, fev )
+        {
+        }
+
+        template <typename ExprT>
+        tensor( ExprT const& expr, Geo_t const& geom )
+            :
+            M_left( expr.left(), geom ),
+            M_right( expr.right(), geom )
+        {
+        }
+
+        template <typename TheExprExpandedType, typename TupleTensorSymbolsExprType, typename ExprT, typename... TheArgsType>
+        tensor( std::true_type,
+                TheExprExpandedType const& exprExpanded,
+                TupleTensorSymbolsExprType& ttse,
+                ExprT const& expr,
+                Geo_t const& geom,
+                TheArgsType const&... theInitArgs )
+            :
+            M_left( std::true_type{}, exprExpanded.left(), ttse, expr.left(), geom, theInitArgs... ),
+            M_right( std::true_type{}, exprExpanded.right(), ttse, expr.right(), geom, theInitArgs... )
+        {
+        }
+
+        void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu ) noexcept
+        {
+            if ( is_zero::update_and_eval_left )
+                M_left.update( geom, fev, feu );
+            if ( is_zero::update_and_eval_right )
+                M_right.update( geom, fev, feu );
+        }
+        void update( Geo_t const& geom, Basis_i_t const& fev ) noexcept
+        {
+            if ( is_zero::update_and_eval_left )
+                M_left.update( geom, fev );
+            if ( is_zero::update_and_eval_right )
+                M_right.update( geom, fev );
+        }
+        void update( Geo_t const& geom ) noexcept
+        {
+            if ( is_zero::update_and_eval_left )
+                M_left.update( geom );
+            if ( is_zero::update_and_eval_right )
+                M_right.update( geom );
+        }
+
+        template <typename... CTX>
+        void updateContext( CTX const&... ctx ) noexcept
+        {
+            M_left.updateContext( ctx... );
+            M_right.updateContext( ctx... );
+        }
+
+        template <typename TheExprExpandedType, typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type,
+                     TheExprExpandedType const& exprExpanded,
+                     TupleTensorSymbolsExprType& ttse,
+                     Geo_t const& geom,
+                     TheArgsType const&... theUpdateArgs )
+        {
+            M_left.update( std::true_type{}, exprExpanded.left(), ttse, geom, theUpdateArgs... );
+            M_right.update( std::true_type{}, exprExpanded.right(), ttse, geom, theUpdateArgs... );
+        }
+
+        value_type evalij( uint16_type i, uint16_type j ) const noexcept
+        {
+            return M_left.evalij( i, j ) * M_right.evalij( i, j );
+        }
+
+        value_type evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const noexcept
+        {
+            if constexpr ( is_zero::value )
+                return value_type( 0 );
+            else if constexpr ( l_type::shape::is_scalar )
+                return M_left.evalijq( i, j, 0, 0, q ) * M_right.evalijq( i, j, 0, 0, q );
+            else
+                return M_left.evalijq( i, j, c1, c2, q ) * M_right.evalijq( i, j, c1, c2, q );
+        }
+
+        template <int PatternContext>
+        value_type evalijq( uint16_type i,
+                            uint16_type j,
+                            uint16_type c1,
+                            uint16_type c2,
+                            uint16_type q,
+                            std::integral_constant<int, PatternContext> ) const noexcept
+        {
+            if constexpr ( is_zero::value )
+                return value_type( 0 );
+            else if constexpr ( l_type::shape::is_scalar )
+                return M_left.evalijq( i, j, 0, 0, q, std::integral_constant<int, PatternContext>{} ) *
+                       M_right.evalijq( i, j, 0, 0, q, std::integral_constant<int, PatternContext>{} );
+            else
+                return M_left.evalijq( i, j, c1, c2, q, std::integral_constant<int, PatternContext>{} ) *
+                       M_right.evalijq( i, j, c1, c2, q, std::integral_constant<int, PatternContext>{} );
+        }
+
+        value_type evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const noexcept
+        {
+            if constexpr ( is_zero::value )
+                return value_type( 0 );
+            else if constexpr ( l_type::shape::is_scalar )
+                return M_left.evaliq( i, 0, 0, q ) * M_right.evaliq( i, 0, 0, q );
+            else
+                return M_left.evaliq( i, c1, c2, q ) * M_right.evaliq( i, c1, c2, q );
+        }
+
+        value_type evalq( uint16_type c1, uint16_type c2, uint16_type q ) const noexcept
+        {
+            if constexpr ( l_type::shape::is_scalar )
+                return M_left.evalq( 0, 0, q ) * M_right.evalq( 0, 0, q );
+            else
+                return M_left.evalq( c1, c2, q ) * M_right.evalq( c1, c2, q );
+        }
+
+        l_type M_left;
+        r_type M_right;
+    };
+
+    evaluate_type evaluate( bool p ) const
+    {
+        auto leval = M_left.evaluate( p ).template cast<value_type>();
+        auto reval = M_right.evaluate( p ).template cast<value_type>();
+        CHECK( leval.rows() == reval.rows() && leval.cols() == reval.cols() )
+            << "hadamard(): runtime extents must match";
+        return leval.cwiseProduct( reval );
+    }
+
+    std::string expressionStr() const
+    {
+        return std::string();
+    }
+
+    bool isSymetric() const
+    {
+        return false;
+    }
+
+protected:
+    vf_hadamard() = default;
+
+private:
+    left_expression_type M_left;
+    right_expression_type M_right;
+};
+
+template <VfExpr LeftExprT, VfExpr RightExprT>
+    requires ComponentwiseCompatibleExpr<Expr<LeftExprT>, Expr<RightExprT>>
+[[nodiscard]] inline Expr<vf_hadamard<LeftExprT, RightExprT>>
+hadamard( Expr<LeftExprT> const& left, Expr<RightExprT> const& right )
+{
+    using expr_t = vf_hadamard<LeftExprT, RightExprT>;
+    return Expr<expr_t>( expr_t( left, right ) );
+}
+
 }
 }
 

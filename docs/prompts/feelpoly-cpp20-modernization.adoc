@@ -1,0 +1,515 @@
+= Feel++ feelpoly C++20 Modernization Prompt
+:author: Feel++ Consortium
+:revdate: 2025-01-02
+:toc: left
+:toclevels: 3
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+
+== Overview
+
+This document provides a comprehensive prompt for the phased modernization of the `feelpp/feel/feelpoly` module to C++20. The goal is to introduce modern C++ features while maintaining backward API compatibility.
+
+=== Key Objectives
+
+1. **C++20 Concepts**: Replace SFINAE patterns with concepts for cleaner, more expressive code
+2. **Replace boost::mpl**: Migrate to C++20 type traits + boost::mp11 for compile-time metaprogramming
+3. **Dynamic Order Support**: Add Eigen-style `Dynamic` order alongside static order (dimensions remain static)
+4. **Eigen Migration**: Gradually replace ublas with Eigen for linear algebra (Kokkos compatibility)
+5. **Backward Compatibility**: Existing API must continue to work without modification
+
+=== Constraints
+
+* C++20 minimum (no C++17 fallback)
+* Topological dimension (`nDim`) and spatial dimension (`nRealDim`) remain static template parameters
+* Order can be static (default, backward compatible) or dynamic (opt-in)
+* Must be compatible with Kokkos kernels (POD types, no virtual functions in hot paths)
+* ublas remains default storage for backward compatibility; Eigen is opt-in
+
+---
+
+== Phase 1: Foundation Layer
+
+=== Objective
+Create the foundational headers that define concepts, metaprogramming utilities, and order system.
+
+=== Files to Create
+
+==== `feelpp/feel/feelpoly/concepts.hpp`
+
+[source,cpp]
+----
+// Core concepts for the polynomial module
+// Requirements:
+// - Define Feel::Dynamic constant (= -1, Eigen-style)
+// - Concepts: PolynomialBasis, PolynomialSet, ScalarField, VectorField, Tensor2Field
+// - Concepts: GeometricMapping, LinearGeometricMapping, NonLinearGeometricMapping
+// - Concepts: EigenMatrix, EigenVector, UBlasMatrix, UBlasVector, MatrixLike, VectorLike
+// - Concepts: StaticOrder, DynamicOrder, HasOrder
+// - Concepts: Convex, SimplexConvex, HypercubeConvex
+// - Concepts: KokkosCompatibleStorage
+----
+
+==== `feelpp/feel/feelpoly/meta.hpp`
+
+[source,cpp]
+----
+// Metaprogramming utilities replacing boost::mpl
+// Requirements:
+// - Use boost::mp11 for type lists (mp::mp_list, mp::mp_at_c, mp::mp_find, etc.)
+// - Define type_list<Ts...>, type_at<L,I>, type_find<L,T>, type_transform<L,F>
+// - Define if_t<Cond,T,F> using std::conditional_t
+// - Define constant<V>, int_c<N>, uint16_c<N>, bool_c<B>
+// - Define type_identity<T> replacing mpl::identity
+// - Use constexpr functions where possible instead of type traits
+----
+
+==== `feelpp/feel/feelpoly/order.hpp`
+
+[source,cpp]
+----
+// Order system supporting static and dynamic orders
+// Requirements:
+// - Define order_t<N> with static value and is_dynamic/is_static flags
+// - Define DofCalculator<Dim, Order> for compile-time or runtime DOF computation
+// - Support simplex and hypercube DOF calculations
+// - Provide constexpr functions for static order, regular functions for dynamic
+----
+
+=== Acceptance Criteria
+
+* [ ] All concepts compile and can be used in `requires` clauses
+* [ ] `mp::mp_list` can replace all `mpl::vector` usage patterns
+* [ ] `if_t<>` can replace all `mpl::if_<>` patterns
+* [ ] Order system works for both static and dynamic cases
+* [ ] No boost::mpl includes in new headers
+
+---
+
+== Phase 2: Policy Modernization
+
+=== Objective
+Modernize the policy classes (Scalar, Vectorial, Tensor2, storage policies) with concepts while preserving the existing API.
+
+=== Files to Modify
+
+==== `feelpp/feel/feelpoly/policy.hpp`
+
+[source,cpp]
+----
+// Modernization requirements:
+// 1. Keep ScalarBase, VectorialBase, Tensor2Base, Tensor2SymmBase tags (backward compat)
+// 2. Add StorageEigen<T> alongside StorageUBlas<T>
+// 3. Update Scalar<Dim>, Vectorial<Dim>, Tensor2<Dim> with:
+//    - constexpr static members instead of static const
+//    - Concept-constrained toMatrix/toType overloads for both ublas and Eigen
+// 4. Replace mpl::if_ in RankUp, RankDown, GetComponent with if_t<>
+// 5. Keep all existing type aliases and constants
+----
+
+==== `feelpp/feel/feelpoly/traits.hpp`
+
+[source,cpp]
+----
+// Modernization requirements:
+// 1. Use concepts in trait definitions where beneficial
+// 2. Keep is_scalar_polynomial, is_vector_polynomial, is_tensor2_polynomial
+// 3. Keep polynomial_order<T>, is_linear_polynomial<T>
+// 4. Add concept-based alternatives alongside existing traits
+----
+
+=== Acceptance Criteria
+
+* [ ] Existing code using `Scalar<3>`, `Vectorial<2>`, etc. compiles unchanged
+* [ ] `RankUp<T>::type`, `RankDown<T>::type` work with new implementation
+* [ ] Both ublas and Eigen matrices work with `toMatrix`/`toType`
+* [ ] No mpl includes remain in policy.hpp
+
+---
+
+== Phase 3: PolynomialSet Modernization
+
+=== Objective
+Add dynamic order support to PolynomialSet while keeping the default static behavior.
+
+=== Files to Modify
+
+==== `feelpp/feel/feelpoly/polynomialset.hpp`
+
+[source,cpp]
+----
+// Template signature change:
+// FROM: template<typename Poly, template<uint16_type> class PolySetType = Scalar>
+// TO:   template<typename Poly, template<uint16_type> class PolySetType = Scalar,
+//                int OrderSpec = Poly::nOrder>
+
+// Requirements:
+// 1. Add OrderSpec template parameter defaulting to Poly::nOrder (backward compat)
+// 2. Add is_order_static constexpr bool = (OrderSpec != Dynamic)
+// 3. Keep nOrder static constant for backward compat (use OrderSpec when static)
+// 4. Add runtime m_order member (only used when !is_order_static)
+// 5. Add constructor taking runtime order for dynamic case
+// 6. Add toDynamic() method to convert static -> dynamic
+// 7. Add toStatic<N>() method returning optional<> for dynamic -> static
+// 8. Use concepts to constrain methods (requires is_order_static, etc.)
+// 9. Replace BOOST_STATIC_ASSERT with static_assert
+// 10. Replace mpl usage with mp11/C++20
+
+// Type alias for opt-in dynamic order:
+template<typename Poly, template<uint16_type> class PolySetType = Scalar>
+using DynamicPolynomialSet = PolynomialSet<Poly, PolySetType, Dynamic>;
+----
+
+==== `feelpp/feel/feelpoly/polynomial.hpp`
+
+[source,cpp]
+----
+// Similar changes as PolynomialSet:
+// 1. Add OrderSpec template parameter
+// 2. Support both static and dynamic order
+// 3. Keep existing API working
+----
+
+=== Acceptance Criteria
+
+* [ ] `PolynomialSet<Dubiner<2,2,3>>` compiles and works as before
+* [ ] `PolynomialSet<Dubiner<2,2,3>, Scalar, Dynamic>` works with runtime order
+* [ ] `DynamicPolynomialSet<Dubiner<2,2,3>>` is a valid alias
+* [ ] `degree()` returns correct value for both static and dynamic
+* [ ] Conversion between static and dynamic works
+
+---
+
+== Phase 4: Basis Functions Modernization
+
+=== Objective
+Modernize the polynomial basis classes (Dubiner, Legendre, Jacobi, etc.) with concepts.
+
+=== Files to Modify
+
+==== `feelpp/feel/feelpoly/dubiner.hpp`
+
+[source,cpp]
+----
+// Requirements:
+// 1. Replace mpl usage in DubinerTraits with mp11/C++20
+// 2. Add concept constraints to methods
+// 3. Keep static nOrder but add support for dynamic evaluation
+// 4. Add evaluate(points, order) overload for dynamic order
+// 5. Use constexpr where possible
+// 6. Keep existing API (nDim, nRealDim, nOrder, value_type, etc.)
+----
+
+==== Similar changes for:
+* `feelpp/feel/feelpoly/legendre.hpp`
+* `feelpp/feel/feelpoly/jacobi.hpp`
+* `feelpp/feel/feelpoly/boundadapted.hpp`
+* `feelpp/feel/feelpoly/lagrange.hpp`
+* `feelpp/feel/feelpoly/nedelec.hpp`
+* `feelpp/feel/feelpoly/raviartthomas.hpp`
+
+=== Acceptance Criteria
+
+* [ ] All basis classes compile with existing usage patterns
+* [ ] Concept constraints provide clear error messages
+* [ ] Dynamic order evaluation works where implemented
+* [ ] No mpl includes remain
+
+---
+
+== Phase 5: GeoMap Modernization
+
+=== Objective
+Modernize the geometric mapping with concepts and mp11 type lists.
+
+=== Files to Modify
+
+==== `feelpp/feel/feelpoly/geomap.hpp`
+
+[source,cpp]
+----
+// Requirements:
+// 1. Replace mpl::vector with mp::mp_list for geomap_edges_t, geomap_faces_t, etc.
+// 2. Replace mpl::at with mp::mp_at_c
+// 3. Replace enable_if SFINAE with concept constraints:
+//    - basisN() for linear vs nonlinear using requires LinearGeometricMapping<T>
+// 4. Add Eigen type aliases alongside ublas types
+// 5. Add concept-constrained Eigen versions of transform, jacobian
+// 6. Keep all existing methods and types for backward compatibility
+// 7. Use constexpr for static methods
+// 8. Optionally add OrderSpec for dynamic order support
+----
+
+=== Acceptance Criteria
+
+* [ ] `GeoMap<2, 1, 2>` compiles and works as before
+* [ ] Type lists correctly resolve edge_gm_type, face_gm_type, element_gm_type
+* [ ] Concept-constrained methods dispatch correctly for linear/nonlinear
+* [ ] Both ublas and Eigen transform methods work
+
+---
+
+== Phase 6: Point Sets and Quadrature
+
+=== Objective
+Modernize point set classes and integration measures.
+
+=== Files to Modify
+
+* `feelpp/feel/feelpoly/equispaced.hpp`
+* `feelpp/feel/feelpoly/pointsetquadrature.hpp`
+* `feelpp/feel/feelpoly/pointsetinterpolation.hpp`
+* `feelpp/feel/feelpoly/fekete.hpp`
+* `feelpp/feel/feelpoly/warpblend.hpp`
+* `feelpp/feel/feelpoly/im.hpp`
+* `feelpp/feel/feelpoly/imsimplex.hpp`
+
+=== Requirements
+
+[source,cpp]
+----
+// For each file:
+// 1. Replace mpl with mp11/C++20
+// 2. Add concept constraints
+// 3. Support dynamic order where applicable
+// 4. Keep existing API
+----
+
+=== Acceptance Criteria
+
+* [ ] All point set classes compile with existing usage
+* [ ] Integration measures work for both static and dynamic order
+* [ ] Quadrature rules selected correctly
+
+---
+
+== Phase 7: Eigen Integration Layer
+
+=== Objective
+Create interoperability layer between ublas and Eigen for gradual migration.
+
+=== Files to Create
+
+==== `feelpp/feel/feelalg/eigen_ublas_interop.hpp`
+
+[source,cpp]
+----
+// Requirements:
+// 1. Zero-copy Eigen::Map wrappers for ublas matrices/vectors (when layout matches)
+// 2. Copy conversion functions: toEigen(), toUBlas()
+// 3. Generic operation wrappers: matprod(), norm2(), etc. that work with both
+// 4. Concept constraints for type detection
+----
+
+=== Acceptance Criteria
+
+* [ ] Can create Eigen::Map from ublas::matrix (column-major)
+* [ ] toEigen/toUBlas conversions work correctly
+* [ ] Generic operations dispatch to correct backend
+
+---
+
+== Phase 8: Testing and Validation
+
+=== Objective
+Ensure all changes maintain backward compatibility and new features work.
+
+=== Test Categories
+
+==== Backward Compatibility Tests
+
+[source,cpp]
+----
+// Verify existing patterns still work:
+PolynomialSet<Dubiner<2, 2, 3>, Scalar> ps1;  // Must compile
+GeoMap<2, 1, 2, double, Simplex> gm1;          // Must compile
+auto order = ps1.degree();                      // Must return 3
+static_assert(ps1.nOrder == 3);                 // Must pass
+----
+
+==== Dynamic Order Tests
+
+[source,cpp]
+----
+// Verify dynamic order works:
+PolynomialSet<Dubiner<2, 2, 3>, Scalar, Dynamic> ps_dyn(5);
+assert(ps_dyn.degree() == 5);
+auto ps_static = ps_dyn.toStatic<5>();
+assert(ps_static.has_value());
+----
+
+==== Concept Constraint Tests
+
+[source,cpp]
+----
+// Verify concepts provide good error messages:
+static_assert(PolynomialBasis<Dubiner<2, 2, 3>>);
+static_assert(GeometricMapping<GeoMap<2, 1, 2>>);
+static_assert(LinearGeometricMapping<GeoMap<2, 1, 2>>);
+static_assert(!LinearGeometricMapping<GeoMap<2, 2, 2>>);
+----
+
+==== Eigen Integration Tests
+
+[source,cpp]
+----
+// Verify Eigen operations work:
+Eigen::MatrixXd pts = Eigen::MatrixXd::Random(2, 10);
+auto result = basis.evaluate(pts);  // Should work with Eigen input
+----
+
+=== Files to Create/Modify
+
+* `testsuite/feelpoly/test_concepts.cpp` (new)
+* `testsuite/feelpoly/test_dynamic_order.cpp` (new)
+* `testsuite/feelpoly/test_eigen_interop.cpp` (new)
+* Update existing tests to verify backward compatibility
+
+---
+
+== Implementation Guidelines
+
+=== Code Style
+
+[source,cpp]
+----
+// Use constexpr for compile-time values
+static constexpr uint16_type nDim = Dim;
+
+// Use concepts in requires clauses
+template<EigenMatrix M>
+auto process(M const& m) requires (M::RowsAtCompileTime > 0) { ... }
+
+// Use [[nodiscard]] for getters
+[[nodiscard]] constexpr uint16_type dim() const noexcept { return nDim; }
+
+// Use if constexpr for compile-time branching
+if constexpr (is_order_static) {
+    return nOrder;
+} else {
+    return m_runtime_order;
+}
+
+// Use std::conditional_t instead of mpl::if_
+using type = std::conditional_t<Cond, TypeA, TypeB>;
+
+// Use mp::mp_list instead of mpl::vector
+using type_list = mp::mp_list<Type1, Type2, Type3>;
+
+// Use mp::mp_at_c instead of mpl::at
+using selected = mp::mp_at_c<type_list, Index>;
+----
+
+=== Backward Compatibility Checklist
+
+For each modified file, verify:
+
+* [ ] Existing template instantiations compile
+* [ ] Existing type aliases resolve to same types
+* [ ] Existing static constants have same values
+* [ ] Existing methods have same signatures (or compatible overloads)
+* [ ] Existing inheritance hierarchies preserved
+* [ ] Existing tests pass without modification
+
+=== Performance Considerations
+
+* Use `[[no_unique_address]]` for empty members (e.g., static order storage)
+* Prefer `constexpr` functions over type traits for simple computations
+* Use fixed-size Eigen types when dimensions are known at compile time
+* Avoid virtual functions in hot paths (use concepts for static dispatch)
+
+---
+
+== Dependency Graph
+
+[source]
+----
+Phase 1: Foundation
+    concepts.hpp
+    meta.hpp
+    order.hpp
+         |
+         v
+Phase 2: Policies
+    policy.hpp (depends on: concepts, meta)
+    traits.hpp (depends on: concepts)
+         |
+         v
+Phase 3: PolynomialSet
+    polynomialset.hpp (depends on: concepts, meta, policy, order)
+    polynomial.hpp
+         |
+         v
+Phase 4: Basis Functions
+    dubiner.hpp, legendre.hpp, etc. (depends on: policy, concepts)
+         |
+         v
+Phase 5: GeoMap
+    geomap.hpp (depends on: concepts, meta, lagrange)
+         |
+         v
+Phase 6: Point Sets
+    equispaced.hpp, im.hpp, etc.
+         |
+         v
+Phase 7: Eigen Integration
+    eigen_ublas_interop.hpp
+         |
+         v
+Phase 8: Testing
+    All test files
+----
+
+---
+
+== Success Metrics
+
+1. **Compilation**: All existing code compiles without modification
+2. **Tests**: All existing tests pass
+3. **No mpl**: Zero `boost/mpl` includes in modernized code
+4. **Concepts**: At least 10 concepts defined and used
+5. **Dynamic Order**: At least PolynomialSet supports dynamic order
+6. **Eigen Ready**: Interop layer allows gradual Eigen migration
+7. **Documentation**: All new concepts and features documented
+
+---
+
+== Notes for AI Assistants
+
+When implementing these changes:
+
+1. **Read before modifying**: Always read the existing file content before making changes
+2. **Preserve structure**: Keep existing class layout and member ordering where possible
+3. **Add, don't replace**: Add new overloads/methods alongside existing ones initially
+4. **Test incrementally**: Verify compilation after each significant change
+5. **Document concepts**: Add brief comments explaining what each concept requires
+6. **Use static_assert**: Add static_asserts to verify concept satisfaction where helpful
+
+=== Example Prompt for Phase 1
+
+[source]
+----
+Implement Phase 1 of the feelpoly C++20 modernization:
+
+1. Create feelpp/feel/feelpoly/concepts.hpp with:
+   - Dynamic constant (= -1)
+   - Core polynomial concepts (PolynomialBasis, ScalarField, VectorField, etc.)
+   - Geometric mapping concepts
+   - Matrix/Vector concepts for Eigen and ublas
+
+2. Create feelpp/feel/feelpoly/meta.hpp with:
+   - mp11-based type list utilities
+   - Replacement for mpl::if_, mpl::identity
+   - Compile-time constants
+
+3. Create feelpp/feel/feelpoly/order.hpp with:
+   - order_t<N> type
+   - DofCalculator for simplex/hypercube
+
+Ensure all headers:
+- Use #pragma once or include guards
+- Include necessary dependencies
+- Compile standalone
+- Follow Feel++ coding style
+----

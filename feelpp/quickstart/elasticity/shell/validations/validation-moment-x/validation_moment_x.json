@@ -1,0 +1,77 @@
+{
+  "name": "validation-moment-x",
+  "description": "Moment case from validation.pdf page 9: clamp XMoins and apply a unit resultant moment on XPlus through an equivalent tangential traction field.",
+  "gmsh": {
+    "filename": "validation_moment_x.geo"
+  },
+  "material": {
+    "E": 10.0,
+    "nu": 0.0
+  },
+  "boundaryConditions": {
+    "clampMarkers": [
+      "XMoins"
+    ]
+  },
+  "loads": {
+    "bodyForce": "{0,0,0}",
+    "pointLoads": [
+      {
+        "marker": "P2",
+        "value": [
+          0.25,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "marker": "P4",
+        "value": [
+          0.25,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "marker": "P6",
+        "value": [
+          -0.25,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "marker": "P8",
+        "value": [
+          -0.25,
+          0.0,
+          0.0
+        ]
+      }
+    ]
+  },
+  "checks": {
+    "target": "sb9g25",
+    "items": [
+      {
+        "type": "probe",
+        "name": "node 2 z displacement",
+        "point": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "direction": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "reference": 0.3,
+        "description": "Node 2 z displacement calculated with Matlab code",
+        "tolerance": {
+          "absolute": 1e-15
+        }
+      }
+    ]
+  }
+}

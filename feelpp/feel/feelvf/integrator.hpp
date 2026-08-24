@@ -153,11 +153,18 @@ public:
         //
         // some typedefs
         //
+        static constexpr bool is_on_points = Elements::isOnPoints();
         using range_entity_type = std::remove_cv_t<std::remove_reference_t<typename Elements::element_t>>;
-        using the_element_type = typename range_entity_type::super2::template Element<range_entity_type>::type;
+        using the_element_type = std::conditional_t<is_on_points,
+                                                    typename Elements::mesh_t::element_type,
+                                                    typename range_entity_type::super2::template Element<range_entity_type>::type>;
 
-        using im_type = im_t<the_element_type,expression_value_type>;
-        using im2_type = im_t<the_element_type,expression_value_type>;
+        using im_type = std::conditional_t<is_on_points,
+                                           Im,
+                                           im_t<the_element_type,expression_value_type>>;
+        using im2_type = std::conditional_t<is_on_points,
+                                            Im2,
+                                            im_t<the_element_type,expression_value_type>>;
 
         typedef the_element_type element_type;
         typedef typename the_element_type::gm_type gm_type;
@@ -796,6 +803,10 @@ private:
     void assemble( FormType& __form, mpl::int_<MESH_FACES> /**/, mpl::bool_<true> /**/, bool hasRelation ) const;
     template<typename FormType>
     void assemble( FormType& __form, mpl::int_<MESH_FACES> /**/, mpl::bool_<false> /**/, bool hasRelation ) const;
+    template<typename FormType>
+    void assemble( FormType& __form, mpl::int_<MESH_POINTS> /**/, mpl::bool_<true> /**/, bool hasRelation ) const;
+    template<typename FormType>
+    void assemble( FormType& __form, mpl::int_<MESH_POINTS> /**/, mpl::bool_<false> /**/, bool hasRelation ) const;
 
     template<typename FE1,typename FE2,typename ElemContType>
     void assembleWithRelationDifferentMeshType( vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const
@@ -843,6 +854,8 @@ private:
     void assembleInCaseOfInterpolate(vf::detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const;
     template<typename FE,typename VectorType,typename ElemContType>
     void assembleInCaseOfInterpolate(vf::detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_FACES> /**/ ) const;
+    template<typename FE,typename VectorType,typename ElemContType>
+    void assembleInCaseOfInterpolate(vf::detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_POINTS> /**/ ) const;
 
 
     template<typename P0hType>
@@ -1256,6 +1269,23 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     {
         assembleInCaseOfInterpolate( __form,mpl::int_<MESH_ELEMENTS>() );
     }
+}
+
+template<typename Elements, typename Im, typename Expr, typename Im2>
+template<typename FormType>
+void
+Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_POINTS> /**/, mpl::bool_<true> /**/, bool /*hasRelation*/ ) const
+{
+    assembleInCaseOfInterpolate( __form, mpl::int_<MESH_POINTS>() );
+}
+
+template<typename Elements, typename Im, typename Expr, typename Im2>
+template<typename FormType>
+void
+Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_POINTS> /**/, mpl::bool_<false> /**/, bool hasRelation ) const
+{
+    CHECK( hasRelation ) << "[integrator::assemble<MESH_POINTS>] point ranges on unrelated meshes are not supported yet";
+    assembleInCaseOfInterpolate( __form, mpl::int_<MESH_POINTS>() );
 }
 
 namespace detail
@@ -4619,6 +4649,90 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
     } // else
 
     delete formc;
+}
+
+template<typename Elements, typename Im, typename Expr, typename Im2>
+template<typename FE,typename VectorType,typename ElemContType>
+void
+Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_POINTS> /**/ ) const
+{
+    using FormType = vf::detail::LinearForm<FE,VectorType,ElemContType>;
+    using space_type = typename FormType::test_space_type;
+    using fe_type = typename FormType::fe_type;
+    using gm_type = typename FormType::gm_type;
+    using geoelement_type = typename FormType::mesh_test_element_type;
+    using test_dof_type = typename space_type::dof_type;
+    using form_value_type = typename FormType::value_type;
+    static const size_type gmc_context_v = expression_type::context|vm::POINT|vm::JACOBIAN;
+    static const size_type fe_context_v = expression_type::context;
+    using fecontext_type = typename fe_type::template Context<fe_context_v, fe_type, gm_type, geoelement_type>;
+
+    auto space = __form.testSpace();
+    auto mesh = space->mesh();
+    auto const* dof = space->dof().get();
+    auto fe = space->fe();
+    auto gm = __form.gm();
+
+    Eigen::Matrix<int, test_dof_type::nDofPerElement, 1> localRows;
+    Eigen::Matrix<form_value_type, test_dof_type::nDofPerElement, 1> localValues;
+    Eigen::Matrix<int, test_dof_type::nDofPerElement, 1> localSigns;
+
+    for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
+    {
+        auto pt_it = lit->begin();
+        auto pt_en = lit->end();
+        DLOG(INFO) << "integrating over " << std::distance( pt_it, pt_en ) << " points\n";
+
+        for ( ; pt_it != pt_en; ++pt_it )
+        {
+            auto const& curPt = boost::unwrap_ref( *pt_it );
+            if ( curPt.elements().empty() )
+                continue;
+            CHECK( curPt.mesh()->isSameMesh( mesh ) )
+                << "[integrator::assemble<MESH_POINTS>] point ranges on a different mesh are not supported yet";
+
+            index_type eid = invalid_v<index_type>;
+            uint16_type ptid_in_element = invalid_uint16_type_value;
+            for ( auto const& eltConnectedToPoint : curPt.elements() )
+            {
+                index_type eltIdConnected = eltConnectedToPoint.first;
+                if ( dof->isElementDone( eltIdConnected ) )
+                {
+                    eid = eltIdConnected;
+                    ptid_in_element = eltConnectedToPoint.second;
+                    break;
+                }
+            }
+            if ( eid == invalid_v<index_type> )
+                continue;
+
+            auto const& elt = mesh->element( eid );
+            auto geopc = gm->preCompute( fe->vertexPoints( ptid_in_element ) );
+            auto gmc = gm->template context<gmc_context_v>( elt, geopc, this->expression().dynamicContext() );
+            auto fepc = fe->preCompute( fe, gmc->xRefs() );
+            auto fec = std::make_shared<fecontext_type>( fe, gmc, fepc );
+            auto mapgmc = vf::mapgmc( gmc );
+            auto mapfec = vf::mapfec( fec );
+            auto exprEvaluator = this->expression().evaluator( mapgmc, mapfec );
+
+            fec->update( gmc );
+            exprEvaluator.update( mapgmc, mapfec );
+
+            localValues.setZero();
+            for ( int q = 0; q < gmc->xRefs().size2(); ++q )
+                for ( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+                    localValues( i ) += exprEvaluator.evaliq( i, 0, 0, q );
+
+            if ( test_dof_type::is_modal || is_hdiv_conforming<fe_type>::value || is_hcurl_conforming<fe_type>::value )
+            {
+                localSigns = dof->localToGlobalSigns( eid );
+                localValues.array() *= localSigns.array().template cast<form_value_type>();
+            }
+
+            localRows = dof->localToGlobalIndices( eid, __form.dofIdToContainerId() ).array();
+            __form.addVector( localRows.data(), localRows.size(), localValues.data(), eid );
+        }
+    }
 }
 
 namespace detail_integrator

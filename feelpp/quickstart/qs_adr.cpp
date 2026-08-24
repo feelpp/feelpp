@@ -55,7 +55,9 @@ int main(int argc, char**argv )
 
         tic();
         auto Vh = Pch<2>( mesh );
-        auto u = Vh->element("u");
+        auto u = trial( Vh, "u" );
+        auto v = test( Vh, "v" );
+        auto uh = Vh->element("u");
         auto gamma = expr(soption(_name="functions.gamma"));
         auto beta = expr<FEELPP_DIM,1>(soption(_name="functions.beta"));
         auto sigma = expr<FEELPP_DIM,FEELPP_DIM>(soption(_name="functions.sigma"));
@@ -64,7 +66,7 @@ int main(int argc, char**argv )
         auto r_2 = expr( soption(_name="functions.b"), "b" ); // Robin right hand side expression
         auto n = expr( soption(_name="functions.c"), "c" ); // Neumann expression
         auto g = expr( soption(_name="functions.g"), "g" );
-        auto v = Vh->element( g, "g" );
+        auto uExact = Vh->element( g, "g" );
         toc("Vh");
         // end::mesh_space[]
 
@@ -72,15 +74,15 @@ int main(int argc, char**argv )
         tic();
         auto l = form1( _test=Vh );
         l = integrate(_range=elements(mesh),
-                    _expr=f*id(v));
-        l+=integrate(_range=markedfaces(mesh,"Robin"), _expr=r_2*id(v));
-        l+=integrate(_range=markedfaces(mesh,"Neumann"), _expr=n*id(v));
+                    _expr=f*v);
+        l+=integrate(_range=markedfaces(mesh,"Robin"), _expr=r_2*v);
+        l+=integrate(_range=markedfaces(mesh,"Neumann"), _expr=n*v);
         toc("l");
 
         tic();
         auto a = form2( _trial=Vh, _test=Vh);
         a = integrate(_range=elements(mesh),
-                    _expr=grad(v)*(sigma*trans(gradt(u))) + (gradt(u)*beta)*id(v) + gamma*idt(u)*id(v) );
+                    _expr=grad(v)*(sigma*trans(grad(u))) + (grad(u)*beta)*v + gamma*u*v );
 
         // tag::stab[]
         if ( boption("stabilisation") )
@@ -88,37 +90,37 @@ int main(int argc, char**argv )
             auto stable = expr( soption(_name="delta",_prefix="functions") );
             auto epsilon=(trace(sigma)/FEELPP_DIM);
             auto delta = stable*constant(1.0)/(1.0/h() + epsilon/(h()*h()));
-            auto  L = -epsilon*laplacian(v)+ grad(v)*beta + gamma*id(v);
-            auto  Lt = -epsilon*laplaciant(u)+ gradt(u)*beta + gamma*idt(u);
+            auto  L = -epsilon*laplacian(v)+ grad(v)*beta + gamma*v;
+            auto  Lt = -epsilon*laplacian(u)+ grad(u)*beta + gamma*u;
 
             a+= integrate(_range=elements(mesh), _expr=delta*L*Lt );
             l+= integrate(_range=elements(mesh), _expr=delta*f*L );
         }
         // end::stab[]
         
-        a+=integrate(_range=markedfaces(mesh,"Robin"), _expr=r_1*idt(u)*id(v));
-        a+=on(_range=markedfaces(mesh,"Dirichlet"), _rhs=l, _element=u, _expr=g );
+        a+=integrate(_range=markedfaces(mesh,"Robin"), _expr=r_1*u*v);
+        a+=on(_range=markedfaces(mesh,"Dirichlet"), _rhs=l, _element=uh, _expr=g );
         //! if no markers Robin Neumann or Dirichlet are present in the mesh then
         //! impose Dirichlet boundary conditions over the entire boundary
         if ( !mesh->hasAnyMarker({"Robin", "Neumann","Dirichlet"}) )
-            a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u, _expr=g );
+            a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=uh, _expr=g );
         toc("a");
 
         tic();
         //! solve the linear system, find u s.t. a(u,v)=l(v) for all v
         if ( !boption( "no-solve" ) )
-            a.solve(_rhs=l,_solution=u);
+            a.solve(_rhs=l,_solution=uh);
         toc("a.solve");
 
         // end::forms[]
-        cout << "||u-u_h||_L2=" << normL2(_range=elements(mesh), _expr=idv(u)-g) << std::endl;
+        cout << "||u-u_h||_L2=" << normL2(_range=elements(mesh), _expr=idv(uh)-g) << std::endl;
 
         // tag::export[]
         tic();
         auto e = exporter( _mesh=mesh );
         e->addRegions();
-        e->add( "uh", u );
-        e->add( "u", v );
+        e->add( "uh", uh );
+        e->add( "u", uExact );
         e->save();
         toc("Exporter");
         return 0;

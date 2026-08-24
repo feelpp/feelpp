@@ -1,0 +1,77 @@
+{
+  "name": "validation-cantilever-z",
+  "description": "Plate bending case from validation.pdf page 14: clamp XMoins and apply a total -10 N load on XPlus in the Z direction, using the current one-layer shell benchmark adaptation.",
+  "gmsh": {
+    "filename": "validation_cantilever_z.geo"
+  },
+  "material": {
+    "E": 210000000000.0,
+    "nu": 0.0
+  },
+  "boundaryConditions": {
+    "clampMarkers": [
+      "XMoins"
+    ]
+  },
+  "loads": {
+    "bodyForce": "{0,0,0}",
+    "totalForces": [
+      {
+        "marker": "XPlus",
+        "value": [
+          0.0,
+          0.0,
+          -10.0
+        ]
+      }
+    ]
+  },
+  "checks": {
+    "target": "hexa8",
+    "items": [
+      {
+        "type": "euler-bernoulli-cantilever",
+        "name": "tip z displacement",
+        "tip": {
+          "point": [
+            1.0,
+            0.5,
+            0.0
+          ],
+          "direction": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "component": 2
+        },
+        "beam": {
+          "length": 1.0,
+          "height": 0.1,
+          "thickness": 1.0
+        },
+        "load": {
+          "tipForce": -10.0,
+          "tipMoment": 0.0
+        },
+        "check": false,
+        "targets": {
+          "hexa8": {
+            "check": false
+          },
+          "sb9": {
+            "check": true
+          },
+          "sb9g25": {
+            "check": true
+          }
+        },
+        "tolerance": {
+          "absolute": 1e-09,
+          "relative": 0.005
+        },
+        "description": "Euler-Bernoulli cantilever value quoted in validation.pdf; accepted here on the 6x6x1 shell adaptation within 0.5%"
+      }
+    ]
+  }
+}

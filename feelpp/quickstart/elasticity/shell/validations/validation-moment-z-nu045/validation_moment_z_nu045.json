@@ -1,0 +1,104 @@
+{
+  "name": "validation-moment-z-nu045",
+  "description": "Moment case from validation.pdf page 12: clamp ZMoins and apply a unit resultant moment on ZPlus with nu=0.45.",
+  "gmsh": {
+    "filename": "validation_moment_z_nu045.geo"
+  },
+  "material": {
+    "E": 10.0,
+    "nu": 0.45
+  },
+  "boundaryConditions": {
+    "clampMarkers": [
+      "ZMoins"
+    ]
+  },
+  "loads": {
+    "bodyForce": "{0,0,0}",
+    "pointLoads": [
+      {
+        "marker": "P1",
+        "value": [
+          0.0,
+          0.0,
+          0.25
+        ]
+      },
+      {
+        "marker": "P2",
+        "value": [
+          0.0,
+          0.0,
+          0.25
+        ]
+      },
+      {
+        "marker": "P5",
+        "value": [
+          0.0,
+          0.0,
+          -0.25
+        ]
+      },
+      {
+        "marker": "P6",
+        "value": [
+          0.0,
+          0.0,
+         -0.25
+        ]
+      }
+    ]
+  },
+  "probe": {
+    "point": [
+      1.0,
+      1.0,
+      0.5
+    ],
+    "direction": [
+      1.0,
+      0.0,
+      0.0
+    ],
+    "label": "diagnostic x displacement"
+  },
+  "checks": {
+    "target": "hexa8",
+    "items": [
+      {
+        "type": "elasticity-point-fields",
+        "name": "validation-code-matlab",
+        "point": [
+          0.5,
+          0.5,
+          0.5
+        ],
+        "references": {
+          "sb9g25": {
+            "epsilon": [
+              0.0169,
+              0.0169,
+              -0.0408,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sigma": [
+              -0.1023,
+              -0.1023,
+              -0.5,
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "description": "Epsilon/Sigma at element center; component order xx,yy,zz,xy,xz,yz.",
+        "tolerance": {
+          "absolute": 1e-4
+        }
+      }
+    ]
+  }
+}

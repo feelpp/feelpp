@@ -7,31 +7,7 @@
 #include <feel/feeldiscr/product.hpp>
 #include <feel/feelvf/blockforms.hpp>
 #include <feel/feelvf/vf.hpp>
-namespace Feel
-{
-template <typename SpaceType>
-NullSpace<double> qsNullSpace( SpaceType const& space, mpl::int_<2> /**/ )
-{
-    auto mode1 = space->element( oneX() );
-    auto mode2 = space->element( oneY() );
-    auto mode3 = space->element( vec(Py(),-Px()) );
-    NullSpace<double> userNullSpace( { mode1,mode2,mode3 } );
-    return userNullSpace;
-}
-template <typename SpaceType>
-NullSpace<double> qsNullSpace( SpaceType const& space, mpl::int_<3> /**/ )
-{
-    auto mode1 = space->element( oneX() );
-    auto mode2 = space->element( oneY() );
-    auto mode3 = space->element( oneZ() );
-    auto mode4 = space->element( vec(Py(),-Px(),cst(0.)) );
-    auto mode5 = space->element( vec(-Pz(),cst(0.),Px()) );
-    auto mode6 = space->element( vec(cst(0.),Pz(),-Py()) );
-    NullSpace<double> userNullSpace( { mode1,mode2,mode3,mode4,mode5,mode6 } );
-    return userNullSpace;
-}
-
-}
+#include "nullspace-rigidbody.hpp"
 
 int main(int argc, char**argv )
 {
@@ -138,10 +114,11 @@ int main(int argc, char**argv )
         if ( !boption( "no-solve" ) )
         {
             tic();
-            std::shared_ptr<NullSpace<double> > myNullSpace( new NullSpace<double>(backend(),qsNullSpace(Vh,mpl::int_<FEELPP_DIM>())) );
-            backend()->attachNearNullSpace( myNullSpace );
+            auto b = backend();
+            auto rigidBodyModes = std::make_shared<NullSpace<double>>( b, qsNullSpace( Vh ) );
+            b->attachNearNullSpace( rigidBodyModes );
             if ( boption(_name="nullspace") )
-                backend()->attachNearNullSpace( myNullSpace );
+                b->attachNullSpace( rigidBodyModes );
 
             auto U=Xh.element();
             a.solve(_rhs=l,_solution=U);

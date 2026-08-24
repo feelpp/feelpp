@@ -1,0 +1,7 @@
+shell-affine-hexa-manufactured --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/affine-hexa/affine_hexa.cfg
+shell-affine-hexa-manufactured-tensor --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/affine-hexa/affine_hexa.cfg --elasticity.formulation=tensor
+shell-affine-hexa-manufactured-mandel --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/affine-hexa/affine_hexa.cfg --elasticity.formulation=mandel
+shell-affine-hexa-manufactured-voigt --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/affine-hexa/affine_hexa.cfg --elasticity.formulation=voigt
+shell-validation-traction-x-nu0 --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/validation-traction-nu0/validation_traction_x_nu0.cfg --mesh.expected-elements=1
+shell-validation-traction-y-nu0 --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/validation-traction-nu0/validation_traction_y_nu0.cfg --mesh.expected-elements=1
+shell-validation-traction-z-nu0 --config-file=${CMAKE_CURRENT_SOURCE_DIR}/elasticity/shell/validation-traction-nu0/validation_traction_z_nu0.cfg --mesh.expected-elements=1

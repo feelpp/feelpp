@@ -1,0 +1,1262 @@
+= Feel++ feelviewfactor C++20/23 Modernization Prompt
+:author: Feel++ Consortium
+:revdate: 2026-01-02
+:toc: left
+:toclevels: 3
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+
+== Overview
+
+This document provides a comprehensive prompt for the phased modernization of the `feelpp/feel/feelviewfactor` module to C++20/23. The library computes view factors for radiative heat transfer using numerical integration and ray tracing methods.
+
+=== Current State
+
+[cols="1,2,1,1"]
+|===
+| File | Purpose | LOC | Issues
+
+| `viewfactorbase.hpp`
+| Abstract base class for view factor computation
+| 121
+| Minor (needs `[[nodiscard]]`)
+
+| `raytracingviewfactor.hpp`
+| Ray tracing-based view factor computation with BVH
+| 449
+| Major (public members, `using namespace`, poor encapsulation)
+
+| `unobstructedplanarviewfactor.hpp`
+| Numerical integration (2AI/1AI methods)
+| 179
+| Minor (good structure)
+
+| `kdtreevectorofvectorsadaptor.hpp`
+| nanoflann KD-tree adapter
+| 138
+| Minor (raw pointer, no RAII)
+
+| `viewfactorfactory.hpp`
+| Factory pattern (incomplete)
+| 29
+| **Critical** (wrong destructor name, incomplete)
+|===
+
+=== Key Objectives
+
+1. **C++20 Concepts**: Define `ViewFactorMesh` and `ViewFactorComputable` concepts
+2. **Code Quality**: Fix bugs, encapsulate data, remove global `using namespace`
+3. **Modern C++**: Use `std::format`, `std::span`, `[[nodiscard]]`, `constexpr`
+4. **Parallelism**: Improve threading model with `std::jthread` (optional)
+5. **C++23 Features**: Add `std::expected` for error handling (optional)
+6. **Testing**: Ensure all changes are validated by compilation and test execution
+
+=== Constraints
+
+* C++20 minimum
+* Must maintain backward API compatibility
+* Tests must pass after each phase
+* No changes to external dependencies (nanoflann, Eigen)
+
+=== Test Commands
+
+After each phase, verify with:
+
+[source,bash]
+----
+# Configure (if not already done)
+cmake --preset default
+
+# Build the feelviewfactor library and tests
+cmake --build --preset default --target feelpp_test_viewfactor_quadrature feelpp_test_viewfactor_raytracing
+
+# Run tests
+ctest --preset default -R viewfactor
+----
+
+---
+
+== Phase 1: Critical Bug Fixes and Code Quality
+
+=== Objective
+Fix critical bugs and improve code organization without adding new features.
+
+=== Files to Modify
+
+==== `feelpp/feel/feelviewfactor/viewfactorfactory.hpp`
+
+[source,cpp]
+----
+// CRITICAL BUG FIX: Wrong destructor name on line 26
+// Current:  virtual ~ExporterFactory() = default;
+// Fix:      virtual ~ViewFactorProducerFactory() = default;
+
+// Also complete the factory implementation:
+#pragma once
+
+#include <memory>
+#include <feel/feelviewfactor/viewfactorbase.hpp>
+
+namespace Feel
+{
+
+template<typename MeshType>
+class ViewFactorProducerFactory
+{
+public:
+    virtual ~ViewFactorProducerFactory() = default;
+    virtual std::unique_ptr<ViewFactorBase<MeshType>> create() = 0;
+};
+
+} // namespace Feel
+----
+
+==== `feelpp/feel/feelviewfactor/raytracingviewfactor.hpp`
+
+[source,cpp]
+----
+// 1. Remove global using directive (line 25)
+// DELETE: using namespace nanoflann;
+// Use qualified names: nanoflann::KNNResultSet, etc.
+
+// 2. Move free functions to detail namespace (lines 31-161)
+namespace Feel::viewfactor::detail {
+    void getRandomDirection(...);
+    double elementArea(...);  // 3D overload
+    double elementArea(...);  // 2D overload
+    bool isOnSurface(...);    // 3D overload
+    bool isOnSurface(...);    // 2D overload
+}
+
+// 3. Move all public data members (lines 234-247) to private/protected
+// Current PUBLIC members that should be PRIVATE:
+//   - M_submesh, M_mesh, M_view_factors_matrix
+//   - M_markers_string, list_of_bdys, M_markers_int
+//   - M_Nrays, M_Nthreads, M_point_indices
+//   - M_view_factor_row, M_bvh_tree
+//   - M_rd, M_rd2, M_gen, M_gen2
+
+// 4. Add proper accessors for data that needs external access
+public:
+    [[nodiscard]] tr_mesh_ptrtype const& submesh() const { return M_submesh; }
+    [[nodiscard]] int numRays() const { return M_Nrays; }
+    [[nodiscard]] int numThreads() const { return M_Nthreads; }
+----
+
+==== `feelpp/feel/feelviewfactor/kdtreevectorofvectorsadaptor.hpp`
+
+[source,cpp]
+----
+// Replace raw pointer with unique_ptr for RAII (line 67)
+// Current: index_t* index = nullptr;
+// Fix:     std::unique_ptr<index_t> index;
+
+// Update constructor (line 82-84):
+index = std::make_unique<index_t>(
+    static_cast<int>(dims), *this,
+    nanoflann::KDTreeSingleIndexAdaptorParams(leaf_max_size));
+
+// Remove destructor (line 87) - unique_ptr handles cleanup
+// DELETE: ~KDTreeVectorOfVectorsAdaptor() { delete index; }
+
+// Add default move operations
+KDTreeVectorOfVectorsAdaptor(KDTreeVectorOfVectorsAdaptor&&) = default;
+KDTreeVectorOfVectorsAdaptor& operator=(KDTreeVectorOfVectorsAdaptor&&) = default;
+
+// Delete copy operations (contains unique_ptr)
+KDTreeVectorOfVectorsAdaptor(const KDTreeVectorOfVectorsAdaptor&) = delete;
+KDTreeVectorOfVectorsAdaptor& operator=(const KDTreeVectorOfVectorsAdaptor&) = delete;
+----
+
+=== Verification
+
+[source,bash]
+----
+# Build
+cmake --build --preset default --target feelpp_test_viewfactor_quadrature feelpp_test_viewfactor_raytracing
+
+# Test
+ctest --preset default -R viewfactor -V
+----
+
+=== Acceptance Criteria
+
+* [ ] Factory has correct destructor name
+* [ ] No `using namespace` in header files
+* [ ] All data members are private with appropriate accessors
+* [ ] KD-tree adaptor uses RAII (unique_ptr)
+* [ ] All tests pass: `ctest --preset default -R viewfactor`
+
+---
+
+== Phase 2: C++20 Concepts
+
+=== Objective
+Create concepts.hpp with type constraints for the view factor library.
+
+=== Files to Create
+
+==== `feelpp/feel/feelviewfactor/concepts.hpp`
+
+[source,cpp]
+----
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+
+ This file is part of the Feel library
+
+ Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ Date: 2026-01-02
+
+ Copyright (C) 2026 Feel++ Consortium
+
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation; either
+ version 2.1 of the License, or (at your option) any later version.
+
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+
+ You should have received a copy of the GNU Lesser General Public
+ License along with this library; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
+#ifndef FEELPP_FEELVIEWFACTOR_CONCEPTS_HPP
+#define FEELPP_FEELVIEWFACTOR_CONCEPTS_HPP 1
+
+#include <concepts>
+#include <memory>
+#include <string>
+#include <vector>
+
+namespace Feel
+{
+
+/**
+ * @brief Concept for meshes compatible with view factor computation
+ *
+ * Requirements:
+ * - Must have face_type for boundary iteration
+ * - Must have nDim (2 or 3 only)
+ * - Must support marker queries
+ * - Must provide geometric mapping (gm())
+ */
+template<typename M>
+concept ViewFactorMesh = requires(M m, std::string marker) {
+    typename M::face_type;
+    typename M::element_type;
+    { M::nDim } -> std::convertible_to<int>;
+    { m.hasMarker(marker) } -> std::convertible_to<bool>;
+    { m.gm() };
+    { m.numElements() } -> std::convertible_to<size_t>;
+} && (M::nDim == 2 || M::nDim == 3);
+
+/**
+ * @brief Concept for view factor computation classes
+ *
+ * All view factor implementations must satisfy this concept.
+ */
+template<typename T>
+concept ViewFactorComputable = requires(T t, bool elementwise) {
+    typename T::value_type;
+    typename T::mesh_t;
+    { t.compute(elementwise) } -> std::same_as<void>;
+    { t.viewFactors() };
+    { t.areas() };
+};
+
+/**
+ * @brief Concept for view factor base class compatibility
+ */
+template<typename T>
+concept ViewFactorDerived = ViewFactorComputable<T> && requires(T t, unsigned int i, unsigned int j) {
+    { t.devReciprocity(i, j) } -> std::convertible_to<typename T::value_type>;
+    { t.maxDevReciprocity() } -> std::convertible_to<typename T::value_type>;
+};
+
+/**
+ * @brief Concept for ray-traceable geometry
+ *
+ * Meshes that support BVH-based ray tracing.
+ */
+template<typename M>
+concept RayTraceableMesh = ViewFactorMesh<M> && requires(M m) {
+    // Must support trace mesh extraction
+    typename trace_mesh_t<M>;
+};
+
+/**
+ * @brief Concept for JSON configuration objects
+ */
+template<typename J>
+concept ViewFactorConfig = requires(J j) {
+    { j["viewfactor"]["markers"] };
+    { j["viewfactor"]["quadrature_order"] };
+};
+
+} // namespace Feel
+
+#endif /* FEELPP_FEELVIEWFACTOR_CONCEPTS_HPP */
+----
+
+=== Files to Modify
+
+==== `feelpp/feel/feelviewfactor/viewfactorbase.hpp`
+
+[source,cpp]
+----
+// Add include for concepts
+#include <feel/feelviewfactor/concepts.hpp>
+
+// Constrain template parameter
+template <ViewFactorMesh MeshType>
+class ViewFactorBase
+{
+    // ... existing code ...
+};
+
+// Add static_assert to verify concept satisfaction
+static_assert(ViewFactorMesh<Mesh<Simplex<2>>>,
+              "2D simplex mesh must satisfy ViewFactorMesh");
+static_assert(ViewFactorMesh<Mesh<Simplex<3>>>,
+              "3D simplex mesh must satisfy ViewFactorMesh");
+----
+
+==== `feelpp/feel/feelviewfactor/unobstructedplanarviewfactor.hpp`
+
+[source,cpp]
+----
+// Add concept constraint
+template<ViewFactorMesh MeshType>
+class UnobstructedPlanarViewFactor : public ViewFactorBase<MeshType>
+{
+    // ... existing code ...
+};
+----
+
+==== `feelpp/feel/feelviewfactor/raytracingviewfactor.hpp`
+
+[source,cpp]
+----
+// Add concept constraint (after Phase 1 fixes)
+template <ViewFactorMesh MeshType>
+class RayTracingViewFactor : public ViewFactorBase<MeshType>
+{
+    // ... existing code ...
+};
+----
+
+=== Verification
+
+[source,bash]
+----
+# Build
+cmake --build --preset default --target feelpp_test_viewfactor_quadrature feelpp_test_viewfactor_raytracing
+
+# Test
+ctest --preset default -R viewfactor -V
+
+# Verify concept works (add to a test or try compilation)
+# static_assert(Feel::ViewFactorMesh<Feel::Mesh<Feel::Simplex<3>>>);
+----
+
+=== Acceptance Criteria
+
+* [ ] `concepts.hpp` created with documented concepts
+* [ ] `ViewFactorMesh` concept constrains all view factor classes
+* [ ] `ViewFactorComputable` concept correctly describes the interface
+* [ ] Concept errors provide clear messages for invalid types
+* [ ] All tests pass: `ctest --preset default -R viewfactor`
+
+---
+
+== Phase 3: Modern C++ Attributes and Accessors
+
+=== Objective
+Add `[[nodiscard]]`, `constexpr`, and improve const-correctness throughout.
+
+=== Files to Modify
+
+==== `feelpp/feel/feelviewfactor/viewfactorbase.hpp`
+
+[source,cpp]
+----
+// Add [[nodiscard]] to all accessor methods
+[[nodiscard]] eigen_matrix_xx_type<value_type> const& viewFactors() const { return vf_; }
+[[nodiscard]] eigen_vector_x_col_type<value_type> const& areas() const { return areas_; }
+[[nodiscard]] value_type devReciprocity(unsigned int i, unsigned int j) const;
+[[nodiscard]] Real maxDevReciprocity() const;
+
+// Add [[nodiscard]] to list_of_bdys accessor (add if missing)
+[[nodiscard]] std::vector<std::string> const& boundaryMarkers() const { return list_of_bdys_; }
+
+// Use std::numbers for pi (C++20)
+#include <numbers>
+inline static constexpr value_type divisor_ = (mesh_t::nDim == 2) ? 2.0 : std::numbers::pi;
+
+// Modernize maxDevReciprocity with std::max
+[[nodiscard]] Real maxDevReciprocity() const
+{
+    value_type max_dev = 0;
+    for (int i = 0; i < this->vf_.rows(); ++i)
+    {
+        for (int j = 0; j < i; ++j)
+        {
+            max_dev = std::max(max_dev, std::abs(this->devReciprocity(i, j)));
+        }
+    }
+    return max_dev;
+}
+----
+
+==== `feelpp/feel/feelviewfactor/unobstructedplanarviewfactor.hpp`
+
+[source,cpp]
+----
+// No changes needed beyond Phase 2 concept constraint
+// The compute() method is virtual and cannot be [[nodiscard]]
+----
+
+==== `feelpp/feel/feelviewfactor/raytracingviewfactor.hpp`
+
+[source,cpp]
+----
+// Add [[nodiscard]] to accessors (after moving members to private in Phase 1)
+[[nodiscard]] mesh_ptrtype mesh() const { return M_mesh; }
+[[nodiscard]] std::vector<std::string> const& markerNames() const { return M_markers_string; }
+[[nodiscard]] tr_mesh_ptrtype const& submesh() const { return M_submesh; }
+[[nodiscard]] int numRays() const noexcept { return M_Nrays; }
+[[nodiscard]] int numThreads() const noexcept { return M_Nthreads; }
+----
+
+=== Verification
+
+[source,bash]
+----
+# Build with warnings to check [[nodiscard]] effectiveness
+cmake --build --preset default --target feelpp_test_viewfactor_quadrature feelpp_test_viewfactor_raytracing -- -Wall -Wextra
+
+# Test
+ctest --preset default -R viewfactor -V
+----
+
+=== Acceptance Criteria
+
+* [ ] All accessor methods have `[[nodiscard]]`
+* [ ] `std::numbers::pi` used instead of `M_PI`
+* [ ] `std::max` used instead of ternary for clarity
+* [ ] No new compiler warnings introduced
+* [ ] All tests pass: `ctest --preset default -R viewfactor`
+
+---
+
+== Phase 4: std::format for Error Messages (C++20)
+
+=== Objective
+Replace string concatenation in error messages with `std::format` for better readability and type safety.
+
+=== Files to Modify
+
+==== `feelpp/feel/feelviewfactor/raytracingviewfactor.hpp`
+
+[source,cpp]
+----
+#include <format>
+
+// Line 81: getRandomDirection error
+// Current:
+throw std::logic_error("Wrong dimension " + std::to_string(random_direction.size()) +
+                       " for the random direction");
+// Replace with:
+throw std::logic_error(std::format("Wrong dimension {} for the random direction",
+                                   random_direction.size()));
+
+// Line 108: elementArea error
+// Current:
+throw std::logic_error("Wrong area calculation for the random direction");
+// This message is fine as-is (no formatting needed)
+
+// Line 286: get_random_point error
+// Current:
+throw std::logic_error("Point not on triangle, but it must be");
+// This is fine as-is
+
+// Line 320: get_random_point dimension error
+// Current:
+throw std::logic_error("Problem for the computation of the random point");
+// Improve with dimension info:
+throw std::logic_error(std::format("Cannot compute random point for dimension {}", dimension));
+----
+
+==== `feelpp/feel/feelviewfactor/unobstructedplanarviewfactor.hpp`
+
+[source,cpp]
+----
+#include <format>
+
+// Line 72: Marker validation
+// Current:
+throw std::logic_error("boundary marker " + current_side + " does not exist in mesh");
+// Replace with:
+throw std::logic_error(std::format("boundary marker '{}' does not exist in mesh", current_side));
+
+// Line 83: Remote marker validation
+// Current:
+throw std::logic_error("remote boundary marker " + remote_side + " does not exist in mesh");
+// Replace with:
+throw std::logic_error(std::format("remote boundary marker '{}' does not exist in mesh", remote_side));
+
+// Line 163: Integration method error
+// Current:
+throw std::logic_error("Integration method not specified. Choose one between the available ones.");
+// Improve with available options:
+throw std::logic_error(std::format(
+    "Integration method '{}' not supported. Choose 'DoubleAreaIntegration' or 'SingleAreaIntegration'",
+    this->j_["viewfactor"]["algorithm"].template get<std::string>()));
+----
+
+==== `feelpp/feel/feelviewfactor/kdtreevectorofvectorsadaptor.hpp`
+
+[source,cpp]
+----
+#include <format>
+
+// Line 79-81: Dimension mismatch error
+// Current:
+throw std::runtime_error(
+    "Data set dimensionality does not match the 'DIM' template argument");
+// Replace with:
+throw std::runtime_error(std::format(
+    "Data set dimensionality {} does not match the 'DIM' template argument {}",
+    dims, DIM));
+----
+
+=== Verification
+
+[source,bash]
+----
+# Build
+cmake --build --preset default --target feelpp_test_viewfactor_quadrature feelpp_test_viewfactor_raytracing
+
+# Test
+ctest --preset default -R viewfactor -V
+----
+
+=== Acceptance Criteria
+
+* [ ] All string concatenation in errors replaced with `std::format`
+* [ ] Error messages include relevant variable values
+* [ ] No compilation errors with `<format>` header
+* [ ] All tests pass: `ctest --preset default -R viewfactor`
+
+---
+
+== Phase 5: std::span for Array Parameters (C++20)
+
+=== Objective
+Use `std::span` for non-owning array parameters to improve flexibility and safety.
+
+=== Files to Modify
+
+==== `feelpp/feel/feelviewfactor/raytracingviewfactor.hpp`
+
+[source,cpp]
+----
+#include <span>
+
+// getRandomDirection: Change vector reference to span
+// Current (line 31):
+void getRandomDirection(std::vector<double>& random_direction,
+                        std::mt19937& M_gen, std::mt19937& M_gen2,
+                        Eigen::VectorXd normal);
+// Replace with:
+void getRandomDirection(std::span<double> random_direction,
+                        std::mt19937& M_gen, std::mt19937& M_gen2,
+                        Eigen::VectorXd const& normal);  // Also add const&
+
+// Update internal usage to use span's size()
+int size = static_cast<int>(random_direction.size());
+----
+
+==== `feelpp/feel/feelviewfactor/viewfactorbase.hpp`
+
+[source,cpp]
+----
+#include <span>
+
+// init() method can take span instead of vector reference
+// Current (line 47):
+virtual void init(std::vector<std::string> const& list_of_bdys);
+// Add overload:
+virtual void init(std::span<const std::string> list_of_bdys) {
+    list_of_bdys_.assign(list_of_bdys.begin(), list_of_bdys.end());
+    vf_.resize(list_of_bdys_.size(), list_of_bdys_.size());
+}
+
+// Keep original for backward compatibility
+virtual void init(std::vector<std::string> const& list_of_bdys) {
+    init(std::span<const std::string>(list_of_bdys));
+}
+----
+
+=== Verification
+
+[source,bash]
+----
+# Build
+cmake --build --preset default --target feelpp_test_viewfactor_quadrature feelpp_test_viewfactor_raytracing
+
+# Test
+ctest --preset default -R viewfactor -V
+----
+
+=== Acceptance Criteria
+
+* [ ] `std::span` used for non-owning array parameters
+* [ ] Original vector-based overloads preserved for backward compatibility
+* [ ] No unnecessary copies introduced
+* [ ] All tests pass: `ctest --preset default -R viewfactor`
+
+---
+
+== Phase 6: Detail Namespace and Code Organization
+
+=== Objective
+Organize internal helper functions into a `detail` namespace and improve file structure.
+
+=== Files to Create
+
+==== `feelpp/feel/feelviewfactor/detail/geometry.hpp`
+
+[source,cpp]
+----
+#pragma once
+
+#include <Eigen/Dense>
+#include <feel/feelcore/feel.hpp>
+#include <format>
+#include <stdexcept>
+
+namespace Feel::viewfactor::detail
+{
+
+/**
+ * @brief Compute sum of areas of three triangles formed by point and triangle vertices (3D)
+ */
+[[nodiscard]] inline double elementArea(
+    Eigen::VectorXd const& point,
+    Eigen::VectorXd const& el_p1,
+    Eigen::VectorXd const& el_p2,
+    Eigen::VectorXd const& el_p3)
+{
+    if (point.size() != 3)
+        throw std::logic_error(std::format(
+            "elementArea (3D): expected 3D point, got dimension {}", point.size()));
+
+    Eigen::Vector3d point_3d = point.head<3>();
+    Eigen::Vector3d el_p1_3d = el_p1.head<3>();
+    Eigen::Vector3d el_p2_3d = el_p2.head<3>();
+    Eigen::Vector3d el_p3_3d = el_p3.head<3>();
+
+    auto v1 = (point_3d - el_p1_3d).cross(point_3d - el_p2_3d);
+    auto v2 = (point_3d - el_p2_3d).cross(point_3d - el_p3_3d);
+    auto v3 = (point_3d - el_p3_3d).cross(point_3d - el_p1_3d);
+
+    return v1.norm() / 2.0 + v2.norm() / 2.0 + v3.norm() / 2.0;
+}
+
+/**
+ * @brief Compute sum of lengths of two segments (2D)
+ */
+[[nodiscard]] inline double elementArea(
+    Eigen::VectorXd const& point,
+    Eigen::VectorXd const& el_p1,
+    Eigen::VectorXd const& el_p2)
+{
+    return (point - el_p1).norm() + (point - el_p2).norm();
+}
+
+/**
+ * @brief Check if point lies on triangle surface (3D)
+ */
+[[nodiscard]] inline bool isOnSurface(
+    Eigen::VectorXd const& point,
+    Eigen::VectorXd const& el_p1,
+    Eigen::VectorXd const& el_p2,
+    Eigen::VectorXd const& el_p3,
+    double tolerance = 1e-5)
+{
+    auto c = (el_p1 + el_p2 + el_p3) / 3.0;
+    auto elem_area = elementArea(c, el_p1, el_p2, el_p3);
+    auto area = elementArea(point, el_p1, el_p2, el_p3);
+    return math::abs(area - elem_area) < tolerance;
+}
+
+/**
+ * @brief Check if point lies on segment (2D)
+ */
+[[nodiscard]] inline bool isOnSurface(
+    Eigen::VectorXd const& point,
+    Eigen::VectorXd const& el_p1,
+    Eigen::VectorXd const& el_p2,
+    double tolerance = 1e-6)
+{
+    auto v1 = el_p2 - el_p1;
+    auto v2 = point - el_p1;
+    auto cross = v2[1] * v1[0] - v1[1] * v2[0];
+
+    if (math::abs(cross) > tolerance)
+        return false;
+
+    if (math::abs(el_p2[0] - el_p1[0]) >= math::abs(el_p2[1] - el_p1[1]))
+    {
+        return (el_p2[0] - el_p1[0] > 0)
+            ? (el_p1[0] <= point[0] && point[0] <= el_p2[0])
+            : (el_p2[0] <= point[0] && point[0] <= el_p1[0]);
+    }
+    else
+    {
+        return (el_p2[1] - el_p1[1] > 0)
+            ? (el_p1[1] <= point[1] && point[1] <= el_p2[1])
+            : (el_p2[1] <= point[1] && point[1] <= el_p1[1]);
+    }
+}
+
+} // namespace Feel::viewfactor::detail
+----
+
+==== `feelpp/feel/feelviewfactor/detail/random.hpp`
+
+[source,cpp]
+----
+#pragma once
+
+#include <Eigen/Dense>
+#include <cmath>
+#include <format>
+#include <numbers>
+#include <random>
+#include <span>
+#include <stdexcept>
+
+namespace Feel::viewfactor::detail
+{
+
+/**
+ * @brief Generate random direction uniformly distributed on hemisphere (3D) or half-circle (2D)
+ *
+ * @param random_direction Output span to fill with direction components
+ * @param gen1 First random number generator
+ * @param gen2 Second random number generator
+ * @param normal Surface normal vector
+ */
+inline void getRandomDirection(
+    std::span<double> random_direction,
+    std::mt19937& gen1,
+    std::mt19937& gen2,
+    Eigen::VectorXd const& normal)
+{
+    std::uniform_real_distribution<double> dist(0.0, 1.0);
+    auto const size = static_cast<int>(random_direction.size());
+
+    if (size == 3)
+    {
+        Eigen::Vector3d z_axis(0, 0, 1);
+        double phi = 2.0 * std::numbers::pi * dist(gen1);
+        double theta = std::asin(std::sqrt(dist(gen2)));
+
+        random_direction[0] = std::sin(theta) * std::cos(phi);
+        random_direction[1] = std::sin(theta) * std::sin(phi);
+        random_direction[2] = std::cos(theta);
+
+        // Rotate if normal is not aligned with z-axis
+        if (std::abs(normal.dot(z_axis)) < 1.0)
+        {
+            Eigen::Vector3d direction(random_direction[0], random_direction[1], random_direction[2]);
+            Eigen::Vector3d crossProd1 = z_axis.cross(normal.head<3>());
+            Eigen::Vector3d crossProd2 = crossProd1.cross(z_axis);
+            Eigen::Vector3d crossProd3 = crossProd1.cross(normal.head<3>());
+
+            Eigen::Matrix3d matrix1, matrix2;
+            matrix1.col(0) = z_axis;
+            matrix1.col(1) = crossProd2;
+            matrix1.col(2) = crossProd1;
+
+            matrix2.row(0) = normal.head<3>();
+            matrix2.row(1) = crossProd3;
+            matrix2.row(2) = crossProd1;
+
+            direction = matrix1 * (matrix2 * direction);
+
+            random_direction[0] = direction[0];
+            random_direction[1] = direction[1];
+            random_direction[2] = direction[2];
+        }
+    }
+    else if (size == 2)
+    {
+        double phi = std::numbers::pi * dist(gen1);
+        random_direction[0] = std::cos(phi);
+        random_direction[1] = std::sin(phi);
+    }
+    else
+    {
+        throw std::logic_error(std::format(
+            "Wrong dimension {} for the random direction (expected 2 or 3)", size));
+    }
+}
+
+} // namespace Feel::viewfactor::detail
+----
+
+=== Files to Modify
+
+==== `feelpp/feel/feelviewfactor/raytracingviewfactor.hpp`
+
+[source,cpp]
+----
+// Replace free functions with detail namespace includes
+#include <feel/feelviewfactor/detail/geometry.hpp>
+#include <feel/feelviewfactor/detail/random.hpp>
+
+// Remove the inline free functions (lines 31-161)
+// Use Feel::viewfactor::detail::getRandomDirection, etc.
+----
+
+==== `feelpp/feel/feelviewfactor/CMakeLists.txt`
+
+[source,cmake]
+----
+# Update to include detail headers
+set( SRC viewfactorbase.cpp unobstructedplanarviewfactor.cpp raytracingviewfactor.cpp )
+file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
+file(GLOB DETAIL_HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} detail/*.hpp)
+feel_append_src(feelviewfactor "${SRC}")
+----
+
+=== Verification
+
+[source,bash]
+----
+# Build
+cmake --build --preset default --target feelpp_test_viewfactor_quadrature feelpp_test_viewfactor_raytracing
+
+# Test
+ctest --preset default -R viewfactor -V
+----
+
+=== Acceptance Criteria
+
+* [ ] `detail/` directory created with `geometry.hpp` and `random.hpp`
+* [ ] Free functions moved from `raytracingviewfactor.hpp` to detail namespace
+* [ ] All internal usage updated to use `Feel::viewfactor::detail::`
+* [ ] CMakeLists.txt updated to include detail headers
+* [ ] All tests pass: `ctest --preset default -R viewfactor`
+
+---
+
+== Phase 7: Optional C++23 Features (std::expected)
+
+=== Objective
+Add optional C++23 `std::expected` for error handling as an alternative to exceptions.
+
+NOTE: This phase is optional and requires C++23 compiler support.
+
+=== Files to Modify
+
+==== `feelpp/feel/feelviewfactor/viewfactorbase.hpp`
+
+[source,cpp]
+----
+#if __cplusplus >= 202302L
+#include <expected>
+#endif
+
+template <ViewFactorMesh MeshType>
+class ViewFactorBase
+{
+public:
+    // ... existing code ...
+
+#if __cplusplus >= 202302L
+    /**
+     * @brief Validate that a marker exists in the mesh
+     * @return std::expected<void, std::string> with error message if invalid
+     */
+    [[nodiscard]] std::expected<void, std::string> validateMarker(
+        std::string_view marker) const
+    {
+        if (!mesh_->hasMarker(std::string{marker}))
+            return std::unexpected{std::format(
+                "boundary marker '{}' does not exist in mesh", marker)};
+        return {};
+    }
+
+    /**
+     * @brief Compute view factors with error reporting
+     * @return std::expected with success or error description
+     */
+    [[nodiscard]] virtual std::expected<void, std::string>
+    computeChecked(bool elementwise = false) = 0;
+#endif
+};
+----
+
+==== `feelpp/feel/feelviewfactor/unobstructedplanarviewfactor.hpp`
+
+[source,cpp]
+----
+#if __cplusplus >= 202302L
+template<ViewFactorMesh MeshType>
+std::expected<void, std::string>
+UnobstructedPlanarViewFactor<MeshType>::computeChecked(bool elementwise)
+{
+    // Validate all markers first
+    for (auto const& marker : this->list_of_bdys_)
+    {
+        if (auto result = this->validateMarker(marker); !result)
+            return std::unexpected{result.error()};
+    }
+
+    // Proceed with computation
+    this->compute(elementwise);
+    return {};
+}
+#endif
+----
+
+=== Verification
+
+[source,bash]
+----
+# Build with C++23 if available
+cmake --build --preset default --target feelpp_test_viewfactor_quadrature feelpp_test_viewfactor_raytracing
+
+# Test
+ctest --preset default -R viewfactor -V
+----
+
+=== Acceptance Criteria
+
+* [ ] C++23 features guarded with `#if __cplusplus >= 202302L`
+* [ ] `std::expected` provides cleaner error handling alternative
+* [ ] Backward compatibility maintained (exceptions still work)
+* [ ] Compiles with both C++20 and C++23
+* [ ] All tests pass: `ctest --preset default -R viewfactor`
+
+---
+
+== Phase 8: Unit Tests for New Features
+
+=== Objective
+Add unit tests to verify concept constraints and new functionality.
+
+=== Files to Create
+
+==== `testsuite/feelviewfactor/test_viewfactor_concepts.cpp`
+
+[source,cpp]
+----
+#define BOOST_TEST_MODULE test_viewfactor_concepts
+#include <boost/test/unit_test.hpp>
+
+#include <feel/feelviewfactor/concepts.hpp>
+#include <feel/feeldiscr/mesh.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+
+using namespace Feel;
+
+BOOST_AUTO_TEST_SUITE(viewfactor_concepts)
+
+BOOST_AUTO_TEST_CASE(test_viewfactor_mesh_concept_2d)
+{
+    // Verify 2D simplex mesh satisfies ViewFactorMesh
+    static_assert(ViewFactorMesh<Mesh<Simplex<2>>>,
+                  "2D simplex mesh must satisfy ViewFactorMesh");
+}
+
+BOOST_AUTO_TEST_CASE(test_viewfactor_mesh_concept_3d)
+{
+    // Verify 3D simplex mesh satisfies ViewFactorMesh
+    static_assert(ViewFactorMesh<Mesh<Simplex<3>>>,
+                  "3D simplex mesh must satisfy ViewFactorMesh");
+}
+
+BOOST_AUTO_TEST_CASE(test_viewfactor_mesh_dimension_constraint)
+{
+    // 1D meshes should NOT satisfy ViewFactorMesh (radiation requires 2D/3D)
+    static_assert(!ViewFactorMesh<Mesh<Simplex<1>>>,
+                  "1D mesh must NOT satisfy ViewFactorMesh");
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+----
+
+==== `testsuite/feelviewfactor/test_viewfactor_detail.cpp`
+
+[source,cpp]
+----
+#define BOOST_TEST_MODULE test_viewfactor_detail
+#include <boost/test/unit_test.hpp>
+
+#include <feel/feelviewfactor/detail/geometry.hpp>
+#include <feel/feelviewfactor/detail/random.hpp>
+
+using namespace Feel::viewfactor::detail;
+
+BOOST_AUTO_TEST_SUITE(viewfactor_detail)
+
+BOOST_AUTO_TEST_CASE(test_element_area_triangle)
+{
+    Eigen::VectorXd p1(3), p2(3), p3(3), center(3);
+    p1 << 0, 0, 0;
+    p2 << 1, 0, 0;
+    p3 << 0, 1, 0;
+    center << 1.0/3.0, 1.0/3.0, 0;
+
+    double area = elementArea(center, p1, p2, p3);
+    BOOST_CHECK_CLOSE(area, 0.5, 1e-10);  // Triangle area = 0.5
+}
+
+BOOST_AUTO_TEST_CASE(test_is_on_surface_triangle)
+{
+    Eigen::VectorXd p1(3), p2(3), p3(3), point_in(3), point_out(3);
+    p1 << 0, 0, 0;
+    p2 << 1, 0, 0;
+    p3 << 0, 1, 0;
+    point_in << 0.25, 0.25, 0;
+    point_out << 1, 1, 0;
+
+    BOOST_CHECK(isOnSurface(point_in, p1, p2, p3));
+    BOOST_CHECK(!isOnSurface(point_out, p1, p2, p3));
+}
+
+BOOST_AUTO_TEST_CASE(test_random_direction_3d)
+{
+    std::mt19937 gen1(42), gen2(43);
+    std::vector<double> dir(3);
+    Eigen::VectorXd normal(3);
+    normal << 0, 0, 1;
+
+    getRandomDirection(std::span<double>(dir), gen1, gen2, normal);
+
+    // Direction should be unit vector
+    double norm = std::sqrt(dir[0]*dir[0] + dir[1]*dir[1] + dir[2]*dir[2]);
+    BOOST_CHECK_CLOSE(norm, 1.0, 1e-10);
+
+    // Direction should be in upper hemisphere (dot with normal > 0)
+    double dot = dir[0]*normal[0] + dir[1]*normal[1] + dir[2]*normal[2];
+    BOOST_CHECK_GE(dot, 0.0);
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+----
+
+=== Files to Modify
+
+==== `testsuite/feelviewfactor/CMakeLists.txt`
+
+[source,cmake]
+----
+# Add new test files
+feelpp_add_test(viewfactor_concepts NO_MPI_TEST)
+feelpp_add_test(viewfactor_detail NO_MPI_TEST)
+
+# Existing tests
+feelpp_add_test(viewfactor_quadrature NO_MPI_TEST CFG cases/viewfactor.cfg)
+feelpp_add_testcase(cases PREFIX testviewfactors)
+add_dependencies(feelpp_test_viewfactor_quadrature testviewfactors_add_testcase_cases)
+
+feelpp_add_test(viewfactor_raytracing NO_MPI_TEST CFG cases/viewfactor.cfg)
+add_dependencies(feelpp_test_viewfactor_raytracing testviewfactors_add_testcase_cases)
+----
+
+=== Verification
+
+[source,bash]
+----
+# Build all viewfactor tests
+cmake --build --preset default --target feelpp_test_viewfactor_concepts feelpp_test_viewfactor_detail feelpp_test_viewfactor_quadrature feelpp_test_viewfactor_raytracing
+
+# Run all viewfactor tests
+ctest --preset default -R viewfactor -V
+----
+
+=== Acceptance Criteria
+
+* [ ] `test_viewfactor_concepts.cpp` tests concept constraints
+* [ ] `test_viewfactor_detail.cpp` tests geometry and random utilities
+* [ ] All new tests compile and pass
+* [ ] All existing tests still pass
+* [ ] Full test command: `ctest --preset default -R viewfactor`
+
+---
+
+== Implementation Guidelines
+
+=== Code Style
+
+[source,cpp]
+----
+// Use [[nodiscard]] for all non-void returns that shouldn't be ignored
+[[nodiscard]] auto viewFactors() const -> eigen_matrix_xx_type<value_type> const&;
+
+// Use constexpr where possible
+static constexpr int nDim = MeshType::nDim;
+
+// Use std::numbers for mathematical constants
+#include <numbers>
+constexpr double pi = std::numbers::pi;
+
+// Use concepts in requires clauses
+template<ViewFactorMesh MeshType>
+class ViewFactorBase { ... };
+
+// Use std::format for error messages
+throw std::logic_error(std::format("Invalid marker: {}", marker));
+
+// Use std::span for non-owning array parameters
+void process(std::span<const double> data);
+
+// Organize internal helpers in detail namespace
+namespace Feel::viewfactor::detail { ... }
+----
+
+=== Backward Compatibility Checklist
+
+For each modified file, verify:
+
+* [ ] Existing template instantiations compile
+* [ ] Existing type aliases resolve to same types
+* [ ] Existing static constants have same values
+* [ ] Existing methods have same signatures (or compatible overloads)
+* [ ] Existing inheritance hierarchies preserved
+* [ ] Existing tests pass without modification
+
+=== Testing Protocol
+
+After each phase:
+
+[source,bash]
+----
+# 1. Clean build (optional, for thorough verification)
+cmake --build --preset default --target clean
+
+# 2. Build viewfactor targets
+cmake --build --preset default --target feelpp_test_viewfactor_quadrature feelpp_test_viewfactor_raytracing
+
+# 3. Run tests with verbose output
+ctest --preset default -R viewfactor -V
+
+# 4. Check for compiler warnings
+cmake --build --preset default --target feelpp_test_viewfactor_quadrature 2>&1 | grep -i warning
+----
+
+---
+
+== Dependency Graph
+
+[source]
+----
+Phase 1: Bug Fixes (CRITICAL - DO FIRST)
+    viewfactorfactory.hpp (fix destructor)
+    raytracingviewfactor.hpp (encapsulation, remove using namespace)
+    kdtreevectorofvectorsadaptor.hpp (RAII)
+         |
+         v
+Phase 2: Concepts
+    concepts.hpp (new)
+    viewfactorbase.hpp (add concept constraint)
+    unobstructedplanarviewfactor.hpp (add concept constraint)
+    raytracingviewfactor.hpp (add concept constraint)
+         |
+         v
+Phase 3: Modern Attributes
+    viewfactorbase.hpp ([[nodiscard]], std::numbers)
+    raytracingviewfactor.hpp ([[nodiscard]])
+         |
+         v
+Phase 4: std::format
+    raytracingviewfactor.hpp (error messages)
+    unobstructedplanarviewfactor.hpp (error messages)
+    kdtreevectorofvectorsadaptor.hpp (error messages)
+         |
+         v
+Phase 5: std::span
+    raytracingviewfactor.hpp (function parameters)
+    viewfactorbase.hpp (init overload)
+         |
+         v
+Phase 6: Code Organization
+    detail/geometry.hpp (new)
+    detail/random.hpp (new)
+    raytracingviewfactor.hpp (use detail namespace)
+    CMakeLists.txt (update)
+         |
+         v
+Phase 7: C++23 Features (OPTIONAL)
+    viewfactorbase.hpp (std::expected)
+    unobstructedplanarviewfactor.hpp (std::expected)
+         |
+         v
+Phase 8: Testing
+    test_viewfactor_concepts.cpp (new)
+    test_viewfactor_detail.cpp (new)
+    CMakeLists.txt (add tests)
+----
+
+---
+
+== Success Metrics
+
+1. **Compilation**: All existing code compiles without modification
+2. **Tests**: All existing and new tests pass
+3. **No Global Using**: Zero `using namespace` in header files
+4. **Concepts**: ViewFactorMesh and ViewFactorComputable concepts defined and used
+5. **Attributes**: All accessors have `[[nodiscard]]`
+6. **Modern C++**: `std::format`, `std::span`, `std::numbers` used appropriately
+7. **Code Organization**: Helper functions in `detail` namespace
+8. **Documentation**: All new concepts and functions documented
+
+---
+
+== Notes for AI Assistants
+
+When implementing these changes:
+
+1. **Fix bugs first**: Phase 1 is critical and must be completed before other phases
+2. **Read before modifying**: Always read the existing file content before making changes
+3. **Preserve structure**: Keep existing class layout and member ordering where possible
+4. **Add, don't replace**: Add new overloads/methods alongside existing ones initially
+5. **Test incrementally**: Verify compilation and tests after each phase
+6. **Document concepts**: Add brief comments explaining what each concept requires
+
+=== Example Prompt for Phase 1
+
+[source]
+----
+Implement Phase 1 of the feelviewfactor C++20 modernization:
+
+1. Fix viewfactorfactory.hpp:
+   - Change destructor from ~ExporterFactory() to ~ViewFactorProducerFactory()
+   - Add missing public: access specifier
+   - Rename producer() to create() for clarity
+
+2. Fix raytracingviewfactor.hpp:
+   - Remove "using namespace nanoflann;" (line 25)
+   - Move all M_* members from public to private section
+   - Add [[nodiscard]] accessor methods for members that need external access
+
+3. Fix kdtreevectorofvectorsadaptor.hpp:
+   - Replace raw pointer with std::unique_ptr
+   - Remove manual destructor
+   - Add defaulted move operations
+   - Delete copy operations
+
+4. Verify:
+   cmake --build --preset default --target feelpp_test_viewfactor_quadrature feelpp_test_viewfactor_raytracing
+   ctest --preset default -R viewfactor -V
+----

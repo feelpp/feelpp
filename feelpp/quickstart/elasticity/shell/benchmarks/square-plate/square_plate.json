@@ -1,0 +1,41 @@
+{
+  "name": "square-plate",
+  "description": "Square plate inspired case, simplified here as a clamped thin plate under pressure.",
+  "gmsh": {
+    "filename": "square_plate.geo"
+  },
+  "material": {
+    "E": 1000000.0,
+    "nu": 0.3
+  },
+  "boundaryConditions": {
+    "clampMarkers": [
+      "XMoins",
+      "XPlus",
+      "YMoins",
+      "YPlus"
+    ]
+  },
+  "loads": {
+    "bodyForce": "{0,0,0}",
+    "pressures": [
+      {
+        "marker": "ZPlus",
+        "value": 1.0
+      }
+    ]
+  },
+  "probe": {
+    "point": [
+      5.0,
+      5.0,
+      0.0
+    ],
+    "direction": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "label": "center z displacement"
+  }
+}
