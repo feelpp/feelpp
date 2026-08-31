@@ -381,6 +381,8 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUse()
 template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
 void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUseAfterMovingNodes( bool upMeasures )
 {
+    this->markGeometryChanged();
+
     // reset geomap cache
     if ( this->gm()->isCached() )
     {
