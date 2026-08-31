@@ -75,31 +75,35 @@ ELECTROMAGNETIC_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
     int nBlock = nBlockElectric + nBlockMagnetic;
     BlocksBaseGraphCSR myblockGraph(nBlock,nBlock);
 
-    int indexBlock=0;
+    size_type subBlockIndexMagneticVectorPotential = M_magneticModel->startSubBlockSpaceIndex( magnetic_model_type::FieldTag::vectorPotential(M_magneticModel.get()).identifier() );
+    size_type subBlockIndexElectricPotential = 0;//M_electricModel->startSubBlockSpaceIndex( electric_model_type::FieldTag::potential(M_electricModel.get()).identifier() );
+    int indexBlock= this->startSubBlockSpaceIndex( "electric" );
 
     auto blockMatElectric = M_electricModel->buildBlockMatrixGraph();
     for (int tk1=0;tk1<nBlockElectric ;++tk1 )
         for (int tk2=0;tk2<nBlockElectric ;++tk2 )
             myblockGraph(indexBlock+tk1,indexBlock+tk2) = blockMatElectric(tk1,tk2);
-#if 0 // TODO coupling
-    BlocksStencilPattern patCoupling1(1,nBlockHeat,size_type(Pattern::ZERO));
-    patCoupling1(0,0) = size_type(Pattern::COUPLED);
-    myblockGraph(indexBlock,indexBlock+nBlockHeat) = stencil(_test=M_heatModel->spaceTemperature(),
-                                                                     _trial=M_electricModel->spaceElectricPotential(),
+
+    if ( false ) // enable if transient coupling electric-magnetic
+    {
+        BlocksStencilPattern patCoupling1(nBlockElectric,nBlockMagnetic,size_type(Pattern::ZERO));
+        patCoupling1(subBlockIndexElectricPotential,subBlockIndexMagneticVectorPotential) = size_type(Pattern::COUPLED);
+        myblockGraph(indexBlock,indexBlock+nBlockElectric) = stencil(_test=M_electricModel->spaceElectricPotential(),
+                                                                     _trial=M_magneticModel->spaceVectorPotential(),
                                                                      _pattern_block=patCoupling1,
                                                                      _diag_is_nonzero=false,_close=false)->graph();
-
-    if ( true )
-    {
-        BlocksStencilPattern patCoupling2(nBlockHeat,1,size_type(Pattern::ZERO));
-        patCoupling2(0,0) = size_type(Pattern::COUPLED);
-        myblockGraph(indexBlock+nBlockHeat,indexBlock) = stencil(_test=M_electricModel->spaceElectricPotential(),
-                                                                         _trial=M_heatModel->spaceTemperature(),
-                                                                         _pattern_block=patCoupling2,
-                                                                         _diag_is_nonzero=false,_close=false)->graph();
     }
-#endif
-    indexBlock += nBlockElectric;
+
+
+    BlocksStencilPattern patCoupling2(nBlockMagnetic,nBlockElectric,size_type(Pattern::ZERO));
+    patCoupling2(subBlockIndexMagneticVectorPotential,subBlockIndexElectricPotential) = size_type(Pattern::COUPLED);
+    myblockGraph(indexBlock+nBlockElectric,indexBlock) = stencil(_test=M_magneticModel->spaceVectorPotential(),
+                                                             _trial=M_electricModel->spaceElectricPotential(),
+                                                             _pattern_block=patCoupling2,
+                                                             _diag_is_nonzero=false,_close=false)->graph();
+
+    //indexBlock += nBlockElectric;
+    indexBlock = this->startSubBlockSpaceIndex( "magnetic" );
 
     auto blockMatMagnetic = M_magneticModel->buildBlockMatrixGraph();
     for (int tk1=0;tk1<nBlockMagnetic ;++tk1 )
@@ -222,6 +226,9 @@ ELECTROMAGNETIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                                                                             return this->updateLinear_Electric( data );
                                                                         } );                                    
     }
+#else
+    M_electricModel->initAlgebraicFactory();
+    M_magneticModel->initAlgebraicFactory();
 #endif
 
 #if 0
@@ -268,10 +275,11 @@ ELECTROMAGNETIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // algebraic solver
     if ( buildModelAlgebraicFactory )
     {
-        if ( M_solverName == "Newton" || M_solverName == "Picard" )
+        if ( true || M_solverName == "Newton" || M_solverName == "Picard" )
         {
             auto algebraicFactory = std::make_shared<model_algebraic_factory_type>( this->shared_from_this(),this->backend() );
             this->setAlgebraicFactory( algebraicFactory );
+            M_magneticModel->updateAlgebraicFactory( algebraicFactory );
         }
     }
 
@@ -453,18 +461,17 @@ ELECTROMAGNETIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTROMAGNETIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
-#if 0 // TODO
     this->log("Electromagnetic","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
     auto mfields = this->modelFields();
     auto symbolExpr = this->symbolsExpr( mfields );
     //std::cout << "holalla \n "<< symbolExpr.names() << std::endl;
-    M_heatModel->exportResults( time, symbolExpr );
     M_electricModel->exportResults( time, symbolExpr );
+    M_magneticModel->exportResults( time, symbolExpr );
 
     auto exprExport =  hana::concat( M_materialsProperties->exprPostProcessExports( this->mesh(),this->physicsAvailable(),symbolExpr ),
-                                     hana::concat( M_heatModel->exprPostProcessExportsToolbox( symbolExpr,M_heatModel->keyword() ),
+                                     hana::concat( M_magneticModel->exprPostProcessExportsToolbox( symbolExpr,M_magneticModel->keyword() ),
                                                    M_electricModel->exprPostProcessExportsToolbox( symbolExpr,M_electricModel->keyword() ) ) );
     this->executePostProcessExports( M_exporter, time, mfields, symbolExpr, exprExport );
 
@@ -476,7 +483,6 @@ ELECTROMAGNETIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
         this->timerTool("PostProcessing").save();
     }
     this->log("Electromagnetic","exportResults", "finish");
-#endif
 }
 
 ELECTROMAGNETIC_CLASS_TEMPLATE_DECLARATIONS
@@ -485,12 +491,30 @@ ELECTROMAGNETIC_CLASS_TEMPLATE_TYPE::updateParameterValues()
 {
     if ( !this->manageParameterValues() )
         return;
-
+#if 0
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->materialsProperties()->updateParameterValues( paramValues );
 
     this->setParameterValues( paramValues );
+#endif
+    int previousParam = 0;
+    while ( true )
+    {
+        this->modelProperties().parameters().updateParameterValues();
+        auto paramValues = this->modelProperties().parameters().toParameterValues();
+        this->materialsProperties()->updateParameterValues( paramValues );
+        for ( auto [physicName,physicData] : this->physics/*FromCurrentType*/() )
+            physicData->updateParameterValues( paramValues );
+
+        this->updateParameterValues_postProcess( paramValues, prefixvm("postprocess",this->keyword(),"_" ) );
+
+        if ( paramValues.size() == previousParam )
+            break;
+        previousParam = paramValues.size();
+
+        this->setParameterValues( paramValues );
+    }
 }
 
 ELECTROMAGNETIC_CLASS_TEMPLATE_DECLARATIONS
@@ -501,8 +525,14 @@ ELECTROMAGNETIC_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,do
     {
         this->modelProperties().parameters().setParameterValues( paramValues );
         this->modelProperties().postProcess().setParameterValues( paramValues );
+        this->modelProperties().initialConditions().setParameterValues( paramValues );
         this->materialsProperties()->setParameterValues( paramValues );
     }
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        physicData->setParameterValues( paramValues );
+
+    super_type::super_model_meshes_type::setParameterValues( paramValues );
+
     M_electricModel->setParameterValues( paramValues );
     M_magneticModel->setParameterValues( paramValues );
 }
@@ -517,13 +547,13 @@ ELECTROMAGNETIC_CLASS_TEMPLATE_TYPE::solve()
 
     this->setStartBlockSpaceIndex( 0 );
 
-    if ( M_solverName == "Linear" )
+    if ( false )//M_solverName == "Linear" )
     {
         M_electricModel->solve();
         M_magneticModel->solve();
         this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
     }
-    else if ( M_solverName == "Newton" || M_solverName == "Picard" )
+    else if ( true )//M_solverName == "Newton" || M_solverName == "Picard" )
     {
 #if 0 // TODO
         // initial guess
@@ -531,14 +561,13 @@ ELECTROMAGNETIC_CLASS_TEMPLATE_TYPE::solve()
             M_electricModel->solve();
         if ( M_solverNewtonInitialGuessUseLinearHeat )
             M_heatModel->solve();
-
+#endif
         // solve non linear monolithic system
         M_electricModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("electric") );
-        M_magenticModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("magnetic") );
+        M_magneticModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("magnetic") );
         this->algebraicBlockVectorSolution()->updateVectorFromSubVectors();
         this->algebraicFactory()->solve( M_solverName, this->algebraicBlockVectorSolution()->vectorMonolithic() );
         this->algebraicBlockVectorSolution()->localize();
-#endif
     }
 
     double tElapsed = this->timerTool("Solve").stop("solve");

@@ -136,6 +136,7 @@ private :
 
 public :
     void initAlgebraicFactory();
+    void updateAlgebraicFactory( model_algebraic_factory_ptrtype algebraicFactory );
 
     BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
     //int nBlockMatrixGraph() const { return 1; }

@@ -482,17 +482,7 @@ MAGNETIC_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
     auto algebraicFactory = std::make_shared<model_algebraic_factory_type>( this->shared_from_this(),this->backend() );
     this->setAlgebraicFactory( algebraicFactory );
 
-    if ( M_preconditionerAttachAms )
-    {
-        this->algebraicFactory()->attachAuxiliarySparseMatrix( "G", M_preconditionerAmsMatrixG );
-        this->algebraicFactory()->attachAuxiliaryVector( "Px", M_preconditionerAmsVectorOnes.at(0) );
-        if ( M_preconditionerAmsVectorOnes.size() > 1 )
-        this->algebraicFactory()->attachAuxiliaryVector( "Py", M_preconditionerAmsVectorOnes.at(1) );
-        if ( M_preconditionerAmsVectorOnes.size() > 2 )
-            this->algebraicFactory()->attachAuxiliaryVector( "Pz", M_preconditionerAmsVectorOnes.at(2) );
-
-        //this->algebraicFactory()->attachAuxiliarySparseMatrix("a_beta",NULL);
-    }
+    this->updateAlgebraicFactory( algebraicFactory );
 
 #if 0
     if ( M_timeStepping == "Theta" )
@@ -504,6 +494,23 @@ MAGNETIC_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
             algebraicFactory->dataInfos().addVectorInfo( "time-stepping.previous-solution", this->backend()->newVector( this->algebraicBlockVectorSolution()->vectorMonolithic()->mapPtr() ) );
     }
 #endif
+}
+
+MAGNETIC_CLASS_TEMPLATE_DECLARATIONS
+void
+MAGNETIC_CLASS_TEMPLATE_TYPE::updateAlgebraicFactory( model_algebraic_factory_ptrtype algebraicFactory )
+{
+    if ( M_preconditionerAttachAms )
+    {
+        algebraicFactory->attachAuxiliarySparseMatrix( "G", M_preconditionerAmsMatrixG );
+        algebraicFactory->attachAuxiliaryVector( "Px", M_preconditionerAmsVectorOnes.at(0) );
+        if ( M_preconditionerAmsVectorOnes.size() > 1 )
+        algebraicFactory->attachAuxiliaryVector( "Py", M_preconditionerAmsVectorOnes.at(1) );
+        if ( M_preconditionerAmsVectorOnes.size() > 2 )
+            algebraicFactory->attachAuxiliaryVector( "Pz", M_preconditionerAmsVectorOnes.at(2) );
+
+        //algebraicFactory->attachAuxiliarySparseMatrix("a_beta",NULL);
+    }
 }
 
 MAGNETIC_CLASS_TEMPLATE_DECLARATIONS

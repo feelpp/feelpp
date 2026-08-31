@@ -185,6 +185,14 @@ public :
     // apply assembly and solver
     void solve();
 
+
+    void updateLinearPDE( DataUpdateLinear & data ) const override;
+    template <typename ModelContextType>
+    void updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mfields ) const;
+    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
+    template <typename ModelContextType>
+    void updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mfields ) const;
+
 #if 0
     void updateLinearPDE( DataUpdateLinear & data ) const override;
     void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
@@ -225,5 +233,7 @@ private :
 
 } // namespace FeelModels
 } // namespace Feel
+
+#include <feel/feelmodels/electromagnetic/electromagneticassembly.hpp>
 
 #endif // FEELPP_TOOLBOXES_ELECTROMAGNETIC_HPP

@@ -1197,13 +1197,13 @@ macro( genLibElectromagnetic )
     set(ELECTROMAGNETIC_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/electromagnetic/${ELECTROMAGNETIC_LIB_VARIANTS})
     set(ELECTROMAGNETIC_CODEGEN_FILES_TO_COPY
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electromagnetic/electromagnetic_inst.cpp
-      #${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electromagnetic/electromagneticassemblylinear_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electromagnetic/electromagneticassemblylinear_inst.cpp
       #${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electromagnetic/electromagneticassemblyjacobian_inst.cpp
       #${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electromagnetic/electromagneticassemblyresidual_inst.cpp
       )
     set(ELECTROMAGNETIC_CODEGEN_SOURCES
       ${ELECTROMAGNETIC_LIB_DIR}/electromagnetic_inst.cpp
-      #${ELECTROMAGNETIC_LIB_DIR}/electromagneticassemblylinear_inst.cpp
+      ${ELECTROMAGNETIC_LIB_DIR}/electromagneticassemblylinear_inst.cpp
       #${ELECTROMAGNETIC_LIB_DIR}/electromagneticassemblyjacobian_inst.cpp
       #${ELECTROMAGNETIC_LIB_DIR}/electromagneticassemblyresidual_inst.cpp
       )
