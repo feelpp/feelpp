@@ -26,6 +26,7 @@ cmake_minimum_required (VERSION 3.21)
 if(FEELPP_COMPONENT STREQUAL "toolboxes" OR
   FEELPP_COMPONENT STREQUAL "mor" OR
   FEELPP_COMPONENT STREQUAL "testsuite" OR
+  FEELPP_COMPONENT STREQUAL "quickstart" OR
   FEELPP_COMPONENT STREQUAL "benchmarks" OR
   FEELPP_COMPONENT STREQUAL "python" OR
   FEELPP_COMPONENT STREQUAL "mor;python"
@@ -48,7 +49,11 @@ if(FEELPP_COMPONENT STREQUAL "toolboxes" OR
       message(STATUS "[component] PYTHON_COMPONENT: ${PYTHON_COMPONENT}")
       foreach(component IN LISTS FEELPP_COMPONENT)
         message(STATUS "[component] ${component}")
-        add_subdirectory(${component})
+        if(component STREQUAL "quickstart")
+          add_subdirectory(feelpp/quickstart quickstart)
+        else()
+          add_subdirectory(${component})
+        endif()
       endforeach()
       if ( NOT FEELPP_VERSION_MAJOR )
         include(${CMAKE_SOURCE_DIR}/feelpp.version.cmake)
@@ -264,6 +269,9 @@ endif()
 if (FEELPP_ENABLE_PYTHON)
   add_subdirectory(feelpp/python)
 endif()
+if (TARGET pyfeelpptoolboxes AND TARGET pyfeelpp)
+  add_dependencies(pyfeelpptoolboxes pyfeelpp)
+endif()
 # toolboxes/python and mor/python are added by their parent CMakeLists.txt
 
 #
@@ -284,12 +292,6 @@ endif()
 if ( FEELPP_ENABLE_TESTS )
   if (TARGET testsuite-feelpp)
     add_dependencies(testsuite testsuite-feelpp)
-  endif()
-  if (TARGET testsuite-toolboxes)
-    add_dependencies(testsuite testsuite-toolboxes)
-  endif()
-  if (TARGET testsuite-mor)
-    add_dependencies(testsuite testsuite-mor)
   endif()
 endif()
 

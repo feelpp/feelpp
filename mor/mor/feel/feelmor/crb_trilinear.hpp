@@ -31,7 +31,7 @@
 #ifndef __CRBTrilinear_H
 #define __CRBTrilinear_H 1
 
-#include <boost/multi_array.hpp>
+#include <feel/feelcore/boostmultiarray.hpp>
 #include <boost/tuple/tuple.hpp>
 #include "boost/tuple/tuple_io.hpp"
 #include <boost/format.hpp>
@@ -147,6 +147,7 @@ public:
 
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> > map_dense_matrix_type;
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> > map_dense_vector_type;
+    typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> const > map_dense_const_vector_type;
 
     typedef boost::tuple< std::vector<vectorN_type> , std::vector<vectorN_type> , std::vector<vectorN_type>, std::vector<vectorN_type> > solutions_tuple;
     typedef boost::tuple< double,double,double , std::vector< std::vector< double > > , std::vector< std::vector< double > > > upper_bounds_tuple;
@@ -304,15 +305,16 @@ public:
      * Update the Jacobian Matrix for Newton Solver
      *
      */
-    void updateJacobian( const map_dense_vector_type& X, map_dense_matrix_type& J , parameter_type const& mu , int N ) const override;
+    void updateJacobian( const map_dense_const_vector_type& X, map_dense_matrix_type& J , parameter_type const& mu , int N ) const override;
 
     /**
      * Update the Residual of the Newton Solver
      *
      */
-    void updateResidual( const map_dense_vector_type& X, map_dense_vector_type& R , parameter_type const& mu , int N ) const override;
+    void updateResidual( const map_dense_const_vector_type& X, map_dense_vector_type& R , parameter_type const& mu , int N ) const override;
 
 
+    void displayVector(const map_dense_const_vector_type& V ) const ;
     void displayVector(const map_dense_vector_type& V ) const ;
     void displayVector(const vectorN_type& V ) const ;
     void displayMatrix(const matrixN_type& M ) const ;
@@ -957,7 +959,7 @@ CRBTrilinear<TruthModelType>::updateLinearTerms( parameter_type const& mu , int 
 }
 template<typename TruthModelType>
 void
-CRBTrilinear<TruthModelType>::updateJacobian( const map_dense_vector_type& map_X, map_dense_matrix_type& map_J , const parameter_type & mu , int N) const
+CRBTrilinear<TruthModelType>::updateJacobian( const map_dense_const_vector_type& map_X, map_dense_matrix_type& map_J , const parameter_type & mu , int N) const
 {
     LOG(INFO) << "updateJacobian \n";
     map_J = M_bilinear_terms;
@@ -1006,7 +1008,7 @@ CRBTrilinear<TruthModelType>::updateJacobian( const map_dense_vector_type& map_X
 
 template<typename TruthModelType>
 void
-CRBTrilinear<TruthModelType>::updateResidual( const map_dense_vector_type& map_X, map_dense_vector_type& map_R , const parameter_type & mu, int N ) const
+CRBTrilinear<TruthModelType>::updateResidual( const map_dense_const_vector_type& map_X, map_dense_vector_type& map_R , const parameter_type & mu, int N ) const
 {
     LOG(INFO) << " updateResidual \n";
 
@@ -1055,6 +1057,17 @@ CRBTrilinear<TruthModelType>::updateResidual( const map_dense_vector_type& map_X
         }
         std::cout<<std::endl;
     }
+}
+
+template<typename TruthModelType>
+void
+CRBTrilinear<TruthModelType>::displayVector( const map_dense_const_vector_type& V ) const
+{
+    int size=V.size();
+    std::cout<<std::setprecision(14)<<" ( ";
+    for(int i=0; i<size-1;i++)
+        std::cout<<V(i)<<" , ";
+    std::cout<<V(size-1)<<" ) ";
 }
 
 template<typename TruthModelType>

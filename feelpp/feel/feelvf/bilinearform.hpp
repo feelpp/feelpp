@@ -1345,6 +1345,7 @@ BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
     if ( init )
     {
         this->M_matrix->zero();
+        this->resetDeferredDirichletAfterOperatorReset();
     }
 
     __expr.assemble( M_X1, M_X2, *this );
@@ -1365,7 +1366,11 @@ BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
 
     DVLOG(2) << "BilinearForm::assign() start loop on test spaces\n";
 
-    if ( init ) this->M_matrix->zero();
+    if ( init )
+    {
+        this->M_matrix->zero();
+        this->resetDeferredDirichletAfterOperatorReset();
+    }
 
     assign( __expr, mpl::bool_<true>(), mpl::bool_<( space_1_type::nSpaces > 1 && space_2_type::nSpaces > 1 )>() );
     DVLOG(2) << "BilinearForm::assign() stop loop on test spaces\n";
@@ -1512,6 +1517,8 @@ void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( std::shared_ptr<Space
                     M_bf.rowStartInMatrix() + M_test_index, M_bf.colStartInMatrix() + M_trial_index,
                     false, M_bf.doThreshold(), M_bf.threshold(), M_bf.pattern() );
 #endif
+        bf.shareDeferredDirichletState( M_bf.deferredDirichletStatePtr() );
+        bf.setDirichletPolicy( M_bf.dirichletPolicy() );
 
         bf += M_expr;
     }
@@ -1593,6 +1600,8 @@ void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( std::shared_ptr<Spac
                     M_bf.rowStartInMatrix() + M_test_index, M_bf.colStartInMatrix()+ M_trial_index,
                     false, M_bf.doThreshold(), M_bf.threshold(), M_bf.pattern() );
 #endif
+        bf.shareDeferredDirichletState( M_bf.deferredDirichletStatePtr() );
+        bf.setDirichletPolicy( M_bf.dirichletPolicy() );
 
         bf += M_expr;
     }

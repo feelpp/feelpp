@@ -173,9 +173,15 @@ if(FEELPP_USE_EXTERNAL_CLN)
   if(NOT TARGET cln::cln)
     add_library(cln::cln INTERFACE IMPORTED)
 
+    if(CLN_LINK_LIBRARIES)
+      set(_feelpp_cln_link_libraries "${CLN_LINK_LIBRARIES}")
+    else()
+      set(_feelpp_cln_link_libraries "${CLN_LIBRARIES}")
+    endif()
+
     set_target_properties(cln::cln PROPERTIES
       INTERFACE_INCLUDE_DIRECTORIES "${CLN_INCLUDE_DIRS}"
-      INTERFACE_LINK_LIBRARIES "${CLN_LIBRARIES}"
+      INTERFACE_LINK_LIBRARIES "${_feelpp_cln_link_libraries}"
     )
   endif()
   if (TARGET cln::cln)
@@ -252,8 +258,40 @@ include(FetchContent)
 
 option( FEELPP_USE_EXTERNAL_EIGEN3 "USE_EXTERNAL_EIGEN3" OFF )
 if ( FEELPP_USE_EXTERNAL_EIGEN3 )
-  FIND_PACKAGE(Eigen3 REQUIRED)
-  add_library(Eigen3::Eigen ALIAS eigen)
+  find_package(Eigen3 CONFIG QUIET)
+  if ( NOT TARGET Eigen3::Eigen )
+    find_package(Eigen3 REQUIRED)
+  endif()
+  if ( NOT TARGET Eigen3::Eigen )
+    if ( TARGET eigen )
+      get_target_property(_feelpp_eigen_include_dirs eigen INTERFACE_INCLUDE_DIRECTORIES)
+    elseif ( EIGEN3_INCLUDE_DIRS )
+      set(_feelpp_eigen_include_dirs ${EIGEN3_INCLUDE_DIRS})
+    elseif ( EIGEN3_INCLUDE_DIR )
+      set(_feelpp_eigen_include_dirs ${EIGEN3_INCLUDE_DIR} ${EIGEN3_INCLUDE_DIR}/unsupported)
+    endif()
+    if ( _feelpp_eigen_include_dirs )
+      add_library(Eigen3::Eigen INTERFACE IMPORTED GLOBAL)
+      set_target_properties(Eigen3::Eigen PROPERTIES
+        INTERFACE_INCLUDE_DIRECTORIES "${_feelpp_eigen_include_dirs}")
+    endif()
+  endif()
+  if ( NOT TARGET eigen )
+    add_library(eigen INTERFACE IMPORTED GLOBAL)
+    set_property(TARGET eigen PROPERTY INTERFACE_LINK_LIBRARIES Eigen3::Eigen)
+  endif()
+  if ( EIGEN3_INCLUDE_DIRS )
+    target_include_directories( feelpp_contrib BEFORE
+      INTERFACE
+      ${EIGEN3_INCLUDE_DIRS}
+      )
+  elseif ( EIGEN3_INCLUDE_DIR )
+    target_include_directories( feelpp_contrib BEFORE
+      INTERFACE
+      ${EIGEN3_INCLUDE_DIR}
+      ${EIGEN3_INCLUDE_DIR}/unsupported
+      )
+  endif()
 else()
 
 set(EIGEN_BUILD_DOC OFF)
@@ -822,9 +860,15 @@ if ( FEELPP_ENABLE_CPR )
   set(FETCHCONTENT_SOURCE_DIR_CPR ${CMAKE_CURRENT_SOURCE_DIR}/cpr)
   # patch includes fix for 18.04 compilation
   FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/feelpp/cpr.git GIT_TAG 1.12.0)
-  set( CPR_USE_SYSTEM_CURL ON )
-  set( CPR_ENABLE_SSL ON)
-  set( CPR_USE_SYSTEM_LIB_PSL ON)
+  if ( NOT DEFINED CPR_USE_SYSTEM_CURL )
+    set( CPR_USE_SYSTEM_CURL ON )
+  endif()
+  if ( NOT DEFINED CPR_ENABLE_SSL )
+    set( CPR_ENABLE_SSL ON )
+  endif()
+  if ( NOT DEFINED CPR_USE_SYSTEM_LIB_PSL )
+    set( CPR_USE_SYSTEM_LIB_PSL ON )
+  endif()
   set( BUILD_CPR_TESTS OFF )
   if ( NOT ${CMAKE_INSTALL_INCLUDEDIR} MATCHES "feelpp$")
       set( CMAKE_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/feelpp")

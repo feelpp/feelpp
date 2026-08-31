@@ -210,7 +210,28 @@ class ContainerTests(unittest.TestCase):
                     )
 
             bootstrap = run.call_args.args[0][-1]
-            self.assertIn("required_packages='pkgconf arch-test debian-archive-keyring'", bootstrap)
+            self.assertIn(
+                "required_packages='pkgconf arch-test python3-jinja2 python3-yaml debian-archive-keyring'",
+                bootstrap,
+            )
+
+    def test_run_in_docker_bootstrap_installs_python_runtime_dependencies(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            context = self.make_context(tmpdir)
+
+            with mock.patch("feelpp.pkg.apt_keys.run_checked", return_value=None):
+                with mock.patch("feelpp.pkg.container.runner.run") as run:
+                    run_in_docker(
+                        context,
+                        argv=["build", "chain", "--dist", "noble"],
+                        image="pkg-env:test",
+                    )
+
+            bootstrap = run.call_args.args[0][-1]
+            self.assertIn(
+                "required_packages='pkgconf arch-test python3-jinja2 python3-yaml'",
+                bootstrap,
+            )
 
     def test_run_in_docker_skips_host_gnupg_mount_when_signing_disabled(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

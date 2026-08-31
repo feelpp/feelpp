@@ -92,13 +92,13 @@ void defcfpdes(py::module &m)
         .def( "mesh", &toolbox_cfpdes_t::mesh, "get the mesh" )
         .def( "setMesh", &toolbox_cfpdes_t::setMesh, "set the mesh" )
         .def(
-            "exportSolutionToStep", []( std::shared_ptr<toolbox_cfpdes_t> const& t, step_ptr_t& s )
+            "exportSolutionToStep", []( toolbox_cfpdes_t& t, step_ptr_t& s )
             {
-                t->apply( [&s]( auto const& cfpde )
-                          {
-                              std::cout << fmt::format( "[cfpde] exporting {}_{} ...", cfpde->equationName(), cfpde->unknownName() ) << std::endl;
-                              s->add( fmt::format( "{}_{}", cfpde->equationName(), cfpde->unknownName() ), cfpde->fieldUnknown() );
-                          } );
+                t.apply( [&s]( auto const& cfpde )
+                         {
+                             std::cout << fmt::format( "[cfpde] exporting {}_{} ...", cfpde->equationName(), cfpde->unknownName() ) << std::endl;
+                             s->add( fmt::format( "{}_{}", cfpde->equationName(), cfpde->unknownName() ), cfpde->fieldUnknown() );
+                         } );
             },
             "apply external exporter on solution" )
 
@@ -163,4 +163,3 @@ PYBIND11_MODULE(_cfpdes, m )
     defcfpdes<3>(m);
 
 }
-

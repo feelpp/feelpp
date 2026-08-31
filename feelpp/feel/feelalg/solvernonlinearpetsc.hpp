@@ -95,6 +95,7 @@ public:
     //eigen
     typedef typename super::map_dense_matrix_type map_dense_matrix_type;
     typedef typename super::map_dense_vector_type map_dense_vector_type;
+    typedef typename super::map_dense_const_vector_type map_dense_const_vector_type;
 
     typedef DataMap<> datamap_type;
     typedef std::shared_ptr<datamap_type> datamap_ptrtype;

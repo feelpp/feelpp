@@ -51,7 +51,7 @@ def default_state_root() -> Path:
 
 
 def _bootstrap_apt_packages(context: PackagingContext) -> list[str]:
-    packages = ["pkgconf", "arch-test"]
+    packages = ["pkgconf", "arch-test", "python3-jinja2", "python3-yaml"]
     if context.flavor == "debian":
         packages.append("debian-archive-keyring")
     return packages

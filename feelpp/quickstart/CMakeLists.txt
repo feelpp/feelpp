@@ -26,7 +26,7 @@ cmake_minimum_required(VERSION 3.21)
 project(quickstart)
 set(PROJECT_SHORTNAME "qs")
 
-if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
+if ( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR OR FEELPP_COMPONENT STREQUAL "quickstart" )
   find_package(Feel++ PATHS ${FEELPP_DIR}/share/feelpp/feel/cmake/modules $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
   if(NOT FEELPP_FOUND)
       message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
@@ -52,6 +52,11 @@ endif()
 
 add_subdirectory( python )
 add_subdirectory( laplacian )
+
+feelpp_get_compile_definition(Feelpp::feelpp FEELPP_HAS_PETSC_TAO)
+if ( FEELPP_HAS_PETSC_TAO )
+  add_subdirectory( optimization )
+endif()
 
 #
 # ADR

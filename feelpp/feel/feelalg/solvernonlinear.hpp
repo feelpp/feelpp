@@ -90,6 +90,7 @@ public:
 
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> > map_dense_matrix_type;
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> > map_dense_vector_type;
+    typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> const > map_dense_const_vector_type;
 
     typedef std::function<void ( const vector_ptrtype& X,
                                    vector_ptrtype& R )> residual_function_type;
@@ -108,11 +109,11 @@ public:
                                    dense_matrix_type& J )> dense_matvec_function_type;
 
     //eigen
-    typedef std::function<void ( map_dense_vector_type const& X,
+    typedef std::function<void ( map_dense_const_vector_type const& X,
                                    map_dense_vector_type & R )> map_dense_residual_function_type;
-    typedef std::function<void ( map_dense_vector_type const& X,
+    typedef std::function<void ( map_dense_const_vector_type const& X,
                                    map_dense_matrix_type& J )> map_dense_jacobian_function_type;
-    typedef std::function<void ( map_dense_vector_type const& X,
+    typedef std::function<void ( map_dense_const_vector_type const& X,
                                    map_dense_vector_type& R,
                                    map_dense_matrix_type& J )> map_dense_matvec_function_type;
 

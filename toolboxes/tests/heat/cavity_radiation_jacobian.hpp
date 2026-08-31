@@ -300,12 +300,13 @@ namespace Feel
                                 }
                             }
 
+                            auto RR = form1(_test=M_Xh, _vector=backend()->newVector( M_Xh ));
                             for ( auto& [bc, value] : specs["/BoundaryConditions/heat/temperature"_json_pointer].items())
                             {
-                                auto RR = backend()->newVector( M_Xh );
                                 auto dirichletBc = expr(value["expr"].get<std::string>());
                                 at+=on( _range=markedfaces(M_mesh,bc), _rhs=RR, _element=u, _expr=cst(0)*dirichletBc );
                             }
+                            at.applyDeferredDirichletToBaseOperator( RR );
 
 
         };

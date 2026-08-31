@@ -28,6 +28,7 @@ public:
     typedef typename super::element_ptrtype element_ptrtype;
     typedef typename super::matrix_info_tuple matrix_info_tuple;
     typedef typename super::map_dense_vector_type map_dense_vector_type;
+    typedef typename super::map_dense_const_vector_type map_dense_const_vector_type;
     typedef typename super::map_dense_matrix_type map_dense_matrix_type;
     typedef typename super::space_type space_type;
     typedef typename super::beta_vector_type beta_vector_type;
@@ -138,8 +139,8 @@ public:
 
 
 private:
-    void updateJacobianOnline( const map_dense_vector_type& X, map_dense_matrix_type& J , parameter_type const& mu , int N ) const;
-    void updateResidualOnline( const map_dense_vector_type& X, map_dense_vector_type& R , parameter_type const& mu , int N ) const;
+    void updateJacobianOnline( const map_dense_const_vector_type& X, map_dense_matrix_type& J , parameter_type const& mu , int N ) const;
+    void updateResidualOnline( const map_dense_const_vector_type& X, map_dense_vector_type& R , parameter_type const& mu , int N ) const;
 
     virtual void buildRbMatrixTrilinear( int number_of_added_elements, parameter_type& mu ) override;
 
@@ -160,7 +161,7 @@ private:
             }
         }
 
-    double newR(const map_dense_vector_type& X, parameter_type const& mu , int N) const
+    double newR(const map_dense_const_vector_type& X, parameter_type const& mu , int N) const
         {
             int N0 = this->subN(0,N);
             int N1 = this->subN(1,N);
@@ -173,7 +174,7 @@ private:
 
             return R.norm();
         }
-    void updatePsiT( const map_dense_vector_type& X, parameter_type const& mu, int N ) const
+    void updatePsiT( const map_dense_const_vector_type& X, parameter_type const& mu, int N ) const
         {
             double new_rez = newR( X, mu, N );
             if ( M_rez==-1 )
@@ -852,7 +853,7 @@ CRBAero<TruthModelType>::onlineSolveNewton(  size_type N, parameter_type const& 
 
 template <typename TruthModelType>
 void
-CRBAero<TruthModelType>::updateJacobianOnline( const map_dense_vector_type& X, map_dense_matrix_type& J , parameter_type const& mu , int N ) const
+CRBAero<TruthModelType>::updateJacobianOnline( const map_dense_const_vector_type& X, map_dense_matrix_type& J , parameter_type const& mu , int N ) const
 {
     tic();
     boost::mpi::timer tJ, tJtri, tJnl, tBeta;
@@ -961,7 +962,7 @@ CRBAero<TruthModelType>::updateJacobianOnline( const map_dense_vector_type& X, m
 
 template <typename TruthModelType>
 void
-CRBAero<TruthModelType>::updateResidualOnline( const map_dense_vector_type& X, map_dense_vector_type& R , parameter_type const& mu , int N ) const
+CRBAero<TruthModelType>::updateResidualOnline( const map_dense_const_vector_type& X, map_dense_vector_type& R , parameter_type const& mu , int N ) const
 {
     tic();
     boost::mpi::timer tR, tRtri, tRnl, tBeta;
