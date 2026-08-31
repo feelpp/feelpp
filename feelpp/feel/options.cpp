@@ -115,6 +115,20 @@ functionspace_options( std::string const& prefix )
 }
 
 po::options_description
+functionspace_manager_options( std::string const& prefix )
+{
+    po::options_description _options( "Function Space Manager options" );
+    _options.add_options()
+        ( prefixvm( prefix, "functionspace.manager.enable" ).c_str(), Feel::po::value<bool>()->default_value(false), "enable automatic whole-mesh function-space reuse" )
+        ( prefixvm( prefix, "functionspace.manager.max-entries" ).c_str(), Feel::po::value<std::size_t>()->default_value(64), "maximum function spaces retained by the manager" )
+        ( prefixvm( prefix, "functionspace.manager.max-entries-per-mesh" ).c_str(), Feel::po::value<std::size_t>()->default_value(16), "maximum function spaces retained per mesh" )
+        ( prefixvm( prefix, "functionspace.manager.mpi-consistency-diagnostics" ).c_str(), Feel::po::value<bool>()->default_value(false), "report rank-local function-space manager hit mismatches" )
+        ( prefixvm( prefix, "functionspace.manager.log-stats" ).c_str(), Feel::po::value<bool>()->default_value(false), "log function-space manager statistics at shutdown" )
+        ;
+    return _options;
+}
+
+po::options_description
 onelab_options( std::string const& prefix )
 {
     po::options_description onelab( "Onelab options" );
@@ -1235,6 +1249,7 @@ feel_options( std::string const& prefix  )
 #if !defined( FEELPP_HAS_TRILINOS_EPETRA )
                    .add( functionspace_options( prefix ) )
 #endif
+                   .add( functionspace_manager_options( prefix ) )
                    .add( aitken_options( prefix ) )
 
                    .add( msi_options( prefix ) )

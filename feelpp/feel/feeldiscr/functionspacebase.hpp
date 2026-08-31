@@ -32,6 +32,8 @@
 #include <feel/feelcore/journalwatcher.hpp>
 #include <feel/feelcore/commobject.hpp>
 #include <feel/feelalg/datamap.hpp>
+#include <feel/feeldiscr/functionspacebuildinstrumentation.hpp>
+#include <feel/feelmesh/enums.hpp>
 
 namespace Feel
 {
@@ -71,11 +73,15 @@ public:
     FunctionSpaceBase()
         :
         super( Environment::worldCommPtr() ), super2( "FunctionSpace" )
-    {}
+    {
+        FunctionSpaceBuildInstrumentation::recordFunctionSpaceConstruction();
+    }
     explicit FunctionSpaceBase( std::string const& name, worldcomm_ptr_t const& w )
         :
         super( w ), super2( "FunctionSpace", name )
-    {}
+    {
+        FunctionSpaceBuildInstrumentation::recordFunctionSpaceConstruction();
+    }
     FunctionSpaceBase( FunctionSpaceBase const& ) = default;
     FunctionSpaceBase( FunctionSpaceBase && ) = default;
     //! destructor
@@ -103,6 +109,16 @@ public:
     //@{
 
     virtual datamap_ptr_t<> mapPtr() const = 0;
+
+    /**
+     * @brief Update derived geometric data after a mesh change notification.
+     *
+     * The base implementation ignores the notification. Concrete function
+     * spaces override this hook when they retain mesh-dependent geometry.
+     *
+     * @param changes kind of mesh change to process
+     */
+    virtual void updateAfterMeshChange( MESH_CHANGES changes ) { (void)changes; }
 
     //@}
 

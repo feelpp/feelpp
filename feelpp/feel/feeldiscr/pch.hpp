@@ -30,6 +30,7 @@
 #define FEELPP_PCH_H 1
 #include <boost/mp11/utility.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/functionspacemanager.hpp>
 
 namespace Feel {
 
@@ -70,10 +71,20 @@ using Pch_element_type=Pch_element_t<MeshType,Order,T,Pts, Tag>;
 
 
 /**
- * \fn Pch<k,MeshType>
+ * @brief Build a whole-mesh continuous scalar Lagrange function space.
  *
- * build a function space of continuous function which are piecewise polynomial
- * of degree (total or in each variable) less than k.
+ * The request uses @ref FunctionSpaceReusePolicy::automatic. It therefore
+ * reuses a managed space when global reuse is enabled and otherwise preserves
+ * the historical always-new behavior.
+ *
+ * @tparam Order polynomial order
+ * @tparam T coefficient value type
+ * @tparam Pts interpolation point-set family
+ * @tparam MeshType concrete mesh type
+ * @tparam Tag basis tag used to distinguish otherwise identical spaces
+ * @param mesh mesh on which the function space is defined
+ * @param dte extended DOF-table mode
+ * @return continuous scalar function space
  */
 template<int Order,
          typename T = double,
@@ -84,9 +95,62 @@ inline
 Pch_ptrtype<MeshType,Order,T,Pts,Tag>
 Pch( std::shared_ptr<MeshType> const& mesh, DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
 {
-    return Pch_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
-                                                    _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
-                                                    _extended_doftable=dte );
+    using space_type = Pch_type<MeshType,Order,T,Pts,Tag>;
+    return getOrCreateFunctionSpace<space_type>(
+        mesh,
+        FunctionSpaceManagerOptions{ normalizeFunctionSpaceDofTable( dte ),
+                                        MESH_RENUMBER | MESH_CHECK },
+        FunctionSpaceReusePolicy::automatic,
+        [&]()
+        {
+            return space_type::New( _mesh=mesh,
+                                    _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
+                                    _extended_doftable=dte );
+        } );
+}
+
+/**
+ * @brief Build a whole-mesh continuous scalar Lagrange space using named arguments.
+ *
+ * Supported arguments are the required @c _mesh and the optional
+ * @c _extended_doftable and @c _fspace_reuse_policy keywords. The reuse policy
+ * defaults to @ref FunctionSpaceReusePolicy::automatic.
+ *
+ * @tparam Order polynomial order
+ * @tparam T coefficient value type
+ * @tparam Pts interpolation point-set family
+ * @tparam Tag basis tag used to distinguish otherwise identical spaces
+ * @tparam Ts named-argument types
+ * @param v named arguments controlling mesh, DOF table, and reuse policy
+ * @return continuous scalar function space
+ */
+template<int Order,
+         typename T = double,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
+         int Tag = 0,
+         typename... Ts>
+    requires ( sizeof...( Ts ) != 0 ) && ( NA::is_named_argument_v<Ts> && ... )
+inline auto
+Pch( Ts&&... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>( v )... );
+    auto mesh = args.get( _mesh );
+    auto dte = args.get_else( _extended_doftable, DofTableExtendedType::DEFAULT );
+    auto policy = args.get_else( _fspace_reuse_policy,
+                                 FunctionSpaceReusePolicy::automatic );
+    using mesh_type = typename std::decay_t<decltype( mesh )>::element_type;
+    using space_type = Pch_type<mesh_type,Order,T,Pts,Tag>;
+    return getOrCreateFunctionSpace<space_type>(
+        mesh,
+        FunctionSpaceManagerOptions{ normalizeFunctionSpaceDofTable( dte ),
+                                        MESH_RENUMBER | MESH_CHECK },
+        policy,
+        [&]()
+        {
+            return space_type::New( _mesh=mesh,
+                                    _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
+                                    _extended_doftable=dte );
+        } );
 }
 
 /**

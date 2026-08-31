@@ -216,6 +216,8 @@ using selector = NA::named_argument_t<struct selector_tag>;
 using quadptloc = NA::named_argument_t<struct quadptloc_tag>;
 
 using extended_doftable = NA::named_argument_t<struct extended_doftable_tag>;
+//! Named argument selecting a FunctionSpaceReusePolicy for a factory request.
+using fspace_reuse_policy = NA::named_argument_t<struct fspace_reuse_policy_tag>;
 
 
 
@@ -533,6 +535,8 @@ inline constexpr auto& _arg = NA::identifier<na::arg>;
 inline constexpr auto& _quadptloc = NA::identifier<na::quadptloc>;
 
 inline constexpr auto& _extended_doftable = NA::identifier<na::extended_doftable>;
+//! Function-space factory keyword associated with na::fspace_reuse_policy.
+inline constexpr auto& _fspace_reuse_policy = NA::identifier<na::fspace_reuse_policy>;
 
 
 
