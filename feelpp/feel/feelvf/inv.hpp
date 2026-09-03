@@ -137,6 +137,37 @@ class Inv : public ExprDynamicBase
             return eval.inverse();
        }
 
+
+    void setParameterValues( std::map<std::string,value_type> const& mp )
+        {
+            M_expr.setParameterValues( mp );
+        }
+    void updateParameterValues( std::map<std::string,double> & pv ) const
+        {
+            M_expr.updateParameterValues( pv );
+        }
+    template <typename SymbolsExprType>
+    auto applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            return Inv<decltype( M_expr.applySymbolsExpr( se ) )>( M_expr.applySymbolsExpr( se ) );
+        }
+    template <typename TheSymbolExprType>
+    bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
+        {
+            return M_expr.hasSymbolDependency( symb, se );
+        }
+    template <typename TheSymbolExprType>
+    void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se ) const
+        {
+            M_expr.dependentSymbols( symb, res, se );
+        }
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
+               TheSymbolExprType const& se ) const
+        {
+            return Inv<decltype( M_expr.template diff<diffOrder>( diffVariable, world, dirLibExpr, se ) )>( M_expr.template diff<diffOrder>( diffVariable, world, dirLibExpr, se ) );
+        }
+
     //@}
 
     //template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,std::shared_ptrvf::detail::gmc<0> > > >, typename Basis_j_t = Basis_i_t>
@@ -183,6 +214,14 @@ class Inv : public ExprDynamicBase
               M_inv( vf::detail::ExtractGm<Geo_t>::get( geom )->nPoints() )
         {
         }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            M_tensor_expr( std::true_type{}, exprExpanded.expression(), ttse, expr.expression(), geom, theInitArgs... ),
+            M_inv( vf::detail::ExtractGm<Geo_t>::get( geom )->nPoints() )
+        {
+        }
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
         {
             update( geom );
@@ -196,6 +235,14 @@ class Inv : public ExprDynamicBase
             M_tensor_expr.update( geom );
             computeInv( mpl::int_<shape::N>() );
         }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+        {
+            M_tensor_expr.update( std::true_type{}, exprExpanded.expression(), ttse, geom, theUpdateArgs... );
+            computeInv( mpl::int_<shape::N>() );
+        }
+
 
         value_type
         evalij( uint16_type i, uint16_type j ) const
