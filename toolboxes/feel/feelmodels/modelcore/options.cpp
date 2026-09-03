@@ -433,6 +433,7 @@ magnetic_options( std::string const& prefix )
     magneticOptions.add_options()
         (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >()->default_value( "automatic" ), "numeric solver : automatic, Newton, Picard, Linear")
         (prefixvm(prefix,"null-space.method").c_str(), Feel::po::value< std::string >()->default_value( "regularized-formulation" ), "possible values : regularized-formulation, saddle-point")
+        (prefixvm(prefix,"null-space.regularization.epsilon").c_str(), Feel::po::value< double >()->default_value( 1e-6 ), "regularization parameter")
         (prefixvm(prefix,"preconditioner.attach-ams").c_str(), Feel::po::value<bool>()->default_value(false), "attach data for ams preconditioner")
       ;
     return magneticOptions.add( modelnumerical_options( prefix ) );

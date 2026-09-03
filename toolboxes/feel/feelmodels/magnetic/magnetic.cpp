@@ -46,6 +46,7 @@ MAGNETIC_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_nullSpaceMethod = soption(_name="null-space.method",_prefix=this->prefix(),_vm=this->clovm());
     if ( M_nullSpaceMethod != "regularized-formulation" && M_nullSpaceMethod != "saddle-point" && M_nullSpaceMethod != "none" )
         throw std::runtime_error( "null-space.method should be regularized-formulation, saddle-point or none" );
+    M_nullSpaceRegularizationEpsilon = doption(_name="null-space.regularization.epsilon",_prefix=this->prefix(),_vm=this->clovm());
     M_preconditionerAttachAms = boption(_name="preconditioner.attach-ams",_prefix=this->prefix(),_vm=this->clovm());
 }
 
@@ -564,6 +565,9 @@ MAGNETIC_CLASS_TEMPLATE_TYPE::updateInformationObject( nl::json & p ) const
     {
         this->algebraicFactory()->updateInformationObject( p["Algebraic Solver"] );
     }
+
+    auto se = this->symbolsExpr();
+    se.updateInformationObject( p["Symbols"] );
 }
 
 MAGNETIC_CLASS_TEMPLATE_DECLARATIONS
@@ -625,6 +629,10 @@ MAGNETIC_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, Ta
 #endif
     if ( jsonInfo.contains( "Algebraic Solver" ) )
         tabInfo->add( "Algebraic Solver", model_algebraic_factory_type::tabulateInformations( jsonInfo.at("Algebraic Solver"), tabInfoProp ) );
+
+    if ( jsonInfo.contains("Symbols") )
+        tabInfo->add( "Symbols", TabulateInformationTools::FromJSON::tabulateInformationsSymbolsExpr( jsonInfo.at("Symbols"),tabInfoProp,true) );
+
 
     return tabInfo;
 }

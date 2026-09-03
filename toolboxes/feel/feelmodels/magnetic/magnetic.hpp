@@ -267,7 +267,21 @@ public :
     template <typename ModelFieldsType>
     auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
         {
-            return symbols_expression_empty_t{};
+
+            auto const& A = mfields.field( FieldTag::vectorPotential(this), FieldTag::vectorPotential(this).identifier() );
+
+            typedef decltype( this->fluxDensityExpr(A) ) _expr_flux_density_type;
+            symbol_expression_t<_expr_flux_density_type> se_fluxDensity;
+            std::string symbolFluxDensityStr = prefixvm( this->keyword(), "B", "_");
+            se_fluxDensity.add( symbolFluxDensityStr, this->fluxDensityExpr( A ), SymbolExprComponentSuffix( nRealDim,1 ) );
+
+            typedef decltype( this->fieldIntensityExpr( A ) ) _expr_field_intensity_type;
+            symbol_expression_t<_expr_field_intensity_type> se_fieldIntensity;
+            std::string symbolFieldIntensityStr = prefixvm( this->keyword(), "H", "_");
+            se_fieldIntensity.add( symbolFieldIntensityStr, this->fieldIntensityExpr( A ), SymbolExprComponentSuffix( nRealDim,1 ) );
+
+            //return symbols_expression_empty_t{};
+            return Feel::vf::symbolsExpr( se_fluxDensity, se_fieldIntensity );
         }
 
     template <typename ModelFieldsType, typename TrialSelectorModelFieldsType>
@@ -388,6 +402,11 @@ public :
         {
           return this->reluctivityExpr( matName, symbolsExpr )*this->fluxDensityExpr( A );
         }
+    template <typename FieldVectorPotentialType, typename SymbolsExpr = symbols_expression_empty_t>
+    auto fieldIntensityExpr( FieldVectorPotentialType const& A, SymbolsExpr const& symbolsExpr = symbols_expression_empty_t{} ) const
+        {
+          return this->reluctivityExpr( symbolsExpr )*this->fluxDensityExpr( A );
+        }
 
     //___________________________________________________________________________________//
     // apply assembly and solver
@@ -449,9 +468,11 @@ protected :
 
     std::string M_solverName;
     std::string M_nullSpaceMethod = "regularized-formulation"; // "regularized-formulation", "saddle-point"
+    double M_nullSpaceRegularizationEpsilon = 1e-6;
     bool M_preconditionerAttachAms = false;
     sparse_matrix_ptrtype M_preconditionerAmsMatrixG;
     std::array<vector_ptrtype,nRealDim> M_preconditionerAmsVectorOnes;
+    bool M_equationScalingUseVacuumPermeability = true;
 
     // post-process
     export_ptrtype M_exporter;

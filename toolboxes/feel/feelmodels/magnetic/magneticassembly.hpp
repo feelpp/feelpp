@@ -59,10 +59,14 @@ Magnetic<ConvexType,BasisMagneticVectorPotentialType>::updateLinearPDE( DataUpda
                                _rowstart=this->rowStartInVector()+startBlockIndexVectorPotential );
     //--------------------------------------------------------------------------------------------------//
 
+    double mu_0_cst = ModelPhysicMagnetic<nDim>::vacuumPermeabilityConstant();
+    double equationScaling = M_equationScalingUseVacuumPermeability? mu_0_cst : 1.0;
+
     for ( auto const& [physicId,physicData] : this->physicsFromCurrentType() )
     {
         auto physicMagneticData = std::static_pointer_cast<ModelPhysicMagnetic<nDim>>(physicData);
-        auto mu_0 = physicMagneticData->vacuumPermeabilityExpr();
+        //auto mu_0 = physicMagneticData->vacuumPermeabilityExpr();
+        //double mu_0_cst = physicMagneticData->vacuumPermeabilityConstant();
         for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicId ) )
         {
             auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
@@ -78,7 +82,7 @@ Magnetic<ConvexType,BasisMagneticVectorPotentialType>::updateLinearPDE( DataUpda
                     {
                         bilinearForm_A_A +=
                             integrate( _range=range,
-                                       _expr= timeSteppingScaling*(1./mu_0)*inner(inv(mu_r)*curlt(u),curl(v)),
+                                       _expr= equationScaling*timeSteppingScaling*(1./mu_0_cst)*inner(inv(mu_r)*curlt(u),curl(v)),
                                        _geomap=this->geomap() );
                     }
                 }
@@ -93,7 +97,7 @@ Magnetic<ConvexType,BasisMagneticVectorPotentialType>::updateLinearPDE( DataUpda
                 {
                     bilinearForm_A_A +=
                         integrate( _range=range,
-                                   _expr= timeSteppingScaling*(1./(mu_0*mu_r))*inner(curlt(u),curl(v)),
+                                   _expr= equationScaling*timeSteppingScaling*(1./(mu_0_cst*mu_r))*inner(curlt(u),curl(v)),
                                    _geomap=this->geomap() );
                 }
             }
@@ -107,7 +111,7 @@ Magnetic<ConvexType,BasisMagneticVectorPotentialType>::updateLinearPDE( DataUpda
                 {
                     myLinearForm +=
                         integrate( _range=range,
-                                   _expr= timeSteppingScaling*inner(theExpr,id(v)),
+                                   _expr= equationScaling*timeSteppingScaling*inner(theExpr,id(v)),
                                    _geomap=this->geomap() );
                 }
             }
@@ -118,7 +122,7 @@ Magnetic<ConvexType,BasisMagneticVectorPotentialType>::updateLinearPDE( DataUpda
     // additional term in regularized formulation
     if ( M_nullSpaceMethod == "regularized-formulation" && buildCstPart )
     {
-        double epsilonPenal = 1.;
+        double epsilonPenal = M_nullSpaceRegularizationEpsilon;
         bilinearForm_A_A +=
             integrate( _range=this->rangeMeshElements(),
                        _expr= timeSteppingScaling*epsilonPenal*inner(idt(u),id(v)),
@@ -167,8 +171,8 @@ Magnetic<ConvexType,BasisMagneticVectorPotentialType>::updateLinearPDE( DataUpda
                 {
                     myLinearForm +=
                         integrate( _range=markedfaces(this->mesh(),bcData->markers()),
-                                   _expr= -timeSteppingScaling*inner(curl(v),reluctivityExpr*cross(theExpr,N()))
-                                   + timeSteppingScaling*M_penaldir*trans( reluctivityExpr*cross(theExpr,N()) )*cross(id(v),N())/hFace(),
+                                   _expr= -timeSteppingScaling*equationScaling*inner(curl(v),reluctivityExpr*cross(theExpr,N()))
+                                   + timeSteppingScaling*equationScaling*M_penaldir*trans( reluctivityExpr*cross(theExpr,N()) )*cross(id(v),N())/hFace(),
                                    _geomap=this->geomap() );
                 }
             }
@@ -185,9 +189,9 @@ Magnetic<ConvexType,BasisMagneticVectorPotentialType>::updateLinearPDE( DataUpda
                 if ( !allmarkers.empty() )
                     bilinearForm_A_A +=
                         integrate(_range=markedfaces(this->mesh(),allmarkers),
-                                  _expr=-timeSteppingScaling*inner(reluctivityExpr*curlt(u),cross(id(v),N()))
-                                  - timeSteppingScaling*inner(curl(v),reluctivityExpr*cross(idt(u),N()))
-                                  + timeSteppingScaling*M_penaldir*trans( reluctivityExpr*cross(idt(u),N()) )*cross(id(v),N())/hFace(),
+                                  _expr=-equationScaling*timeSteppingScaling*inner(reluctivityExpr*curlt(u),cross(id(v),N()))
+                                  - equationScaling*timeSteppingScaling*inner(curl(v),reluctivityExpr*cross(idt(u),N()))
+                                  + equationScaling*timeSteppingScaling*M_penaldir*trans( reluctivityExpr*cross(idt(u),N()) )*cross(id(v),N())/hFace(),
                                   _geomap=this->geomap() );
             }
         }
@@ -317,6 +321,9 @@ Magnetic<ConvexType,BasisMagneticVectorPotentialType>::updateJacobian( DataUpdat
 
 
 
+    double mu_0_cst = ModelPhysicMagnetic<nDim>::vacuumPermeabilityConstant();
+    double equationScaling = M_equationScalingUseVacuumPermeability? mu_0_cst : 1.0;
+
     for ( auto const& [physicId,physicData] : this->physicsFromCurrentType() )
     {
         auto physicMagneticData = std::static_pointer_cast<ModelPhysicMagnetic<nDim>>(physicData);
@@ -338,7 +345,7 @@ Magnetic<ConvexType,BasisMagneticVectorPotentialType>::updateJacobian( DataUpdat
                     {
                         bilinearForm_A_A +=
                             integrate( _range=range,
-                                       _expr= timeSteppingScaling*(1./mu_0)*inner(inv(mu_r)*curlt(u),curl(v)),
+                                       _expr= equationScaling*timeSteppingScaling*(1./mu_0)*inner(inv(mu_r)*curlt(u),curl(v)),
                                        _geomap=this->geomap() );
                     }
                 }
@@ -358,7 +365,7 @@ Magnetic<ConvexType,BasisMagneticVectorPotentialType>::updateJacobian( DataUpdat
                 {
                     bilinearForm_A_A +=
                         integrate( _range=range,
-                                   _expr= timeSteppingScaling*(1./(mu_0*mu_r))*inner(curlt(u),curl(v)),
+                                   _expr= equationScaling*timeSteppingScaling*(1./(mu_0*mu_r))*inner(curlt(u),curl(v)),
                                    _geomap=this->geomap() );
                 }
 
@@ -374,7 +381,7 @@ Magnetic<ConvexType,BasisMagneticVectorPotentialType>::updateJacobian( DataUpdat
         // additional term in regularized formulation
     if ( M_nullSpaceMethod == "regularized-formulation" && buildCstPart )
     {
-        double epsilonPenal = 1.;
+        double epsilonPenal = M_nullSpaceRegularizationEpsilon;
         bilinearForm_A_A +=
             integrate( _range=this->rangeMeshElements(),
                        _expr= timeSteppingScaling*epsilonPenal*inner(idt(u),id(v)),
@@ -464,6 +471,9 @@ Magnetic<ConvexType,BasisMagneticVectorPotentialType>::updateResidual( DataUpdat
     auto linearForm_A = form1( _test=Xh, _vector=R,
                                _rowstart=this->rowStartInVector() + startBlockIndexVectorPotential );
 
+    double mu_0_cst = ModelPhysicMagnetic<nDim>::vacuumPermeabilityConstant();
+    double equationScaling = M_equationScalingUseVacuumPermeability? mu_0_cst : 1.0;
+
     for ( auto const& [physicId,physicData] : this->physicsFromCurrentType() )
     {
         auto physicMagneticData = std::static_pointer_cast<ModelPhysicMagnetic<nDim>>(physicData);
@@ -484,7 +494,7 @@ Magnetic<ConvexType,BasisMagneticVectorPotentialType>::updateResidual( DataUpdat
                     {
                         linearForm_A +=
                             integrate( _range=range,
-                                       _expr= timeSteppingScaling*(1./mu_0)*inner(inv(mu_r)*curlv(u),curl(v)),
+                                       _expr= equationScaling*timeSteppingScaling*(1./mu_0)*inner(inv(mu_r)*curlv(u),curl(v)),
                                        _geomap=this->geomap() );
                     }
                 }
@@ -499,7 +509,7 @@ Magnetic<ConvexType,BasisMagneticVectorPotentialType>::updateResidual( DataUpdat
                 {
                     linearForm_A +=
                         integrate( _range=range,
-                                   _expr= timeSteppingScaling*(1./(mu_0*mu_r))*inner(curlv(u),curl(v)),
+                                   _expr= equationScaling*timeSteppingScaling*(1./(mu_0*mu_r))*inner(curlv(u),curl(v)),
                                    _geomap=this->geomap() );
                 }
             }
@@ -513,7 +523,7 @@ Magnetic<ConvexType,BasisMagneticVectorPotentialType>::updateResidual( DataUpdat
                 {
                     linearForm_A +=
                         integrate( _range=range,
-                                   _expr= -timeSteppingScaling*inner(theExpr,id(v)),
+                                   _expr= -equationScaling*timeSteppingScaling*inner(theExpr,id(v)),
                                    _geomap=this->geomap() );
                 }
             }
@@ -523,7 +533,7 @@ Magnetic<ConvexType,BasisMagneticVectorPotentialType>::updateResidual( DataUpdat
     // additional term in regularized formulation
     if ( M_nullSpaceMethod == "regularized-formulation" && buildNonCstPart && !UseJacobianLinearTerms )
     {
-        double epsilonPenal = 1.;
+        double epsilonPenal = M_nullSpaceRegularizationEpsilon;
         linearForm_A +=
             integrate( _range=this->rangeMeshElements(),
                        _expr= timeSteppingScaling*epsilonPenal*inner(idv(u),id(v)),
