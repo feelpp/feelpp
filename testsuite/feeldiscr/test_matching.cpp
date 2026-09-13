@@ -12,7 +12,6 @@
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/createsubmesh.hpp>
-#include <feel/feeldiscr/projector.hpp>
 #include <feel/feeldiscr/pch.hpp>
 
 namespace test_matching
@@ -81,14 +80,13 @@ run()
     form2( _trial=Xh, _test=Yh, _matrix=M ) = integrate( _range=elements(mesh_2), _expr=idt(u)*id(v) );
 
     auto g = Px()+Py();
-    auto gproj = vf::project( _space=Yh, _range=elements( mesh_2 ),_expr=g );
     auto F = backend->newVector( _test=Xh );
     form1( _test=Yh, _vector=F ) = integrate( _range=elements(mesh_2), _expr=g*id(v) );
 
     backend->solve(_matrix=M, _solution=u, _rhs=F,_pcfactormatsolverpackage="umfpack");
 
     auto expo = exporter(_mesh=mesh_1, _name="Exporter");
-    expo->add( "g", gproj );
+    expo->add( "g", g );
     expo->add( "u", u );
     expo->save();
 

@@ -508,13 +508,75 @@ BOOST_AUTO_TEST_CASE( dataset_contract_errors )
     renamed->add("fixed",field);
     renamed->defaultTimeSet()->setName("different_sequence");
     BOOST_CHECK_THROW(renamed->save(),std::invalid_argument);
+}
 
-    auto partialRange=elements(mesh,Px()<cst(.5),_selector=select_elements_from_expression::with_value,_value=1);
-    using scalar_space_type=Pch_type<mesh_type,1>;
-    auto partialSpace=scalar_space_type::New(_mesh=mesh,_range=partialRange);
-    auto partialField=partialSpace->element(cst(2.));
-    auto partial=exporter(_mesh=mesh,_name="partial",_geo="static");
-    BOOST_CHECK_THROW(partial->add("partial",partialField),std::invalid_argument);
+//! \brief Partial FE snapshots remain static, own their values and zero untouched DOFs.
+BOOST_AUTO_TEST_CASE( dataset_partial_support )
+{
+    auto mesh = unitSquare( .25 );
+    using mesh_type = typename decltype( mesh )::element_type;
+    auto range = elements( mesh, Px() < cst( .5 ),
+                           _selector = select_elements_from_expression::with_value, _value = 1 );
+    auto scalar = Pch<1>( mesh, range )->element( cst( 2. ) );
+    auto quadratic = Pch<2>( mesh, range )->element( cst( 3. ) );
+    auto cell = Pdh<0>( mesh, range )->element( cst( 7. ) );
+    auto vector = Pchv<1>( mesh, range )->element( vec( cst( 4. ), cst( 5. ) ) );
+    auto tensorSpace = Pchm_type<mesh_type, 1>::New( _mesh = mesh, _range = range );
+    auto tensor = tensorSpace->element(
+        mat<2, 2>( cst( 1. ), cst( 2. ), cst( 3. ), cst( 4. ) ) );
+    using mixed_space_type = FunctionSpace<mesh_type, bases<Lagrange<1, Scalar>, Lagrange<1, Vectorial>>>;
+    auto partialSupport = std::make_shared<MeshSupport<mesh_type>>( mesh, range );
+    auto fullSupport = std::make_shared<MeshSupport<mesh_type>>( mesh );
+    auto mixedSpace = mixed_space_type::New(
+        _mesh = mesh, _range = boost::fusion::make_vector( partialSupport, fullSupport ) );
+    auto mixed = mixedSpace->element();
+    mixed.template element<0>().on( _range = range, _expr = cst( 6. ), _close = true );
+    mixed.template element<1>().on( _range = elements( mesh ), _expr = vec( cst( 8. ), cst( 9. ) ), _close = true );
+
+    auto e = exporter( _mesh = mesh, _name = "partial_support", _geo = "static" );
+    e->add( "scalar", scalar );
+    e->add( "quadratic", quadratic );
+    e->add( "cell", cell );
+    e->add( "vector", vector );
+    e->add( "tensor", tensor );
+    e->add( "mixed", mixed );
+    BOOST_CHECK_EQUAL( e->defaultTimeSet()->numberOfSteps(), 0 );
+
+    // Changing the partial sources must leave the registered snapshots unchanged.
+    scalar.on( _range = range, _expr = cst( 20. ) );
+    quadratic.on( _range = range, _expr = cst( 30. ) );
+    cell.on( _range = range, _expr = cst( 70. ) );
+    vector.on( _range = range, _expr = vec( cst( 40. ), cst( 50. ) ) );
+    tensor.on( _range = range, _expr = mat<2, 2>( cst( 10. ), cst( 20. ), cst( 30. ), cst( 40. ) ) );
+    mixed.template element<0>().on( _range = range, _expr = cst( 60. ) );
+
+    auto expected = Pch<1>( mesh )->element();
+    auto checkNodal = [&]( auto const& field, double value )
+    {
+        BOOST_CHECK( support( field->functionSpace() )->isFullSupport() );
+        expected.zero();
+        // Synchronize supported DOFs across full-mesh partition boundaries.
+        expected.on( _range = range, _expr = cst( value ), _close = true );
+        BOOST_CHECK_SMALL( normL2( _range = range, _expr = idv( *field ) - cst( value ) ), 1e-12 );
+        BOOST_CHECK_SMALL( normL2( _range = elements( mesh ), _expr = idv( *field ) - idv( expected ) ), 1e-12 );
+    };
+    auto fields = e->staticFields();
+    checkNodal( fields->nodal( "scalar" ).second[0][0], 2. );
+    checkNodal( fields->nodal( "quadratic" ).second[0][0], 3. );
+    checkNodal( fields->nodal( "vector" ).second[0][0], 4. );
+    checkNodal( fields->nodal( "vector" ).second[1][0], 5. );
+    for ( int i = 0; i < 2; ++i )
+        for ( int j = 0; j < 2; ++j )
+            checkNodal( fields->nodal( "tensor" ).second[i][j], 1. + 2 * i + j );
+    checkNodal( fields->nodal( "mixed_0" ).second[0][0], 6. );
+    BOOST_CHECK_CLOSE( fields->nodal( "mixed_1" ).second[0][0]->min(), 8., 1e-8 );
+    BOOST_CHECK_CLOSE( fields->nodal( "mixed_1" ).second[1][0]->min(), 9., 1e-8 );
+    auto expectedCell = Pdh<0>( mesh )->element();
+    expectedCell.on( _range = range, _expr = cst( 7. ), _close = true );
+    auto cellSnapshot = fields->element( "cell" ).second[0][0];
+    BOOST_CHECK( support( cellSnapshot->functionSpace() )->isFullSupport() );
+    BOOST_CHECK_SMALL( normL2( _range = elements( mesh ), _expr = idv( *cellSnapshot ) - idv( expectedCell ) ), 1e-12 );
+    e->save();
 }
 
 /** @brief Stationary add/save works for all geometry hints and native/per-step storage. */
