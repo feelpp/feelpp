@@ -161,7 +161,7 @@ int cg_laplacian_app()
         if ( opt_u )
         {
             e->add( "p", *opt_u );
-            e->add( "u", -k*gradv(*opt_u), "element" );
+            e->add( "u", -k * gradv( *opt_u ), elements( support( Vh ) ), "element" );
         }
         e->add( "k", k );
         e->add( "f", f );

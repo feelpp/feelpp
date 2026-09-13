@@ -18,6 +18,8 @@ feelpp_add_test( evaluator )
 
 feelpp_add_test( functionallinearfree )
 feelpp_add_test( fspace_context )
+feelpp_add_test( functionspace_manager_baseline )
+feelpp_add_test( functionspace_manager )
 feelpp_add_test( geomap )
 
 feelpp_add_test( spacefunc )

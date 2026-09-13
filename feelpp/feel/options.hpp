@@ -114,6 +114,13 @@ po::options_description error_options( std::string const& prefix = "" );
 
 po::options_description functionspace_options( std::string const& prefix = "" );
 
+/**
+ * @brief Return command-line options controlling function-space reuse.
+ * @param prefix optional option-name prefix
+ * @return function-space manager options description
+ */
+po::options_description functionspace_manager_options( std::string const& prefix = "" );
+
 po::options_description aitken_options( std::string const& prefix = "" );
 
 /**
