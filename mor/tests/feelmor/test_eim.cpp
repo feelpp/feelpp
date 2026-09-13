@@ -265,7 +265,7 @@ public:
                     {
                         LOG(INFO) << "evaluate model at p = " << p << "\n";
                         auto v = fun->operator()( p );
-                        e->add( (boost::format( "%1%(%2%)" ) % fun->name() % p(0) ).str(), v );
+                        e->add( fmt::format( "{}_sample_{}", fun->name(), mu_number ), v );
                         LOG(INFO) << "evaluate eim interpolant at p = " << p << "\n";
                     }
                     if( cvg_study )
@@ -283,7 +283,7 @@ public:
                     Feel::Timer timer;
                     auto w = fun->interpolant( p );
                     double t=timer.elapsed();
-                    e->add( (boost::format( "%1%-eim(%2%)" ) % fun->name() % p(0) ).str(), w );
+                    e->add( fmt::format( "{}_eim_sample_{}", fun->name(), mu_number ), w );
                     time_vector[fun_number]( mu_number )=t;
                     mu_number++;
                 }
@@ -426,6 +426,7 @@ public:
             S->logEquidistribute(10);
             for( auto fun : M_funs )
             {
+                int sampleIndex = 0;
                 for( auto p : *S )
                 {
                     LOG(INFO) << "evaluate model at p = " << p << "\n";
@@ -433,9 +434,9 @@ public:
                     LOG(INFO) << "evaluate eim interpolant at p = " << p << "\n";
                     auto w = fun->interpolant( p );
 
-                    e->add( (boost::format( "model2-%1%(%2%)" ) % fun->name() % p(0) ).str(), v );
-                    e->add( (boost::format( "model2-%1%-eim(%2%-%3%-%4%-%5%)" ) % fun->name() % p(0) %p(1) %p(2) %p(3) ).str(), w );
-
+                    e->add( fmt::format( "model2_{}_sample_{}", fun->name(), sampleIndex ), v );
+                    e->add( fmt::format( "model2_{}_eim_sample_{}", fun->name(), sampleIndex ), w );
+                    ++sampleIndex;
                 }
             }
             e->save();

@@ -472,6 +472,11 @@ public:
      * @param u Field copied now; later source mutation cannot change this snapshot.
      * @param reps Nodal/element representation(s), with the same defaults as Step::add.
      *
+     * Partial-support fields on this mesh are copied over their support into
+     * full-mesh output buffers; untouched output DOFs remain zero. Continuous
+     * fields retain their shared boundary DOFs on adjacent elements.
+     * This also applies to individual components of a mixed-space field.
+     *
      * Collective registration precedes all steps and saves. No temporal step is
      * manufactured by this call. Native Gold writes once; packed Gold and other
      * backends materialize this same snapshot in each output record. Mesh/layout
@@ -705,7 +710,7 @@ private:
         if (!message.empty()) throw std::invalid_argument("Exporter dataset fields: "+message);
     }
 
-    /** @brief Validate mesh, communicator and support, including mixed-space subfields. */
+    /** @brief Validate mesh and communicator, including mixed-space subfields. */
     template<typename F>
     std::string validateDatasetFunction(F const& field) const
     {
@@ -728,8 +733,6 @@ private:
                 return "field communicator differs from exporter communicator";
             if (!M_mesh || !M_mesh->isSameMesh(field.functionSpace()->mesh()))
                 return "field must use the exporter mesh";
-            if (field.functionSpace()->dof()->hasMeshSupport() && field.functionSpace()->dof()->meshSupport()->isPartialSupport())
-                return "partial-support FE snapshots are unsupported; use an explicit expression range";
             return "";
         }
     }
