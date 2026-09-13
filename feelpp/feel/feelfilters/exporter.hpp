@@ -31,6 +31,10 @@
 #ifndef FEELPP_FILTERS_EXPORTER_H
 #define FEELPP_FILTERS_EXPORTER_H
 
+#include <typeinfo>
+#include <cmath>
+#include <iomanip>
+#include <limits>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/visitor.hpp>
 #include <feel/feelcore/factory.hpp>
@@ -38,6 +42,7 @@
 
 #include <feel/feeldiscr/timeset.hpp>
 #include <feel/feelfilters/enums.hpp>
+#include <feel/feelfilters/exporterio.hpp>
 #include <feel/feelmesh/meshfragmentation.hpp>
 
 namespace Feel
@@ -97,6 +102,8 @@ public:
     typedef typename timeset_set_type::const_iterator timeset_const_iterator;
     typedef typename timeset_type::step_type step_type;
     typedef typename timeset_type::step_ptrtype step_ptrtype;
+    using field_set_type = Feel::detail::ExportFieldSet<MeshType,N>;
+    using field_set_ptrtype = std::shared_ptr<field_set_type>;
     typedef typename timeset_type::step_set_type step_set_type;
 
     typedef typename mesh_type::index_type index_type;
@@ -178,6 +185,7 @@ public:
     static std::shared_ptr<Exporter<MeshType,N> > New( po::variables_map const& vm = Environment::vm(),
                                                          std::string prefix = Environment::about().appName(),
                                                          worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() ) FEELPP_DEPRECATED;
+
     /**
      * Static function instantiating from the Exporter Factory an exporter using
      * \p prefix for the prefix of the data files.
@@ -212,6 +220,22 @@ public:
     std::string const& type() const
     {
         return M_type;
+    }
+
+    /** @return Whether the storage strategy writes dataset fields once.
+     * Other backends materialize the same immutable snapshot in temporal records.
+     * This is a storage capability, not a restriction on exporter-level add().
+     */
+    virtual bool supportsNativeStaticFields() const { return false; }
+
+    /** @brief Select payload aggregation on backends supporting this policy.
+     * All ranks must select the same policy. Automatic preserves the backend
+     * default; unsupported explicit policies throw rather than being ignored.
+     */
+    virtual void setIOPolicy( ExporterIOPolicy policy )
+    {
+        if ( policy != ExporterIOPolicy::Automatic )
+            throw std::invalid_argument( "this exporter does not support an explicit I/O policy" );
     }
 
     /**
@@ -272,6 +296,7 @@ public:
      */
     Exporter<MeshType,N>* setType( std::string const& __type )
     {
+        if (hasStaticFields() && __type!=M_type) throw std::logic_error("set backend before dataset fields");
         M_type = __type;
         return this;
     }
@@ -283,15 +308,24 @@ public:
     Exporter<MeshType,N>* addPath( boost::format fmt );
 
     /**
-     * set the path
+     * @brief Collectively create and validate the shared output directory.
+     * Every rank performs the directory operation: an MPI barrier alone does
+     * not invalidate another node's negative filesystem lookup cache.
+     * @throws std::runtime_error if any rank cannot access the directory.
      */
     void setPath( std::string path )
     {
-        if ( !fs::exists(path) && this->worldComm().isMasterRank() )
+        validateStaticOutputPath(path);
+        std::string error;
+        try
+        {
             fs::create_directories( path );
-        // be sure that all process can find the path after
-        this->worldComm().barrier();
-
+            if ( !fs::is_directory( path ) )
+                error = "not a directory: " + path;
+        }
+        catch ( std::exception const& e ) { error = e.what(); }
+        auto message=collectiveError(error);
+        if (!message.empty()) throw std::runtime_error("Exporter::setPath: "+message);
         M_path = path;
     }
 
@@ -300,6 +334,7 @@ public:
      */
     Exporter<MeshType,N>* setPrefix( std::string const& __prefix )
     {
+        if (hasStaticFields() && __prefix!=M_prefix) throw std::logic_error("cannot rename an exporter containing dataset fields");
         M_prefix = __prefix;
 
         if(M_ts_set.size() > 0)
@@ -340,6 +375,7 @@ public:
     {
         return M_ts_set.begin();
     }
+
     timeset_iterator endTimeSet()
     {
         return M_ts_set.end();
@@ -349,6 +385,7 @@ public:
     {
         return M_ts_set.begin();
     }
+
     timeset_const_iterator endTimeSet() const
     {
         return M_ts_set.end();
@@ -360,11 +397,13 @@ public:
         CHECK( !M_ts_set.empty() ) << "time set is empty";
         return M_ts_set.front();
     }
+
     timeset_ptrtype timeSet( int ts )
         {
             CHECK( 0 <= ts && ts < M_ts_set.size() ) << "invalid time set index " << ts;
             return M_ts_set[ts];
         }
+
     /**
      * @return mesh fragmentation used as mesh parts of exporter
      */
@@ -379,6 +418,7 @@ public:
     template <typename MFT>
     void setMeshFragmentation( MFT && mf )
     {
+        if (hasStaticFields()) throw std::logic_error("set mesh fragmentation before dataset fields");
         M_meshFragmentation = std::forward<MFT>( mf );
     }
 
@@ -389,6 +429,7 @@ public:
         {
             return M_use_single_transient_file;
         }
+
     /**
      * set the use single transient file to \p s
      */
@@ -396,73 +437,103 @@ public:
         {
             M_use_single_transient_file = s;
         }
+
     void
     setMesh( mesh_ptrtype mesh, ExporterGeometry exgeo = EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY )
         {
+            if (hasStaticFields() && (mesh!=M_staticMesh || exgeo!=M_ex_geometry))
+                throw std::logic_error("cannot replace dataset mesh or geometry policy");
+            M_mesh = mesh;
             M_ex_geometry = exgeo;
             M_ts_set.back()->setMesh( mesh );
             //this->step( 0 )->setMesh( mesh );
         }
 
 
-    //! export a scalar quantity \p u with name \p name
-    //! \param name name of the scalar quantity
-    //! \param u scalar quantity to be exported
-    //! \param cst true if the scalar is constant over time, false otherwise
+    /** @brief Snapshot a time-independent per-case scalar on the exporter.
+     * @param name Dataset-level name, reserved against temporal fields.
+     * @param u Value copied now.
+     * @param cst Compatibility flag: must be true; use step(t)->add for temporal scalars.
+     */
     template<typename T>
-    void
-    add( std::string const& name, T const& u, bool cst = false,
-         typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr )
-        {
-            this->step( 0 )->add( name, u, cst );
-        }
+    void add(std::string const& name,T const& u,bool cst=true,
+             typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr)
+    {
+        std::ostringstream schema;
+        schema << "scalar:" << std::setprecision(std::numeric_limits<T>::max_digits10) << u;
+        std::string error=cst ? "" : "use step(t)->add for time-dependent scalars";
+        if (!std::isfinite(static_cast<scalar_type>(u))) error="dataset constants must be finite";
+        registerDatasetField(name,"",schema.str(),error,
+                             [&](auto& fields) { fields.add(sanitize(name),u,true); });
+    }
 
-    //! export field \p u with name \p name. If both nodal and element representations are present
-    //! in \p reps, the suffixes _n and _e are added to the name.
-    //! \param name name of field exported
-    //! \param u the field (element of function space)
-    //! \param reps representation of the field exported. It can be a string (nodal or element) or set of string
+    /** @brief Snapshot an FE field independently of all temporal time sets.
+     * @param name Dataset-level name, sanitized as for Step::add.
+     * @param u Field copied now; later source mutation cannot change this snapshot.
+     * @param reps Nodal/element representation(s), with the same defaults as Step::add.
+     *
+     * Collective registration precedes all steps and saves. No temporal step is
+     * manufactured by this call. Native Gold writes once; packed Gold and other
+     * backends materialize this same snapshot in each output record. Mesh/layout
+     * changes require a new exporter. See step(t)->add for transient fields.
+     */
     template<typename F>
-    void
-    add( std::string const& name, F const& u, typename step_type::variant_representation_arg_type reps = "",
-         typename std::enable_if<is_functionspace_element_v<F>>::type* = nullptr )
-        {
-            this->step( 0 )->add( name, u, reps );
-        }
+    void add(std::string const& name,F const& u,typename step_type::variant_representation_arg_type reps="",
+             typename std::enable_if<is_functionspace_element_v<decay_type<Feel::remove_shared_ptr_type<std::remove_pointer_t<F>>>>>::type* = nullptr)
+    {
+        std::string error;
+        if constexpr (is_ptr_or_shared_ptr<F>::value)
+            if (!u) error="null dataset field";
+        validateDatasetError(error);
+        auto const& field=unwrap_ptr(u);
+        registerDatasetField(name,reps,typeid(decay_type<decltype(field)>).name(),validateDatasetFunction(field),
+                             [&](auto& fields) { fields.add(sanitize(name),field,reps); });
+    }
 
-    //! export expression \p expr with name \p name. If both nodal and element representations are present
-    //! in \p reps, the suffixes _n and _e are added to the name.
-    //! \param name name of field exported
-    //! \param expr a Feel++ expression (scalar, vectorial of dim 2 or 3,  square matrix 2*2 or 3*3 )
-    //! \param reps representation of the field exported. It can be a string (nodal or element) or set of string
+    /** @brief Snapshot an expression evaluated once on the exporter mesh.
+     * @param name Dataset field name.
+     * @param expr Expression evaluated at registration, not at later save calls.
+     * @param reps Nodal/element representation(s), as for Step::add.
+     */
     template<typename ExprT>
-    void
-    add( std::string const& name, ExprT const& expr, typename step_type::variant_representation_arg_type reps = "",
-         typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> >* = nullptr )
+    void add(std::string const& name,ExprT const& expr,typename step_type::variant_representation_arg_type reps="",
+             typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT>>* = nullptr)
     {
-        this->step( 0 )->add( name, expr, reps );
+        registerDatasetField(name,reps,typeid(ExprT).name(),"",
+                             [&](auto& fields) { fields.add(sanitize(name),expr,reps); });
     }
 
-    //! export expression \p expr with name \p name which is defined on \p rangeElt. If both nodal and element
-    //! representations are present in \p reps, the suffixes _n and _e are added to the name.
-    //! \param name name of field exported
-    //! \param expr a Feel++ expression (scalar, vectorial of dim 2 or 3,  square matrix 2*2 or 3*3 )
-    //! \param rangeElt collection of mesh element
-    //! \param reps representation of the field exported. It can be a string (nodal or element) or set of string
-    template<typename ExprT, typename EltWrapperT = Range<mesh_type,MESH_ELEMENTS>>
-    void
-    add( std::string const& name, ExprT const& expr, EltWrapperT const& rangeElt, typename step_type::variant_representation_arg_type reps = "",
-         typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> && is_filter_v<EltWrapperT> >* = nullptr )
+    /** @brief Snapshot an expression over an exporter-mesh range.
+     * @param name Dataset field name.
+     * @param expr Expression evaluated once; values outside the range remain zero.
+     * @param rangeElt Element/boundary range belonging to the exporter mesh.
+     * @param reps Nodal/element representation(s), as for Step::add.
+     */
+    template<typename ExprT,typename EltWrapperT=Range<mesh_type,MESH_ELEMENTS>>
+    void add(std::string const& name,ExprT const& expr,EltWrapperT const& rangeElt,
+             typename step_type::variant_representation_arg_type reps="",
+             typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> && is_filter_v<EltWrapperT>>* = nullptr)
     {
-        this->step( 0 )->add( name, expr, rangeElt, reps );
+        std::string error=rangeElt.mesh()==M_mesh.get() ? "" : "expression range must use the exporter mesh";
+        registerDatasetField(name,reps,typeid(ExprT).name(),error,
+                             [&](auto& fields) { fields.add(sanitize(name),expr,rangeElt,reps); });
     }
 
-    //! export the mesh partitioning
-    void
-    addRegions()
-        {
-            this->step( 0 )->addRegions( "" );
-        }
+    /** @brief Snapshot mesh partition IDs as the dataset field "pid". */
+    void addRegions()
+    {
+        registerDatasetField("pid","element","partition-id","",[](auto& fields) { fields.addRegions(""); });
+    }
+
+    /** @return Whether this exporter owns time-independent field snapshots. */
+    bool hasStaticFields() const { return bool(M_staticFields); }
+
+    /** @return Time-neutral dataset storage; it has no Step or TimeSet reference. */
+    field_set_ptrtype const& staticFields() const { return M_staticFields; }
+
+    /** @return Whether the dataset snapshot has been successfully materialized. */
+    bool staticFieldsWritten() const { return M_staticWritten; }
+
 
     /**
      * @return the step shared_ptr at time \p time
@@ -472,11 +543,15 @@ public:
         CHECK( !M_ts_set.empty() ) << "timeset is empty";
         return this->step( time, M_ts_set.size() -1 );
     }
+
     step_ptrtype step( double time, int s )
     {
+        M_staticOnlyAdapter=false;
         CHECK( s >= 0 && s < M_ts_set.size() ) << "invalid timeset index " << s;
         timeset_ptrtype __ts = M_ts_set[s];
-        return __ts->step( time, this->freq() );
+        auto result = __ts->step(time,this->freq());
+        if (hasStaticFields()) result->fieldSet()->reserveNames(M_staticNames);
+        return result;
     }
 
     //@}
@@ -497,6 +572,7 @@ public:
         }
         return invalid_v<uint16_type>;
     }
+
     //! add the timeset with name \p __tsname to the Exporter
     //! if the name is empty, use the prefix exporter
     uint16_type addTimeSet( std::string const& tsname = "" )
@@ -511,33 +587,51 @@ public:
         if ( !this->worldComm().isActive() )
             return;
 
-        bool hasStepToWrite = false;
-        steps_write_on_disk_type stepsToWriteOnDisk;
-        timeset_const_iterator __ts_it = this->beginTimeSet();
-        timeset_const_iterator __ts_en = this->endTimeSet();
-        for ( ; __ts_it != __ts_en ; ++__ts_it )
+        if (hasStaticFields())
         {
-            timeset_ptrtype __ts = *__ts_it;
-            auto steps = __ts->stepsToWriteOnDisk();
-            stepsToWriteOnDisk.push_back( std::make_pair( __ts, steps ) );
-            if ( !steps.empty() || (__ts->numberOfSteps() == 0 && __ts->hasMesh() ) )
-                hasStepToWrite = true;
-        }
-
-        if ( hasStepToWrite )
-            this->save( stepsToWriteOnDisk );
-
-        for ( auto & [__ts, steps ] : stepsToWriteOnDisk )
-        {
-            for ( auto & step : steps )
+            validateStaticFields();
+            validateStaticOutputPath(this->path());
+            // Temporal-only formats need a compatibility output record, but
+            // registration itself never constructs a Step or references a TimeSet.
+            if (!supportsNativeStaticFields() && M_ts_set.front()->numberOfSteps()==0)
             {
-                step->setState( STEP_ON_DISK );
+                M_ts_set.front()->step(0,this->freq());
+                M_staticOnlyAdapter=true;
+            }
+        }
+        bool hasStepToWrite=false;
+        steps_write_on_disk_type stepsToWriteOnDisk;
+        for (auto const& ts : M_ts_set)
+        {
+            auto steps=ts->stepsToWriteOnDisk();
+            stepsToWriteOnDisk.emplace_back(ts,steps);
+            if (!steps.empty() || (ts->numberOfSteps()==0 && ts->hasMesh())) hasStepToWrite=true;
+        }
+        if (hasStepToWrite)
+        {
+            bool const materialize=hasStaticFields() && !supportsNativeStaticFields();
+            auto exposeSnapshot=[&](bool attach) {
+                if (materialize)
+                    for (auto const& [ts,steps] : stepsToWriteOnDisk)
+                        for (auto const& step : steps) step->fieldSet()->materialize(*M_staticFields,attach);
+            };
+            exposeSnapshot(true);
+            try { this->save(stepsToWriteOnDisk); }
+            catch (...) { exposeSnapshot(false); throw; }
+            exposeSnapshot(false);
+            if (materialize) markStaticFieldsWritten(false);
+            M_hasSaved=true;
+        }
+        for (auto& [ts,steps] : stepsToWriteOnDisk)
+        {
+            for (auto const& step : steps)
+            {
+                step->setState(STEP_ON_DISK);
                 step->cleanup();
             }
-            // save metadata file (sould be done even the if step is not write on the disk
-            std::string filename = (fs::path(this->path()) / (prefix()+".timeset")).string();
-            __ts->save( filename, this->worldComm() );
+            ts->save((fs::path(this->path())/(ts->name()+".timeset")).string(),this->worldComm());
         }
+        if (hasStaticFields() && M_staticWritten) writeStaticFieldGuard();
     }
 
     //!
@@ -550,15 +644,18 @@ public:
      */
     void restart( double __time )
     {
+        if (hasStaticFields() || fs::exists(fs::path(this->path())/(this->prefix()+".static-fields")))
+            throw std::logic_error("restart with dataset fields requires a new exporter/output directory");
         auto __ts_it = this->beginTimeSet();
         auto __ts_en = this->endTimeSet();
 
         for ( ; __ts_it != __ts_en ; ++__ts_it )
         {
-            auto filename = this->path()+"/"+prefix()+".timeset";
+            auto filename = this->path()+"/"+(*__ts_it)->name()+".timeset";
             if ( !fs::exists( filename ) )
                 return;
             ( *__ts_it )->load( filename,__time );
+            M_hasSaved=true;
         }
     }
 
@@ -566,12 +663,183 @@ public:
     //@}
 protected:
 
+    /** @return Whether the only temporal record is a stationary-format adapter. */
+    bool isStationaryDataset() const
+    { return M_staticOnlyAdapter && M_ts_set.size()==1 && M_ts_set.front()->numberOfSteps()==1; }
+
     /**
      * this p save function is defined by the Exporter subclasses and implement
      * saving the data to files
      */
     virtual void save( steps_write_on_disk_type const& stepsToWriteOnDisk ) const = 0;
 
+
+    /** @brief Mark successful output; only native storage may release copied values. */
+    void markStaticFieldsWritten(bool releasePayload=true) const
+    {
+        M_staticOutputPath=fs::absolute(this->path()).string();
+        M_staticWritten=true;
+        if (releasePayload) M_staticFields->cleanup();
+    }
+
+private:
+    /** @brief Return one bounded error on every rank, without all-gathering P strings.
+     * Success reduces one rank identifier. Failure broadcasts at most 4 KiB
+     * from the first failing rank, preserving collective exception behavior.
+     */
+    std::string collectiveError(std::string const& error) const
+    {
+        auto const& comm=this->worldComm().comm();
+        int source=error.empty()?comm.size():comm.rank();
+        int first=mpi::all_reduce(comm,source,mpi::minimum<int>());
+        if (first==comm.size()) return {};
+        std::string message=comm.rank()==first?error.substr(0,4096):std::string{};
+        mpi::broadcast(comm,message,first);
+        return message;
+    }
+
+    /** @brief Propagate validation errors before collective conversion or I/O. */
+    void validateDatasetError(std::string const& error) const
+    {
+        auto message=collectiveError(error);
+        if (!message.empty()) throw std::invalid_argument("Exporter dataset fields: "+message);
+    }
+
+    /** @brief Validate mesh, communicator and support, including mixed-space subfields. */
+    template<typename F>
+    std::string validateDatasetFunction(F const& field) const
+    {
+        if constexpr (F::functionspace_type::nSpaces > 1)
+        {
+            std::string error;
+            hana::for_each(hana::make_range(hana::int_c<0>,hana::int_c<F::functionspace_type::nSpaces>),
+                          [&](auto i) {
+                              auto e=validateDatasetFunction(field.template element<decltype(i)::value>());
+                              if (!e.empty()) error=e;
+                          });
+            return error;
+        }
+        else
+        {
+            if (!field.worldComm().isActive()) return "field communicator is inactive";
+            int relation=MPI_UNEQUAL;
+            MPI_Comm_compare(this->worldComm().comm(),field.worldComm().comm(),&relation);
+            if (!field.worldComm().isActive() || (relation!=MPI_IDENT && relation!=MPI_CONGRUENT))
+                return "field communicator differs from exporter communicator";
+            if (!M_mesh || !M_mesh->isSameMesh(field.functionSpace()->mesh()))
+                return "field must use the exporter mesh";
+            if (field.functionSpace()->dof()->hasMeshSupport() && field.functionSpace()->dof()->meshSupport()->isPartialSupport())
+                return "partial-support FE snapshots are unsupported; use an explicit expression range";
+            return "";
+        }
+    }
+
+    /** @brief Validate a collective schema and populate an exporter-owned FieldSet. */
+    template<typename Populate>
+    void registerDatasetField(std::string const& name,typename field_set_type::variant_representation_arg_type const& reps,
+                              std::string const& shape,std::string error,Populate&& populate)
+    {
+        std::set<std::string> representations;
+        try { representations=field_set_type::representationType(reps); }
+        catch (std::invalid_argument const& e) { error=e.what(); }
+        std::string key=sanitize(name);
+        std::ostringstream schema;
+        schema << key << ':' << shape;
+        for (auto const& rep : representations) schema << ':' << rep;
+        auto expectedSchema=schema.str();
+        mpi::broadcast(this->worldComm().comm(),expectedSchema,this->worldComm().masterRank());
+        if (expectedSchema!=schema.str()) error="dataset field schema differs between MPI ranks";
+        if (!M_mesh) error="set the exporter mesh before registering dataset fields";
+        else if (M_ts_set.size()!=1) error="dataset fields currently require one output mesh/time sequence";
+        else if (M_hasSaved || M_ts_set.front()->numberOfSteps()) error="register dataset fields before creating steps or saving";
+        else if (key.empty() || key.find_first_of("/\\")!=std::string::npos) error="invalid dataset field name";
+        else if (M_staticNames->count(key) || M_staticNames->count(key+"_n") || M_staticNames->count(key+"_e"))
+            error="duplicate dataset field name: "+key;
+        validateDatasetError(error);
+        // Build transactionally: a rejected mixed-field subname must not leave
+        // earlier subfields in the dataset or overwrite an existing snapshot.
+        if (M_staticFields) validateStaticFields();
+        auto candidate=std::make_shared<field_set_type>(M_staticFields ? M_staticFields->spaceCache() : nullptr);
+        candidate->setMesh(M_mesh);
+        candidate->reserveNames(M_staticNames);
+        populate(*candidate);
+        if (!M_staticFields)
+        {
+            M_staticFields=candidate;
+            M_staticMesh=M_mesh;
+            M_staticStructureRevision=M_mesh->functionSpaceStructuralRevision();
+            M_staticGeometryRevision=M_mesh->geometryRevision();
+            M_staticSequenceName=M_ts_set.front()->name();
+        }
+        else M_staticFields->materialize(*candidate,true);
+        M_staticNames->insert(key);
+        auto names=M_staticFields->names();
+        M_staticNames->insert(names.begin(),names.end());
+    }
+
+    /** @brief Reject stale geometry/layout and name collisions before opening files. */
+    void validateStaticFields() const
+    {
+        std::string error;
+        if (M_ts_set.size()!=1) error="dataset fields currently require one output mesh/time sequence";
+        if (M_mesh!=M_staticMesh ||
+            M_staticMesh->functionSpaceStructuralRevision()!=M_staticStructureRevision ||
+            M_staticMesh->geometryRevision()!=M_staticGeometryRevision)
+            error="mesh changed after dataset registration; start a new exporter";
+        for (auto const& ts : M_ts_set)
+        {
+            if (!ts->hasMesh() || ts->mesh()!=M_staticMesh) error="time sequence uses a different dataset mesh";
+            if (ts->name()!=M_staticSequenceName) error="cannot rename the output sequence after dataset registration";
+            for (auto it=ts->beginStep();it!=ts->endStep();++it)
+            {
+                auto const& step=*it;
+                if (step->isIgnored()) continue;
+                if (!step->hasMesh() || step->mesh()!=M_staticMesh) error="step uses a different dataset mesh";
+                for (auto const& name : step->fieldSet()->names())
+                    if (M_staticNames->count(name)) error="temporal field collides with dataset field: "+name;
+            }
+        }
+        validateDatasetError(error);
+    }
+
+    /** @brief Reject moving already-materialized snapshots to another destination. */
+    void validateStaticOutputPath(std::string const& path) const
+    {
+        if (M_staticWritten && M_staticOutputPath!=fs::absolute(path).string())
+            throw std::logic_error("cannot change the output path after writing dataset fields");
+    }
+
+    /** @brief Publish an exporter-level restart guard, not a temporal field manifest. */
+    void writeStaticFieldGuard() const
+    {
+        std::string error;
+        if (this->worldComm().isMasterRank())
+        {
+            std::ofstream out((fs::path(this->path())/(this->prefix()+".static-fields")).string());
+            out << "Feel++ dataset field snapshots; restart unsupported\n";
+            for (auto const& name : *M_staticNames) out << name << '\n';
+            out.close();
+            if (!out) error="cannot write dataset restart guard";
+        }
+        validateDatasetError(error);
+    }
+
+    //! Exporter-owned dataset geometry and time-neutral field storage.
+    mesh_ptrtype M_mesh, M_staticMesh;
+    field_set_ptrtype M_staticFields;
+    //! Dataset names; temporal fields only borrow weak reservations.
+    std::shared_ptr<std::set<std::string>> M_staticNames=std::make_shared<std::set<std::string>>();
+
+    //! Mesh-layout revision binding the snapshot to exported ordering.
+    uint64_type M_staticStructureRevision=0, M_staticGeometryRevision=0;
+    //! Materialization/registration lifecycle, independent of temporal steps.
+    mutable bool M_staticWritten=false, M_hasSaved=false, M_staticOnlyAdapter=false;
+    //! Fixed destination after the first successful snapshot write.
+    mutable std::string M_staticOutputPath;
+    //! Filename-layout guard only; static field ownership remains time-neutral.
+    std::string M_staticSequenceName;
+
+protected:
 
     bool M_do_export;
     MeshFragmentation<mesh_type> M_meshFragmentation;
@@ -612,8 +880,10 @@ auto exporter( Ts && ... v )
         e->setMesh( mesh, EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY );
     else if ( std::string(geo).compare("change") == 0 )
         e->setMesh( mesh, EXPORTER_GEOMETRY_CHANGE );
-    else // default
+    else if ( geo == "static" )
         e->setMesh( mesh, EXPORTER_GEOMETRY_STATIC );
+    else
+        throw std::invalid_argument( "unknown exporter geometry: " + geo );
     e->setPath( path );
     // addRegions not work with transient simulation!
     //e->addRegions();
