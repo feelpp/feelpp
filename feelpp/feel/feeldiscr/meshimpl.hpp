@@ -99,6 +99,30 @@ BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_HYPERCUBE_OP_E, 3, ( DIMS3, BOOST_PP_LIS
 
 namespace meshdetail
 {
+// In one dimension faces are points and use a different container. Preserve
+// that path while batching edge/surface cleanup in two and three dimensions.
+template <typename MeshType>
+std::size_t eraseDisconnectedFaces( MeshType& mesh )
+{
+    if constexpr ( MeshType::nDim > 1 )
+        return mesh.eraseFacesIf( []( auto const& face ) { return !face.isConnectedTo0(); } );
+    else
+    {
+        std::size_t removed = 0;
+        for ( auto it = mesh.beginFace(); it != mesh.endFace(); )
+        {
+            if ( !it->second.isConnectedTo0() )
+            {
+                it = mesh.eraseFace( it );
+                ++removed;
+            }
+            else
+                ++it;
+        }
+        return removed;
+    }
+}
+
 template <typename MeshType>
 typename MeshType::gm1_ptrtype
 initGm1( typename MeshType::gm_ptrtype gm, mpl::true_ /**/ )
@@ -1312,23 +1336,9 @@ void
     if ( !(nDim == 1 && nOrder > 1) ) // not remove faces in this case (can be internal point)
     {
         tic();
-        // clean faces not connected to an element
-        face_iterator f_it = this->beginFace();
-        face_iterator f_en = this->endFace();
-        for ( ; f_it != f_en; )
-        {
-            auto const& face = f_it->second;
-            // cleanup the face data structure :
-            if ( !face.isConnectedTo0() )
-            {
-                DLOG( INFO ) << "removing face id : " << face.id();
-                // remove all faces that are not connected to any elements
-                f_it = this->eraseFace( f_it );
-                //++f_it;
-            }
-            else
-                ++f_it;
-        }
+        auto const removed = meshdetail::eraseDisconnectedFaces( *this );
+        if ( removed )
+            LOG( INFO ) << "Removed " << removed << " disconnected faces using bulk cleanup";
         toc( "Mesh.updateEntitiesCoDimensionOne.clean_faces", Environment::logVerbosityLevel() > 1 );
     }
 
@@ -1577,23 +1587,9 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensi
         }
     }
 
-    // clean faces not connected to an element
-    face_iterator f_it = this->beginFace();
-    face_iterator f_en = this->endFace();
-    for ( ; f_it != f_en; )
-    {
-        auto const& face = f_it->second;
-        // cleanup the face data structure :
-        if ( !face.isConnectedTo0() )
-        {
-            DLOG( INFO ) << "removing face id : " << face.id();
-            // remove all faces that are not connected to any elements
-            f_it = this->eraseFace( f_it );
-            //++f_it;
-        }
-        else
-            ++f_it;
-    }
+    auto const removed = meshdetail::eraseDisconnectedFaces( *this );
+    if ( removed )
+        LOG( INFO ) << "Removed " << removed << " disconnected faces using bulk cleanup";
 }
 
 #if 0
