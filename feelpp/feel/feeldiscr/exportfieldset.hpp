@@ -835,7 +835,8 @@ template <typename MeshType, int N = 1> class ExportFieldSet
 
     //! \brief Reuse scalar export spaces within a time set or a detached dataset snapshot.
     //! Cache misses use Pch<N>'s automatic manager policy: compatible whole-mesh
-    //! spaces can be shared across exporters when functionspace.manager.enable is true.
+    //! spaces are shared across exporters by default, unless
+    //! functionspace.manager.enable is explicitly disabled.
     //! Only the space is shared; each exported component owns its field values.
     template <bool isNodal, typename FunctionType = std::nullopt_t>
     FEELPP_NO_EXPORT scalar_p1_space_ptrtype

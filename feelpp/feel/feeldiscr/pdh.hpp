@@ -65,10 +65,8 @@ Pdh_ptrtype<MeshType,Order,Pts>
 Pdh( std::shared_ptr<MeshType> const& mesh, DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
 {
     using space_type = Pdh_type<MeshType,Order,Pts>;
-    return getOrCreateFunctionSpace<space_type>(
-        mesh,
-        FunctionSpaceManagerOptions{ normalizeFunctionSpaceDofTable( dte ),
-                                        MESH_RENUMBER | MESH_CHECK },
+    return getOrCreateWholeMeshFunctionSpace<space_type>(
+        mesh, dte,
         FunctionSpaceReusePolicy::automatic,
         [&]()
         {
@@ -105,10 +103,8 @@ Pdh( Ts&&... v )
                                  FunctionSpaceReusePolicy::automatic );
     using mesh_type = typename std::decay_t<decltype( mesh )>::element_type;
     using space_type = Pdh_type<mesh_type,Order,Pts>;
-    return getOrCreateFunctionSpace<space_type>(
-        mesh,
-        FunctionSpaceManagerOptions{ normalizeFunctionSpaceDofTable( dte ),
-                                        MESH_RENUMBER | MESH_CHECK },
+    return getOrCreateWholeMeshFunctionSpace<space_type>(
+        mesh, dte,
         policy,
         [&]()
         {
