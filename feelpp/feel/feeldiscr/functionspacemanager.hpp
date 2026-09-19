@@ -50,7 +50,7 @@ enum class FunctionSpaceReusePolicy
  */
 struct FunctionSpaceManagerConfig
 {
-    bool enabled = false;                    ///< Enable reuse for @c automatic requests.
+    bool enabled = true;                     ///< Enable reuse for @c automatic requests.
     std::size_t maxEntries = 64;             ///< Maximum entries retained in this process.
     std::size_t maxEntriesPerMesh = 16;      ///< Maximum entries retained for one mesh.
     bool mpiConsistencyDiagnostics = false;  ///< Log rank-local hit/miss disagreement.
@@ -309,6 +309,36 @@ getOrCreateFunctionSpace( std::shared_ptr<MeshType> const& mesh,
     auto result = std::dynamic_pointer_cast<SpaceType>( erased );
     CHECK( result ) << "function-space manager returned an incompatible type";
     return result;
+}
+
+/**
+ * @brief Get or construct a whole-mesh function space with standard mesh options.
+ *
+ * This adapter centralizes the construction options shared by whole-mesh
+ * convenience factories. The factory controls only the concrete space's
+ * construction details, such as its worlds communicator.
+ *
+ * @tparam SpaceType concrete function-space type
+ * @tparam MeshType concrete mesh type
+ * @tparam Factory construction callable type
+ * @param mesh mesh on which the space is defined
+ * @param dte requested extended-DOF-table mode
+ * @param policy requested reuse policy
+ * @param factory callable constructing @c std::shared_ptr<SpaceType>
+ * @return retained or newly constructed function space
+ */
+template <typename SpaceType, typename MeshType, typename Factory>
+std::shared_ptr<SpaceType>
+getOrCreateWholeMeshFunctionSpace( std::shared_ptr<MeshType> const& mesh,
+                                   DofTableExtendedType dte,
+                                   FunctionSpaceReusePolicy policy,
+                                   Factory&& factory )
+{
+    return getOrCreateFunctionSpace<SpaceType>(
+        mesh,
+        FunctionSpaceManagerOptions{ normalizeFunctionSpaceDofTable( dte ),
+                                     MESH_RENUMBER | MESH_CHECK },
+        policy, std::forward<Factory>( factory ) );
 }
 
 } // namespace Feel

@@ -30,6 +30,7 @@
 #define FEELPP_PDHV_HPP
 
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/functionspacemanager.hpp>
 
 namespace Feel {
 
@@ -71,20 +72,78 @@ template<typename MeshType,int Order,template<class, uint16_type, class> class P
 using Pdhv_element_type=Pdhv_element_t<MeshType,Order,Pts>;
 
 /**
-   Given a \p mesh, build a function space of vectorial discontinuous function
-   which are piecewise polynomial of degree (total or in each variable) less
-   than k using Lagrange basis functions
+ * @brief Build a whole-mesh discontinuous vector Lagrange function space.
+ *
+ * The request uses @ref FunctionSpaceReusePolicy::automatic. It therefore
+ * reuses a managed space when global reuse is enabled and otherwise preserves
+ * the historical always-new behavior.
+ *
+ * @tparam Order polynomial order
+ * @tparam Pts interpolation point-set family
+ * @tparam MeshType concrete mesh type
+ * @tparam Tag basis tag used to distinguish otherwise identical spaces
+ * @param mesh mesh on which the function space is defined
+ * @param dte extended DOF-table mode
+ * @return discontinuous vector function space
  */
 template<int Order,
-         template<class, uint16_type, class> class Pts = PointSetFekete,typename MeshType,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
+         typename MeshType,
          int Tag = 0>
 inline
 Pdhv_ptrtype<MeshType,Order,Pts,Tag>
 Pdhv( std::shared_ptr<MeshType> mesh, DofTableExtendedType dte = DofTableExtendedType::DEFAULT  )
 {
-    return Pdhv_type<MeshType,Order,Pts,Tag>::New( _mesh=mesh,
-                                                   _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
-                                                   _extended_doftable=dte );
+    using space_type = Pdhv_type<MeshType,Order,Pts,Tag>;
+    return getOrCreateWholeMeshFunctionSpace<space_type>(
+        mesh, dte,
+        FunctionSpaceReusePolicy::automatic,
+        [&]()
+        {
+            return space_type::New( _mesh=mesh,
+                                    _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
+                                    _extended_doftable=dte );
+        } );
+}
+
+/**
+ * @brief Build a whole-mesh discontinuous vector Lagrange space using named arguments.
+ *
+ * Supported arguments are the required @c _mesh and the optional
+ * @c _extended_doftable and @c _fspace_reuse_policy keywords. The reuse policy
+ * defaults to @ref FunctionSpaceReusePolicy::automatic.
+ *
+ * @tparam Order polynomial order
+ * @tparam Pts interpolation point-set family
+ * @tparam Tag basis tag used to distinguish otherwise identical spaces
+ * @tparam Ts named-argument types
+ * @param v named arguments controlling mesh, DOF table, and reuse policy
+ * @return discontinuous vector function space
+ */
+template<int Order,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
+         int Tag = 0,
+         typename... Ts>
+    requires ( sizeof...( Ts ) != 0 ) && ( NA::is_named_argument_v<Ts> && ... )
+inline auto
+Pdhv( Ts&&... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>( v )... );
+    auto mesh = args.get( _mesh );
+    auto dte = args.get_else( _extended_doftable, DofTableExtendedType::DEFAULT );
+    auto policy = args.get_else( _fspace_reuse_policy,
+                                 FunctionSpaceReusePolicy::automatic );
+    using mesh_type = typename std::decay_t<decltype( mesh )>::element_type;
+    using space_type = Pdhv_type<mesh_type,Order,Pts,Tag>;
+    return getOrCreateWholeMeshFunctionSpace<space_type>(
+        mesh, dte,
+        policy,
+        [&]()
+        {
+            return space_type::New( _mesh=mesh,
+                                    _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
+                                    _extended_doftable=dte );
+        } );
 }
 
 /**

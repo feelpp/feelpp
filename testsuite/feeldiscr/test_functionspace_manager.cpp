@@ -13,8 +13,11 @@
 #include <feel/feeldiscr/functionspacebuildinstrumentation.hpp>
 #include <feel/feeldiscr/functionspacemanager.hpp>
 #include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pchm.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/pdh.hpp>
+#include <feel/feeldiscr/pdhm.hpp>
+#include <feel/feeldiscr/pdhv.hpp>
 #include <feel/feelfilters/unitsquare.hpp>
 #include <feel/feelmesh/meshmover.hpp>
 
@@ -57,6 +60,52 @@ class InstrumentationScope
   private:
     bool M_wasEnabled;
 };
+
+/**
+ * @brief Request the same managed space twice and verify that it is reused.
+ * @tparam Factory Callable returning a managed function-space pointer.
+ * @param factory Explicit-reuse factory request.
+ * @return The first managed space pointer.
+ */
+template <typename Factory>
+auto checkExplicitReuse( Factory&& factory )
+{
+    auto first = factory();
+    auto second = factory();
+    BOOST_TEST( first.get() == second.get() );
+    return first;
+}
+
+/**
+ * @brief Verify the pointer-reuse result of an automatic-policy factory.
+ * @tparam Factory Callable returning an automatic-policy function-space pointer.
+ * @param factory Automatic-policy factory request.
+ * @param shouldReuse Whether the manager configuration enables reuse.
+ * @return The first function-space pointer.
+ */
+template <typename Factory>
+auto checkAutomaticPolicy( Factory&& factory, bool shouldReuse )
+{
+    auto first = factory();
+    auto second = factory();
+    BOOST_TEST( ( first.get() == second.get() ) == shouldReuse );
+    return first;
+}
+
+/**
+ * @brief Verify that two managed factories retain distinct concrete spaces.
+ * @tparam LeftFactory Callable returning the first managed function-space pointer.
+ * @tparam RightFactory Callable returning the second managed function-space pointer.
+ * @param leftFactory Explicit-reuse request for the first concrete space type.
+ * @param rightFactory Explicit-reuse request for the second concrete space type.
+ */
+template <typename LeftFactory, typename RightFactory>
+void checkDistinctManagedTypes( LeftFactory&& leftFactory, RightFactory&& rightFactory )
+{
+    auto left = leftFactory();
+    auto right = rightFactory();
+    BOOST_TEST( static_cast<void*>( left.get() ) != static_cast<void*>( right.get() ) );
+}
 } // namespace
 
 BOOST_AUTO_TEST_CASE( explicit_reuse_normalizes_options_and_reports_stats )
@@ -65,9 +114,11 @@ BOOST_AUTO_TEST_CASE( explicit_reuse_normalizes_options_and_reports_stats )
     auto mesh = unitSquare( 0.25 );
     InstrumentationScope instrumentation;
 
-    auto XhDefault = Pch<2>(
-        _mesh=mesh,
-        _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    auto XhDefault = checkExplicitReuse( [&mesh]()
+    {
+        return Pch<2>( _mesh=mesh,
+                       _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    } );
     auto XhVertices = Pch<2>(
         _mesh=mesh,
         _extended_doftable=DofTableExtendedType::VERTICES,
@@ -76,26 +127,286 @@ BOOST_AUTO_TEST_CASE( explicit_reuse_normalizes_options_and_reports_stats )
         _mesh=mesh,
         _extended_doftable=DofTableExtendedType::NONE,
         _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
-    auto Dh = Pdh<2>(
-        _mesh=mesh,
-        _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    auto Dh = checkExplicitReuse( [&mesh]()
+    {
+        return Pdh<2>( _mesh=mesh,
+                       _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    } );
 
     BOOST_TEST( XhDefault.get() == XhVertices.get() );
     BOOST_TEST( XhDefault.get() != XhNone.get() );
-    BOOST_TEST( static_cast<void*>( XhDefault.get() ) != static_cast<void*>( Dh.get() ) );
 
     auto const counts = FunctionSpaceBuildInstrumentation::counts();
     BOOST_TEST( counts.functionSpaceConstructions == 3 );
     BOOST_TEST( counts.dofTableBuilds == 3 );
 
     auto const stats = FunctionSpaceManager::instance().stats( mesh );
-    BOOST_TEST( stats.lookups == 4 );
-    BOOST_TEST( stats.hits == 1 );
+    BOOST_TEST( stats.lookups == 6 );
+    BOOST_TEST( stats.hits == 3 );
     BOOST_TEST( stats.misses == 3 );
     BOOST_TEST( stats.builds == 3 );
     BOOST_TEST( stats.retainedEntries == 3 );
     BOOST_TEST( stats.retainedDofs ==
                 XhDefault->nDof() + XhNone->nDof() + Dh->nDof() );
+
+    FunctionSpaceManager::instance().clear( mesh );
+}
+
+BOOST_AUTO_TEST_CASE( concrete_function_space_types_are_isolated )
+{
+    resetManager();
+    auto mesh = unitSquare( 0.25 );
+
+    checkDistinctManagedTypes(
+        [&mesh]()
+        {
+            return Pch<2>( _mesh=mesh,
+                           _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+        },
+        [&mesh]()
+        {
+            return Pdh<2>( _mesh=mesh,
+                           _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+        } );
+
+    auto const stats = FunctionSpaceManager::instance().stats( mesh );
+    BOOST_TEST( stats.retainedEntries == 2 );
+    FunctionSpaceManager::instance().clear( mesh );
+}
+
+BOOST_AUTO_TEST_CASE( vector_factories_reuse_and_preserve_range_semantics )
+{
+    resetManager();
+    auto mesh = unitSquare( 0.25 );
+
+    auto Vh = checkExplicitReuse( [&mesh]()
+    {
+        return Pchv<1>( _mesh=mesh,
+                         _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    } );
+    auto VhVertices = Pchv<1>(
+        _mesh=mesh,
+        _extended_doftable=DofTableExtendedType::VERTICES,
+        _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    auto VhNone = Pchv<1>(
+        _mesh=mesh,
+        _extended_doftable=DofTableExtendedType::NONE,
+        _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    auto Dvh = checkExplicitReuse( [&mesh]()
+    {
+        return Pdhv<1>( _mesh=mesh,
+                         _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    } );
+    auto Xh = Pch<1>( _mesh=mesh,
+                      _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    auto Dh = Pdh<1>( _mesh=mesh,
+                      _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    auto VhOrder = Pchv<2>( _mesh=mesh,
+                            _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    auto VhTag = Pchv<1,PointSetFekete,double,1>(
+        _mesh=mesh,
+        _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    auto VhPointSet = Pchv<2,PointSetEquiSpaced>(
+        _mesh=mesh,
+        _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    auto VhFloat = checkExplicitReuse( [&mesh]()
+    {
+        return Pchv<1,PointSetFekete,float>(
+            _mesh=mesh,
+            _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    } );
+    auto DvhOrder = Pdhv<2>( _mesh=mesh,
+                             _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    auto DvhTag = Pdhv<1,PointSetFekete,1>(
+        _mesh=mesh,
+        _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    auto DvhPointSet = Pdhv<2,PointSetEquiSpaced>(
+        _mesh=mesh,
+        _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+
+    BOOST_TEST( Vh.get() == VhVertices.get() );
+    BOOST_TEST( Vh.get() != VhNone.get() );
+    BOOST_TEST( static_cast<void*>( Vh.get() ) != static_cast<void*>( Dvh.get() ) );
+    BOOST_TEST( static_cast<void*>( Vh.get() ) != static_cast<void*>( Xh.get() ) );
+    BOOST_TEST( static_cast<void*>( Vh.get() ) != static_cast<void*>( Dh.get() ) );
+    BOOST_TEST( static_cast<void*>( Dvh.get() ) != static_cast<void*>( Xh.get() ) );
+    BOOST_TEST( static_cast<void*>( Dvh.get() ) != static_cast<void*>( Dh.get() ) );
+    BOOST_TEST( static_cast<void*>( Xh.get() ) != static_cast<void*>( Dh.get() ) );
+    BOOST_TEST( static_cast<void*>( Vh.get() ) != static_cast<void*>( VhOrder.get() ) );
+    BOOST_TEST( static_cast<void*>( Vh.get() ) != static_cast<void*>( VhTag.get() ) );
+    BOOST_TEST( static_cast<void*>( Vh.get() ) != static_cast<void*>( VhPointSet.get() ) );
+    BOOST_TEST( static_cast<void*>( Vh.get() ) != static_cast<void*>( VhFloat.get() ) );
+    BOOST_TEST( static_cast<void*>( Dvh.get() ) != static_cast<void*>( DvhOrder.get() ) );
+    BOOST_TEST( static_cast<void*>( Dvh.get() ) != static_cast<void*>( DvhTag.get() ) );
+    BOOST_TEST( static_cast<void*>( Dvh.get() ) != static_cast<void*>( DvhPointSet.get() ) );
+
+    auto continuousRange1 = Pchv<1>( mesh, elements( mesh ) );
+    auto continuousRange2 = Pchv<1>( mesh, elements( mesh ) );
+    auto discontinuousRange1 = Pdhv<1>( mesh, elements( mesh ) );
+    auto discontinuousRange2 = Pdhv<1>( mesh, elements( mesh ) );
+    BOOST_TEST( continuousRange1.get() != continuousRange2.get() );
+    BOOST_TEST( discontinuousRange1.get() != discontinuousRange2.get() );
+
+    auto const stats = FunctionSpaceManager::instance().stats( mesh );
+    BOOST_TEST( stats.retainedEntries == 12 );
+    FunctionSpaceManager::instance().clear( mesh );
+}
+
+BOOST_AUTO_TEST_CASE( vector_automatic_policy_follows_manager_configuration )
+{
+    resetManager();
+    auto mesh = unitSquare( 0.25 );
+
+    checkAutomaticPolicy( [&mesh]() { return Pchv<1>( mesh ); }, false );
+    checkAutomaticPolicy( [&mesh]() { return Pdhv<1>( mesh ); }, false );
+
+    resetManager( managerConfig( true ) );
+    checkAutomaticPolicy( [&mesh]() { return Pchv<1>( mesh ); }, true );
+    checkAutomaticPolicy( [&mesh]() { return Pdhv<1>( mesh ); }, true );
+
+    FunctionSpaceManager::instance().clear( mesh );
+}
+
+BOOST_AUTO_TEST_CASE( vector_named_policies_replace_and_bypass_matching_entries )
+{
+    resetManager();
+    auto mesh = unitSquare( 0.25 );
+
+    auto Vh = Pchv<1>( _mesh=mesh,
+                       _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    auto rebuiltVh = Pchv<1>( _mesh=mesh,
+                              _fspace_reuse_policy=FunctionSpaceReusePolicy::rebuild );
+    auto reusedVh = Pchv<1>( _mesh=mesh,
+                             _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    auto bypassedVh = Pchv<1>( _mesh=mesh,
+                               _fspace_reuse_policy=FunctionSpaceReusePolicy::bypass );
+    BOOST_TEST( rebuiltVh.get() != Vh.get() );
+    BOOST_TEST( reusedVh.get() == rebuiltVh.get() );
+    BOOST_TEST( bypassedVh.get() != rebuiltVh.get() );
+
+    auto Dvh = Pdhv<1>( _mesh=mesh,
+                        _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    auto rebuiltDvh = Pdhv<1>( _mesh=mesh,
+                               _fspace_reuse_policy=FunctionSpaceReusePolicy::rebuild );
+    auto reusedDvh = Pdhv<1>( _mesh=mesh,
+                              _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    auto bypassedDvh = Pdhv<1>( _mesh=mesh,
+                                _fspace_reuse_policy=FunctionSpaceReusePolicy::bypass );
+    BOOST_TEST( rebuiltDvh.get() != Dvh.get() );
+    BOOST_TEST( reusedDvh.get() == rebuiltDvh.get() );
+    BOOST_TEST( bypassedDvh.get() != rebuiltDvh.get() );
+    BOOST_TEST( FunctionSpaceManager::instance().stats( mesh ).retainedEntries == 2 );
+
+    FunctionSpaceManager::instance().clear( mesh );
+}
+
+BOOST_AUTO_TEST_CASE( tensor_factories_reuse_and_keep_concrete_types_isolated )
+{
+    resetManager();
+    auto mesh = unitSquare( 0.25 );
+
+    auto Mh = checkExplicitReuse( [&mesh]()
+    {
+        return Pchm<1>( _mesh=mesh,
+                         _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    } );
+    auto Mhs = checkExplicitReuse( [&mesh]()
+    {
+        return Pchms<1>( _mesh=mesh,
+                          _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    } );
+    auto Dmh = checkExplicitReuse( [&mesh]()
+    {
+        return Pdhm<1>( _mesh=mesh,
+                         _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    } );
+    auto Dmhs = checkExplicitReuse( [&mesh]()
+    {
+        return Pdhms<1>( _mesh=mesh,
+                          _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    } );
+    auto MhVertices = Pchm<1>(
+        _mesh=mesh,
+        _extended_doftable=DofTableExtendedType::VERTICES,
+        _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    auto MhNone = Pchm<1>(
+        _mesh=mesh,
+        _extended_doftable=DofTableExtendedType::NONE,
+        _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    auto MhTag = Pchm<1,double,PointSetFekete,1>(
+        _mesh=mesh,
+        _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    auto MhPointSet = Pchm<2,double,PointSetEquiSpaced>(
+        _mesh=mesh,
+        _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    auto MhFloat = checkExplicitReuse( [&mesh]()
+    {
+        return Pchm<1,float>( _mesh=mesh,
+                               _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    } );
+    auto DmhTag = Pdhm<1,double,PointSetFekete,1>(
+        _mesh=mesh,
+        _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+
+    BOOST_TEST( Mh.get() == MhVertices.get() );
+    BOOST_TEST( static_cast<void*>( Mh.get() ) != static_cast<void*>( Mhs.get() ) );
+    BOOST_TEST( static_cast<void*>( Mh.get() ) != static_cast<void*>( Dmh.get() ) );
+    BOOST_TEST( static_cast<void*>( Mh.get() ) != static_cast<void*>( Dmhs.get() ) );
+    BOOST_TEST( static_cast<void*>( Mhs.get() ) != static_cast<void*>( Dmh.get() ) );
+    BOOST_TEST( static_cast<void*>( Mhs.get() ) != static_cast<void*>( Dmhs.get() ) );
+    BOOST_TEST( static_cast<void*>( Dmh.get() ) != static_cast<void*>( Dmhs.get() ) );
+    BOOST_TEST( static_cast<void*>( Mh.get() ) != static_cast<void*>( MhNone.get() ) );
+    BOOST_TEST( static_cast<void*>( Mh.get() ) != static_cast<void*>( MhTag.get() ) );
+    BOOST_TEST( static_cast<void*>( Mh.get() ) != static_cast<void*>( MhPointSet.get() ) );
+    BOOST_TEST( static_cast<void*>( Mh.get() ) != static_cast<void*>( MhFloat.get() ) );
+    BOOST_TEST( static_cast<void*>( Dmh.get() ) != static_cast<void*>( DmhTag.get() ) );
+    BOOST_TEST( FunctionSpaceManager::instance().stats( mesh ).retainedEntries == 9 );
+
+    FunctionSpaceManager::instance().clear( mesh );
+}
+
+BOOST_AUTO_TEST_CASE( tensor_automatic_policy_reuses_by_default )
+{
+    resetManager( managerConfig( true ) );
+    auto mesh = unitSquare( 0.25 );
+
+    checkAutomaticPolicy( [&mesh]() { return Pchm<1>( mesh ); }, true );
+    checkAutomaticPolicy( [&mesh]() { return Pchms<1>( mesh ); }, true );
+    checkAutomaticPolicy( [&mesh]() { return Pdhm<1>( mesh ); }, true );
+    checkAutomaticPolicy( [&mesh]() { return Pdhms<1>( mesh ); }, true );
+
+    FunctionSpaceManager::instance().clear( mesh );
+}
+
+BOOST_AUTO_TEST_CASE( tensor_rebuild_and_bypass_affect_only_the_matching_entry )
+{
+    resetManager();
+    auto mesh = unitSquare( 0.25 );
+
+    auto Mh = Pchm<1>( _mesh=mesh,
+                       _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    auto Dmh = Pdhm<1>( _mesh=mesh,
+                        _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    auto rebuiltMh = Pchm<1>( _mesh=mesh,
+                              _fspace_reuse_policy=FunctionSpaceReusePolicy::rebuild );
+    auto reusedDmh = Pdhm<1>( _mesh=mesh,
+                              _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    BOOST_TEST( rebuiltMh.get() != Mh.get() );
+    BOOST_TEST( reusedDmh.get() == Dmh.get() );
+    BOOST_TEST( FunctionSpaceManager::instance().stats( mesh ).retainedEntries == 2 );
+
+    auto const statsBeforeBypass = FunctionSpaceManager::instance().stats( mesh );
+    auto bypassedMh = Pchm<1>( _mesh=mesh,
+                               _fspace_reuse_policy=FunctionSpaceReusePolicy::bypass );
+    auto const statsAfterBypass = FunctionSpaceManager::instance().stats( mesh );
+    BOOST_TEST( bypassedMh.get() != rebuiltMh.get() );
+    BOOST_TEST( statsAfterBypass.lookups == statsBeforeBypass.lookups );
+    BOOST_TEST( statsAfterBypass.hits == statsBeforeBypass.hits );
+    BOOST_TEST( statsAfterBypass.misses == statsBeforeBypass.misses );
+    BOOST_TEST( statsAfterBypass.builds == statsBeforeBypass.builds );
+    BOOST_TEST( statsAfterBypass.rebuilds == statsBeforeBypass.rebuilds );
+    BOOST_TEST( statsAfterBypass.retainedEntries == statsBeforeBypass.retainedEntries );
+    BOOST_TEST( statsAfterBypass.retainedDofs == statsBeforeBypass.retainedDofs );
 
     FunctionSpaceManager::instance().clear( mesh );
 }
@@ -110,13 +421,11 @@ BOOST_AUTO_TEST_CASE( policies_preserve_default_and_direct_new_semantics )
     auto automatic2 = Pch<1>( mesh );
     BOOST_TEST( automatic1.get() != automatic2.get() );
 
-    auto reused1 = Pch<1>(
-        _mesh=mesh,
-        _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
-    auto reused2 = Pch<1>(
-        _mesh=mesh,
-        _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
-    BOOST_TEST( reused1.get() == reused2.get() );
+    auto reused1 = checkExplicitReuse( [&mesh]()
+    {
+        return Pch<1>( _mesh=mesh,
+                       _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    } );
 
     auto rebuilt = Pch<1>(
         _mesh=mesh,
@@ -319,6 +628,56 @@ BOOST_AUTO_TEST_CASE( mpi_local_miss_forces_collective_rebuild )
     FunctionSpaceManager::instance().clear( mesh );
 }
 
+BOOST_AUTO_TEST_CASE( mpi_vector_local_miss_forces_collective_rebuild )
+{
+    resetManager();
+    auto mesh = unitSquare( 0.25 );
+    InstrumentationScope instrumentation;
+
+    auto Xh1 = Pchv<2>(
+        _mesh=mesh,
+        _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    if ( mesh->worldComm().globalRank() == 0 )
+        FunctionSpaceManager::instance().clear( mesh );
+    mesh->worldComm().globalComm().barrier();
+
+    auto Xh2 = Pchv<2>(
+        _mesh=mesh,
+        _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    BOOST_TEST( Xh2.get() != Xh1.get() );
+
+    auto const counts = FunctionSpaceBuildInstrumentation::counts();
+    BOOST_TEST( counts.functionSpaceConstructions == 2 );
+    BOOST_TEST( counts.dofTableBuilds == 2 );
+
+    FunctionSpaceManager::instance().clear( mesh );
+}
+
+BOOST_AUTO_TEST_CASE( mpi_tensor_local_miss_forces_collective_rebuild )
+{
+    resetManager();
+    auto mesh = unitSquare( 0.25 );
+    InstrumentationScope instrumentation;
+
+    auto Xh1 = Pchm<1>(
+        _mesh=mesh,
+        _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    if ( mesh->worldComm().globalRank() == 0 )
+        FunctionSpaceManager::instance().clear( mesh );
+    mesh->worldComm().globalComm().barrier();
+
+    auto Xh2 = Pchm<1>(
+        _mesh=mesh,
+        _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse );
+    BOOST_TEST( Xh2.get() != Xh1.get() );
+
+    auto const counts = FunctionSpaceBuildInstrumentation::counts();
+    BOOST_TEST( counts.functionSpaceConstructions == 2 );
+    BOOST_TEST( counts.dofTableBuilds == 2 );
+
+    FunctionSpaceManager::instance().clear( mesh );
+}
+
 BOOST_AUTO_TEST_CASE( mpi_request_signature_mismatch_is_rejected )
 {
     resetManager();
@@ -331,6 +690,25 @@ BOOST_AUTO_TEST_CASE( mpi_request_signature_mismatch_is_rejected )
                          : DofTableExtendedType::NONE;
     BOOST_CHECK_THROW(
         Pch<1>(
+            _mesh=mesh,
+            _extended_doftable=dte,
+            _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse ),
+        std::runtime_error );
+    BOOST_TEST( FunctionSpaceManager::instance().stats( mesh ).retainedEntries == 0 );
+}
+
+BOOST_AUTO_TEST_CASE( mpi_vector_request_signature_mismatch_is_rejected )
+{
+    resetManager();
+    auto mesh = unitSquare( 0.25 );
+    if ( mesh->worldComm().globalSize() == 1 )
+        return;
+
+    auto const dte = mesh->worldComm().globalRank() % 2 == 0
+                         ? DofTableExtendedType::VERTICES
+                         : DofTableExtendedType::NONE;
+    BOOST_CHECK_THROW(
+        Pchv<1>(
             _mesh=mesh,
             _extended_doftable=dte,
             _fspace_reuse_policy=FunctionSpaceReusePolicy::reuse ),

@@ -45,13 +45,16 @@ class InstrumentationScope
 };
 } // namespace
 
-BOOST_AUTO_TEST_CASE( repeated_whole_mesh_factories_always_build )
+BOOST_AUTO_TEST_CASE( repeated_whole_mesh_factories_reuse_by_default )
 {
     constexpr std::uint64_t requests = 3;
+    auto& manager = FunctionSpaceManager::instance();
+    manager.clear();
+    BOOST_TEST( manager.config().enabled );
     auto mesh = unitSquare( 0.25 );
     InstrumentationScope instrumentation;
 
-    auto checkAlwaysNew = [requests]( auto&& factory )
+    auto checkDefaultReuse = [requests]( auto&& factory )
     {
         FunctionSpaceBuildInstrumentation::reset();
 
@@ -62,16 +65,18 @@ BOOST_AUTO_TEST_CASE( repeated_whole_mesh_factories_always_build )
             spaces.push_back( factory() );
 
         auto const counts = FunctionSpaceBuildInstrumentation::counts();
-        BOOST_TEST( counts.functionSpaceConstructions == requests );
-        BOOST_TEST( counts.dofTableBuilds == requests );
+        BOOST_TEST( counts.functionSpaceConstructions == 1u );
+        BOOST_TEST( counts.dofTableBuilds == 1u );
 
         for ( std::size_t i = 0; i < spaces.size(); ++i )
             for ( std::size_t j = i + 1; j < spaces.size(); ++j )
-                BOOST_TEST( spaces[i].get() != spaces[j].get() );
+                BOOST_TEST( spaces[i].get() == spaces[j].get() );
     };
 
-    checkAlwaysNew( [&mesh]()
-                    { return Pch<2>( mesh ); } );
-    checkAlwaysNew( [&mesh]()
-                    { return Pdh<1>( mesh ); } );
+    checkDefaultReuse( [&mesh]()
+                       { return Pch<2>( mesh ); } );
+    checkDefaultReuse( [&mesh]()
+                       { return Pdh<1>( mesh ); } );
+
+    manager.clear( mesh );
 }
