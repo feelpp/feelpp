@@ -33,8 +33,8 @@ ifdef::env-github,env-browser[:outfilesuffix: .adoc]
 :uri-news: {uri-www}/news
 :uri-manpage: {uri-project}/man/asciidoctor
 :uri-help-base: https://help.github.com/articles
-:uri-contribute: {uri-rel-file-base}CONTRIBUTING.adoc
-:uri-license: {uri-rel-file-base}LICENSE.adoc
+:uri-contribute: {uri-repo}/blob/develop/.github/CONTRIBUTING.md
+:uri-license: {uri-repo}/blob/develop/LICENSE
 :uri-issues: {uri-repo}/issues
 :uri-contributors: {uri-repo}/graphs/contributors
 :uri-fork-help: {uri-help-base}/fork-a-repo
