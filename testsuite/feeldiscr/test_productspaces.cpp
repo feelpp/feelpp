@@ -1113,7 +1113,7 @@ BOOST_AUTO_TEST_CASE( test4 )
     ex->add(alphabet[2],U(2_c));
     for(int i = 0; i < ps->numberOfSpaces(); ++i )
     {
-        ex->add(alphabet[i+2],U(3_c,i));
+        ex->add( alphabet[i + 3], U( 3_c, i ) );
         //U[i].printMatlab(alphabet[i]+".m");
     }
     ex->save();

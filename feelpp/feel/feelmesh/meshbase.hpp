@@ -175,6 +175,29 @@ public:
         return M_is_updated;
     }
 
+    /**
+     * @brief Return the revision used to invalidate mesh-based function spaces.
+     *
+     * The revision advances when an already finalized mesh is marked as no
+     * longer updated for use because its topology or DOF-relevant structure
+     * may have changed.
+     *
+     * @return current structural revision
+     */
+    uint64_type functionSpaceStructuralRevision() const noexcept
+    {
+        return M_functionSpaceStructuralRevision;
+    }
+
+    /**
+     * @brief Return the coordinate-only geometry revision.
+     * @return number of geometry changes reported through the mesh lifecycle
+     */
+    uint64_type geometryRevision() const noexcept
+    {
+        return M_geometryRevision;
+    }
+
     //!
     //! set the topological dimension
     //!
@@ -788,11 +811,24 @@ public:
 protected:
 
     /**
-     * set to the flag whether the mesh is updated for proper use
+     * @brief Set whether the mesh is finalized and ready for use.
+     *
+     * Changing a finalized mesh to the not-updated state advances the
+     * function-space structural revision exactly once.
+     *
+     * @param u whether the mesh is updated for use
      */
     void setUpdatedForUse( bool u )
     {
+        if ( M_is_updated && !u )
+            ++M_functionSpaceStructuralRevision;
         M_is_updated = u;
+    }
+
+    /** @brief Advance the coordinate-only geometry revision. */
+    void markGeometryChanged()
+    {
+        ++M_geometryRevision;
     }
 
     /**
@@ -895,6 +931,9 @@ private:
      * \p true if the mesh is parametric (e.g. has parametric nodes), \p false otherwise
      */
     bool M_is_parametric;
+
+    uint64_type M_functionSpaceStructuralRevision = 0; ///< DOF-topology invalidation revision.
+    uint64_type M_geometryRevision = 0; ///< Coordinate-only geometry revision.
 
     /**
      * number of vertices

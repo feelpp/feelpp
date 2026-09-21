@@ -115,6 +115,7 @@ struct hash<std::tuple<TT...>>
 #include <feel/feeldiscr/doffromboundary.hpp>
 #include <feel/feeldiscr/doffromedge.hpp>
 #include <feel/feeldiscr/doffromperiodic.hpp>
+#include <feel/feeldiscr/functionspacebuildinstrumentation.hpp>
 
 #include <feel/feelmesh/meshsupport.hpp>
 
@@ -1812,6 +1813,7 @@ template<typename MeshType, typename FEType, typename PeriodicityType, typename 
 void
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
 {
+    FunctionSpaceBuildInstrumentation::recordDofTableBuild();
     tic();
     M_mesh = boost::addressof( M );
     wc( this )->print( fmt::format( "[DofTable::build] starts, has mesh support: {}", this->hasMeshSupport() ),

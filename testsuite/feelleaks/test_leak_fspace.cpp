@@ -70,7 +70,11 @@ int main(int argc, char**argv )
         CHECK( aMesh.use_count() == 1 ) << "Invalid mesh shared_ptr, count: " << aMesh.use_count();
         decltype( Pch<1>( aMesh ) ) Xh;
         {
-            Xh = Pch<1>( aMesh );
+            // This test verifies that releasing the function space releases its
+            // mesh reference. The manager intentionally retains cached spaces,
+            // so bypass it to preserve that ownership contract.
+            Xh = Pch<1>( _mesh=aMesh,
+                          _fspace_reuse_policy=FunctionSpaceReusePolicy::bypass );
             CHECK( Xh.use_count() == 1 ) << "Invalid functionspace shared_ptr, count: " << Xh.use_count();
             CHECK( aMesh.use_count() == 2 ) << "Invalid mesh shared_ptr, count: " << aMesh.use_count();
             {

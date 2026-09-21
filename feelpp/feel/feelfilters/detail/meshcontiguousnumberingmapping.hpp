@@ -25,6 +25,8 @@
 #define FEELPP_FILTERS_DETAILS_MESHCONTIGUOUSNUMBERINGMAPPING_HPP 1
 
 #include <feel/feelmesh/meshfragmentation.hpp>
+#include <limits>
+#include <stdexcept>
 
 namespace Feel
 {
@@ -41,6 +43,18 @@ struct MeshContiguousNumberingMapping
     using range_element_type = Range<mesh_type,MESH_ELEMENTS>; //elements_reference_wrapper_t<mesh_type>;
     using point_ref_type = boost::reference_wrapper< typename mesh_type::point_type const>;
 
+    /** @brief Add global numbering counts without silently wrapping mesh indices.
+     * All ranks apply this to the same gathered counts. Large distributed meshes
+     * must use a sufficiently wide mesh index type for the replicated global table.
+     */
+    static index_type checkedNumberingSum(index_type base,index_type count)
+    {
+        if (count>std::numeric_limits<index_type>::max()-base)
+            throw std::overflow_error("mesh export numbering exceeds mesh index width; use wider indices");
+        return base+count;
+    }
+
+    //! \brief Number a fragmented mesh on its existing communicator.
     explicit MeshContiguousNumberingMapping( mesh_type* mesh, bool interprocessPointAreDuplicated = false, MeshFragmentation<mesh_type> const& meshFragmentation = MeshFragmentation<mesh_type>{} )
         :
         M_mesh( mesh ),
@@ -61,6 +75,7 @@ struct MeshContiguousNumberingMapping
             CHECK( itFindPart !=  M_partIdToRangeElement.end() ) << "part not registered";
             return std::get<0>( itFindPart->second );
         }
+
     range_element_type const& rangeElement( int part ) const
         {
             auto itFindPart = M_partIdToRangeElement.find( part );
@@ -74,6 +89,7 @@ struct MeshContiguousNumberingMapping
             CHECK( itFindData != M_pointIdToContiguous.end() ) << "part not registered";
             return itFindData->second;
         }
+
     index_type pointIdToContiguous( int part, index_type ptId ) const
         {
             auto itFindData = M_pointIdToContiguous.find( part );
@@ -85,12 +101,14 @@ struct MeshContiguousNumberingMapping
                 return invalid_v<index_type>;
             return itFindPt->second.first;
         }
+
     std::unordered_map<index_type,index_type> const& elementIdToContiguous( int part ) const
         {
             auto itFindData = M_elementIdToContiguous.find( part );
             CHECK( itFindData == M_elementIdToContiguous.end() ) << "part not registered";
             return itFindData->second;
         }
+
     index_type elementIdToContiguous( int part, index_type eltId ) const
         {
             auto itFindData = M_elementIdToContiguous.find( part );
@@ -102,12 +120,14 @@ struct MeshContiguousNumberingMapping
                 return invalid_v<index_type>;
             return itFindElt->second;
         }
+
     std::vector<index_type> const& pointIdsInElements( int part ) const
         {
             auto itFindPointIdsInElements =  M_pointIdsInElements.find( part );
             CHECK( itFindPointIdsInElements != M_pointIdsInElements.end() ) << "part not registered";
             return itFindPointIdsInElements->second;
         }
+
     std::vector<storage_node_value_type> const& nodes( int part ) const
         {
             auto itFindNodes =  M_nodes.find( part );
@@ -116,11 +136,15 @@ struct MeshContiguousNumberingMapping
         }
 
     index_type startPointIds( int part, rank_type therank ) const { return genericInfo<0>( part, therank ); }
+
     index_type numberOfPoint( int part, rank_type therank ) const { return genericInfo<1>( part, therank ); }
+
     index_type startElementIds( int part, rank_type therank ) const { return genericInfo<2>( part, therank ); }
+
     index_type numberOfElement( int part, rank_type therank ) const { return genericInfo<3>( part, therank ); }
 
     index_type numberOfPointAllProcess( int part ) const { return genericInfoAllProcess<0>( part ); }
+
     index_type numberOfElementAllProcess( int part ) const { return genericInfoAllProcess<1>( part ); }
 
     void updateNodesCoordinates()
@@ -174,6 +198,7 @@ private :
             CHECK( therank < itFindNumberOfPointElement->second.size() ) << "invalid rank";
             return std::get<TupleId>( itFindNumberOfPointElement->second[therank] );
         }
+
     template <int TupleId>
     index_type genericInfoAllProcess( int part ) const
         {
@@ -420,8 +445,8 @@ MeshContiguousNumberingMapping<MeshType,StorageNodeValueType>::updateForUse( Mes
             // index_type nElt = std::get<1>( recvInfos[p][k] );
             auto const& [nPt,nElt] = recvInfos[p][k];
             numberOfPointElement[p] = std::make_tuple( startPtId, nPt, startEltId, nElt );
-            startPtId+=nPt;
-            startEltId+=nElt;
+            startPtId=checkedNumberingSum(startPtId,nPt);
+            startEltId=checkedNumberingSum(startEltId,nElt);
         }
         ++k;
         M_numberOfPointElementAllProcess[marker] = std::make_tuple( startPtId,startEltId );
@@ -543,9 +568,11 @@ struct MeshPoints
     MeshPoints( MeshType* mesh, const WorldComm&, IteratorType it, IteratorType en, const bool outer = false, const bool renumber = false, const bool fill = false, const int startIndex = 1 );
 
     int translatePointIds( std::vector<int32_t>& ids );
+
     int translateElementIds( std::vector<int32_t>& ids );
 
     int globalNumberOfPoints() const { return global_npts; }
+
     int globalNumberOfElements() const { return global_nelts; }
 
     std::vector<int> numberOfPoints, numberOfElements;

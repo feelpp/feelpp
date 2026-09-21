@@ -30,7 +30,9 @@
 #ifndef FEELPP_MESH_FACES_HPP
 #define FEELPP_MESH_FACES_HPP
 
+#include <algorithm>
 #include <unordered_map>
+#include <unordered_set>
 #include <feel/feelcore/commobject.hpp>
 #include <feel/feelmesh/geoelement.hpp>
 #include <feel/feelmesh/filters.hpp>
@@ -650,6 +652,37 @@ public:
         auto itret = M_faces.erase( it );
         M_orderedFaces.erase( itOrdered );
         return itret;
+    }
+
+    /**
+     * Remove all faces selected by a predicate in expected linear time.
+     *
+     * The predicate is evaluated once per face, before any mutation. Retained
+     * faces keep their addresses, markers and relative order. In particular,
+     * bulk mesh cleanup must not repeatedly scan and shift M_orderedFaces via
+     * eraseFace(). References are compacted before the selected faces die.
+     */
+    template <typename Predicate>
+    std::size_t eraseFacesIf( Predicate const& predicate )
+    {
+        std::unordered_set<index_type> erasedIds;
+        for ( auto const& [id, face] : M_faces )
+        {
+            if ( predicate( face ) )
+                erasedIds.insert( id );
+        }
+        if ( erasedIds.empty() )
+            return 0;
+
+        auto firstErased = std::remove_if( M_orderedFaces.begin(), M_orderedFaces.end(),
+                                         [&erasedIds]( auto const& faceWrap )
+                                         {
+                                             return erasedIds.find( unwrap_ref( faceWrap ).id() ) != erasedIds.end();
+                                         } );
+        M_orderedFaces.erase( firstErased, M_orderedFaces.end() );
+        for ( auto id : erasedIds )
+            M_faces.erase( id );
+        return erasedIds.size();
     }
 
     /**

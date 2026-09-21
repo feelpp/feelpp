@@ -27,6 +27,7 @@ M_element_type()
 {
     init();
 }
+
 template<typename MeshType, int N>
 ExporterEnsightGold<MeshType,N>::ExporterEnsightGold( std::string const& __p, int freq, worldcomm_ptr_t const& worldComm )
     :
@@ -116,6 +117,7 @@ void
 ExporterEnsightGold<MeshType,N>::save( steps_write_on_disk_type const& stepsToWriteOnDisk ) const
 {
     tic();
+    resolveIOPolicy();
 
     for ( auto const& [__ts,steps] : stepsToWriteOnDisk  )
     {
@@ -132,7 +134,7 @@ ExporterEnsightGold<MeshType,N>::save( steps_write_on_disk_type const& stepsToWr
             {
                 mesh_ptrtype mesh = __step->mesh();
                 int stepIndex = __step->activeIndex();
-                bool isFirstStep = ( stepIndex == (*__ts->beginStep())->index() );
+                bool isFirstStep = ( stepIndex == __ts->firstActiveStep()->activeIndex() );
                 tic();
                 writeGeoFiles( __ts, mesh,stepIndex,isFirstStep );
                 toc("ExporterEnsightGold::save geo",Environment::logVerbosityLevel()>1);
@@ -140,6 +142,13 @@ ExporterEnsightGold<MeshType,N>::save( steps_write_on_disk_type const& stepsToWr
                 writeVariableFiles( __ts, __step );
                 toc("ExporterEnsightGold::save variables",Environment::logVerbosityLevel()>1);
             }
+        }
+        if ( this->hasStaticFields() && this->supportsNativeStaticFields() && !this->staticFieldsWritten() && M_cache_mp.count(__ts->name()) )
+        {
+            auto const& snapshot = this->staticFields();
+            saveFields<true>( __ts, snapshot, true, "", true, snapshot->beginNodal(), snapshot->endNodal(), true );
+            saveFields<false>( __ts, snapshot, true, "", true, snapshot->beginElement(), snapshot->endElement(), true );
+            this->markStaticFieldsWritten();
         }
     }
 
@@ -160,34 +169,34 @@ ExporterEnsightGold<MeshType,N>::writeSoSFile() const
 {
     // only on proc 0
     if ( this->worldComm().isMasterRank() )
+    for ( auto const& ts : this->M_ts_set )
     {
         std::ostringstream filestr;
-        filestr << this->path() << "/" << this->prefix() << "-" << this->worldComm().globalSize() << ".sos";
+        filestr << this->path() << "/" << ts->name() << "-" << this->worldComm().globalSize() << ".sos";
         std::ofstream __out( filestr.str().c_str() );
 
         if ( __out.fail() )
         {
-            DVLOG(2) << "cannot open " << filestr.str()  << "\n";
-            exit( 0 );
+            checkMpiIo( MPI_ERR_IO, "cannot open " + filestr.str() );
         }
 
         __out << "FORMAT:\n"
               << "type: master_server gold \n\n";
         __out << "MULTIPLE_CASEFILES\n"
               << "total number of cfiles: 1 " << std::endl
-              << "cfiles global path: " << fs::current_path().string() << "\n"
-              << "cfiles pattern: "<< this->prefix() << ".case\n"
+              << "cfiles global path: " << fs::absolute(this->path()).string() << "\n"
+              << "cfiles pattern: "<< ts->name() << ".case\n"
               << "cfiles start number: 0\n"
               << "cfiles increment: 1\n\n";
         __out << "SERVERS\n"
-              << "number of servers: "<< (this->worldComm().globalSize()/100)+1 <<" repeat\n";
+              << "number of servers: 1 repeat\n";
 
         //
         // save also a sos that paraview can understand, the previous format
         // does not seem to be supported by paraview
         //
         std::ostringstream filestrparaview;
-        filestrparaview << this->path() << "/" << this->prefix() << "-paraview-" << this->worldComm().globalSize() << ".sos";
+        filestrparaview << this->path() << "/" << ts->name() << "-paraview-" << this->worldComm().globalSize() << ".sos";
         std::ofstream __outparaview( filestrparaview.str().c_str() );
 
         __outparaview << "FORMAT:\n"
@@ -198,17 +207,22 @@ ExporterEnsightGold<MeshType,N>::writeSoSFile() const
         __outparaview << "#Server " << 1 << "\n"
                       << "machine id: " << mpi::environment::processor_name() << "\n"
                       << "executable: /usr/local/bin/ensight76/bin/ensight7.server\n"
-                      << "data_path: " << fs::current_path().string() << "\n"
-                      << "casefile: " << this->prefix() << ".case\n";
+                      << "data_path: " << fs::absolute(this->path()).string() << "\n"
+                      << "casefile: " << ts->name() << ".case\n";
+        __out.close();
+        __outparaview.close();
+        if ( !__out || !__outparaview ) checkMpiIo( MPI_ERR_IO, "writing SOS metadata" );
     }
 }
+
 template<typename MeshType, int N>
 template<typename Iterator,typename TSt>
 void
 ExporterEnsightGold<MeshType,N>::writeCaseFileVariables( Iterator it, Iterator end,
                                                          std::string const& loc,
                                                          TSt const& __ts,
-                                                         std::ostream& __out ) const
+                                                         std::ostream& __out, typename super::field_set_ptrtype const& step,
+                                                         bool isStatic ) const
 {
     for( ; it != end; ++it )
     {
@@ -234,21 +248,26 @@ ExporterEnsightGold<MeshType,N>::writeCaseFileVariables( Iterator it, Iterator e
             ext = "tsrs";
         }
 
-        if ( M_mergeTimeSteps )
+        if ( isStatic )
+        {
+            __out << type << " per " << loc << ": " << step->fieldName(it->first, loc == "node")
+                  << " " << this->prefix() << "." << it->first << "." << ext << '\n';
+        }
+        else if ( M_mergeTimeSteps )
         {
             __out << type << " per " << loc << ": "
-                  << __ts->index() << " 1 " // << *__ts_it->beginStep() << " "
-                  << unwrap_ptr(it->second.second[0][0]).name() << " " << __ts->name() << "." << it->first;
+                  << 1 << " 1 " // Each standalone case has its own time-set namespace.
+                  << step->fieldName(it->first, loc == "node") << " " << __ts->name() << "." << it->first;
             /* if we want to pack data in several files instead of one, we add an index to the filename */
-            if ( M_packTimeSteps )
+            if ( M_packTimeSteps > 0 )
                 __out << ".*";
             __out << "." << ext << std::endl;
         }
         else
         {
             __out << type << " per " << loc << ": "
-                  << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                  << unwrap_ptr(it->second.second[0][0]).name() << " " << __ts->name() << "." << it->first;
+                  << 1 << " "
+                  << step->fieldName(it->first, loc == "node") << " " << __ts->name() << "." << it->first;
             __out << "." << ext << "." << std::string(M_timeExponent, '*') << std::endl;
         }
     }
@@ -261,15 +280,13 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
     // only on proc 0
     if( this->worldComm().isMasterRank() )
     {
-        std::ostringstream filestr;
-
         timeset_const_iterator __ts_it = this->beginTimeSet();
         timeset_const_iterator __ts_en = this->endTimeSet();
 
         while ( __ts_it != __ts_en )
         {
             timeset_ptrtype __ts = *__ts_it;
-
+            std::ostringstream filestr;
             filestr << this->path() << "/"
                 << __ts->name();
             filestr << ".case";
@@ -278,14 +295,21 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
 
             if ( __out.fail() )
             {
-                CHECK( false ) << "cannot open " << filestr.str()  << "\n";
+                checkMpiIo( MPI_ERR_IO, "cannot open " + filestr.str() );
             }
 
             __out << "FORMAT:\n"
                   << "type: ensight gold\n"
                   << "GEOMETRY:\n";
 
-            switch ( this->exporterGeometry() )
+            if ( !__ts->firstActiveStep() )
+            {
+                // A dataset-only export has no temporal geometry declaration.
+                __out << "model: " << __ts->name() << ".geo";
+                if ( this->exporterGeometry() != EXPORTER_GEOMETRY_STATIC )
+                    __out << "." << std::setfill('0') << std::setw(M_timeExponent) << TS_INITIAL_INDEX << std::setfill(' ');
+            }
+            else switch ( this->exporterGeometry() )
             {
                 case EXPORTER_GEOMETRY_STATIC:
                 {
@@ -299,7 +323,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
                 {
                     if( M_mergeTimeSteps )
                     {
-                        __out << "model: " << __ts->index() << " 1 " << __ts->name();
+                        __out << "model: 1 1 " << __ts->name();
                         /* if we want to pack data in several files instead of one, we add an index to the filename */
                         if ( M_packTimeSteps > 0 )
                             __out << ".*";
@@ -307,11 +331,11 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
                     }
                     else
                     {
-                        __out << "model: " << __ts->index() << " " << __ts->name();
+                        __out << "model: 1 " << __ts->name();
                         __out << ".geo" << "." << std::string(M_timeExponent, '*');
                     }
 
-                    if ( this->exporterGeometry() == EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY )
+                    if ( this->exporterGeometry() == EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY && !this->isStationaryDataset() )
                     {
                         __out << " change_coords_only";
                     }
@@ -320,16 +344,25 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
             }
             __out << "\n";
 
-            __out << "VARIABLES:" << "\n";
+            __out << "VARIABLE:" << "\n";
+            if ( this->hasStaticFields() && this->supportsNativeStaticFields() )
+            {
+                auto const& snapshot = this->staticFields();
+                for (auto it=snapshot->beginScalar();it!=snapshot->endScalar();++it)
+                    __out << "constant per case: " << it->first << " " << std::setprecision(17) << it->second.first << '\n';
+                writeCaseFileVariables( snapshot->beginNodal(), snapshot->endNodal(), "node", __ts, __out, snapshot, true );
+                writeCaseFileVariables( snapshot->beginElement(), snapshot->endElement(), "element", __ts, __out, snapshot, true );
+            }
 
             auto __tstp_st = __ts->beginStep();
             auto __tstp_en = __ts->endStep();
             /* protect this portion of code */
             /* if we don't have time steps */
             /* happens when we only have the mesh */
-            if(__tstp_st != __tstp_en)
+            if( __ts->firstActiveStep() )
             {
                 auto __tstp_it = boost::prior(__tstp_en);
+                while ( (*__tstp_it)->isIgnored() ) --__tstp_it;
 
                 // treat constant per case
                 auto s_it = ( *__tstp_it )->beginScalar();
@@ -339,28 +372,22 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
                     if ( s_it->second.second )
                     {
                         // constant over time
-                        __out << "constant per case: " << s_it->first << " " << __ts->name() << "." << s_it->second.first << "\n";
+                        __out << "constant per case: " << s_it->first << " " << std::setprecision(17) << s_it->second.first << "\n";
                     }
                     else
                     {
                         if ( this->worldComm().isMasterRank() )
                         {
 
-                            __out << "constant per case file: " << __ts->index() << " " << s_it->first << " " << __ts->name() << "." << s_it->first << ".cst";
+                            __out << "constant per case file: 1 " << s_it->first << " " << __ts->name() << "." << s_it->first << ".cst";
                             // loop over time
                             auto stepit = __ts->beginStep();
                             auto stepen = __ts->endStep();
 
-                            std::ofstream ofs;
-                            int d = std::distance( stepit, stepen );
-                            LOG(INFO) << "distance = " << d;
-                            if ( d > 1 )
-                                ofs.open( this->path()+ "/"+ __ts->name()+"."+s_it->first+".cst", std::ios::out | std::ios::app );
-                            else
-                                ofs.open( this->path()+ "/" +__ts->name()+"."+s_it->first+".cst", std::ios::out );
-
-                            auto step = *boost::prior(stepen);
-                            ofs << step->scalar( s_it->first ) << "\n";
+                            std::ofstream ofs( this->path()+ "/" +__ts->name()+"."+s_it->first+".cst" );
+                            for ( ; stepit != stepen; ++stepit )
+                                if ( !(*stepit)->isIgnored() )
+                                    ofs << std::setprecision(17) << (*stepit)->scalar( s_it->first ) << "\n";
                             ofs.close();
                             __out << "\n";
                         }
@@ -371,109 +398,96 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
                 writeCaseFileVariables( ( *__tstp_it )->beginNodal(),
                                         ( *__tstp_it )->endNodal(),
                                         "node",
-                                        __ts, __out );
+                                        __ts, __out, (*__tstp_it)->fieldSet() );
                 writeCaseFileVariables( ( *__tstp_it )->beginElement(),
                                         ( *__tstp_it )->endElement(),
                                         "element",
-                                        __ts, __out );
+                                        __ts, __out, (*__tstp_it)->fieldSet() );
 
             }
 
-            __out << "TIME:\n";
-
-            if ( auto __firstActiveStep =  __ts->firstActiveStep() )
+            // A native dataset with no samples has no TIME/FILE declarations.
+            if ( __ts->firstActiveStep() || M_mergeTimeSteps )
             {
-                __out << "time set:        " << __ts->index() << "\n"
-                    << "number of steps: " << __ts->numberOfActiveSteps() << "\n"
-                    << "filename start number: " << __firstActiveStep->activeIndex() << "\n"
-                    << "filename increment: " << 1 << "\n"
-                    << "time values: ";
-            }
-            else
-            {
-                __out << "time set:        " << TS_INITIAL_INDEX << "\n"
-                    << "number of steps: " << 1 << "\n"
-                    << "filename start number: " << TS_INITIAL_INDEX << "\n"
-                    << "filename increment: " << 1 << "\n"
-                    << "time values: 1.0";
-            }
+                __out << "TIME:\n";
 
-            uint16_type __l = 1;
-            typename timeset_type::step_const_iterator __its = __ts->beginStep();
-            typename timeset_type::step_const_iterator __ens = __ts->endStep();
-            for ( ; __its != __ens ; ++__its )
-            {
-                if ( (*__its)->isIgnored() )
-                    continue;
-                __out << std::scientific << std::setprecision( 6 ) << ( *__its )->time() << " ";
-
-                if ( __l++ % 10 == 0 )
-                    __out << "\n";
-            }
-            __out << "\n";
-
-            if ( M_mergeTimeSteps )
-            {
-                auto ts = *(this->beginTimeSet());
-
-                // create several filesets if we pack data into groups in several files
-                if( M_packTimeSteps > 0 )
+                if ( auto __firstActiveStep =  __ts->firstActiveStep() )
                 {
-                    int stepsPerFile = M_packTimeSteps;
-                    int nbFiles = ts->numberOfSteps() / stepsPerFile;
-                    int r = ts->numberOfSteps() % stepsPerFile;
-
-                    __out << "FILE\n";
-                    __out << "file set: 1\n";
-                    // create a file set for each step pack
-                    int i = 0;
-                    for( i = 0; i < nbFiles; i++)
-                    {
-                        __out << "filename index: " << i + 1 << "\n";
-                        __out << "number of steps: " << stepsPerFile << "\n";
-                    }
-
-                    // if we have remainder steps to pack
-                    // we create an additional file pack
-                    if( r != 0 )
-                    {
-                        __out << "filename index: " << i + 1 << "\n";
-                        __out << "number of steps: " << r << "\n";
-                    }
+                    __out << "time set:        1\n"
+                        << "number of steps: " << __ts->numberOfActiveSteps() << "\n"
+                        << "filename start number: " << __firstActiveStep->activeIndex() << "\n"
+                        << "filename increment: " << 1 << "\n"
+                        << "time values: ";
                 }
                 else
                 {
-                    __out << "FILE\n";
-                    __out << "file set: 1\n";
-                    __out << "number of steps: " << ts->numberOfSteps() << "\n";
+                    __out << "time set:        " << TS_INITIAL_INDEX << "\n"
+                        << "number of steps: " << 1 << "\n"
+                        << "filename start number: " << TS_INITIAL_INDEX << "\n"
+                        << "filename increment: " << 1 << "\n"
+                        << "time values: 1.0";
                 }
-            }
 
-            __out << "\n";
-
-            if ( boption( _name="exporter.ensightgold.use-sos" ) == false )
-            {
-                // In the following line, we substituted the Environment::numberOfProcessors
-                // by the size of the worldComm passed to the exporter to ensure that we are using
-                // only the data for the current processor
-                if ( ( this->worldComm().globalSize() > 1 )  && ( this->worldComm().globalRank() == 0 ) )
+                uint16_type __l = 1;
+                typename timeset_type::step_const_iterator __its = __ts->beginStep();
+                typename timeset_type::step_const_iterator __ens = __ts->endStep();
+                for ( ; __its != __ens ; ++__its )
                 {
-                    __out << "APPENDED_CASEFILES\n"
-                        << "total number of cfiles: " << this->worldComm().globalSize()-1 << "\n"
-                        // no need for that
-                        // << "cfiles global path: " << fs::current_path().string() << "\n"
-                        << "cfiles: ";
-                    for(int p = 1; p < this->worldComm().globalSize(); ++p )
+                    if ( (*__its)->isIgnored() )
+                        continue;
+                    __out << std::scientific << std::setprecision( 6 ) << ( *__its )->time() << " ";
+
+                    if ( __l++ % 10 == 0 )
+                        __out << "\n";
+                }
+                __out << "\n";
+
+                if ( M_mergeTimeSteps )
+                {
+                    auto ts = __ts;
+
+                    // create several filesets if we pack data into groups in several files
+                    if( M_packTimeSteps > 0 )
                     {
-                        std::ostringstream filestr;
-                        filestr << __ts->name() << "-"
-                            << this->worldComm().globalSize() << "_" << p << ".case";
-                        __out << filestr.str() << "\n        ";
+                        int stepsPerFile = M_packTimeSteps;
+                        auto count = std::max<typename timeset_type::size_type>(1, ts->numberOfActiveSteps());
+                        int nbFiles = count / stepsPerFile;
+                        int r = count % stepsPerFile;
+
+                        __out << "FILE\n";
+                        __out << "file set: 1\n";
+                        // create a file set for each step pack
+                        int i = 0;
+                        for( i = 0; i < nbFiles; i++)
+                        {
+                            __out << "filename index: " << i + 1 << "\n";
+                            __out << "number of steps: " << stepsPerFile << "\n";
+                        }
+
+                        // if we have remainder steps to pack
+                        // we create an additional file pack
+                        if( r != 0 )
+                        {
+                            __out << "filename index: " << i + 1 << "\n";
+                            __out << "number of steps: " << r << "\n";
+                        }
+                    }
+                    else
+                    {
+                        __out << "FILE\n";
+                        __out << "file set: 1\n";
+                        __out << "number of steps: " << std::max<typename timeset_type::size_type>(1, ts->numberOfActiveSteps()) << "\n";
                     }
                 }
-            } // use-sos
+
+                __out << "\n";
+
+            }
+
+            // MPI-IO produces one shared case, not a case per MPI rank.
 
             __out.close();
+            if ( !__out ) checkMpiIo( MPI_ERR_IO, "writing " + filestr.str() );
             ++__ts_it;
         }
     }
@@ -483,7 +497,7 @@ template<typename MeshType, int N>
 void
 ExporterEnsightGold<MeshType,N>::writeGeoFiles( timeset_ptrtype __ts, mesh_ptrtype mesh, int timeIndex, bool isFirstStep ) const
 {
-    // prepare/udate cache
+    // prepare/update cache
     bool buildNewCache = true;
     auto itFindCache = M_cache_mp.find( __ts->name() );
     if ( itFindCache != M_cache_mp.end() )
@@ -504,11 +518,11 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles( timeset_ptrtype __ts, mesh_ptrty
         M_cache_mp[__ts->name()] = std::make_shared<mesh_contiguous_numbering_mapping_type>( mesh.get(), false, this->meshFragmentation() );
         toc( "ExporterEnsightGold::writeGeoFiles init cache", Environment::logVerbosityLevel() > 0 );
         // clear others caches with export of fields
-        M_mapNodalArrayToDofId.clear();
-        M_mapElementArrayToDofId.clear();
+        M_mapNodalArrayToDofId.erase( __ts->name() );
+        M_mapElementArrayToDofId.erase( __ts->name() );
     }
 
-    // mesh already write, do nothing
+    // mesh already written, do nothing
     if ( !isFirstStep && this->exporterGeometry() == EXPORTER_GEOMETRY_STATIC )
         return;
 
@@ -527,12 +541,12 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles( timeset_ptrtype __ts, mesh_ptrty
     std::ostringstream __geofname;
     __geofname << this->path() << "/" << __ts->name();
 
-    if( M_mergeTimeSteps )
+    if( M_mergeTimeSteps && this->exporterGeometry() != EXPORTER_GEOMETRY_STATIC )
     {
         if ( M_packTimeSteps > 0 )
         {
             // timestep indices start at 1
-            int startTsIndex = (__ts->numberOfSteps() == 0 )? TS_INITIAL_INDEX : (*__ts->beginStep())->index();
+            int startTsIndex = __ts->firstActiveStep() ? __ts->firstActiveStep()->activeIndex() : TS_INITIAL_INDEX;
             __geofname << "." << ((timeIndex - startTsIndex)/M_packTimeSteps + 1);
             writeNewGeoFile = ( ( (timeIndex - startTsIndex) % M_packTimeSteps ) == 0 ) ;
         }
@@ -556,15 +570,15 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles( timeset_ptrtype __ts, mesh_ptrty
         /* (MPI IO does not have a truncate mode ) */
         if(this->worldComm().isMasterRank() && fs::exists(str))
         {
-            MPI_File_delete(str, MPI_INFO_NULL);
+            checkMpiIo( MPI_File_delete(str, MPI_INFO_NULL), "MPI_File_delete " + std::string(str) );
         }
         MPI_Barrier( this->worldComm().comm() );
     }
 
     if( M_mergeTimeSteps && !writeNewGeoFile )
-        MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL , &fh );
+        openFile( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL , &fh );
     else
-        MPI_File_open( this->worldComm().comm(), str, MPI_MODE_WRONLY | MPI_MODE_CREATE, MPI_INFO_NULL , &fh );
+        openFile( this->worldComm().comm(), str, MPI_MODE_WRONLY | MPI_MODE_CREATE, MPI_INFO_NULL , &fh );
 
     //MPI_Info_free(&info);
     free(str);
@@ -578,7 +592,8 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles( timeset_ptrtype __ts, mesh_ptrty
     // read previous FILE_INDEX
     if ( M_mergeTimeSteps && !writeNewGeoFile )
     {
-        index.read(fh);
+        index.read( fh );
+        if ( !index.defined() ) checkMpiIo( MPI_ERR_IO, "missing geometry append index" );
         if ( index.defined() )
             posInFile=index.nextFreePosFile();
     }
@@ -591,7 +606,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles( timeset_ptrtype __ts, mesh_ptrty
         index.write( fh, posInFile );
 
     /* close file */
-    MPI_File_close(&fh);
+    closeFile(&fh);
 
 }
 
@@ -628,7 +643,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_contiguous_nu
         {
             memset(buffer, '\0', sizeof(buffer));
             strncpy(buffer, "C Binary", 80);
-            MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+            writeAt(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
         }
         posInFile+=80;
         //LOG(INFO) << "wrote " << buffer << std::endl;
@@ -642,7 +657,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_contiguous_nu
             char buffer[80];
             memset(buffer, '\0', sizeof(buffer));
             strncpy(buffer, "BEGIN TIME STEP", 80);
-            MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+            writeAt(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
         }
         // all procs increment their offset
         posInFile+=80;
@@ -666,7 +681,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_contiguous_nu
         strcpy( &buffer2[160], "node id assign" );
         strcpy( &buffer2[240], "element id assign" );
         //MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-        MPI_File_write_at(fh, posInFile, buffer2, sizeof(buffer2), MPI_CHAR, &status);
+        writeAt(fh, posInFile, buffer2, sizeof(buffer2), MPI_CHAR, &status);
     }
     posInFile+=320;
 
@@ -697,7 +712,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkers(MPI_File fh, mesh_contiguous_nu
             char buffer[80];
             memset(buffer, '\0', 80);
             strcpy(buffer,"END TIME STEP");
-            MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+            writeAt(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
         }
         posInFile+=80;
     }
@@ -741,14 +756,14 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
         memset(buffer, '\0', sizeof(buffer));
         strncpy(buffer, "part", 80);
         //MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-        MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+        writeAt(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
     }
     posInFile+=80;
 
     if( this->worldComm().isMasterRank() )
     {
         int32_t partid = m.second[0] + 1;
-        MPI_File_write_at(fh, posInFile, &partid, 1, MPI_INT32_T, &status);
+        writeAt(fh, posInFile, &partid, 1, MPI_INT32_T, &status);
         // MPI_File_write_ordered(fh, &partid, 1, MPI_INT32_T, &status);
     }
     posInFile += sizeOfInt32_t;
@@ -760,7 +775,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
         strncpy(buffer2, m.first.c_str(), 80 - 1 );
         strcpy(&buffer2[80], "coordinates");
         // MPI_File_write_ordered(fh, buffer2, size, MPI_CHAR, &status);
-        MPI_File_write_at(fh, posInFile, buffer2, sizeof(buffer2), MPI_CHAR, &status);
+        writeAt(fh, posInFile, buffer2, sizeof(buffer2), MPI_CHAR, &status);
     }
     posInFile+=160;
 
@@ -776,7 +791,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
     {
         // write number of points
         // MPI_File_write_ordered(fh, &gnop, size, MPI_INT32_T, &status);
-        MPI_File_write_at(fh, posInFile, &gnop, 1, MPI_INT32_T, &status);
+        writeAt(fh, posInFile, &gnop, 1, MPI_INT32_T, &status);
     }
     posInFile += sizeOfInt32_t;
 
@@ -789,7 +804,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
     // - calculate every proc offset "localOffset" with Mpi_Exscan(...)
     MPI_Exscan(&ptIdWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
     // - write in file on cursor : posInFile + localOffset
-    MPI_File_write_at(fh, posInFile+localOffset, mp.ids.data(), mp.ids.size(),MPI_INT32_T, &status);
+    writeAt(fh, posInFile+localOffset, mp.ids.data(), mp.ids.size(),MPI_INT32_T, &status);
     // - calculate the whole offset to increment posInFile :
     sumOffsets = localOffset + ptIdWritingSize;
     MPI_Bcast(&sumOffsets, 1, MPI_INT, this->worldComm().globalSize()-1, this->worldComm());
@@ -809,7 +824,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
     // - write in file on cursor : posInFile + localOffset + i*sumOffsets
     for(int i = 0; i < 3; i++)
     {
-        MPI_File_write_at(fh, posInFile + i*sumOffsets + localOffset, \
+        writeAt(fh, posInFile + i*sumOffsets + localOffset, \
                           mp.coords.data() + i * __nv, __nv, MPI_FLOAT, &status );
         //MPI_File_write_ordered(fh, mp.coords.data() + i * __nv, __nv, MPI_FLOAT, &status );
     }
@@ -825,7 +840,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
     {
         memset(buffer, '\0', sizeof(buffer));
         strcpy( buffer, M_face_type.c_str() );
-        MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+        writeAt(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
         //MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
         VLOG(1) << "face type " << buffer;
     }
@@ -834,7 +849,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
 
     if( this->worldComm().isMasterRank() )
     {
-        MPI_File_write_at(fh, posInFile, &__ne, 1, MPI_INT32_T, &status);
+        writeAt(fh, posInFile, &__ne, 1, MPI_INT32_T, &status);
         //MPI_File_write_ordered(fh, &__ne, size, MPI_INT32_T, &status);
         VLOG(1) << "n faces " << __ne;
     }
@@ -858,7 +873,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
     // - calculate every proc offset "localOffset" with Mpi_Exscan
     MPI_Exscan(&idnodeWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
     // - write in file on cursor : posInFile + localOffset
-    MPI_File_write_at(fh, posInFile+localOffset, idnode.data(), idnode.size(), MPI_INT32_T, &status);
+    writeAt(fh, posInFile+localOffset, idnode.data(), idnode.size(), MPI_INT32_T, &status);
     //MPI_File_write_ordered(fh, idnode.data(), idnode.size(), MPI_INT32_T, &status);
 
     sumOffsets = localOffset + idnodeWritingSize;
@@ -891,7 +906,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype m
     MPI_Exscan(&idelemWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
     // - write in file on cursor : posInFile + localOffset
 
-    MPI_File_write_at(fh, posInFile+localOffset, idelem.data(), idelem.size(), MPI_INT32_T, &status);
+    writeAt(fh, posInFile+localOffset, idelem.data(), idelem.size(), MPI_INT32_T, &status);
     //MPI_File_write_ordered(fh, idelem.data(), idelem.size(), MPI_INT32_T, &status);
 
     sumOffsets = localOffset + idelemWritingSize;
@@ -936,7 +951,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
         memset(buffer, '\0', sizeof(buffer));
         strncpy(buffer, "part", 80);
         // write number of points
-        MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+        writeAt(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
         //MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
     }
     posInFile+=80;
@@ -947,7 +962,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
         int32_t partid = markerid + 1;
         LOG(INFO) << "writing part " << partid << std::endl;
         // write number of points
-        MPI_File_write_at(fh, posInFile, &partid, 1, MPI_INT32_T, &status);
+        writeAt(fh, posInFile, &partid, 1, MPI_INT32_T, &status);
         // MPI_File_write_ordered(fh, &partid, size, MPI_INT32_T, &status);
     }
     posInFile+=sizeOfInt32_t;
@@ -962,7 +977,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
         sprintf(buffer2, "Marker %d (%s)", (int)(markerid), mesh->markerName(markerid).substr(0, 32).c_str());
         strcpy( &buffer2[80], "coordinates" );
 
-        MPI_File_write_at(fh, posInFile, buffer2, sizeof(buffer2), MPI_CHAR, &status);
+        writeAt(fh, posInFile, buffer2, sizeof(buffer2), MPI_CHAR, &status);
         //MPI_File_write_ordered(fh, buffer2, size, MPI_CHAR, &status);
     }
     posInFile+=160;
@@ -972,7 +987,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
 
     if( this->worldComm().isMasterRank() )
     {
-        MPI_File_write_at(fh, posInFile, &gnop, 1, MPI_INT32_T, &status );
+        writeAt(fh, posInFile, &gnop, 1, MPI_INT32_T, &status );
         //MPI_File_write_ordered(fh, &gnop, size, MPI_INT32_T, &status );
     }
     posInFile+=sizeOfInt32_t;
@@ -994,7 +1009,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
     MPI_Exscan(&pointidsWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
     // - write in file on cursor : posInFile + localOffset
 
-    MPI_File_write_at(fh, posInFile+localOffset, pointids.data(), pointids.size(), MPI_INT32_T, &status );
+    writeAt(fh, posInFile+localOffset, pointids.data(), pointids.size(), MPI_INT32_T, &status );
     //MPI_File_write_ordered(fh, pointids.data(), pointids.size(), MPI_INT32_T, &status );
 
     sumOffsets = localOffset + pointidsWritingSize;
@@ -1017,7 +1032,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
     // - write in file on cursor : posInFile + localOffset
     for(int i = 0; i < 3; i++)
     {
-        MPI_File_write_at(fh, posInFile + localOffset + i*sumOffsets, \
+        writeAt(fh, posInFile + localOffset + i*sumOffsets, \
                           mp.coords.data() + i * __nv, __nv, MPI_FLOAT, &status );
         //MPI_File_write_ordered(fh, mp.coords.data() + i * __nv, __nv, MPI_FLOAT, &status );
     }
@@ -1029,7 +1044,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
     {
         memset(buffer, '\0', sizeof(buffer));
         strncpy( buffer, this->elementType().c_str(), 80-1);
-        MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+        writeAt(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
         //MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status );
     }
     posInFile+=80;
@@ -1047,7 +1062,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
     //LOG(INFO) << "Global nb elements: " << gnole << std::endl;
     if( this->worldComm().isMasterRank() )
     {
-        MPI_File_write_at(fh, posInFile, &gnole, 1, MPI_INT32_T, &status );
+        writeAt(fh, posInFile, &gnole, 1, MPI_INT32_T, &status );
         //MPI_File_write_ordered(fh, &gnole, size, MPI_INT32_T, &status );
     }
     posInFile+=sizeOfInt32_t;
@@ -1076,7 +1091,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
     MPI_Exscan(&elidsWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
     // - write in file on cursor : posInFile + localOffset
 
-    MPI_File_write_at(fh, posInFile+localOffset, elids.data(), elids.size(), MPI_INT32_T, &status );
+    writeAt(fh, posInFile+localOffset, elids.data(), elids.size(), MPI_INT32_T, &status );
     //MPI_File_write_ordered(fh, elids.data(), elids.size(), MPI_INT32_T, &status );
     sumOffsets = localOffset + elidsWritingSize;
     MPI_Bcast(&sumOffsets, 1, MPI_INT, this->worldComm().globalSize()-1, this->worldComm());
@@ -1105,7 +1120,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
     MPI_Exscan(&ptidsWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
     // - write in file on cursor : posInFile + localOffset
 
-    MPI_File_write_at(fh, posInFile+localOffset, ptids.data(), ptids.size(), MPI_INT32_T, &status );
+    writeAt(fh, posInFile+localOffset, ptids.data(), ptids.size(), MPI_INT32_T, &status );
     //MPI_File_write_ordered(fh, ptids.data(), ptids.size(), MPI_INT32_T, &status );
 
     sumOffsets = localOffset + ptidsWritingSize;
@@ -1129,7 +1144,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
             memset(buffer, '\0', sizeof(buffer));
             strcpy( buffer, ghost_t.c_str() );
             //buffer = ghost_t.c_str();
-            MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+            writeAt(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
             //MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status );
         }
         posInFile +=80;
@@ -1140,7 +1155,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
         int32_t gnoge = mpg.globalNumberOfElements();
         if( this->worldComm().isMasterRank() )
         {
-            MPI_File_write_at(fh, posInFile, &gnoge, 1, MPI_INT32_T, &status );
+            writeAt(fh, posInFile, &gnoge, 1, MPI_INT32_T, &status );
             //MPI_File_write_ordered(fh, &gnoge, size, MPI_INT32_T, &status );
         }
         posInFile +=sizeOfInt32_t;
@@ -1162,7 +1177,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
         MPI_Exscan(&elidsWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
         // - write in file on cursor : posInFile + localOffset
 
-        MPI_File_write_at(fh, posInFile+localOffset, elids.data(), elids.size(), MPI_INT32_T, &status );
+        writeAt(fh, posInFile+localOffset, elids.data(), elids.size(), MPI_INT32_T, &status );
         // MPI_File_write_ordered(fh, elids.data(), elids.size(), MPI_INT32_T, &status );
 
         sumOffsets = localOffset + elidsWritingSize;
@@ -1191,7 +1206,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements(MPI_File fh, mesh_ptrtyp
         MPI_Exscan(&ptidsWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
         // - write in file on cursor : posInFile + localOffset
 
-        MPI_File_write_at(fh, posInFile+localOffset, ptids.data(), ptids.size(), MPI_INT32_T, &status );
+        writeAt(fh, posInFile+localOffset, ptids.data(), ptids.size(), MPI_INT32_T, &status );
         // MPI_File_write_ordered(fh, ptids.data(), ptids.size(), MPI_INT32_T, &status );
 
         sumOffsets = localOffset + ptidsWritingSize;
@@ -1215,6 +1230,10 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements( MPI_File fh, mesh_conti
     MPI_Type_size( MPI_FLOAT , &sizeOfFloat );
 
     auto mesh = mp.mesh();
+    if ( mp.numberOfPointAllProcess(part) > std::numeric_limits<int32_t>::max() ||
+         mp.numberOfElementAllProcess(part) > std::numeric_limits<int32_t>::max() ||
+         part < 0 || part >= std::numeric_limits<int32_t>::max() )
+        checkMpiIo( MPI_ERR_COUNT, "EnSight Gold part exceeds signed 32-bit format limits" );
 
     rank_type currentPid = mesh->worldComm().localRank();
 
@@ -1223,7 +1242,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements( MPI_File fh, mesh_conti
         memset(buffer, '\0', sizeof(buffer));
         strncpy(buffer, "part", 80);
         // write number of points
-        MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+        writeAt(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
         //MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
     }
     posInFile+=80;
@@ -1234,7 +1253,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements( MPI_File fh, mesh_conti
         int32_t partid = part + 1;
         LOG(INFO) << "writing part " << partid << std::endl;
         // write number of points
-        MPI_File_write_at(fh, posInFile, &partid, 1, MPI_INT32_T, &status);
+        writeAt(fh, posInFile, &partid, 1, MPI_INT32_T, &status);
         // MPI_File_write_ordered(fh, &partid, size, MPI_INT32_T, &status);
     }
     posInFile+=sizeOfInt32_t;
@@ -1255,17 +1274,17 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements( MPI_File fh, mesh_conti
             //sprintf(buffer2, "Marker %d (%s)", (int)(markerid), mesh->markerName(markerid).substr(0, 32).c_str());
         strcpy( &buffer2[80], "coordinates" );
 
-        MPI_File_write_at(fh, posInFile, buffer2, sizeof(buffer2), MPI_CHAR, &status);
+        writeAt(fh, posInFile, buffer2, sizeof(buffer2), MPI_CHAR, &status);
         //MPI_File_write_ordered(fh, buffer2, size, MPI_CHAR, &status);
     }
     posInFile+=160;
 
     //size_type __nv = mp.ids.size();
-    int32_t gnop = (int32_t)(mp.numberOfPointAllProcess( part ) );
+    int32_t gnop = (int32_t)(mp.numberOfPointAllProcess(part) );
     //std::cout << "gnop=" << gnop << std::endl;
     if( this->worldComm().isMasterRank() )
     {
-        MPI_File_write_at(fh, posInFile, &gnop, 1, MPI_INT32_T, &status );
+        writeAt(fh, posInFile, &gnop, 1, MPI_INT32_T, &status );
         //MPI_File_write_ordered(fh, &gnop, size, MPI_INT32_T, &status );
     }
     posInFile+=sizeOfInt32_t;
@@ -1275,47 +1294,47 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements( MPI_File fh, mesh_conti
     std::vector<int32_t> pointids(gnop);
     for(int i = 0 ; i < gnop ; ++i )
         pointids[i] = i+1;
-    MPI_File_write_at(fh, posInFile/*+localOffset*/,  pointids.data(), pointids.size(), MPI_INT32_T, &status );
+    writeAt(fh, posInFile/*+localOffset*/,  pointids.data(), pointids.size(), MPI_INT32_T, &status );
     posInFile+=gnop*sizeOfInt32_t;
 #endif
 
-    int32_t nPointOnProcess = mp.numberOfPoint( part,currentPid );
+    std::size_t nPointOnProcess = mp.numberOfPoint( part,currentPid );
     auto const& nodes_B = mp.nodes( part );
     std::vector<float> nodes( nodes_B.size() );
     CHECK( nodes_B.size() == 3*nPointOnProcess ) << "aie " <<  nodes_B.size() << " vs " <<  3*nPointOnProcess;
-    for (int k=0;k<nPointOnProcess;++k )
+    for (std::size_t k=0;k<nPointOnProcess;++k )
     {
         nodes[k] = nodes_B[3*k];
         nodes[k+nPointOnProcess] = nodes_B[3*k+1];
         nodes[k+2*nPointOnProcess] = nodes_B[3*k+2];
     }
 
-    int32_t localOffset = mp.startPointIds( part,currentPid )*sizeOfFloat;
+    MPI_Offset localOffset = MPI_Offset(mp.startPointIds(part,currentPid))*sizeOfFloat;
     //MPI_File_write_at(fh, posInFile+localOffset,  nodes.data(), nodes.size(), MPI_FLOAT, &status );
-    if ( nPointOnProcess > 0 )
-    {
-        MPI_File_write_at(fh, posInFile+localOffset,  nodes.data(), nPointOnProcess, MPI_FLOAT, &status ); // coord x
-        MPI_File_write_at(fh, posInFile+gnop*sizeOfFloat+localOffset,  &nodes.data()[nPointOnProcess], nPointOnProcess, MPI_FLOAT, &status ); // coord y
-        MPI_File_write_at(fh, posInFile+2*gnop*sizeOfFloat+localOffset,  &nodes.data()[2*nPointOnProcess], nPointOnProcess, MPI_FLOAT, &status ); // coord z
-    }
-    posInFile += gnop*3*sizeOfFloat;
+    // All ranks participate, even when this part owns no local points.
+    writePayload(fh, posInFile+localOffset, nodes.data(), nPointOnProcess, MPI_FLOAT, &status);
+    writePayload(fh, posInFile+MPI_Offset(gnop)*sizeOfFloat+localOffset,
+                 nPointOnProcess ? nodes.data()+nPointOnProcess : nullptr, nPointOnProcess, MPI_FLOAT, &status);
+    writePayload(fh, posInFile+MPI_Offset(2)*gnop*sizeOfFloat+localOffset,
+                 nPointOnProcess ? nodes.data()+2*nPointOnProcess : nullptr, nPointOnProcess, MPI_FLOAT, &status);
+    posInFile += MPI_Offset(gnop)*3*sizeOfFloat;
 
     /* write element type */
     if( this->worldComm().isMasterRank() )
     {
         memset(buffer, '\0', sizeof(buffer));
         strncpy( buffer, this->elementType().c_str(), 80-1);
-        MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+        writeAt(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
         //MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status );
     }
     posInFile+=80;
 
-    int32_t gnole = mp.numberOfElementAllProcess( part );//mp.globalNumberOfElements();
+    int32_t gnole = mp.numberOfElementAllProcess(part);//mp.globalNumberOfElements();
     //std::cout << "gnole="<<gnole<<std::endl;
     //LOG(INFO) << "Global nb elements: " << gnole << std::endl;
     if( this->worldComm().isMasterRank() )
     {
-        MPI_File_write_at(fh, posInFile, &gnole, 1, MPI_INT32_T, &status );
+        writeAt(fh, posInFile, &gnole, 1, MPI_INT32_T, &status );
         //MPI_File_write_ordered(fh, &gnole, size, MPI_INT32_T, &status );
     }
     posInFile+=sizeOfInt32_t;
@@ -1323,18 +1342,22 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements( MPI_File fh, mesh_conti
     std::vector<int32_t> elids(gnole);
     for (int k=0;k<gnole;++k)
         elids[k] = k+1;
-    MPI_File_write_at(fh, posInFile/*+localOffset*/,  elids.data(), elids.size(), MPI_INT32_T, &status );
+    writeAt(fh, posInFile/*+localOffset*/,  elids.data(), elids.size(), MPI_INT32_T, &status );
     posInFile+=gnole*sizeOfInt32_t;
 #endif
 
     auto const& pointsIdsInElt_B = mp.pointIdsInElements( part );
-    std::vector<int32_t> pointsIdsInElt(pointsIdsInElt_B.size());
+    std::vector<int32_t> pointsIdsInElt( pointsIdsInElt_B.size() );
+    auto localPointId=[&](index_type id) -> int32_t {
+        if (id>=index_type(gnop)) checkMpiIo(MPI_ERR_COUNT,"connectivity outside exported part");
+        return int32_t(id)+1;
+    };
 
     uint16_type nPointsUsedInElt = mesh_type::element_type::numPoints;
     if constexpr ( N == 1 )
     {
-        for ( int k=0;k<pointsIdsInElt_B.size();++k)
-            pointsIdsInElt[k] = pointsIdsInElt_B[k] +1 ;
+        for ( std::size_t k=0;k<pointsIdsInElt_B.size();++k)
+            pointsIdsInElt[k] = localPointId(pointsIdsInElt_B[k]);
     }
     else
     {
@@ -1342,11 +1365,15 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements( MPI_File fh, mesh_conti
         CHECK( itFindOrdering != M_nodesOrderingInElementToEnsight.end() ) << "not found an ordering";
         auto const& mappingWithThisKindOfElement = itFindOrdering->second;
         nPointsUsedInElt = mappingWithThisKindOfElement.size();
-        mp.updateOrderingOfPointsIdsInElt( part, currentPid, pointsIdsInElt, mappingWithThisKindOfElement, 1, nPointsUsedInElt );
+        pointsIdsInElt.resize(std::size_t(mp.numberOfElement(part,currentPid))*nPointsUsedInElt);
+        for (std::size_t k=0;k<mp.numberOfElement(part,currentPid);++k)
+            for (uint16_type p=0;p<nPointsUsedInElt;++p)
+                pointsIdsInElt[k*nPointsUsedInElt+mappingWithThisKindOfElement[p]]=
+                    localPointId(pointsIdsInElt_B[k*mesh_type::element_type::numPoints+p]);
     }
-    localOffset = mp.startElementIds( part,currentPid )*nPointsUsedInElt*sizeOfInt32_t;
-    MPI_File_write_at(fh, posInFile+localOffset, pointsIdsInElt.data(), pointsIdsInElt.size(), MPI_INT32_T, &status );
-    posInFile += gnole*nPointsUsedInElt*sizeOfInt32_t;
+    localOffset = MPI_Offset(mp.startElementIds(part,currentPid))*nPointsUsedInElt*sizeOfInt32_t;
+    writePayload(fh, posInFile+localOffset, pointsIdsInElt.data(), pointsIdsInElt.size(), MPI_INT32_T, &status );
+    posInFile += MPI_Offset(gnole)*nPointsUsedInElt*sizeOfInt32_t;
 }
 #endif
 
@@ -1370,7 +1397,7 @@ ExporterEnsightGold<MeshType,N>::writeVariableFiles( timeset_ptrtype __ts, step_
     {
         if ( M_packTimeSteps > 0 )
         {
-            int relativeTsIndex = __step->index() - (*__ts->beginStep())->index();
+            int relativeTsIndex = __step->activeIndex() - __firstActiveStep->activeIndex();
             ossFilenameStepIndex << (relativeTsIndex/M_packTimeSteps + 1);
             writeNewFile = ( ( relativeTsIndex % M_packTimeSteps ) == 0 ) ;
         }
@@ -1383,15 +1410,15 @@ ExporterEnsightGold<MeshType,N>::writeVariableFiles( timeset_ptrtype __ts, step_
     }
     std::string filenameStepIndex = ossFilenameStepIndex.str();
 
-    saveFields<true>( __ts, __step, writeNewFile, filenameStepIndex, isFirstStep, __step->beginNodal(), __step->endNodal() );
-    saveFields<false>( __ts, __step, writeNewFile, filenameStepIndex, isFirstStep, __step->beginElement(), __step->endElement() );
+    saveFields<true>( __ts, __step->fieldSet(), writeNewFile, filenameStepIndex, isFirstStep, __step->beginNodal(), __step->endNodal() );
+    saveFields<false>( __ts, __step->fieldSet(), writeNewFile, filenameStepIndex, isFirstStep, __step->beginElement(), __step->endElement() );
 }
 
 
 template<typename MeshType, int N>
 template<bool IsNodal,typename Iterator>
 void
-ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename timeset_type::step_ptrtype __step, bool writeNewFile, std::string const& filenameStepIndex, bool isFirstStep, Iterator __var, Iterator en ) const
+ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename super::field_set_ptrtype __step, bool writeNewFile, std::string const& filenameStepIndex, bool isFirstStep, Iterator __var, Iterator en, bool isStatic ) const
 {
     tic();
     int size = 0;
@@ -1408,6 +1435,8 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
     int localOffset, sumOffsets;
 
     auto __mesh = __step->mesh();
+    auto& nodalArrayToDofId = M_mapNodalArrayToDofId[__ts->name()];
+    auto& elementArrayToDofId = M_mapElementArrayToDofId[__ts->name()];
 
     auto itFindCache = M_cache_mp.find( __ts->name() );
     CHECK( itFindCache != M_cache_mp.end() ) << "mesh numbering cache not found";
@@ -1459,14 +1488,14 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
 
         std::ostringstream __varfname;
 
-        __varfname << this->path() << "/" << __ts->name() << "." << __var->first;
+        __varfname << this->path() << "/" << (isStatic ? this->prefix() : __ts->name()) << "." << __var->first;
         /* if we want to pack data in several files instead of one */
         /* we compute an index to add to the filename */
-        if( M_mergeTimeSteps && M_packTimeSteps > 0 )
+        if( !isStatic && M_mergeTimeSteps && M_packTimeSteps > 0 )
             __varfname << "." << filenameStepIndex;
         // add extension
         __varfname << fileExt;
-        if( !M_mergeTimeSteps )
+        if( !isStatic && !M_mergeTimeSteps )
             __varfname << "." << filenameStepIndex;
 
         DVLOG(2) << "[ExporterEnsightGold::saveFields] saving " << __varfname.str() << "...\n";
@@ -1483,7 +1512,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
         {
             if( this->worldComm().isMasterRank()  && fs::exists(str))
             {
-                MPI_File_delete(str, MPI_INFO_NULL);
+                checkMpiIo( MPI_File_delete(str, MPI_INFO_NULL), "MPI_File_delete " + std::string(str) );
             }
             MPI_Barrier(this->worldComm().comm());
         }
@@ -1492,9 +1521,9 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
         //init MPI_Info object fromhints defined as environment variables
         //MPI_Info info = initIoInfoFromEnvVars();
         if ( M_mergeTimeSteps && !writeNewFile )
-            MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL , &fh );
+            openFile( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL , &fh );
         else
-            MPI_File_open( this->worldComm().comm(), str, MPI_MODE_WRONLY | MPI_MODE_CREATE, MPI_INFO_NULL , &fh );
+            openFile( this->worldComm().comm(), str, MPI_MODE_WRONLY | MPI_MODE_CREATE, MPI_INFO_NULL , &fh );
 
         //MPI_Info_free(&info);
         free(str);
@@ -1506,16 +1535,20 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
         if ( writeNewFile )
             MPI_File_set_size( fh, posInFile );
 #endif
-        Feel::detail::FileIndex index( this->worldCommPtr()  );
+        Feel::detail::FileIndex index( this->worldCommPtr() );
 
         if( M_mergeTimeSteps )
         {
-            // first read
-            index.read(fh);
+            // Recover the standard trailer before every append; no retained index cache.
+            if ( !writeNewFile )
+            {
+                index.read( fh );
+                if ( !index.defined() ) checkMpiIo( MPI_ERR_IO, "missing field append index" );
+            }
 
             /* Move to the beginning of the fie index section */
             /* to overwrite it */
-            if ( index.defined() && (__step->index() - TS_INITIAL_INDEX) > 0 ) {
+            if ( index.defined() ) {
                 // MPI_File_seek_shared(fh, index.fileblock_n_steps, MPI_SEEK_SET);
                 posInFile = index.nextFreePosFile();
             }
@@ -1530,7 +1563,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
             {
                 memset(buffer, '\0', sizeof(buffer));
                 strncpy(buffer, "BEGIN TIME STEP", 80);
-                MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+                writeAt(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
             }
             posInFile+=80;
 
@@ -1543,7 +1576,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
         {
             memset(buffer, '\0', sizeof(buffer));
             strncpy(buffer, field00.name().c_str(), 80-1);
-            MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+            writeAt(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
         }
         posInFile+=80;
 
@@ -1576,7 +1609,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
                     memset(buffer, '\0', sizeof(buffer));
                     strcpy( buffer, "part" );
                     //buffer = "part";
-                    MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+                    writeAt(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
                     // memset(buffer, '\0', sizeof(buffer));
                     // strcpy( buffer, "part" );
                     // MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
@@ -1586,7 +1619,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
                 if( this->worldComm().isMasterRank() )
                 {
                     int32_t partid = m.second[0] + 1;
-                    MPI_File_write_at(fh, posInFile, &partid, 1, MPI_INT32_T, &status);
+                    writeAt(fh, posInFile, &partid, 1, MPI_INT32_T, &status);
                     //MPI_File_write_ordered(fh, &partid, size, MPI_INT32_T, &status);
                 }
                 posInFile+=sizeOfInt32_t;
@@ -1596,7 +1629,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
                     memset(buffer, '\0', sizeof(buffer));
                     strcpy( buffer, "coordinates" );
                     //buffer = "coordinates";
-                    MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+                    writeAt(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
                     // memset(buffer, '\0', sizeof(buffer));
                     // strcpy( buffer, "coordinates" );
                     // MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
@@ -1625,7 +1658,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
                                 if ( c2 >= fieldData.second[c1].size() )
                                     continue;
                                 auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
-                                uint16_type c = c2*nComponents1+c1;
+                                uint16_type c = c1*nComponents2+c2;
                                 size_type global_node_id = nfaces*c + pid ;
                                 size_type thedof =  fieldComp.start() +
                                     fieldComp.functionSpace()->dof()->faceLocalToGlobal( face.id(), j, c ).index();
@@ -1647,7 +1680,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
                 // - write in file on cursor : posInFile + localOffset
                 for ( uint16_type c = 0; c < field00.nComponents; ++c )
                 {
-                    MPI_File_write_at(fh, posInFile + localOffset + c*sumOffsets, \
+                    writeAt(fh, posInFile + localOffset + c*sumOffsets, \
                                       field.data() + nfaces * c, nfaces, MPI_FLOAT, &status);
                     // MPI_File_write_ordered(fh, field.data() + nfaces * c, nfaces, MPI_FLOAT, &status);
                 }
@@ -1665,10 +1698,10 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
                 memset(buffer, '\0', sizeof(buffer));
                 strcpy( buffer, "part" );
                 //MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-                MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+                writeAt(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
                 //int32_t partid = *mit + 1;
                 int32_t partid = part + 1;
-                MPI_File_write_at(fh, posInFile+80, &partid, 1, MPI_INT32_T, &status);
+                writeAt(fh, posInFile+80, &partid, 1, MPI_INT32_T, &status);
                 DVLOG(2) << "part " << buffer << "\n";
                 if ( IsNodal )
                 {
@@ -1679,7 +1712,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
                     memset(buffer, '\0', sizeof(buffer));
                     strncpy(buffer, this->elementType().c_str(), 80-1);
                 }
-                MPI_File_write_at(fh, posInFile+80+sizeOfInt32_t, buffer, sizeof(buffer), MPI_CHAR, &status);
+                writeAt(fh, posInFile+80+sizeOfInt32_t, buffer, sizeof(buffer), MPI_CHAR, &status);
             }
             posInFile+=160+sizeOfInt32_t;
             toc("saveFields part",Environment::logVerbosityLevel()>0);
@@ -1690,7 +1723,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
             index_type nValuesPerComponentAllProcess = invalid_v<index_type>;
             index_type offsetValuesPerComponent = invalid_v<index_type>;
 
-            Eigen::VectorXf __field;
+            std::vector<float> __field;
 
             /* Loop on the elements */
             tic();
@@ -1699,19 +1732,20 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
             if constexpr ( IsNodal )
                 {
 
-                    nValuesPerComponentAllProcess = mp.numberOfPointAllProcess( part );
+                    nValuesPerComponentAllProcess = mp.numberOfPointAllProcess(part);
                     offsetValuesPerComponent = mp.startPointIds( part,currentPid );
 
-                    if ( M_mapNodalArrayToDofId.find( part ) == M_mapNodalArrayToDofId.end() )
+                    if ( nodalArrayToDofId.find( part ) == nodalArrayToDofId.end() )
                     {
                         nValuesPerComponent = mp.numberOfPoint( part,currentPid );
 
-                        auto & mapArrayToDofId = M_mapNodalArrayToDofId[part];
+                        auto & mapArrayToDofId = nodalArrayToDofId[part];
                         mapArrayToDofId.resize( nValuesPerComponent,invalid_size_type_value );
 
-                        size_type __field_size = nValuesPerComponent*nComponents;
+                        std::size_t __field_size = std::size_t(nValuesPerComponent)*nComponents;
                         VLOG(1) << "field size=" << __field_size;
-                        __field = Eigen::VectorXf::Zero( __field_size );
+                        __field.resize( __field_size );
+                        std::fill(__field.begin(),__field.end(),0.f);
 
                         //const int np = __step->mesh()->numLocalVertices();
 
@@ -1736,7 +1770,8 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
                                     for ( uint16_type c2 = 0; c2 < fieldData.second[c1].size(); ++c2 )
                                     {
                                         auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
-                                        uint16_type cMap = c2*nComponents1+c1;
+                                        // Gold TENSOR9 uses row-major xx,xy,xz,yx,yy,yz,zx,zy,zz.
+                                        uint16_type cMap = c1*nComponents2+c2;
                                         if ( isTensor2Symm )
                                             cMap = symmetricTensorOutputSlot( c1, c2, nComponents1, SymmetricTensorOrder::EnsightTensor6 );
 
@@ -1746,7 +1781,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
                                                                                      << " mesh numPoints: " << __step->mesh()->numPoints();
                                         DCHECK( global_node_id < __field_size ) << "Invalid dof id : " << global_node_id << " max size : " << __field_size;
 
-                                        __field(global_node_id) = fieldComp.globalValue( dof_id );
+                                        __field[global_node_id] = fieldComp.globalValue( dof_id );
                                         DVLOG(3) << "v[" << global_node_id << "]=" << fieldComp.globalValue( dof_id ) << "  dof_id:" << dof_id;
                                     }
                                 }
@@ -1756,19 +1791,20 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
                 } // IsNodal
             else
             {
-                nValuesPerComponentAllProcess = mp.numberOfElementAllProcess( part );
+                nValuesPerComponentAllProcess = mp.numberOfElementAllProcess(part);
                 offsetValuesPerComponent = mp.startElementIds( part,currentPid );
 
-                if ( M_mapElementArrayToDofId.find( part ) == M_mapElementArrayToDofId.end() )
+                if ( elementArrayToDofId.find( part ) == elementArrayToDofId.end() )
                 {
                     nValuesPerComponent = mp.numberOfElement( part,currentPid );
 
-                    auto & mapArrayToDofId =  M_mapElementArrayToDofId[part];
+                    auto & mapArrayToDofId = elementArrayToDofId[part];
                     mapArrayToDofId.resize( nValuesPerComponent,invalid_size_type_value );
 
-                    size_type __field_size = nValuesPerComponent*nComponents;
+                    std::size_t __field_size = std::size_t(nValuesPerComponent)*nComponents;
                     VLOG(1) << "field size=" << __field_size;
-                    __field = Eigen::VectorXf::Zero( __field_size );
+                    __field.resize( __field_size );
+                        std::fill(__field.begin(),__field.end(),0.f);
                     auto const& r =  mp.rangeElement( part );
                     auto elt_it = r.begin();
                     auto elt_en = r.end();
@@ -1785,12 +1821,12 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
                             for ( uint16_type c2 = 0; c2 < fieldData.second[c1].size(); ++c2 )
                             {
                                 auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
-                                uint16_type cMap = c2*nComponents1+c1;
+                                uint16_type cMap = c1*nComponents2+c2;
                                 if ( isTensor2Symm )
                                     cMap = symmetricTensorOutputSlot( c1, c2, nComponents1, SymmetricTensorOrder::EnsightTensor6 );
 
                                 size_type global_node_id = cMap*nValuesPerComponent + e;
-                                __field(global_node_id) = fieldComp.globalValue( dof_id );
+                                __field[global_node_id] = fieldComp.globalValue( dof_id );
                                 DVLOG(3) << "v[" << global_node_id << "]=" << fieldComp.globalValue( dof_id ) << "  dof_id:" << dof_id;
                             }
                         }
@@ -1800,11 +1836,12 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
 
             if ( nValuesPerComponent == invalid_v<index_type> )
             {
-                auto const& mapArrayToDofId = (IsNodal)? M_mapNodalArrayToDofId.find( part )->second : M_mapElementArrayToDofId.find( part )->second;
+                auto const& mapArrayToDofId = (IsNodal)? nodalArrayToDofId.at(part) : elementArrayToDofId.at(part);
                 nValuesPerComponent = mapArrayToDofId.size();
-                size_type __field_size = nValuesPerComponent*nComponents;
+                std::size_t __field_size = std::size_t(nValuesPerComponent)*nComponents;
                 VLOG(1) << "field size=" << __field_size;
-                __field = Eigen::VectorXf::Zero( __field_size );
+                __field.resize( __field_size );
+                        std::fill(__field.begin(),__field.end(),0.f);
                 for ( size_type k=0;k<nValuesPerComponent;++k )
                 {
                     size_type dof_id = mapArrayToDofId[k];
@@ -1813,11 +1850,11 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
                         for ( uint16_type c2 = 0; c2 < fieldData.second[c1].size(); ++c2 )
                         {
                             auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
-                            uint16_type cMap = c2*nComponents1+c1;
+                            uint16_type cMap = c1*nComponents2+c2;
                             if ( isTensor2Symm )
                                 cMap = symmetricTensorOutputSlot( c1, c2, nComponents1, SymmetricTensorOrder::EnsightTensor6 );
                             size_type global_node_id = cMap*nValuesPerComponent + k;
-                            __field(global_node_id) = fieldComp.globalValue( dof_id );
+                            __field[global_node_id] = fieldComp.globalValue( dof_id );
                         }
                     }
                 }
@@ -1826,15 +1863,13 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
             toc("saveFields element loop",Environment::logVerbosityLevel()>0);
             tic();
             // - write in file on cursor : posInFile + localOffset
-            if ( nValuesPerComponent > 0 )
+            for ( uint16_type c = 0; c < nComponents; ++c )
             {
-                for ( uint16_type c = 0; c < nComponents; ++c )
-                {
-                    MPI_File_write_at(fh, posInFile + (offsetValuesPerComponent + c*nValuesPerComponentAllProcess)*sizeOfFloat,
-                                      &__field.data()[c*nValuesPerComponent], nValuesPerComponent, MPI_FLOAT, &status);
-                }
+                writePayload(fh, posInFile + (MPI_Offset(offsetValuesPerComponent) + MPI_Offset(c)*nValuesPerComponentAllProcess)*sizeOfFloat,
+                             nValuesPerComponent ? __field.data()+std::size_t(c)*nValuesPerComponent : nullptr,
+                             nValuesPerComponent, MPI_FLOAT, &status);
             }
-            posInFile += nComponents*nValuesPerComponentAllProcess*sizeOfFloat;
+            posInFile += MPI_Offset(nComponents)*nValuesPerComponentAllProcess*sizeOfFloat;
             toc("saveFields write part",Environment::logVerbosityLevel()>0);
         } // parts loop
 
@@ -1845,7 +1880,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
             {
                 memset(buffer, '\0', sizeof(buffer));
                 strncpy(buffer,"END TIME STEP", 80);
-                MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
+                writeAt(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
             }
             posInFile+=80;
             // write back the file index
@@ -1853,7 +1888,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
         }
         DVLOG(2) << "[ExporterEnsightGold::saveFields] saving " << __varfname.str() << "done\n";
 
-        MPI_File_close(&fh);
+        closeFile(&fh);
 
         ++__var;
     }

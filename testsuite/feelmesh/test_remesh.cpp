@@ -225,29 +225,33 @@ TestRemesh<Dim, RDim>::execute( int niter )
         ein->addRegions();
         ein->add( "metric", met );
 
+        // Each checker produces a distinct stationary comparison field.
+        int checkerIndex = 0;
+
         for( auto f : checkers() )
         {
             auto v = Vh->element( expr(f.first ) );
-            ein->add( "v", v );
+            ein->add( fmt::format( "v_{}", checkerIndex ), v );
             auto iv = interp.operator()( v );
             auto vr = Vhr->element( expr( f.first ) );
-            eout->add( "iv", iv );
-            eout->add( "v", vr );
+            eout->add( fmt::format( "iv_{}", checkerIndex ), iv );
+            eout->add( fmt::format( "v_{}", checkerIndex ), vr );
             double errv = normL2( _range = elements( out ), _expr = idv( vr ) - idv( iv ) );
             if ( Environment::isMasterRank() )
                 BOOST_MESSAGE( fmt::format("L2 error norm {}: {}", f.first, errv ) );
             BOOST_CHECK_SMALL(errv, 1e-10);
 
             auto w = Wh->element( expr<real_dim, 1>( f.second ) );
-            ein->add( "w", w );
+            ein->add( fmt::format( "w_{}", checkerIndex ), w );
             auto iw = interpv.operator()( w );
             auto wr = Whr->element( expr<real_dim,1>( f.second ) );
-            eout->add( "iw", iw );
-            eout->add( "w", wr );
+            eout->add( fmt::format( "iw_{}", checkerIndex ), iw );
+            eout->add( fmt::format( "w_{}", checkerIndex ), wr );
             double errw = normL2( _range = elements( out ), _expr = idv( wr ) - idv( iw ) );
             if ( Environment::isMasterRank() )
                 BOOST_MESSAGE( fmt::format( "L2 error norm {}: {}", f.second, errw ) );
             BOOST_CHECK_SMALL( errw, 1e-10 );
+            ++checkerIndex;
         }
         if ( nelements( markedelements( Vh->mesh(), required_elements_str_ ), true ) > 0 )
         {

@@ -1,26 +1,13 @@
-//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-//!
-//! This file is part of the Feel++ library
-//!
-//! This library is free software; you can redistribute it and/or
-//! modify it under the terms of the GNU Lesser General Public
-//! License as published by the Free Software Foundation; either
-//! version 2.1 of the License, or (at your option) any later version.
-//!
-//! This library is distributed in the hope that it will be useful,
-//! but WITHOUT ANY WARRANTY; without even the implied warranty of
-//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//! Lesser General Public License for more details.
-//!
-//! You should have received a copy of the GNU Lesser General Public
-//! License along with this library; if not, write to the Free Software
-//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-//!
-//! @file
-//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-//! @date 21 May 2011
-//! @copyright 2011-2017 Feel++ Consortium
-//!
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-
+
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+    SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+
+    SPDX-FileCopyrightText: 2011-2017 University of Strasbourg
+    SPDX-FileCopyrightText: 2026 University of Strasbourg
+
+    SPDX-License-Identifier: LGPL-3.0-or-later
+*/
 #ifndef FEELPP_MESH_HPP
 #define FEELPP_MESH_HPP 1
 
@@ -54,6 +41,7 @@
 #include <feel/feeldiscr/traits.hpp>
 #include <feel/feelmesh/enums.hpp>
 #include <feel/feelmesh/filters.hpp>
+#include <feel/feelmesh/compactmarkerfragmentation.hpp>
 #include <feel/feelmesh/mesh0d.hpp>
 #include <feel/feelmesh/mesh1d.hpp>
 #include <feel/feelmesh/mesh2d.hpp>
@@ -822,23 +810,28 @@ class Mesh
                 collectPointMarkerIds.insert( pointMarkers );
             }
 
-            mpi::all_reduce( MeshBase<>::worldComm().localComm(), mpi::inplace( collectMarkerIds.data() ), collectMarkerIds.size(), UpdateSetForAllReduce<std::set<_marker_element_type>>() );
-
-            for (int cd=0;cd<ets.size();++cd )
-            {
-                ElementsType et = ets[cd];
-                M_meshFragmentationByMarker[et].clear();
-                auto & mfbym = M_meshFragmentationByMarker[et];
-                int fragmentId = 0;
-                for ( _marker_element_type const& mIds : collectMarkerIds[cd] )
-                    mfbym.emplace( fragmentId++, mIds );
-            }
+            /**
+             * Rebuild global marker fragments one codimension at a time. The
+             * compact MPI representation keeps only the final mapping on every
+             * rank and consumes the local marker collections.
+             */
+            M_meshFragmentationByMarker.clear();
+            for ( std::size_t cd = 0; cd < ets.size(); ++cd )
+                M_meshFragmentationByMarker[ets[cd]] =
+                    Feel::detail::globalMarkerFragments( collectMarkerIds[cd], MeshBase<>::worldComm().localComm() );
         }
 
-    //! return mesh fragmentation : mapping fragment id to elements marker ids
+    /**
+     * @brief Returns the fragment-to-marker mapping for one entity type.
+     * @param et Entity type, defaulting to mesh elements.
+     * @return A mapping from fragment identifiers to marker combinations.
+     */
     std::map<int,typename element_type::marker_type> const& meshFragmentationByMarker( ElementsType et = ElementsType::MESH_ELEMENTS ) const { return M_meshFragmentationByMarker.find( et )->second; }
 
-    //! return mesh fragmentation : mapping fragment id to elements marker ids for all entities
+    /**
+     * @brief Returns fragment-to-marker mappings for every mesh entity type.
+     * @return Mappings indexed by entity type then fragment identifier.
+     */
     std::map<ElementsType, std::map<int,typename element_type::marker_type>> const& meshFragmentationByMarkerByEntity() const { return M_meshFragmentationByMarker; }
 
     //! !
