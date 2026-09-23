@@ -21,10 +21,12 @@ jobs:
     runs-on: self-ubuntu-24.04
     if: "github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, 'doc skip')"
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v7
       with:
-        submodules: 'recursive'
+        submodules: false
         lfs: 'true'
+    - name: Initialize submodules
+      run: git submodule update --init --recursive
 #    - name: Update Dependencies
 #      run: |
 #        sudo apt install -y gpg
