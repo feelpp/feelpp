@@ -1,0 +1,13 @@
+<map id="Feel::ApplicationXML" name="Feel::ApplicationXML">
+<area shape="rect" id="node1" title="XML application." alt="" coords="149,1224,301,1448"/>
+<area shape="rect" id="node2" href="$classFeel_1_1Application.html" title="provides information about the Application" alt="" coords="5,732,152,1147"/>
+<area shape="rect" id="node3" title=" " alt="" coords="123,476,253,568"/>
+<area shape="rect" id="node4" href="$classFeel_1_1Parameter.html" title="parameter class to describe code inputs" alt="" coords="171,205,285,283"/>
+<area shape="rect" id="node8" href="$classFeel_1_1Output__impl.html" title=" " alt="" coords="223,345,366,452"/>
+<area shape="rect" id="node5" href="$classFeel_1_1Parameter__impl.html" title=" " alt="" coords="155,5,301,156"/>
+<area shape="rect" id="node6" title=" " alt="" coords="227,893,357,985"/>
+<area shape="rect" id="node7" href="$classFeel_1_1Output.html" title="output class to describe code outputs" alt="" coords="247,592,342,669"/>
+<area shape="rect" id="node9" title=" " alt="" coords="381,901,547,978"/>
+<area shape="rect" id="node10" title=" " alt="" coords="424,592,504,669"/>
+<area shape="rect" id="node11" title=" " alt="" coords="401,353,527,445"/>
+</map>

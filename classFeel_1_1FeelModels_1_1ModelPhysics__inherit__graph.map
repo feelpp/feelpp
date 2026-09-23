@@ -1,0 +1,11 @@
+<map id="Feel::FeelModels::ModelPhysics&lt; Dim &gt;" name="Feel::FeelModels::ModelPhysics&lt; Dim &gt;">
+<area shape="rect" id="node1" title="Physic set Model." alt="" coords="147,763,359,987"/>
+<area shape="rect" id="node6" href="$classFeel_1_1FeelModels_1_1ModelGenericPDE.html" title=" " alt="" coords="31,1035,241,1200"/>
+<area shape="rect" id="node9" href="$classFeel_1_1FeelModels_1_1ModelGenericPDE.html" title="Generic PDE Model class." alt="" coords="265,1035,476,1200"/>
+<area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title="Model base class." alt="" coords="139,564,367,715"/>
+<area shape="rect" id="node3" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="40,131,251,516"/>
+<area shape="rect" id="node4" title=" " alt="" coords="79,5,211,83"/>
+<area shape="rect" id="node5" title=" " alt="" coords="275,277,447,369"/>
+<area shape="rect" id="node7" href="$classFeel_1_1FeelModels_1_1CoefficientFormPDEBase.html" title=" " alt="" coords="5,1248,267,1604"/>
+<area shape="rect" id="node8" href="$classFeel_1_1FeelModels_1_1CoefficientFormPDE.html" title="class for a single CoefficientFormPDE" alt="" coords="5,1652,267,1905"/>
+</map>

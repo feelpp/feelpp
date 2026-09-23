@@ -1,0 +1,19 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$classProductSpaceBase.html" title=" " alt="" coords="5,13,140,39"/>
+<area shape="rect" id="node2" href="$classFeel_1_1ProductSpace.html" title=" " alt="" coords="231,5,368,47"/>
+<area shape="rect" id="node3" title=" " alt="" coords="15,435,131,462"/>
+<area shape="rect" id="node4" href="$classFeel_1_1LocalDofSet.html" title=" " alt="" coords="215,71,383,127"/>
+<area shape="rect" id="node5" href="$classFeel_1_1FeelModels_1_1ModelField.html" title=" " alt="" coords="203,151,396,207"/>
+<area shape="rect" id="node6" href="$classFeel_1_1FeelModels_1_1ModelMeasuresQuantity.html" title=" " alt="" coords="188,232,411,273"/>
+<area shape="rect" id="node7" href="$classFeel_1_1FeelModels_1_1SelectorModelField.html" title=" " alt="" coords="206,297,393,339"/>
+<area shape="rect" id="node8" href="$classFeel_1_1FeelModels_1_1TrialSymbolExpr.html" title=" " alt="" coords="199,363,400,404"/>
+<area shape="rect" id="node9" href="$classFeel_1_1LocalDofSet.html" title=" " alt="" coords="232,428,367,469"/>
+<area shape="rect" id="node10" href="$classFeel_1_1Symbols.html" title=" " alt="" coords="246,494,353,521"/>
+<area shape="rect" id="node11" href="$classFeel_1_1TimeSet.html" title="Handles a set of time steps." alt="" coords="247,545,351,571"/>
+<area shape="rect" id="node14" href="$classFeel_1_1TimerData.html" title="TimerData is the value for the TimerTable map." alt="" coords="241,595,357,622"/>
+<area shape="rect" id="node15" href="$classFeel_1_1WorldsComm.html" title="a set of worlds communicator" alt="" coords="232,646,367,673"/>
+<area shape="rect" id="node16" href="$structFeel_1_1vf_1_1SymbolExpr.html" title="attach a symbol (string) with a feel++ expression ex : auto se = SymbolExpr( &quot;u&quot;, cst(3...." alt="" coords="227,697,372,739"/>
+<area shape="rect" id="node17" href="$structFeel_1_1vf_1_1SymbolExprComponentSuffix.html" title=" " alt="" coords="193,763,405,804"/>
+<area shape="rect" id="node12" href="$classFeel_1_1CNAB2.html" title=" " alt="" coords="461,515,641,542"/>
+<area shape="rect" id="node13" href="$classFeel_1_1CNAB2x2.html" title=" " alt="" coords="459,567,644,608"/>
+</map>

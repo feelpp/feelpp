@@ -1,0 +1,12 @@
+<map id="Feel::FeelModels::HeatFluid&lt; HeatType, FluidType &gt;" name="Feel::FeelModels::HeatFluid&lt; HeatType, FluidType &gt;">
+<area shape="rect" id="node1" title="class for conjuguate heat transfer toolbox" alt="" coords="311,1321,498,1487"/>
+<area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1ModelNumerical.html" title="Handles some numerical model aspects: timestepping, mesh and properties." alt="" coords="153,991,398,1273"/>
+<area shape="rect" id="node3" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title="Model base class." alt="" coords="244,564,472,715"/>
+<area shape="rect" id="node7" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic.html" title=" " alt="" coords="295,777,514,928"/>
+<area shape="rect" id="node8" href="$classFeel_1_1FeelModels_1_1ModelMeshes.html" title=" " alt="" coords="5,763,220,943"/>
+<area shape="rect" id="node10" href="$classFeel_1_1FeelModels_1_1ModelPhysics.html" title=" " alt="" coords="431,1020,653,1244"/>
+<area shape="rect" id="node4" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="145,131,355,516"/>
+<area shape="rect" id="node5" title=" " alt="" coords="184,5,316,83"/>
+<area shape="rect" id="node6" title=" " alt="" coords="380,277,552,369"/>
+<area shape="rect" id="node9" title=" " alt="" coords="51,593,174,685"/>
+</map>

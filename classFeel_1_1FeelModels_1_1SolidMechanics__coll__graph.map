@@ -1,0 +1,21 @@
+<map id="Feel::FeelModels::SolidMechanics&lt; ConvexType, BasisDisplacementType &gt;" name="Feel::FeelModels::SolidMechanics&lt; ConvexType, BasisDisplacementType &gt;">
+<area shape="rect" id="node1" title="class for Solid Mechanics toolbox" alt="" coords="611,1787,879,1967"/>
+<area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1ModelNumerical.html" title="Handles some numerical model aspects: timestepping, mesh and properties." alt="" coords="93,1455,339,1737"/>
+<area shape="rect" id="node3" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title="Model base class." alt="" coords="51,925,279,1076"/>
+<area shape="rect" id="node7" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic.html" title=" " alt="" coords="37,1227,256,1377"/>
+<area shape="rect" id="node8" href="$classFeel_1_1FeelModels_1_1ModelMeshes.html" title=" " alt="" coords="281,1212,495,1392"/>
+<area shape="rect" id="node12" href="$classFeel_1_1FeelModels_1_1ModelPhysics.html" title=" " alt="" coords="639,1499,851,1693"/>
+<area shape="rect" id="node4" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="264,132,475,517"/>
+<area shape="rect" id="node19" href="$classFeel_1_1FeelModels_1_1ModelPhysic.html" title=" " alt="" coords="569,580,793,863"/>
+<area shape="rect" id="node5" title=" " alt="" coords="303,5,435,83"/>
+<area shape="rect" id="node6" title=" " alt="" coords="157,675,329,767"/>
+<area shape="rect" id="node9" title=" " alt="" coords="311,962,433,1039"/>
+<area shape="rect" id="node10" title=" " alt="" coords="353,683,391,760"/>
+<area shape="rect" id="node11" title=" " alt="" coords="425,683,463,760"/>
+<area shape="rect" id="node13" title=" " alt="" coords="890,286,1051,363"/>
+<area shape="rect" id="node14" title=" " alt="" coords="816,1263,896,1341"/>
+<area shape="rect" id="node15" title=" " alt="" coords="795,955,922,1047"/>
+<area shape="rect" id="node16" title=" " alt="" coords="573,1241,790,1363"/>
+<area shape="rect" id="node17" title=" " alt="" coords="457,962,567,1039"/>
+<area shape="rect" id="node18" title=" " alt="" coords="591,947,771,1054"/>
+</map>

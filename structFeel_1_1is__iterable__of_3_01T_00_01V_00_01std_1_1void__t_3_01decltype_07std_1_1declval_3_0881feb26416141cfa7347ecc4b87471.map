@@ -1,0 +1,4 @@
+<map id="Feel::is_iterable_of&lt; T, V, std::void_t&lt; decltype(std::declval&lt; T &gt;().begin()), decltype(std::declval&lt; T &gt;().end()), std::is_same&lt; decltype(*std::declval&lt; T &gt;().begin()), V &gt; &gt; &gt;" name="Feel::is_iterable_of&lt; T, V, std::void_t&lt; decltype(std::declval&lt; T &gt;().begin()), decltype(std::declval&lt; T &gt;().end()), std::is_same&lt; decltype(*std::declval&lt; T &gt;().begin()), V &gt; &gt; &gt;">
+<area shape="rect" id="node1" title=" " alt="" coords="5,131,216,296"/>
+<area shape="rect" id="node2" title=" " alt="" coords="59,5,162,83"/>
+</map>

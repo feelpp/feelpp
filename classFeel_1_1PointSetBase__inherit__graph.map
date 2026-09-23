@@ -1,0 +1,4 @@
+<map id="Feel::PointSetBase" name="Feel::PointSetBase">
+<area shape="rect" id="node1" title="base class for point sets, to be used eg with SFINAE" alt="" coords="50,5,185,83"/>
+<area shape="rect" id="node2" href="$classFeel_1_1PointSet.html" title="Class of all PointSet on a Convex." alt="" coords="5,131,229,369"/>
+</map>

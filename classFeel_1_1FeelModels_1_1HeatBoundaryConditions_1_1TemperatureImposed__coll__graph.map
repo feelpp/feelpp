@@ -1,0 +1,15 @@
+<map id="Feel::FeelModels::HeatBoundaryConditions::TemperatureImposed" name="Feel::FeelModels::HeatBoundaryConditions::TemperatureImposed">
+<area shape="rect" id="node1" title=" " alt="" coords="359,1193,573,1315"/>
+<area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1GenericDirichletBoundaryCondition.html" title=" " alt="" coords="369,935,563,1144"/>
+<area shape="rect" id="node3" title=" " alt="" coords="47,603,127,681"/>
+<area shape="rect" id="node11" title=" " alt="" coords="96,787,244,865"/>
+<area shape="rect" id="node4" title=" " alt="" coords="24,279,151,371"/>
+<area shape="rect" id="node5" title=" " alt="" coords="268,780,451,872"/>
+<area shape="rect" id="node6" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title="Model base class." alt="" coords="245,567,473,717"/>
+<area shape="rect" id="node7" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="214,132,425,517"/>
+<area shape="rect" id="node8" title=" " alt="" coords="253,5,385,83"/>
+<area shape="rect" id="node9" title=" " alt="" coords="449,279,621,371"/>
+<area shape="rect" id="node10" title=" " alt="" coords="475,787,598,865"/>
+<area shape="rect" id="node12" title=" " alt="" coords="622,787,739,865"/>
+<area shape="rect" id="node13" title=" " alt="" coords="763,787,828,865"/>
+</map>

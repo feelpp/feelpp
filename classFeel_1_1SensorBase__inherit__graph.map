@@ -1,0 +1,8 @@
+<map id="Feel::SensorBase&lt; Space, ValueT &gt;" name="Feel::SensorBase&lt; Space, ValueT &gt;">
+<area shape="rect" id="node1" title="base class for sensors" alt="" coords="167,432,346,612"/>
+<area shape="rect" id="node4" href="$classFeel_1_1SensorGaussian.html" title="gaussian type sensor" alt="" coords="5,667,156,833"/>
+<area shape="rect" id="node5" href="$classFeel_1_1SensorPointwise.html" title="pointwise type sensor" alt="" coords="180,660,333,840"/>
+<area shape="rect" id="node6" href="$classFeel_1_1SensorSurface.html" title="surface type sensor" alt="" coords="358,660,499,840"/>
+<area shape="rect" id="node2" href="$classFeel_1_1FsFunctionalLinear.html" title=" " alt="" coords="174,219,339,384"/>
+<area shape="rect" id="node3" href="$classFeel_1_1FsFunctional.html" title=" " alt="" coords="191,5,322,171"/>
+</map>

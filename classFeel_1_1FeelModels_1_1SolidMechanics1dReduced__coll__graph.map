@@ -1,0 +1,21 @@
+<map id="Feel::FeelModels::SolidMechanics1dReduced&lt; ConvexType, BasisDisplacementType &gt;" name="Feel::FeelModels::SolidMechanics1dReduced&lt; ConvexType, BasisDisplacementType &gt;">
+<area shape="rect" id="node1" title=" " alt="" coords="586,1757,906,1923"/>
+<area shape="rect" id="node2" href="$classFeel_1_1FeelModels_1_1ModelNumerical.html" title="Handles some numerical model aspects: timestepping, mesh and properties." alt="" coords="94,1425,340,1708"/>
+<area shape="rect" id="node3" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title="Model base class." alt="" coords="52,925,280,1076"/>
+<area shape="rect" id="node7" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic.html" title=" " alt="" coords="38,1197,257,1348"/>
+<area shape="rect" id="node8" href="$classFeel_1_1FeelModels_1_1ModelMeshes.html" title=" " alt="" coords="282,1183,496,1363"/>
+<area shape="rect" id="node12" href="$classFeel_1_1FeelModels_1_1ModelPhysics.html" title=" " alt="" coords="640,1469,852,1664"/>
+<area shape="rect" id="node4" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="265,132,476,517"/>
+<area shape="rect" id="node19" href="$classFeel_1_1FeelModels_1_1ModelPhysic.html" title=" " alt="" coords="570,580,794,863"/>
+<area shape="rect" id="node5" title=" " alt="" coords="304,5,436,83"/>
+<area shape="rect" id="node6" title=" " alt="" coords="158,675,330,767"/>
+<area shape="rect" id="node9" title=" " alt="" coords="312,962,434,1039"/>
+<area shape="rect" id="node10" title=" " alt="" coords="354,683,392,760"/>
+<area shape="rect" id="node11" title=" " alt="" coords="426,683,464,760"/>
+<area shape="rect" id="node13" title=" " alt="" coords="891,286,1052,363"/>
+<area shape="rect" id="node14" title=" " alt="" coords="817,1234,897,1311"/>
+<area shape="rect" id="node15" title=" " alt="" coords="796,955,923,1047"/>
+<area shape="rect" id="node16" title=" " alt="" coords="574,1212,791,1333"/>
+<area shape="rect" id="node17" title=" " alt="" coords="458,962,568,1039"/>
+<area shape="rect" id="node18" title=" " alt="" coords="592,947,772,1054"/>
+</map>
