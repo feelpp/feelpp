@@ -8,8 +8,13 @@ on:
     # Keep the lightweight planner active so pkg= directives can opt any
     # branch into packaging. Only configured default branches build by default.
     branches: ['*']
+    paths-ignore:
+      - '.github/workflows/doxygen.yml'
+      - '.github/workflows/pkg.yml'
   pull_request:
     branches: ['*']
+    paths-ignore:
+      - '.github/workflows/doxygen.yml'
   workflow_dispatch:
     inputs:
       parallel:
