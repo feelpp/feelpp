@@ -41,7 +41,7 @@
     "https://spdx.org/licenses/LGPL-3.0-only.html",
     "https://spdx.org/licenses/GPL-3.0-only.html"
   ],
-  "version": "v0.111.0-preview.13",
+  "version": "v0.111.0",
   "programmingLanguage": [
     {
       "@type": "ComputerLanguage",
