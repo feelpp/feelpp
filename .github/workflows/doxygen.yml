@@ -34,7 +34,7 @@ jobs:
 #        sudo apt update
 #        sudo apt --reinstall install -y libfeelpp1 libfeelpp-dev feelpp-tools doxygen graphviz
     - name: Configure Doxygen Preset
-      run: cmake --preset doxygen -DDOXYGEN_EXECUTABLE=/nvme0/prudhomm/local/doxygen/bin/doxygen
+      run: cmake --preset doxygen -DDOXYGEN=/nvme0/prudhomm/local/doxygen/bin/doxygen -DDOXYGEN_EXECUTABLE=/nvme0/prudhomm/local/doxygen/bin/doxygen
     - name: Build Doxygen
       run: cmake --build --preset doxygen --target doxygen
     - name: Deploy
