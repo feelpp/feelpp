@@ -322,7 +322,16 @@ SolverOptimizationPetsc<T, SizeT>::objectiveGradientBridge(
         auto stateView = makeVectorView( state, callbackContext );
         auto gradientView = makeVectorView( gradient, callbackContext );
         objective_gradient_data_type data( *stateView, *gradientView );
-        callbackContext.solver->objectiveGradient()( data );
+        // Older PETSc releases leave the combined callback installed when
+        // TaoSetObjectiveAndGradient is called with a null function. Dispatch
+        // to the currently registered Feel++ callbacks after a reset.
+        if ( callbackContext.solver->hasObjectiveGradient() )
+            callbackContext.solver->objectiveGradient()( data );
+        else
+        {
+            data.objective = callbackContext.solver->objective()( data.state );
+            callbackContext.solver->gradient()( data.state, data.gradient );
+        }
         *objective = static_cast<PetscReal>( data.objective );
         if ( !gradientView->closed() )
             gradientView->close();
