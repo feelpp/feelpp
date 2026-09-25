@@ -68,6 +68,7 @@ def command_release(args: argparse.Namespace) -> int:
         args.version,
         dry_run=args.dry_run,
         dists=tuple(args.dist) or None,
+        spack_targets=tuple(args.spack),
         publication_rows=args.publications_rows,
         publication_since=args.publications_since,
     )
@@ -187,6 +188,12 @@ def build_parser() -> argparse.ArgumentParser:
         action="append",
         default=[],
         help="Restrict release validation to a distro. Repeat to target multiple distros.",
+    )
+    release_parser.add_argument(
+        "--spack",
+        action="append",
+        default=[],
+        help="Include a published Spack full image, for example openmpi5. Repeat for multiple targets.",
     )
     release_parser.add_argument(
         "--dry-run",

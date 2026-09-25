@@ -125,6 +125,15 @@ class VersionRepoMixin:
             json.dumps(
                 {
                     "profiles": {
+                        "images": {
+                            "catalog": {
+                                "spack:openmpi5": {
+                                    "image_backend": "spack",
+                                    "ci_full": "true",
+                                    "oci_dist": "spack-openmpi5",
+                                }
+                            }
+                        },
                         "packaging": {
                             "catalog": {
                                 "ubuntu:noble": {"flavor": "ubuntu", "dist": "noble", "version": "24.04"},
@@ -181,4 +190,3 @@ class VersionRepoMixin:
         for path, (source, version) in changelogs.items():
             path.write_text(changelog_template.format(source=source, version=version), encoding="utf-8")
         return repo_root
-
