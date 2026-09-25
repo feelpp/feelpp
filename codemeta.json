@@ -67,13 +67,46 @@
   "contributor": [
     {
       "@type": "Person",
+      "givenName": "Ali",
+      "familyName": "Elarif"
+    },
+    {
+      "@type": "Person",
       "givenName": "Thomas",
       "familyName": "Saigre"
     },
     {
       "@type": "Person",
+      "givenName": "Luca",
+      "familyName": "Berti"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Lucas",
+      "familyName": "Palazzolo"
+    },
+    {
+      "@type": "Person",
+      "name": "jermuzet"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Thibaut",
+      "familyName": "Metivet"
+    },
+    {
+      "@type": "Person",
+      "name": "luzpaz"
+    },
+    {
+      "@type": "Person",
       "givenName": "Philippe",
       "familyName": "Pincon"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Céline Van",
+      "familyName": "Landeghem"
     }
   ],
   "copyrightHolder": [
