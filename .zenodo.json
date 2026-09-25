@@ -19,12 +19,40 @@
   ],
   "contributors": [
     {
+      "name": "Elarif, Ali",
+      "type": "Researcher"
+    },
+    {
       "name": "Saigre, Thomas",
       "affiliation": "IRMA",
       "type": "Researcher"
     },
     {
+      "name": "Berti, Luca",
+      "type": "Researcher"
+    },
+    {
+      "name": "Palazzolo, Lucas",
+      "type": "Researcher"
+    },
+    {
+      "name": "jermuzet",
+      "type": "Researcher"
+    },
+    {
+      "name": "Metivet, Thibaut",
+      "type": "Researcher"
+    },
+    {
+      "name": "luzpaz",
+      "type": "Researcher"
+    },
+    {
       "name": "Pincon, Philippe",
+      "type": "Researcher"
+    },
+    {
+      "name": "Landeghem, Céline Van",
       "type": "Researcher"
     }
   ],
