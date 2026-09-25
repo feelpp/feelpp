@@ -99,12 +99,12 @@
     {
       "@type": "Role",
       "roleName": "numpex-catalog:discussion",
-      "url": "https://feelpp.slack.com/"
+      "url": "https://github.com/orgs/feelpp/discussions"
     },
     {
       "@type": "Role",
       "roleName": "numpex-catalog:spack_package",
-      "url": "https://github.com/spack/spack-packages/blob/develop/repos/spack_repo/builtin/packages/bigdft_suite/package.py"
+      "url": "https://github.com/numpex/spack.numpex/blob/main/spack_repo/numpex/packages/feelpp/package.py"
     },
     {
       "@type": "Role",
