@@ -132,12 +132,12 @@
     {
       "@type": "Role",
       "roleName": "numpex-catalog:discussion",
-      "url": "https://github.com/feelpp/discussions"
+      "url": "https://github.com/orgs/feelpp/discussions"
     },
     {
       "@type": "Role",
       "roleName": "numpex-catalog:spack_package",
-      "url": "https://github.com/numpex/spack.numpex/blob/main/packages/feelpp/package.py"
+      "url": "https://github.com/numpex/spack.numpex/blob/main/spack_repo/numpex/packages/feelpp/package.py"
     },
     {
       "@type": "Role",
