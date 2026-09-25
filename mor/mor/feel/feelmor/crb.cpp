@@ -95,6 +95,7 @@ crbOptions( std::string const& prefix )
         ( "crb.compute-stat",Feel::po::value<bool>()->default_value( true ), "compute statistics on the run if true")
         ( "crb.cvg-study",Feel::po::value<bool>()->default_value( false ), "convergence study if true")
         ( "crb.computational-time-neval",Feel::po::value<int>()->default_value( 0 )," number of evaluation to perform to have the computational time of crb online step" )
+        ( "crb.export-extra-info", Feel::po::value<bool>()->default_value( false ), "export extra information to convergence files")
 
         ( "crb.run-on-WNmu",Feel::po::value<bool>()->default_value( false ), "use mu taken for build the reduced basis, so for steady problems we are very accurate")
         ( "crb.run-on-scm-parameters",Feel::po::value<bool>()->default_value( false ), "use mu taken during the SCM offline step ( for a(.,.;mu) ), so the coercivity constant is exact")

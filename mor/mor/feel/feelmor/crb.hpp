@@ -2740,7 +2740,7 @@ CRB<TruthModelType>::offline()
 
         if( this->worldComm().isMasterRank() )
         {
-            std::cout << "N = " << M_N+1 << "/"  << M_iter_max << "( max = " << user_max << ")\n";
+            std::cout << "N = " << M_N+1 << "/"  << M_iter_max << " ( max = " << user_max << ")\n";
             int size = mu.size();
             std::cout << "  -- mu = [ ";
             for ( int i=0; i< size-1; i++ )

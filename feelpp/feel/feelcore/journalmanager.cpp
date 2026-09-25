@@ -57,7 +57,12 @@ JournalManager::JournalManager()
 }
 
 
-//! Save the global property tree into a json file.
+//! Add data tree into the journal
+void
+JournalManager::journalAdd( nl::json const &j, bool merge )
+{
+    S_journal_ptree.update( j, merge );
+}
 void
 JournalManager::journalSave( std::string const& filename )
 {
