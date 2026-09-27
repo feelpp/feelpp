@@ -866,6 +866,98 @@ spack:
             self.assertIn('"recommended_groups": [', stdout.getvalue())
             self.assertIn(' full-all', stdout.getvalue())
 
+    def test_spack_openmpi5_bake_supports_component_images(self) -> None:
+        repo_root = self.repo_root()
+        for component, expected_base, expected_preset in (
+            ("feelpp", "ghcr.io/feelpp/feelpp-env:spack-openmpi5", "feelpp-spack-openmpi5"),
+            ("toolboxes", "ghcr.io/feelpp/feelpp:spack-openmpi5", "toolboxes-spack-openmpi5"),
+            ("mor", "ghcr.io/feelpp/feelpp-toolboxes:spack-openmpi5", "mor-spack-openmpi5"),
+        ):
+            with self.subTest(component=component), tempfile.TemporaryDirectory() as tmpdir:
+                with mock.patch("sys.stdout", io.StringIO()):
+                    rc = main([
+                        "image", "bake", "--repo-root", str(repo_root),
+                        "--branch", "develop",
+                        "--job-root", tmpdir, "--target", "spack:openmpi5",
+                        "--component", component,
+                    ])
+                self.assertEqual(rc, 0)
+                bake_file = Path(tmpdir) / "images" / "spack-openmpi5" / "docker-bake.json"
+                payload = json.loads(bake_file.read_text(encoding="utf-8"))
+                builder = payload["target"][component]
+                runtime = payload["target"][f"{component}-runtime"]
+                self.assertEqual(builder["args"]["FROM_IMAGE"], expected_base)
+                self.assertEqual(builder["args"]["CMAKE_PRESET"], expected_preset)
+                self.assertEqual(runtime["contexts"]["build_output"], f"target:{component}")
+
+    def test_spack_openmpi_component_image_requires_openmpi5(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            stderr = io.StringIO()
+            with mock.patch("sys.stderr", stderr):
+                rc = main([
+                    "image", "bake", "--repo-root", str(self.repo_root()),
+                    "--job-root", tmpdir, "--target", "spack:openmpi",
+                    "--component", "feelpp",
+                ])
+            self.assertEqual(rc, 1)
+            self.assertIn("require spack:openmpi5", stderr.getvalue())
+
+    def test_spack_mpich_bake_supports_only_feelpp_component(self) -> None:
+        repo_root = self.repo_root()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with mock.patch("sys.stdout", io.StringIO()):
+                rc = main([
+                    "image", "bake", "--repo-root", str(repo_root),
+                    "--job-root", tmpdir, "--target", "spack:mpich",
+                    "--component", "feelpp",
+                ])
+            self.assertEqual(rc, 0)
+            bake_file = Path(tmpdir) / "images" / "spack-mpich" / "docker-bake.json"
+            payload = json.loads(bake_file.read_text(encoding="utf-8"))
+            self.assertEqual(payload["target"]["feelpp"]["args"]["FROM_IMAGE"],
+                             "ghcr.io/feelpp/feelpp-env:spack-mpich")
+            self.assertEqual(payload["target"]["feelpp"]["args"]["CMAKE_PRESET"],
+                             "feelpp-spack-mpich")
+
+            for component in ("toolboxes", "mor", "full"):
+                with self.subTest(component=component), mock.patch("sys.stderr", io.StringIO()):
+                    self.assertEqual(main([
+                        "image", "bake", "--repo-root", str(repo_root),
+                        "--job-root", tmpdir, "--target", "spack:mpich",
+                        "--component", component,
+                    ]), 1)
+
+    def test_spack_mpich_environment_bake_copies_ch3_overlay(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with mock.patch("sys.stdout", io.StringIO()):
+                rc = main([
+                    "image", "bake", "--repo-root", str(self.repo_root()),
+                    "--job-root", tmpdir, "--target", "spack:mpich",
+                    "--component", "env",
+                ])
+            self.assertEqual(rc, 0)
+            context = Path(tmpdir) / "images" / "spack-mpich"
+            bake = json.loads((context / "docker-bake.json").read_text(encoding="utf-8"))
+            args = bake["target"]["spack-mpich"]["args"]
+            self.assertEqual((args["SPACK_BUILD_JOBS"], args["SPACK_CONCURRENT_PACKAGES"]), ("15", "3"))
+            self.assertTrue((context / "packaging" / "spack" / "repo" / "spack_repo" /
+                             "feelpp" / "packages" / "mpich" / "package.py").is_file())
+            self.assertFalse((context / "packaging" / "spack" / "environments" /
+                              "cpu" / "mpich" / "spack.lock").exists())
+
+    def test_spack_mpich_cmake_preset_is_core_only(self) -> None:
+        presets = json.loads((self.repo_root() / "CMakePresets.json").read_text(encoding="utf-8"))
+        configure = {preset["name"]: preset for preset in presets["configurePresets"]}
+        self.assertIn("feelpp-spack-mpich", configure)
+        self.assertNotIn("toolboxes-spack-mpich", configure)
+        self.assertNotIn("mor-spack-mpich", configure)
+        self.assertNotIn("release-clang-spack-cpu-mpich", configure)
+        core = configure["feelpp-spack-mpich"]["cacheVariables"]
+        self.assertEqual(core["FEELPP_COMPONENT"], "feelpp")
+        self.assertEqual(core["FEELPP_ENABLE_PYTHON"], "OFF")
+        self.assertEqual(core["FEELPP_ENABLE_TOOLBOXES"], "OFF")
+        self.assertEqual(core["FEELPP_ENABLE_MOR"], "OFF")
+
     def test_spack_image_bake_supports_platform_override(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             repo_root = self.repo_root()

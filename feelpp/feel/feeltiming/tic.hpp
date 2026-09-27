@@ -1,31 +1,11 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2012-03-20
-
-  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+  SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+  SPDX-FileCopyrightText: 2012 Université Joseph Fourier (Grenoble I)
+  SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
+  SPDX-License-Identifier: LGPL-2.1-or-later
 */
-/**
-   \file tic.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2012-03-20
- */
+
 #if !defined(FEELPP_TIMING_TIC_HPP)
 #define FEELPP_TIMING_TIC_HPP 1
 
@@ -113,6 +93,27 @@ inline double  toc( std::string const& msg = "",
     Environment::addTimer( msg, t, uiname );
     return t.first;
 }
+
+/**
+ * @brief Gather and print the latest local toc() samples across MPI ranks.
+ *
+ * Call after the measured work: this function communicates, while tic() and
+ * toc() remain local. Every rank in @p comm must pass identical @p labels in
+ * the same order. The structured reports remain accessible through
+ * Environment::timerRankReports() and Environment::timerRankReportsJson().
+ *
+ * @param labels Timer labels to summarize.
+ * @param comm Communicator whose ranks contributed the samples.
+ * @param showRankValues Print durations in rank order as well as summaries.
+ */
+inline void reportTocRankStatistics( std::vector<std::string> const& labels,
+                                     mpi::communicator const& comm,
+                                     bool showRankValues = false )
+{
+    Environment::gatherTimerRankStatistics( labels, comm );
+    if ( comm.rank() == 0 )
+        Environment::printTimerRankReports( std::cout, showRankValues );
+}
 } // time
 } // Feel
 
@@ -121,6 +122,7 @@ namespace Feel
 // Convenience namespace injection from time:: into Feel::
 using time::tic;
 using time::toc;
+using time::reportTocRankStatistics;
 }
 
 #endif /* FEELPP_TIMING_TIC_HPP */
