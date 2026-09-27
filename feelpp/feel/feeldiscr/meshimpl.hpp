@@ -1,37 +1,20 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-  This file is part of the Feel library
+  SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+  SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2007-08-07
-
-  Copyright (C) 2007-2010 Université Joseph Fourier (Grenoble I)
-  Copyright (C) 2011-2016 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+  SPDX-FileCopyrightText: 2007-2010 Université Joseph Fourier (Grenoble I)
+  SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
+  SPDX-License-Identifier: LGPL-3.0-or-later
 */
-/**
-   \file meshimpl.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2007-08-07
- */
+
 #ifndef FEELPP_MESHIMPL_HPP
 #define FEELPP_MESHIMPL_HPP 1
 
 #include <boost/preprocessor/comparison/greater_equal.hpp>
 #include <boost/preprocessor/list/first_n.hpp>
+#include <boost/mpi/collectives/all_gather.hpp>
+#include <array>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -527,19 +510,30 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateMeasures()
     // data such as the measure of point element neighbors
     if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
     {
+        tic();
+        std::vector<size_type> neighborIds;
         boost::tie( iv, en ) = this->elementsRange();
         for ( ; iv != en; ++iv )
         {
             auto& eltModified = iv->second;
-            value_type meas = 0;
-            for ( auto const& _elt : eltModified.pointElementNeighborIds() )
+            neighborIds.clear();
+            for ( uint16_type pointId = 0; pointId < eltModified.nPoints(); ++pointId )
             {
-                // warning : only compute meas for active element (no ghost)
-                if ( this->hasElement( _elt ) )
-                    meas += this->element( _elt ).measure();
+                auto const& incidentElements = eltModified.point( pointId ).elements();
+                for ( auto const& [neighborId, localPointId] : incidentElements )
+                    neighborIds.push_back( neighborId );
+            }
+            std::sort( neighborIds.begin(), neighborIds.end() );
+            neighborIds.erase( std::unique( neighborIds.begin(), neighborIds.end() ), neighborIds.end() );
+            value_type meas = 0;
+            for ( size_type neighborId : neighborIds )
+            {
+                if ( this->hasElement( neighborId ) )
+                    meas += this->element( neighborId ).measure();
             }
             eltModified.setMeasurePointElementNeighbors( meas );
         }
+        toc( "[Mesh::updateMeasures] point element neighbor measures", Environment::logVerbosityLevel() > 0 );
     }
     toc( "[Mesh::updateMeasures] update entity measures", Environment::logVerbosityLevel() > 0 );
 
@@ -1080,6 +1074,7 @@ void
     // First We check if we have already Faces stored
     if ( !this->faces().empty() )
     {
+        std::unordered_set<size_type> duplicateFaceIds;
         face_iterator __it = this->beginFace();
         face_iterator __en = this->endFace();
         LOG( INFO ) << "We have " << std::distance( __it, __en ) << " faces in the database";
@@ -1109,8 +1104,21 @@ void
             {
                 // if ( __it->hasMarker() && ( !facePtr->hasMarker() || ( __it->marker() != facePtr->marker() ) ) )
                 //     facePtr->setMarker( __it->marker().value() );
-                __it = this->eraseFace( __it );
+                // eraseFace scans and shifts ordered faces; collect duplicates for one bulk erase.
+                if constexpr ( nDim > 1 )
+                {
+                    duplicateFaceIds.insert( face.id() );
+                    ++__it;
+                }
+                else
+                    __it = this->eraseFace( __it );
             }
+        }
+        if constexpr ( nDim > 1 )
+        {
+            if ( !duplicateFaceIds.empty() )
+                this->eraseFacesIf( [&duplicateFaceIds]( auto const& candidate )
+                                    { return duplicateFaceIds.find( candidate.id() ) != duplicateFaceIds.end(); } );
         }
     }
     toc( "Mesh.updateEntitiesCoDimensionOne.add_faces", Environment::logVerbosityLevel() > 1 );
@@ -1384,21 +1392,35 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensi
     bool faceinserted = false;
 
     Eigen::Matrix<size_type, element_type::numVertices, 1> pointIdInElt;
-    std::vector<size_type> lids( face_type::numVertices );
+    std::array<size_type, face_type::numVertices> lids;
 
     element_iterator iv, en;
     boost::tie( iv, en ) = this->elementsRange();
     size_type nElt = std::distance( iv, en );
 
-    typedef std::unordered_map<std::vector /*set*/<size_type>, std::tuple<element_type*, uint16_type, face_type*>, Feel::HashTables::HasherContainers<size_type>> pointstoface_container_type;
+    using face_key_type = std::array<size_type, face_type::numVertices>;
+    /** @brief Hash the fixed-size vertex IDs identifying one face. */
+    struct FaceKeyHash
+    {
+        /** @brief Combine vertex IDs for the unordered face lookup. */
+        std::size_t operator()( face_key_type const& key ) const
+        {
+            return boost::hash_range( key.begin(), key.end() );
+        }
+    };
+    using pointstoface_container_type = std::unordered_map<face_key_type, std::tuple<element_type*, uint16_type, face_type*>, FaceKeyHash>;
+    tic();
     pointstoface_container_type _faces( nElt * _numLocalFaces );
     typename pointstoface_container_type::iterator _faceit;
 
     size_type next_face = 0;
+    size_type numberRegisteredFaces = this->faces().size();
+    size_type numberDuplicateFaces = 0;
 
     // First We check if we have already Faces stored
     if ( !this->faces().empty() )
     {
+        std::unordered_set<size_type> duplicateFaceIds;
         face_iterator __it = this->beginFace();
         face_iterator __en = this->endFace();
         LOG( INFO ) << "We have " << std::distance( __it, __en ) << " faces in the database";
@@ -1428,12 +1450,33 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensi
             {
                 // if ( __it->hasMarker() && ( !facePtr->hasMarker() || ( __it->marker() != facePtr->marker() ) ) )
                 //     facePtr->setMarker( __it->marker().value() );
-                __it = this->eraseFace( __it );
+                // Defer duplicate removal so ordered faces are shifted only once.
+                if constexpr ( nDim > 1 )
+                {
+                    duplicateFaceIds.insert( face.id() );
+                    ++__it;
+                }
+                else
+                    __it = this->eraseFace( __it );
             }
         }
+        if constexpr ( nDim > 1 )
+        {
+            numberDuplicateFaces = duplicateFaceIds.size();
+            if ( !duplicateFaceIds.empty() )
+                this->eraseFacesIf( [&duplicateFaceIds]( auto const& candidate )
+                                    { return duplicateFaceIds.find( candidate.id() ) != duplicateFaceIds.end(); } );
+        }
     }
+    toc( "Mesh.updateEntitiesCoDimensionOneMinimal.registered_faces", Environment::logVerbosityLevel() > 0 );
+    if ( Environment::logVerbosityLevel() > 0 && this->worldComm().isMasterRank() )
+        std::cout << "[Mesh.updateEntitiesCoDimensionOneMinimal] registered faces: " << numberRegisteredFaces
+                  << ", duplicates: " << numberDuplicateFaces << '\n';
+    if ( numberDuplicateFaces )
+        LOG( INFO ) << "Removed " << numberDuplicateFaces << " duplicate pre-existing faces using bulk cleanup";
 
     // get an ordering by process (need in // for have a deterministic choice of face connection (0 and 1) and therfore to define the permutations )
+    tic();
     std::map<rank_type, std::vector<element_type*>, std::less<rank_type>> elementsByProcOrdering;
     for ( ; iv != en; ++iv )
     {
@@ -1558,7 +1601,10 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensi
         }     // element loop
     }
 
+    toc( "Mesh.updateEntitiesCoDimensionOneMinimal.connect_elements", Environment::logVerbosityLevel() > 0 );
+
     // add boundary faces if not present
+    tic();
     boost::tie( iv, en ) = this->elementsRange();
     for ( ; iv != en; ++iv )
     {
@@ -1587,9 +1633,13 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensi
         }
     }
 
+    toc( "Mesh.updateEntitiesCoDimensionOneMinimal.add_boundary_faces", Environment::logVerbosityLevel() > 0 );
+
+    tic();
     auto const removed = meshdetail::eraseDisconnectedFaces( *this );
     if ( removed )
         LOG( INFO ) << "Removed " << removed << " disconnected faces using bulk cleanup";
+    toc( "Mesh.updateEntitiesCoDimensionOneMinimal.erase_disconnected_faces", Environment::logVerbosityLevel() > 0 );
 }
 
 #if 0
@@ -1981,6 +2031,7 @@ template <typename Shape, typename T, int Tag, typename IndexT, bool EnableShare
 void
 Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateParallelData()
 {
+    tic();
     // some contexts and data used in update
     using container_elements_type = std::vector<std::tuple<size_type,size_type>>; // (id of ghost elt, id of active element)
     using container_faces_type = std::map<size_type,std::tuple<std::tuple<size_type,uint16_type>,
@@ -2062,9 +2113,11 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateParallelData()
         if ( meshHasUpdateEdges )
             this->updateInterprocessEdges( edgesInterprocessDetection );
     }
+    toc( "Mesh.updateParallelData detect interprocess entities", Environment::logVerbosityLevel() > 0 );
     //------------------------------------------------------------------------------------------------//
     //------------------------------------------------------------------------------------------------//
 
+    tic();
     auto initialNeighborSubdomains = this->neighborSubdomains();
     rank_type currentProcessId = MeshBase<IndexT>::worldComm().localRank();
 
@@ -2148,6 +2201,7 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateParallelData()
             }
         }
     }
+    toc( "Mesh.updateParallelData collect ghost entity data", Environment::logVerbosityLevel() > 0 );
 
     //------------------------------------------------------------------------------------------------//
     //int neighborSubdomains = this->neighborSubdomains().size();
@@ -2159,6 +2213,7 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateParallelData()
     // get size of data to transfer
     std::map<rank_type,std::array<std::size_t,nDim==1?3:nDim+1>> sizeRecv, sizeSended;
     uint16_type sizeDataPointIndex = nDim==1?2:nDim;
+    tic();
     for ( rank_type neighborRank : initialNeighborSubdomains )
     {
         sizeSended[neighborRank][0] = std::get<tuple_id_info_elements>( dataToSend[neighborRank] ).size();
@@ -2173,7 +2228,9 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateParallelData()
     // wait all requests
     mpi::wait_all( std::begin(reqs), std::begin(reqs) + countRequest );
     countRequest = 0;
+    toc( "Mesh.updateParallelData exchange entity counts", Environment::logVerbosityLevel() > 0 );
 
+    tic();
     for ( rank_type neighborRank : initialNeighborSubdomains )
     {
         std::size_t nRecvDataElement = sizeRecv[neighborRank][0];
@@ -2216,8 +2273,10 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateParallelData()
     // wait all requests
     mpi::wait_all( std::begin(reqs), std::begin(reqs) + countRequest );
     countRequest = 0;
+    toc( "Mesh.updateParallelData exchange ghost entity data", Environment::logVerbosityLevel() > 0 );
 
     //------------------------------------------------------------------------------------------------//
+    tic();
     M_neighbor_processors.clear();
     // update mesh data (step 1)
     std::map<size_type,element_type*> eltUpdated;
@@ -2295,6 +2354,7 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateParallelData()
             }
         }
     }
+    toc( "Mesh.updateParallelData apply active entity data", Environment::logVerbosityLevel() > 0 );
 
     // Step 2 : active elements and subentity included are properly built, we can send info to ghost elements
 
@@ -2363,6 +2423,7 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateParallelData()
                 }
             }
         };
+    tic();
     prepareDataToSendStep2( eltUpdated, std::integral_constant<int,tuple_id_info_elements>{} );
     prepareDataToSendStep2( facesUpdated,std::integral_constant<int,tuple_id_info_faces>{} );
     if constexpr ( nDim == 3 )
@@ -2370,6 +2431,8 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateParallelData()
     //if constexpr ( nDim > 2 )
     if ( nDim > 1 || !meshHasUpdateFaces )
         prepareDataToSendStep2( pointsUpdated,std::integral_constant<int,tuple_id_info_points>{} );
+    toc( "Mesh.updateParallelData collect active entity data", Environment::logVerbosityLevel() > 0 );
+    tic();
     for ( rank_type neighborRank : initialNeighborSubdomains )
     {
         reqs[countRequest++] = MeshBase<IndexT>::worldComm().localComm().isend( neighborRank, 0, dataToSendStep2[neighborRank] );
@@ -2378,9 +2441,11 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateParallelData()
     // wait all requests
     mpi::wait_all( std::begin(reqs), std::begin(reqs) + countRequest );
     countRequest = 0;
+    toc( "Mesh.updateParallelData exchange active entity data", Environment::logVerbosityLevel() > 0 );
 
     //------------------------------------------------------------------------------------------------//
     // update ghost elements and subentities (step 2)
+    tic();
     for ( auto const& [rankRecv,dataEntities] : dataToRecvStep2 )
     {
         // elements
@@ -2456,6 +2521,7 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateParallelData()
             }
         }
     }
+    toc( "Mesh.updateParallelData apply ghost entity data", Environment::logVerbosityLevel() > 0 );
 
 }
 

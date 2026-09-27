@@ -3,7 +3,7 @@
      SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
      SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
 
-    SPDX-FileCopyrightText: 2013-2026 University of Strasbourg
+    SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
 
      SPDX-License-Identifier: LGPL-3.0-or-later
 */
@@ -12,8 +12,13 @@
 
 #if defined(FEELPP_HAS_HDF5)
 #include <boost/algorithm/string/split.hpp>
+#include <boost/functional/hash.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
+
+#include <algorithm>
+#include <array>
+#include <unordered_map>
 
 #include <feel/feelcore/hdf5.hpp>
 #include <feel/feelfilters/partitionmetadata.hpp>
@@ -54,9 +59,9 @@ namespace pt =  boost::property_tree;
          - number of global points (in mesh file)
          - number of local points (in current partition)
          - points offset (in current partition)
-         - number of global active elements (in mesh file)
-         - number of local active elements (in current partition)
-         - active elements offset (in current partition)
+         - number of global elements, including ghosts (in mesh file)
+         - number of local elements, including ghosts (in current partition)
+         - elements offset (in current partition)
          - number of global ghost elements (in mesh file)
          - number of local ghost elements (in current partition)
          - ghost elements offset (in current partition)
@@ -75,7 +80,7 @@ namespace pt =  boost::property_tree;
          - point x coordinates
          - point y coordinates
          - point z coordinates
-  4. elements - 1 x ( (1 + num of element nodes)* number of global active elements ):
+  4. elements - 1 x ( (1 + num of element nodes)* number of global elements, including ghosts ):
          - element markers
          - points ids
   5. elements_ghosts - 1 x ( number of global ghost elements ):
@@ -387,36 +392,32 @@ void PartitionIO<MeshType>::writeMetaData (mesh_ptrtype meshParts)
 template<typename MeshType>
 void PartitionIO<MeshType>::read (mesh_ptrtype meshParts, size_type ctxMeshUpdate, double scale )
 {
+    tic();
+    tic();
     readMetaData( meshParts );
+    toc( "PartitionIO reading metadata", Environment::logVerbosityLevel() > 0 );
     M_meshPartIn = meshParts;
 
+    tic();
     rank_type processId = M_meshPartIn->worldComm().localRank();
     rank_type nProcess =  M_meshPartIn->worldComm().localSize();
 
-    std::set<rank_type> partIdsSet;
-    std::vector<rank_type> countPartByPid(nProcess,0);
-    for ( rank_type p=0;p<M_meshPartIn->numberOfPartitions();++p )
-    {
-        for ( rank_type pid=0;pid<nProcess;++pid )
-        {
-            if ( pid == (p%nProcess) )
-                ++countPartByPid[pid];
-        }
-        if ( processId == (p%nProcess) )
-            partIdsSet.insert( p );
-    }
-    rank_type maxCount = *std::max_element(countPartByPid.begin(),countPartByPid.end());
+    rank_type nPartitions = M_meshPartIn->numberOfPartitions();
+    rank_type maxCount = nPartitions/nProcess + ( nPartitions%nProcess != 0 );
     std::vector<rank_type> partIds( maxCount, invalid_rank_type_value );
-    rank_type theId = 0;
-    for ( rank_type p : partIdsSet )
-        partIds[theId++] = p;
+    rank_type localCount = 0;
+    for ( rank_type p = processId; p < nPartitions; p += nProcess )
+        partIds[localCount++] = p;
     //std::cout <<  "partIds.size()="  << partIds.size() << " : " <<  partIds << std::endl;
 
     if ( partIds.size() > 1 && nProcess > 1 )
         CHECK( false ) << "TODO";
+    toc( "PartitionIO assigning partitions", Environment::logVerbosityLevel() > 0 );
 
     tic();
+    tic();
     M_HDF5IO.openFile (M_h5_filename, meshParts->worldComm(), true);
+    toc( "PartitionIO opening hdf5 file", Environment::logVerbosityLevel() > 0 );
     tic();
     readStats( partIds );
     toc("PartitionIO reading stats",Environment::logVerbosityLevel()>0);
@@ -435,24 +436,33 @@ void PartitionIO<MeshType>::read (mesh_ptrtype meshParts, size_type ctxMeshUpdat
     readMarkedSubEntities( partIds );
     toc("PartitionIO reading marked_subentities",Environment::logVerbosityLevel()>0);
 
+    tic();
     M_HDF5IO.closeFile();
+    toc( "PartitionIO closing hdf5 file", Environment::logVerbosityLevel() > 0 );
     toc("PartitionIO reading hdf5 file",Environment::logVerbosityLevel()>0);
 
     // These are reader scratch data, not mesh state. Release capacities before
     // connectivity construction and global fragmentation (the next memory peak).
+    tic();
     M_mapFragmentIdToMarker.clear();
     std::vector<unsigned int>().swap( M_uintBuffer );
     std::vector<value_type>().swap( M_realBuffer );
     mapGhostHdf5IdToFeelId.clear();
+    toc( "PartitionIO releasing read buffers", Environment::logVerbosityLevel() > 0 );
 
+    tic();
     prepareUpdateForUseStep1();
+    toc( "PartitionIO preparing mesh update step 1", Environment::logVerbosityLevel() > 0 );
+    tic();
     prepareUpdateForUseStep2();
+    toc( "PartitionIO preparing mesh update step 2", Environment::logVerbosityLevel() > 0 );
 
     tic();
     M_meshPartIn->components().reset();
     M_meshPartIn->components().set( ctxMeshUpdate );
     M_meshPartIn->updateForUse();
     toc("PartitionIO mesh update for use",Environment::logVerbosityLevel()>0);
+    toc( "PartitionIO read total", Environment::logVerbosityLevel() > 0 );
 }
 template<typename MeshType>
 void PartitionIO<MeshType>::readMetaData( mesh_ptrtype meshParts )
@@ -545,8 +555,22 @@ void PartitionIO<MeshType>::writeStats()
         M_markedPointsOffSet[partId] = 0;
     }
 
+    tic();
+    auto const& localPartitionIds = M_meshPartitionSet->localPartitionIds();
+    auto localPartitionIt = localPartitionIds.begin();
     for ( rank_type p=0 ; p< numGlobalPartition ; ++p )
     {
+        if ( localPartitionIt != localPartitionIds.end() && *localPartitionIt == p )
+        {
+            M_pointsOffSet[p] = M_numGlobalPoints;
+            M_elementsOffSet[p] = M_numGlobalElements;
+            M_ghostElementsOffSet[p] = M_numGlobalGhostElements;
+            M_markedFacesOffSet[p] = M_numGlobalMarkedFaces;
+            M_markedEdgesOffSet[p] = M_numGlobalMarkedEdges;
+            M_markedPointsOffSet[p] = M_numGlobalMarkedPoints;
+            ++localPartitionIt;
+        }
+
         size_type nPtAll = M_meshPartitionSet->statNumPointsAll(p);
         M_numGlobalPoints += nPtAll;
         size_type nEltAll = M_meshPartitionSet->statNumElementsAll(p);
@@ -559,20 +583,8 @@ void PartitionIO<MeshType>::writeStats()
         M_numGlobalMarkedEdges += nMarkedEdgesAll;
         size_type nMarkedPointsAll = M_meshPartitionSet->statNumPointsMarkedAll(p);
         M_numGlobalMarkedPoints += nMarkedPointsAll;
-
-        for ( rank_type partId : M_meshPartitionSet->localPartitionIds() )
-        {
-            if ( p < partId )
-            {
-                M_pointsOffSet[partId] += nPtAll;
-                M_elementsOffSet[partId] += nEltAll;
-                M_ghostElementsOffSet[partId] += nGhostEltAll;
-                M_markedFacesOffSet[partId] += nMarkedFacesAll;
-                M_markedEdgesOffSet[partId] += nMarkedEdgesAll;
-                M_markedPointsOffSet[partId] += nMarkedPointsAll;
-            }
-        }
     }
+    toc( "PartitionIO computing stats offsets", Environment::logVerbosityLevel() > 0 );
 
     // Create new table
     M_HDF5IO.createTable ("stats", H5T_STD_U32BE, currentSpaceDims);
@@ -1138,6 +1150,7 @@ void PartitionIO<MeshType>::readPoints( std::vector<rank_type> const& partIds, d
 
             node_type coords( d );
             size_type currentBufferIndexIds = 0, currentBufferIndexCoords = 0;
+            tic();
             for (size_type j = 0; j < M_numLocalPoints[partId]; ++j)
             {
                 int id = M_uintBuffer[currentBufferIndexIds++];
@@ -1148,8 +1161,9 @@ void PartitionIO<MeshType>::readPoints( std::vector<rank_type> const& partIds, d
 
                 point_type pt( id, coords, false/*onbdy*/ );
                 pt.setProcessIdInPartition( partId );
-                M_meshPartIn->addPoint( pt );
+                M_meshPartIn->addPoint( std::move( pt ) );
             }
+            toc( "PartitionIO inserting points", Environment::logVerbosityLevel() > 0 );
 
         }
     }
@@ -1196,7 +1210,7 @@ void PartitionIO<MeshType>::readElements( std::vector<rank_type> const& partIds,
             if ( partId != invalid_rank_type_value )
                 numberOfLocalElementsInProcess += M_numLocalElements[partId];
         }
-        M_meshPartIn->reserveNumberOfPoint( numberOfLocalElementsInProcess ); // WARNING : NOT EXACT IF A PROCESS HAS MORE THAN ONE PARTITION
+        M_meshPartIn->reserveNumberOfElement( numberOfLocalElementsInProcess ); // WARNING : NOT EXACT IF A PROCESS HAS MORE THAN ONE PARTITION
 
         for ( rank_type partId : partIds )
         {
@@ -1604,6 +1618,7 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
     if (nProc == 1)
         return;
 
+    tic();
     // prepare container to send  : ( pid -> (pt0Id1,Pt0Id2,..,pt01d1,Pt1Id2,..) )
     std::map< rank_type, std::vector<size_type> > dataToSend;
     std::map< rank_type, std::vector<size_type> > memoryMsgToSend;
@@ -1623,9 +1638,11 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
         currentData.shrink_to_fit();
         memoryMsgToSend[neighborRank].shrink_to_fit();
     }
+    toc( "PartitionIO step 2 collecting ghost requests", Environment::logVerbosityLevel() > 0 );
 
 
     // define neighborSubdomains (rank ids) in order to ensure symetric comm
+    tic();
     // TODO: neighborSubdomains data can be include in h5 file? and no need to apply all_to_all
     std::set<rank_type> neighborSubdomains;
     if ( true )
@@ -1643,6 +1660,7 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
             if  ( dataRecvNeighborProcess.at(p) )
                 neighborSubdomains.insert( p );
     }
+    toc( "PartitionIO step 2 discovering neighbors", Environment::logVerbosityLevel() > 0 );
 
     int nbRequest = 2*neighborSubdomains.size();
     if ( nbRequest == 0 )
@@ -1652,6 +1670,7 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
     int cptRequest=0;
 
     // get size of data to transfer
+    tic();
     std::map<rank_type,std::size_t> sizeSended;
     std::map<rank_type,std::size_t> sizeRecv;
     for ( rank_type neighborRank : neighborSubdomains )
@@ -1663,9 +1682,11 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
     }
     // wait all requests
     mpi::wait_all(std::begin(reqs), std::end(reqs));
+    toc( "PartitionIO step 2 exchanging request sizes", Environment::logVerbosityLevel() > 0 );
     // first send/recv
     std::map< rank_type, std::vector<size_type> > dataToRecv;
 
+    tic();
     cptRequest = 0;
     for ( rank_type neighborRank : neighborSubdomains )
     {
@@ -1679,13 +1700,26 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
         if ( nRecvData > 0)
             reqs[cptRequest++] = theWorldComm.localComm().irecv( neighborRank, 0, dataToRecv[neighborRank].data(), nRecvData );
     }
+    toc( "PartitionIO step 2 posting ghost requests", Environment::logVerbosityLevel() > 0 );
 
     // build map which allow to identify element from point ids (only for elt which touch the interprocess part)
     // TODO: by using a gloabl element numbering over all partititons/process, we can reduce this kind of code
-    std::map<std::set<size_type>,size_type> mapPointIdsToEltId;
+    tic();
+    using element_key_type = std::array<size_type, mesh_type::element_type::numPoints>;
+    /** @brief Hash the sorted point IDs identifying one active element. */
+    struct ElementKeyHash
+    {
+        /** @brief Combine point IDs for the ghost-request lookup. */
+        std::size_t operator()( element_key_type const& key ) const
+        {
+            return boost::hash_range( key.begin(), key.end() );
+        }
+    };
+    std::unordered_map<element_key_type, size_type, ElementKeyHash> mapPointIdsToEltId;
     auto rangeElements = M_meshPartIn->elementsWithProcessId( partId );
     auto elt_it = std::get<0>( rangeElements );
     auto const elt_en = std::get<1>( rangeElements );
+    mapPointIdsToEltId.reserve( std::distance( elt_it, elt_en ) );
     for ( ; elt_it != elt_en ; ++elt_it )
     {
         auto const& elt = boost::unwrap_ref( *elt_it );
@@ -1693,13 +1727,16 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
         if ( elt.numberOfNeighborPartitions() < 1 )
             continue;
 #endif
-        std::set<size_type> ptIds;
+        element_key_type ptIds;
         for ( uint16_type vLocId = 0 ; vLocId < mesh_type::element_type::numPoints; ++vLocId )
-            ptIds.insert( elt.point( vLocId ).id() );
+            ptIds[vLocId] = elt.point( vLocId ).id();
+        std::sort( ptIds.begin(), ptIds.end() );
         mapPointIdsToEltId[ptIds] = elt.id();
     }
+    toc( "PartitionIO step 2 indexing active elements", Environment::logVerbosityLevel() > 0 );
 
     // wait all requests
+    tic();
     mpi::wait_all( std::begin(reqs), std::begin(reqs) + cptRequest );
 
     // treatment of recv request and prepare containers to re-send
@@ -1711,7 +1748,9 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
         dataToReSend[neighborRank].reserve( nDataRecv );
         for  ( auto it = currentData.begin(); it != currentData.end() ;it+=mesh_type::element_type::numPoints )
         {
-            std::set<size_type> ptIdsInEltSet( it, it+mesh_type::element_type::numPoints );
+            element_key_type ptIdsInEltSet;
+            std::copy( it, it+mesh_type::element_type::numPoints, ptIdsInEltSet.begin() );
+            std::sort( ptIdsInEltSet.begin(), ptIdsInEltSet.end() );
             auto itFindElt = mapPointIdsToEltId.find( ptIdsInEltSet );
             CHECK( itFindElt != mapPointIdsToEltId.end() ) << "element not find from point ids";
 
@@ -1721,8 +1760,10 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
             dataToReSend[neighborRank].push_back( itFindElt->second );
         }
     }
+    toc( "PartitionIO step 2 resolving ghost requests", Environment::logVerbosityLevel() > 0 );
 
     // send and recv info
+    tic();
     cptRequest=0;
     std::map<rank_type, std::vector<size_type> > finalDataToRecv;
     for ( rank_type neighborRank : neighborSubdomains )
@@ -1752,6 +1793,7 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
             eltModified.setIdInOtherPartitions( pid, itFinalDataToRecv->second[k] );
         }
     }
+    toc( "PartitionIO step 2 returning active IDs", Environment::logVerbosityLevel() > 0 );
 }
 
 
