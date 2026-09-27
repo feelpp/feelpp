@@ -1,26 +1,11 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
 
- This file is part of the Feel++ library
+ SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
- Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- Date: 27 Oct 2024
+ SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
+ SPDX-License-Identifier: LGPL-2.1-or-later
+*/
 
- Copyright (C) 2024 Feel++ Consortium
-
- This library is free software; you can redistribute it and/or
- modify it under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation; either
- version 2.1 of the License, or (at your option) any later version.
-
- This library is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
-
- You should have received a copy of the GNU Lesser General Public
- License along with this library; if not, write to the Free Software
- Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- */
 #pragma once
 
 #include <fmt/core.h>
@@ -53,6 +38,7 @@ template <typename T, typename L, typename A>
 struct is_range<boost::numeric::ublas::matrix<T, L, A>, char> : std::false_type {};
 
 // Prevent fmt/ranges.h from treating ublas types as container adaptors
+#if FMT_VERSION < 120200
 namespace detail {
 template <typename T, typename A>
 struct is_container_adaptor_like<boost::numeric::ublas::vector<T, A>> : std::false_type {};
@@ -60,7 +46,20 @@ struct is_container_adaptor_like<boost::numeric::ublas::vector<T, A>> : std::fal
 template <typename T, typename L, typename A>
 struct is_container_adaptor_like<boost::numeric::ublas::matrix<T, L, A>> : std::false_type {};
 }
+#endif
 }
+
+#if FMT_VERSION >= 120200
+FMT_BEGIN_NAMESPACE
+/** @brief Keep Boost.uBLAS vectors out of fmt container-adaptor formatting. */
+template <typename T, typename A>
+struct is_container_adaptor<boost::numeric::ublas::vector<T, A>> : std::false_type {};
+
+/** @brief Keep Boost.uBLAS matrices out of fmt container-adaptor formatting. */
+template <typename T, typename L, typename A>
+struct is_container_adaptor<boost::numeric::ublas::matrix<T, L, A>> : std::false_type {};
+FMT_END_NAMESPACE
+#endif
 #endif
 
 #if __has_include(<ginac/ginac.h>)
