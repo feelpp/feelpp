@@ -151,6 +151,36 @@
          "name": "python"
       },
       {
+         "configurePreset": "feelpp-spack-openmpi5",
+         "jobs": 25,
+         "name": "feelpp-spack-openmpi5"
+      },
+      {
+         "configurePreset": "testsuite-spack-openmpi5",
+         "jobs": 25,
+         "name": "testsuite-spack-openmpi5"
+      },
+      {
+         "configurePreset": "quickstart-spack-openmpi5",
+         "jobs": 25,
+         "name": "quickstart-spack-openmpi5"
+      },
+      {
+         "configurePreset": "toolboxes-spack-openmpi5",
+         "jobs": 25,
+         "name": "toolboxes-spack-openmpi5"
+      },
+      {
+         "configurePreset": "mor-spack-openmpi5",
+         "jobs": 25,
+         "name": "mor-spack-openmpi5"
+      },
+      {
+         "configurePreset": "feelpp-spack-mpich",
+         "jobs": 25,
+         "name": "feelpp-spack-mpich"
+      },
+      {
          "configurePreset": "feelpp-usrlocal",
          "jobs": 25,
          "name": "feelpp-usrlocal"
@@ -756,6 +786,110 @@
          "name": "python"
       },
       {
+         "cacheVariables": {
+            "FEELPP_COMPONENT": "feelpp",
+            "FEELPP_ENABLE_BENCHMARKS": "OFF",
+            "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
+            "FEELPP_ENABLE_FMILIB": "OFF",
+            "FEELPP_ENABLE_MOR": "OFF",
+            "FEELPP_ENABLE_PYTHON": "ON",
+            "FEELPP_ENABLE_QUICKSTART": "OFF",
+            "FEELPP_ENABLE_TESTS": "OFF",
+            "FEELPP_ENABLE_TOOLBOXES": "OFF",
+            "FEELPP_USE_EXTERNAL_CLN": "ON"
+         },
+         "description": "Feel++ Feel++ Library with the OpenMPI 5 Spack environment",
+         "inherits": [
+            "spack",
+            "feelpp"
+         ],
+         "name": "feelpp-spack-openmpi5"
+      },
+      {
+         "cacheVariables": {
+            "FEELPP_COMPONENT": "testsuite"
+         },
+         "description": "Feel++ Test Suite with the OpenMPI 5 Spack environment",
+         "inherits": [
+            "spack",
+            "testsuite"
+         ],
+         "name": "testsuite-spack-openmpi5"
+      },
+      {
+         "cacheVariables": {
+            "FEELPP_COMPONENT": "quickstart"
+         },
+         "description": "Feel++ Quickstart with the OpenMPI 5 Spack environment",
+         "inherits": [
+            "spack",
+            "quickstart"
+         ],
+         "name": "quickstart-spack-openmpi5"
+      },
+      {
+         "cacheVariables": {
+            "FEELPP_COMPONENT": "toolboxes",
+            "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
+            "FEELPP_ENABLE_PYTHON": "ON",
+            "FEELPP_TOOLBOXES_ENABLE_ADVECTION": "OFF",
+            "FEELPP_TOOLBOXES_ENABLE_CFPDE": "ON",
+            "FEELPP_TOOLBOXES_ENABLE_ELECTRIC": "ON",
+            "FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS": "ON",
+            "FEELPP_TOOLBOXES_ENABLE_FSI": "OFF",
+            "FEELPP_TOOLBOXES_ENABLE_HDG": "OFF",
+            "FEELPP_TOOLBOXES_ENABLE_HEAT": "ON",
+            "FEELPP_TOOLBOXES_ENABLE_LEVELSET": "OFF",
+            "FEELPP_TOOLBOXES_ENABLE_MAXWELL": "OFF",
+            "FEELPP_TOOLBOXES_ENABLE_MULTIFLUID": "OFF",
+            "FEELPP_TOOLBOXES_ENABLE_PYTHON": "ON",
+            "FEELPP_TOOLBOXES_ENABLE_SOLIDMECHANICS": "ON",
+            "FEELPP_TOOLBOXES_ENABLE_THERMOELECTRIC": "ON"
+         },
+         "description": "Feel++ Toolboxes with the OpenMPI 5 Spack environment",
+         "inherits": [
+            "spack",
+            "toolboxes"
+         ],
+         "name": "toolboxes-spack-openmpi5"
+      },
+      {
+         "cacheVariables": {
+            "FEELPP_COMPONENT": "mor",
+            "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
+            "FEELPP_ENABLE_OPENTURNS": "ON",
+            "FEELPP_ENABLE_PYTHON": "ON",
+            "FEELPP_ENABLE_RESEARCH": "OFF",
+            "FEELPP_MOR_ENABLE_PYTHON": "ON"
+         },
+         "description": "Feel++ MOR (Model Order Reduction) with the OpenMPI 5 Spack environment",
+         "inherits": [
+            "spack",
+            "mor"
+         ],
+         "name": "mor-spack-openmpi5"
+      },
+      {
+         "cacheVariables": {
+            "FEELPP_COMPONENT": "feelpp",
+            "FEELPP_ENABLE_BENCHMARKS": "OFF",
+            "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
+            "FEELPP_ENABLE_FMILIB": "OFF",
+            "FEELPP_ENABLE_MOR": "OFF",
+            "FEELPP_ENABLE_PYTHON": "OFF",
+            "FEELPP_ENABLE_QUICKSTART": "OFF",
+            "FEELPP_ENABLE_TESTS": "OFF",
+            "FEELPP_ENABLE_TOOLBOXES": "OFF",
+            "FEELPP_USE_EXTERNAL_CLN": "ON"
+         },
+         "description": "Feel++ core with the MPICH 3.4.3 CH3 Spack environment",
+         "inherits": [
+            "spack",
+            "feelpp"
+         ],
+         "name": "feelpp-spack-mpich"
+      },
+      {
          "description": "Build only the Feel++ library Component and install in /usr/local",
          "displayName": "feelpp | usrlocal | clang | release | cmake package manager",
          "inherits": [
@@ -1330,6 +1464,54 @@
          },
          "inherits": "default",
          "name": "python",
+         "output": {
+            "outputOnFailure": true
+         }
+      },
+      {
+         "configurePreset": "feelpp-spack-openmpi5",
+         "inherits": "feelpp",
+         "name": "feelpp-spack-openmpi5",
+         "output": {
+            "outputOnFailure": true
+         }
+      },
+      {
+         "configurePreset": "testsuite-spack-openmpi5",
+         "inherits": "testsuite",
+         "name": "testsuite-spack-openmpi5",
+         "output": {
+            "outputOnFailure": true
+         }
+      },
+      {
+         "configurePreset": "quickstart-spack-openmpi5",
+         "inherits": "quickstart",
+         "name": "quickstart-spack-openmpi5",
+         "output": {
+            "outputOnFailure": true
+         }
+      },
+      {
+         "configurePreset": "toolboxes-spack-openmpi5",
+         "inherits": "toolboxes",
+         "name": "toolboxes-spack-openmpi5",
+         "output": {
+            "outputOnFailure": true
+         }
+      },
+      {
+         "configurePreset": "mor-spack-openmpi5",
+         "inherits": "mor",
+         "name": "mor-spack-openmpi5",
+         "output": {
+            "outputOnFailure": true
+         }
+      },
+      {
+         "configurePreset": "feelpp-spack-mpich",
+         "inherits": "feelpp",
+         "name": "feelpp-spack-mpich",
          "output": {
             "outputOnFailure": true
          }

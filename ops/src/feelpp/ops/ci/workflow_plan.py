@@ -93,6 +93,7 @@ def compute_workflow_plan(
     mode: str,
     targets: list[str],
     enabled_jobs: list[str],
+    spack_components: bool = False,
 ) -> dict[str, object]:
     ci_profile, catalog, _catalog_profile_name, full_job = _resolve_ci_profile(config)
     requested_mode = mode.strip().lower() or "components"
@@ -121,6 +122,8 @@ def compute_workflow_plan(
             row.get("ci_components"),
             default=str(row.get("image_backend", "")).lower() != "spack",
         )
+        if str(row.get("image_backend", "")).lower() == "spack":
+            supports_components = supports_components and spack_components and target in {"spack:openmpi5", "spack:mpich"}
         supports_full = _as_bool(
             row.get("ci_full"),
             default=target in configured_full_targets or str(row.get("image_backend", "")).lower() == "spack",
@@ -148,17 +151,27 @@ def compute_workflow_plan(
     full_targets = _lower_unique(full_targets)
     rerouted_full_targets = _lower_unique(rerouted_full_targets)
 
-    component_targets_present = bool(component_targets)
+    def targets_for_job(job: str) -> list[str]:
+        return [
+            target for target in component_targets
+            if job in str(catalog[target].get("ci_component_jobs", ",".join(COMPONENT_JOBS))).split(",")
+        ]
+
+    job_targets = {job: targets_for_job(job) for job in COMPONENT_JOBS}
     full_targets_present = bool(full_targets)
 
-    run_feelpp = component_targets_present and "feelpp" in requested_component_jobs
-    run_testsuite = component_targets_present and "testsuite" in requested_component_jobs
-    run_quickstart = component_targets_present and "quickstart" in requested_component_jobs
-    run_toolboxes = component_targets_present and "toolboxes" in requested_component_jobs
-    run_mor = component_targets_present and "mor" in requested_component_jobs
+    run_feelpp = bool(job_targets["feelpp"]) and "feelpp" in requested_component_jobs
+    run_testsuite = bool(job_targets["testsuite"]) and "testsuite" in requested_component_jobs
+    run_quickstart = bool(job_targets["quickstart"]) and "quickstart" in requested_component_jobs
+    run_toolboxes = bool(job_targets["toolboxes"]) and "toolboxes" in requested_component_jobs
+    run_mor = bool(job_targets["mor"]) and "mor" in requested_component_jobs
     run_full = full_targets_present and (requested_full or bool(rerouted_full_targets))
 
-    component_matrix = _build_matrix(component_targets, catalog, warnings)
+    component_matrix = _build_matrix(job_targets["feelpp"], catalog, warnings)
+    testsuite_matrix = _build_matrix(job_targets["testsuite"], catalog, warnings)
+    quickstart_matrix = _build_matrix(job_targets["quickstart"], catalog, warnings)
+    toolboxes_matrix = _build_matrix(job_targets["toolboxes"], catalog, warnings)
+    mor_matrix = _build_matrix(job_targets["mor"], catalog, warnings)
     full_matrix = _build_matrix(full_targets, catalog, warnings)
 
     return {
@@ -167,6 +180,10 @@ def compute_workflow_plan(
         "component_targets_json": json.dumps(component_targets),
         "full_targets_json": json.dumps(full_targets),
         "component_matrix_json": json.dumps(component_matrix),
+        "testsuite_matrix_json": json.dumps(testsuite_matrix),
+        "quickstart_matrix_json": json.dumps(quickstart_matrix),
+        "toolboxes_matrix_json": json.dumps(toolboxes_matrix),
+        "mor_matrix_json": json.dumps(mor_matrix),
         "full_matrix_json": json.dumps(full_matrix),
         "requested_component_jobs_json": json.dumps(requested_component_jobs),
         "rerouted_full_targets_json": json.dumps(rerouted_full_targets),
@@ -188,6 +205,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--mode", default="", help="Resolved planner mode")
     parser.add_argument("--targets-json", default="[]", help="Selected targets JSON array")
     parser.add_argument("--enabled-jobs-json", default="[]", help="Enabled jobs JSON array")
+    parser.add_argument("--spack-components", action="store_true", help="Allow OpenMPI 5 and MPICH core component jobs")
     parser.add_argument(
         "--github-output",
         default="",
@@ -217,6 +235,7 @@ def main(argv: list[str] | None = None) -> int:
             mode=args.mode,
             targets=[str(target) for target in targets],
             enabled_jobs=[str(job) for job in enabled_jobs],
+            spack_components=args.spack_components,
         )
     except ValueError as exc:
         print(str(exc), file=sys.stderr)

@@ -7,6 +7,7 @@ import shutil
 import yaml
 
 from .bake_permissions import fs_read_allow_flags, required_fs_read_paths_from_bake_payload
+from .apt import COMPONENT_TEMPLATE_SPECS
 from .catalog import ImageTarget, list_image_targets
 from .cmake_presets import resolve_cmake_preset
 from .common import branch_tag_suffix, default_bake_target_name, oci_image_ref
@@ -160,11 +161,18 @@ def _normalize_requested_component(component: str | None) -> str | None:
     if component in {None, ""}:
         return None
     normalized = str(component).strip().lower()
-    if normalized in {"env"}:
-        return "env"
-    if normalized == "full":
-        return "full"
-    raise ValueError("Spack image generation only supports component values env or full")
+    aliases = {
+        "env": "env",
+        "full": "full",
+        "feelpp": "feelpp",
+        "toolboxes": "toolboxes",
+        "feelpp-toolboxes": "toolboxes",
+        "mor": "mor",
+        "feelpp-mor": "mor",
+    }
+    if normalized not in aliases:
+        raise ValueError(f"Unsupported Spack image component: {component}")
+    return aliases[normalized]
 
 
 def _full_builder_tag(target: ImageTarget, *, branch: str) -> str:
@@ -218,6 +226,16 @@ def generate_spack_bake(
     resolved_base_image = base_image or target.base_image
     resolved_bake_target = bake_target or default_bake_target_name(target.target)
     requested_component = _normalize_requested_component(component)
+    supported_components = {
+        "spack:openmpi5": {"feelpp", "toolboxes", "mor"},
+        "spack:mpich": {"feelpp"},
+    }
+    if requested_component in {"feelpp", "toolboxes", "mor"} and requested_component not in supported_components.get(
+        target.target, set()
+    ):
+        raise ValueError("Spack component images require spack:openmpi5, or spack:mpich for feelpp only")
+    if requested_component == "full" and target.target == "spack:mpich":
+        raise ValueError("spack:mpich supports only the Feel++ core component")
     resolved_build_jobs, resolved_concurrent_packages = _resolved_parallelism(
         environment_manifest,
         build_jobs=spack_build_jobs,
@@ -294,7 +312,7 @@ def generate_spack_bake(
                 resolved_bake_target: target_payload,
             }
         }
-    else:
+    elif requested_component == "full":
         feelpp_dir = context_dir / "feelpp"
         feelpp_dir.mkdir(parents=True, exist_ok=True)
         full_template = workspace.repo_root / DOCKER_TEMPLATE_DIR / "feelpp.Dockerfile.full"
@@ -367,6 +385,88 @@ def generate_spack_bake(
             "target": {
                 "feelpp-full": full_builder_target,
                 "feelpp-full-runtime": full_runtime_target,
+            },
+        }
+    else:
+        component_key = {
+            "feelpp": "feelpp",
+            "toolboxes": "feelpp-toolboxes",
+            "mor": "feelpp-mor",
+        }[requested_component]
+        component_spec = COMPONENT_TEMPLATE_SPECS[component_key]
+        component_dir = context_dir / component_key
+        component_dir.mkdir(parents=True, exist_ok=True)
+        dockerfile_path = component_dir / "Dockerfile.multistage"
+        template = workspace.repo_root / DOCKER_TEMPLATE_DIR / component_spec.template_name
+        dockerfile_path.write_text(template.read_text(encoding="utf-8"), encoding="utf-8")
+
+        tag_suffix = branch_tag_suffix(workspace.branch)
+        builder_ref = oci_image_ref(
+            component_spec.image_name,
+            f"{target.oci_dist}{tag_suffix}-dev",
+            registry=registry,
+            namespace=namespace,
+        )
+        runtime_ref = oci_image_ref(
+            component_spec.image_name,
+            f"{target.oci_dist}{tag_suffix}",
+            registry=registry,
+            namespace=namespace,
+        )
+        image_refs[f"{requested_component}-dev"] = builder_ref
+        image_refs[requested_component] = runtime_ref
+        default_from_image = {
+            "feelpp": env_image_ref,
+            "toolboxes": oci_image_ref("feelpp", f"{target.oci_dist}{tag_suffix}", registry=registry, namespace=namespace),
+            "mor": oci_image_ref("feelpp-toolboxes", f"{target.oci_dist}{tag_suffix}", registry=registry, namespace=namespace),
+        }[requested_component]
+        builder_args = {
+            "FROM_IMAGE": from_image or default_from_image,
+            "DESCRIPTION": component_spec.description,
+            "BRANCH": workspace.branch,
+            "BUILD_JOBS": str(resolved_build_jobs),
+            "CMAKE_PRESET": resolve_cmake_preset(target, component=requested_component),
+            "CXX": cxx,
+            "CC": cc,
+            "CMAKE_FLAGS": cmake_flags,
+        }
+        if requested_component == "toolboxes":
+            builder_args["RUN_CTEST"] = "1"
+        builder_target = {
+            "context": component_key,
+            "dockerfile": "Dockerfile.multistage",
+            "target": "builder",
+            "contexts": {"feelpp_source": str(workspace.repo_root)},
+            "args": builder_args,
+            "tags": [builder_ref],
+        }
+        runtime_target = {
+            "context": component_key,
+            "dockerfile": "Dockerfile.multistage",
+            "target": "runtime",
+            "contexts": {
+                "feelpp_source": str(workspace.repo_root),
+                "build_output": f"target:{component_spec.bake_target}",
+            },
+            "args": builder_args,
+            "tags": [runtime_ref],
+        }
+        if resolved_platforms is not None:
+            builder_target["platforms"] = list(resolved_platforms)
+            runtime_target["platforms"] = list(resolved_platforms)
+        group_name = f"{requested_component}-all"
+        available_groups = [f"{requested_component}-dev", f"{requested_component}-runtime", group_name]
+        recommended_groups = [group_name]
+        bake_payload = {
+            "group": {
+                f"{requested_component}-dev": {"targets": [component_spec.bake_target]},
+                f"{requested_component}-runtime": {"targets": [component_spec.runtime_target]},
+                group_name: {"targets": [component_spec.bake_target, component_spec.runtime_target]},
+                "default": {"targets": [component_spec.bake_target, component_spec.runtime_target]},
+            },
+            "target": {
+                component_spec.bake_target: builder_target,
+                component_spec.runtime_target: runtime_target,
             },
         }
     bake_file = context_dir / "docker-bake.json"
