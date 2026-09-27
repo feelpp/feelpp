@@ -74,6 +74,8 @@ RUN --mount=from=build_output,source=/usr/local,target=/mnt/builder \
 
 RUN ldconfig
 
+RUN id -u feelpp >/dev/null 2>&1 || useradd -m -s /bin/bash feelpp
+
 USER feelpp
 ENV HOME=/home/feelpp
 ENV FEELPP_REPOSITORY=/feel

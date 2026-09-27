@@ -67,6 +67,30 @@ class PlannerDirectiveTests(unittest.TestCase):
         with self.assertRaisesRegex(PlannerDirectiveError, "feelpp-full"):
             build_planner_message(targets="spack:openmpi5", only="feelpp")
 
+    def test_openmpi5_components_require_explicit_opt_in(self) -> None:
+        self.assertEqual(
+            build_planner_message(
+                targets="spack:openmpi5", only="feelpp", spack_components=True,
+            ),
+            "targets=spack:openmpi5\nonly=feelpp\nmode=components",
+        )
+        with self.assertRaisesRegex(PlannerDirectiveError, "feelpp-full"):
+            build_planner_message(
+                targets="spack:openmpi", only="feelpp", spack_components=True,
+            )
+
+    def test_mpich_allows_only_opted_in_core_component(self) -> None:
+        self.assertEqual(
+            build_planner_message(targets="spack-mpich", only="feelpp", spack_components=True),
+            "targets=spack:mpich\nonly=feelpp\nmode=components",
+        )
+        with self.assertRaisesRegex(PlannerDirectiveError, "spack_components=true"):
+            build_planner_message(targets="spack:mpich", only="feelpp")
+        with self.assertRaisesRegex(PlannerDirectiveError, "only the feelpp component"):
+            build_planner_message(targets="spack:mpich", only="toolboxes", spack_components=True)
+        with self.assertRaisesRegex(PlannerDirectiveError, "full-only Spack targets"):
+            build_planner_message(targets="spack:mpich spack:openmpi", spack_components=True)
+
     def test_build_message_rejects_skip_filters_for_spack_target(self) -> None:
         with self.assertRaisesRegex(PlannerDirectiveError, "do not support skip="):
             build_planner_message(targets="spack:openmpi", skip="mor")

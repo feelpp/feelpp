@@ -1,0 +1,56 @@
+# MPICH 3.4.3 / CH3 environment for Feel++ core and LUMI host-MPI binding.
+# The repository overlay changes the builtin CH3:nemesis:tcp configure flag
+# to the exact --with-device=ch3 flag used in LUMI's container guidance.
+spack:
+  config:
+    installer: new
+    build_jobs: 15
+    concurrent_packages: 3
+  packages:
+    mpi:
+      require:
+      - mpich@3.4.3 device=ch3 netmod=tcp
+    mesa:
+      require:
+      - ~llvm
+
+  specs:
+  - "mpich@3.4.3 device=ch3 netmod=tcp"
+  - "cmake"
+  - "ninja"
+  - "bison"
+  - "flex"
+  - "rsync"
+  - "boost+regex+date_time+filesystem+iostreams+mpi+multithreaded+program_options+serialization+shared+system+test"
+  - "fmt+shared cxxstd=20"
+  - "curl"
+  - "libzip"
+  - "pugixml"
+  - "hwloc"
+  - "cln"
+  - "ginac"
+  - "eigen"
+  - "ann"
+  - "arpack-ng+mpi+shared"
+  - "fftw+mpi precision=float,double,long_double"
+  - "gl2ps"
+  - "glpk+gmp"
+  - "gsl"
+  - "gmsh@4.13.1 +opencascade+mmg~fltk"
+  - "py-gmsh@4.13.1"
+  - "py-pybind11"
+  - "py-mpi4py"
+  - "py-petsc4py@3.25.0"
+  - "py-slepc4py@3.25.0"
+  - "py-sympy"
+  - "py-pytest"
+  - "petsc+hpddm+mumps+hwloc+ptscotch+suite-sparse+hdf5+hypre"
+  - "slepc+hpddm"
+
+  view: $user_cache_path/views/feelpp/cpu-mpich
+
+  concretizer:
+    unify: true
+
+  repos:
+    feelpp: ${FEELPP_REPO_ROOT}/packaging/spack/repo/spack_repo/feelpp

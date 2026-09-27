@@ -10,6 +10,7 @@ local buildTypes = {
   relwithdebinfo: 'RelWithDebInfo',
 };
 local components = ['feelpp', 'testsuite', 'quickstart', 'toolboxes', 'mor', 'python'];
+local spackOpenmpi5Components = ['feelpp', 'testsuite', 'quickstart', 'toolboxes', 'mor'];
 local packageManagers = ['cmake', 'spack', 'conan', 'vcpkg'];
 local spackEnvironments = ['cpu/openmpi', 'cpu/openmpi5'];
 local spackPresetName(env) = 'release-clang-spack-' + std.strReplace(env, '/', '-');
@@ -401,6 +402,22 @@ local componentPreset(component) = {
   cacheVariables: componentCacheVars[component],
 };
 
+local spackOpenmpi5ComponentPreset(component) = {
+  name: component + '-spack-openmpi5',
+  inherits: ['spack', component],
+  description: 'Feel++ ' + componentDisplayName(component) + ' with the OpenMPI 5 Spack environment',
+  cacheVariables: componentCacheVars[component],
+};
+
+local spackMpichFeelppPreset = {
+  name: 'feelpp-spack-mpich',
+  inherits: ['spack', 'feelpp'],
+  description: 'Feel++ core with the MPICH 3.4.3 CH3 Spack environment',
+  cacheVariables: componentCacheVars.feelpp + {
+    FEELPP_ENABLE_PYTHON: 'OFF',
+  },
+};
+
 // Special component presets
 local feelppUsrlocalPreset = {
   name: 'feelpp-usrlocal',
@@ -671,6 +688,8 @@ local configurePresets =
   [buildTypeCompilerCppStdSpackPreset('release', 'clang', '20')] +
   // Component presets
   [componentPreset(comp) for comp in components] +
+  [spackOpenmpi5ComponentPreset(comp) for comp in spackOpenmpi5Components] +
+  [spackMpichFeelppPreset] +
   // Special component presets
   [
     feelppUsrlocalPreset,
@@ -724,6 +743,8 @@ std.flattenArrays([
 [buildPreset('release-clang-cpp20-spack')] +
 // Component presets
 [buildPreset(comp) for comp in components] +
+[buildPreset(comp + '-spack-openmpi5') for comp in spackOpenmpi5Components] +
+[buildPreset('feelpp-spack-mpich')] +
 // Special presets
 [
   buildPreset('feelpp-usrlocal'),
@@ -896,6 +917,8 @@ std.flattenArrays([
     testPresetWithRetry(comp, { inherits: 'default', execution+: { jobs: 4 } })
   for comp in components
 ] +
+[testPreset(comp + '-spack-openmpi5', { inherits: comp }) for comp in spackOpenmpi5Components] +
+[testPreset('feelpp-spack-mpich', { inherits: 'feelpp' })] +
 // Special presets
 [
   testPreset('feelpp-usrlocal', { inherits: 'feelpp' }),
