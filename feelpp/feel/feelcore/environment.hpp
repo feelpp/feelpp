@@ -2,17 +2,14 @@
 
     SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
     SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+    SPDX-FileContributor: Alexandre Ancel <alexandre.ancel@cemosis.fr>
 
     SPDX-FileCopyrightText: 2007-2011 Joseph Fourier University
-    SPDX-FileCopyrightText: 2011-2026 University of Strasbourg
+    SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
 
     SPDX-License-Identifier: LGPL-3.0-or-later
 */
 
-//! \file environment.hpp
-//! \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-//! \date 2010-04-14
-//!
 #ifndef FEELPP_ENVIRONMENT_HPP
 #define FEELPP_ENVIRONMENT_HPP 1
 
@@ -95,6 +92,40 @@ void throw_with_trace( const E& e )
 
 // forward declarationx@
 class TimerTable;
+
+/**
+ * @brief Statistics for one toc() label across ranks in a communicator.
+ *
+ * Rank values preserve communicator rank order. Missing local samples are NaN
+ * and are excluded from summary statistics.
+ */
+struct TimerRankReport
+{
+    /// Label passed to toc().
+    std::string label;
+    /// Latest local duration for each communicator rank, in seconds.
+    std::vector<double> rankSeconds;
+    /// Number of ranks with a finite duration.
+    std::size_t samples = 0;
+    /// Minimum finite rank duration in seconds.
+    double minimum = 0;
+    /// Tenth percentile using linear interpolation.
+    double p10 = 0;
+    /// Twenty-fifth percentile using linear interpolation.
+    double p25 = 0;
+    /// Median rank duration in seconds.
+    double median = 0;
+    /// Arithmetic mean of finite rank durations in seconds.
+    double mean = 0;
+    /// Seventy-fifth percentile using linear interpolation.
+    double p75 = 0;
+    /// Ninetieth percentile using linear interpolation.
+    double p90 = 0;
+    /// Maximum finite rank duration in seconds.
+    double maximum = 0;
+    /// Population standard deviation of finite rank durations in seconds.
+    double stdDev = 0;
+};
 
 //!
 //! @class MemoryUsage
@@ -793,6 +824,27 @@ public:
                           std::string const& uiname );
 
     /**
+     * @brief Gather the latest local toc() sample for each label after timing.
+     *
+     * This is collective on @p comm. Every rank must pass identical labels in
+     * the same order. The returned reference stays valid until the next gather
+     * or Environment reinitialization. No output is produced.
+     *
+     * @param labels Timer labels to gather.
+     * @param comm Communicator containing the sampled ranks.
+     * @return Structured rank reports, available on every rank in @p comm.
+     */
+    static std::vector<TimerRankReport> const& gatherTimerRankStatistics( std::vector<std::string> const& labels,
+                                                                          mpi::communicator const& comm );
+
+    /** @brief Access the latest gathered reports without MPI communication. */
+    static std::vector<TimerRankReport> const& timerRankReports();
+    /** @brief Return the latest gathered reports as JSON, optionally with raw rank values. */
+    static nl::json timerRankReportsJson( bool includeRankValues = true );
+    /** @brief Print the latest gathered reports without MPI communication. */
+    static void printTimerRankReports( std::ostream& output, bool showRankValues = false );
+
+    /**
      * display and save timers
      */
     static void saveTimers( bool save );
@@ -993,6 +1045,8 @@ private:
     static hwloc_topology_t S_hwlocTopology;
 #endif
     static std::unique_ptr<TimerTable> S_timers;
+    /// Latest reports produced by gatherTimerRankStatistics().
+    static std::vector<TimerRankReport> S_timerRankReports;
 
     //! Hardware System information instance.
     static std::unique_ptr<Sys::HwSysBase> S_hwSysInstance;

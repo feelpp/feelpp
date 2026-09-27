@@ -2,14 +2,18 @@
 
     SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
     SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+    SPDX-FileContributor: Alexandre Ancel <alexandre.ancel@cemosis.fr>
 
     SPDX-FileCopyrightText: 2007-2011 Joseph Fourier University
-    SPDX-FileCopyrightText: 2011-2026 University of Strasbourg
+    SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
 
     SPDX-License-Identifier: LGPL-3.0-or-later
 */
 
 #include <cstdlib>
+#include <cmath>
+#include <limits>
+#include <numeric>
 #include <pwd.h>
 #include <utility>
 #ifdef __cplusplus
@@ -39,6 +43,7 @@ extern "C"
 #include <boost/date_time/c_local_time_adjustor.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include <boost/mpi/collectives/all_gather.hpp>
 
 #include <range/v3/view/take_exactly.hpp>
 
@@ -238,8 +243,7 @@ AboutData makeAboutDefault( std::string name )
                      name,
                      "0.1",
                      name,
-                     AboutData::License_GPL,
-                     "Copyright (c) 2012-2020 Feel++ Consortium" );
+                     AboutData::License_GPL );
 
     about.addAuthor( "Feel++ Consortium",
                      "",
@@ -577,6 +581,7 @@ Environment::Environment( int argc, char** argv,
     S_informationObject = std::make_unique<JournalWatcher>( std::bind( &Environment::updateInformationObject, this, std::placeholders::_1 ), "Environment", "", false );
 
     S_timers = std::make_unique<TimerTable>();
+    S_timerRankReports.clear();
 
     auto today = std::chrono::system_clock::now();
     tic();
@@ -2958,6 +2963,108 @@ Environment::addTimer( std::string const& msg,
     S_timers->add( msg, t, uiname );
 }
 
+std::vector<TimerRankReport> const&
+Environment::gatherTimerRankStatistics( std::vector<std::string> const& labels,
+                                        mpi::communicator const& comm )
+{
+    auto quantile = []( std::vector<double> const& sorted, double probability )
+    {
+        double position = probability * ( sorted.size() - 1 );
+        auto lower = static_cast<std::size_t>( position );
+        auto upper = std::min( lower + 1, sorted.size() - 1 );
+        return sorted[lower] + ( sorted[upper] - sorted[lower] ) * ( position - lower );
+    };
+
+    S_timerRankReports.clear();
+    S_timerRankReports.reserve( labels.size() );
+    for ( auto const& label : labels )
+    {
+        double localSeconds = S_timers->lastOrNaN( label );
+        TimerRankReport report;
+        report.label = label;
+        mpi::all_gather( comm, localSeconds, report.rankSeconds );
+
+        std::vector<double> sorted;
+        sorted.reserve( report.rankSeconds.size() );
+        for ( double seconds : report.rankSeconds )
+        {
+            if ( std::isfinite( seconds ) )
+                sorted.push_back( seconds );
+        }
+        report.samples = sorted.size();
+        if ( !sorted.empty() )
+        {
+            std::sort( sorted.begin(), sorted.end() );
+            report.minimum = sorted.front();
+            report.p10 = quantile( sorted, 0.10 );
+            report.p25 = quantile( sorted, 0.25 );
+            report.median = quantile( sorted, 0.50 );
+            report.mean = std::accumulate( sorted.begin(), sorted.end(), 0.0 ) / sorted.size();
+            report.p75 = quantile( sorted, 0.75 );
+            report.p90 = quantile( sorted, 0.90 );
+            report.maximum = sorted.back();
+            double variance = 0;
+            for ( double seconds : sorted )
+                variance += ( seconds - report.mean ) * ( seconds - report.mean );
+            report.stdDev = std::sqrt( variance / sorted.size() );
+        }
+        S_timerRankReports.push_back( std::move( report ) );
+    }
+    return S_timerRankReports;
+}
+
+std::vector<TimerRankReport> const&
+Environment::timerRankReports()
+{
+    return S_timerRankReports;
+}
+
+nl::json
+Environment::timerRankReportsJson( bool includeRankValues )
+{
+    nl::json reports = nl::json::array();
+    for ( auto const& report : S_timerRankReports )
+    {
+        nl::json value = {
+            {"label", report.label}, {"samples", report.samples}, {"ranks", report.rankSeconds.size()},
+            {"min", report.minimum}, {"p10", report.p10}, {"p25", report.p25},
+            {"median", report.median}, {"mean", report.mean}, {"p75", report.p75},
+            {"p90", report.p90}, {"max", report.maximum}, {"std_dev", report.stdDev}
+        };
+        if ( includeRankValues )
+        {
+            value["rank_seconds"] = nl::json::array();
+            for ( double seconds : report.rankSeconds )
+                value["rank_seconds"].push_back( std::isfinite( seconds ) ? nl::json( seconds ) : nl::json( nullptr ) );
+        }
+        reports.push_back( std::move( value ) );
+    }
+    return reports;
+}
+
+void
+Environment::printTimerRankReports( std::ostream& output, bool showRankValues )
+{
+    for ( auto const& report : S_timerRankReports )
+    {
+        if ( showRankValues )
+        {
+            output << "[timer rank_seconds] " << report.label << ':';
+            for ( double seconds : report.rankSeconds )
+                output << ' ' << seconds;
+            output << '\n';
+        }
+        output << "[timer ranks] " << report.label << " samples=" << report.samples << '/'
+               << report.rankSeconds.size();
+        if ( report.samples )
+            output << " min=" << report.minimum << " p10=" << report.p10 << " p25=" << report.p25
+                   << " median=" << report.median << " mean=" << report.mean
+                   << " p75=" << report.p75 << " p90=" << report.p90
+                   << " max=" << report.maximum << " std_dev=" << report.stdDev << " s";
+        output << '\n';
+    }
+}
+
 void
 Environment::saveTimers( bool display )
 {
@@ -3009,6 +3116,7 @@ hwloc_topology_t Environment::S_hwlocTopology = NULL;
 #endif
 
 std::unique_ptr<TimerTable> Environment::S_timers;
+std::vector<TimerRankReport> Environment::S_timerRankReports;
 std::unique_ptr<Sys::HwSysBase> Environment::S_hwSysInstance;
 
 std::unique_ptr<JournalWatcher> Environment::S_informationObject;

@@ -1,33 +1,14 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-  This file is part of the Feel library
+  SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+  SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-11-16
-
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2007,2008 Université Joseph Fourier (Grenoble I)
-  Copyright (C) 2009-2017 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+  SPDX-FileCopyrightText: 2005-2006 EPFL
+  SPDX-FileCopyrightText: 2007-2008 Université Joseph Fourier (Grenoble I)
+  SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
+  SPDX-License-Identifier: LGPL-3.0-or-later
 */
-/**
-   \file importergmsh.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-11-16
- */
+
 #ifndef FEELPP_IMPORTERGMSH_HPP
 #define FEELPP_IMPORTERGMSH_HPP 1
 
@@ -1923,6 +1904,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
 
     if ( std::string( __buf ) == "$Nodes" )
     {
+        tic();
         VLOG(2) << "Reading $Nodes ...";
         // eat  '\n' in binary mode otherwise the next binary read will get screwd
         if ( binary )
@@ -2076,6 +2058,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         VLOG(2) << "Reading $Nodes done";
 
         __is >> __buf;
+        toc( "ImporterGmsh::readFromFileVersion4 nodes", Environment::logVerbosityLevel() > 0 );
     }
 
 
@@ -2085,6 +2068,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
 
     if ( std::string( __buf ) == "$Elements" )
     {
+        tic();
         VLOG(2) << "Reading $Elements ...";
         // eat  '\n' in binary mode otherwise the next binary read will get screwd
         if ( binary )
@@ -2347,6 +2331,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
             << " instead of $EndElements";
         VLOG(2) << "Reading $Elements done";
         __is >> __buf;
+        toc( "ImporterGmsh::readFromFileVersion4 elements", Environment::logVerbosityLevel() > 0 );
     }
 
     std::vector<PeriodicEntity> periodic_entities;
@@ -2500,6 +2485,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
 
     if ( numPartitions > 1 )
     {
+        tic();
         int nbRequest = ghostElementToSendToProcessId.size() + ghostElementToRecvFromProcessId.size();
         if ( nbRequest > 0 )
         {
@@ -2595,6 +2581,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                 }
             }
         }
+        toc( "ImporterGmsh::readFromFileVersion4 ghost exchange", Environment::logVerbosityLevel() > 0 );
     } // if ( numPartitions > 1 )
 
     // update ordered points in mesh data structure
