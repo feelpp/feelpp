@@ -877,6 +877,7 @@ spack:
                 with mock.patch("sys.stdout", io.StringIO()):
                     rc = main([
                         "image", "bake", "--repo-root", str(repo_root),
+                        "--branch", "develop",
                         "--job-root", tmpdir, "--target", "spack:openmpi5",
                         "--component", component,
                     ])
