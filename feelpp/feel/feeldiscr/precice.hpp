@@ -2,8 +2,8 @@
 
  This file is part of the Feel library
 
- Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- Date: 2026-01-02
+ Author(s): Vincent Chabannes <vincent.chabannes@feelpp.org>
+ Date: 2026-10-02
 
  Copyright (C) 2026 Feel++ Consortium
 
@@ -26,6 +26,8 @@
 #define FEELPP_FEELDISCR_PRECICE_HPP 1
 
 #if defined( FEELPP_HAS_PRECICE )
+
+#include <boost/mp11/algorithm.hpp>
 #include <precice/precice.hpp>
 
 
@@ -155,6 +157,9 @@ template <typename MeshType>
 class PreciceCouplingMesh
 {
     enum class SpaceIndex { Pch1=0, Pchv1 };
+
+    template<class T>
+    using get_functionspace_element_t = typename T::element_type;
 public:
     using mesh_type = MeshType;
     using mesh_ptrtype = std::shared_ptr<mesh_type>;
@@ -164,7 +169,7 @@ public:
     using space_vector_type = Pchv_type<mesh_type,1>;
     using space_vector_element_type = typename space_vector_type::element_type;
     using spaces_type = std::tuple<space_scalar_type, space_vector_type>;
-    using spaces_element_type = std::tuple<space_scalar_element_type, space_vector_element_type>; // TODO use transform mp11
+    using spaces_element_type = boost::mp11::mp_transform<get_functionspace_element_t,spaces_type>;
 
     template <PreciceData::ShapeType Shape>
     static constexpr SpaceIndex space_index_from_shape_v = Shape==PreciceData::ShapeType::scalar ? SpaceIndex::Pch1 : SpaceIndex::Pchv1;
@@ -281,7 +286,6 @@ public:
             static constexpr SpaceIndex spaceIndex = space_index_from_shape_v< std::decay_t<PreciceWriteDataType>::shape_c>;
             using _space_type = typename std::decay_t<PreciceWriteDataType>::space_type;
             std::string const& preciceDataName = _writeData.name();
-            int dim = mesh_type::nRealDim;
             std::vector<double> preciceDataValues( M_preciceIDs.size() * _space_type::nComponents, 0.0 );
 
             // get write data and init the field if not already done
@@ -296,7 +300,7 @@ public:
                 for ( uint16_type k = 0; k < _space_type::nComponents; ++k )
                 {
                     index_type f_dofid = f_scalardofid*_space_type::nComponents + k;
-                    preciceDataValues[ dim * p_id + k ] = feelDataField( f_dofid );
+                    preciceDataValues[ _space_type::nComponents * p_id + k ] = feelDataField( f_dofid );
                 }
             }
             M_precice.writeData( M_meshName, preciceDataName, M_preciceIDs, preciceDataValues );
@@ -368,7 +372,6 @@ public:
             static constexpr SpaceIndex spaceIndex = space_index_from_shape_v< std::decay_t<PreciceReadDataType>::shape_c>;
             using _space_type = typename std::decay_t<PreciceReadDataType>::space_type;
             std::string const& preciceDataName = _readData.name();
-            int dim = mesh_type::nRealDim;
             std::vector<double> preciceDataValues( M_preciceIDs.size() * _space_type::nComponents );
             M_precice.readData( M_meshName, preciceDataName, M_preciceIDs, 0, preciceDataValues );
 
@@ -380,7 +383,7 @@ public:
                 for ( uint16_type k = 0; k < _space_type::nComponents; ++k )
                 {
                     index_type f_dofid = M_preciceIdToScalarDofId[p_id]*_space_type::nComponents + k;
-                    feelDataField.set( f_dofid, preciceDataValues[ dim * p_id + k ] );
+                    feelDataField.set( f_dofid, preciceDataValues[ _space_type::nComponents * p_id + k ] );
                 }
             }
 
@@ -532,13 +535,19 @@ private:
     std::vector<int> M_preciceIDs;
     std::map<int, index_type> M_preciceIdToScalarDofId;
 
-    std::tuple< std::shared_ptr<space_scalar_type>, std::shared_ptr<space_vector_type> > M_spaces;
-    std::tuple< std::map<std::string, PreciceReadData<space_scalar_type>>,
-                std::map<std::string, PreciceReadData<space_vector_type>> > M_readData;
-    std::tuple< std::map<std::string, PreciceWriteData<space_scalar_type>>,
-                std::map<std::string, PreciceWriteData<space_vector_type>> > M_writeData;
+    template<class T>
+    using add_shared_ptr_t = std::shared_ptr<T>;
+    boost::mp11::mp_transform<add_shared_ptr_t,spaces_type> M_spaces;
 
-    std::tuple< std::shared_ptr<space_scalar_element_type>, std::shared_ptr<space_vector_element_type> > M_internalFields;
+    template<class T>
+    using add_map_precice_read_data_t = std::map<std::string, PreciceReadData<T> >;
+    boost::mp11::mp_transform<add_map_precice_read_data_t,spaces_type> M_readData;
+
+    template<class T>
+    using add_map_precice_write_data_t = std::map<std::string, PreciceWriteData<T> >;
+    boost::mp11::mp_transform<add_map_precice_write_data_t,spaces_type> M_writeData;
+
+    boost::mp11::mp_transform<add_shared_ptr_t,spaces_element_type> M_internalFields;
 };
 
 template <typename MeshType>
@@ -556,6 +565,9 @@ public:
             M_precice->finalize();
     };
 
+    bool hasParticipant() const { return M_precice != nullptr; }
+    precice::Participant& participant() { return *M_precice; }
+
     void initParticipant( std::string const& solverName, std::string const& configFileName,
                           WorldComm const& worldComm = Environment::worldComm() )
         {
@@ -572,16 +584,16 @@ public:
     template <concepts::RangeOnElements RangeElts>
     auto initCouplingMesh( std::string const& preciceMeshName, RangeElts const& rangeElts )
         {
-            M_couplingMesh = std::make_unique<PreciceCouplingMesh<mesh_type>>( *M_precice, shared_from_this(rangeElts.mesh()), rangeElts, preciceMeshName );
-            return M_couplingMesh.get();
+            M_couplingMesh[preciceMeshName] = std::make_unique<PreciceCouplingMesh<mesh_type>>( *M_precice, shared_from_this(rangeElts.mesh()), rangeElts, preciceMeshName );
+            return M_couplingMesh.at( preciceMeshName ).get();
         }
 
     template <concepts::RangeOnFaces RangeFaces>
     auto initCouplingMesh( std::string const& preciceMeshName, RangeFaces const& rangeFaces )
         {
             auto submesh = createSubmesh( _range=rangeFaces,_view=true );
-            M_couplingTraceMesh = std::make_unique<PreciceCouplingMesh<trace_mesh_type>>( *M_precice, submesh, preciceMeshName );
-            return M_couplingTraceMesh.get();
+            M_couplingTraceMesh[preciceMeshName] = std::make_unique<PreciceCouplingMesh<trace_mesh_type>>( *M_precice, submesh, preciceMeshName );
+            return M_couplingTraceMesh.at( preciceMeshName ).get();
         }
 
     void updateForUse()
@@ -592,12 +604,18 @@ public:
 
     void readData()
         {
-            this->M_couplingTraceMesh->readAllData();
+            for ( auto & [meshName,couplingMesh] : M_couplingMesh )
+                couplingMesh->readAllData();
+            for ( auto & [meshName,couplingTraceMesh] : M_couplingTraceMesh )
+                couplingTraceMesh->readAllData();
         }
 
     void writeData()
         {
-            this->M_couplingTraceMesh->writeAllData();
+            for ( auto & [meshName,couplingMesh] : M_couplingMesh )
+                couplingMesh->writeAllData();
+            for ( auto & [meshName,couplingTraceMesh] : M_couplingTraceMesh )
+                couplingTraceMesh->writeAllData();
         }
 
     void advance( double dt )
@@ -608,61 +626,9 @@ public:
 
 protected:
     std::unique_ptr<precice::Participant> M_precice;
-    std::unique_ptr<mesh_type> M_couplingMesh;
-    std::unique_ptr<PreciceCouplingMesh<trace_mesh_type>> M_couplingTraceMesh;
+    std::map<std::string,std::unique_ptr<PreciceCouplingMesh<mesh_type>>> M_couplingMesh;
+    std::map<std::string,std::unique_ptr<PreciceCouplingMesh<trace_mesh_type>>> M_couplingTraceMesh;
 };
-
-#if 0
-template <typename ToolboxType>
-class SolidMechanicsPreciceAdapter : public PreciceAdapter<typename ToolboxType::mesh_type>
-{
-    using super_type = PreciceAdapter<typename ToolboxType::mesh_type>;
-public:
-    using model_type = ToolboxType;
-    using mesh_type = typename model_type::mesh_type;
-    using mesh_ptrtype = std::shared_ptr<mesh_type>;
-
-    SolidMechanicsPreciceAdapter( model_type& sm )
-        :
-        M_toolbox( sm )
-        {
-            const std::string configFileName("precice-config.xml");
-            const std::string solverName("Solid");
-            this->initParticipant( solverName, configFileName, M_toolbox.worldComm() );
-            auto mesh = M_toolbox.mesh();
-            auto rangeFaces = boundaryfaces(mesh);
-            auto couplingMesh = this->initCouplingMesh( "Solid-Mesh", rangeFaces );
-
-            couplingMesh->template initReadData<PreciceData::ShapeType::vector>( "Force", [this]( auto const& readData ){
-                                                                                              auto mesh = M_toolbox.mesh();
-                                                                                              auto rangeFaces = boundaryfaces(mesh);
-                                                                                              auto const& u = readData.field();
-                                                                                              M_toolbox.modelMesh().template updateField<mesh_type>( "preciceForce", idv(u), rangeFaces, "Pchv1" );
-                                                                                          } );
-
-            couplingMesh->template initWriteData<PreciceData::ShapeType::vector>( "Displacement", [this]( auto & writeData ){
-                                                                                                      auto mesh = M_toolbox.mesh();
-                                                                                                      auto rangeFaces = boundaryfaces(mesh);
-                                                                                                      auto const& u = M_toolbox.fieldDisplacement();
-                                                                                                      writeData.field().on( _range=rangeFaces, _expr=idv(u),_close=true );
-                                                                                                  } );
-
-            this->updateForUse();
-        }
-
-    void advance()
-        {
-            //double dt = this->M_precice->getMaxTimeStepSize();
-            double dt = M_toolbox.timeStep();
-            super_type::advance(dt);
-        }
-
-private:
-    model_type& M_toolbox;
-};
-#endif
-
-
 
 } // namespace Feel
 
