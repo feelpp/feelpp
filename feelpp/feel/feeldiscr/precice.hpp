@@ -29,6 +29,7 @@
 
 #include <boost/mp11/algorithm.hpp>
 #include <precice/precice.hpp>
+#include <feel/feeldiscr/pdhv.hpp>
 
 
 namespace Feel
@@ -153,26 +154,31 @@ private:
     callback_datarequested_type M_func;
 };
 
-template <typename MeshType>
+enum class PreciceCouplingMeshLocation { vertices=0, barycenter };
+
+template <typename MeshType,PreciceCouplingMeshLocation Location = PreciceCouplingMeshLocation::vertices>
 class PreciceCouplingMesh
 {
-    enum class SpaceIndex { Pch1=0, Pchv1 };
+    enum class SpaceIndex { lagrange_scalar=0, lagrange_vector };
 
     template<class T>
     using get_functionspace_element_t = typename T::element_type;
 public:
     using mesh_type = MeshType;
+    static constexpr PreciceCouplingMeshLocation location_c = Location;
     using mesh_ptrtype = std::shared_ptr<mesh_type>;
 
-    using space_scalar_type = Pch_type<mesh_type,1>;
+    using space_scalar_type = std::conditional_t<location_c==PreciceCouplingMeshLocation::vertices,
+        Pch_type<mesh_type,1>, Pdh_type<mesh_type,1>>;
     using space_scalar_element_type = typename space_scalar_type::element_type;
-    using space_vector_type = Pchv_type<mesh_type,1>;
+    using space_vector_type = std::conditional_t<location_c==PreciceCouplingMeshLocation::vertices,
+        Pchv_type<mesh_type,1>, Pdhv_type<mesh_type,1>>;
     using space_vector_element_type = typename space_vector_type::element_type;
     using spaces_type = std::tuple<space_scalar_type, space_vector_type>;
     using spaces_element_type = boost::mp11::mp_transform<get_functionspace_element_t,spaces_type>;
 
     template <PreciceData::ShapeType Shape>
-    static constexpr SpaceIndex space_index_from_shape_v = Shape==PreciceData::ShapeType::scalar ? SpaceIndex::Pch1 : SpaceIndex::Pchv1;
+    static constexpr SpaceIndex space_index_from_shape_v = Shape==PreciceData::ShapeType::scalar ? SpaceIndex::lagrange_scalar : SpaceIndex::lagrange_vector;
     template <SpaceIndex S>
     using space_type_t = std::tuple_element_t<std::to_underlying(S), spaces_type>;
     template <PreciceData::ShapeType Shape>
@@ -202,13 +208,13 @@ public:
         {
             static constexpr int space_index = std::to_underlying(S);
             using _space_type = std::tuple_element_t<space_index, spaces_type>;
-            auto & space = std::get<space_index>( M_spaces );
+            auto space = std::get<space_index>( M_spaces );
             if ( !space )
                 space = _space_type::New(_mesh=M_mesh );
-            return space.get();
+            return space;
         }
-    space_scalar_type* initSpaceScalar() { return this->initSpace<SpaceIndex::Pch1>(); }
-    space_vector_type* initSpaceVector() { return this->initSpace<SpaceIndex::Pchv1>(); }
+    std::shared_ptr<space_scalar_type> initSpaceScalar() { return this->initSpace<SpaceIndex::lagrange_scalar>(); }
+    std::shared_ptr<space_vector_type> initSpaceVector() { return this->initSpace<SpaceIndex::lagrange_vector>(); }
 
 
 
@@ -249,8 +255,8 @@ public:
             }
             return writeData;
         }
-    PreciceWriteData<space_type_t<SpaceIndex::Pch1>> & initWriteScalarData( std::string const& preciceDataName ) { return this->initWriteData<SpaceIndex::Pch1>( preciceDataName ); }
-    PreciceWriteData<space_type_t<SpaceIndex::Pch1>> & initWriteVectorData( std::string const& preciceDataName ) { return this->initWriteData<SpaceIndex::Pchv1>( preciceDataName ); }
+    PreciceWriteData<space_type_t<SpaceIndex::lagrange_scalar>> & initWriteScalarData( std::string const& preciceDataName ) { return this->initWriteData<SpaceIndex::lagrange_scalar>( preciceDataName ); }
+    PreciceWriteData<space_type_t<SpaceIndex::lagrange_scalar>> & initWriteVectorData( std::string const& preciceDataName ) { return this->initWriteData<SpaceIndex::lagrange_vector>( preciceDataName ); }
 
     template <SpaceIndex S>
     void hasWriteData( std::string const& preciceDataName )
@@ -336,8 +342,8 @@ public:
                 readData.setField( space->elementPtr() );
             return readData;
         }
-    PreciceReadData<space_type_t<SpaceIndex::Pch1>> & initReadScalarData( std::string const& preciceDataName ) { return this->initReadData<SpaceIndex::Pch1>( preciceDataName ); }
-    PreciceReadData<space_type_t<SpaceIndex::Pch1>> & initReadVectorData( std::string const& preciceDataName ) { return this->initReadData<SpaceIndex::Pchv1>( preciceDataName ); }
+    PreciceReadData<space_type_t<SpaceIndex::lagrange_scalar>> & initReadScalarData( std::string const& preciceDataName ) { return this->initReadData<SpaceIndex::lagrange_scalar>( preciceDataName ); }
+    PreciceReadData<space_type_t<SpaceIndex::lagrange_scalar>> & initReadVectorData( std::string const& preciceDataName ) { return this->initReadData<SpaceIndex::lagrange_vector>( preciceDataName ); }
 
     template <SpaceIndex S>
     void hasReadData( std::string const& preciceDataName )
@@ -389,8 +395,8 @@ public:
 
             readData.invokeDataUpdated();
         }
-    void readScalarData( std::string const& preciceDataName ) { this->readData<SpaceIndex::Pch1>( preciceDataName ); }
-    void readVectorData( std::string const& preciceDataName ) { this->readData<SpaceIndex::Pchv1>( preciceDataName ); }
+    void readScalarData( std::string const& preciceDataName ) { this->readData<SpaceIndex::lagrange_scalar>( preciceDataName ); }
+    void readVectorData( std::string const& preciceDataName ) { this->readData<SpaceIndex::lagrange_vector>( preciceDataName ); }
 
 
     void readAllData()
@@ -527,6 +533,43 @@ private:
         }
 
 
+        void initMappingBarycenter()
+        {
+            auto space = initSpaceScalar();
+            auto mesh = space->mesh();
+            auto dof = space->dof();
+            int dim = mesh->realDimension();
+            std::vector<double> coordinates;
+            // tmp container to store the feel dof ids
+            std::vector<index_type> feelDofIds;
+
+            for ( auto const& eltWrap : elements(mesh) )
+            {
+                auto const& elt = unwrap_ref(eltWrap);
+
+                auto bary = elt.barycenter();
+
+                for ( int d = 0; d < dim; ++d )
+                    coordinates.push_back( bary[d] );
+                // with Pdh0, the number of local dofs is 1, so we can just take the first one
+                for( auto const& ldof : dof->localDof( elt.id() ) )
+                {
+                    index_type thedof = ldof.second.index();
+                    uint16_type localDof = ldof.first.localDof();
+                    feelDofIds.push_back( thedof );
+                    break;
+                }
+            }
+            std::vector<int> preciceVertexIDs( feelDofIds.size() );
+            M_precice.setMeshVertices( M_meshName, coordinates, preciceVertexIDs );
+            M_preciceIDs = preciceVertexIDs;
+            for ( size_t i = 0; i < preciceVertexIDs.size(); ++i )
+            {
+                int p_id = preciceVertexIDs[i];
+                index_type f_dofid = feelDofIds[i];
+                M_preciceIdToScalarDofId[p_id] = f_dofid;
+            }
+        }
 
 private:
     precice::Participant& M_precice;
@@ -581,19 +624,23 @@ public:
             // TODO : inspect the precice configuration and print some information about the coupling
         }
 
-    template <concepts::RangeOnElements RangeElts>
+
+    template <PreciceCouplingMeshLocation Location = PreciceCouplingMeshLocation::vertices, concepts::RangeOnElements RangeElts>
     auto initCouplingMesh( std::string const& preciceMeshName, RangeElts const& rangeElts )
         {
-            M_couplingMesh[preciceMeshName] = std::make_unique<PreciceCouplingMesh<mesh_type>>( *M_precice, shared_from_this(rangeElts.mesh()), rangeElts, preciceMeshName );
-            return M_couplingMesh.at( preciceMeshName ).get();
+            using precice_coupling_mesh_type = PreciceCouplingMesh<mesh_type,Location>;
+            M_couplingMesh[preciceMeshName] = std::make_unique<precice_coupling_mesh_type>( *M_precice, shared_from_this(rangeElts.mesh()), rangeElts, preciceMeshName );
+            return std::get<std::unique_ptr<precice_coupling_mesh_type>>( M_couplingMesh.at( preciceMeshName ) ).get();
         }
 
-    template <concepts::RangeOnFaces RangeFaces>
+
+    template <PreciceCouplingMeshLocation Location = PreciceCouplingMeshLocation::vertices, concepts::RangeOnFaces RangeFaces>
     auto initCouplingMesh( std::string const& preciceMeshName, RangeFaces const& rangeFaces )
         {
+            using precice_coupling_mesh_type = PreciceCouplingMesh<trace_mesh_type,Location>;
             auto submesh = createSubmesh( _range=rangeFaces,_view=true );
-            M_couplingTraceMesh[preciceMeshName] = std::make_unique<PreciceCouplingMesh<trace_mesh_type>>( *M_precice, submesh, preciceMeshName );
-            return M_couplingTraceMesh.at( preciceMeshName ).get();
+            M_couplingMesh[preciceMeshName] = std::make_unique<precice_coupling_mesh_type>( *M_precice, submesh, preciceMeshName );
+            return std::get<std::unique_ptr<precice_coupling_mesh_type>>( M_couplingMesh.at( preciceMeshName ) ).get();
         }
 
     void updateForUse()
@@ -605,17 +652,21 @@ public:
     void readData()
         {
             for ( auto & [meshName,couplingMesh] : M_couplingMesh )
-                couplingMesh->readAllData();
-            for ( auto & [meshName,couplingTraceMesh] : M_couplingTraceMesh )
-                couplingTraceMesh->readAllData();
+            {
+                std::visit( [this]( auto & couplingMeshPtr ){
+                    couplingMeshPtr->readAllData();
+                }, couplingMesh );
+            }
         }
 
     void writeData()
         {
             for ( auto & [meshName,couplingMesh] : M_couplingMesh )
-                couplingMesh->writeAllData();
-            for ( auto & [meshName,couplingTraceMesh] : M_couplingTraceMesh )
-                couplingTraceMesh->writeAllData();
+            {
+                std::visit( [this]( auto & couplingMeshPtr ){
+                    couplingMeshPtr->writeAllData();
+                }, couplingMesh );
+            }
         }
 
     void advance( double dt )
@@ -626,8 +677,11 @@ public:
 
 protected:
     std::unique_ptr<precice::Participant> M_precice;
-    std::map<std::string,std::unique_ptr<PreciceCouplingMesh<mesh_type>>> M_couplingMesh;
-    std::map<std::string,std::unique_ptr<PreciceCouplingMesh<trace_mesh_type>>> M_couplingTraceMesh;
+    std::map<std::string,std::variant<std::unique_ptr<PreciceCouplingMesh<mesh_type,PreciceCouplingMeshLocation::vertices>>,
+                                      std::unique_ptr<PreciceCouplingMesh<mesh_type,PreciceCouplingMeshLocation::barycenter>>,
+                                      std::unique_ptr<PreciceCouplingMesh<trace_mesh_type,PreciceCouplingMeshLocation::vertices>>,
+                                      std::unique_ptr<PreciceCouplingMesh<trace_mesh_type,PreciceCouplingMeshLocation::barycenter>>
+                                      >> M_couplingMesh;
 };
 
 } // namespace Feel
