@@ -169,10 +169,10 @@ public:
     using mesh_ptrtype = std::shared_ptr<mesh_type>;
 
     using space_scalar_type = std::conditional_t<location_c==PreciceCouplingMeshLocation::vertices,
-        Pch_type<mesh_type,1>, Pdh_type<mesh_type,1>>;
+        Pch_type<mesh_type,1>, Pdh_type<mesh_type,0>>;
     using space_scalar_element_type = typename space_scalar_type::element_type;
     using space_vector_type = std::conditional_t<location_c==PreciceCouplingMeshLocation::vertices,
-        Pchv_type<mesh_type,1>, Pdhv_type<mesh_type,1>>;
+        Pchv_type<mesh_type,1>, Pdhv_type<mesh_type,0>>;
     using space_vector_element_type = typename space_vector_type::element_type;
     using spaces_type = std::tuple<space_scalar_type, space_vector_type>;
     using spaces_element_type = boost::mp11::mp_transform<get_functionspace_element_t,spaces_type>;
@@ -423,8 +423,14 @@ public:
                 }, M_writeData);
         }
 private:
-
     void initMapping()
+        {
+            if constexpr (location_c==PreciceCouplingMeshLocation::vertices)
+                this->initMappingVertices();
+            else if constexpr (location_c==PreciceCouplingMeshLocation::barycenter)
+                this->initMappingBarycenter();
+        }
+    void initMappingVertices()
         {
             auto space = initSpaceScalar();
             auto mesh = space->mesh();
