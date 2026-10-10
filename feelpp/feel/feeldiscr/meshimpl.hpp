@@ -1728,7 +1728,17 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateAdjacencyElements
     VLOG( 2 ) << "Compute adjacency graph\n";
     //typedef std::unordered_map<std::vector/*set*/<size_type>, size_type, Feel::HashTables::HasherContainers<size_type> > pointstoface_container_type;
     //typedef std::unordered_map<std::vector/*set*/<size_type>, std::tuple<size_type,uint16_type>, Feel::HashTables::HasherContainers<size_type> > pointstoface_container_type;
-    typedef std::unordered_map<std::vector /*set*/<size_type>, std::tuple<element_type*, uint16_type>, Feel::HashTables::HasherContainers<size_type>> pointstoface_container_type;
+    using face_key_type = std::array<size_type, face_type::numVertices>;
+    /** @brief Hash the fixed-size vertex IDs identifying an adjacency face. */
+    struct FaceKeyHash
+    {
+        /** @brief Combine the face's vertex IDs in their sorted order. */
+        std::size_t operator()( face_key_type const& key ) const
+        {
+            return boost::hash_range( key.begin(), key.end() );
+        }
+    };
+    using pointstoface_container_type = std::unordered_map<face_key_type, std::tuple<element_type*, uint16_type>, FaceKeyHash>;
 
     std::vector<uint16_type> myfToP( face_type::numVertices * this->numLocalFaces() );
     for ( uint16_type j = 0; j < this->numLocalFaces(); j++ )
@@ -1740,13 +1750,13 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateAdjacencyElements
     bool faceinserted = false;
 
     Eigen::Matrix<size_type, element_type::numVertices, 1> pointIdInElt;
-    std::vector<size_type> lids( face_type::numVertices );
+    face_key_type lids;
 
     const uint16_type _numLocalFaces = this->numLocalFaces();
 
     element_iterator iv, en;
     boost::tie( iv, en ) = this->elementsRange();
-    size_type nElt = std::distance( iv, en );
+    size_type nElt = this->elements().size();
 
     pointstoface_container_type _faces;
     _faces.reserve( nElt * _numLocalFaces );
