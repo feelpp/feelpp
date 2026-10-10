@@ -14,7 +14,9 @@
 #define FEELPP_ENVIRONMENT_HPP 1
 
 #include <cstdlib>
+#include <cstdint>
 #include <memory>
+#include <map>
 #include <tuple>
 #include <vector>
 
@@ -93,38 +95,44 @@ void throw_with_trace( const E& e )
 // forward declarationx@
 class TimerTable;
 
-/**
- * @brief Statistics for one toc() label across ranks in a communicator.
- *
- * Rank values preserve communicator rank order. Missing local samples are NaN
- * and are excluded from summary statistics.
- */
-struct TimerRankReport
+/** @brief Distribution of repeated toc() calls for one rank or selected ranks. */
+struct TimerProfileStatistics
+{
+    /// Number of measured calls.
+    std::uint64_t count = 0;
+    /// Sum of call durations in seconds.
+    double total = 0;
+    /// Smallest call duration in seconds.
+    double minimum = 0;
+    /// Largest call duration in seconds.
+    double maximum = 0;
+    /// Arithmetic mean call duration in seconds.
+    double mean = 0;
+    /// Population standard deviation in seconds.
+    double stdDev = 0;
+    /// Approximate tenth percentile of call durations.
+    double p10 = 0;
+    /// Approximate twenty-fifth percentile of call durations.
+    double p25 = 0;
+    /// Approximate median call duration.
+    double median = 0;
+    /// Approximate seventy-fifth percentile of call durations.
+    double p75 = 0;
+    /// Approximate ninetieth percentile of call durations.
+    double p90 = 0;
+    /// Approximate ninety-ninth percentile of call durations.
+    double p99 = 0;
+};
+
+/** @brief Per-rank and pooled call distributions for one toc() label. */
+struct TimerProfileReport
 {
     /// Label passed to toc().
     std::string label;
-    /// Latest local duration for each communicator rank, in seconds.
-    std::vector<double> rankSeconds;
-    /// Number of ranks with a finite duration.
-    std::size_t samples = 0;
-    /// Minimum finite rank duration in seconds.
-    double minimum = 0;
-    /// Tenth percentile using linear interpolation.
-    double p10 = 0;
-    /// Twenty-fifth percentile using linear interpolation.
-    double p25 = 0;
-    /// Median rank duration in seconds.
-    double median = 0;
-    /// Arithmetic mean of finite rank durations in seconds.
-    double mean = 0;
-    /// Seventy-fifth percentile using linear interpolation.
-    double p75 = 0;
-    /// Ninetieth percentile using linear interpolation.
-    double p90 = 0;
-    /// Maximum finite rank duration in seconds.
-    double maximum = 0;
-    /// Population standard deviation of finite rank durations in seconds.
-    double stdDev = 0;
+    /// Statistics keyed by selected communicator rank, including ranks with no calls.
+    std::map<int, TimerProfileStatistics> ranks;
+    /// Statistics over every recorded call on the selected ranks.
+    TimerProfileStatistics pooled;
 };
 
 //!
@@ -824,25 +832,44 @@ public:
                           std::string const& uiname );
 
     /**
-     * @brief Gather the latest local toc() sample for each label after timing.
+     * @brief Gather call distributions for selected communicator ranks.
      *
-     * This is collective on @p comm. Every rank must pass identical labels in
-     * the same order. The returned reference stays valid until the next gather
-     * or Environment reinitialization. No output is produced.
+     * Every rank in @p comm must call this with identical labels and selected
+     * ranks. The default selects communicator rank 0. An explicitly empty
+     * @p selectedRanks selects all ranks.
+     * Rank numbers are local to @p comm. Duplicate ranks are ignored and an
+     * out-of-range rank throws. Only selected ranks contribute to the pooled
+     * statistics, including their entire history of toc() calls. The result is
+     * cached and available on every rank until the next gather.
      *
-     * @param labels Timer labels to gather.
+     * @param labels Timer labels to gather in the same order on every rank.
      * @param comm Communicator containing the sampled ranks.
-     * @return Structured rank reports, available on every rank in @p comm.
+     * @param selectedRanks Rank IDs to include; defaults to {0}, while {} includes all ranks.
+     * @return Cached profile reports on every rank in @p comm.
      */
-    static std::vector<TimerRankReport> const& gatherTimerRankStatistics( std::vector<std::string> const& labels,
-                                                                          mpi::communicator const& comm );
-
-    /** @brief Access the latest gathered reports without MPI communication. */
-    static std::vector<TimerRankReport> const& timerRankReports();
-    /** @brief Return the latest gathered reports as JSON, optionally with raw rank values. */
-    static nl::json timerRankReportsJson( bool includeRankValues = true );
-    /** @brief Print the latest gathered reports without MPI communication. */
-    static void printTimerRankReports( std::ostream& output, bool showRankValues = false );
+    static std::vector<TimerProfileReport> const& gatherTimerProfileStatistics( std::vector<std::string> const& labels,
+                                                                                mpi::communicator const& comm,
+                                                                                std::vector<int> selectedRanks = { 0 } );
+    /**
+     * @brief Discover every label on the selected ranks, then gather its call profile.
+     *
+     * This is collective on @p comm. With no rank argument, labels from
+     * communicator rank 0 are selected. An explicitly empty @p selectedRanks
+     * includes all ranks and the union of their labels. The union is sorted
+     * lexically. A label absent on a selected rank has a zero-count profile.
+     *
+     * @param comm Communicator whose members participate in the gather.
+     * @param selectedRanks Rank IDs to include; defaults to {0}, while {} includes all ranks.
+     * @return Cached profile reports on every rank in @p comm.
+     */
+    static std::vector<TimerProfileReport> const& gatherTimerProfileStatistics( mpi::communicator const& comm,
+                                                                                std::vector<int> selectedRanks = { 0 } );
+    /** @brief Access the latest per-rank and pooled profiles without communication. */
+    static std::vector<TimerProfileReport> const& timerProfileReports();
+    /** @brief Return the latest selected-rank and pooled profiles as JSON. */
+    static nl::json timerProfileReportsJson();
+    /** @brief Print pooled profiles, optionally followed by each rank's profile. */
+    static void printTimerProfileReports( std::ostream& output, bool showRanks = false );
 
     /**
      * display and save timers
@@ -1045,8 +1072,8 @@ private:
     static hwloc_topology_t S_hwlocTopology;
 #endif
     static std::unique_ptr<TimerTable> S_timers;
-    /// Latest reports produced by gatherTimerRankStatistics().
-    static std::vector<TimerRankReport> S_timerRankReports;
+    /// Latest reports produced by gatherTimerProfileStatistics().
+    static std::vector<TimerProfileReport> S_timerProfileReports;
 
     //! Hardware System information instance.
     static std::unique_ptr<Sys::HwSysBase> S_hwSysInstance;

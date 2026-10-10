@@ -16,9 +16,8 @@
 #include <cmath>
 #include <iomanip>
 #include <iostream>
-#include <limits>
-#include <numeric>
 #include <sstream>
+#include <vector>
 
 namespace Feel
 {
@@ -49,15 +48,11 @@ TimerSummary summarize( TimerData const& timer )
     if ( result.count == 0 )
         return result;
 
-    auto [minimum, maximum] = std::minmax_element( timer.begin(), timer.end() );
-    result.min = *minimum;
-    result.max = *maximum;
-    result.total = std::accumulate( timer.begin(), timer.end(), 0.0 );
-    result.mean = result.total / result.count;
-    double variance = 0;
-    for ( double value : timer )
-        variance += ( value - result.mean ) * ( value - result.mean );
-    result.stdDev = std::sqrt( variance / result.count );
+    result.min = timer.min();
+    result.max = timer.max();
+    result.total = timer.total();
+    result.mean = timer.mean();
+    result.stdDev = timer.stdDev();
     return result;
 }
 
@@ -75,8 +70,26 @@ TimerData::TimerData( std::string const& message, std::string const& instanceNam
 
 void TimerData::add( std::pair<double, int> const& sample )
 {
-    this->push_back( sample.first );
+    double elapsed = sample.first;
+    if ( !std::isfinite( elapsed ) || elapsed < 0 )
+        return;
+    M_Statistics.add( elapsed );
+    M_Last = elapsed;
+    M_Quantiles.add( elapsed );
     level = sample.second;
+}
+
+double TimerData::stdDev() const
+{
+    return M_Statistics.stdDev();
+}
+
+TimerProfileSnapshot TimerData::profileSnapshot() const
+{
+    TimerProfileSnapshot result;
+    result.statistics = M_Statistics;
+    result.quantiles = M_Quantiles;
+    return result;
 }
 
 TimerTable::TimerTable()
@@ -91,7 +104,7 @@ TimerTable::~TimerTable()
 void TimerTable::add( std::string const& message, std::pair<double, int> const& sample,
                       std::string const& instanceName )
 {
-    if ( message.empty() )
+    if ( message.empty() || !std::isfinite( sample.first ) || sample.first < 0 )
         return;
     auto it = this->find( message );
     if ( it == this->end() )
@@ -100,12 +113,19 @@ void TimerTable::add( std::string const& message, std::pair<double, int> const& 
     M_max_len = std::max( M_max_len, message.size() + 2 * static_cast<std::size_t>( std::max( sample.second, 0 ) ) );
 }
 
-double TimerTable::lastOrNaN( std::string const& message ) const
+std::vector<std::string> TimerTable::labels() const
+{
+    std::vector<std::string> result;
+    result.reserve( this->size() );
+    for ( auto it = this->begin(); it != this->end(); ++it )
+        result.push_back( it->first );
+    return result;
+}
+
+TimerProfileSnapshot TimerTable::profileSnapshot( std::string const& message ) const
 {
     auto it = this->find( message );
-    if ( it == this->end() || it->second.empty() )
-        return std::numeric_limits<double>::quiet_NaN();
-    return it->second.back();
+    return it == this->end() ? TimerProfileSnapshot{} : it->second.profileSnapshot();
 }
 
 void TimerTable::save( bool display )
