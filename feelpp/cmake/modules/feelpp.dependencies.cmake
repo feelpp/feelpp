@@ -1844,6 +1844,20 @@ if ( FEELPP_ENABLE_LIBCURL )
   endif()
 endif()
 
+
+option( FEELPP_ENABLE_PRECICE "Enable precice in Feel++" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+message(STATUS "[feelpp] FEELPP_ENABLE_PRECICE=${FEELPP_ENABLE_PRECICE}" )
+if ( FEELPP_ENABLE_PRECICE )
+  #find_package(precice 3.0 REQUIRED CONFIG)
+  find_package(precice CONFIG REQUIRED)
+  if( precice_FOUND )
+    set( FEELPP_HAS_PRECICE 1 )
+    message(STATUS "[feelpp] preCICE: ${PRECICE_LIBRARIES}" )
+    #set( FEELPP_LIBRARIES ${PRECICE_LIBRARIES} ${FEELPP_LIBRARIES} )
+    set( FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} preCICE/${PRECICE_VERSION_STRING}" )
+  endif()
+endif()
+
 #
 # if Feel++ has been installed on the system
 #

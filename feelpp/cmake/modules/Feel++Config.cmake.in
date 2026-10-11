@@ -136,6 +136,9 @@ set(SIMULATIONRUNTIMEC_LIBRARY "@SIMULATIONRUNTIMEC_LIBRARY@")
 set(FMILIB_INCLUDE_DIR "@FMILIB_INCLUDE_DIR@" )
 set(FMILIB_LIBRARIES "@FMILIB_LIBRARIES@" )
 
+# preCICE
+set(FEELPP_HAS_PRECICE "@FEELPP_HAS_PRECICE@")
+
 set(Python3_EXECUTABLE "@Python3_EXECUTABLE@")
 set(Python3_INCLUDE_DIRS "@Python3_INCLUDE_DIRS@")
 set(Python3_LIBRARIES "@Python3_LIBRARIES@")
@@ -266,6 +269,9 @@ if (NOT FEELPP_DONT_SETUP_CMAKE)
     find_dependency( VTK )
   endif()
   #find_dependency( OpenTURNS )
+  if ( FEELPP_HAS_PRECICE )
+    find_dependency( precice )
+  endif()
 
   if ( NOT TARGET Feelpp::feelpp )
     include("${CMAKE_CURRENT_LIST_DIR}/FeelppTargets.cmake")

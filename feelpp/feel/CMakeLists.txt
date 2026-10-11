@@ -295,6 +295,11 @@ if ( OPENTURNS_FOUND )
   target_include_directories( feelpp PUBLIC ${OpenTURNS_INCLUDE_DIRS} )
   target_link_libraries( feelpp PUBLIC ${OpenTURNS_LIBRARIES} )
 endif()
+if( precice_FOUND )
+  target_compile_definitions( feelpp PUBLIC FEELPP_HAS_PRECICE )
+  target_link_libraries( feelpp PUBLIC precice::precice)
+endif()
+
 
 find_package(PkgConfig REQUIRED)
 
