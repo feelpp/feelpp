@@ -631,6 +631,7 @@ public:
                     feelDataField.set( f_dofid, preciceDataValues[ _space_type::nComponents * p_id + k ] );
                 }
             }
+            sync( feelDataField );
 
             readData.invokeDataUpdated();
         }
@@ -910,7 +911,8 @@ public:
     auto initCouplingMesh( std::string const& preciceMeshName, RangeElts const& rangeElts )
         {
             using precice_coupling_mesh_type = PreciceCouplingMesh<mesh_type, Location>;
-            M_couplingMesh[preciceMeshName] = std::make_unique<precice_coupling_mesh_type>( *M_precice, shared_from_this(rangeElts.mesh()), rangeElts, preciceMeshName );
+            M_couplingMesh[preciceMeshName] = std::make_unique<precice_coupling_mesh_type>( *M_precice, const_cast<mesh_type*>( rangeElts.mesh() )->shared_from_this(),
+                                                                                            rangeElts, preciceMeshName );
             return std::get<std::unique_ptr<precice_coupling_mesh_type>>( M_couplingMesh.at( preciceMeshName ) ).get();
         }
 
