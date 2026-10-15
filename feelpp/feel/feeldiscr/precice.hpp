@@ -70,6 +70,196 @@ concept RangeOnFaces = requires {
 
 } // namespace concepts
 
+
+/**
+ * @enum PreciceCouplingMeshLocation
+ * @brief Discretization location for preCICE coupling mesh vertices.
+ */
+enum class PreciceCouplingMeshLocation { vertices = 0, barycenter };
+
+/**
+ * @enum PreciceDataShapeType
+ * @brief Shape type for preCICE coupling data (scalar or vector).
+ */
+enum class PreciceDataShapeType { scalar = 0, vector };
+
+
+/**
+ * @class PreciceSetupData
+ * @brief Represents a preCICE coupling data setup.
+ */
+class PreciceSetupData
+{
+public:
+    PreciceSetupData() = default;
+    PreciceSetupData( PreciceSetupData const& ) = default;
+    PreciceSetupData( PreciceSetupData&& ) = default;
+    PreciceSetupData& operator=( PreciceSetupData const& )= default;
+    PreciceSetupData& operator=( PreciceSetupData&& )= default;
+
+    std::string const& name() const { return M_name; }
+    PreciceDataShapeType shape() const { return M_shape; }
+    nl::json const& properties() const { return M_properties; }
+
+    bool is( PreciceDataShapeType shapeType ) const { return M_shape == shapeType; }
+    bool isScalar() const { return M_shape == PreciceDataShapeType::scalar; }
+    bool isVector() const { return M_shape == PreciceDataShapeType::vector; }
+
+    static PreciceSetupData fromJson( nl::json const& j )
+    {
+        std::string dataName = j.at( "name" ).get<std::string>();
+        std::string dataType = boost::algorithm::to_lower_copy( j.at( "shape" ).get<std::string>() );
+        if ( dataType != "scalar" && dataType != "vector" )
+            throw std::runtime_error( fmt::format( "PreciceSetupData: invalid data type: {}. Must be 'scalar' or 'vector'", dataType ) );
+        nl::json dataProperties = j.at( "properties" );
+        PreciceSetupData res;
+        res.M_name = dataName;
+        res.M_shape = ( dataType == "scalar" ) ? PreciceDataShapeType::scalar : PreciceDataShapeType::vector;
+        res.M_properties = dataProperties;
+        return res;
+    }
+private:
+    std::string M_name;
+    PreciceDataShapeType M_shape;
+    nl::json M_properties;
+};
+
+/**
+ * @class PreciceSetupCouplingMesh
+ * @brief Represents a preCICE coupling mesh setup.
+ */
+class PreciceSetupCouplingMesh
+{
+public:
+    PreciceSetupCouplingMesh() = default;
+    PreciceSetupCouplingMesh( PreciceSetupCouplingMesh const& ) = default;
+    PreciceSetupCouplingMesh( PreciceSetupCouplingMesh&& ) = default;
+    PreciceSetupCouplingMesh& operator=( PreciceSetupCouplingMesh const& )= default;
+    PreciceSetupCouplingMesh& operator=( PreciceSetupCouplingMesh&& )= default;
+
+    std::string const& name() const { return M_name; }
+    std::string const& markers() const { return M_markers; }
+    PreciceCouplingMeshLocation locations() const { return M_locations; }
+    bool isLocatedOnVertices() const { return M_locations == PreciceCouplingMeshLocation::vertices; }
+    bool isLocatedOnBarycenter() const { return M_locations == PreciceCouplingMeshLocation::barycenter; }
+    std::vector<std::string> const& readDataNames() const { return M_readDataNames; }
+    std::vector<std::string> const& writeDataNames() const { return M_writeDataNames; }
+
+    static PreciceSetupCouplingMesh fromJson( nl::json const& j )
+    {
+        std::string meshName = j.at( "name" ).get<std::string>();
+        std::string markers = j.at( "markers" ).get<std::string>();
+        std::string locations = boost::algorithm::to_lower_copy( j.at( "locations" ).get<std::string>() );
+        if ( locations != "vertices" && locations != "barycenter" )
+            throw std::runtime_error( fmt::format( "PreciceSetupCouplingMesh: invalid locations value: {}. Must be 'vertices' or 'barycenter'", locations ) );
+        std::vector<std::string> readData = j.at( "readData" ).get<std::vector<std::string>>();
+        std::vector<std::string> writeData = j.at( "writeData" ).get<std::vector<std::string>>();
+        PreciceSetupCouplingMesh res;
+        res.M_name = meshName;
+        res.M_markers = markers;
+        res.M_locations = ( locations == "vertices" ) ? PreciceCouplingMeshLocation::vertices : PreciceCouplingMeshLocation::barycenter;
+        res.M_readDataNames = readData;
+        res.M_writeDataNames = writeData;
+        return res;
+    }
+private:
+    std::string M_name;
+    std::string M_markers;
+    PreciceCouplingMeshLocation M_locations;
+    std::vector<std::string> M_readDataNames;
+    std::vector<std::string> M_writeDataNames;
+};
+
+/**
+ * @class PreciceParticipantSetup
+ * @brief Represents a preCICE participant setup, including meshes and data.
+ */
+class PreciceParticipantSetup
+{
+public:
+    PreciceParticipantSetup( std::string const& participantName, std::string const& configFileName )
+        :
+        M_participantName( participantName ),
+        M_configFileName( Environment::expand( configFileName ) )
+    {
+    }
+
+    static PreciceParticipantSetup fromJson( nl::json const& j )
+    {
+        std::string participantName = j.at( "participant" ).get<std::string>();
+        std::string configFileName = j.at( "configFileName" ).get<std::string>();
+        PreciceParticipantSetup res( participantName, configFileName );
+        for ( auto const& [meshName, meshData] : j.at( "couplingMeshes" ).items() )
+        {
+            PreciceSetupCouplingMesh couplingMesh = PreciceSetupCouplingMesh::fromJson( meshData );
+            res.M_couplingMeshes[couplingMesh.name()] = couplingMesh;
+        }
+        for ( auto const& [dataName, dataData] : j.at( "data" ).items() )
+        {
+            PreciceSetupData couplingData = PreciceSetupData::fromJson( dataData );
+            res.M_couplingData[couplingData.name()] = couplingData;
+        }
+        return res;
+    }
+
+    /**
+     * @brief Get the participant name.
+     * @return Reference to the participant name string.
+     */
+    std::string const& name() const { return M_participantName; }
+
+    /**
+     * @brief Get the configuration file name.
+     * @return Reference to the configuration file name string.
+     */
+    std::string const& configFileName() const { return M_configFileName; }
+
+    /**
+     * @brief Get the coupling data map.
+     * @return Const reference to the map of coupling data.
+     */
+    std::map<std::string, PreciceSetupData> const& couplingData() const { return M_couplingData; }
+
+    /**
+     * @brief Get a specific coupling data by name.
+     * @param dataName Name of the coupling data.
+     * @return Const reference to the corresponding PreciceSetupData.
+     * @throws std::runtime_error if the data name is not found.
+     */
+    PreciceSetupData const& couplingData( std::string const& dataName ) const
+    {
+        auto it = M_couplingData.find( dataName );
+        if ( it == M_couplingData.end() )
+            throw std::runtime_error( "PreciceParticipantSetup: coupling data not found: " + dataName );
+        return it->second;
+    }
+
+    /**
+     * @brief Get the coupling meshes map.
+     * @return Const reference to the map of coupling meshes.
+     */
+    std::map<std::string, PreciceSetupCouplingMesh> const& couplingMeshes() const { return M_couplingMeshes; }
+
+    /**
+     * @brief Get a specific coupling mesh by name.
+     * @param meshName Name of the coupling mesh.
+     * @return Const reference to the corresponding PreciceSetupCouplingMesh.
+     * @throws std::runtime_error if the mesh name is not found.
+     */
+    PreciceSetupCouplingMesh const& couplingMesh( std::string const& meshName ) const
+        {
+            auto it = M_couplingMeshes.find( meshName );
+            if ( it == M_couplingMeshes.end() )
+                throw std::runtime_error( "PreciceParticipantSetup: coupling mesh not found: " + meshName );
+            return it->second;
+        }
+private:
+    std::string M_participantName;
+    std::string M_configFileName;
+    std::map<std::string, PreciceSetupData> M_couplingData;
+    std::map<std::string, PreciceSetupCouplingMesh> M_couplingMeshes;
+};
+
 /**
  * @class PreciceData
  * @brief Abstract base class representing data exchanged via preCICE.
@@ -81,7 +271,8 @@ public:
      * @enum ShapeType
      * @brief Data shape classification (scalar or vector).
      */
-    enum class ShapeType { scalar = 0, vector };
+    //enum class ShapeType { scalar = 0, vector };
+    using ShapeType = PreciceDataShapeType;
 
     /**
      * @enum ModeType
@@ -93,8 +284,9 @@ public:
      * @brief Constructor for PreciceData.
      * @param name Name of the preCICE data set.
      */
-    explicit PreciceData( std::string const& name )
-        : M_name( name )
+    explicit PreciceData( std::string const& name, nl::json const& properties = {} )
+        : M_name( name ),
+          M_properties( properties )
         {}
 
     PreciceData( PreciceData const& ) = default;
@@ -121,8 +313,15 @@ public:
      */
     virtual ModeType mode() const = 0;
 
+    /**
+     * @brief Get the properties associated with the data.
+     * @return Const reference to a JSON object containing properties.
+     */
+    nl::json const& properties() const { return M_properties; }
+
 private:
     std::string M_name;
+    nl::json M_properties;
 };
 
 /**
@@ -141,8 +340,8 @@ public:
      * @brief Constructor for PreciceReadWriteData.
      * @param name Name of the data set.
      */
-    explicit PreciceReadWriteData( std::string const& name )
-        : PreciceData( name )
+    explicit PreciceReadWriteData( std::string const& name, nl::json const& properties = {} )
+        : PreciceData( name, properties )
         {}
 
     /**
@@ -196,10 +395,11 @@ public:
     /**
      * @brief Constructor for PreciceReadData.
      * @param name Name of the preCICE data.
+     * @param properties Optional JSON object containing additional properties for the data.
      * @param func Optional callback invoked after data is read and updated.
      */
-    PreciceReadData( std::string const& name, callback_dataupdated_type func = {} )
-        : super_type( name ),
+    PreciceReadData( std::string const& name, nl::json const& properties = {}, callback_dataupdated_type func = {} )
+        : super_type( name, properties ),
           M_func( func )
         {}
 
@@ -253,10 +453,11 @@ public:
     /**
      * @brief Constructor for PreciceWriteData.
      * @param name Name of the preCICE data.
+     * @param properties Optional JSON object containing additional properties for the data.
      * @param func Optional callback invoked when data is requested before writing.
      */
-    PreciceWriteData( std::string const& name, callback_datarequested_type func = {} )
-        : super_type( name ),
+    PreciceWriteData( std::string const& name, nl::json const& properties = {}, callback_datarequested_type func = {} )
+        : super_type( name, properties ),
           M_func( func )
         {}
 
@@ -293,11 +494,6 @@ private:
     callback_datarequested_type M_func;
 };
 
-/**
- * @enum PreciceCouplingMeshLocation
- * @brief Discretization location for preCICE coupling mesh vertices.
- */
-enum class PreciceCouplingMeshLocation { vertices = 0, barycenter };
 
 /**
  * @class PreciceCouplingMesh
@@ -315,6 +511,8 @@ class PreciceCouplingMesh
 public:
     using mesh_type = MeshType;
     static constexpr PreciceCouplingMeshLocation location_c = Location;
+    static constexpr bool isOnVertices_c = location_c == PreciceCouplingMeshLocation::vertices;
+    static constexpr bool isOnBarycenter_c = location_c == PreciceCouplingMeshLocation::barycenter;
     using mesh_ptrtype = std::shared_ptr<mesh_type>;
 
     using space_scalar_type = std::conditional_t<location_c == PreciceCouplingMeshLocation::vertices,
@@ -388,13 +586,14 @@ public:
      * @tparam Shape Data shape (scalar or vector).
      * @tparam FuncType Callback type.
      * @param preciceDataName Name of data in preCICE.
+     * @param properties Optional JSON object containing additional properties for the data.
      * @param func Optional callback triggered when write data is requested.
      * @return Reference to initialized PreciceWriteData.
      */
     template <PreciceData::ShapeType Shape, typename FuncType = typename PreciceWriteData<space_from_shape_t<Shape>>::callback_datarequested_type>
-    PreciceWriteData< space_from_shape_t<Shape> > & initWriteData( std::string const& preciceDataName, FuncType && func = {} )
+    PreciceWriteData< space_from_shape_t<Shape> > & initWriteData( std::string const& preciceDataName, nl::json const& properties = {}, FuncType && func = {} )
         {
-            return this->initWriteData< space_index_from_shape_v<Shape>, FuncType >( preciceDataName, std::forward<FuncType>( func ) );
+            return this->initWriteData< space_index_from_shape_v<Shape>, FuncType >( preciceDataName, properties, std::forward<FuncType>( func ) );
         }
 
     /**
@@ -402,11 +601,12 @@ public:
      * @tparam S SpaceIndex.
      * @tparam FuncType Callback type.
      * @param preciceDataName Name of data in preCICE.
+     * @param properties Optional JSON object containing additional properties for the data.
      * @param func Optional callback triggered when write data is requested.
      * @return Reference to initialized PreciceWriteData.
      */
     template <SpaceIndex S, typename FuncType = typename PreciceWriteData<space_type_t<S>>::callback_datarequested_type>
-    PreciceWriteData<space_type_t<S>> & initWriteData( std::string const& preciceDataName, FuncType && func = {} )
+    PreciceWriteData<space_type_t<S>> & initWriteData( std::string const& preciceDataName, nl::json const& properties = {}, FuncType && func = {} )
         {
             static constexpr int space_index = std::to_underlying(S);
             using _space_type = std::tuple_element_t<space_index, spaces_type>;
@@ -415,7 +615,7 @@ public:
 
             auto itFindData = writeDataMap.find( preciceDataName );
             if ( itFindData == writeDataMap.end() )
-                writeDataMap.emplace( preciceDataName, PreciceWriteData<_space_type>( preciceDataName, func ) );
+                writeDataMap.emplace( preciceDataName, PreciceWriteData<_space_type>( preciceDataName, properties, func ) );
             else if constexpr ( requires { static_cast<bool>(func); } ) {
                 if ( func )
                     itFindData->second.setCallbackDataRequested( std::forward<FuncType>( func ) );
@@ -433,11 +633,12 @@ public:
             }
             return writeData;
         }
-
+#if 0
     /** @brief Initialize scalar write data. */
     PreciceWriteData<space_type_t<SpaceIndex::lagrange_scalar>> & initWriteScalarData( std::string const& preciceDataName ) { return this->initWriteData<SpaceIndex::lagrange_scalar>( preciceDataName ); }
     /** @brief Initialize vector write data. */
     PreciceWriteData<space_type_t<SpaceIndex::lagrange_vector>> & initWriteVectorData( std::string const& preciceDataName ) { return this->initWriteData<SpaceIndex::lagrange_vector>( preciceDataName ); }
+#endif
 
     /**
      * @brief Check if a write data set has been initialized.
@@ -517,13 +718,14 @@ public:
      * @tparam Shape Data shape.
      * @tparam FuncType Callback type.
      * @param preciceDataName Name of data in preCICE.
+     * @param properties Optional JSON object containing additional properties for the data.
      * @param func Optional callback triggered after data update.
      * @return Reference to initialized PreciceReadData.
      */
     template <PreciceData::ShapeType Shape, typename FuncType = typename PreciceReadData<space_from_shape_t<Shape>>::callback_dataupdated_type>
-    PreciceReadData< space_from_shape_t<Shape> > & initReadData( std::string const& preciceDataName, FuncType && func = {} )
+    PreciceReadData< space_from_shape_t<Shape> > & initReadData( std::string const& preciceDataName, nl::json const& properties = {}, FuncType && func = {} )
         {
-            return this->initReadData< space_index_from_shape_v<Shape>, FuncType >( preciceDataName, std::forward<FuncType>( func ) );
+            return this->initReadData< space_index_from_shape_v<Shape>, FuncType >( preciceDataName, properties, std::forward<FuncType>( func ) );
         }
 
     /**
@@ -531,11 +733,12 @@ public:
      * @tparam S SpaceIndex.
      * @tparam FuncType Callback type.
      * @param preciceDataName Name of data in preCICE.
+     * @param properties Optional JSON object containing additional properties for the data.
      * @param func Optional callback triggered after data update.
      * @return Reference to initialized PreciceReadData.
      */
     template <SpaceIndex S, typename FuncType = typename PreciceReadData<space_type_t<S>>::callback_dataupdated_type>
-    PreciceReadData<space_type_t<S>> & initReadData( std::string const& preciceDataName, FuncType && func = {} )
+    PreciceReadData<space_type_t<S>> & initReadData( std::string const& preciceDataName, nl::json const& properties = {}, FuncType && func = {} )
         {
             static constexpr int space_index = std::to_underlying(S);
             using _space_type = std::tuple_element_t<space_index, spaces_type>;
@@ -544,7 +747,7 @@ public:
 
             auto itFindData = readDataMap.find( preciceDataName );
             if ( itFindData == readDataMap.end() )
-                readDataMap.emplace( preciceDataName, PreciceReadData<_space_type>( preciceDataName, func ) );
+                readDataMap.emplace( preciceDataName, PreciceReadData<_space_type>( preciceDataName, properties, func ) );
             else if constexpr ( requires { static_cast<bool>(func); } ) {
                 if ( func )
                     itFindData->second.setCallbackDataUpdated( std::forward<FuncType>( func ) );
@@ -557,12 +760,12 @@ public:
                 readData.setField( space->elementPtr() );
             return readData;
         }
-
+#if 0
     /** @brief Initialize scalar read data. */
     PreciceReadData<space_type_t<SpaceIndex::lagrange_scalar>> & initReadScalarData( std::string const& preciceDataName ) { return this->initReadData<SpaceIndex::lagrange_scalar>( preciceDataName ); }
     /** @brief Initialize vector read data. */
     PreciceReadData<space_type_t<SpaceIndex::lagrange_vector>> & initReadVectorData( std::string const& preciceDataName ) { return this->initReadData<SpaceIndex::lagrange_vector>( preciceDataName ); }
-
+#endif
     /**
      * @brief Check if a read data set has been initialized.
      * @tparam S SpaceIndex.
@@ -853,6 +1056,7 @@ public:
     using mesh_type = MeshType;
     using mesh_ptrtype = std::shared_ptr<mesh_type>;
     using trace_mesh_type = trace_mesh_t<mesh_type>;
+    using variant_mesh_range_type = std::variant<Range<mesh_type,MESH_ELEMENTS>, Range<mesh_type,MESH_FACES> >;
 
     PreciceAdapter() = default;
 
@@ -879,16 +1083,23 @@ public:
 
     /**
      * @brief Initialize preCICE participant instance.
-     * @param solverName Participant name in precice-config.xml.
+     * @param participantName Participant name in precice-config.xml.
      * @param configFileName Path to precice-config.xml.
      * @param worldComm MPI communicator context (defaults to Feel++ WorldComm).
      */
-    void initParticipant( std::string const& solverName, std::string const& configFileName,
+    void initParticipant( std::string const& participantName, std::string const& configFileName,
                           WorldComm const& worldComm = Environment::worldComm() )
         {
-            M_precice = std::make_unique< precice::Participant >( solverName, configFileName,
+            M_precice = std::make_unique< precice::Participant >( participantName, configFileName,
                                                                   /*comm_rank*/ worldComm.globalRank(),
                                                                   /*comm_size*/ worldComm.globalSize() );
+        }
+
+
+    void initParticipant( PreciceParticipantSetup const& setup,
+                          WorldComm const& worldComm = Environment::worldComm() )
+        {
+            this->initParticipant( setup.name(), setup.configFileName(), worldComm );
         }
 
     /**
@@ -931,6 +1142,92 @@ public:
             auto submesh = createSubmesh( _range = rangeFaces, _view = true );
             M_couplingMesh[preciceMeshName] = std::make_unique<precice_coupling_mesh_type>( *M_precice, submesh, preciceMeshName );
             return std::get<std::unique_ptr<precice_coupling_mesh_type>>( M_couplingMesh.at( preciceMeshName ) ).get();
+        }
+
+    /**
+     * @brief Initialize all coupling meshes based on provided setup and callback function.
+     * @tparam F Callback type.
+     * @param setup PreciceParticipantSetup instance containing coupling mesh configurations.
+     * @param func Callback function invoked for each initialized coupling mesh and should return a range (element or face) for the mesh.
+     */
+    template <typename F>
+    void initAllCouplingMeshes( PreciceParticipantSetup const& setup, F && func )
+        {
+            for ( auto const& [name, meshSetup] : setup.couplingMeshes() )
+            {
+                auto range = std::invoke( func, meshSetup );
+                variant_mesh_range_type rangeVariant = std::invoke( func, meshSetup );
+                std::visit( [this,&name,&meshSetup]( auto const& range ){
+                                if ( meshSetup.isLocatedOnVertices() )
+                                    this->initCouplingMesh<PreciceCouplingMeshLocation::vertices>( name, range );
+                                else if ( meshSetup.isLocatedOnBarycenter() )
+                                    this->initCouplingMesh<PreciceCouplingMeshLocation::barycenter>( name, range );
+                            }, rangeVariant );
+            }
+        }
+
+    /* @brief Initialize all write data sets across registered coupling meshes.
+     * @tparam Shape Data shape (scalar or vector).
+     * @tparam F Callback type.
+     * @param setup PreciceParticipantSetup instance containing coupling mesh and data configurations.
+     * @param func Callback function invoked for each initialized write data set.
+     */
+    template <PreciceData::ShapeType Shape, typename F>
+    void initAllWriteData( PreciceParticipantSetup const& setup, F && func )
+        {
+            for ( auto const& [name, meshSetup] : setup.couplingMeshes() )
+            {
+                auto itFindMesh = M_couplingMesh.find( name );
+                if ( itFindMesh == M_couplingMesh.end() )
+                    throw std::runtime_error( fmt::format( "PreciceAdapter::initAllWriteData : no coupling mesh with name {} has been initialized", name ) );
+                std::visit( [this,&setup,&meshSetup,&func]( auto & couplingMeshPtr ){
+                                for ( std::string const& dataName : meshSetup.writeDataNames() )
+                                {
+                                    auto dataSetup = setup.couplingData( dataName );
+                                    if ( dataSetup.is( Shape ) )
+                                    {
+                                        couplingMeshPtr->template initWriteData<Shape>
+                                            ( dataName,
+                                              dataSetup.properties(),
+                                              [func,couplingMeshPtr=couplingMeshPtr.get()]( auto & writeData ){
+                                                  std::invoke( func, writeData, *couplingMeshPtr );
+                                              } );
+                                    }
+                                }
+                            }, itFindMesh->second );
+            }
+        }
+
+    /* @brief Initialize all read data sets across registered coupling meshes.
+     * @tparam Shape Data shape (scalar or vector).
+     * @tparam F Callback type.
+     * @param setup PreciceParticipantSetup instance containing coupling mesh and data configurations.
+     * @param func Callback function invoked for each initialized read data set.
+     */
+    template <PreciceData::ShapeType Shape,typename F>
+    void initAllReadData( PreciceParticipantSetup const& setup, F && func )
+        {
+            for ( auto const& [name, meshSetup] : setup.couplingMeshes() )
+            {
+                auto itFindMesh = M_couplingMesh.find( name );
+                if ( itFindMesh == M_couplingMesh.end() )
+                    throw std::runtime_error( fmt::format( "PreciceAdapter::initAllReadData : no coupling mesh with name {} has been initialized", name ) );
+                std::visit( [this,&setup,&meshSetup,&func]( auto & couplingMeshPtr ){
+                                for ( std::string const& dataName : meshSetup.readDataNames() )
+                                {
+                                    auto dataSetup = setup.couplingData( dataName );
+                                    if ( dataSetup.is( Shape ) )
+                                    {
+                                        couplingMeshPtr->template initReadData<Shape>
+                                            ( dataName,
+                                              dataSetup.properties(),
+                                              [func,couplingMeshPtr=couplingMeshPtr.get()]( auto & readData ){
+                                                  std::invoke( func, readData, *couplingMeshPtr );
+                                              } );
+                                    }
+                                }
+                            }, itFindMesh->second );
+            }
         }
 
     /**
