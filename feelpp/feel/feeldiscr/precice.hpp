@@ -592,7 +592,7 @@ public:
         {
             static constexpr int space_index = std::to_underlying(S);
             using _space_type = std::tuple_element_t<space_index, spaces_type>;
-            auto space = std::get<space_index>( M_spaces );
+            auto & space = std::get<space_index>( M_spaces );
             if ( !space )
             {
                 if constexpr ( range_mesh_entities_type::isOnElements() )
@@ -607,6 +607,36 @@ public:
     std::shared_ptr<space_scalar_type> initSpaceScalar() { return this->initSpace<SpaceIndex::lagrange_scalar>(); }
     /** @brief Initialize vector function space. */
     std::shared_ptr<space_vector_type> initSpaceVector() { return this->initSpace<SpaceIndex::lagrange_vector>(); }
+
+    /**
+     * @brief Retrieve a function space by SpaceIndex.
+     * @tparam S SpaceIndex (lagrange_scalar or lagrange_vector).
+     * @return Shared pointer to the requested FunctionSpace.
+     * @throws std::runtime_error if the space has not been initialized yet.
+     */
+    template <SpaceIndex S>
+    auto getSpace() const
+        {
+            static constexpr int space_index = std::to_underlying(S);
+            auto space = std::get<space_index>( M_spaces );
+            if ( !space )
+                throw std::runtime_error( "PreciceCouplingMesh::getSpace : space has not been initialized yet" );
+            return space;
+        }
+
+    /**
+     * @brief Retrieve a function space by ShapeType (scalar or vector).
+     * @tparam Shape Data shape type.
+     * @return Shared pointer to the requested FunctionSpace.
+     * @throws std::runtime_error if the space has not been initialized yet.
+     */
+    template <PreciceData::ShapeType Shape>
+    auto getSpace() const { return this->getSpace< space_index_from_shape_v<Shape> >(); }
+
+    /** @brief Retrieve the scalar function space. */
+    auto getSpaceScalar() const { return this->getSpace<SpaceIndex::lagrange_scalar>(); }
+    /** @brief Retrieve the vector function space. */
+    auto getSpaceVector() const { return this->getSpace<SpaceIndex::lagrange_vector>(); }
 
     /**
      * @brief Initialize write data set by ShapeType.
@@ -884,6 +914,50 @@ public:
             std::apply([applyWriteData]<typename... T>(T&&... args) {
                     ((applyWriteData( args )), ...);
                 }, M_writeData);
+        }
+
+
+
+    /** @brief Update Feel++ field data from an expression by using either nodal or L2 projection. */
+    template <typename DataType,typename ExprType>
+    void updateDataField( DataType & data, ExprType const& expr, bool useNodalProjection = false ) const
+        {
+            auto rangeEntities = this->rangeMeshEntities();
+            if ( useNodalProjection )
+            {
+                data.field().on( _range=rangeEntities, _expr=expr,_close=true );
+            }
+            else // L2 projection
+            {
+                if constexpr ( DataType::space_type::is_continuous )
+                {
+                    throw std::runtime_error( "PreciceCouplingMesh::updateDataField : TODO: L2 projection is not supported for continuous function spaces" );
+                }
+                else
+                {
+                    auto P0d = this->getSpace<DataType::shape_c>();
+                    auto F = Feel::backend()->newVector( _test=P0d );
+                    auto uProj = P0d->element( F );
+                    if constexpr ( range_mesh_entities_type::isOnElements() )
+                    {
+                        form1( _test=P0d, _vector=F )
+                            = integrate( _range=rangeEntities,
+                                         _expr=inner(expr,id(uProj))/meas() );
+                    }
+                    else if constexpr ( range_mesh_entities_type::isOnFaces() )
+                    {
+                        form1( _test=P0d, _vector=F )
+                            = integrate( _range=rangeEntities,
+                                         _expr=inner(expr,id(uProj))/measFace() );
+                    }
+                    else
+                    {
+                        throw std::runtime_error( "PreciceCouplingMesh::updateDataField : unsupported range of mesh entities" );
+                    }
+                    F->close();
+                    data.field() = uProj;
+                }
+            }
         }
 
 private:
