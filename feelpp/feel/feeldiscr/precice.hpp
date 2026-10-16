@@ -83,6 +83,11 @@ enum class PreciceCouplingMeshLocation { vertices = 0, barycenter };
  */
 enum class PreciceDataShapeType { scalar = 0, vector };
 
+/**
+ * @enum PreciceFieldProjectionType
+ * @brief Projection type for preCICE coupling fields (nodal or L2).
+ */
+enum class PreciceFieldProjectionType { nodal = 0, L2 };
 
 /**
  * @class PreciceSetupData
@@ -131,6 +136,58 @@ private:
 class PreciceSetupCouplingMesh
 {
 public:
+    class WriteMetadata
+    {
+    public:
+        WriteMetadata() = default;
+        WriteMetadata( std::string const& dataName, PreciceFieldProjectionType projType, nl::json const& properties = nl::json{} )
+            :
+            M_name( dataName ),
+            M_projectionType( projType ),
+            M_properties( properties )
+        {}
+        WriteMetadata( WriteMetadata const& ) = default;
+        WriteMetadata( WriteMetadata&& ) = default;
+        WriteMetadata& operator=( WriteMetadata const& )= default;
+        WriteMetadata& operator=( WriteMetadata&& )= default;
+
+        std::string const& name() const { return M_name; }
+        PreciceFieldProjectionType projectionType() const { return M_projectionType; }
+
+        static WriteMetadata fromJson( nl::json const& j )
+        {
+            if ( j.is_object() )
+            {
+                std::string dataName = j.at( "name" ).get<std::string>();
+                PreciceFieldProjectionType projectionType = PreciceFieldProjectionType::L2; // default projection type
+                if ( j.contains( "projection" ) )
+                {
+                    std::string projectionTypeStr = boost::algorithm::to_lower_copy( j.at( "projection" ).get<std::string>() );
+                    if ( projectionTypeStr == "nodal" )
+                        projectionType = PreciceFieldProjectionType::nodal;
+                    else if ( projectionTypeStr == "l2" )
+                        projectionType = PreciceFieldProjectionType::L2;
+                    else
+                        throw std::runtime_error( fmt::format( "PreciceSetupCouplingMesh: invalid projection type: {}. Must be 'nodal', or 'L2'", projectionTypeStr ) );
+                }
+                nl::json writeProperties = j.value( "properties", nl::json{} );
+                return WriteMetadata{ dataName, projectionType, writeProperties };
+            }
+            else if ( j.is_string() )
+            {
+                std::string dataName = j.get<std::string>();
+                return WriteMetadata{ dataName, PreciceFieldProjectionType::L2 }; // default projection type
+            }
+            else
+            {
+                throw std::runtime_error( "PreciceSetupCouplingMesh: invalid writeData format. Must be an object or a string." );
+            }
+        }
+    private:
+        std::string M_name;
+        PreciceFieldProjectionType M_projectionType = PreciceFieldProjectionType::L2;
+        nl::json M_properties;
+    };
     PreciceSetupCouplingMesh() = default;
     PreciceSetupCouplingMesh( PreciceSetupCouplingMesh const& ) = default;
     PreciceSetupCouplingMesh( PreciceSetupCouplingMesh&& ) = default;
@@ -143,7 +200,7 @@ public:
     bool isLocatedOnVertices() const { return M_locations == PreciceCouplingMeshLocation::vertices; }
     bool isLocatedOnBarycenter() const { return M_locations == PreciceCouplingMeshLocation::barycenter; }
     std::vector<std::string> const& readDataNames() const { return M_readDataNames; }
-    std::vector<std::string> const& writeDataNames() const { return M_writeDataNames; }
+    std::map<std::string, WriteMetadata> const& writeDataMap() const { return M_writeDataMap; }
 
     static PreciceSetupCouplingMesh fromJson( nl::json const& j )
     {
@@ -153,13 +210,18 @@ public:
         if ( locations != "vertices" && locations != "barycenter" )
             throw std::runtime_error( fmt::format( "PreciceSetupCouplingMesh: invalid locations value: {}. Must be 'vertices' or 'barycenter'", locations ) );
         std::vector<std::string> readData = j.at( "readData" ).get<std::vector<std::string>>();
-        std::vector<std::string> writeData = j.at( "writeData" ).get<std::vector<std::string>>();
+        nl::json writeDataJson = j.at( "writeData" );
         PreciceSetupCouplingMesh res;
         res.M_name = meshName;
         res.M_markers = markers;
         res.M_locations = ( locations == "vertices" ) ? PreciceCouplingMeshLocation::vertices : PreciceCouplingMeshLocation::barycenter;
         res.M_readDataNames = readData;
-        res.M_writeDataNames = writeData;
+        for ( auto const& [dataRank, dataData] : writeDataJson.items() )
+        {
+            WriteMetadata writeData = WriteMetadata::fromJson( dataData );
+            res.M_writeDataMap[writeData.name()] = std::move( writeData );
+        }
+
         return res;
     }
 private:
@@ -167,7 +229,7 @@ private:
     std::string M_markers;
     PreciceCouplingMeshLocation M_locations;
     std::vector<std::string> M_readDataNames;
-    std::vector<std::string> M_writeDataNames;
+    std::map<std::string, WriteMetadata> M_writeDataMap;
 };
 
 /**
@@ -314,11 +376,16 @@ public:
     virtual ModeType mode() const = 0;
 
     /**
-     * @brief Get the properties associated with the data.
+     * @brief Get the properties associated with the data. Some properties about the data nature, as units, etc. can be stored in this JSON object.
      * @return Const reference to a JSON object containing properties.
      */
     nl::json const& properties() const { return M_properties; }
 
+    /**
+     * @brief Set or update the properties associated with the data.
+     * @param properties JSON object containing new properties.
+     */
+    void setProperties( nl::json const& properties ) { M_properties = properties; }
 private:
     std::string M_name;
     nl::json M_properties;
@@ -449,17 +516,29 @@ public:
     using self_type = PreciceWriteData<SpaceType>;
     using space_type = typename super_type::space_type;
     using callback_datarequested_type = std::function<void( self_type & )>;
+    using metadata_type = typename PreciceSetupCouplingMesh::WriteMetadata;
 
     /**
      * @brief Constructor for PreciceWriteData.
      * @param name Name of the preCICE data.
+     * @param metadata Metadata associated with the write data, including projection type.
      * @param properties Optional JSON object containing additional properties for the data.
      * @param func Optional callback invoked when data is requested before writing.
      */
-    PreciceWriteData( std::string const& name, nl::json const& properties = {}, callback_datarequested_type func = {} )
+    PreciceWriteData( std::string const& name,
+                      metadata_type const& metadata = {},
+                      nl::json const& properties = {},
+                      callback_datarequested_type func = {} )
         : super_type( name, properties ),
+          M_metadata( metadata ),
           M_func( func )
         {}
+
+    /**
+     * @brief Get the metadata associated with the write data.
+     * @return Const reference to metadata_type.
+     */
+    metadata_type const& metadata() const { return M_metadata; }
 
     /**
      * @brief Get the transfer mode type.
@@ -472,6 +551,12 @@ public:
      * @return Const reference to callback_datarequested_type.
      */
     callback_datarequested_type const& callbackDataRequested() const { return M_func; }
+
+    /**
+     * @brief Set or update the metadata associated with the write data.
+     * @param metadata Metadata to set.
+     */
+    void setMetadata( metadata_type const& metadata ) { M_metadata = metadata; }
 
     /**
      * @brief Set or update the data-requested callback.
@@ -491,6 +576,7 @@ public:
         }
 
 private:
+    metadata_type M_metadata;
     callback_datarequested_type M_func;
 };
 
@@ -648,9 +734,11 @@ public:
      * @return Reference to initialized PreciceWriteData.
      */
     template <PreciceData::ShapeType Shape, typename FuncType = typename PreciceWriteData<space_from_shape_t<Shape>>::callback_datarequested_type>
-    PreciceWriteData< space_from_shape_t<Shape> > & initWriteData( std::string const& preciceDataName, nl::json const& properties = {}, FuncType && func = {} )
+    PreciceWriteData< space_from_shape_t<Shape> > & initWriteData( std::string const& preciceDataName,
+                                                                   typename PreciceSetupCouplingMesh::WriteMetadata const& writeDataSetup,
+                                                                   nl::json const& properties = {}, FuncType && func = {} )
         {
-            return this->initWriteData< space_index_from_shape_v<Shape>, FuncType >( preciceDataName, properties, std::forward<FuncType>( func ) );
+            return this->initWriteData< space_index_from_shape_v<Shape>, FuncType >( preciceDataName, writeDataSetup, properties, std::forward<FuncType>( func ) );
         }
 
     /**
@@ -658,12 +746,15 @@ public:
      * @tparam S SpaceIndex.
      * @tparam FuncType Callback type.
      * @param preciceDataName Name of data in preCICE.
+     * @param writeDataSetup WriteMetadata setup containing projection type and other configurations.
      * @param properties Optional JSON object containing additional properties for the data.
      * @param func Optional callback triggered when write data is requested.
      * @return Reference to initialized PreciceWriteData.
      */
     template <SpaceIndex S, typename FuncType = typename PreciceWriteData<space_type_t<S>>::callback_datarequested_type>
-    PreciceWriteData<space_type_t<S>> & initWriteData( std::string const& preciceDataName, nl::json const& properties = {}, FuncType && func = {} )
+    PreciceWriteData<space_type_t<S>> & initWriteData( std::string const& preciceDataName,
+                                                       typename PreciceSetupCouplingMesh::WriteMetadata const& writeMetadata,
+                                                       nl::json const& properties = {}, FuncType && func = {} )
         {
             static constexpr int space_index = std::to_underlying(S);
             using _space_type = std::tuple_element_t<space_index, spaces_type>;
@@ -672,15 +763,18 @@ public:
 
             auto itFindData = writeDataMap.find( preciceDataName );
             if ( itFindData == writeDataMap.end() )
-                writeDataMap.emplace( preciceDataName, PreciceWriteData<_space_type>( preciceDataName, properties, func ) );
-            else if constexpr ( requires { static_cast<bool>(func); } ) {
-                if ( func )
-                    itFindData->second.setCallbackDataRequested( std::forward<FuncType>( func ) );
-            }
-            else
-                itFindData->second.setCallbackDataRequested( std::forward<FuncType>( func ) );
+                writeDataMap.emplace( preciceDataName, PreciceWriteData<_space_type>( preciceDataName, writeMetadata, properties, func ) );
 
             auto & writeData = writeDataMap.at( preciceDataName );
+            writeData.setMetadata( writeMetadata );
+            writeData.setProperties( properties );
+            if constexpr ( requires { static_cast<bool>(func); } ) {
+                if ( func )
+                    writeData.setCallbackDataRequested( std::forward<FuncType>( func ) );
+            }
+            else
+                writeData.setCallbackDataRequested( std::forward<FuncType>( func ) );
+
             if ( !writeData.hasField() )
             {
                 auto & internalField = std::get<space_index>( M_internalFields );
@@ -748,7 +842,7 @@ public:
             std::string const& preciceDataName = _writeData.name();
             std::vector<double> preciceDataValues( M_preciceIDs.size() * _space_type::nComponents, 0.0 );
 
-            auto & writeData = this->initWriteData<spaceIndex>( preciceDataName );
+            auto & writeData = this->getWriteData<spaceIndex>( preciceDataName );
             auto & feelDataField = writeData.field();
             writeData.invokeDataRequested();
 
@@ -920,42 +1014,52 @@ public:
 
     /** @brief Update Feel++ field data from an expression by using either nodal or L2 projection. */
     template <typename DataType,typename ExprType>
-    void updateDataField( DataType & data, ExprType const& expr, bool useNodalProjection = false ) const
+    void updateDataField( DataType & data, ExprType const& expr ) const
         {
             auto rangeEntities = this->rangeMeshEntities();
-            if ( useNodalProjection )
+            switch ( data.metadata().projectionType() )
             {
-                data.field().on( _range=rangeEntities, _expr=expr,_close=true );
-            }
-            else // L2 projection
-            {
-                if constexpr ( DataType::space_type::is_continuous )
+                case PreciceFieldProjectionType::nodal:
                 {
-                    throw std::runtime_error( "PreciceCouplingMesh::updateDataField : TODO: L2 projection is not supported for continuous function spaces" );
+                    data.field().on( _range=rangeEntities, _expr=expr,_close=true );
+                    break;
                 }
-                else
+                case PreciceFieldProjectionType::L2:
                 {
-                    auto P0d = this->getSpace<DataType::shape_c>();
-                    auto F = Feel::backend()->newVector( _test=P0d );
-                    auto uProj = P0d->element( F );
-                    if constexpr ( range_mesh_entities_type::isOnElements() )
+                    if constexpr ( DataType::space_type::is_continuous )
                     {
-                        form1( _test=P0d, _vector=F )
-                            = integrate( _range=rangeEntities,
-                                         _expr=inner(expr,id(uProj))/meas() );
-                    }
-                    else if constexpr ( range_mesh_entities_type::isOnFaces() )
-                    {
-                        form1( _test=P0d, _vector=F )
-                            = integrate( _range=rangeEntities,
-                                         _expr=inner(expr,id(uProj))/measFace() );
+                        throw std::runtime_error( "PreciceCouplingMesh::updateDataField : TODO: L2 projection is not supported for continuous function spaces" );
                     }
                     else
                     {
-                        throw std::runtime_error( "PreciceCouplingMesh::updateDataField : unsupported range of mesh entities" );
+                        auto P0d = this->getSpace<DataType::shape_c>();
+                        auto F = Feel::backend()->newVector( _test=P0d ); // TODO: try to build a petsc view from internal field to avoid copy
+                        auto uProj = P0d->element( F );
+                        if constexpr ( range_mesh_entities_type::isOnElements() )
+                        {
+                            form1( _test=P0d, _vector=F )
+                                = integrate( _range=rangeEntities,
+                                             _expr=inner(expr,id(uProj))/meas() );
+                        }
+                        else if constexpr ( range_mesh_entities_type::isOnFaces() )
+                        {
+                            form1( _test=P0d, _vector=F )
+                                = integrate( _range=rangeEntities,
+                                             _expr=inner(expr,id(uProj))/measFace() );
+                        }
+                        else
+                        {
+                            throw std::runtime_error( "PreciceCouplingMesh::updateDataField : unsupported range of mesh entities" );
+                        }
+                        F->close();
+                        data.field() = uProj;
                     }
-                    F->close();
-                    data.field() = uProj;
+                    break;
+                }
+                default:
+                {
+                    throw std::runtime_error( "PreciceCouplingMesh::updateDataField : unsupported projection type" );
+                    break;
                 }
             }
         }
@@ -1270,13 +1374,13 @@ public:
                 if ( itFindMesh == M_couplingMesh.end() )
                     throw std::runtime_error( fmt::format( "PreciceAdapter::initAllWriteData : no coupling mesh with name {} has been initialized", name ) );
                 std::visit( [this,&setup,&meshSetup,&func]( auto & couplingMeshPtr ){
-                                for ( std::string const& dataName : meshSetup.writeDataNames() )
+                                for ( auto const& [dataName, writeDataSetup] : meshSetup.writeDataMap() )
                                 {
                                     auto dataSetup = setup.couplingData( dataName );
                                     if ( dataSetup.is( Shape ) )
                                     {
                                         couplingMeshPtr->template initWriteData<Shape>
-                                            ( dataName,
+                                            ( dataName, writeDataSetup,
                                               dataSetup.properties(),
                                               [func,couplingMeshPtr=couplingMeshPtr.get()]( auto & writeData ){
                                                   std::invoke( func, writeData, *couplingMeshPtr );
