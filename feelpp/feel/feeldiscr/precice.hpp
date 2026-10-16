@@ -501,7 +501,7 @@ private:
  * @tparam MeshType Feel++ mesh type.
  * @tparam Location Coupling mesh location strategy (vertices P1/P1v or barycenter P0d/P0dv).
  */
-template <typename MeshType, PreciceCouplingMeshLocation Location = PreciceCouplingMeshLocation::vertices>
+template <typename RangeMeshEntitiesType, PreciceCouplingMeshLocation Location = PreciceCouplingMeshLocation::vertices>
 class PreciceCouplingMesh
 {
     enum class SpaceIndex { lagrange_scalar = 0, lagrange_vector };
@@ -509,7 +509,10 @@ class PreciceCouplingMesh
     template<class T>
     using get_functionspace_element_t = typename T::element_type;
 public:
-    using mesh_type = MeshType;
+    using range_mesh_entities_type = RangeMeshEntitiesType;
+    using parent_mesh_type = typename range_mesh_entities_type::mesh_t;
+    using mesh_type = std::conditional_t< range_mesh_entities_type::mesh_entities == MESH_ELEMENTS, parent_mesh_type, trace_mesh_t<parent_mesh_type> >;
+
     static constexpr PreciceCouplingMeshLocation location_c = Location;
     static constexpr bool isOnVertices_c = location_c == PreciceCouplingMeshLocation::vertices;
     static constexpr bool isOnBarycenter_c = location_c == PreciceCouplingMeshLocation::barycenter;
@@ -532,33 +535,52 @@ public:
     using space_from_shape_t = space_type_t< space_index_from_shape_v<Shape> >;
 
     /**
-     * @brief Construct coupling mesh on full mesh.
+     * @brief Construct coupling mesh on a range of mesh entities (elements, faces, edges, or points).
      * @param precice Reference to the preCICE participant.
-     * @param mesh Shared pointer to Feel++ mesh.
+     * @param rangeEntities Range of mesh entities (elements, faces, edges, or points).
      * @param preciceMeshName Name of preCICE mesh as specified in precice-config.xml.
      */
-    PreciceCouplingMesh( precice::Participant& precice, mesh_ptrtype mesh, std::string const& preciceMeshName )
+    PreciceCouplingMesh( precice::Participant& precice, range_mesh_entities_type const& rangeEntities, std::string const& preciceMeshName )
         : M_precice( precice ),
-          M_mesh( mesh ),
-          M_meshName( preciceMeshName )
+          M_meshName( preciceMeshName ),
+          M_rangeMeshEntities( rangeEntities )
         {
-            this->initMapping();
+            if constexpr ( range_mesh_entities_type::isOnElements() )
+            {
+                M_mesh = const_cast<mesh_type*>( rangeEntities.mesh() )->shared_from_this();
+                this->initMapping( M_rangeMeshEntities );
+            }
+            else
+            {
+                M_mesh = createSubmesh( _range = rangeEntities, _view = true );
+                this->initMapping( elements( M_mesh ) );
+            }
         }
 
     /**
-     * @brief Construct coupling mesh on an element range.
-     * @param precice Reference to the preCICE participant.
-     * @param mesh Shared pointer to Feel++ mesh.
-     * @param rangeElt Element range on the mesh.
-     * @param preciceMeshName Name of preCICE mesh as specified in precice-config.xml.
+     * @brief Get the preCICE participant reference.
+     * @return Reference to the preCICE participant.
      */
-    PreciceCouplingMesh( precice::Participant& precice, mesh_ptrtype mesh, Range<mesh_type, MESH_ELEMENTS> rangeElt, std::string const& preciceMeshName )
-        : M_precice( precice ),
-          M_mesh( mesh ),
-          M_meshName( preciceMeshName )
-        {
-            this->initMapping();
-        }
+    precice::Participant& precice() { return M_precice; }
+
+    /**
+     * @brief Get the name of the preCICE mesh.
+     * @return Const reference to the mesh name string.
+     */
+    std::string const& name() const { return M_meshName; }
+
+    /**
+     * @brief Get the shared pointer to the Feel++ mesh associated with this coupling mesh.
+     * @return Const reference to the shared pointer of the mesh.
+     */
+    mesh_ptrtype const& couplingMesh() const { return M_mesh; }
+
+    /**
+     * @brief Get the range of mesh entities associated with this coupling mesh.
+     * @return Const reference to the range of mesh entities.
+     */
+    range_mesh_entities_type const& rangeMeshEntities() const { return M_rangeMeshEntities; }
+
 
     /**
      * @brief Initialize or retrieve a function space by SpaceIndex.
@@ -572,7 +594,12 @@ public:
             using _space_type = std::tuple_element_t<space_index, spaces_type>;
             auto space = std::get<space_index>( M_spaces );
             if ( !space )
-                space = _space_type::New( _mesh = M_mesh );
+            {
+                if constexpr ( range_mesh_entities_type::isOnElements() )
+                    space = _space_type::New( _mesh = M_mesh, _range = M_rangeMeshEntities );
+                else
+                    space = _space_type::New( _mesh = M_mesh );
+            }
             return space;
         }
 
@@ -633,12 +660,6 @@ public:
             }
             return writeData;
         }
-#if 0
-    /** @brief Initialize scalar write data. */
-    PreciceWriteData<space_type_t<SpaceIndex::lagrange_scalar>> & initWriteScalarData( std::string const& preciceDataName ) { return this->initWriteData<SpaceIndex::lagrange_scalar>( preciceDataName ); }
-    /** @brief Initialize vector write data. */
-    PreciceWriteData<space_type_t<SpaceIndex::lagrange_vector>> & initWriteVectorData( std::string const& preciceDataName ) { return this->initWriteData<SpaceIndex::lagrange_vector>( preciceDataName ); }
-#endif
 
     /**
      * @brief Check if a write data set has been initialized.
@@ -760,12 +781,7 @@ public:
                 readData.setField( space->elementPtr() );
             return readData;
         }
-#if 0
-    /** @brief Initialize scalar read data. */
-    PreciceReadData<space_type_t<SpaceIndex::lagrange_scalar>> & initReadScalarData( std::string const& preciceDataName ) { return this->initReadData<SpaceIndex::lagrange_scalar>( preciceDataName ); }
-    /** @brief Initialize vector read data. */
-    PreciceReadData<space_type_t<SpaceIndex::lagrange_vector>> & initReadVectorData( std::string const& preciceDataName ) { return this->initReadData<SpaceIndex::lagrange_vector>( preciceDataName ); }
-#endif
+
     /**
      * @brief Check if a read data set has been initialized.
      * @tparam S SpaceIndex.
@@ -871,17 +887,17 @@ public:
         }
 
 private:
-    /** @brief Initialize preCICE mesh mapping based on Location template parameter. */
-    void initMapping()
+    /** @brief Initialize preCICE mesh mapping based on Location template parameter and provided range of mesh elements. */
+    void initMapping( Range<mesh_type, MESH_ELEMENTS> const& rangeElts )
         {
             if constexpr ( location_c == PreciceCouplingMeshLocation::vertices )
-                this->initMappingVertices();
+                this->initMappingVertices( rangeElts );
             else if constexpr ( location_c == PreciceCouplingMeshLocation::barycenter )
-                this->initMappingBarycenter();
+                this->initMappingBarycenter( rangeElts );
         }
 
     /** @brief Register nodal mesh vertices and element connectivities in preCICE. */
-    void initMappingVertices()
+    void initMappingVertices( Range<mesh_type, MESH_ELEMENTS> const& rangeElts )
         {
             auto space = initSpaceScalar();
             auto mesh = space->mesh();
@@ -898,7 +914,7 @@ private:
             std::vector<index_type> feelQuadrilateralVertexIDs;
             std::vector<index_type> feelTetrahedronVertexIDs;
 
-            for ( auto const& eltWrap : elements(mesh) )
+            for ( auto const& eltWrap : rangeElts )
             {
                 auto const& elt = unwrap_ref(eltWrap);
                 std::vector<index_type> feelElementVertexIDs( elt.nPoints(), invalid_v<index_type> );
@@ -987,7 +1003,7 @@ private:
         }
 
     /** @brief Register element barycenters (P0d) in preCICE. */
-    void initMappingBarycenter()
+    void initMappingBarycenter( Range<mesh_type, MESH_ELEMENTS> const& rangeElts )
         {
             auto space = initSpaceScalar();
             auto mesh = space->mesh();
@@ -996,7 +1012,7 @@ private:
             std::vector<double> coordinates;
             std::vector<index_type> feelDofIds;
 
-            for ( auto const& eltWrap : elements(mesh) )
+            for ( auto const& eltWrap : rangeElts )
             {
                 auto const& elt = unwrap_ref(eltWrap);
                 auto bary = elt.barycenter();
@@ -1024,8 +1040,9 @@ private:
 
 private:
     precice::Participant& M_precice;
-    mesh_ptrtype M_mesh;
     std::string M_meshName;
+    mesh_ptrtype M_mesh;
+    range_mesh_entities_type M_rangeMeshEntities;
     std::vector<int> M_preciceIDs;
     std::map<int, index_type> M_preciceIdToScalarDofId;
 
@@ -1121,9 +1138,8 @@ public:
     template <PreciceCouplingMeshLocation Location = PreciceCouplingMeshLocation::vertices, concepts::RangeOnElements RangeElts>
     auto initCouplingMesh( std::string const& preciceMeshName, RangeElts const& rangeElts )
         {
-            using precice_coupling_mesh_type = PreciceCouplingMesh<mesh_type, Location>;
-            M_couplingMesh[preciceMeshName] = std::make_unique<precice_coupling_mesh_type>( *M_precice, const_cast<mesh_type*>( rangeElts.mesh() )->shared_from_this(),
-                                                                                            rangeElts, preciceMeshName );
+            using precice_coupling_mesh_type = PreciceCouplingMesh<Range<mesh_type, MESH_ELEMENTS>, Location>;
+            M_couplingMesh[preciceMeshName] = std::make_unique<precice_coupling_mesh_type>( *M_precice, rangeElts, preciceMeshName );
             return std::get<std::unique_ptr<precice_coupling_mesh_type>>( M_couplingMesh.at( preciceMeshName ) ).get();
         }
 
@@ -1138,9 +1154,8 @@ public:
     template <PreciceCouplingMeshLocation Location = PreciceCouplingMeshLocation::vertices, concepts::RangeOnFaces RangeFaces>
     auto initCouplingMesh( std::string const& preciceMeshName, RangeFaces const& rangeFaces )
         {
-            using precice_coupling_mesh_type = PreciceCouplingMesh<trace_mesh_type, Location>;
-            auto submesh = createSubmesh( _range = rangeFaces, _view = true );
-            M_couplingMesh[preciceMeshName] = std::make_unique<precice_coupling_mesh_type>( *M_precice, submesh, preciceMeshName );
+            using precice_coupling_mesh_type = PreciceCouplingMesh<Range<mesh_type, MESH_FACES>, Location>;
+            M_couplingMesh[preciceMeshName] = std::make_unique<precice_coupling_mesh_type>( *M_precice, rangeFaces, preciceMeshName );
             return std::get<std::unique_ptr<precice_coupling_mesh_type>>( M_couplingMesh.at( preciceMeshName ) ).get();
         }
 
@@ -1276,10 +1291,10 @@ public:
 
 protected:
     std::unique_ptr<precice::Participant> M_precice;
-    std::map<std::string, std::variant<std::unique_ptr<PreciceCouplingMesh<mesh_type, PreciceCouplingMeshLocation::vertices>>,
-                                       std::unique_ptr<PreciceCouplingMesh<mesh_type, PreciceCouplingMeshLocation::barycenter>>,
-                                       std::unique_ptr<PreciceCouplingMesh<trace_mesh_type, PreciceCouplingMeshLocation::vertices>>,
-                                       std::unique_ptr<PreciceCouplingMesh<trace_mesh_type, PreciceCouplingMeshLocation::barycenter>>
+    std::map<std::string, std::variant<std::unique_ptr<PreciceCouplingMesh<Range<mesh_type, MESH_ELEMENTS>, PreciceCouplingMeshLocation::vertices>>,
+                                       std::unique_ptr<PreciceCouplingMesh<Range<mesh_type, MESH_ELEMENTS>, PreciceCouplingMeshLocation::barycenter>>,
+                                       std::unique_ptr<PreciceCouplingMesh<Range<mesh_type, MESH_FACES>, PreciceCouplingMeshLocation::vertices>>,
+                                       std::unique_ptr<PreciceCouplingMesh<Range<mesh_type, MESH_FACES>, PreciceCouplingMeshLocation::barycenter>>
                                        >> M_couplingMesh;
 };
 
