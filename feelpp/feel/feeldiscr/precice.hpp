@@ -36,11 +36,14 @@
 
 #include <boost/mp11/algorithm.hpp>
 #include <precice/precice.hpp>
+#include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
-
+#include <feel/feelvf/geometricdata.hpp>
+#include <feel/feelvf/operators.hpp>
+#include <feel/feelvf/form.hpp>
 
 namespace Feel
 {
