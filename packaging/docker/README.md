@@ -9,6 +9,8 @@ Current scope:
 - shared environment assets under `assets/`
 - base environment templates plus component/full Dockerfile templates under
   `templates/`
+- standalone OpenFOAM 2606 / preCICE recipes and a Compose example under
+  [`openfoam/`](openfoam/README.md), for coupling with a separate KUB image
 
 Design rules:
 
