@@ -40,3 +40,17 @@ Later planned rows:
 
 Generated bake contexts belong under the packaging job root and are produced by
 `fpp-pkg image bake --target ...`.
+
+## preCICE dependency environments
+
+Noble, Trixie, and Resolute environment recipes install preCICE **3.4.1**.
+Distribution metadata pins the official amd64 package URL and SHA-256. The arm64
+path builds the same verified source release against the distribution's MPI,
+Boost, Eigen, PETSc and Python dependencies. Arm64 runtime validation remains a
+publication gate; generating a Dockerfile does not verify that build.
+
+The generated context copies `assets/install-precice.sh` only for these targets.
+The installer checks package identity/version/architecture, verifies checksums,
+runs `ldconfig` and `precice-version`, and records its inputs in
+`/usr/local/share/feelpp/image/precice.tsv`. Rebuild environment images before
+building the corresponding Feel++ core images with preCICE enabled.

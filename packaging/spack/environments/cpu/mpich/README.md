@@ -53,3 +53,12 @@ On LUMI, host-MPI probes completed on one, two, and three distinct nodes
 and `libjson-c` paths after LUMI's system update; the probe substituted the
 current host paths and omitted unavailable binds. This confirms a small MPI
 communicator and host library selection, not a Feel++ solver workload.
+
+## Solver stack update — 2026-10-11
+
+The current manifest selects PETSc/petsc4py 3.25.6, SLEPc/slepc4py 3.25.2 and
+preCICE 3.4.1 from builtin catalog
+`093bed090925a0c327ba4fd927f1f1d5e36f2b3e`, with the repository's preCICE and
+PETSc HPDDM install overlays. MPICH 3.4.3 and its CH3 configuration are retained.
+The earlier installation and OCI results above describe their original stacks;
+these source pins require rebuilding the dependency and Feel++ core images.
