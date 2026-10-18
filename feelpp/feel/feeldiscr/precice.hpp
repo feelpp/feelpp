@@ -425,6 +425,26 @@ private:
     std::map<std::string, PreciceSetupCouplingMesh> M_couplingMeshes;
 };
 
+
+template <typename mesh_type, PreciceFieldBasisType basis_c, PreciceDataShapeType shape_c>
+struct PreciceFunctionSpace
+{
+    // TODO static assert if basis_c is default_basis (should be set only to P1c or P0d)
+    static constexpr bool isP1_c = ( basis_c == PreciceFieldBasisType::P1c );
+    static constexpr bool isP0_c = ( basis_c == PreciceFieldBasisType::P0d );
+    static constexpr bool isScalar_c = ( shape_c == PreciceDataShapeType::scalar );
+    using type = std::conditional_t<isScalar_c,
+                          std::conditional_t<isP1_c, Pch_type<mesh_type, 1>, Pdh_type<mesh_type, 0>>,
+                          std::conditional_t<isP1_c, Pchv_type<mesh_type, 1>, Pdhv_type<mesh_type, 0>>>;
+    using dual_type = PreciceFunctionSpace<mesh_type,
+                                           basis_c == PreciceFieldBasisType::P1c ? PreciceFieldBasisType::P0d : PreciceFieldBasisType::P1c,
+                                           shape_c>::type;
+};
+template <typename mesh_type, PreciceFieldBasisType basis_c, PreciceDataShapeType shape_c>
+using PreciceFunctionSpace_t = typename PreciceFunctionSpace<mesh_type, basis_c, shape_c>::type;
+template <typename mesh_type, PreciceFieldBasisType basis_c, PreciceDataShapeType shape_c>
+using PreciceDualFunctionSpace_t = typename PreciceFunctionSpace<mesh_type, basis_c, shape_c>::dual_type;
+
 /**
  * @class PreciceData
  * @brief Abstract base class representing data exchanged via preCICE.
@@ -499,12 +519,20 @@ private:
  * @brief Base wrapper linking preCICE data with a Feel++ FunctionSpace element.
  * @tparam SpaceType Feel++ FunctionSpace type.
  */
-template <typename SpaceType>
+template <typename SpaceType, bool UseDualSpace = false>
 class PreciceReadWriteData : public PreciceData
 {
 public:
-    using space_type = SpaceType;
-    constexpr static ShapeType shape_c = space_type::is_scalar ? ShapeType::scalar : ShapeType::vector;
+    //using space_type = SpaceType;
+    using primal_space_type = SpaceType;
+    static constexpr bool useDualSpace_c = UseDualSpace;
+    constexpr static ShapeType shape_c = primal_space_type::is_scalar ? ShapeType::scalar : ShapeType::vector;
+
+    using dual_space_type = PreciceDualFunctionSpace_t<typename primal_space_type::mesh_type,
+                                                       primal_space_type::is_continuous ? PreciceFieldBasisType::P1c : PreciceFieldBasisType::P0d,
+                                                       shape_c>;
+
+    using space_type = std::conditional_t<UseDualSpace, dual_space_type, primal_space_type>;
 
     /**
      * @brief Constructor for PreciceReadWriteData.
@@ -553,12 +581,12 @@ private:
  * @brief Class handling data read from preCICE into Feel++.
  * @tparam SpaceType Feel++ FunctionSpace type.
  */
-template <typename SpaceType>
-class PreciceReadData : public PreciceReadWriteData<SpaceType>
+template <typename SpaceType,bool UseDualSpace=false>
+class PreciceReadData : public PreciceReadWriteData<SpaceType,UseDualSpace>
 {
-    using super_type = PreciceReadWriteData<SpaceType>;
+    using super_type = PreciceReadWriteData<SpaceType,UseDualSpace>;
 public:
-    using self_type = PreciceReadData<SpaceType>;
+    using self_type = PreciceReadData<SpaceType,UseDualSpace>;
     using space_type = typename super_type::space_type;
     using callback_dataupdated_type = std::function<void( self_type const& )>;
     using metadata_type = PreciceReadMetadata;
@@ -598,6 +626,18 @@ public:
     callback_dataupdated_type const& callbackDataUpdated() const { return M_func; }
 
     /**
+     * @brief Get const reference to the primal field element.
+     * @return Const reference to the primal field element.
+     */
+    typename super_type::primal_space_type::element_type const& primalField() const { return *M_primalField; }
+
+    /**
+     * @brief Get mutable reference to the primal field element.
+     * @return Mutable reference to the primal field element.
+     */
+    typename super_type::primal_space_type::element_type & primalField() { return *M_primalField; }
+
+    /**
      * @brief Set or update the metadata associated with the read data.
      * @param metadata Metadata to set.
      */
@@ -612,6 +652,18 @@ public:
     void setCallbackDataUpdated( FuncType && func ) { M_func = std::forward<FuncType>( func ); }
 
     /**
+     * @brief Set the primal field element pointer.
+     * @param primalField Shared pointer to the primal function space element.
+     */
+    void setPrimalField( std::shared_ptr<typename super_type::primal_space_type::element_type> primalField ) { M_primalField = primalField; }
+
+    /**
+     * @brief Check if a primal field element is attached.
+     * @return True if M_primalField is non-null, false otherwise.
+     */
+    bool hasPrimalField() const { return M_primalField != nullptr; }
+
+    /**
      * @brief Trigger the data-updated callback if defined.
      */
     void invokeDataUpdated()
@@ -623,6 +675,8 @@ public:
 private:
     metadata_type M_metadata;
     callback_dataupdated_type M_func;
+    std::shared_ptr<typename super_type::primal_space_type::element_type> M_primalField;
+
 };
 
 /**
@@ -712,7 +766,7 @@ private:
 template <typename RangeMeshEntitiesType, PreciceCouplingMeshLocation Location = PreciceCouplingMeshLocation::vertices>
 class PreciceCouplingMesh
 {
-    enum class SpaceIndex { lagrange_scalar = 0, lagrange_vector };
+    enum class SpaceIndex { lagrange_scalar = 0, lagrange_vector, dual_lagrange_scalar, dual_lagrange_vector };
 
     template<class T>
     using get_functionspace_element_t = typename T::element_type;
@@ -726,13 +780,19 @@ public:
     static constexpr bool isOnBarycenter_c = location_c == PreciceCouplingMeshLocation::barycenter;
     using mesh_ptrtype = std::shared_ptr<mesh_type>;
 
-    using space_scalar_type = std::conditional_t<location_c == PreciceCouplingMeshLocation::vertices,
-                                                 Pch_type<mesh_type, 1>, Pdh_type<mesh_type, 0>>;
-    using space_scalar_element_type = typename space_scalar_type::element_type;
-    using space_vector_type = std::conditional_t<location_c == PreciceCouplingMeshLocation::vertices,
-                                                 Pchv_type<mesh_type, 1>, Pdhv_type<mesh_type, 0>>;
-    using space_vector_element_type = typename space_vector_type::element_type;
-    using spaces_type = std::tuple<space_scalar_type, space_vector_type>;
+    using space_scalar_type = PreciceFunctionSpace_t<mesh_type,
+                                                     location_c == PreciceCouplingMeshLocation::vertices ? PreciceFieldBasisType::P1c : PreciceFieldBasisType::P0d,
+                                                     PreciceDataShapeType::scalar>;
+    using space_vector_type = PreciceFunctionSpace_t<mesh_type,
+                                                     location_c == PreciceCouplingMeshLocation::vertices ? PreciceFieldBasisType::P1c : PreciceFieldBasisType::P0d,
+                                                     PreciceDataShapeType::vector>;
+    using dual_space_scalar_type = PreciceDualFunctionSpace_t<mesh_type,
+                                                              location_c == PreciceCouplingMeshLocation::vertices ? PreciceFieldBasisType::P1c : PreciceFieldBasisType::P0d,
+                                                              PreciceDataShapeType::scalar>;
+    using dual_space_vector_type = PreciceDualFunctionSpace_t<mesh_type,
+                                                              location_c == PreciceCouplingMeshLocation::vertices ? PreciceFieldBasisType::P1c : PreciceFieldBasisType::P0d,
+                                                              PreciceDataShapeType::vector>;
+    using spaces_type = std::tuple<space_scalar_type, space_vector_type, dual_space_scalar_type, dual_space_vector_type>;
     using spaces_element_type = boost::mp11::mp_transform<get_functionspace_element_t, spaces_type>;
 
     template <PreciceData::ShapeType Shape>
@@ -789,6 +849,17 @@ public:
      */
     range_mesh_entities_type const& rangeMeshEntities() const { return M_rangeMeshEntities; }
 
+    /**
+     * @brief Check if the coupling mesh is located on vertices.
+     * @return True if located on vertices, false otherwise.
+     */
+    static constexpr bool isOnVertices() { return isOnVertices_c; }
+
+    /**
+     * @brief Check if the coupling mesh is located on barycenters.
+     * @return True if located on barycenters, false otherwise.
+     */
+    static constexpr bool isOnBarycenter() { return isOnBarycenter_c; }
 
     /**
      * @brief Initialize or retrieve a function space by SpaceIndex.
@@ -992,12 +1063,12 @@ public:
      * @param func Optional callback triggered after data update.
      * @return Reference to initialized PreciceReadData.
      */
-    template <PreciceData::ShapeType Shape, typename FuncType = typename PreciceReadData<space_from_shape_t<Shape>>::callback_dataupdated_type>
-    PreciceReadData< space_from_shape_t<Shape> > & initReadData( std::string const& preciceDataName,
-                                                                 PreciceReadMetadata const& readMetadata,
-                                                                 nl::json const& properties = {}, FuncType && func = {} )
+    template <PreciceData::ShapeType Shape, bool UseDualSpace, typename FuncType = typename PreciceReadData<space_from_shape_t<Shape>>::callback_dataupdated_type>
+    PreciceReadData< space_from_shape_t<Shape>, UseDualSpace > & initReadData( std::string const& preciceDataName,
+                                                                               PreciceReadMetadata const& readMetadata,
+                                                                               nl::json const& properties = {}, FuncType && func = {} )
         {
-            return this->initReadData< space_index_from_shape_v<Shape>, FuncType >( preciceDataName, readMetadata, properties, std::forward<FuncType>( func ) );
+            return this->initReadData< space_index_from_shape_v<Shape>, UseDualSpace, FuncType >( preciceDataName, readMetadata, properties, std::forward<FuncType>( func ) );
         }
 
     /**
@@ -1010,21 +1081,21 @@ public:
      * @param func Optional callback triggered after data update.
      * @return Reference to initialized PreciceReadData.
      */
-    template <SpaceIndex S, typename FuncType = typename PreciceReadData<space_type_t<S>>::callback_dataupdated_type>
-    PreciceReadData<space_type_t<S>> & initReadData( std::string const& preciceDataName,
-                                                     PreciceReadMetadata const& readMetadata,
-                                                     nl::json const& properties = {}, FuncType && func = {} )
+    template <SpaceIndex S, bool UseDualSpace, typename FuncType = typename PreciceReadData<space_type_t<S>>::callback_dataupdated_type>
+    PreciceReadData<space_type_t<S>,UseDualSpace> & initReadData( std::string const& preciceDataName,
+                                                                  PreciceReadMetadata const& readMetadata,
+                                                                  nl::json const& properties = {}, FuncType && func = {} )
         {
             static constexpr int space_index = std::to_underlying(S);
             using _space_type = std::tuple_element_t<space_index, spaces_type>;
-            auto space = this->initSpace<S>();
             auto & readDataMap = std::get<space_index>( M_readData );
 
             auto itFindData = readDataMap.find( preciceDataName );
             if ( itFindData == readDataMap.end() )
-                readDataMap.emplace( preciceDataName, PreciceReadData<_space_type>( preciceDataName ) );
+                readDataMap.emplace( preciceDataName, PreciceReadData<_space_type,UseDualSpace>( preciceDataName ) );
 
-            auto & readData = readDataMap.at( preciceDataName );
+            auto & readDataVariant = readDataMap.at( preciceDataName );
+            auto & readData = std::get<PreciceReadData<_space_type,UseDualSpace>>( readDataVariant );
 
             readData.setMetadata( readMetadata );
             readData.setProperties( properties );
@@ -1036,7 +1107,22 @@ public:
                 readData.setCallbackDataUpdated( std::forward<FuncType>( func ) );
 
             if ( !readData.hasField() )
-                readData.setField( space->elementPtr() );
+            {
+                auto space = this->initSpace<S>();
+                if constexpr ( UseDualSpace )
+                {
+                    auto dualSpace = this->initSpace< static_cast<SpaceIndex>( std::to_underlying(S) + 2 ) >();
+                    readData.setField( dualSpace->elementPtr() );
+                    readData.setPrimalField( space->elementPtr() );
+                }
+                else
+                {
+                    auto uPtr = space->elementPtr();
+                    readData.setField( uPtr );
+                    readData.setPrimalField( uPtr );
+                }
+            }
+
             return readData;
         }
 
@@ -1061,15 +1147,16 @@ public:
      * @param preciceDataName Name of data in preCICE.
      * @return Reference to PreciceReadData.
      */
-    template <SpaceIndex S>
-    PreciceReadData<space_type_t<S>> & getReadData( std::string const& preciceDataName )
+    template <SpaceIndex S, bool UseDualSpace>
+    PreciceReadData<space_type_t<S>,UseDualSpace> & getReadData( std::string const& preciceDataName )
         {
             if ( !this->hasReadData<S>( preciceDataName ) )
                 throw std::runtime_error( "PreciceCouplingMesh::getReadData : no read data with name " + preciceDataName + " has been initialized" );
 
             static constexpr int space_index = std::to_underlying(S);
             auto & readDataMap = std::get<space_index>( M_readData );
-            return readDataMap.at( preciceDataName );
+            auto & readDataVariant = readDataMap.at( preciceDataName );
+            return std::get<PreciceReadData<space_type_t<S>,UseDualSpace>>( readDataVariant );
         }
 
     /**
@@ -1080,8 +1167,8 @@ public:
     template <SpaceIndex S>
     void readData( std::string const& preciceDataName )
         {
-            auto & _readData = this->getReadData<S>( preciceDataName );
-            this->read( _readData );
+            auto & readDataVariant = this->getReadData<S>( preciceDataName );
+            std::visit( [this]( auto & _readData ) {  this->read( _readData ); }, readDataVariant );
         }
 
     /**
@@ -1098,19 +1185,27 @@ public:
             std::vector<double> preciceDataValues( M_preciceIDs.size() * _space_type::nComponents );
             M_precice.readData( M_meshName, preciceDataName, M_preciceIDs, 0, preciceDataValues );
 
-            auto & readData = this->getReadData<spaceIndex>( preciceDataName );
-            auto & feelDataField = readData.field();
+            auto & primalField = _readData.primalField();
             for ( auto const& p_id : M_preciceIDs )
             {
                 for ( uint16_type k = 0; k < _space_type::nComponents; ++k )
                 {
                     index_type f_dofid = M_preciceIdToScalarDofId[p_id] * _space_type::nComponents + k;
-                    feelDataField.set( f_dofid, preciceDataValues[ _space_type::nComponents * p_id + k ] );
+                    primalField.set( f_dofid, preciceDataValues[ _space_type::nComponents * p_id + k ] );
                 }
             }
-            sync( feelDataField );
+            sync( primalField );
 
-            readData.invokeDataUpdated();
+            if constexpr ( PreciceReadDataType::useDualSpace_c )
+            {
+                auto & dualField = _readData.field();
+                auto dualSpace = dualField.functionSpace();
+                this->updateFieldImpl( dualField, idv( primalField ),
+                                       elements( support(dualSpace) ),
+                                       PreciceFieldProjectionType::L2 );
+            }
+
+            _readData.invokeDataUpdated();
         }
 
     /** @brief Read scalar data set from preCICE. */
@@ -1123,8 +1218,10 @@ public:
         {
             auto applyReadData = [this]( auto & readDataMap )
                                      {
-                                         for ( auto & [preciceDataName, _readData] : readDataMap )
-                                             this->read( _readData );
+                                         for ( auto & [preciceDataName, _readDataVariant] : readDataMap )
+                                         {
+                                             std::visit( [this]( auto & _readData ) {  this->read( _readData ); }, _readDataVariant );
+                                         }
                                      };
             std::apply([applyReadData]<typename... T>(T&&... args) {
                     ((applyReadData( args )), ...);
@@ -1151,51 +1248,7 @@ public:
     void updateDataField( DataType & data, ExprType const& expr ) const
         {
             auto rangeEntities = this->rangeMeshEntities();
-            switch ( data.metadata().projectionType() )
-            {
-                case PreciceFieldProjectionType::nodal:
-                {
-                    data.field().on( _range=rangeEntities, _expr=expr,_close=true );
-                    break;
-                }
-                case PreciceFieldProjectionType::L2:
-                {
-                    if constexpr ( DataType::space_type::is_continuous )
-                    {
-                        throw std::runtime_error( "PreciceCouplingMesh::updateDataField : TODO: L2 projection is not supported for continuous function spaces" );
-                    }
-                    else
-                    {
-                        auto P0d = this->getSpace<DataType::shape_c>();
-                        auto F = Feel::backend()->newVector( _test=P0d ); // TODO: try to build a petsc view from internal field to avoid copy
-                        auto uProj = P0d->element( F );
-                        if constexpr ( range_mesh_entities_type::isOnElements() )
-                        {
-                            form1( _test=P0d, _vector=F )
-                                = integrate( _range=rangeEntities,
-                                             _expr=inner(expr,id(uProj))/meas() );
-                        }
-                        else if constexpr ( range_mesh_entities_type::isOnFaces() )
-                        {
-                            form1( _test=P0d, _vector=F )
-                                = integrate( _range=rangeEntities,
-                                             _expr=inner(expr,id(uProj))/measFace() );
-                        }
-                        else
-                        {
-                            throw std::runtime_error( "PreciceCouplingMesh::updateDataField : unsupported range of mesh entities" );
-                        }
-                        F->close();
-                        data.field() = uProj;
-                    }
-                    break;
-                }
-                default:
-                {
-                    throw std::runtime_error( "PreciceCouplingMesh::updateDataField : unsupported projection type" );
-                    break;
-                }
-            }
+            this->updateFieldImpl( data.field(), expr, rangeEntities, data.metadata().projectionType() );
         }
 
 private:
@@ -1350,6 +1403,72 @@ private:
             }
         }
 
+    /** @brief Update Feel++ field data from an expression by using either nodal or L2 projection. */
+    template <typename FieldType,typename ExprType, typename RangeType>
+    void updateFieldImpl( FieldType & field, ExprType const& expr, RangeType const& rangeEntities,
+                          PreciceFieldProjectionType projectionType = PreciceFieldProjectionType::L2 ) const
+        {
+            using _space_type = typename FieldType::functionspace_type;
+            if ( projectionType == PreciceFieldProjectionType::nodal )
+            {
+                field.on( _range=rangeEntities, _expr=expr, _close=true );
+            }
+            else if ( projectionType == PreciceFieldProjectionType::L2 )
+            {
+                // NOTE: for now we implement one L2 projection using lumped mass matrix for P1c and P0d fields.
+                // Maybe, we can also implement a more general L2 projection using the mass matrix for P1c fields.
+                auto Xh = field.functionSpace();
+                if constexpr ( _space_type::is_continuous ) // P1c
+                {
+                    // NOTE: the code below is equivalent to the commented line but more efficient
+                    // and work for field shape (only scalar with this snipet)
+                    // dualField = div( sum( dualSpace, idv( primalField ) * meas() ),
+                    //                  sum( dualSpace, meas() ) );
+                    //auto rangeElt = elements( support(dualSpace) );
+                    auto vecNum = Feel::backend()->newVector( _test=Xh );
+                    form1( _test=Xh, _vector=vecNum )
+                        = integrate( _range=rangeEntities,
+                                     _expr=inner(expr,id(field) ) );
+                    auto vecDenom = Feel::backend()->newVector( _test=Xh );
+                    form1( _test=Xh, _vector=vecDenom )
+                        = integrate( _range=rangeEntities,
+                                     _expr=inner( vf::ones<_space_type::nComponents1,_space_type::nComponents2>(),
+                                                  id(field) ) );
+                    auto vecResult = toPETScPtr( field );
+                    vecResult->pointwiseDivide( *vecNum, *vecDenom );
+                }
+                else // P0d
+                {
+                    // TODO: the code does not compile when using F =  toPETScPtr( ...)
+                    // auto F = toPETScPtr( field );
+                    auto F = Feel::backend()->newVector( _test=Xh );
+                    if constexpr ( range_mesh_entities_type::isOnElements() )
+                    {
+                        form1( _test=Xh, _vector=F )
+                            = integrate( _range=rangeEntities,
+                                         _expr=inner(expr,id(field))/meas() );
+                    }
+                    else if constexpr ( range_mesh_entities_type::isOnFaces() )
+                    {
+                        form1( _test=Xh, _vector=F )
+                            = integrate( _range=rangeEntities,
+                                         _expr=inner(expr,id(field))/measFace() );
+                    }
+                    else
+                    {
+                        throw std::runtime_error( "PreciceCouplingMesh::updateDataField : unsupported range of mesh entities" );
+                    }
+                    F->close();
+                    field = *F;
+
+                }
+            }
+            else
+            {
+                throw std::runtime_error( "PreciceCouplingMesh::updateFieldP1c : unsupported projection type" );
+            }
+        }
+
 private:
     precice::Participant& M_precice;
     std::string M_meshName;
@@ -1363,7 +1482,7 @@ private:
     boost::mp11::mp_transform<add_shared_ptr_t, spaces_type> M_spaces;
 
     template<class T>
-    using add_map_precice_read_data_t = std::map<std::string, PreciceReadData<T> >;
+    using add_map_precice_read_data_t = std::map<std::string, std::variant< PreciceReadData<T,false>, PreciceReadData<T,true> >>;
     boost::mp11::mp_transform<add_map_precice_read_data_t, spaces_type> M_readData;
 
     template<class T>
@@ -1543,15 +1662,23 @@ public:
                                 for ( auto const& [dataName, readMetadata] : meshSetup.readMetadataMap() )
                                 {
                                     auto dataSetup = setup.couplingData( dataName );
-                                    if ( dataSetup.is( Shape ) )
-                                    {
-                                        couplingMeshPtr->template initReadData<Shape>
-                                            ( dataName, readMetadata,
-                                              dataSetup.properties(),
+                                    if ( !dataSetup.is( Shape ) )
+                                        continue;
+                                    using coupling_mesh_type = std::decay_t<decltype(*couplingMeshPtr)>;
+                                    bool usePrimal = ( couplingMeshPtr->isOnVertices() && readMetadata.basis() == PreciceFieldBasisType::P1c ) ||
+                                                     ( couplingMeshPtr->isOnBarycenter() && readMetadata.basis() == PreciceFieldBasisType::P0d );
+                                    if ( usePrimal )
+                                        couplingMeshPtr->template initReadData<Shape,false>
+                                            ( dataName, readMetadata, dataSetup.properties(),
                                               [func,couplingMeshPtr=couplingMeshPtr.get()]( auto & readData ){
                                                   std::invoke( func, readData, *couplingMeshPtr );
                                               } );
-                                    }
+                                    else
+                                        couplingMeshPtr->template initReadData<Shape,true>
+                                            ( dataName, readMetadata, dataSetup.properties(),
+                                              [func,couplingMeshPtr=couplingMeshPtr.get()]( auto & read ){
+                                                  std::invoke( func, read, *couplingMeshPtr );
+                                              } );
                                 }
                             }, itFindMesh->second );
             }
