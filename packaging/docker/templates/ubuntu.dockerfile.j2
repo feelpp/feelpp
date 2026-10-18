@@ -22,6 +22,13 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+{% if precice %}
+COPY install-precice.sh /usr/local/bin/feelpp-install-precice
+RUN bash /usr/local/bin/feelpp-install-precice \
+    '{{ precice.version }}' '{{ precice.package_url }}' '{{ precice.package_sha256 }}' \
+    '{{ precice.source_url }}' '{{ precice.source_sha256 }}'
+
+{% endif %}
 RUN useradd -m -s /bin/bash -G sudo feelpp \
     && echo "feelpp ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
@@ -39,4 +46,3 @@ ENV OMPI_ALLOW_RUN_AS_ROOT=1 \
     OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
 
 CMD ["/bin/bash"]
-

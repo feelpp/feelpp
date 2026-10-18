@@ -141,6 +141,11 @@ RUN mkdir -p "$SPACK_USER_CONFIG_PATH" "$SPACK_USER_CACHE_PATH" \\
        fi \\
     && spack clean --all
 
+# Shell initialization queries Spack before activating the environment. Use its
+# already installed repositories globally to avoid a network fetch at startup.
+RUN "$SPACK_ROOT/bin/spack" -e {environment_dir} config get repos > /tmp/feelpp-spack-repos.yaml \\
+    && mv /tmp/feelpp-spack-repos.yaml "$SPACK_USER_CONFIG_PATH/repos.yaml"
+
 RUN cat >/etc/profile.d/feelpp-spack.sh <<'EOF'
 export FEELPP_REPO_ROOT=/opt/feelpp
 export SPACK_ROOT=/opt/spack
