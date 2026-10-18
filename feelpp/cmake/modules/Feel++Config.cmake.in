@@ -270,7 +270,7 @@ if (NOT FEELPP_DONT_SETUP_CMAKE)
   endif()
   #find_dependency( OpenTURNS )
   if ( FEELPP_HAS_PRECICE )
-    find_dependency( precice )
+    find_dependency( precice CONFIG )
   endif()
 
   if ( NOT TARGET Feelpp::feelpp )
