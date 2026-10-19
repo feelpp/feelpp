@@ -1844,6 +1844,24 @@ if ( FEELPP_ENABLE_LIBCURL )
   endif()
 endif()
 
+
+option( FEELPP_ENABLE_PRECICE "Enable preCICE coupling support in Feel++ when available" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+message(STATUS "[feelpp] FEELPP_ENABLE_PRECICE=${FEELPP_ENABLE_PRECICE}" )
+set( FEELPP_HAS_PRECICE 0 )
+if ( FEELPP_ENABLE_PRECICE )
+  find_package( precice CONFIG QUIET )
+  if ( precice_FOUND )
+    set( FEELPP_HAS_PRECICE 1 )
+    message(STATUS "[feelpp] preCICE: ${precice_VERSION}" )
+    message(STATUS "[feelpp] preCICE CMake package: ${precice_DIR}" )
+    get_target_property( _feelpp_precice_library precice::precice LOCATION )
+    message(STATUS "[feelpp] preCICE library: ${_feelpp_precice_library}" )
+    set( FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} preCICE/${precice_VERSION}" )
+  else()
+    message(STATUS "[feelpp] preCICE not found: coupling support disabled" )
+  endif()
+endif()
+
 #
 # if Feel++ has been installed on the system
 #

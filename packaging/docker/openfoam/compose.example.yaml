@@ -1,0 +1,36 @@
+# SPDX-FileCopyrightText: 2026 University of Strasbourg
+# SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
+# Validate with `docker compose -f compose.example.yaml config` before running.
+# Each command must be a participant that consumes the same preCICE configuration.
+services:
+  kub:
+    image: ${KUB_IMAGE:?Set the rebuilt KUB image, preferably by digest}
+    user: "${RUN_UID:-1001}:${RUN_GID:-1001}"
+    working_dir: /coupling/kub
+    command: ["bash", "-c", "exec ${KUB_COMMAND:?Set the KUB coupling participant command}"]
+    init: true
+    restart: "no"
+    volumes:
+      - type: bind
+        source: ${CASE_ROOT:?Set an absolute path to the prepared coupling case}
+        target: /coupling
+    networks: [coupling]
+
+  openfoam:
+    image: ${OPENFOAM_IMAGE:-ghcr.io/feelpp/openfoam:2606-precice3.4.1-ubuntu24.04}
+    user: "${RUN_UID:-1001}:${RUN_GID:-1001}"
+    working_dir: /coupling/openfoam
+    command: ["bash", "-c", "exec ${OPENFOAM_COMMAND:?Set the OpenFOAM coupling participant command}"]
+    init: true
+    restart: "no"
+    volumes:
+      - type: bind
+        source: ${CASE_ROOT:?Set an absolute path to the prepared coupling case}
+        target: /coupling
+    networks: [coupling]
+
+networks:
+  coupling:
+    driver: bridge

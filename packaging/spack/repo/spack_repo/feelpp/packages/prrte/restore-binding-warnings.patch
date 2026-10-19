@@ -1,0 +1,40 @@
+Restore warning topics still referenced by odls_base_bind.c in PRRTE 4.1.0.
+Without them, pmix_show_help_vstring returns NULL and write_help_msg calls
+strlen(NULL) when memory binding is denied, for example by Docker seccomp.
+The upstream fork/exec refactor also restores these topics:
+https://github.com/openpmix/prrte/commit/f24b3f384ac07737af922b045fedaee4e6063c74
+
+--- a/src/mca/odls/pdefault/help-prte-odls-default.txt
++++ b/src/mca/odls/pdefault/help-prte-odls-default.txt
+@@ -49,6 +49,31 @@
+   Error message:     %s
+   Location:          %s:%d
+ #
++[not bound]
++PRTE could not bind a new process. The process will continue unbound.
++
++  Local host:        %s
++  Application name:  %s
++  Error message:     %s
++  Location:          %s:%d
++#
++[incorrectly bound]
++PRTE could not determine a new process's binding. It will continue bound
++to all available processors.
++
++  Local host:        %s
++  Application name:  %s
++  Location:          %s:%d
++#
++[memory not bound]
++PRTE could not bind memory for a new process. It will continue with CPU
++binding, but without memory binding. Performance may be degraded.
++
++  Local host:        %s
++  Application name:  %s
++  Error message:     %s
++  Location:          %s:%d
++#
+ [iof setup failed]
+ PRTE tried to launch a child process but the "IOF child setup"
+ failed.  This should not happen.  Your job will now abort.

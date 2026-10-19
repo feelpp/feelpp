@@ -15,6 +15,16 @@ Current scope:
 
 Current overlays:
 
+- `prrte`
+  - restores three binding-warning messages missing from PRRTE 4.1.0
+  - regenerates its prebuilt C message table without purging warning topics
+  - prevents a launcher crash when Docker denies NUMA memory binding
+  - preserves CPU binding and reports the actual memory-binding warning
+- `precice`
+  - adds the checksum-pinned 3.4.1 release to the builtin recipe
+  - builds the version probe and disables the upstream test-suite build
+  - used by the CPU OpenMPI 5 and MPICH environments with MPI/PETSc enabled
+    and preCICE Python actions disabled
 - `cln`
   - switches `@1.3:` to the upstream CMake build system
   - keeps autotools available only for older `@:1.2` releases
@@ -53,3 +63,12 @@ Important rule:
 - it is not the intended final public home of the Feel++ Spack package
 
 The long-term target remains an upstream recipe in `spack/spack-packages`.
+
+The CPU OpenMPI 5 and MPICH manifests pin the builtin repository to
+`093bed090925a0c327ba4fd927f1f1d5e36f2b3e`. Spack v1.0.0's default
+`releases/v2025.07` catalog lacks their PETSc 3.25 Python recipes. The pin uses
+a separate checkout below `$user_cache_path/package_repos/`, preserving other
+user repositories. The preCICE overlay supplies 3.4.1 on top of that catalog.
+The two manifests explicitly select PETSc/petsc4py 3.25.6 and SLEPc/slepc4py
+3.25.2, keeping the solver stack on the 3.25 release series. The PETSc overlay
+continues to install the HPDDM runtime library.

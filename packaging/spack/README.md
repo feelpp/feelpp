@@ -5,13 +5,13 @@
 Current scope:
 
 - keep shared Spack environment manifests under version control
-- expose one supported shared CPU/OpenMPI environment for Feel++ development
+- expose supported shared CPU MPI environments for Feel++ development
 - preserve the imported `openmpi4/` manifest as a visible legacy bootstrap
   reference
 - reserve separate locations for:
   - shared environments
   - site-local include templates
-  - a temporary in-repo Spack overlay repository if one is needed later
+- a small in-repo Spack overlay repository for package fixes
 
 Directory roles:
 
@@ -52,7 +52,31 @@ Current CI-oriented image generation support:
   - generate a self-contained Docker context plus `docker-bake.json`
   - the generated image installs the repository-owned Spack environment inside
     an Ubuntu 24.04 base image by default
-  - the first supported target is `spack:openmpi`
+  - `spack:openmpi` remains the full-stack baseline
+- `fpp-pkg image bake --target spack:openmpi5 --component feelpp --from-image ghcr.io/feelpp/feelpp-env:spack-openmpi5`
+  - generate a Feel++ core builder and runtime image from the OpenMPI 5 Spack
+    environment, without building Toolboxes or MOR
+  - `toolboxes` and `mor` can also be selected explicitly; each uses the
+    preceding component runtime image as its base
+- `fpp-pkg image bake --target spack:mpich --component env`
+  - generate the MPICH 3.4.3/CH3 environment image; build jobs default to 15
+    and concurrent packages to three
+- `fpp-pkg image bake --target spack:mpich --component feelpp --from-image ghcr.io/feelpp/feelpp-env:spack-mpich`
+  - generate only the Feel++ core builder and runtime image from that environment
+
+The Feel++ CI workflow keeps the full Spack build by default. To request the
+OpenMPI 5 core component, dispatch `.github/workflows/ci.yml` with
+`targets=spack:openmpi5`, `only=feelpp`, and `spack_components=true`. Set
+`mode=components` explicitly when combining it with other targets. The
+`spack:openmpi` target remains full-build only.
+For the MPICH core, dispatch with `targets=spack:mpich`, `only=feelpp`, and
+`spack_components=true`. The MPICH target has no full, Testsuite, Quickstart,
+Toolboxes, or MOR image jobs.
+
+The OCI environment sets `SPACK_USER_CONFIG_PATH=/opt/spack-user` and
+`SPACK_USER_CACHE_PATH=/opt/spack-user-cache` inside the image. Locally
+configured host paths are used by local Spack commands; Docker does not mount
+those directories into this image build.
 
 Current environment roles:
 
@@ -63,6 +87,8 @@ Current environment roles:
   - portable OpenMPI 5 validation environment for Gaya and LUMI-C
   - enables UCX and OFI; LUMI supplies its HPE libfabric/CXI provider through
     site-local Spack configuration
+- `environments/cpu/mpich/`
+  - MPICH 3.4.3 with CH3 and a unified MPI dependency graph; see its README
 - `environments/cpu/openmpi-macosx/`
   - macOS CPU/OpenMPI environment without UCX/CMA
   - uses OpenBLAS for BLAS/LAPACK to avoid the macOS Accelerate/MUMPS crash path

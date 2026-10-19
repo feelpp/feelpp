@@ -1,33 +1,14 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-  This file is part of the Feel library
+  SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+  SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-11-16
-
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2007,2008 Université Joseph Fourier (Grenoble I)
-  Copyright (C) 2009-2017 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+  SPDX-FileCopyrightText: 2005-2006 EPFL
+  SPDX-FileCopyrightText: 2007-2008 Université Joseph Fourier (Grenoble I)
+  SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
+  SPDX-License-Identifier: LGPL-3.0-or-later
 */
-/**
-   \file importergmsh.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-11-16
- */
+
 #ifndef FEELPP_IMPORTERGMSH_HPP
 #define FEELPP_IMPORTERGMSH_HPP 1
 
@@ -35,8 +16,13 @@
 #include <fstream>
 #include <iomanip>
 #include <algorithm>
+#include <cstdint>
+#include <cstdlib>
+#include <memory>
 #include <unordered_map>
+#include <vector>
 
+#include <feel/feelcore/json.hpp>
 #include <feel/feelcore/worldcomm.hpp>
 #include <feel/feelcore/feelgmsh.hpp>
 #include <feel/feeldiscr/mesh.hpp>
@@ -533,6 +519,19 @@ private:
     FEELPP_NO_EXPORT void readFromFile( mesh_type* mesh );
     FEELPP_NO_EXPORT void readFromFileVersion2( mesh_type* mesh, std::ifstream & __is, std::string __buf,
                                                 double version, bool binary, bool swap );
+    /**
+     * @brief Read mesh entities and partition metadata from a Gmsh 4.x file.
+     * @tparam gmsh_size_type Type of node and element counts in the file.
+     * @tparam gmsh_size_partition_type Type of partition tags in the file.
+     * @tparam gmsh_size_periodiclink_type Type of periodic-link counts in the file.
+     * @tparam gmsh_elttag_type Type of element tags in the file.
+     * @param mesh Mesh receiving imported entities.
+     * @param __is Stream containing the mesh data.
+     * @param __buf Current section name.
+     * @param version Gmsh format version.
+     * @param binary Whether the file uses binary encoding.
+     * @param swap Whether binary values require byte swapping.
+     */
     template <typename gmsh_size_type,typename gmsh_size_partition_type,typename gmsh_size_periodiclink_type,typename gmsh_elttag_type>
     FEELPP_NO_EXPORT void readFromFileVersion4( mesh_type* mesh, std::ifstream & __is, std::string __buf,
                                                 double version, bool binary, bool swap );
@@ -554,9 +553,27 @@ private:
     FEELPP_NO_EXPORT int addFace( mesh_type* mesh, Feel::detail::GMSHElement const& __e, mpl::int_<3> );
 
     FEELPP_NO_EXPORT int addVolume( mesh_type* mesh, Feel::detail::GMSHElement const& __e );
+    /**
+     * @brief Insert a volume using an optional importer-local point lookup table.
+     * @param mesh Mesh receiving the volume.
+     * @param __e Gmsh volume record to insert.
+     * @param densePoints Importer-local point pointers indexed by Gmsh tag, or null for map lookup.
+     * @return Feel++ identifier of the inserted volume.
+     */
+    FEELPP_NO_EXPORT int addVolume( mesh_type* mesh, Feel::detail::GMSHElement const& __e,
+                                   std::vector<point_type*> const* densePoints );
     FEELPP_NO_EXPORT int addVolume( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, mpl::int_<1> );
     FEELPP_NO_EXPORT int addVolume( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, mpl::int_<2> );
-    FEELPP_NO_EXPORT int addVolume( mesh_type* mesh, Feel::detail::GMSHElement const& __e, mpl::int_<3> );
+    /**
+     * @brief Construct a three-dimensional volume and link its stored mesh points.
+     * @param mesh Mesh receiving the volume.
+     * @param __e Gmsh volume record to insert.
+     * @param densePoints Importer-local point pointers, or null for map lookup.
+     * @return Feel++ identifier of the inserted volume.
+     */
+    FEELPP_NO_EXPORT int addVolume( mesh_type* mesh, Feel::detail::GMSHElement const& __e,
+                                   mpl::int_<3>,
+                                   std::vector<point_type*> const* densePoints = nullptr );
 
     FEELPP_NO_EXPORT void updateGhostCellInfo( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,rank_type> > const& __mapGhostElt,
                                                     std::vector<int> const& nbMsgToRecv );
@@ -1920,9 +1937,16 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
 
     //std::map<size_type,Feel::detail::GMSHPoint> additionalNodes;
     std::map<rank_type,std::set<size_type>> interprocessNodes; // neighbour partId -> ( points id )
+    std::vector<point_type*> densePointLookup;
+    bool const densePointLookupRequested = []()
+    {
+        auto const* value = std::getenv( "FEELPP_GMSH_DENSE_POINT_LOOKUP" );
+        return value && std::string( value ) == "1";
+    }();
 
     if ( std::string( __buf ) == "$Nodes" )
     {
+        tic();
         VLOG(2) << "Reading $Nodes ...";
         // eat  '\n' in binary mode otherwise the next binary read will get screwd
         if ( binary )
@@ -1944,6 +1968,19 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                 __is.read( (char*)&minNodeTag, sizeof(gmsh_size_type) );
                 __is.read( (char*)&maxNodeTag, sizeof(gmsh_size_type) );
             }
+        }
+
+        // This importer-local table is useful only when Gmsh tags are dense.
+        // One pointer per node is capped at 1 GiB; the mesh remains the owner.
+        // Pointers into its unordered point map remain valid across rehashes.
+        if ( densePointLookupRequested && mesh_type::nDim == 3 && worldSize == 1 &&
+             numPartitions == 1 && version >= 4.1 && minNodeTag == 1 &&
+             maxNodeTag == nNodes && nNodes > 0 &&
+             static_cast<std::uint64_t>( nNodes ) < ( std::uint64_t{1} << 27 ) )
+        {
+            tic();
+            densePointLookup.resize( static_cast<std::size_t>( nNodes ) + 1, nullptr );
+            toc( "ImporterGmsh::dense point lookup allocate", no_display );
         }
 
         int entityDim, entityTag, parametric;
@@ -2065,7 +2102,18 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                     }
 #endif
                 }
-                mesh->addPoint( pt );
+                if ( densePointLookup.empty() )
+                    mesh->addPoint( pt );
+                else if ( id < densePointLookup.size() )
+                {
+                    auto [pointIt, inserted] = mesh->addPoint( pt );
+                    densePointLookup[id] = std::addressof( pointIt->second );
+                }
+                else
+                {
+                    std::vector<point_type*>().swap( densePointLookup );
+                    mesh->addPoint( pt );
+                }
             }
         }
         __is >> __buf;
@@ -2076,6 +2124,12 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
         VLOG(2) << "Reading $Nodes done";
 
         __is >> __buf;
+        toc( "ImporterGmsh::readFromFileVersion4 nodes", Environment::logVerbosityLevel() > 0 );
+        if ( densePointLookupRequested && procId == 0 )
+            std::cout << "[gmsh dense point lookup] "
+                      << nl::json( { { "active", !densePointLookup.empty() },
+                                     { "entries", densePointLookup.size() },
+                                     { "table_bytes", densePointLookup.size()*sizeof(point_type*) } } ).dump() << '\n';
     }
 
 
@@ -2085,6 +2139,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
 
     if ( std::string( __buf ) == "$Elements" )
     {
+        tic();
         VLOG(2) << "Reading $Elements ...";
         // eat  '\n' in binary mode otherwise the next binary read will get screwd
         if ( binary )
@@ -2207,7 +2262,6 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                     __is.read( (char*)&_vectmpelttag[0], numVertices*sizeof(gmsh_elttag_type) );
                     indices.assign( _vectmpelttag.begin(),_vectmpelttag.end() );
                 }
-
                 // update current gmsh element with read data
                 it_gmshElt.num = elementTag;
 
@@ -2282,9 +2336,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
 
                 if ( useThisEntity )
                 {
-                    // update current gmsh element with read data
                     it_gmshElt.indices = indices;
-
                     switch ( elementType )
                     {
                         // Points
@@ -2327,15 +2379,16 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                     case GMSH_HEXAHEDRON:
                     case GMSH_HEXAHEDRON_2:
                     {
-                        __idGmshToFeel[it_gmshElt.num] = addVolume( mesh, it_gmshElt );
+                        if ( densePointLookup.empty() )
+                            __idGmshToFeel[it_gmshElt.num] = addVolume( mesh, it_gmshElt );
+                        else
+                            __idGmshToFeel[it_gmshElt.num] = addVolume( mesh, it_gmshElt, &densePointLookup );
                         break;
                     }
 
                     default:
                         break;
                     }
-
-
                 }
 
             }
@@ -2347,6 +2400,14 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
             << " instead of $EndElements";
         VLOG(2) << "Reading $Elements done";
         __is >> __buf;
+        toc( "ImporterGmsh::readFromFileVersion4 elements", Environment::logVerbosityLevel() > 0 );
+    }
+
+    if ( !densePointLookup.empty() )
+    {
+        tic();
+        std::vector<point_type*>().swap( densePointLookup );
+        toc( "ImporterGmsh::dense point lookup release", no_display );
     }
 
     std::vector<PeriodicEntity> periodic_entities;
@@ -2500,6 +2561,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
 
     if ( numPartitions > 1 )
     {
+        tic();
         int nbRequest = ghostElementToSendToProcessId.size() + ghostElementToRecvFromProcessId.size();
         if ( nbRequest > 0 )
         {
@@ -2595,6 +2657,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                 }
             }
         }
+        toc( "ImporterGmsh::readFromFileVersion4 ghost exchange", Environment::logVerbosityLevel() > 0 );
     } // if ( numPartitions > 1 )
 
     // update ordered points in mesh data structure
@@ -2838,6 +2901,16 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement co
 }
 template<typename MeshType>
 int
+ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement const& __e,
+                                   std::vector<point_type*> const* densePoints )
+{
+    if constexpr ( mesh_type::nDim == 3 )
+        return addVolume( mesh, __e, mpl::int_<3>(), densePoints );
+    else
+        return addVolume( mesh, __e );
+}
+template<typename MeshType>
+int
 ImporterGmsh<MeshType>::addVolume( mesh_type*, Feel::detail::GMSHElement const&, mpl::int_<1> )
 {
     CHECK( false ) << "ImporterGmsh<MeshType>::addVolume with dim=1 not valid";
@@ -2852,7 +2925,9 @@ ImporterGmsh<MeshType>::addVolume( mesh_type*, Feel::detail::GMSHElement const&,
 }
 template<typename MeshType>
 int
-ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement const& __e, mpl::int_<3> )
+ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement const& __e,
+                                   mpl::int_<3>,
+                                   std::vector<point_type*> const* densePoints )
 {
     element_type e;
     e.setId( ( false )? __e.num : mesh->elements().size() );
@@ -2881,7 +2956,10 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement co
         for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
         {
             //ptseen[mesh->point( __e.indices[jj] ).id()]=1;
-            point_type & pt = mesh->pointIterator( __e.indices[jj] )->second;
+            size_type pointId = __e.indices[jj];
+            point_type* cachedPoint = densePoints && pointId < densePoints->size()
+                                          ? (*densePoints)[pointId] : nullptr;
+            point_type & pt = cachedPoint ? *cachedPoint : mesh->pointIterator( pointId )->second;
             if (!e.isGhostCell()) pt.setProcessId( e.processId() );
             //std::cout << "gmsh index " << jj << " -> " << ordering.fromGmshId(jj) << " -> " << mesh->point( __e[jj] ).id()+1 << " : " << mesh->point( __e[jj] ).node() << "\n";
             e.setPoint( ordering.fromGmshId( jj ), pt );

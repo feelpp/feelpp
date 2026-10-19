@@ -1,31 +1,12 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-
 
-  This file is part of the Feel library
+  SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+  SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2013-12-24
-
-  Copyright (C) 2013-2016 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+  SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
+  SPDX-License-Identifier: LGPL-2.1-or-later
 */
-/**
-   \file loadgmshmesh.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2013-12-24
- */
+
 #ifndef FEELPP_FILTERS_LOADGMSHMESH_H
 #define FEELPP_FILTERS_LOADGMSHMESH_H
 
@@ -123,13 +104,17 @@ loadGMSHMeshImpl( std::shared_ptr<MeshType> mesh, std::string const& filename, s
         if ( rebuild_partitions && partitions > 1 )
         {
             _mesh_ptrtype _meshSeq = std::make_shared<_mesh_type>( Environment::worldCommSeqPtr() );
+            tic();
             _meshSeq->accept( import );
+            toc( "loadGMSHMesh.partition import", Environment::logVerbosityLevel() > 0 );
+            tic();
             _meshSeq->components().reset();
             size_type update_ = MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES|MESH_GEOMAP_NOT_CACHED;
             if ( true ) // TODO: only required if partitioning has constraints
                 update_ |= MESH_UPDATE_FACES_MINIMAL;
             _meshSeq->components().set( update_ );
             _meshSeq->updateForUse();
+            toc( "loadGMSHMesh.partition mesh update", Environment::logVerbosityLevel() > 0 );
 #if defined(FEELPP_HAS_HDF5)
             using io_t = PartitionIO<_mesh_type>;
             if ( fnamePartitioned.empty() )
@@ -139,7 +124,12 @@ loadGMSHMeshImpl( std::shared_ptr<MeshType> mesh, std::string const& filename, s
 
             io_t io( fnamePartitioned );
             //std::vector<Range<_mesh_type,MESH_ELEMENTS>> partitionByRange;
-            io.write( partitionMesh( _meshSeq, partitions, {}, partitioning ) );
+            tic();
+            auto meshPartitionSet = partitionMesh( _meshSeq, partitions, {}, partitioning );
+            toc( "loadGMSHMesh.partition mesh", Environment::logVerbosityLevel() > 0 );
+            tic();
+            io.write( std::move( meshPartitionSet ) );
+            toc( "loadGMSHMesh.partition write", Environment::logVerbosityLevel() > 0 );
 #endif
         }
         else

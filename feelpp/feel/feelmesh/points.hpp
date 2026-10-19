@@ -1,31 +1,13 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-  This file is part of the Feel library
+  SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+  SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-09-03
-
-  Copyright (C) 2005,2006 EPFL
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+  SPDX-FileCopyrightText: 2005-2006 EPFL
+  SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
+  SPDX-License-Identifier: LGPL-3.0-or-later
 */
-/**
-   \file points.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-09-03
- */
+
 #ifndef FEELPP_MESH_POINTS_HPP
 #define FEELPP_MESH_POINTS_HPP
 
@@ -532,14 +514,13 @@ class Points
     }
 
     /**
-     * add a new point in the mesh
-     * @param f a new point
-     * @return the new point from the list
+     * @brief Copy a point into the mesh if its ID is not present.
+     * @param f Point to insert.
+     * @return Iterator to the stored point and whether insertion occurred.
      */
     std::pair<point_iterator,bool> addPoint( point_type const& f )
     {
-        //return M_points.insert( std::make_pair( f.id(), f ) ).first->second;
-        auto ret = M_points.emplace( std::make_pair( f.id(), f ) );
+        auto ret = M_points.try_emplace( f.id(), f );
 
         auto& newPoint = ret.first->second;
         if ( ret.second )
@@ -552,14 +533,13 @@ class Points
     }
 
     /**
-     * add a new point in the mesh
-     * @param f a new point
-     * @return the new point from the list
+     * @brief Move a point into the mesh if its ID is not present.
+     * @param f Point to insert; it is left intact if its ID already exists.
+     * @return Iterator to the stored point and whether insertion occurred.
      */
     std::pair<point_iterator,bool> addPoint( point_type&& f )
     {
-        //return M_points.insert( std::make_pair( f.id(), f ) ).first->second;
-        auto ret = M_points.emplace( std::make_pair( f.id(), f ) );
+        auto ret = M_points.try_emplace( f.id(), std::move( f ) );
 
         auto& newPoint = ret.first->second;
         if ( ret.second )

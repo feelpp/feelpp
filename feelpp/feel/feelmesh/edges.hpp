@@ -1,35 +1,19 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-  This file is part of the Feel library
+  SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+  SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-09-03
-
-  Copyright (C) 2005,2006 EPFL
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+  SPDX-FileCopyrightText: 2005-2006 EPFL
+  SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
+  SPDX-License-Identifier: LGPL-3.0-or-later
 */
-/**
-   \file edges.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-09-03
- */
+
 #ifndef FEELPP_MESH_EDGES_HPP
 #define FEELPP_MESH_EDGES_HPP
 
+#include <algorithm>
 #include <unordered_map>
+#include <unordered_set>
 #include <feel/feelcore/commobject.hpp>
 #include <feel/feelmesh/geoelement.hpp>
 
@@ -200,6 +184,12 @@ public:
     edge_const_iterator endEdge() const
     {
         return M_edges.end();
+    }
+
+    /** @brief Return ordered edge references so callers can inspect their size and capacity. */
+    ordered_edges_reference_wrapper_type const& orderedEdges() const noexcept
+    {
+        return M_orderedEdges;
     }
 
     ordered_edge_reference_wrapper_iterator beginOrderedEdge()
@@ -485,12 +475,41 @@ public:
     edge_iterator eraseEdge( edge_iterator it )
         {
             size_type erasedId = it->first;
-            auto itret = M_edges.erase( it );
             auto itOrdered = std::find_if( M_orderedEdges.begin(), M_orderedEdges.end(),
                                            [&erasedId]( auto & edgeWrap ) { return unwrap_ref( edgeWrap ).id() == erasedId; } );
+            CHECK( itOrdered != M_orderedEdges.end() ) << "edge " << erasedId << " is missing from ordered edges";
             M_orderedEdges.erase( itOrdered );
-            return itret;
+            return M_edges.erase( it );
         }
+
+    /**
+     * @brief Erase selected edges in one pass while preserving retained order.
+     * @tparam Predicate Callable accepting an edge and returning true to erase it.
+     * @param predicate Selection function applied to every registered edge.
+     * @return Number of erased edges.
+     */
+    template <typename Predicate>
+    std::size_t eraseEdgesIf( Predicate const& predicate )
+    {
+        std::unordered_set<size_type> erasedIds;
+        for ( auto const& [id, edge] : M_edges )
+        {
+            if ( predicate( edge ) )
+                erasedIds.insert( id );
+        }
+        if ( erasedIds.empty() )
+            return 0;
+
+        auto firstErased = std::remove_if( M_orderedEdges.begin(), M_orderedEdges.end(),
+                                          [&erasedIds]( auto const& edgeWrap )
+                                          {
+                                              return erasedIds.find( unwrap_ref( edgeWrap ).id() ) != erasedIds.end();
+                                          } );
+        M_orderedEdges.erase( firstErased, M_orderedEdges.end() );
+        for ( auto id : erasedIds )
+            M_edges.erase( id );
+        return erasedIds.size();
+    }
 
 
     void setWorldCommEdges( worldcomm_ptr_t const& _worldComm )

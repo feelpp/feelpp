@@ -1,6 +1,6 @@
 {
   "jobs": ["feelpp", "testsuite", "quickstart", "toolboxes", "mor"],
-  "targets": ["ubuntu:noble", "debian:trixie", "ubuntu:resolute", "spack:openmpi", "spack:openmpi5"],
+  "targets": ["ubuntu:noble", "debian:trixie", "ubuntu:resolute", "spack:openmpi", "spack:openmpi5", "spack:mpich"],
   "defaults": {
     "mode": "components",
     "jobs": ["feelpp", "testsuite", "quickstart", "toolboxes", "mor"],
@@ -13,7 +13,7 @@
   "profiles": {
     "ci": {
       "jobs": ["feelpp", "testsuite", "quickstart", "toolboxes", "mor"],
-      "targets": ["ubuntu:noble", "debian:trixie", "ubuntu:resolute", "spack:openmpi", "spack:openmpi5"],
+      "targets": ["ubuntu:noble", "debian:trixie", "ubuntu:resolute", "spack:openmpi", "spack:openmpi5", "spack:mpich"],
       "matrixCatalogProfile": "images",
       "defaults": {
         "mode": "components",
@@ -130,6 +130,22 @@
           "spack_environment": "cpu/openmpi",
           "base_image": "ubuntu:24.04"
         },
+        "spack:mpich": {
+          "flavor": "spack",
+          "dist": "mpich",
+          "version": "3.4.3",
+          "docker": "true",
+          "continue-on-error": "false",
+          "oci_dist": "spack-mpich",
+          "image_backend": "spack",
+          "image_strategy": "environment",
+          "ci_components": "true",
+          "ci_component_jobs": "feelpp",
+          "ci_full": "false",
+          "cmake_feelpp_preset": "feelpp-spack-mpich",
+          "spack_environment": "cpu/mpich",
+          "base_image": "ubuntu:24.04"
+        },
         "spack:openmpi5": {
           "flavor": "spack",
           "dist": "openmpi5",
@@ -139,8 +155,13 @@
           "oci_dist": "spack-openmpi5",
           "image_backend": "spack",
           "image_strategy": "environment",
-          "ci_components": "false",
+          "ci_components": "true",
           "ci_full": "true",
+          "cmake_feelpp_preset": "feelpp-spack-openmpi5",
+          "cmake_testsuite_preset": "testsuite-spack-openmpi5",
+          "cmake_quickstart_preset": "quickstart-spack-openmpi5",
+          "cmake_toolboxes_preset": "toolboxes-spack-openmpi5",
+          "cmake_mor_preset": "mor-spack-openmpi5",
           "cmake_full_preset": "release-clang-spack-cpu-openmpi5",
           "spack_environment": "cpu/openmpi5",
           "base_image": "ubuntu:24.04"
@@ -166,7 +187,9 @@
         "sid": ["debian:sid"],
         "unstable": ["debian:sid"],
         "future": ["debian:testing", "debian:sid"],
-        "spack": ["spack:openmpi", "spack:openmpi5"],
+        "spack": ["spack:openmpi", "spack:openmpi5", "spack:mpich"],
+        "mpich": ["spack:mpich"],
+        "spack-mpich": ["spack:mpich"],
         "openmpi": ["spack:openmpi"],
         "spack-openmpi": ["spack:openmpi"],
         "openmpi5": ["spack:openmpi5"],

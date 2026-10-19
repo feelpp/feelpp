@@ -1,320 +1,196 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
- 
- This file is part of the Feel++ library
- 
- Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- Date: 23 mai 2015
- 
- Copyright (C) 2015 Feel++ Consortium
- 
- This library is free software; you can redistribute it and/or
- modify it under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation; either
- version 2.1 of the License, or (at your option) any later version.
- 
- This library is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
- 
- You should have received a copy of the GNU Lesser General Public
- License along with this library; if not, write to the Free Software
- Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
- */
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+
+   SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+   SPDX-FileContributor: Guillaume Dollé <dolle.guillaume@gmail.com>
+
+   SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
+   SPDX-License-Identifier: LGPL-2.1-or-later
+*/
 #ifndef FEELPP_TIMERTABLE_HPP
 #define FEELPP_TIMERTABLE_HPP 1
 
-#include <iomanip>
-#include <iostream>
-
-#include <boost/accumulators/accumulators.hpp>
-#include <boost/accumulators/statistics/stats.hpp>
-#include <boost/accumulators/statistics/count.hpp>
-#include <boost/accumulators/statistics/mean.hpp>
-#include <boost/accumulators/statistics/variance.hpp>
-#include <boost/accumulators/statistics/sum.hpp>
-#include <boost/accumulators/statistics/min.hpp>
-#include <boost/accumulators/statistics/max.hpp>
-#include <boost/algorithm/string/trim_all.hpp>
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <ostream>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <feel/feelcore/journalwatcher.hpp>
+#include <feel/feelstats/iterativestatistics.hpp>
+#include <feel/feelstats/kll.hpp>
 
-namespace Feel {
-
-static uint16_type TIMERDATA_INSTANCE_NUMBER = 0;
-static const std::string timerDefaultInstanceName() { return "timer-" + std::to_string(TIMERDATA_INSTANCE_NUMBER); }
-
-//! TimerData is the value for the TimerTable map.
-class TimerData : public std::vector<double>
+namespace Feel
 {
-  public:
-    TimerData() = default;
-    TimerData(TimerData const& ) = default;
-    TimerData( std::string const& m, 
-               std::string const& p = timerDefaultInstanceName() )
-        : msg(m), instance_name(p)
+
+/** @brief Serializable local moments and quantile sketch for one label. */
+struct TimerProfileSnapshot
+{
+    /// Mergeable local count, sum, extrema, mean, and variance state.
+    Stats::IterativeStatistics<double> statistics;
+    /// Mergeable quantile summary of local durations.
+    Stats::KllSketch<double> quantiles{};
+
+    /** @brief Serialize the profile for the MPI gather. */
+    template <typename Archive>
+    void serialize( Archive& archive, unsigned int )
     {
-        TIMERDATA_INSTANCE_NUMBER++;
+        archive & statistics & quantiles;
     }
-    void add( std::pair<double,int> const& t ) { this->push_back( t.first ); level=t.second; }
-    std::string msg;
-    std::string instance_name;
-    int level;
 };
 
-//! TimerTable is a map of timer.
-class TimerTable : std::map<std::string, TimerData>,
-    public JournalWatcher
+/**
+ * @brief Streaming local statistics for one tic()/toc() label.
+ *
+ * TimerTable owns these records. Summary statistics are updated on each sample.
+ * Moments use constant storage; the equal-capacity quantile sketch retains
+ * O(k log N) values for N calls and capacity k per level. Raw samples are not
+ * retained. Recording is intended for a single thread per process.
+ */
+class TimerData
 {
-    using super = std::map<std::string, TimerData>;
-    using super2 = JournalWatcher;
 public:
+    /** @brief Create an empty timer record. */
+    TimerData() = default;
+    /** @brief Copy the timer label, journal name, and accumulated statistics. */
+    TimerData( TimerData const& ) = default;
 
-    //! Constructors
-    //! @{
+    /** @brief Create a labeled timer record with an optional journal instance name. */
+    explicit TimerData( std::string const& message, std::string const& instanceName = {} );
 
-    //! Default constructor
-    TimerTable() : super2( "TimerTable", false ) {}
+    /** @brief Accumulate a finite, nonnegative duration; ignore invalid samples. */
+    void add( std::pair<double, int> const& sample );
 
+    /** @brief Number of accumulated samples. */
+    std::size_t size() const { return M_Statistics.count(); }
+    /** @brief Whether any sample has been accumulated. */
+    bool empty() const { return M_Statistics.empty(); }
+    /** @brief Latest elapsed duration; valid when the record is nonempty. */
+    double back() const { return M_Last; }
+    /** @brief Sum of elapsed durations in seconds. */
+    double total() const { return M_Statistics.total(); }
+    /** @brief Smallest elapsed duration in seconds. */
+    double min() const { return M_Statistics.min(); }
+    /** @brief Largest elapsed duration in seconds. */
+    double max() const { return M_Statistics.max(); }
+    /** @brief Arithmetic mean elapsed duration in seconds. */
+    double mean() const { return M_Statistics.mean(); }
+    /** @brief Population standard deviation in seconds. */
+    double stdDev() const;
+    /** @brief Sum of squared deviations, for merging rank statistics. */
+    double m2() const { return M_Statistics.m2(); }
+    /** @brief Approximate quantile of all samples for this label. */
+    double quantile( double probability ) const { return M_Quantiles.quantile( probability ); }
+    /** @brief Copy the local statistics needed for collective profiling. */
+    TimerProfileSnapshot profileSnapshot() const;
 
-    //! @}
-
-    //! Destructor
-    ~TimerTable() override { this->journalFinalize(); }
-
-    //! Modifiers
-    //! @{
-
-    //! Add a timer for the given message
-    void add( std::string const& msg,
-              std::pair<double,int> const&  t,
-              std::string const& uiname = "" )
-        {
-            if ( msg.empty() ) return;
-            auto it = this->find( msg );
-            if ( it != this->end() )
-            {
-                it->second.add( t );
-            }
-            else
-            {
-                
-                TimerData T( msg );
-                if( not uiname.empty() )
-                    T.instance_name = uiname;
-                T.add( t );
-                this->insert( std::make_pair( msg, T ) );
-                auto m = msg.size()+2*t.second;
-                M_max_len = (m>M_max_len)?m:M_max_len;
-            }
-        }
-
-    //! @}
-
-    //! Methods
-    //! @{
-
-    //! Save the timers.
-    //! If display is true, the timers are printed on the standard output.
-    void save( bool display ) 
-        {
-            std::ostringstream os;
-            using namespace boost::accumulators;
-            using namespace std::string_literals;
-            
-            os << std::setw( M_max_len ) <<std::left << "Timer" << " " 
-               << std::setw(7) << std::right << "Count" << " "
-               << std::setw(9+2) << std::right << "Total(s)" << " "
-               << std::setw(9+2) << std::right << "Max(s)" << " "
-               << std::setw(9+2) << std::right << "Min(s)" << " "
-               << std::setw(9+2) << std::right << "Mean(s)" << " "
-               << std::setw(9+2) << std::right << "StdDev(s)" << "\n";
-            
-            std::map<double,TimerData, std::greater<double>> sortTotal;
-            for( auto const& T: *this )
-            {
-                accumulator_set<double, stats<boost::accumulators::tag::count,
-                                              boost::accumulators::tag::mean,
-                                              boost::accumulators::tag::variance,
-                                              boost::accumulators::tag::min,
-                                              boost::accumulators::tag::max> > acc;
-                for_each(T.second.begin(), T.second.end(), std::bind<void>(std::ref(acc), std::placeholders::_1));
-                double tot = boost::accumulators::sum(acc);
-                sortTotal[tot] = T.second;
-                os << std::setw( 2*T.second.level ) << " "
-                   << std::setw( M_max_len -  2*T.second.level ) <<std::left << T.first << " " 
-                   << std::setw(7) << std::right << boost::accumulators::count(acc) << " "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::sum(acc) << " "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::max(acc) << " "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::min(acc) << " "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::mean(acc) << " "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << std::sqrt(boost::accumulators::variance(acc)) << "\n";
-            }
-            os << "--------------------------------------------------------------------------------\n";
-            os << std::setw( M_max_len ) <<std::left << "Timer" << " " 
-               << std::setw(7) << std::right << "Count" << " "
-               << std::setw(9+2) << std::right << "Total(s)" << " "
-               << std::setw(9+2) << std::right << "Max(s)" << " "
-               << std::setw(9+2) << std::right << "Min(s)" << " "
-               << std::setw(9+2) << std::right << "Mean(s)" << " "
-               << std::setw(9+2) << std::right << "StdDev(s)" << "\n";
-            for( auto const& T: sortTotal )
-            {
-                accumulator_set<double, stats<boost::accumulators::tag::count,
-                                              boost::accumulators::tag::mean,
-                                              boost::accumulators::tag::variance,
-                                              boost::accumulators::tag::min,
-                                              boost::accumulators::tag::max> > acc;
-                for_each(T.second.begin(), T.second.end(), std::bind<void>(std::ref(acc), std::placeholders::_1));
-
-                os << std::setw( 2*T.second.level ) << " "
-                   << std::setw( M_max_len-2*T.second.level ) <<std::left << T.second.msg << " " 
-                   << std::setw(7) << std::right << boost::accumulators::count(acc) << " "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::sum(acc) << " "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::max(acc) << " "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::min(acc) << " "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::mean(acc) << " "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << std::sqrt(boost::accumulators::variance(acc)) << "\n";
-
-                std::string n = boost::trim_fill_copy( boost::trim_fill_copy_if( T.second.msg, "_", boost::is_any_of(":")), "_" );                
-            }
-            os << std::resetiosflags(os.flags());
-            if ( display )
-                if ( Environment::isMasterRank() )
-                    std::cout << os.str() << std::endl;
-        }
-
-    //! Save timers in markdown format.
-    //! \param os output stream
-    //! \see save
-    void saveMD( std::ostream & os ) 
-        {
-            using namespace boost::accumulators;
-           
-            os << std::setw( M_max_len ) << std::left  << "|Timer" << " " 
-               << std::setw(7)           << std::right << "|Count" << " "
-               << std::setw(9+2)         << std::right << "|Total(s)" << " "
-               << std::setw(9+2)         << std::right << "|Max(s)" << " "
-               << std::setw(9+2)         << std::right << "|Min(s)" << " "
-               << std::setw(9+2)         << std::right << "|Mean(s)" << " "
-               << std::setw(9+2)         << std::right << "|StdDev(s)|" << "\n";
-           
-            os << "|---|---|---|---|---|---|---|" << std::endl; 
-            std::map<double,TimerData, std::greater<double>> sortTotal;
-            for( auto const& T: *this )
-            {
-                accumulator_set<double, stats<boost::accumulators::tag::count,
-                                              boost::accumulators::tag::mean,
-                                              boost::accumulators::tag::variance,
-                                              boost::accumulators::tag::min,
-                                              boost::accumulators::tag::max> > acc;
-                for_each(T.second.begin(), T.second.end(), std::bind<void>(std::ref(acc), std::placeholders::_1));
-                double tot = boost::accumulators::sum(acc);
-                sortTotal[tot] = T.second;
-                os << std::setw( M_max_len ) << std::left       << "|" << T.first << " | " 
-                   << std::setw(7)           << std::right      << boost::accumulators::count(acc) << " | "
-                   << std::setw(11)          << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::sum(acc) << " | "
-                   << std::setw(11)          << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::max(acc) << " | "
-                   << std::setw(11)          << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::min(acc) << " | "
-                   << std::setw(11)          << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::mean(acc) << " | "
-                   << std::setw(11)          << std::scientific << std::setprecision( 2 ) << std::right << std::sqrt(boost::accumulators::variance(acc)) << "|\n";
-            }
-            os << "\n";
-            os << std::setw( M_max_len ) << std::left  << "|Timer" << " " 
-               << std::setw(7)           << std::right << "|Count" << " "
-               << std::setw(9+2)         << std::right << "|Total(s)" << " "
-               << std::setw(9+2)         << std::right << "|Max(s)" << " "
-               << std::setw(9+2)         << std::right << "|Min(s)" << " "
-               << std::setw(9+2)         << std::right << "|Mean(s)" << " "
-               << std::setw(9+2)         << std::right << "|StdDev(s)|" << "\n";
-            os << "|---|---|---|---|---|---|---|" << std::endl; 
-            for( auto const& T: sortTotal )
-            {
-                accumulator_set<double, stats<boost::accumulators::tag::count,
-                                              boost::accumulators::tag::mean,
-                                              boost::accumulators::tag::variance,
-                                              boost::accumulators::tag::min,
-                                              boost::accumulators::tag::max> > acc;
-                for_each(T.second.begin(), T.second.end(), std::bind<void>(std::ref(acc), std::placeholders::_1));
-
-                os << std::setw( M_max_len ) <<std::left << "|" << T.second.msg << " | " 
-                   << std::setw(7) << std::right << boost::accumulators::count(acc) << " | "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::sum(acc) << " | "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::max(acc) << " | "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::min(acc) << " | "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << boost::accumulators::mean(acc) << " | "
-                   << std::setw(11) << std::scientific << std::setprecision( 2 ) << std::right << std::sqrt(boost::accumulators::variance(acc)) << "|\n";
-            }
-            os << "\n";
-            os << std::resetiosflags(os.flags());
-        }
-
-    void test()
-    {}
+    /// Human-readable timer label.
+    std::string msg;
+    /// Name of this timer record in the environment journal.
+    std::string instance_name;
+    /// Nesting level of the most recent sample.
+    int level = 0;
 
 private:
-
-    //! Private Methods
-    //! @{
-
-    //! update information
-    void updateInformationObject( nl::json & p ) const override
-    {
-        using namespace boost::accumulators;
-        using namespace std::string_literals;
-
-        p.clear();
-        std::map<double,TimerData, std::greater<double>> sortTotal;
-
-        // Get total time accumulating all timers.
-        for( auto const& T: *this )
-        {
-            accumulator_set<double, stats<boost::accumulators::tag::count,
-                                          boost::accumulators::tag::mean,
-                                          boost::accumulators::tag::variance,
-                                          boost::accumulators::tag::min,
-                                          boost::accumulators::tag::max> > acc;
-            for_each(T.second.begin(), T.second.end(), std::bind<void>(std::ref(acc), std::placeholders::_1));
-            double tot = boost::accumulators::sum(acc);
-            sortTotal[tot] = T.second;
-
-            const std::string& prefix = T.second.instance_name;
-            auto & jData = p[prefix];
-            jData[ "message" ] = T.second.msg;
-            jData[ "count" ] = boost::accumulators::count(acc);
-            jData[ "total" ] = boost::accumulators::sum(acc);
-            jData[ "max" ] = boost::accumulators::max(acc);
-            jData[ "min"] = boost::accumulators::min(acc);
-            jData[ "mean" ] = boost::accumulators::mean(acc);
-            jData[ "std_dev" ] = std::sqrt( boost::accumulators::variance(acc) );
-        }
-
-        for( auto const& T: sortTotal )
-        {
-            accumulator_set<double, stats<boost::accumulators::tag::count,
-                                          boost::accumulators::tag::mean,
-                                          boost::accumulators::tag::variance,
-                                          boost::accumulators::tag::min,
-                                          boost::accumulators::tag::max> > acc;
-            for_each(T.second.begin(), T.second.end(), std::bind<void>(std::ref(acc), std::placeholders::_1));
-
-            const std::string& prefix = T.second.instance_name;
-            auto & jData = p[prefix];
-            jData[ "message" ] = T.second.msg;
-            jData[ "count" ] = boost::accumulators::count(acc);
-            jData[ "total" ] = boost::accumulators::sum(acc);
-            jData[ "max" ] = boost::accumulators::max(acc);
-            jData[ "min" ] = boost::accumulators::min(acc);
-            jData[ "mean" ] = boost::accumulators::mean(acc);
-            jData[ "std_dev" ] = std::sqrt( boost::accumulators::variance(acc) );
-        }
-    }
-
-    //! @}
-
-private:
-    size_type M_max_len = 0;
+    /// Mergeable moments and extrema of durations for this label.
+    Stats::IterativeStatistics<double> M_Statistics;
+    /// Latest accumulated duration in seconds.
+    double M_Last = 0;
+    /// Quantile summary with bounded retention per level.
+    Stats::KllSketch<double> M_Quantiles;
 };
 
-} // Feel namespace.
+/**
+ * @brief Local timer statistics and their text, Markdown, and journal reports.
+ *
+ * Each tic()/toc() call updates this table locally. Gather profiles only after
+ * the timed work; every rank in the communicator must call the gather with the
+ * same labels and rank selection. Rank IDs are local to that communicator.
+ * The pooled profile combines every call from the selected ranks for each label.
+ *
+ * @par Record repeated calls under one or more labels
+ * @code{.cpp}
+ * #include <feel/feeltiming/tic.hpp>
+ *
+ * auto const& comm = Feel::Environment::worldComm().localComm();
+ * Feel::tic();
+ * // Assemble a system.
+ * Feel::toc( "assembly", Feel::no_display );
+ * Feel::tic();
+ * // Solve the system.
+ * Feel::toc( "solve", Feel::no_display );
+ * @endcode
+ *
+ * @par Default: all labels recorded on communicator rank 0
+ * @code{.cpp}
+ * auto const& master = Feel::Environment::gatherTimerProfileStatistics( comm );
+ * // One report per label on rank 0; each report.ranks contains only rank 0.
+ * @endcode
+ *
+ * @par Specific labels, with rank 0 selected by default
+ * @code{.cpp}
+ * auto const& chosenLabels = Feel::Environment::gatherTimerProfileStatistics(
+ *     { "assembly", "solve" }, comm );
+ * // Reports follow the requested label order, even if a label has no calls.
+ * @endcode
+ *
+ * @par All labels from all ranks
+ * @code{.cpp}
+ * auto const& all = Feel::Environment::gatherTimerProfileStatistics( comm, {} );
+ * // Labels are the sorted union across ranks; each report has all rank profiles.
+ * @endcode
+ *
+ * @par All labels from one rank or a group of ranks
+ * @code{.cpp}
+ * int targetRank = comm.size() - 1;
+ * auto const& one = Feel::Environment::gatherTimerProfileStatistics( comm, { targetRank } );
+ * auto const& group = Feel::Environment::gatherTimerProfileStatistics( comm, { 0, targetRank } );
+ * // group[0].pooled covers only rank 0 and targetRank (once if they coincide).
+ * @endcode
+ *
+ * @par Specific labels from all ranks or a group
+ * @code{.cpp}
+ * auto const& allAssembly = Feel::Environment::gatherTimerProfileStatistics(
+ *     { "assembly" }, comm, {} );
+ * auto const& groupSolve = Feel::Environment::gatherTimerProfileStatistics(
+ *     { "solve" }, comm, { 0, targetRank } );
+ * @endcode
+ *
+ * Each gather replaces the cached reports, so consume a returned reference
+ * before the next gather. Quantiles are approximate; counts and moments are
+ * accumulated from all recorded calls.
+ */
+class TimerTable : private std::map<std::string, TimerData>, public JournalWatcher
+{
+public:
+    /** @brief Register a local timer table with the environment journal. */
+    TimerTable();
+    /** @brief Finalize journal registration before destroying samples. */
+    ~TimerTable() override;
+
+    /** @brief Store a valid duration. Empty labels and invalid durations are ignored. */
+    void add( std::string const& message, std::pair<double, int> const& sample,
+              std::string const& instanceName = {} );
+    /** @brief Return all recorded local labels in lexical order. */
+    std::vector<std::string> labels() const;
+    /** @brief Return a local profile, or an empty profile for an absent label. */
+    TimerProfileSnapshot profileSnapshot( std::string const& message ) const;
+    /** @brief Print local timer statistics on the master rank when display is true. */
+    void save( bool display );
+    /** @brief Write local timer statistics as Markdown. */
+    void saveMD( std::ostream& output );
+    /** @brief Retained compatibility hook; currently performs no work. */
+    void test();
+
+private:
+    /** @brief Refresh the timer section of the Environment journal. */
+    void updateInformationObject( nl::json& output ) const override;
+
+    /// Width of the longest indented timer label in text output.
+    std::size_t M_max_len = 0;
+};
+
+} // namespace Feel
+
 #endif
