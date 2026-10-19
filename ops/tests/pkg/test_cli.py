@@ -13,6 +13,21 @@ from feelpp.pkg.cli import build_parser, main
 
 
 class CliTests(unittest.TestCase):
+    def testSpackImageBakePassesCmakeFlagsToBothStages(self) -> None:
+        flags = "-DFEELPP_ENABLE_PYTHON=OFF -DFEELPP_ENABLE_FEELPP_PYTHON=OFF"
+        for variant in ("mpich", "openmpi5"):
+            with self.subTest(variant=variant), tempfile.TemporaryDirectory() as directory:
+                output = io.StringIO()
+                arguments = ["fpp-spack", "image", "bake", "--repo-root", str(self.repo_root()),
+                             "--job-root", directory, "--target", f"spack:{variant}",
+                             "--component", "feelpp", f"--cmake-flags={flags}"]
+                with mock.patch("sys.argv", arguments), mock.patch("sys.stdout", output):
+                    self.assertEqual(main(), 0)
+                metadata = json.loads(output.getvalue())
+                bake = json.loads(Path(metadata["bake_file"]).read_text())
+                for target in ("feelpp", "feelpp-runtime"):
+                    self.assertEqual(bake["target"][target]["args"]["CMAKE_FLAGS"], flags)
+
     def repo_root(self) -> Path:
         return Path(__file__).resolve().parents[3]
 
