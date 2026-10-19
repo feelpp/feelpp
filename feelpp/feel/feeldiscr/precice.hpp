@@ -119,6 +119,7 @@ public:
 
     std::string const& name() const { return M_name; }
     PreciceFieldProjectionType projectionType() const { return M_projectionType; }
+    nl::json const& properties() const { return M_properties; }
 
     static PreciceWriteMetadata fromJson( nl::json const& j )
         {
@@ -177,6 +178,8 @@ public:
     std::string const& name() const { return M_name; }
 
     PreciceFieldBasisType basis() const { return M_basis; }
+
+    nl::json const& properties() const { return M_properties; }
 
     static PreciceReadMetadata fromJson( nl::json const& j )
         {
