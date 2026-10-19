@@ -563,10 +563,10 @@ class CliTests(unittest.TestCase):
         spack = payload["spack"]
         self.assertEqual(
             spack["packages"]["mpi"]["require"],
-            ["openmpi@5 fabrics=cma,ofi,ucx schedulers=slurm"],
+            ["openmpi@5~internal-pmix fabrics=cma,ofi,ucx schedulers=slurm"],
         )
         self.assertIn(
-            "openmpi@5 fabrics=cma,ofi,ucx schedulers=slurm "
+            "openmpi@5~internal-pmix fabrics=cma,ofi,ucx schedulers=slurm "
             "^ucx~rocm+cma+thread_multiple+verbs+rc+ud+rdmacm+mlx5_dv",
             spack["specs"],
         )
