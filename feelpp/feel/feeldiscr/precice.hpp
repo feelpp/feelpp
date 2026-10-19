@@ -36,11 +36,14 @@
 
 #include <boost/mp11/algorithm.hpp>
 #include <precice/precice.hpp>
+#include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
-
+#include <feel/feelvf/geometricdata.hpp>
+#include <feel/feelvf/operators.hpp>
+#include <feel/feelvf/form.hpp>
 
 namespace Feel
 {
@@ -1418,22 +1421,56 @@ private:
             }
             else if ( projectionType == PreciceFieldProjectionType::L2 )
             {
-                // Use the same integration range for the numerator and its mass:
-                // a cached face measure is not valid on extracted trace elements.
-                // P1c uses a lumped mass; P0d gives the element mean.
+                // P1c uses a lumped mass matrix; P0d uses the exact element mean.
+                // Maybe, we can also implement a more general L2 projection using the mass matrix for P1c fields.
                 auto Xh = field.functionSpace();
-                auto algebra = Feel::backend( _worldcomm=Xh->worldCommPtr() );
-                auto vecNum = algebra->newVector( _test=Xh );
-                form1( _test=Xh, _vector=vecNum )
-                    = integrate( _range=rangeEntities, _expr=inner(expr,id(field)) );
-                auto vecDenom = algebra->newVector( _test=Xh );
-                form1( _test=Xh, _vector=vecDenom )
-                    = integrate( _range=rangeEntities,
-                                 _expr=inner( vf::ones<_space_type::nComponents1,_space_type::nComponents2>(), id(field) ) );
-                auto vecResult = algebra->newVector( _test=Xh );
-                vecResult->pointwiseDivide( *vecNum, *vecDenom );
-                field = *vecResult;
-                sync( field );
+                if constexpr ( _space_type::is_continuous ) // P1c
+                {
+                    // NOTE: the code below is equivalent to the commented line but more efficient
+                    // and work for field shape (only scalar with this snipet)
+                    // dualField = div( sum( dualSpace, idv( primalField ) * meas() ),
+                    //                  sum( dualSpace, meas() ) );
+                    //auto rangeElt = elements( support(dualSpace) );
+                    auto vecNum = Feel::backend()->newVector( _test=Xh );
+                    form1( _test=Xh, _vector=vecNum )
+                        = integrate( _range=rangeEntities,
+                                     _expr=inner(expr,id(field) ) );
+                    auto vecDenom = Feel::backend()->newVector( _test=Xh );
+                    form1( _test=Xh, _vector=vecDenom )
+                        = integrate( _range=rangeEntities,
+                                     _expr=inner( vf::ones<_space_type::nComponents1,_space_type::nComponents2>(),
+                                                  id(field) ) );
+                    auto vecResult = toPETScPtr( field );
+                    vecResult->pointwiseDivide( *vecNum, *vecDenom );
+                }
+                else // P0d
+                {
+                    // TODO: the code does not compile when using F =  toPETScPtr( ...)
+                    // auto F = toPETScPtr( field );
+                    auto F = Feel::backend()->newVector( _test=Xh );
+                    // A dual read integrates on extracted mesh elements, while a write
+                    // may still integrate on the original parent-mesh faces.
+                    using integration_range_type = std::remove_cvref_t<RangeType>;
+                    if constexpr ( integration_range_type::isOnElements() )
+                    {
+                        form1( _test=Xh, _vector=F )
+                            = integrate( _range=rangeEntities,
+                                         _expr=inner(expr,id(field))/meas() );
+                    }
+                    else if constexpr ( integration_range_type::isOnFaces() )
+                    {
+                        form1( _test=Xh, _vector=F )
+                            = integrate( _range=rangeEntities,
+                                         _expr=inner(expr,id(field))/measFace() );
+                    }
+                    else
+                    {
+                        throw std::runtime_error( "PreciceCouplingMesh::updateDataField : unsupported range of mesh entities" );
+                    }
+                    F->close();
+                    field = *F;
+
+                }
             }
             else
             {

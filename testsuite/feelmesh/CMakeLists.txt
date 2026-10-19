@@ -1,4 +1,5 @@
 set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testmesh")
+feelpp_add_test( entity_measure SRCS test_entity_measure.cpp TIMEOUT 120 )
 feelpp_add_test( mesh_face_cleanup SRCS test_mesh_face_cleanup.cpp TIMEOUT 120 )
 feelpp_add_test( mesh_metadata SRCS test_mesh_metadata.cpp TIMEOUT 120 )
 foreach(THETEST entity mesh regiontree mesh_codim1 kdtree P1mesh updatemarker partitioner_metis elementswithmarkedfaces meshmover convex meshfilters ranges )

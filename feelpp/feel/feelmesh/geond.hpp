@@ -272,11 +272,12 @@ class GeoND
     template <int GeoOrder>
     struct GetImMeasure
     {
-        // quadrature formula used in entity measure (for ho geo, need to check)
+        // Integrate on the reference entity, whose dimension is nDim even
+        // when the entity is embedded in a higher-dimensional space.
         static inline const uint16_type quad_order = ( nOrder - 1 ) * nDim;
         typedef typename mpl::if_<mpl::bool_<GeoShape::is_hypercube>,
-                                  mpl::identity<typename IMGeneric<quad_order, Dim, Hypercube, Gauss, value_type /*double*/>::type>,
-                                  mpl::identity<typename IMGeneric<quad_order, Dim, Simplex, Gauss, value_type /*double*/>::type>>::type::type type;
+                                  mpl::identity<typename IMGeneric<quad_order, nDim, Hypercube, Gauss, value_type /*double*/>::type>,
+                                  mpl::identity<typename IMGeneric<quad_order, nDim, Simplex, Gauss, value_type /*double*/>::type>>::type::type type;
     };
     typedef typename GetImMeasure<nOrder>::type quad_meas_type;
     typedef typename GetImMeasure<1>::type quad_meas1_type;
