@@ -165,12 +165,11 @@ public:
         M_coeff( p.coeff() ),
         M_fname( p.familyName() )
     {
-        // Always check if Poly has runtime order info, regardless of this PolynomialSet's
-        // template order. This handles the case where FiniteElement (with static template order)
-        // is constructed from a dynamic-order primal space.
-        if constexpr ( requires { p.runtimeOrder(); } )
+        // Preserve an object's effective order even when this PolynomialSet's
+        // template metadata is static.
+        if constexpr ( requires { p.order(); } )
         {
-            set_order_value( p.runtimeOrder() );
+            set_order_value( p.order() );
         }
         else
         {
@@ -187,10 +186,9 @@ public:
         M_coeff( p.coeff() ),
         M_fname( p.familyName() )
     {
-        // Always check if Poly has runtime order info
-        if constexpr ( requires { p.runtimeOrder(); } )
+        if constexpr ( requires { p.order(); } )
         {
-            set_order_value( p.runtimeOrder() );
+            set_order_value( p.order() );
         }
         else
         {
@@ -317,15 +315,6 @@ public:
         requires is_dynamic_order<OrderSpec>
     {
         set_order_value( order );
-    }
-
-    /**
-     * \return the runtime order value
-     * \deprecated Use order() instead - unified interface handles both static and dynamic cases
-     */
-    [[nodiscard]] uint16_type runtimeOrder() const
-    {
-        return order();
     }
 
     [[nodiscard]] PolynomialSet<Poly, PolySetType, Dynamic> toDynamic() const
@@ -680,7 +669,7 @@ public:
 
         self_type deriv( Poly(), coeff, true );
         if constexpr ( is_order_dynamic )
-            deriv.setOrder( this->runtimeOrder() );
+            deriv.setOrder( this->order() );
         return deriv;
     }
 
@@ -1634,7 +1623,7 @@ public:
         static inline const bool is_hcurl_conforming = Feel::is_hcurl_conforming<Basis_t>::value;
 
         static const bool do_optimization_p1 =
-            !Basis_t::is_order_dynamic &&
+            !Basis_t::is_order_dynamic && !Geo_t::is_order_dynamic &&
             ( nOrder <= 1 ) && ( Geo_t::nOrder == 1 ) && ( convex_type::is_simplex );
         using do_optimization_p1_t = bool_t<do_optimization_p1>;
         using optimization_p1_t = bool_t<true>;
@@ -1642,14 +1631,14 @@ public:
 
 
         static const bool do_optimization_p2 =
-            !Basis_t::is_order_dynamic &&
+            !Basis_t::is_order_dynamic && !Geo_t::is_order_dynamic &&
             ( nOrder == 2 ) && ( Geo_t::nOrder == 1 ) && ( convex_type::is_simplex );
         using do_optimization_p2_t = bool_t<do_optimization_p2>;
         using optimization_p2_t = bool_t<true>;
         using no_optimization_p2_t = bool_t<false>;
 
         static const bool do_pt_q1 =
-            !Basis_t::is_order_dynamic &&
+            !Basis_t::is_order_dynamic && !Geo_t::is_order_dynamic &&
             ( nOrder <= 2 ) && ( Geo_t::nOrder == 1 ) && ( convex_type::is_hypercube );
 
 
@@ -1883,7 +1872,7 @@ public:
         //! @return the dynamic context associated
         size_type dynamicContext() const { return M_gmc->dynamicContext()/* M_dynamic_context*/; }
 
-        [[nodiscard]] uint16_type basisOrderRuntime() const
+        [[nodiscard]] uint16_type basisOrder() const
         {
             if constexpr ( requires { Basis_t::is_order_dynamic; } )
             {
@@ -1895,84 +1884,85 @@ public:
                             return static_cast<uint16_type>( M_ref_ele->polynomialDegree() );
                         else if constexpr ( requires( reference_element_type const& fe ) { fe.order(); } )
                             return static_cast<uint16_type>( M_ref_ele->order() );
-                        else if constexpr ( requires( reference_element_type const& fe ) { fe.runtimeOrder(); } )
-                            return static_cast<uint16_type>( M_ref_ele->runtimeOrder() );
                     }
                 }
             }
             return static_cast<uint16_type>( nOrder );
         }
 
-        [[nodiscard]] bool runtimeDoOptimizationP1() const
+        /**
+         * @brief Report whether the active geometric mapping is affine.
+         *
+         * Static mappings preserve the compile-time fast path. Dynamic-order
+         * mappings query their runtime strategy, preventing a higher-order
+         * geometry from inheriting the placeholder compile-time order one.
+         */
+        [[nodiscard]] bool geometryIsLinear() const
+        {
+            if constexpr ( Geo_t::is_order_dynamic )
+            {
+                return M_gmc && M_gmc->geometricMapping()->isLinear();
+            }
+            else
+            {
+                return Geo_t::nOrder == 1;
+            }
+        }
+
+        /**
+         * @brief Report whether first derivatives may be cached at one point.
+         */
+        [[nodiscard]] bool canUseP1Optimization() const
         {
             if constexpr ( do_optimization_p1 )
             {
                 return true;
             }
-            else
+            else if constexpr ( convex_type::is_simplex )
             {
-                if constexpr ( convex_type::is_simplex && ( Geo_t::nOrder == 1 ) )
-                {
-                    if constexpr ( requires { Basis_t::is_order_dynamic; } )
-                    {
-                        if constexpr ( Basis_t::is_order_dynamic )
-                            return this->basisOrderRuntime() <= 1;
-                    }
-                }
-                return false;
+                return this->geometryIsLinear() &&
+                       this->basisOrder() <= 1;
             }
+            return false;
         }
 
-        [[nodiscard]] bool runtimeDoOptimizationP2() const
+        /**
+         * @brief Report whether second derivatives may be cached at one point.
+         */
+        [[nodiscard]] bool canUseP2Optimization() const
         {
             if constexpr ( do_optimization_p2 )
             {
                 return true;
             }
-            else
+            else if constexpr ( convex_type::is_simplex )
             {
-                if constexpr ( convex_type::is_simplex && ( Geo_t::nOrder == 1 ) )
-                {
-                    if constexpr ( requires { Basis_t::is_order_dynamic; } )
-                    {
-                        if constexpr ( Basis_t::is_order_dynamic )
-                            return this->basisOrderRuntime() == 2;
-                    }
-                }
-                return false;
+                return this->geometryIsLinear() &&
+                       this->basisOrder() == 2;
             }
+            return false;
         }
 
         [[nodiscard]] uint16_type nPointsFirstDerivative() const
         {
-            return this->runtimeDoOptimizationP1() ? 1 : M_npoints;
+            return this->canUseP1Optimization() ? 1 : M_npoints;
         }
 
         [[nodiscard]] uint16_type nPointsSecondDerivative() const
         {
-            return this->runtimeDoOptimizationP2() ? 1 : M_npoints;
+            return this->canUseP2Optimization() ? 1 : M_npoints;
         }
 
 
         /**
          * @return the number of basis functions
          *
-         * Uses runtime local dof for dynamic-order bases while preserving
-         * compile-time behavior for static-order bases.
+         * Uses the reference element's semantic local cardinality when the
+         * object is available and the compile-time value during setup.
          */
         uint16_type nDofs() const
         {
-            const uint16_type localDof = [&]() -> uint16_type
-            {
-                if constexpr ( requires( reference_element_type const& fe ) { fe.runtimeLocalDof(); } )
-                {
-                    return M_ref_ele ? M_ref_ele->runtimeLocalDof() : nDof;
-                }
-                else
-                {
-                    return nDof;
-                }
-            }();
+            const uint16_type localDof = M_ref_ele ? M_ref_ele->localDof() : nDof;
             constexpr uint16_type factor = ( reference_element_type::is_product ? nComponents1 * nComponents2 : 1 );
             return static_cast<uint16_type>( localDof * factor );
         }
@@ -2060,7 +2050,7 @@ public:
             }
         value_type d( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
             {
-                if ( this->runtimeDoOptimizationP1() )
+                if ( this->canUseP1Optimization() )
                     return d( i, c1, c2, q, optimization_p1_t() );
                 return d( i, c1, c2, q, no_optimization_p1_t() );
             }
@@ -2075,7 +2065,7 @@ public:
 
         value_type dx( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
             {
-                if ( this->runtimeDoOptimizationP1() )
+                if ( this->canUseP1Optimization() )
                     return dx( i, c1, c2, q, optimization_p1_t() );
                 return dx( i, c1, c2, q, no_optimization_p1_t() );
             }
@@ -2091,7 +2081,7 @@ public:
             }
         value_type dy( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
             {
-                if ( this->runtimeDoOptimizationP1() )
+                if ( this->canUseP1Optimization() )
                     return dy( i, c1, c2, q, optimization_p1_t() );
                 return dy( i, c1, c2, q, no_optimization_p1_t() );
             }
@@ -2107,7 +2097,7 @@ public:
             }
         value_type dz( uint32_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
             {
-                if ( this->runtimeDoOptimizationP1() )
+                if ( this->canUseP1Optimization() )
                     return dz( i, c1, c2, q, optimization_p1_t() );
                 return dz( i, c1, c2, q, no_optimization_p1_t() );
             }
@@ -2140,7 +2130,7 @@ public:
         }
         grad_type const& grad( uint16_type i, uint32_type q ) const
             {
-                if ( this->runtimeDoOptimizationP1() )
+                if ( this->canUseP1Optimization() )
                     return grad( i, q, optimization_p1_t() );
                 return grad( i, q, no_optimization_p1_t() );
             }
@@ -2155,7 +2145,7 @@ public:
 
         value_type grad( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
             {
-                if ( this->runtimeDoOptimizationP1() )
+                if ( this->canUseP1Optimization() )
                     return grad( i, c1, c2, q, optimization_p1_t() );
                 return grad( i, c1, c2, q, no_optimization_p1_t() );
             }
@@ -2171,7 +2161,7 @@ public:
 
         symm_grad_type const& symmetricGradient( uint16_type i, uint32_type q ) const
             {
-                if ( this->runtimeDoOptimizationP1() )
+                if ( this->canUseP1Optimization() )
                     return symmetricGradient( i, q, optimization_p1_t() );
                 return symmetricGradient( i, q, no_optimization_p1_t() );
             }
@@ -2186,7 +2176,7 @@ public:
 
         value_type symmetricGradient( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
             {
-                if ( this->runtimeDoOptimizationP1() )
+                if ( this->canUseP1Optimization() )
                     return symmetricGradient( i, c1, c2, q, optimization_p1_t() );
                 return symmetricGradient( i, c1, c2, q, no_optimization_p1_t() );
             }
@@ -2201,7 +2191,7 @@ public:
         
         dx_type  dx( uint16_type i, uint32_type q ) const
             {
-                if ( this->runtimeDoOptimizationP1() )
+                if ( this->canUseP1Optimization() )
                     return dx( i, q, optimization_p1_t() );
                 return dx( i, q, no_optimization_p1_t() );
             }
@@ -2215,7 +2205,7 @@ public:
             }
         dy_type  dy( uint16_type i, uint32_type q ) const
             {
-                if ( this->runtimeDoOptimizationP1() )
+                if ( this->canUseP1Optimization() )
                     return dy( i, q, optimization_p1_t() );
                 return dy( i, q, no_optimization_p1_t() );
             }
@@ -2229,7 +2219,7 @@ public:
             }
         dz_type  dz( uint16_type i, uint32_type q ) const
             {
-                if ( this->runtimeDoOptimizationP1() )
+                if ( this->canUseP1Optimization() )
                     return dz( i, q, optimization_p1_t() );
                 return dz( i, q, no_optimization_p1_t() );
             }
@@ -2270,7 +2260,7 @@ public:
 
         div_type const& div( uint16_type i, uint32_type q ) const
             {
-                if ( this->runtimeDoOptimizationP1() )
+                if ( this->canUseP1Optimization() )
                     return div( i, q, optimization_p1_t() );
                 return div( i, q, no_optimization_p1_t() );
             }
@@ -2284,7 +2274,7 @@ public:
             }
         value_type div( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, rank_t<1> ) const
             {
-                if ( this->runtimeDoOptimizationP1() )
+                if ( this->canUseP1Optimization() )
                     return div( i, c1, c2, q, optimization_p1_t() );
                 return div( i, c1, c2, q, no_optimization_p1_t() );
             }
@@ -2307,7 +2297,7 @@ public:
          */
         value_type div( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, rank_t<2> ) const
             {
-                if ( this->runtimeDoOptimizationP1() )
+                if ( this->canUseP1Optimization() )
                     return div( i, c1, c2, q, rank_t<2>(), optimization_p1_t() );
                 return div( i, c1, c2, q, rank_t<2>(), no_optimization_p1_t() );
             }
@@ -2330,7 +2320,7 @@ public:
          */
         curl_type const& curl( uint16_type i, uint32_type q ) const
             {
-                if ( this->runtimeDoOptimizationP1() )
+                if ( this->canUseP1Optimization() )
                     return curl( i, q, optimization_p1_t() );
                 return curl( i, q, no_optimization_p1_t() );
             }
@@ -2361,7 +2351,7 @@ public:
 
         value_type curl( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, rank_t<1> ) const
             {
-                if ( this->runtimeDoOptimizationP1() )
+                if ( this->canUseP1Optimization() )
                     return curl( i, c1, c2, q, optimization_p1_t() );
                 return curl( i, c1, c2, q, no_optimization_p1_t() );
             }
@@ -2378,7 +2368,7 @@ public:
 
         value_type curlx( uint16_type i, uint32_type q ) const
             {
-                if ( this->runtimeDoOptimizationP1() )
+                if ( this->canUseP1Optimization() )
                     return curlx( i, q, optimization_p1_t() );
                 return curlx( i, q, no_optimization_p1_t() );
             }
@@ -2410,7 +2400,7 @@ public:
 
         value_type curlx( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, rank_t<1> ) const
             {
-                if ( this->runtimeDoOptimizationP1() )
+                if ( this->canUseP1Optimization() )
                     return curlx( i, c1, c2, q, optimization_p1_t() );
                 return curlx( i, c1, c2, q, no_optimization_p1_t() );
             }
@@ -2444,7 +2434,7 @@ public:
 
         value_type curly( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, rank_t<1> ) const
             {
-                if ( this->runtimeDoOptimizationP1() )
+                if ( this->canUseP1Optimization() )
                     return curly( i, c1, c2, q, optimization_p1_t() );
                 return curly( i, c1, c2, q, no_optimization_p1_t() );
             }
@@ -2478,7 +2468,7 @@ public:
 
         value_type curlz( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, rank_t<1> ) const
             {
-                if ( this->runtimeDoOptimizationP1() )
+                if ( this->canUseP1Optimization() )
                     return curlz( i, c1, c2, q, optimization_p1_t() );
                 return curlz( i, c1, c2, q, no_optimization_p1_t() );
             }
@@ -2499,7 +2489,7 @@ public:
             }
         value_type hess( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
             {
-                if ( this->runtimeDoOptimizationP2() )
+                if ( this->canUseP2Optimization() )
                     return hess( i, c1, c2, q, int_t<rank>(), optimization_p2_t() );
                 return hess( i, c1, c2, q, int_t<rank>(), no_optimization_p2_t() );
             }
@@ -2513,7 +2503,7 @@ public:
             }
         laplacian_type const& laplacian( uint16_type i, uint32_type q ) const
             {
-                if ( this->runtimeDoOptimizationP2() )
+                if ( this->canUseP2Optimization() )
                     return laplacian( i, q, optimization_p2_t() );
                 return laplacian( i, q, no_optimization_p2_t() );
             }
@@ -2527,7 +2517,7 @@ public:
             }
         value_type laplacian( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
             {
-                if ( this->runtimeDoOptimizationP2() )
+                if ( this->canUseP2Optimization() )
                     return laplacian( i, c1, c2, q, optimization_p2_t() );
                 return laplacian( i, c1, c2, q, no_optimization_p2_t() );
             }
@@ -2807,7 +2797,7 @@ public:
             for ( uint16_type i = 0; i < this->nDofs(); ++i )
                 for ( uint16_type q = 0; q < M_npoints; ++q )
                 {
-                    auto const storedQ = this->runtimeDoOptimizationP1() ? 0 : q;
+                    auto const storedQ = this->canUseP1Optimization() ? 0 : q;
                     for ( uint16_type c1 = 0; c1 < nComponents1; ++c1 )
                         for ( uint16_type c2 = 0; c2 < g_comp2; ++c2 )
                             for ( uint16_type c3 = 0; c3 < g_comp3; ++c3 )
@@ -2833,7 +2823,7 @@ public:
             for ( uint16_type i = 0; i < this->nDofs(); ++i )
                 for ( uint16_type q = 0; q < M_npoints; ++q )
                 {
-                    auto const storedQ = this->runtimeDoOptimizationP1() ? 0 : q;
+                    auto const storedQ = this->canUseP1Optimization() ? 0 : q;
                     for ( uint16_type c = 0; c < nComponents2; ++c )
                         M_div_batch( static_cast<Eigen::Index>( i )*nComponents2 + c,
                                      q ) = M_div[i][storedQ]( c, 0 );
@@ -2855,7 +2845,7 @@ public:
             for ( uint16_type i = 0; i < this->nDofs(); ++i )
                 for ( uint16_type q = 0; q < M_npoints; ++q )
                 {
-                    auto const storedQ = this->runtimeDoOptimizationP1() ? 0 : q;
+                    auto const storedQ = this->canUseP1Optimization() ? 0 : q;
                     for ( uint16_type c = 0; c < curlComponents; ++c )
                         M_curl_batch( static_cast<Eigen::Index>( i )*curlComponents + c,
                                       q ) = M_curl[i][storedQ]( c, 0 );
@@ -2942,7 +2932,7 @@ protected:
         if ( isUsingDynamicOrder() )
         {
             if constexpr ( requires( basis_type const& b, decltype( pts ) p, uint16_type order ) { b.evaluate( p, order ); } )
-                return M_basis.evaluate( pts, this->runtimeOrder() );
+                return M_basis.evaluate( pts, this->order() );
         }
         return M_basis.evaluate( pts );
     }
@@ -2953,7 +2943,7 @@ protected:
         if ( isUsingDynamicOrder() )
         {
             if constexpr ( requires( basis_type const& b, decltype( pts ) p, uint16_type order ) { b.derivate( p, order ); } )
-                return M_basis.derivate( pts, this->runtimeOrder() );
+                return M_basis.derivate( pts, this->order() );
         }
         return M_basis.derivate( pts );
     }
@@ -2963,7 +2953,7 @@ protected:
         if ( isUsingDynamicOrder() )
         {
             if constexpr ( requires( basis_type const& b, uint16_type j, uint16_type order ) { b.d( j, order ); } )
-                return M_basis.d( i, this->runtimeOrder() );
+                return M_basis.d( i, this->order() );
         }
         return M_basis.d( i );
     }
@@ -2993,6 +2983,34 @@ private:
     matrix_type M_coeff;
     std::string M_fname;
 };
+
+namespace detail
+{
+/**
+ * @brief Materialize a polynomial subset with static or runtime-order storage.
+ *
+ * Family builders use this as their only storage-policy seam.  Static sets
+ * retain their compile-time extent while runtime sets receive the effective
+ * semantic order explicitly; the mathematical coefficient path is otherwise
+ * identical.
+ */
+template<typename PolynomialSetType, typename SourcePolynomialSet>
+[[nodiscard]] PolynomialSetType
+polynomialSetFrom( SourcePolynomialSet const& source, uint16_type order )
+{
+    PolynomialSetType result = [&]()
+    {
+        if constexpr ( std::constructible_from<PolynomialSetType,
+                                                SourcePolynomialSet const&> )
+            return PolynomialSetType( source );
+        else
+            return PolynomialSetType( source.coeff(), true );
+    }();
+    if constexpr ( requires( PolynomialSetType& p ) { p.setOrder( order ); } )
+        result.setOrder( order );
+    return result;
+}
+} // namespace detail
 
 template<typename Poly, template<uint16_type> class PolySetType = Scalar>
 using DynamicPolynomialSet = PolynomialSet<Poly, PolySetType, Dynamic>;

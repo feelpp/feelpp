@@ -44,7 +44,9 @@ DofTable<MeshType, FEType, MortarType>::generateDofPoints( Range<mesh_type,MESH_
 
     typedef typename fe_type::template Context<vm::POINT, fe_type, gm_type, element_type> fecontext_type;
 
-    gm_ptrtype gm( new gm_type );
+    auto gm = this->mesh()->gm();
+    CHECK( gm )
+        << "Dof point generation requires a geometric mapping";
     auto const& fe = this->fe();
 
     // Precompute some data in the reference element for
@@ -76,9 +78,12 @@ DofTable<MeshType, FEType, MortarType>::generateDofPoints( Range<mesh_type,MESH_
             dof_done[thedof] = true;
 
             uint16_type pointId = this->localDofRepresentativePointIndex( ldofId );
-            FEELPP_ASSERT( pointId < static_cast<uint16_type>( fe.points().size2() ) )
-                ( int( pointId ) )( int( fe.points().size2() ) )( int( ldofId ) )
-                .error( "invalid FE representative point index" );
+            CHECK_LT(
+                pointId,
+                static_cast<uint16_type>(
+                    fe.points().size2() ) )
+                << "invalid FE representative point index "
+                << pointId << " for local dof " << ldofId;
 
             if ( ( thedof >= this->firstDof() ) && ( thedof <= this->lastDof() ) )
             {
@@ -114,15 +119,15 @@ DofTable<MeshType, FEType, MortarType>::buildGlobalProcessToGlobalClusterDofMapD
             return false;
 
         auto const& fe = this->fe();
-        const uint16_type nLocalDof = runtimeNLocalDof();
+        const uint16_type nLocalDof = localDofPerComponent();
         for ( uint16_type parentLid = 0; parentLid < nLocalDof; ++parentLid )
             if ( !fe.localDofLayout( parentLid ).attachment.isValid() )
                 return false;
 
-        const uint16_type nDofPerVertex = runtimeDofPerVertex();
-        const uint16_type nDofPerEdge = runtimeDofPerEdge();
-        const uint16_type nDofPerFace = runtimeDofPerFace();
-        const uint16_type nDofPerVolume = runtimeDofPerVolume();
+        const uint16_type nDofPerVertex = M_fe->dofPerVertex();
+        const uint16_type nDofPerEdge = M_fe->dofPerEdge();
+        const uint16_type nDofPerFace = M_fe->dofPerFace();
+        const uint16_type nDofPerVolume = M_fe->dofPerVolume();
         const rank_type myRank = this->worldComm().localRank();
         const rank_type nProc = this->worldComm().localSize();
         const size_type nLocalDofWithGhost = this->M_n_localWithGhost_df[myRank];
@@ -574,25 +579,25 @@ DofTable<MeshType, FEType, MortarType>::buildGlobalProcessToGlobalClusterDofMapO
         return;
 
     // Runtime FE layout (supports both compile-time and dynamic polynomial orders).
-    const uint16_type nDofPerVertexRt = runtimeDofPerVertex();
-    const uint16_type nDofPerEdgeRt = runtimeDofPerEdge();
-    const uint16_type nDofPerFaceRt = runtimeDofPerFace();
+    const uint16_type nDofPerVertex = M_fe->dofPerVertex();
+    const uint16_type nDofPerEdge = M_fe->dofPerEdge();
+    const uint16_type nDofPerFace = M_fe->dofPerFace();
 
-    const uint16_type nLocalDofUpToVertices = element_type::numVertices * nDofPerVertexRt;
-    const uint16_type nLocalDofUpToEdges = nLocalDofUpToVertices + element_type::numEdges * nDofPerEdgeRt;
+    const uint16_type nLocalDofUpToVertices = element_type::numVertices * nDofPerVertex;
+    const uint16_type nLocalDofUpToEdges = nLocalDofUpToVertices + element_type::numEdges * nDofPerEdge;
     const uint16_type nLocalDofUpToFaces =
         (nDim==1)? nLocalDofUpToVertices :
-        (nDim==2)? nLocalDofUpToVertices + element_type::numEdges * nDofPerEdgeRt :
-                   nLocalDofUpToVertices + element_type::numEdges * nDofPerEdgeRt + element_type::numGeometricFaces * nDofPerFaceRt;
+        (nDim==2)? nLocalDofUpToVertices + element_type::numEdges * nDofPerEdge :
+                   nLocalDofUpToVertices + element_type::numEdges * nDofPerEdge + element_type::numGeometricFaces * nDofPerFace;
 
-    const uint16_type nDofPerVertexForDivision = ( nDofPerVertexRt > 0 ) ? nDofPerVertexRt : uint16_type( 1 );
-    const uint16_type nDofPerEdgeForDivision = ( nDofPerEdgeRt > 0 ) ? nDofPerEdgeRt : uint16_type( 1 );
+    const uint16_type nDofPerVertexForDivision = ( nDofPerVertex > 0 ) ? nDofPerVertex : uint16_type( 1 );
+    const uint16_type nDofPerEdgeForDivision = ( nDofPerEdge > 0 ) ? nDofPerEdge : uint16_type( 1 );
     const uint16_type nLocalDofBeforeDofsOfTopologicalFaces =
         (nDim==1)? 0 :
         (nDim==2)? nLocalDofUpToVertices :
-                   nLocalDofUpToVertices + element_type::numEdges * nDofPerEdgeRt;
+                   nLocalDofUpToVertices + element_type::numEdges * nDofPerEdge;
 
-    const uint16_type nDofPerTopologicalFace = (nDim==1)? nDofPerVertexRt : (nDim==2)? nDofPerEdgeRt : nDofPerFaceRt;
+    const uint16_type nDofPerTopologicalFace = (nDim==1)? nDofPerVertex : (nDim==2)? nDofPerEdge : nDofPerFace;
     const uint16_type nDofPerTopologicalFaceForDivision = ( nDofPerTopologicalFace > 0 ) ? nDofPerTopologicalFace : uint16_type( 1 );
 
     const rank_type myRank = this->worldComm().localRank();
@@ -683,7 +688,7 @@ DofTable<MeshType, FEType, MortarType>::buildGlobalProcessToGlobalClusterDofMapO
             }
             if constexpr ( nDim == 3 )
             {
-                if ( nDofPerEdgeRt > 0 && currentEltTouchInterprocess )
+                if ( nDofPerEdge > 0 && currentEltTouchInterprocess )
                 {
                     for ( size_type j = 0; j < elt.nEdges(); j++ )
                     {
@@ -802,8 +807,8 @@ DofTable<MeshType, FEType, MortarType>::buildGlobalProcessToGlobalClusterDofMapO
 
                         auto edgePermutation = elt.edgePermutation( edgeIdInElt );
                         // shift local dof to relative dof edge numbering
-                        localDofOwnerDof = nLocalDofUpToVertices + edgeIdInEltOwnerDof * nDofPerEdgeRt;
-                        localDofOwnerDof += ( edgePermutation == edgePermutationOwnerDof )? locDofInEgde : nDofPerEdgeRt - 1 - locDofInEgde;
+                        localDofOwnerDof = nLocalDofUpToVertices + edgeIdInEltOwnerDof * nDofPerEdge;
+                        localDofOwnerDof += ( edgePermutation == edgePermutationOwnerDof )? locDofInEgde : nDofPerEdge - 1 - locDofInEgde;
                     }
                 }
                 else if ( locDof < nLocalDofUpToFaces )
@@ -1408,7 +1413,7 @@ DofTable<MeshType, FEType, MortarType>::buildGhostDofMapExtended( mesh_type& mes
                 {
                 case 0:
                 {
-                    const uint16_type nDofPerVertex = runtimeDofPerVertex();
+                    const uint16_type nDofPerVertex = M_fe->dofPerVertex();
                     if ( nDofPerVertex == 0 || attachment.entityId >= element_type::numVertices ||
                          attachment.ordinal >= nDofPerVertex )
                         return false;
@@ -1421,7 +1426,7 @@ DofTable<MeshType, FEType, MortarType>::buildGhostDofMapExtended( mesh_type& mes
                 }
                 case 1:
                 {
-                    const uint16_type nDofPerEdge = runtimeDofPerEdge();
+                    const uint16_type nDofPerEdge = M_fe->dofPerEdge();
                     if ( nDofPerEdge == 0 || attachment.ordinal >= nDofPerEdge )
                         return false;
 
@@ -1474,7 +1479,7 @@ DofTable<MeshType, FEType, MortarType>::buildGhostDofMapExtended( mesh_type& mes
                 }
                 case 2:
                 {
-                    const uint16_type nDofPerFace = runtimeDofPerFace();
+                    const uint16_type nDofPerFace = M_fe->dofPerFace();
                     if ( nDofPerFace == 0 || attachment.ordinal >= nDofPerFace )
                         return false;
 
@@ -1518,7 +1523,7 @@ DofTable<MeshType, FEType, MortarType>::buildGhostDofMapExtended( mesh_type& mes
                 }
                 case 3:
                 {
-                    const uint16_type nDofPerVolume = runtimeDofPerVolume();
+                    const uint16_type nDofPerVolume = M_fe->dofPerVolume();
                     if ( nDofPerVolume == 0 || attachment.ordinal >= nDofPerVolume )
                         return false;
 
@@ -1536,7 +1541,7 @@ DofTable<MeshType, FEType, MortarType>::buildGhostDofMapExtended( mesh_type& mes
             std::map<descriptor_key_type,std::set<size_type>> localKeyToDofs;
             bool descriptorExtendedUsable = true;
 
-            const uint16_type nLocalDof = runtimeNLocalDof();
+            const uint16_type nLocalDof = localDofPerComponent();
             auto rangeElements = elements( mesh, entity_process_t::ALL );
             for ( auto const& eltWrap : rangeElements )
             {

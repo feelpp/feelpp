@@ -225,11 +225,11 @@ void checkHypercube2dRuntimeDofLayout()
     const auto expectedEdgeDof = static_cast<uint16_type>( Order - 1 );
     const auto expectedFaceDof = static_cast<uint16_type>( ( Order - 1 ) * ( Order - 1 ) );
 
-    BOOST_CHECK_EQUAL( fe.runtimeLocalDof(), expectedLocalDof );
-    BOOST_CHECK_EQUAL( fe.runtimeDofPerVertex(), 1 );
-    BOOST_CHECK_EQUAL( fe.runtimeDofPerEdge(), expectedEdgeDof );
-    BOOST_CHECK_EQUAL( fe.runtimeDofPerFace(), expectedFaceDof );
-    BOOST_CHECK_EQUAL( fe.runtimeDofPerVolume(), 0 );
+    BOOST_CHECK_EQUAL( fe.localDof(), expectedLocalDof );
+    BOOST_CHECK_EQUAL( fe.dofPerVertex(), 1 );
+    BOOST_CHECK_EQUAL( fe.dofPerEdge(), expectedEdgeDof );
+    BOOST_CHECK_EQUAL( fe.dofPerFace(), expectedFaceDof );
+    BOOST_CHECK_EQUAL( fe.dofPerVolume(), 0 );
     BOOST_CHECK_EQUAL( fe.localInterpolant().size(), expectedLocalDof );
     BOOST_CHECK_EQUAL( fe.localInterpolants( 3 ).rows(), expectedLocalDof );
     BOOST_CHECK_EQUAL( fe.localInterpolants( 3 ).cols(), 3 );
@@ -291,11 +291,11 @@ void checkDynamicSimplex2dFacetInterpolationUsesRuntimeDofs()
     using fe_dynamic_t = typename lagrange_dynamic_t::template apply<2, 2, double, Simplex<2>>::type;
 
     fe_dynamic_t fe{ RuntimeOrder{ Order } };
-    const auto nFacetDof = static_cast<uint16_type>( 2 * fe.runtimeDofPerVertex() + fe.runtimeDofPerEdge() );
+    const auto nFacetDof = static_cast<uint16_type>( 2 * fe.dofPerVertex() + fe.dofPerEdge() );
 
     fake_scalar_facet_expr<fe_dynamic_t> expr( nFacetDof, 0 );
     fe_dynamic_t::local_interpolants_type Ihloc =
-        fe_dynamic_t::local_interpolants_type::Zero( 1, fe.runtimeLocalDof() );
+        fe_dynamic_t::local_interpolants_type::Zero( 1, fe.localDof() );
 
     fe.interpolateBasisFunction( expr, Ihloc );
 
@@ -496,13 +496,13 @@ BOOST_AUTO_TEST_CASE( test_lagrange_dynamic_runtime_orders_up_to_10 )
     {
         fe_dyn_t fe{ RuntimeOrder{ order } };
 
-        BOOST_CHECK_EQUAL( fe.runtimeOrder(), order );
-        BOOST_CHECK_EQUAL( fe.runtimeLocalDof(), simplex_2d_p1::polyDims( order ) );
+        BOOST_CHECK_EQUAL( fe.order(), order );
+        BOOST_CHECK_EQUAL( fe.localDof(), simplex_2d_p1::polyDims( order ) );
 
-        const auto dofPerVertex = fe.runtimeDofPerVertex();
-        const auto dofPerEdge = fe.runtimeDofPerEdge();
-        const auto dofPerFace = fe.runtimeDofPerFace();
-        BOOST_CHECK_EQUAL( fe.runtimeLocalDof(), 3 * dofPerVertex + 3 * dofPerEdge + dofPerFace );
+        const auto dofPerVertex = fe.dofPerVertex();
+        const auto dofPerEdge = fe.dofPerEdge();
+        const auto dofPerFace = fe.dofPerFace();
+        BOOST_CHECK_EQUAL( fe.localDof(), 3 * dofPerVertex + 3 * dofPerEdge + dofPerFace );
     }
 }
 
@@ -532,8 +532,8 @@ BOOST_AUTO_TEST_CASE( test_lagrange_dynamic_equispaced_policy )
     {
         fe_dyn_equi_t fe{ RuntimeOrder{ order } };
 
-        BOOST_CHECK_EQUAL( fe.runtimeOrder(), order );
-        BOOST_CHECK_EQUAL( fe.runtimeLocalDof(), simplex_2d_p1::polyDims( order ) );
+        BOOST_CHECK_EQUAL( fe.order(), order );
+        BOOST_CHECK_EQUAL( fe.localDof(), simplex_2d_p1::polyDims( order ) );
 
         const double tol = ( order >= 10 ) ? 1e-8 : 1e-10;
         checkKroneckerDeltaProperty( fe, tol, "dynamic equispaced P" + std::to_string( order ) );

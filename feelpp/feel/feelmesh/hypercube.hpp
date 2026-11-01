@@ -21,8 +21,6 @@
 #include <feel/feelmesh/hypercubeordering.hpp>
 #include <feel/feelpoly/order.hpp>
 
-#include <variant>
-
 namespace Feel
 {
 class HypercubeBase {};
@@ -39,13 +37,22 @@ class HypercubeBase {};
  * @tparam RDim Real/spatial dimension
  */
 template<int Dim, int Order=1, int RDim = Dim>
-class Hypercube  : public Convex<Dim, (Order >= 0 ? Order : 1), RDim>, HypercubeBase
+class Hypercube : public Convex<
+                      Dim,
+                      ( OrderBase<Order>::order_spec >= 0
+                            ? OrderBase<Order>::order_spec
+                            : 1 ),
+                      RDim>,
+                  public OrderBase<Order>, HypercubeBase
 {
 public:
+    using order_base_type = OrderBase<Order>;
+    using order_base_type::order;
+
     //! @name Order type detection
     //! @{
-    static constexpr bool is_order_static = (Order != Dynamic);
-    static constexpr bool is_order_dynamic = !is_order_static;
+    static constexpr bool is_order_static = order_base_type::is_order_static;
+    static constexpr bool is_order_dynamic = order_base_type::is_order_dynamic;
     //! @}
 
 private:
@@ -60,24 +67,19 @@ private:
     typedef mpl::vector_c<uint16_type, 0, 0, 0, 1, 8> volumes_t;
 
     // Use effective order for mpl computations (fallback to 1 for dynamic case)
-    static constexpr int EffectiveOrder = (Order >= 0) ? Order : 1;
-
-    typedef mpl::vector_c<size_type, 1, EffectiveOrder+1, ( EffectiveOrder+1 )*( EffectiveOrder+1 ), ( EffectiveOrder+1 )*( EffectiveOrder+1 )*( EffectiveOrder+1 ) , ( EffectiveOrder+1 )*( EffectiveOrder+1 )*( EffectiveOrder+1 )*( EffectiveOrder+1 )> points_t;
-    typedef mpl::vector_c<size_type, 0, EffectiveOrder+1-2, ( EffectiveOrder+1-2 )*( EffectiveOrder+1-2 ), ( EffectiveOrder+1-2 )*( EffectiveOrder+1-2 )*( EffectiveOrder+1-2 ) , ( EffectiveOrder+1-2 )*( EffectiveOrder+1-2 )*( EffectiveOrder+1-2 )*( EffectiveOrder+1-2 )> points_interior_t;
-    typedef mpl::vector_c<size_type, 0, EffectiveOrder+1-2,                   EffectiveOrder+1-2,                         ( EffectiveOrder+1-2 ), ( EffectiveOrder+1-2 )> points_edge_t;
-    typedef mpl::vector_c<size_type, 0,         0,     ( EffectiveOrder+1-2 )*( EffectiveOrder+1-2 ),             ( EffectiveOrder+1-2 )*( EffectiveOrder+1-2 ), ( EffectiveOrder+1-2 )*( EffectiveOrder+1-2 ) > points_face_t;
-    typedef mpl::vector_c<size_type, 0,         0,                           0, ( EffectiveOrder+1-2 )*( EffectiveOrder+1-2 )*( EffectiveOrder+1-2 ), ( EffectiveOrder+1-2 )*( EffectiveOrder+1-2 )*( EffectiveOrder+1-2 ) > points_volume_t;
+    static constexpr int EffectiveOrder =
+        is_order_static ? order_base_type::order_spec : 1;
 
     template<uint16_type rdim>
     struct faces_t
     {
-        typedef mpl::vector<Hypercube<0, EffectiveOrder, rdim>,
-                            Hypercube<0, EffectiveOrder, rdim>,
-                            Hypercube<1, EffectiveOrder, rdim>,
-                            Hypercube<2, EffectiveOrder, rdim> > type;
+        typedef mpl::vector<Hypercube<0, Order, rdim>,
+                            Hypercube<0, Order, rdim>,
+                            Hypercube<1, Order, rdim>,
+                            Hypercube<2, Order, rdim> > type;
     };
-    typedef mpl::vector<boost::none_t,Hypercube<1, EffectiveOrder,1>, Hypercube<1, EffectiveOrder, 2>, Hypercube<1, EffectiveOrder, 3>, boost::none_t > v_edges_t;
-    typedef mpl::vector<Hypercube<1, EffectiveOrder>, Hypercube<2, EffectiveOrder>, Hypercube<3, EffectiveOrder>, Hypercube<4, EffectiveOrder>, boost::none_t > elements_t;
+    typedef mpl::vector<boost::none_t,Hypercube<1, Order,1>, Hypercube<1, Order, 2>, Hypercube<1, Order, 3>, boost::none_t > v_edges_t;
+    typedef mpl::vector<Hypercube<1, Order>, Hypercube<2, Order>, Hypercube<3, Order>, Hypercube<4, Order>, boost::none_t > elements_t;
 
     typedef mpl::vector_c<uint16_type, 0, 1, 2, 8> permutations_t;
 
@@ -89,20 +91,17 @@ public:
     static const size_type Shape = mpl::at<shapes_t, mpl::int_<Dim> >::type::value;
     static const size_type Geometry = mpl::at<geometries_t, mpl::int_<Dim> >::type::value;
 
+    static constexpr int order_spec = order_base_type::order_spec;
     static inline const uint16_type nDim = Dim;
     //! Static order value (backward compatibility only).
     //! WARNING: for dynamic order types, this is a placeholder (0). Use order().
-    static inline const uint16_type nOrder = is_order_static ? static_cast<uint16_type>(Order) : 0;
+    static inline const uint16_type nOrder = is_order_static ? static_cast<uint16_type>( order_spec ) : 0;
     //! Template order parameter value (may be Dynamic = -1)
-    static constexpr int nOrder_v = Order;
+    static constexpr int nOrder_v = order_spec;
     static inline const uint16_type nRealDim = RDim;
 
     static inline const uint16_type topological_dimension = nDim;
     static inline const uint16_type real_dimension = RDim;
-
-    //! Runtime order storage (zero-cost for static order via [[no_unique_address]])
-    [[no_unique_address]]
-    std::conditional_t<is_order_dynamic, uint16_type, std::monostate> M_runtime_order{};
 
     typedef typename mpl::at<elements_t, mpl::int_<nDim> >::type element_type;
     typedef typename mpl::at<typename faces_t<real_dimension>::type, mpl::int_<nDim> >::type topological_face_type;
@@ -116,15 +115,17 @@ public:
     static inline const uint16_type numNormals = mpl::at<normals_t, mpl::int_<nDim> >::type::value;
     static inline const uint16_type numVolumes = mpl::at<volumes_t, mpl::int_<nDim> >::type::value;
 
-    //! Static point counts (using EffectiveOrder for mpl, only meaningful for static order)
-    static inline const uint16_type nbPtsPerVertex_static = ( EffectiveOrder==0 )?( ( nDim==0 )?1:0 ):1;
-    static inline const uint16_type nbPtsPerEdge_static = ( EffectiveOrder==0 )?( ( nDim==1 )?1:0 ):(uint16_type)mpl::at<points_edge_t, mpl::int_<nDim> >::type::value;
-    static inline const uint16_type nbPtsPerFace_static = ( EffectiveOrder==0 )?( ( nDim==2 )?1:0 ):(uint16_type)mpl::at<points_face_t, mpl::int_<nDim> >::type::value;
-    static inline const uint16_type nbPtsPerVolume_static = ( EffectiveOrder == 0 ) ? ( ( nDim == 3 ) ? 1 : 0 ) : (uint16_type)mpl::at<points_volume_t, mpl::int_<nDim>>::type::value;
-    static inline const uint16_type numPoints_static = ( numVertices * nbPtsPerVertex_static +
-                                           numEdges * nbPtsPerEdge_static +
-                                           numFaces * nbPtsPerFace_static +
-                                           numVolumes * nbPtsPerVolume_static );
+    //! Static point counts derived from the shared cardinality kernel.
+    static constexpr uint16_type nbPtsPerVertex_static =
+        detail::HypercubeCardinality::perVertex( nDim, EffectiveOrder );
+    static constexpr uint16_type nbPtsPerEdge_static =
+        detail::HypercubeCardinality::perEdge( nDim, EffectiveOrder );
+    static constexpr uint16_type nbPtsPerFace_static =
+        detail::HypercubeCardinality::perFace( nDim, EffectiveOrder );
+    static constexpr uint16_type nbPtsPerVolume_static =
+        detail::HypercubeCardinality::perVolume( nDim, EffectiveOrder );
+    static constexpr uint16_type numPoints_static = static_cast<uint16_type>(
+        detail::HypercubeCardinality::total( nDim, EffectiveOrder ) );
 
     //! Backward-compatible static constants.
     //! WARNING: for dynamic order types, these are placeholder P1-layout values.
@@ -191,7 +192,9 @@ public:
 
     //! Constructor with runtime order (only for dynamic order)
     explicit Hypercube( Feel::RuntimeOrder o ) requires( is_order_dynamic )
-        : M_runtime_order( o.value )
+        : order_base_type(
+              Feel::detail::validatedNodalOrder<
+                  Feel::detail::HypercubeCardinality>( Dim, o ) )
     {
     }
 
@@ -206,21 +209,18 @@ public:
     //! @{
 
     /**
-     * @brief Returns the geometric order
-     * @return The order (static compile-time value or runtime value)
+     * @brief Clear the construction-only order after mesh attachment.
      */
-    [[nodiscard]] constexpr uint16_type order() const noexcept
+    void clearDetachedOrder() noexcept
+        requires( is_order_dynamic )
     {
-        if constexpr ( is_order_static )
-            return nOrder;
-        else
-            return M_runtime_order;
+        this->setOrder( RuntimeOrder{ 0 } );
     }
 
     //! Static-only order accessor (deleted for dynamic types)
     static constexpr uint16_type staticOrder() requires( is_order_static )
     {
-        return static_cast<uint16_type>( Order );
+        return order_base_type::staticOrder();
     }
     static constexpr uint16_type staticOrder() requires( is_order_dynamic ) = delete;
 
@@ -253,56 +253,42 @@ public:
     /**
      * Returns the number of points per vertex
      */
-    [[nodiscard]] uint16_type nPointsOnVertex() const noexcept
+    [[nodiscard]] constexpr uint16_type nPointsOnVertex() const noexcept
     {
-        if constexpr ( is_order_static )
-            return nbPtsPerVertex_static;
-        else
-            return detail::hypercubePerVertex( nDim, order() );
+        return detail::HypercubeCardinality::perVertex( nDim, order() );
     }
 
     /**
      * Returns the number of points per edge
      */
-    [[nodiscard]] uint16_type nPointsOnEdge() const noexcept
+    [[nodiscard]] constexpr uint16_type nPointsOnEdge() const noexcept
     {
-        if constexpr ( is_order_static )
-            return nbPtsPerEdge_static;
-        else
-            return detail::hypercubePerEdge( nDim, order() );
+        return detail::HypercubeCardinality::perEdge( nDim, order() );
     }
 
     /**
      * Returns the number of points per face
      */
-    [[nodiscard]] uint16_type nPointsOnFace() const noexcept
+    [[nodiscard]] constexpr uint16_type nPointsOnFace() const noexcept
     {
-        if constexpr ( is_order_static )
-            return nbPtsPerFace_static;
-        else
-            return detail::hypercubePerFace( nDim, order() );
+        return detail::HypercubeCardinality::perFace( nDim, order() );
     }
 
     /**
      * Returns the number of points per volume
      */
-    [[nodiscard]] uint16_type nPointsOnVolume() const noexcept
+    [[nodiscard]] constexpr uint16_type nPointsOnVolume() const noexcept
     {
-        if constexpr ( is_order_static )
-            return nbPtsPerVolume_static;
-        else
-            return detail::hypercubePerVolume( nDim, order() );
+        return detail::HypercubeCardinality::perVolume( nDim, order() );
     }
 
     /**
      * Returns the total number of points (works for both static and dynamic order)
      */
-    [[nodiscard]] uint16_type nPointsTotal() const noexcept
+    [[nodiscard]] constexpr uint16_type nPointsTotal() const noexcept
     {
-        if constexpr ( is_order_static )
-            return numPoints_static;
-        else
-            return static_cast<uint16_type>( detail::hypercubeTotal( nDim, order() ) );
+        return static_cast<uint16_type>(
+            detail::HypercubeCardinality::total( nDim, order() ) );
     }
 
     //! Static-only point-count accessors (deleted for dynamic types)

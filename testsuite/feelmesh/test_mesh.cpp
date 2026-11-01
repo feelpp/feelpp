@@ -20,7 +20,12 @@
 #include <feel/feelcore/testsuite.hpp>
 
 #include <concepts>
+#include <optional>
+#include <sstream>
 #include <type_traits>
+
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelmesh/geoentity.hpp>
@@ -28,7 +33,10 @@
 
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelmesh/filters.hpp>
+#include <feel/feelfilters/domain.hpp>
+#include <feel/feelfilters/detail/meshcontiguousnumberingmapping.hpp>
 #include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/partitionio.hpp>
 #include <feel/feelfilters/geotool.hpp>
 #include <feel/feelpoly/order.hpp>
 
@@ -44,6 +52,29 @@ concept TestMeshConcept = requires( M m )
     { m.numPoints() } -> std::convertible_to<typename M::size_type>;
     { m.order() } -> std::convertible_to<uint16_type>;
 };
+
+/**
+ * @brief Check the point count of every locally owned mesh element.
+ *
+ * Empty local partitions are valid in distributed tests and must not
+ * dereference `beginElement()`.
+ *
+ * @tparam MeshPtrType mesh shared-pointer type
+ * @param mesh distributed mesh
+ * @param expectedPointCount expected geometry-node count per element
+ */
+template <typename MeshPtrType>
+void checkLocalElementPointCount(
+    MeshPtrType const& mesh,
+    uint16_type expectedPointCount )
+{
+    for ( auto const& elementReference : mesh->elements() )
+    {
+        BOOST_CHECK_EQUAL(
+            elementReference.second.nPoints(),
+            expectedPointCount );
+    }
+}
 
 /**
  * @brief Generic mesh test fixture that works for both static and dynamic order
@@ -272,8 +303,13 @@ private:
 
         // Create mesh with runtime order
         auto mesh = std::make_shared<mesh_type>( runtime_order );
-        // Note: Full implementation requires updating GeoTool to support dynamic order
-        return T.createMesh( _mesh = mesh.get(), _name = "triangle_dynamic" );
+        return T.createMesh(
+            _mesh = mesh,
+            _name = fmt::format(
+                "triangle_dynamic_g{}",
+                runtime_order.value ),
+            _force_rebuild = true,
+            _straighten = false );
     }
 
     double M_meshSize;
@@ -366,11 +402,6 @@ BOOST_AUTO_TEST_CASE( test_mesh_static_order_p2_elements )
 // Dynamic Order Tests (order set at runtime)
 //==============================================================================
 
-// NOTE:
-// Mesh<Simplex<..., Dynamic>> is not yet fully supported in the mesh core
-// (GeoElement/Mesh2D type stack). Keep these tests disabled until core support
-// is completed. Dynamic geometric-order parity is covered in feeldiscr/geomap tests.
-#if 0
 BOOST_AUTO_TEST_CASE( test_mesh_dynamic_order_p1_filters )
 {
     using namespace Feel;
@@ -427,6 +458,351 @@ BOOST_AUTO_TEST_CASE( test_mesh_dynamic_order_p2_elements )
     test_fixture.testElements();
 }
 
+/**
+ * @test Import and evaluate two-dimensional runtime G3--G5 simplex meshes.
+ */
+BOOST_AUTO_TEST_CASE( test_mesh_dynamic_order_g3_to_g5_elements )
+{
+    using namespace Feel;
+    using mesh_type = Mesh<Simplex<2, Dynamic>>;
+
+    for ( uint16_type order = 3; order <= 5; ++order )
+    {
+        test_mesh_detail::MeshTestFixture<mesh_type> testFixture(
+            RuntimeOrder{ order }, 0.8 );
+        BOOST_REQUIRE( testFixture.mesh() );
+        BOOST_CHECK_EQUAL( testFixture.mesh()->order(), order );
+        testFixture.testElements();
+
+        for ( auto const& elementReference :
+              testFixture.mesh()->elements() )
+        {
+            auto const& element = elementReference.second;
+            BOOST_CHECK_EQUAL(
+                element.nPoints(),
+                Feel::detail::simplexTotal( 2, order ) );
+            BOOST_CHECK_EQUAL(
+                element.G().size2(),
+                Feel::detail::simplexTotal( 2, order ) );
+        }
+
+        if ( order == 3 )
+        {
+            auto mergedMesh = merge(
+                testFixture.mesh(),
+                testFixture.mesh() );
+            BOOST_REQUIRE( mergedMesh );
+            BOOST_CHECK_EQUAL(
+                mergedMesh->order(), order );
+            BOOST_CHECK_EQUAL(
+                mergedMesh->numGlobalElements(),
+                2 * testFixture.mesh()
+                        ->numGlobalElements() );
+            Feel::test_mesh_detail::
+                checkLocalElementPointCount(
+                    mergedMesh,
+                    Feel::detail::simplexTotal(
+                        2, order ) );
+        }
+    }
+}
+
+/**
+ * @test Propagate runtime order through tetrahedral faces, edges, and Context.
+ */
+BOOST_AUTO_TEST_CASE( test_mesh_dynamic_3d_g2_and_g5_topology )
+{
+    using namespace Feel;
+    using mesh_type = Mesh<Simplex<3, Dynamic, 3>>;
+
+    for ( uint16_type order : {uint16_type{ 2 },
+                               uint16_type{ 5 }} )
+    {
+        auto mesh = mesh_type::New( RuntimeOrder{ order } );
+        GeoTool::Node first( 0, 0, 0 );
+        GeoTool::Node last( 1, 1, 1 );
+        GeoTool::Cube cube( 0.9, "Omega", first, last );
+        mesh = cube.createMesh(
+            _mesh = mesh,
+            _name = fmt::format(
+                "cube_tetra_dynamic_g{}", order ),
+            _force_rebuild = true,
+            _straighten = false );
+
+        BOOST_REQUIRE( mesh );
+        BOOST_CHECK_EQUAL( mesh->order(), order );
+        BOOST_CHECK_GT( mesh->numGlobalElements(), 0 );
+
+        auto const cellPointCount =
+            Feel::detail::simplexTotal( 3, order );
+        auto const facePointCount =
+            Feel::detail::simplexTotal( 2, order );
+        auto const edgePointCount =
+            Feel::detail::simplexTotal( 1, order );
+
+        for ( auto const& elementReference : mesh->elements() )
+        {
+            auto const& element = elementReference.second;
+            BOOST_CHECK_EQUAL(
+                element.nPoints(), cellPointCount );
+            BOOST_CHECK_EQUAL(
+                element.G().size2(), cellPointCount );
+        }
+        for ( auto const& faceReference : mesh->faces() )
+            BOOST_CHECK_EQUAL(
+                faceReference.second.nPoints(),
+                facePointCount );
+        for ( auto const& edgeReference : mesh->edges() )
+            BOOST_CHECK_EQUAL(
+                edgeReference.second.nPoints(),
+                edgePointCount );
+
+        std::optional<typename mesh_type::geometry_coordinate_matrix_type>
+            nodalCoordinates;
+        if ( order == 5 )
+        {
+            nodalCoordinates = mesh->nodalGeometryCoordinates();
+            mesh->setGeometryRepresentation(
+                geometry::GeometryRepresentationKind::BernsteinBezier );
+            BOOST_CHECK(
+                mesh->geometryRepresentation() ==
+                geometry::GeometryRepresentationKind::BernsteinBezier );
+            BOOST_CHECK_SMALL(
+                ( mesh->nodalGeometryCoordinates() -
+                  *nodalCoordinates )
+                    .norm(),
+                2e-9 );
+        }
+
+        if ( mesh->numElements() > 0 )
+        {
+            auto const& element =
+                mesh->beginElement()->second;
+            auto gm = mesh->gm();
+            typename mesh_type::reference_convex_type
+                reference;
+            auto precompute =
+                gm->preCompute( gm, reference.points() );
+            auto context =
+                gm->template context<
+                    vm::POINT | vm::JACOBIAN>(
+                        element, precompute );
+            BOOST_CHECK( context->isValid() );
+        }
+
+        if ( order == 5 )
+        {
+            auto volumeSubmesh = createSubmesh(
+                _mesh = mesh, _range = elements( mesh ) );
+            BOOST_REQUIRE( volumeSubmesh );
+            BOOST_CHECK_EQUAL(
+                volumeSubmesh->order(), order );
+            BOOST_CHECK(
+                volumeSubmesh->geometryRepresentation() ==
+                geometry::GeometryRepresentationKind::BernsteinBezier );
+            BOOST_REQUIRE_GT(
+                volumeSubmesh->numGlobalElements(), 0 );
+            Feel::test_mesh_detail::
+                checkLocalElementPointCount(
+                    volumeSubmesh, cellPointCount );
+
+            auto boundaryMesh = createSubmesh(
+                _mesh = mesh,
+                _range = boundaryfaces( mesh ) );
+            BOOST_REQUIRE( boundaryMesh );
+            BOOST_CHECK_EQUAL(
+                boundaryMesh->order(), order );
+            BOOST_CHECK(
+                boundaryMesh->geometryRepresentation() ==
+                geometry::GeometryRepresentationKind::BernsteinBezier );
+            BOOST_REQUIRE_GT(
+                boundaryMesh->numGlobalElements(), 0 );
+            Feel::test_mesh_detail::
+                checkLocalElementPointCount(
+                    boundaryMesh, facePointCount );
+
+            using export_mapping_type =
+                Feel::detail::MeshContiguousNumberingMapping<
+                    mesh_type, float>;
+            export_mapping_type exportMapping{
+                mesh.get(), true };
+            BOOST_CHECK_EQUAL(
+                exportMapping.pointsPerElement(),
+                cellPointCount );
+            auto const exportedNodalCoordinates =
+                mesh->nodalGeometryCoordinates();
+            auto const localRank =
+                mesh->worldComm().localRank();
+            for ( auto const& [part, nameAndRange] :
+                  exportMapping.partIdToRangeElement() )
+            {
+                auto const& connectivity =
+                    exportMapping.pointIdsInElements( part );
+                BOOST_CHECK_EQUAL(
+                    connectivity.size(),
+                    exportMapping.numberOfElement(
+                        part, localRank )*cellPointCount );
+                auto const& nodes = exportMapping.nodes( part );
+                auto const startPoint =
+                    exportMapping.startPointIds(
+                        part, localRank );
+                for ( auto const& [pointId, pointData] :
+                      exportMapping.pointIdToContiguous( part ) )
+                {
+                    auto const exportedPoint =
+                        pointData.first-startPoint;
+                    auto const pointIndex =
+                        mesh->pointLocalIndex( pointId );
+                    for ( uint16_type dimension = 0;
+                          dimension < mesh_type::nRealDim;
+                          ++dimension )
+                        BOOST_CHECK_SMALL(
+                            nodes[3*exportedPoint+dimension]-
+                                exportedNodalCoordinates(
+                                    dimension, pointIndex ),
+                            2e-6 );
+                }
+            }
+
+            if ( Environment::worldComm()
+                     .globalSize() == 1 )
+            {
+                std::stringstream archiveBuffer;
+                {
+                    boost::archive::text_oarchive archive{
+                        archiveBuffer };
+                    archive << *mesh;
+                }
+                auto archivedMesh =
+                    mesh_type::New( RuntimeOrder{ 1 } );
+                {
+                    boost::archive::text_iarchive archive{
+                        archiveBuffer };
+                    archive >> *archivedMesh;
+                }
+                BOOST_CHECK_EQUAL(
+                    archivedMesh->order(), order );
+                BOOST_CHECK(
+                    archivedMesh->geometryRepresentation() ==
+                    geometry::GeometryRepresentationKind::BernsteinBezier );
+                BOOST_CHECK_EQUAL(
+                    archivedMesh->numGlobalElements(),
+                    mesh->numGlobalElements() );
+                BOOST_CHECK_EQUAL(
+                    archivedMesh->beginElement()
+                        ->second.nPoints(),
+                    cellPointCount );
+                BOOST_CHECK_SMALL(
+                    ( archivedMesh->nodalGeometryCoordinates() -
+                      *nodalCoordinates )
+                        .norm(),
+                    2e-9 );
+
+                auto const metadataPath =
+                    Environment::repository().directory() /
+                    "runtime_geometry_g5_partition.json";
+                PartitionIO<mesh_type> writer{
+                    metadataPath.string() };
+                writer.write( mesh );
+
+                auto partitionMesh =
+                    mesh_type::New( RuntimeOrder{ 1 } );
+                PartitionIO<mesh_type> reader{
+                    metadataPath.string() };
+                reader.read( partitionMesh );
+                BOOST_CHECK_EQUAL(
+                    partitionMesh->order(), order );
+                BOOST_CHECK(
+                    partitionMesh->geometryRepresentation() ==
+                    geometry::GeometryRepresentationKind::BernsteinBezier );
+                BOOST_CHECK_EQUAL(
+                    partitionMesh->numGlobalElements(),
+                    mesh->numGlobalElements() );
+                BOOST_CHECK_EQUAL(
+                    partitionMesh->beginElement()
+                        ->second.nPoints(),
+                    cellPointCount );
+                BOOST_CHECK_SMALL(
+                    ( partitionMesh->nodalGeometryCoordinates() -
+                      *nodalCoordinates )
+                        .norm(),
+                    2e-9 );
+            }
+        }
+    }
+}
+
+/**
+ * @test Import complete runtime-order quadrilateral and hexahedral G3/G5
+ *       meshes without falling back to statically instantiated maps.
+ */
+BOOST_AUTO_TEST_CASE( test_mesh_dynamic_hypercube_g3_and_g5 )
+{
+    using namespace Feel;
+    using quadrangle_mesh_type =
+        Mesh<Hypercube<2, Dynamic>>;
+    using hexahedron_mesh_type =
+        Mesh<Hypercube<3, Dynamic, 3>>;
+
+    for ( uint16_type order :
+          {uint16_type{ 3 }, uint16_type{ 5 }} )
+    {
+        auto quadrangleMesh =
+            quadrangle_mesh_type::New(
+                RuntimeOrder{ order } );
+        quadrangleMesh = createGMSHMesh(
+            _mesh = quadrangleMesh,
+            _desc = domain(
+                _name = fmt::format(
+                    "quadrangle_dynamic_g{}", order ),
+                _shape = "hypercube",
+                _convex = "Hypercube",
+                _dim = 2,
+                _order = order,
+                _h = 0.5 ),
+            _structured = 1,
+            _force_rebuild = true,
+            _straighten = false );
+        BOOST_REQUIRE( quadrangleMesh );
+        BOOST_CHECK_EQUAL(
+            quadrangleMesh->order(), order );
+        BOOST_REQUIRE_GT(
+            quadrangleMesh->numGlobalElements(), 0 );
+        Feel::test_mesh_detail::
+            checkLocalElementPointCount(
+                quadrangleMesh,
+                Feel::detail::hypercubeTotal(
+                    2, order ) );
+
+        auto hexahedronMesh =
+            hexahedron_mesh_type::New(
+                RuntimeOrder{ order } );
+        hexahedronMesh = createGMSHMesh(
+            _mesh = hexahedronMesh,
+            _desc = domain(
+                _name = fmt::format(
+                    "hexahedron_dynamic_g{}", order ),
+                _shape = "hypercube",
+                _convex = "Hypercube",
+                _dim = 3,
+                _order = order,
+                _h = 0.5 ),
+            _structured = 1,
+            _force_rebuild = true,
+            _straighten = false );
+        BOOST_REQUIRE( hexahedronMesh );
+        BOOST_CHECK_EQUAL(
+            hexahedronMesh->order(), order );
+        BOOST_REQUIRE_GT(
+            hexahedronMesh->numGlobalElements(), 0 );
+        Feel::test_mesh_detail::
+            checkLocalElementPointCount(
+                hexahedronMesh,
+                Feel::detail::hypercubeTotal(
+                    3, order ) );
+    }
+}
+
 BOOST_AUTO_TEST_CASE( test_mesh_dynamic_order_p1_components )
 {
     using namespace Feel;
@@ -469,9 +845,11 @@ BOOST_AUTO_TEST_CASE( test_mesh_dynamic_vs_static_consistency )
     BOOST_CHECK_EQUAL( static_test_fixture.order(), 1 );
     BOOST_CHECK_EQUAL( dynamic_test_fixture.order(), 1 );
 
-    // Both should have same number of elements (assuming same mesh generation)
-    BOOST_CHECK_EQUAL( static_test_fixture.mesh()->numElements(),
-                       dynamic_test_fixture.mesh()->numElements() );
+    // Independent Gmsh runs may partition cells differently across ranks.
+    // Mathematical parity therefore compares the global mesh cardinality.
+    BOOST_CHECK_EQUAL(
+        static_test_fixture.mesh()->numGlobalElements(),
+        dynamic_test_fixture.mesh()->numGlobalElements() );
 
     // Both should pass the same tests
     static_test_fixture.testFilters();
@@ -499,8 +877,9 @@ BOOST_AUTO_TEST_CASE( test_mesh_dynamic_vs_static_consistency_p2 )
 
     BOOST_CHECK_EQUAL( static_test_fixture.order(), 2 );
     BOOST_CHECK_EQUAL( dynamic_test_fixture.order(), 2 );
-    BOOST_CHECK_EQUAL( static_test_fixture.mesh()->numElements(),
-                       dynamic_test_fixture.mesh()->numElements() );
+    BOOST_CHECK_EQUAL(
+        static_test_fixture.mesh()->numGlobalElements(),
+        dynamic_test_fixture.mesh()->numGlobalElements() );
 
     static_test_fixture.testFilters();
     dynamic_test_fixture.testFilters();
@@ -509,8 +888,6 @@ BOOST_AUTO_TEST_CASE( test_mesh_dynamic_vs_static_consistency_p2 )
 
     BOOST_TEST_MESSAGE( "Static and dynamic order P2 meshes are consistent" );
 }
-#endif
-
 //==============================================================================
 // Legacy Tests (preserved for compatibility)
 //==============================================================================

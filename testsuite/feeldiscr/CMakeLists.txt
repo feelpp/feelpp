@@ -128,6 +128,8 @@ feelpp_add_test( sensors CFG sensors.cfg GEO sensorsdesc.json )
 feelpp_add_test( geometricspace )
 
 feelpp_add_test( pch_dynamic NO_MPI_TEST )
+feelpp_add_test( scalar_pde_acceptance )
+feelpp_add_test( compatible_pde_acceptance )
 feelpp_add_test( dynamic_order_math_parity NO_MPI_TEST )
 feelpp_add_test( hdiv_runtime_order_parity NO_MPI_TEST )
 feelpp_add_test( doftable_fe_contract )

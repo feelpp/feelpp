@@ -127,7 +127,8 @@ public:
 
     self_type& operator=( self_type const& p ) = default;
 
-    uint32_type nPoints() const
+    /** Number of coordinates currently stored by this point-set object. */
+    [[nodiscard]] uint32_type nPoints() const noexcept
     {
         return M_npoints;
     }

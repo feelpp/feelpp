@@ -22,8 +22,10 @@
 #include <feel/feelfilters/gmshsimplexdomain.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchm.hpp>
+#include <feel/feeldiscr/pdh.hpp>
 #include <feel/feeldiscr/pdhm.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
+#include <feel/feelvf/integratordirac.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelpoly/dubiner.hpp>
 #include <feel/feelpoly/lagrange.hpp>
@@ -96,7 +98,7 @@ checkExactManufacturedPolynomial( oneelt_mesh_ptrtype const& mesh,
     auto VhStatic = Pch<Order>( mesh );
     auto VhDynamic = Pch<Dynamic>( mesh, RuntimeOrder( Order ) );
 
-    BOOST_REQUIRE_EQUAL( VhDynamic->runtimeOrder(), Order );
+    BOOST_REQUIRE_EQUAL( VhDynamic->order(), Order );
     BOOST_CHECK_EQUAL( VhStatic->nDof(), VhDynamic->nDof() );
 
     auto uStatic = project( _space = VhStatic, _expr = expr );
@@ -159,7 +161,7 @@ void checkPdhvStaticDynamic( oneelt_mesh_ptrtype const& mesh, double tol )
     auto VhDynamic = Pdhv<Dynamic>( mesh, RuntimeOrder( Order ) );
     auto expr = makeManufacturedVectorExpression<Order>();
 
-    BOOST_REQUIRE_EQUAL( VhDynamic->runtimeOrder(), Order );
+    BOOST_REQUIRE_EQUAL( VhDynamic->order(), Order );
     BOOST_CHECK_EQUAL( VhStatic->nDof(), VhDynamic->nDof() );
 
     auto uStatic = VhStatic->element();
@@ -190,7 +192,7 @@ void checkPdhmStaticDynamic( oneelt_mesh_ptrtype const& mesh, double tol )
     auto MhDynamic = Pdhm<Dynamic>( mesh, RuntimeOrder( Order ) );
     auto expr = makeManufacturedTensor2Expression<Order>();
 
-    BOOST_REQUIRE_EQUAL( MhDynamic->runtimeOrder(), Order );
+    BOOST_REQUIRE_EQUAL( MhDynamic->order(), Order );
     BOOST_CHECK_EQUAL( MhStatic->nDof(), MhDynamic->nDof() );
 
     auto mStatic = MhStatic->element();
@@ -221,7 +223,7 @@ void checkPchmStaticDynamic( oneelt_mesh_ptrtype const& mesh, double tol )
     auto MhDynamic = Pchm<Dynamic>( mesh, RuntimeOrder( Order ) );
     auto expr = makeManufacturedTensor2Expression<Order>();
 
-    BOOST_REQUIRE_EQUAL( MhDynamic->runtimeOrder(), Order );
+    BOOST_REQUIRE_EQUAL( MhDynamic->order(), Order );
     BOOST_CHECK_EQUAL( MhStatic->nDof(), MhDynamic->nDof() );
 
     auto mStatic = MhStatic->element();
@@ -335,7 +337,7 @@ checkSimpleLapEndToEndStaticDynamic( oneelt_mesh_ptrtype const& mesh, double tol
     auto VhStatic = Pch<Order>( mesh );
     auto VhDynamic = Pch<Dynamic>( mesh, RuntimeOrder( Order ) );
 
-    BOOST_REQUIRE_EQUAL( VhDynamic->runtimeOrder(), Order );
+    BOOST_REQUIRE_EQUAL( VhDynamic->order(), Order );
     BOOST_CHECK_EQUAL( VhStatic->nDof(), VhDynamic->nDof() );
 
     if constexpr ( Order == 1 )
@@ -437,7 +439,7 @@ checkAnalyticalGradientIntegrals( oneelt_mesh_ptrtype const& mesh, double tol )
     auto VhStatic = Pch<Order>( mesh );
     auto VhDynamic = Pch<Dynamic>( mesh, RuntimeOrder( Order ) );
 
-    BOOST_REQUIRE_EQUAL( VhDynamic->runtimeOrder(), Order );
+    BOOST_REQUIRE_EQUAL( VhDynamic->order(), Order );
     BOOST_CHECK_EQUAL( VhStatic->nDof(), VhDynamic->nDof() );
 
     auto runCase = [&]( auto const& polyExpr,
@@ -525,7 +527,7 @@ checkAnalyticalSemiH1( oneelt_mesh_ptrtype const& mesh, double tol )
     auto VhStatic = Pch<Order>( mesh );
     auto VhDynamic = Pch<Dynamic>( mesh, RuntimeOrder( Order ) );
 
-    BOOST_REQUIRE_EQUAL( VhDynamic->runtimeOrder(), Order );
+    BOOST_REQUIRE_EQUAL( VhDynamic->order(), Order );
     BOOST_CHECK_EQUAL( VhStatic->nDof(), VhDynamic->nDof() );
 
     auto runCase = [&]( auto const& polyExpr,
@@ -609,7 +611,7 @@ checkAnalyticalGradientIntegralsUnitSquare( MeshPtrType const& mesh, double tol 
     auto VhStatic = Pch<Order>( mesh );
     auto VhDynamic = Pch<Dynamic>( mesh, RuntimeOrder( Order ) );
 
-    BOOST_REQUIRE_EQUAL( VhDynamic->runtimeOrder(), Order );
+    BOOST_REQUIRE_EQUAL( VhDynamic->order(), Order );
     BOOST_CHECK_EQUAL( VhStatic->nDof(), VhDynamic->nDof() );
 
     auto runCase = [&]( auto const& polyExpr,
@@ -694,7 +696,7 @@ checkAnalyticalSemiH1UnitSquare( MeshPtrType const& mesh, double tol )
     auto VhStatic = Pch<Order>( mesh );
     auto VhDynamic = Pch<Dynamic>( mesh, RuntimeOrder( Order ) );
 
-    BOOST_REQUIRE_EQUAL( VhDynamic->runtimeOrder(), Order );
+    BOOST_REQUIRE_EQUAL( VhDynamic->order(), Order );
     BOOST_CHECK_EQUAL( VhStatic->nDof(), VhDynamic->nDof() );
 
     auto runCase = [&]( auto const& polyExpr,
@@ -1116,13 +1118,13 @@ BOOST_AUTO_TEST_CASE( test_lagrange_runtime_dof_accessors )
 
     basis_type basis;
 
-    BOOST_CHECK_EQUAL( basis.runtimeOrder(), 2 );
-    BOOST_CHECK_EQUAL( basis.runtimeLocalDof(), basis_type::nLocalDof );
-    BOOST_CHECK_EQUAL( basis.runtimeDofPerVertex(), basis_type::nDofPerVertex );
-    BOOST_CHECK_EQUAL( basis.runtimeDofPerEdge(), basis_type::nDofPerEdge );
-    BOOST_CHECK_EQUAL( basis.runtimeDofPerFace(), basis_type::nDofPerFace );
+    BOOST_CHECK_EQUAL( basis.order(), 2 );
+    BOOST_CHECK_EQUAL( basis.localDof(), basis_type::nLocalDof );
+    BOOST_CHECK_EQUAL( basis.dofPerVertex(), basis_type::nDofPerVertex );
+    BOOST_CHECK_EQUAL( basis.dofPerEdge(), basis_type::nDofPerEdge );
+    BOOST_CHECK_EQUAL( basis.dofPerFace(), basis_type::nDofPerFace );
 
-    BOOST_TEST_MESSAGE( "  P2 runtimeLocalDof = " << basis.runtimeLocalDof() );
+    BOOST_TEST_MESSAGE( "  P2 localDof = " << basis.localDof() );
     BOOST_TEST_MESSAGE( "  P2 nLocalDof = " << basis_type::nLocalDof );
 }
 
@@ -1133,11 +1135,13 @@ BOOST_AUTO_TEST_CASE( test_lagrange_runtime_order_constructor )
 {
     BOOST_TEST_MESSAGE( "Test Lagrange RuntimeOrder constructor" );
 
-    // Static order - RuntimeOrder is ignored
+    // Static order - a matching RuntimeOrder is accepted, a mismatch is rejected.
     {
         using basis_type = fem::Lagrange<2, 2, 2, Scalar, Continuous, double, Simplex, PointSetFekete, 0>;
-        basis_type basis( RuntimeOrder( 5 ) );  // Should be ignored
-        BOOST_CHECK_EQUAL( basis.runtimeOrder(), 2 );  // Still P2
+        basis_type basis( RuntimeOrder( 2 ) );
+        BOOST_CHECK_EQUAL( basis.order(), 2 );
+        BOOST_CHECK_THROW( basis_type( RuntimeOrder( 5 ) ),
+                           std::invalid_argument );
     }
 
     BOOST_CHECK( true );
@@ -1162,11 +1166,14 @@ BOOST_AUTO_TEST_CASE( test_pch_unified_interface )
         auto Vh_with_ro = Pch<2>( mesh, RuntimeOrder( 2 ) );
 
         BOOST_CHECK_EQUAL( Vh_static->nDof(), Vh_with_ro->nDof() );
-        BOOST_CHECK_EQUAL( Vh_static->runtimeOrder(), Vh_with_ro->runtimeOrder() );
-        BOOST_CHECK_EQUAL( Vh_static->runtimeOrder(), 2 );
+        BOOST_CHECK_EQUAL( Vh_static->order(), Vh_with_ro->order() );
+        BOOST_CHECK_EQUAL( Vh_static->order(), 2 );
 
         BOOST_TEST_MESSAGE( "  Static P2: nDof = " << Vh_static->nDof()
-                            << ", runtimeOrder = " << Vh_static->runtimeOrder() );
+                            << ", order = " << Vh_static->order() );
+
+        BOOST_CHECK_THROW( Pch<2>( mesh, RuntimeOrder( 3 ) ),
+                           std::invalid_argument );
     }
 
     BOOST_CHECK( true );
@@ -1185,43 +1192,69 @@ BOOST_AUTO_TEST_CASE( test_pch_dynamic_creation )
     {
         auto Vh = Pch<Dynamic>( mesh, RuntimeOrder( 1 ) );
         BOOST_CHECK( Vh->nDof() > 0 );
-        BOOST_CHECK_EQUAL( Vh->runtimeOrder(), 1 );
+        BOOST_CHECK_EQUAL( Vh->order(), 1 );
         BOOST_TEST_MESSAGE( "  Dynamic P1: nDof = " << Vh->nDof()
-                            << ", runtimeOrder = " << Vh->runtimeOrder() );
+                            << ", order = " << Vh->order() );
     }
 
     // Create dynamic order P2
     {
         auto Vh = Pch<Dynamic>( mesh, RuntimeOrder( 2 ) );
         BOOST_CHECK( Vh->nDof() > 0 );
-        BOOST_CHECK_EQUAL( Vh->runtimeOrder(), 2 );
+        BOOST_CHECK_EQUAL( Vh->order(), 2 );
         BOOST_TEST_MESSAGE( "  Dynamic P2: nDof = " << Vh->nDof()
-                            << ", runtimeOrder = " << Vh->runtimeOrder() );
+                            << ", order = " << Vh->order() );
     }
 
     // Create dynamic order P3
     {
         auto Vh = Pch<Dynamic>( mesh, RuntimeOrder( 3 ) );
         BOOST_CHECK( Vh->nDof() > 0 );
-        BOOST_CHECK_EQUAL( Vh->runtimeOrder(), 3 );
+        BOOST_CHECK_EQUAL( Vh->order(), 3 );
         BOOST_TEST_MESSAGE( "  Dynamic P3: nDof = " << Vh->nDof()
-                            << ", runtimeOrder = " << Vh->runtimeOrder() );
+                            << ", order = " << Vh->order() );
+    }
+}
+
+BOOST_AUTO_TEST_CASE( dynamic_p0_p1_p2_interpolation_and_dirac_evaluation )
+{
+    auto mesh = makeSingleSimplexElementMesh(
+        "dynamic_dirac_reference", Gmsh::GMSH_REFERENCE_DOMAIN );
+    std::vector<oneelt_mesh_type::point_type> points;
+    points.reserve( mesh->numPoints() );
+    for ( auto const& [pointId, point] : mesh->points() )
+        points.push_back( point );
+
+    for ( uint16_type order : { uint16_type( 0 ), uint16_type( 1 ),
+                                uint16_type( 2 ) } )
+    {
+        auto space = Pch<Dynamic>( mesh, RuntimeOrder( order ) );
+        auto field = space->element();
+        double const expectedValue = 2.5 + order;
+        field.on( _range = elements( mesh ), _expr = cst( expectedValue ) );
+
+        auto pointEvaluation = vf::dirac(
+            elements( mesh ), points, idv( field ) ).evaluate();
+
+        BOOST_REQUIRE_EQUAL( pointEvaluation.rows(), 1 );
+        BOOST_REQUIRE_EQUAL( pointEvaluation.cols(), 1 );
+        BOOST_CHECK_SMALL(
+            pointEvaluation( 0, 0 ) - expectedValue*points.size(), 1e-11 );
     }
 }
 
 /**
- * @brief Test that runtimeOrder() works correctly for static and dynamic Pch
+ * @brief Test that order() works correctly for static and dynamic Pch
  *
- * Verifies that runtimeOrder() returns the correct polynomial order
+ * Verifies that order() returns the correct polynomial order
  * for both static and dynamic function spaces.
  *
- * @note **Phase 3 Pending**: Full nDof() equality between static and dynamic
- *       spaces requires updating DofTable to use runtime DOF counts from the
- *       basis class. Currently, dynamic spaces use a placeholder DOF structure.
+ * Static and dynamic spaces both expose their effective order and cardinality
+ * through the constructed FE and DofTable objects.
  */
 BOOST_AUTO_TEST_CASE( test_pch_static_vs_dynamic_runtime_order )
 {
-    BOOST_TEST_MESSAGE( "Test static vs dynamic Pch runtimeOrder equality" );
+    BOOST_TEST_MESSAGE( "Test static vs dynamic Pch order equality" );
 
     auto mesh = unitSquare();
 
@@ -1230,12 +1263,12 @@ BOOST_AUTO_TEST_CASE( test_pch_static_vs_dynamic_runtime_order )
         auto Vh_static = Pch<1>( mesh );
         auto Vh_dynamic = Pch<Dynamic>( mesh, RuntimeOrder( 1 ) );
 
-        // runtimeOrder should match
-        BOOST_CHECK_EQUAL( Vh_static->runtimeOrder(), Vh_dynamic->runtimeOrder() );
-        BOOST_CHECK_EQUAL( Vh_static->runtimeOrder(), 1 );
+        // order should match
+        BOOST_CHECK_EQUAL( Vh_static->order(), Vh_dynamic->order() );
+        BOOST_CHECK_EQUAL( Vh_static->order(), 1 );
 
-        BOOST_TEST_MESSAGE( "  P1 static runtimeOrder = " << Vh_static->runtimeOrder()
-                            << ", dynamic runtimeOrder = " << Vh_dynamic->runtimeOrder() );
+        BOOST_TEST_MESSAGE( "  P1 static order = " << Vh_static->order()
+                            << ", dynamic order = " << Vh_dynamic->order() );
     }
 
     // Compare P2
@@ -1243,12 +1276,12 @@ BOOST_AUTO_TEST_CASE( test_pch_static_vs_dynamic_runtime_order )
         auto Vh_static = Pch<2>( mesh );
         auto Vh_dynamic = Pch<Dynamic>( mesh, RuntimeOrder( 2 ) );
 
-        // runtimeOrder should match
-        BOOST_CHECK_EQUAL( Vh_static->runtimeOrder(), Vh_dynamic->runtimeOrder() );
-        BOOST_CHECK_EQUAL( Vh_static->runtimeOrder(), 2 );
+        // order should match
+        BOOST_CHECK_EQUAL( Vh_static->order(), Vh_dynamic->order() );
+        BOOST_CHECK_EQUAL( Vh_static->order(), 2 );
 
-        BOOST_TEST_MESSAGE( "  P2 static runtimeOrder = " << Vh_static->runtimeOrder()
-                            << ", dynamic runtimeOrder = " << Vh_dynamic->runtimeOrder() );
+        BOOST_TEST_MESSAGE( "  P2 static order = " << Vh_static->order()
+                            << ", dynamic order = " << Vh_dynamic->order() );
     }
 
     // Compare P3
@@ -1256,20 +1289,19 @@ BOOST_AUTO_TEST_CASE( test_pch_static_vs_dynamic_runtime_order )
         auto Vh_static = Pch<3>( mesh );
         auto Vh_dynamic = Pch<Dynamic>( mesh, RuntimeOrder( 3 ) );
 
-        // runtimeOrder should match
-        BOOST_CHECK_EQUAL( Vh_static->runtimeOrder(), Vh_dynamic->runtimeOrder() );
-        BOOST_CHECK_EQUAL( Vh_static->runtimeOrder(), 3 );
+        // order should match
+        BOOST_CHECK_EQUAL( Vh_static->order(), Vh_dynamic->order() );
+        BOOST_CHECK_EQUAL( Vh_static->order(), 3 );
 
-        BOOST_TEST_MESSAGE( "  P3 static runtimeOrder = " << Vh_static->runtimeOrder()
-                            << ", dynamic runtimeOrder = " << Vh_dynamic->runtimeOrder() );
+        BOOST_TEST_MESSAGE( "  P3 static order = " << Vh_static->order()
+                            << ", dynamic order = " << Vh_dynamic->order() );
     }
 }
 
 /**
  * @brief Test projection with dynamic order Pch
  *
- * @note **Phase 3 Pending**: Currently dynamic order spaces use P1 DOF structure
- *       as a placeholder. Full dynamic order support requires DofTable updates.
+ * Dynamic spaces use the DofTable topology produced for their effective order.
  */
 BOOST_AUTO_TEST_CASE( test_pch_dynamic_projection )
 {
@@ -1277,10 +1309,10 @@ BOOST_AUTO_TEST_CASE( test_pch_dynamic_projection )
 
     auto mesh = unitSquare();
 
-    // Create dynamic P1 space (P1 works correctly since placeholder DOF is P1)
+    // Create a dynamic P1 space.
     auto Vh = Pch<Dynamic>( mesh, RuntimeOrder( 1 ) );
     BOOST_CHECK( Vh->nDof() > 0 );
-    BOOST_CHECK_EQUAL( Vh->runtimeOrder(), 1 );
+    BOOST_CHECK_EQUAL( Vh->order(), 1 );
 
     // Project a function
     auto u = Vh->element();
@@ -1571,7 +1603,7 @@ BOOST_AUTO_TEST_CASE( test_lagrange_full_construction_debug )
     lagrange_p2_static_t lagrange_static;
     BOOST_TEST_MESSAGE( "  Static P2 Lagrange created successfully" );
     BOOST_TEST_MESSAGE( "  Static P2 nDof = " << lagrange_static.nDof );
-    BOOST_TEST_MESSAGE( "  Static P2 runtimeLocalDof() = " << lagrange_static.runtimeLocalDof() );
+    BOOST_TEST_MESSAGE( "  Static P2 localDof() = " << lagrange_static.localDof() );
     BOOST_TEST_MESSAGE( "  Static P2 coeff() shape: " << lagrange_static.coeff().size1() << " x " << lagrange_static.coeff().size2() );
 
     // Dynamic P2 Lagrange - this is where we expect the problem
@@ -1581,12 +1613,12 @@ BOOST_AUTO_TEST_CASE( test_lagrange_full_construction_debug )
     BOOST_TEST_MESSAGE( "  About to construct..." );
     lagrange_dyn_t lagrange_dynamic( RuntimeOrder( 2 ) );
     BOOST_TEST_MESSAGE( "  Dynamic P2 Lagrange created successfully!" );
-    BOOST_TEST_MESSAGE( "  Dynamic P2 runtimeLocalDof() = " << lagrange_dynamic.runtimeLocalDof() );
-    BOOST_TEST_MESSAGE( "  Dynamic P2 runtimeOrder() = " << lagrange_dynamic.runtimeOrder() );
+    BOOST_TEST_MESSAGE( "  Dynamic P2 localDof() = " << lagrange_dynamic.localDof() );
+    BOOST_TEST_MESSAGE( "  Dynamic P2 order() = " << lagrange_dynamic.order() );
     BOOST_TEST_MESSAGE( "  Dynamic P2 coeff() shape: " << lagrange_dynamic.coeff().size1() << " x " << lagrange_dynamic.coeff().size2() );
 
     // Check that both have the same number of DOFs
-    BOOST_CHECK_EQUAL( lagrange_static.runtimeLocalDof(), lagrange_dynamic.runtimeLocalDof() );
+    BOOST_CHECK_EQUAL( lagrange_static.localDof(), lagrange_dynamic.localDof() );
     BOOST_CHECK_EQUAL( lagrange_static.coeff().size1(), lagrange_dynamic.coeff().size1() );
     BOOST_CHECK_EQUAL( lagrange_static.coeff().size2(), lagrange_dynamic.coeff().size2() );
 
@@ -1612,8 +1644,8 @@ BOOST_AUTO_TEST_CASE( test_lagrange_full_construction_debug )
         BOOST_TEST_MESSAGE( "    " << oss.str() );
     }
 
-    BOOST_TEST_MESSAGE( "  Step 3b: Evaluating dynamic basis at points with runtimeOrder..." );
-    auto basis_eval_dynamic = lagrange_dynamic.basis().evaluate( pts, lagrange_dynamic.runtimeOrder() );
+    BOOST_TEST_MESSAGE( "  Step 3b: Evaluating dynamic basis at points with order..." );
+    auto basis_eval_dynamic = lagrange_dynamic.basis().evaluate( pts, lagrange_dynamic.order() );
     BOOST_TEST_MESSAGE( "  Dynamic basis eval shape: " << basis_eval_dynamic.size1() << " x " << basis_eval_dynamic.size2() );
     BOOST_TEST_MESSAGE( "  Dynamic basis row 0: " );
     {
@@ -1717,8 +1749,8 @@ BOOST_AUTO_TEST_CASE( test_lagrange_primal_static_vs_dynamic_basisEvaluate )
     using primal_dyn_t = typename lagrange_dyn_t::primal_space_type;
     primal_dyn_t primal_dynamic( RuntimeOrder( 2 ) );
 
-    BOOST_TEST_MESSAGE( "  Dynamic primal runtimeOrder() = " << primal_dynamic.runtimeOrder() );
-    BOOST_TEST_MESSAGE( "  Dynamic primal runtimeLocalDof() = " << primal_dynamic.runtimeLocalDof() );
+    BOOST_TEST_MESSAGE( "  Dynamic primal order() = " << primal_dynamic.order() );
+    BOOST_TEST_MESSAGE( "  Dynamic primal localDof() = " << primal_dynamic.localDof() );
     BOOST_TEST_MESSAGE( "  Dynamic primal is_order_dynamic = " << primal_dyn_t::is_order_dynamic );
 
     auto eval_dynamic = primal_dynamic.basisEvaluate( pts );
@@ -1752,6 +1784,41 @@ BOOST_AUTO_TEST_CASE( test_lagrange_primal_static_vs_dynamic_basisEvaluate )
 
     BOOST_TEST_MESSAGE( "  Max difference: " << max_diff );
     BOOST_CHECK_MESSAGE( all_match, "Lagrange primal basisEvaluate static vs dynamic should match" );
+}
+
+BOOST_AUTO_TEST_CASE( test_dynamic_extreme_value_uses_effective_local_cardinality )
+{
+    auto mesh = unitSquare();
+    auto staticP2 = Pch<2>( mesh );
+    auto dynamicP2 = Pch<Dynamic>( mesh, RuntimeOrder{ 2 } );
+    auto P0h = Pdh<0>( mesh );
+
+    auto staticField = staticP2->element();
+    auto dynamicField = dynamicP2->element();
+    BOOST_REQUIRE_EQUAL( staticField.nLocalDof(),
+                         dynamicField.nLocalDof() );
+    for ( size_type localDof = 0;
+          localDof < staticField.nLocalDof(); ++localDof )
+    {
+        const double value = static_cast<double>( localDof );
+        staticField( localDof ) = value;
+        dynamicField( localDof ) = value;
+    }
+
+    auto staticMax = staticField.max( P0h );
+    auto dynamicMax = dynamicField.max( P0h );
+    auto staticMin = staticField.min( P0h );
+    auto dynamicMin = dynamicField.min( P0h );
+    BOOST_REQUIRE_EQUAL( staticMax.nLocalDof(), dynamicMax.nLocalDof() );
+    BOOST_REQUIRE_EQUAL( staticMin.nLocalDof(), dynamicMin.nLocalDof() );
+    for ( size_type localDof = 0;
+          localDof < staticMax.nLocalDof(); ++localDof )
+    {
+        BOOST_CHECK_EQUAL( staticMax( localDof ),
+                           dynamicMax( localDof ) );
+        BOOST_CHECK_EQUAL( staticMin( localDof ),
+                           dynamicMin( localDof ) );
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -72,29 +72,27 @@ public:
         return 0;
     }
 
-    /** @return zero broken DoFs per vertex. */
-    [[nodiscard]] constexpr uint16_type dofPerVertex() const noexcept { return 0; }
-    /** @return zero broken DoFs per edge. */
-    [[nodiscard]] constexpr uint16_type dofPerEdge() const noexcept { return 0; }
-    /** @return zero broken DoFs per face. */
-    [[nodiscard]] constexpr uint16_type dofPerFace() const noexcept { return 0; }
-    /** @return all per-component DoFs on the cell. */
-    [[nodiscard]] uint16_type dofPerVolume() const noexcept { return this->localDofCount( true ); }
-
-    /** @return compatibility alias for dofPerVertex(). */
-    [[nodiscard]] constexpr uint16_type runtimeDofPerVertex() const noexcept { return 0; }
-    /** @return compatibility alias for dofPerEdge(). */
-    [[nodiscard]] constexpr uint16_type runtimeDofPerEdge() const noexcept { return 0; }
-    /** @return compatibility alias for dofPerFace(). */
-    [[nodiscard]] constexpr uint16_type runtimeDofPerFace() const noexcept { return 0; }
-    /** @return compatibility alias for dofPerVolume(). */
-    [[nodiscard]] uint16_type runtimeDofPerVolume() const noexcept { return dofPerVolume(); }
+    /** @return broken DoFs on a zero-dimensional cell, otherwise zero. */
+    [[nodiscard]] uint16_type dofPerVertex() const noexcept { return this->dofPerCellDimension( 0 ); }
+    /** @return broken DoFs on a one-dimensional cell, otherwise zero. */
+    [[nodiscard]] uint16_type dofPerEdge() const noexcept { return this->dofPerCellDimension( 1 ); }
+    /** @return broken DoFs on a two-dimensional cell, otherwise zero. */
+    [[nodiscard]] uint16_type dofPerFace() const noexcept { return this->dofPerCellDimension( 2 ); }
+    /** @return broken DoFs on a three-dimensional cell, otherwise zero. */
+    [[nodiscard]] uint16_type dofPerVolume() const noexcept { return this->dofPerCellDimension( 3 ); }
 
     /** @return identity because cell-local DoFs are never shared. */
     template<class Element>
     [[nodiscard]] DofTransform dofTransform( Element const&, uint16_type ) const
     {
         return DofTransform::identity();
+    }
+
+private:
+    /** @return all per-component DoFs only for the cell's own dimension. */
+    [[nodiscard]] uint16_type dofPerCellDimension( uint16_type entityDim ) const noexcept
+    {
+        return entityDim == super::nDim ? this->localDofCount( true ) : 0;
     }
 };
 } // namespace fem

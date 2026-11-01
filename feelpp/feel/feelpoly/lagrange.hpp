@@ -55,7 +55,8 @@ concept RuntimePointSet = requires( RuntimeOrder ro,
                                     PointSetT<ConvexType, Dynamic, ValueType> dyn_pset )
 {
     { PointSetT<ConvexType, Dynamic, ValueType>( ro ) };
-    { dyn_pset.runtimeNumPoints() } -> std::convertible_to<uint32_type>;
+    { dyn_pset.order() } -> std::convertible_to<uint16_type>;
+    { dyn_pset.nPoints() } -> std::convertible_to<uint32_type>;
     dyn_pset.points();
     dyn_pset.pointsBySubEntity( uint16_type{}, uint16_type{}, uint16_type{} );
 };
@@ -152,10 +153,10 @@ public:
 
         auto initFromPointSet = [&]( auto const& dyn_pset )
         {
-            const uint32_type runtime_numPoints = dyn_pset.runtimeNumPoints();
-            DVLOG(2) << " o- numPoints = " << runtime_numPoints << " (runtime)\n";
+            const uint32_type pointCount = dyn_pset.nPoints();
+            DVLOG(2) << " o- numPoints = " << pointCount << "\n";
 
-            M_pts.resize( nDim, runtime_numPoints );
+            M_pts.resize( nDim, pointCount );
             M_pts = dyn_pset.points();
             cacheSubEntityPoints( dyn_pset );
 
@@ -331,84 +332,31 @@ private:
 
 private:
     template<typename PointSetT>
-    uint16_type pointSetPtsPerVertex( PointSetT const& pset ) const
+    uint16_type pointSetPtsPerEntity( PointSetT const& pset,
+                                      uint16_type entityDim ) const
     {
-        if constexpr ( requires { pset.runtimeNbPtsPerVertex(); } )
-            return static_cast<uint16_type>( pset.runtimeNbPtsPerVertex() );
-        else if constexpr ( requires { PointSetT::is_order_dynamic; PointSetT::Dim; } )
+        using cardinality_type = std::conditional_t<
+            convex_type::is_simplex,
+            ::Feel::detail::SimplexCardinality,
+            ::Feel::detail::HypercubeCardinality>;
+        const uint16_type effectiveOrder = [&]()
         {
-            if constexpr ( PointSetT::is_order_dynamic && PointSetT::is_simplex )
-                return ::Feel::detail::simplexPerVertex( PointSetT::Dim, pset.order() );
-            else if constexpr ( PointSetT::is_order_dynamic )
-                return ::Feel::detail::hypercubePerVertex( PointSetT::Dim, pset.order() );
+            if constexpr ( requires { pset.order(); } )
+                return static_cast<uint16_type>( pset.order() );
             else
-                return static_cast<uint16_type>( PointSetT::nbPtsPerVertex );
-        }
-        else
-            return static_cast<uint16_type>( PointSetT::nbPtsPerVertex );
-    }
-
-    template<typename PointSetT>
-    uint16_type pointSetPtsPerEdge( PointSetT const& pset ) const
-    {
-        if constexpr ( requires { pset.runtimeNbPtsPerEdge(); } )
-            return static_cast<uint16_type>( pset.runtimeNbPtsPerEdge() );
-        else if constexpr ( requires { PointSetT::is_order_dynamic; PointSetT::Dim; } )
-        {
-            if constexpr ( PointSetT::is_order_dynamic && PointSetT::is_simplex )
-                return ::Feel::detail::simplexPerEdge( PointSetT::Dim, pset.order() );
-            else if constexpr ( PointSetT::is_order_dynamic )
-                return ::Feel::detail::hypercubePerEdge( PointSetT::Dim, pset.order() );
-            else
-                return static_cast<uint16_type>( PointSetT::nbPtsPerEdge );
-        }
-        else
-            return static_cast<uint16_type>( PointSetT::nbPtsPerEdge );
-    }
-
-    template<typename PointSetT>
-    uint16_type pointSetPtsPerFace( PointSetT const& pset ) const
-    {
-        if constexpr ( requires { pset.runtimeNbPtsPerFace(); } )
-            return static_cast<uint16_type>( pset.runtimeNbPtsPerFace() );
-        else if constexpr ( requires { PointSetT::is_order_dynamic; PointSetT::Dim; } )
-        {
-            if constexpr ( PointSetT::is_order_dynamic && PointSetT::is_simplex )
-                return ::Feel::detail::simplexPerFace( PointSetT::Dim, pset.order() );
-            else if constexpr ( PointSetT::is_order_dynamic )
-                return ::Feel::detail::hypercubePerFace( PointSetT::Dim, pset.order() );
-            else
-                return static_cast<uint16_type>( PointSetT::nbPtsPerFace );
-        }
-        else
-            return static_cast<uint16_type>( PointSetT::nbPtsPerFace );
-    }
-
-    template<typename PointSetT>
-    uint16_type pointSetPtsPerVolume( PointSetT const& pset ) const
-    {
-        if constexpr ( requires { pset.runtimeNbPtsPerVolume(); } )
-            return static_cast<uint16_type>( pset.runtimeNbPtsPerVolume() );
-        else if constexpr ( requires { PointSetT::is_order_dynamic; PointSetT::Dim; } )
-        {
-            if constexpr ( PointSetT::is_order_dynamic && PointSetT::is_simplex )
-                return ::Feel::detail::simplexPerVolume( PointSetT::Dim, pset.order() );
-            else if constexpr ( PointSetT::is_order_dynamic )
-                return ::Feel::detail::hypercubePerVolume( PointSetT::Dim, pset.order() );
-            else
-                return static_cast<uint16_type>( PointSetT::nbPtsPerVolume );
-        }
-        else
-            return static_cast<uint16_type>( PointSetT::nbPtsPerVolume );
+                return nOrder;
+        }();
+        return cardinality_type::onEntity(
+            nDim, entityDim, effectiveOrder );
     }
 
     template<typename PointSetT>
     uint16_type subEntityPointCount( PointSetT const& pset, uint16_type topodim ) const
     {
-        const auto ptsPerVertex = pointSetPtsPerVertex( pset );
-        const auto ptsPerEdge = pointSetPtsPerEdge( pset );
-        const auto ptsPerFace = pointSetPtsPerFace( pset );
-        const auto ptsPerVolume = pointSetPtsPerVolume( pset );
+        const auto ptsPerVertex = pointSetPtsPerEntity( pset, 0 );
+        const auto ptsPerEdge = pointSetPtsPerEntity( pset, 1 );
+        const auto ptsPerFace = pointSetPtsPerEntity( pset, 2 );
+        const auto ptsPerVolume = pointSetPtsPerEntity( pset, 3 );
 
         switch ( topodim )
         {
@@ -612,14 +560,6 @@ public:
     }
 
     /**
-     * @deprecated Use order() instead
-     */
-    [[nodiscard]] uint16_type runtimeOrder() const noexcept
-    {
-        return order();
-    }
-
-    /**
      * @brief Get total number of local DOFs (unified interface)
      */
     [[nodiscard]] constexpr uint16_type localDof() const noexcept
@@ -628,22 +568,16 @@ public:
         return nLocalDof;
     }
 
-    [[nodiscard]] uint16_type localDof() const noexcept
+    [[nodiscard]] uint16_type localDof() const
         requires is_dynamic_order<O>
     {
         const auto runtime_order = this->order();
         if constexpr ( convex_type::is_simplex )
-            return static_cast<uint16_type>( ::Feel::detail::simplexTotal( nDim, runtime_order ) );
+            return ::Feel::detail::checkedLocalIndexValue(
+                ::Feel::detail::simplexTotal( nDim, runtime_order ) );
         else
-            return static_cast<uint16_type>( ::Feel::detail::hypercubeTotal( nDim, runtime_order ) );
-    }
-
-    /**
-     * @deprecated Use localDof() instead
-     */
-    [[nodiscard]] uint16_type runtimeLocalDof() const noexcept
-    {
-        return localDof();
+            return ::Feel::detail::checkedLocalIndexValue(
+                ::Feel::detail::hypercubeTotal( nDim, runtime_order ) );
     }
 
     /**
@@ -665,14 +599,6 @@ public:
     }
 
     /**
-     * @deprecated Use dofPerVertex() instead
-     */
-    [[nodiscard]] uint16_type runtimeDofPerVertex() const noexcept
-    {
-        return dofPerVertex();
-    }
-
-    /**
      * @brief Get DOFs per edge (unified interface)
      */
     [[nodiscard]] constexpr uint16_type dofPerEdge() const noexcept
@@ -688,14 +614,6 @@ public:
             return ::Feel::detail::simplexPerEdge( nDim, this->order() );
         else
             return ::Feel::detail::hypercubePerEdge( nDim, this->order() );
-    }
-
-    /**
-     * @deprecated Use dofPerEdge() instead
-     */
-    [[nodiscard]] uint16_type runtimeDofPerEdge() const noexcept
-    {
-        return dofPerEdge();
     }
 
     /**
@@ -717,14 +635,6 @@ public:
     }
 
     /**
-     * @deprecated Use dofPerFace() instead
-     */
-    [[nodiscard]] uint16_type runtimeDofPerFace() const noexcept
-    {
-        return dofPerFace();
-    }
-
-    /**
      * @brief Get DOFs per volume (unified interface)
      */
     [[nodiscard]] constexpr uint16_type dofPerVolume() const noexcept
@@ -740,14 +650,6 @@ public:
             return ::Feel::detail::simplexPerVolume( nDim, this->order() );
         else
             return ::Feel::detail::hypercubePerVolume( nDim, this->order() );
-    }
-
-    /**
-     * @deprecated Use dofPerVolume() instead
-     */
-    [[nodiscard]] uint16_type runtimeDofPerVolume() const noexcept
-    {
-        return dofPerVolume();
     }
 
     //! @}
@@ -800,7 +702,8 @@ public:
      * @brief Constructor with runtime order
      *
      * For dynamic order types, this constructor specifies the actual polynomial order.
-     * For static order types, the RuntimeOrder is ignored (compile-time order is used).
+     * For static order types, it validates that the supplied value agrees with
+     * the compile-time order.
      *
      * @param order Runtime order specification
      */
@@ -821,15 +724,25 @@ private:
      */
     static dual_space_type buildDualSpace( RuntimeOrder order )
     {
+        order = validatedOrder<this_type>( order );
         if constexpr ( is_order_dynamic )
         {
+            if constexpr ( convex_type::is_simplex )
+                order = ::Feel::detail::validatedNodalOrder<
+                    ::Feel::detail::SimplexCardinality>( nDim, order,
+                                                         nComponents );
+            else
+                order = ::Feel::detail::validatedNodalOrder<
+                    ::Feel::detail::HypercubeCardinality>( nDim, order,
+                                                           nComponents );
+
             // Use runtime order for both primal and dual spaces
             primal_space_type primal( order );
             return dual_space_type( primal, order );
         }
         else
         {
-            // Static order: ignore RuntimeOrder and use compile-time order
+            // Static order was validated above; use compile-time construction.
             return dual_space_type( primal_space_type() );
         }
     }
@@ -846,7 +759,7 @@ private:
     {
         if ( is_tensor2symm )
         {
-            const auto localDof = runtimeLocalDof();
+            const auto localDof = this->localDof();
             M_unsymm2symm.resize( nComponents * localDof );
             for ( uint16_type l = 0; l < localDof; ++l )
             {
@@ -898,14 +811,14 @@ public:
 
     uint16_type localDofPerComponent() const override
     {
-        return runtimeLocalDof();
+        return localDof();
     }
 
     uint16_type localDofId( uint16_type parentLocalDofId, uint16_type component = 0 ) const override
     {
         FEELPP_ASSERT( component < nComponents )
             ( component )( parentLocalDofId )( nComponents ).error( "invalid component index" );
-        const uint16_type localDofPerComp = runtimeLocalDof();
+        const uint16_type localDofPerComp = localDof();
         FEELPP_ASSERT( parentLocalDofId < localDofPerComp )
             ( parentLocalDofId )( localDofPerComp ).error( "invalid parent local dof index" );
         return static_cast<uint16_type>( localDofPerComp * component + parentLocalDofId );
@@ -914,40 +827,40 @@ public:
     typename super::DofAttachment dofAttachment( uint16_type localDofId ) const override
     {
         const uint16_type parentLocalDofId = this->dofParent( localDofId );
-        const uint16_type nV = static_cast<uint16_type>( reference_convex_type::numVertices * runtimeDofPerVertex() );
-        const uint16_type nE = static_cast<uint16_type>( reference_convex_type::numEdges * runtimeDofPerEdge() );
-        const uint16_type nF = static_cast<uint16_type>( reference_convex_type::numFaces * runtimeDofPerFace() );
+        const uint16_type nV = static_cast<uint16_type>( reference_convex_type::numVertices * dofPerVertex() );
+        const uint16_type nE = static_cast<uint16_type>( reference_convex_type::numEdges * dofPerEdge() );
+        const uint16_type nF = static_cast<uint16_type>( reference_convex_type::numFaces * dofPerFace() );
 
-        if ( parentLocalDofId < nV && runtimeDofPerVertex() > 0 )
+        if ( parentLocalDofId < nV && dofPerVertex() > 0 )
         {
             return typename super::DofAttachment{
                 .entityDim = 0,
-                .entityId = static_cast<uint16_type>( parentLocalDofId / runtimeDofPerVertex() ),
-                .ordinal = static_cast<uint16_type>( parentLocalDofId % runtimeDofPerVertex() ),
+                .entityId = static_cast<uint16_type>( parentLocalDofId / dofPerVertex() ),
+                .ordinal = static_cast<uint16_type>( parentLocalDofId % dofPerVertex() ),
                 .kind = this->dofType( localDofId ) };
         }
 
         const uint16_type parentAfterVertex = static_cast<uint16_type>( parentLocalDofId - nV );
-        if ( parentAfterVertex < nE && runtimeDofPerEdge() > 0 )
+        if ( parentAfterVertex < nE && dofPerEdge() > 0 )
         {
             return typename super::DofAttachment{
                 .entityDim = 1,
-                .entityId = static_cast<uint16_type>( parentAfterVertex / runtimeDofPerEdge() ),
-                .ordinal = static_cast<uint16_type>( parentAfterVertex % runtimeDofPerEdge() ),
+                .entityId = static_cast<uint16_type>( parentAfterVertex / dofPerEdge() ),
+                .ordinal = static_cast<uint16_type>( parentAfterVertex % dofPerEdge() ),
                 .kind = this->dofType( localDofId ) };
         }
 
         const uint16_type parentAfterEdge = static_cast<uint16_type>( parentAfterVertex - nE );
-        if ( parentAfterEdge < nF && runtimeDofPerFace() > 0 )
+        if ( parentAfterEdge < nF && dofPerFace() > 0 )
         {
             return typename super::DofAttachment{
                 .entityDim = 2,
-                .entityId = static_cast<uint16_type>( parentAfterEdge / runtimeDofPerFace() ),
-                .ordinal = static_cast<uint16_type>( parentAfterEdge % runtimeDofPerFace() ),
+                .entityId = static_cast<uint16_type>( parentAfterEdge / dofPerFace() ),
+                .ordinal = static_cast<uint16_type>( parentAfterEdge % dofPerFace() ),
                 .kind = this->dofType( localDofId ) };
         }
 
-        const uint16_type nDofPerVolume = runtimeDofPerVolume();
+        const uint16_type nDofPerVolume = dofPerVolume();
         if ( nDofPerVolume > 0 )
         {
             const uint16_type parentAfterFace = static_cast<uint16_type>( parentAfterEdge - nF );
@@ -969,7 +882,7 @@ public:
     //! \return the component of a local dof
     uint16_type component( uint16_type localDofId ) const override
         {
-            const uint16_type localDofPerComp = runtimeLocalDof();
+            const uint16_type localDofPerComp = localDof();
             uint16_type comp = localDofId/localDofPerComp;
             DCHECK( comp < nComponents ) << "invalid localDofId " << localDofId;
             return comp;
@@ -978,7 +891,7 @@ public:
     //! \return a parent local dof id for each component (for example, the first component)
     uint16_type dofParent( uint16_type localDofId ) const override
         {
-            const uint16_type localDofPerComp = runtimeLocalDof();
+            const uint16_type localDofPerComp = localDof();
             uint16_type ldofParent = localDofId % localDofPerComp;
             return ldofParent;
         }
@@ -1018,8 +931,8 @@ public:
     local_interpolant_type
     localInterpolant( int n = 1 ) const
         {
-            // Use runtime local DOF count for dynamic order support
-            return local_interpolant_type::Zero( n*nComponents*runtimeLocalDof() );
+            // Use the effective local DOF count for both order modes.
+            return local_interpolant_type::Zero( n*nComponents*localDof() );
         }
 
     //!
@@ -1029,8 +942,8 @@ public:
     local_interpolants_type
     localInterpolants( int p, int n = 1 ) const
         {
-            // Use runtime local DOF count for dynamic order support
-            return local_interpolants_type::Zero( n*nComponents*runtimeLocalDof(), p );
+            // Use the effective local DOF count for both order modes.
+            return local_interpolants_type::Zero( n*nComponents*localDof(), p );
         }
 
     template<typename ExprType>
@@ -1039,8 +952,8 @@ public:
         {
             static_assert( nComponents1 == ExprType::shape::M, "INCOMPATIBLE_NUMBER_OF_COMPONENTS" );
             static_assert( nComponents2 == ExprType::shape::N, "INCOMPATIBLE_NUMBER_OF_COMPONENTS" );
-            // Use runtime local DOF count for dynamic order support
-            const int rtLocalDof = runtimeLocalDof();
+            // Use the effective local DOF count for both order modes.
+            const int rtLocalDof = localDof();
             for( int q = 0; q < rtLocalDof; ++q )
                 for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
                 {
@@ -1065,9 +978,9 @@ public:
     faceLocalInterpolant() const
         {
             const int rtLocalFaceDof =
-                face_type::numVertices * runtimeDofPerVertex() +
-                face_type::numEdges * runtimeDofPerEdge() +
-                face_type::numFaces * runtimeDofPerFace();
+                face_type::numVertices * dofPerVertex() +
+                face_type::numEdges * dofPerEdge() +
+                face_type::numFaces * dofPerFace();
             return local_interpolant_type::Zero( nComponents * rtLocalFaceDof, 1 );
         }
     template<typename ExprType>
@@ -1077,9 +990,9 @@ public:
             static_assert( nComponents1 == ExprType::shape::M, "INCOMPATIBLE_NUMBER_OF_COMPONENTS" );
             static_assert( nComponents2 == ExprType::shape::N, "INCOMPATIBLE_NUMBER_OF_COMPONENTS" );
             const int rtLocalFaceDof =
-                face_type::numVertices * runtimeDofPerVertex() +
-                face_type::numEdges * runtimeDofPerEdge() +
-                face_type::numFaces * runtimeDofPerFace();
+                face_type::numVertices * dofPerVertex() +
+                face_type::numEdges * dofPerEdge() +
+                face_type::numFaces * dofPerFace();
             for( int q = 0; q < rtLocalFaceDof; ++q )
                 for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
                 {
@@ -1104,8 +1017,8 @@ public:
     edgeLocalInterpolant() const
         {
             const int rtLocalEdgeDof =
-                edge_type::numVertices * runtimeDofPerVertex() +
-                edge_type::numEdges * runtimeDofPerEdge();
+                edge_type::numVertices * dofPerVertex() +
+                edge_type::numEdges * dofPerEdge();
             return local_interpolant_type::Zero( nComponents * rtLocalEdgeDof, 1 );
         }
     template<typename ExprType>
@@ -1115,8 +1028,8 @@ public:
             static_assert( nComponents1 == ExprType::shape::M, "INCOMPATIBLE_NUMBER_OF_COMPONENTS" );
             static_assert( nComponents2 == ExprType::shape::N, "INCOMPATIBLE_NUMBER_OF_COMPONENTS" );
             const int rtLocalEdgeDof =
-                edge_type::numVertices * runtimeDofPerVertex() +
-                edge_type::numEdges * runtimeDofPerEdge();
+                edge_type::numVertices * dofPerVertex() +
+                edge_type::numEdges * dofPerEdge();
             for( int q = 0; q < rtLocalEdgeDof; ++q )
                 for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
                 {
@@ -1140,7 +1053,7 @@ public:
     local_interpolant_type
     vertexLocalInterpolant() const
         {
-            return local_interpolant_type::Zero( nComponents * runtimeDofPerVertex(), 1 );
+            return local_interpolant_type::Zero( nComponents * dofPerVertex(), 1 );
         }
     template<typename ExprType>
     void
@@ -1148,7 +1061,7 @@ public:
         {
             static_assert( nComponents1 == ExprType::shape::M, "INCOMPATIBLE_NUMBER_OF_COMPONENTS" );
             static_assert( nComponents2 == ExprType::shape::N, "INCOMPATIBLE_NUMBER_OF_COMPONENTS" );
-            const int rtLocalVertexDof = runtimeDofPerVertex();
+            const int rtLocalVertexDof = dofPerVertex();
             for( int q = 0; q < rtLocalVertexDof; ++q )
                 for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
                 {
@@ -1230,7 +1143,7 @@ public:
         CHECK( ncomp1 > 0 );
         CHECK( Ihloc.rows() % ncomp1 == 0 ) << Ihloc.rows() << " % " << ncomp1;
         const int exprLocalDofPerComp = Ihloc.rows() / ncomp1;
-        const int localDofPerComp = runtimeLocalDof();
+        const int localDofPerComp = localDof();
         for( int q = 0; q < nPoints; ++q )
         {
             uint16_type q2 = mapExprPointToDofPoint[q];
@@ -1272,7 +1185,7 @@ public:
     void
     interpolateBasisFunction( ExprType&& expr, local_interpolants_type & Ihloc ) const
         {
-            std::vector<uint16_type> mapExprPointToDofPoint( runtimeLocalDof() );
+            std::vector<uint16_type> mapExprPointToDofPoint( localDof() );
             std::iota( mapExprPointToDofPoint.begin(), mapExprPointToDofPoint.end(), 0 );
             this->interpolateBasisFunction( expr, Ihloc, mapExprPointToDofPoint );
         }
@@ -1283,9 +1196,9 @@ public:
     interpolateBasisFunction( ExprType&& expr, local_interpolants_type & Ihloc ) const
         {
             int nPoints = expr.nPoints();
-            const uint16_type rtDofPerVertex = runtimeDofPerVertex();
-            const uint16_type rtDofPerEdge = runtimeDofPerEdge();
-            const uint16_type rtDofPerFace = runtimeDofPerFace();
+            const uint16_type rtDofPerVertex = dofPerVertex();
+            const uint16_type rtDofPerEdge = dofPerEdge();
+            const uint16_type rtDofPerFace = dofPerFace();
             const uint16_type rtLocalFacetDof =
                 static_cast<uint16_type>( face_type::numVertices * rtDofPerVertex +
                                           face_type::numEdges * rtDofPerEdge +

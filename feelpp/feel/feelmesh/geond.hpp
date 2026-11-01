@@ -35,6 +35,7 @@
 #include <feel/feelmesh/marker.hpp>
 #include <feel/feelmesh/meshbase.hpp>
 #include <feel/feelpoly/geomap.hpp>
+#include <feel/feelpoly/geometrypointtopology.hpp>
 #include <feel/feelpoly/im.hpp>
 #include <feel/feelpoly/order.hpp>
 
@@ -48,6 +49,10 @@ struct GT_Lagrange;
 
 template <class Convex, uint16_type O, typename T2>
 class Gauss;
+template <int Dim,
+          typename T,
+          template <int, int, int> class Entity>
+class IMGeneral;
 template <int IMORDER,
           int DIM,
           template <int, int, int> class Entity,
@@ -66,9 +71,18 @@ template <typename GeoShape>
 class ReversePoint
 {
   public:
-    uint16_type operate( uint16_type const& point )
+    /**
+     * @brief Map a point index to the reverse entity ordering.
+     * @param point point index in the forward ordering
+     * @param pointCount effective number of geometry points
+     */
+    uint16_type operate( uint16_type point,
+                         uint16_type pointCount ) const
     {
-        return ( point < GeoShape::numVertices ) ? GeoShape::numVertices - point : GeoShape::numPoints - point + GeoShape::numVertices;
+        return ( point < GeoShape::numVertices )
+                   ? GeoShape::numVertices - 1 - point
+                   : pointCount - 1 - point +
+                         GeoShape::numVertices;
     }
 };
 } // namespace detail
@@ -248,6 +262,44 @@ class GeoND
 
     typedef GEOSHAPE GeoShape;
     typedef POINTTYPE PointType;
+    using cardinality_type = std::conditional_t<
+        GeoShape::is_simplex,
+        Feel::detail::SimplexCardinality,
+        Feel::detail::HypercubeCardinality>;
+
+    /**
+     * @brief Map one edge-local geometry point to this entity's point table.
+     *
+     * Unlike the legacy static `eToP()` helper, this method uses the effective
+     * geometry order and therefore supports arbitrary runtime order.
+     *
+     * @param edge local edge number
+     * @param point edge-local point number
+     */
+    [[nodiscard]] uint16_type
+    localPointOnEdge( uint16_type edge, uint16_type point ) const
+    {
+        return geometry::GeometryPointTopology<GeoShape>::get(
+                   RuntimeOrder{ this->order() } )
+            .edgeToPoint( edge, point );
+    }
+
+    /**
+     * @brief Map one face-local geometry point to this entity's point table.
+     *
+     * The restriction is generated from the same equispaced point set as the
+     * geometric mapping, for both static and runtime orders.
+     *
+     * @param face local face number
+     * @param point face-local point number
+     */
+    [[nodiscard]] uint16_type
+    localPointOnFace( uint16_type face, uint16_type point ) const
+    {
+        return geometry::GeometryPointTopology<GeoShape>::get(
+                   RuntimeOrder{ this->order() } )
+            .faceToPoint( face, point );
+    }
 
     //typedef PointType point_type;
     typedef typename super::face_type face_type;
@@ -438,8 +490,8 @@ class GeoND
         using ptrtype = std::shared_ptr<type>;
     };
 
-    using gm_type = typename GetGm<nOrder>::type;
-    using gm_ptrtype = typename GetGm<nOrder>::ptrtype;
+    using gm_type = typename GetGm<nOrder_v>::type;
+    using gm_ptrtype = typename GetGm<nOrder_v>::ptrtype;
 
     using gm1_type = typename GetGm<1>::type;
     using gm1_ptrtype = typename GetGm<1>::ptrtype;
@@ -472,7 +524,16 @@ class GeoND
                                         typename IMGeneric<quad_order, Dim, Simplex, Gauss, value_type>::type>;
     };
 
-    using quad_meas_type = typename GetImMeasure<nOrder>::type;
+    using runtime_quad_meas_type =
+        std::conditional_t<
+            GeoShape::is_hypercube,
+            IMGeneral<Dim, value_type, Hypercube>,
+            IMGeneral<Dim, value_type, Simplex>>;
+    using quad_meas_type =
+        std::conditional_t<
+            is_order_dynamic,
+            runtime_quad_meas_type,
+            typename GetImMeasure<nOrder>::type>;
     using quad_meas1_type = typename GetImMeasure<1>::type;
 
     //-------------------------------------------------------------------------
@@ -483,43 +544,40 @@ class GeoND
      * @brief Get the polynomial order of the geometric entity.
      * @return The order (compile-time for static order, runtime for dynamic).
      */
-    [[nodiscard]] constexpr uint16_type order() const noexcept
+    [[nodiscard]] uint16_type order() const noexcept
     {
-        if constexpr ( is_order_static )
-            return nOrder;
-        else
-            return M_runtime_order;
+        if constexpr ( is_order_dynamic )
+        {
+            if ( M_commonData && M_commonData->mesh() )
+                return M_commonData->mesh()->geometryOrder();
+        }
+        return super::order();
     }
 
     /**
      * @brief Get the quadrature order for measure computation.
      * @return The quadrature order (accounts for runtime order if dynamic).
      */
-    [[nodiscard]] constexpr uint16_type measureQuadOrder() const noexcept
+    [[nodiscard]] constexpr uint16_type measureQuadOrder() const
     {
         if constexpr ( is_order_static )
             return meas_quad_order;
         else
-            return ( M_runtime_order >= 1 ) ? ( M_runtime_order - 1 ) * nDim : 0;
+            return ::Feel::detail::checkedLocalIndexValue(
+                static_cast<size_type>( this->order() - 1 ) * nDim );
     }
 
     /**
-     * @brief Get the number of points in the element (runtime-aware).
-     * @return The number of points.
+     * @brief Return the effective geometric point cardinality.
+     *
+     * The same expression is valid for static entities, detached dynamic
+     * entities, and dynamic entities attached to a mesh.
      */
-    [[nodiscard]] uint16_type nPointsRuntime() const noexcept
+    [[nodiscard]] uint16_type nPoints() const
     {
-        if constexpr ( is_order_static )
-            return numPoints;
-        else
-        {
-            if constexpr ( GeoShape::is_simplex )
-                return static_cast<uint16_type>( Feel::detail::simplexTotal( nDim, M_runtime_order ) );
-            else
-                return static_cast<uint16_type>( Feel::detail::hypercubeTotal( nDim, M_runtime_order ) );
-        }
+        return ::Feel::detail::checkedLocalIndexValue(
+            cardinality_type::total( nDim, this->order() ) );
     }
-
 
     /**
      * default constructor (static order only)
@@ -527,7 +585,7 @@ class GeoND
     GeoND() requires( is_order_static )
         : super( 0 ),
           super2( numTopologicalFaces ),
-          M_pointPointers( numPoints ),
+          M_pointPointers( computeNumPoints( nOrder ) ),
           M_commonData( nullptr )
     {
     }
@@ -538,12 +596,11 @@ class GeoND
      * @param runtime_order the polynomial order specified at runtime
      */
     explicit GeoND( RuntimeOrder runtime_order ) requires( is_order_dynamic )
-        : super( 0 ),
+        : super( 0, runtime_order ),
           super2( numTopologicalFaces ),
           M_pointPointers(
               computeNumPoints( runtime_order.value ) ),
-          M_commonData( nullptr ),
-          M_runtime_order( runtime_order.value )
+          M_commonData( nullptr )
     {
     }
 
@@ -551,10 +608,7 @@ class GeoND
     //! @brief Helper to compute number of points for dynamic order (used in initializer list)
     static constexpr size_type computeNumPoints( uint16_type order ) noexcept
     {
-        if constexpr ( GeoShape::is_simplex )
-            return Feel::detail::simplexTotal( nDim, order );
-        else
-            return Feel::detail::hypercubeTotal( nDim, order );
+        return cardinality_type::total( nDim, order );
     }
 
   public:
@@ -568,7 +622,7 @@ class GeoND
     explicit GeoND( size_type id ) requires( is_order_static )
         : super( id ),
           super2( numTopologicalFaces ),
-          M_pointPointers( numPoints ),
+          M_pointPointers( computeNumPoints( nOrder ) ),
           M_commonData( nullptr )
     {
     }
@@ -580,12 +634,11 @@ class GeoND
      * @param runtime_order the polynomial order specified at runtime
      */
     GeoND( size_type id, RuntimeOrder runtime_order ) requires( is_order_dynamic )
-        : super( id ),
+        : super( id, runtime_order ),
           super2( numTopologicalFaces ),
           M_pointPointers(
               computeNumPoints( runtime_order.value ) ),
-          M_commonData( nullptr ),
-          M_runtime_order( runtime_order.value )
+          M_commonData( nullptr )
     {
     }
 
@@ -595,8 +648,7 @@ class GeoND
           M_pointPointers( e.M_pointPointers ),
           M_neighbors( e.M_neighbors ),
           M_neighborsInitialized( e.M_neighborsInitialized ),
-          M_commonData( e.M_commonData ),
-          M_runtime_order( e.M_runtime_order )
+          M_commonData( e.M_commonData )
     {
     }
     GeoND( GeoND&& e ) noexcept
@@ -605,8 +657,7 @@ class GeoND
           M_pointPointers( std::move( e.M_pointPointers ) ),
           M_neighbors( std::move( e.M_neighbors ) ),
           M_neighborsInitialized( e.M_neighborsInitialized ),
-          M_commonData( std::move( e.M_commonData ) ),
-          M_runtime_order( std::move( e.M_runtime_order ) )
+          M_commonData( std::move( e.M_commonData ) )
     {
     }
 
@@ -620,8 +671,6 @@ class GeoND
         M_neighbors = e.M_neighbors;
         M_neighborsInitialized = e.M_neighborsInitialized;
         M_commonData = e.M_commonData;
-        if constexpr ( is_order_dynamic )
-            M_runtime_order = e.M_runtime_order;
         return *this;
     }
     GeoND& operator=( GeoND&& e )
@@ -632,8 +681,6 @@ class GeoND
         M_neighbors = std::move( e.M_neighbors );
         M_neighborsInitialized = e.M_neighborsInitialized;
         M_commonData = std::move( e.M_commonData );
-        if constexpr ( is_order_dynamic )
-            M_runtime_order = std::move( e.M_runtime_order );
         return *this;
     }
 
@@ -650,6 +697,11 @@ class GeoND
     void setCommonData( GeoNDCommon<self_type> * commonData )
     {
         M_commonData = commonData;
+        if constexpr ( is_order_dynamic )
+        {
+            if ( M_commonData && M_commonData->mesh() )
+                this->clearDetachedOrder();
+        }
         if ( this->canResolveCompactPoints() )
             M_pointPointers.reset();
     }
@@ -696,18 +748,10 @@ class GeoND
     bool hasPointWithMarker() const
     {
         for ( uint16_type point = 0;
-              point < this->nPointsRuntime(); ++point )
+              point < this->nPoints(); ++point )
             if ( this->point( point ).hasMarker() )
                 return true;
         return false;
-    }
-
-    /**
-     * \return the number of points in convex
-     */
-    uint16_type nPoints() const
-    {
-        return numPoints;
     }
 
     /**
@@ -789,7 +833,10 @@ class GeoND
      */
     node_type faceBarycenter( uint16_type f ) const
     {
-        constexpr int nPtsInFace = GEOSHAPE::topological_face_type::numPoints;
+        uint16_type const nPtsInFace =
+            geometry::GeometryPointTopology<GeoShape>::get(
+                RuntimeOrder{ this->order() } )
+                .pointsOnFace();
 
         node_type n( nRealDim );
         em_node_type<value_type> en( n.data().begin(), n.size() );
@@ -797,7 +844,7 @@ class GeoND
         for ( uint16_type p = 0; p < nPtsInFace; ++p )
         {
             // get pt id in element  from local pt id  in face
-            int ptid = this->fToP( f, p );
+            int ptid = this->localPointOnFace( f, p );
             auto const& node = this->point( ptid ).node();
             em_node_type<value_type> emnode( const_cast<typename point_type::value_type /*double*/*>( node.data().begin() ), node.size() );
             en += emnode;
@@ -955,7 +1002,8 @@ class GeoND
     point_type& reversepoint( uint16_type const i )
     {
         return this->point(
-            Feel::detail::ReversePoint<GEOSHAPE>().operate( i ) );
+            Feel::detail::ReversePoint<GEOSHAPE>().operate(
+                i, this->nPoints() ) );
     }
 
     /**
@@ -969,7 +1017,8 @@ class GeoND
     point_type const& reversepoint( uint16_type const i ) const
     {
         return this->point(
-            Feel::detail::ReversePoint<GEOSHAPE>().operate( i ) );
+            Feel::detail::ReversePoint<GEOSHAPE>().operate(
+                i, this->nPoints() ) );
     }
 
     /**
@@ -1020,8 +1069,10 @@ class GeoND
      */
     matrix_node_type G() const
     {
-        matrix_node_type G( nRealDim, numPoints );
-        for ( uint16_type i = 0; i < numPoints; ++i )
+        auto const pointCount =
+            this->nPoints();
+        matrix_node_type G( nRealDim, pointCount );
+        for ( uint16_type i = 0; i < pointCount; ++i )
             ublas::column( G, i ) = this->point( i ).node();
 
         return G;
@@ -1050,8 +1101,12 @@ class GeoND
     void updateG( TheNodesType & G,
                   std::enable_if_t<is_eigen_matrix_v<TheNodesType> >* = nullptr ) const
     {
-        DCHECK( nRealDim == G.rows() && G.cols() >= numPoints ) << "G is not compatible";
-        for ( uint16_type i = 0; i < numPoints; ++i )
+        auto const pointCount =
+            this->nPoints();
+        DCHECK( nRealDim == G.rows() &&
+                G.cols() >= pointCount )
+            << "G is not compatible";
+        for ( uint16_type i = 0; i < pointCount; ++i )
             G.col( i ) = em_fixed_size_cmatrix_t<nRealDim,1,value_type>(
                 this->point( i ).node().data().begin() );
     }
@@ -1324,7 +1379,8 @@ class GeoND
     std::set<size_type> pointElementNeighborIds() const
     {
         std::set<size_type> n;
-        for ( uint16_type __p = 0; __p < numPoints; ++__p )
+        for ( uint16_type __p = 0;
+              __p < this->nPoints(); ++__p )
         {
             auto const& point = this->point( __p );
             std::for_each( point.elements().begin(),
@@ -1342,9 +1398,16 @@ class GeoND
             {
                 gm_ptrtype gm = this->gm();
                 if ( !gm.use_count() )
-                    gm = gm_ptrtype( new gm_type );
+                {
+                    if constexpr ( is_order_dynamic )
+                        gm = std::make_shared<gm_type>(
+                            RuntimeOrder{ this->order() } );
+                    else
+                        gm = std::make_shared<gm_type>();
+                }
 
-                quad_meas_type thequad( meas_quad_order );
+                quad_meas_type thequad(
+                    this->measureQuadOrder() );
                 auto pc = gm->preCompute( gm, thequad.points() );
                 auto ctx = gm->template context<vm::JACOBIAN>( *this, pc );
                 return this->computeMeasureImpl( thequad, ctx );
@@ -1363,9 +1426,16 @@ class GeoND
             {
                 gm_ptrtype gm = this->gm();
                 if ( !gm.use_count() )
-                    gm = gm_ptrtype( new gm_type );
+                {
+                    if constexpr ( is_order_dynamic )
+                        gm = std::make_shared<gm_type>(
+                            RuntimeOrder{ this->order() } );
+                    else
+                        gm = std::make_shared<gm_type>();
+                }
 
-                quad_meas_type thequad( meas_quad_order );
+                quad_meas_type thequad(
+                    this->measureQuadOrder() );
                 auto pcf = gm->preComputeOnFaces( gm, thequad.allfpoints() );
                 auto ctxf = gm->template context<vm::NORMAL | vm::KB | vm::JACOBIAN>( *this, pcf, f );
                 return this->computeFaceMeasureImpl( thequad, ctxf, f );
@@ -1427,7 +1497,19 @@ class GeoND
     /**
      * @return a quadrature to compute the measure of the element
      */
-    static quad_meas_type imMeasure() { return quad_meas_type( meas_quad_order ); }
+    static quad_meas_type imMeasure()
+        requires( is_order_static )
+    {
+        return quad_meas_type( meas_quad_order );
+    }
+
+    /**
+     * @brief Return a measure quadrature at the effective geometry order.
+     */
+    [[nodiscard]] quad_meas_type measureQuadrature() const
+    {
+        return quad_meas_type( this->measureQuadOrder() );
+    }
 
     /**
      * @return a quadrature to compute the measure of the order 1 approximation
@@ -1471,7 +1553,7 @@ class GeoND
              !M_commonData->hasPointResolver() )
             return false;
         auto const ids = this->pointIds();
-        return ids.size() == this->nPointsRuntime() &&
+        return ids.size() == this->nPoints() &&
                std::ranges::none_of(
                    ids,
                    []( index_type id )
@@ -1489,7 +1571,7 @@ class GeoND
     void materializePointPointers() const
     {
         auto const pointCount =
-            this->nPointsRuntime();
+            this->nPoints();
         M_pointPointers.resize( pointCount );
         M_pointPointers.materialize();
 
@@ -1531,7 +1613,7 @@ class GeoND
         DVLOG( 2 ) << "  - points...\n";
         auto& pointPointers = this->pointPointers();
         for ( uint16_type i = 0;
-              i < this->nPointsRuntime(); ++i )
+              i < this->nPoints(); ++i )
         {
             if ( Archive::is_loading::value )
             {
@@ -1577,9 +1659,6 @@ class GeoND
     //! common data shared in a collection of multi-dimensional geometrical entity
     mutable GeoNDCommon<self_type> * M_commonData;
 
-    //! @brief Runtime order storage (only occupies space when is_order_dynamic is true)
-    [[no_unique_address]]
-    std::conditional_t<is_order_dynamic, uint16_type, std::monostate> M_runtime_order{};
 };
 
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE, bool UseMeasuresStorage>
@@ -1592,7 +1671,7 @@ GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage>::setPoint( uint16
         M_pointPointers[i] = std::addressof( p );
     }
     this->setConnectivityEntry(
-        i, p.id(), this->nPointsRuntime() );
+        i, p.id(), this->nPoints() );
 }
 
 template <uint16_type Dim, typename GEOSHAPE, typename T, typename IndexT, typename POINTTYPE, bool UseMeasuresStorage>
@@ -1603,7 +1682,8 @@ GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage>::showMe( bool ver
         << std::endl;
     out << " GeoND object of shape " << Shape << std::endl;
     out << " Number of Vertices = " << numVertices << std::endl;
-    out << "   Number of Points = " << numPoints << std::endl;
+    out << "   Number of Points = "
+        << this->nPoints() << std::endl;
     out << "                 id = " << this->id() << std::endl;
     out << "                  G = " << this->G() /*M_G*/ << "\n";
 
@@ -1636,7 +1716,8 @@ void GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage>::exchangePoi
     auto const current = this->pointIds();
     std::vector<index_type> connectivity(
         current.begin(), current.end() );
-    for ( uint16_type i = 0; i < numPoints; ++i )
+    for ( uint16_type i = 0;
+          i < this->nPoints(); ++i )
         connectivity[i] = current[otn[i]];
     this->setConnectivity( connectivity );
     M_pointPointers.reset();
@@ -1658,9 +1739,16 @@ void GeoND<Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage>::update()
 
     gm_ptrtype gm = this->gm();
     if ( !gm.use_count() )
-        gm = gm_ptrtype( new gm_type );
+    {
+        if constexpr ( is_order_dynamic )
+            gm = std::make_shared<gm_type>(
+                RuntimeOrder{ this->order() } );
+        else
+            gm = std::make_shared<gm_type>();
+    }
 
-    quad_meas_type thequad( meas_quad_order );
+    quad_meas_type thequad =
+        this->measureQuadrature();
     auto pc = gm->preCompute( gm, thequad.points() );
     auto pcf = gm->preComputeOnFaces( gm, thequad.allfpoints() );
 

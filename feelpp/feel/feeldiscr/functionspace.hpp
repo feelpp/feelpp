@@ -890,6 +890,7 @@ public:
     {
         typedef typename mpl::at_c<bases_list,N>::type type;
     };
+    using basis_descriptor_type = typename Basis<0>::type;
     typedef typename mpl::if_<mpl::bool_<is_composite>,
             mpl::identity<bases_list>,
             mpl::identity<basis_0_type> >::type::type basis_type;
@@ -1687,31 +1688,12 @@ public:
          */
         value_type orientedLocalCoefficient( index_type e, uint16_type l ) const
         {
-            if constexpr ( is_hcurl_conforming || is_hdiv_conforming )
-            {
-                auto const& transform = M_functionspace->dof()->localToGlobalTransform( e, l );
-                if ( transform.kind == DofTransformKind::Matrix )
+            return M_functionspace->dof()->localDofCoefficientFromCanonical(
+                e, l,
+                [this]( index_type index )
                 {
-                    auto const row = transform.matrixRowView();
-                    DCHECK( !row.empty() ) << "invalid dense dof transform row";
-                    uint16_type const first = static_cast<uint16_type>( l - transform.matrixRow );
-                    value_type result = 0;
-                    for ( uint16_type column = 0; column < row.size(); ++column )
-                    {
-                        auto const index = M_functionspace->dof()->localToGlobal( e, first + column ).index();
-                        result += static_cast<value_type>( row[column] ) * super::operator[]( index );
-                    }
-                    return result;
-                }
-                auto const index = M_functionspace->dof()->localToGlobal( e, l ).index();
-                return super::operator[]( index ) *
-                       M_functionspace->dof()->localToGlobalSigns( e )( l );
-            }
-            else
-            {
-                auto const index = M_functionspace->dof()->localToGlobal( e, l ).index();
-                return super::operator[]( index );
-            }
+                    return super::operator[]( index );
+                } );
         }
 #if 0
         value_type& localToGlobal( index_type e, index_type l, int c )
@@ -1893,18 +1875,22 @@ public:
             {
                 int N0 = M_functionspace->dof()->nRealLocalDof();
                 int N0c = M_functionspace->dof()->nRealLocalDof( true );
-                auto const& s = M_functionspace->dof()->localToGlobalSigns( e );
+                local_interpolant_type localCoefficients =
+                    std::forward<Tloc>( loc );
+                auto const canonicalCoefficients =
+                    this->canonicalLocalInterpolant( e, localCoefficients );
                     for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
                     {
                         index_type index = ldof.second.index();
                         if ( is_tensor2symm )
                         {
                             int i = M_functionspace->dof()->fe().unsymmToSymm(ldof.first.localDof());
-                            super::operator[]( index ) = s(i)*loc(i);
+                            super::operator[]( index ) = canonicalCoefficients(i);
                         }
                         else
                         {
-                            super::operator[]( index ) = s(ldof.first.localDof())*loc( ldof.first.localDof() );
+                            super::operator[]( index ) =
+                                canonicalCoefficients( ldof.first.localDof() );
                         }
                     }
             }
@@ -1928,18 +1914,8 @@ public:
                                    local_interpolant_type const& localCoefficients ) const
         {
             auto canonicalCoefficients = localCoefficients;
-            if ( M_functionspace->dof()->hasDenseDofTransform( e ) )
-            {
-                auto const transform =
-                    M_functionspace->dof()->localToGlobalCoefficientTransform( e );
-                canonicalCoefficients = transform.fullPivLu().solve( localCoefficients );
-            }
-            else
-            {
-                auto const& signs = M_functionspace->dof()->localToGlobalSigns( e );
-                for ( Eigen::Index i = 0; i < canonicalCoefficients.size(); ++i )
-                    canonicalCoefficients( i ) *= signs( i );
-            }
+            M_functionspace->dof()->mapLocalToCanonicalDofCoefficients(
+                e, canonicalCoefficients );
             return canonicalCoefficients;
         }
 
@@ -1957,18 +1933,48 @@ public:
          * @param localCoefficients coefficients in facet-local ordering
          * @return full element vector in canonical DoF-table coordinates
          */
+        template<typename LocalDofRange>
+        [[nodiscard]] local_interpolant_type
+        canonicalEntityLocalInterpolant(
+            index_type elementId,
+            local_interpolant_type const& localCoefficients,
+            LocalDofRange localDofs ) const
+        {
+            local_interpolant_type elementLocal = local_interpolant_type::Zero(
+                M_functionspace->dof()->nLocalDof() );
+            for ( auto const& localDof : localDofs )
+                elementLocal( localDof.localDof() ) =
+                    localCoefficients( localDof.localDofInFace() );
+            return this->canonicalLocalInterpolant( elementId, elementLocal );
+        }
+
         [[nodiscard]] local_interpolant_type
         canonicalFaceLocalInterpolant(
             geoface_type const& face,
             index_type elementId,
             local_interpolant_type const& localCoefficients ) const
         {
+            auto const localDofs =
+                M_functionspace->dof()->faceLocalDof( face.id() );
+            return this->canonicalEntityLocalInterpolant(
+                elementId, localCoefficients, localDofs );
+        }
+
+        [[nodiscard]] local_interpolant_type
+        canonicalPointLocalInterpolant(
+            index_type elementId,
+            uint16_type pointId,
+            local_interpolant_type const& localCoefficients ) const
+        {
             local_interpolant_type elementLocal = local_interpolant_type::Zero(
                 M_functionspace->dof()->nLocalDof() );
-            for ( auto const& localDof :
-                  M_functionspace->dof()->faceLocalDof( face.id() ) )
-                elementLocal( localDof.localDof() ) =
-                    localCoefficients( localDof.localDofInFace() );
+            for ( int component = 0;
+                  component < ( is_product ? nComponents : 1 ); ++component )
+            {
+                auto const localDof =
+                    M_functionspace->fe()->localDofId( pointId, component );
+                elementLocal( localDof ) = localCoefficients( component );
+            }
             return this->canonicalLocalInterpolant( elementId, elementLocal );
         }
 
@@ -2021,12 +2027,14 @@ public:
             {
                 const auto [ eid,edgeid_in_element ]  = eltsInfo;
 
-                auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
-                for( auto const& ldof : M_functionspace->dof()->edgeLocalDof( eid, edgeid_in_element ) )
+                auto const localDofs = M_functionspace->dof()->edgeLocalDof(
+                    eid, edgeid_in_element );
+                auto const canonicalIh = this->canonicalEntityLocalInterpolant(
+                    eid, Ihloc, localDofs );
+                for( auto const& ldof : localDofs )
                 {
                     index_type index= ldof.index();
-                    //super::operator[]( index ) = s(edgeid_in_element)*Ihloc( ldof.localDofInFace() );
-                    super::operator[]( index ) = Ihloc( ldof.localDofInFace() );
+                    super::operator[]( index ) = canonicalIh( ldof.localDof() );
                 }
             }
 
@@ -2043,11 +2051,14 @@ public:
             {
                 index_type eid = eltsInfo.first;
                 uint16_type ptid_in_element = eltsInfo.second;
-                auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
+                auto const canonicalIh = this->canonicalPointLocalInterpolant(
+                    eid, ptid_in_element, Ihloc );
                 for( int c = 0; c < (is_product?nComponents:1); ++c )
                 {
                     index_type index = M_functionspace->dof()->localToGlobal( eid, ptid_in_element, c ).index();
-                    super::operator[]( index ) = s(ptid_in_element)*Ihloc( c );
+                    auto const localDof =
+                        M_functionspace->fe()->localDofId( ptid_in_element, c );
+                    super::operator[]( index ) = canonicalIh( localDof );
                 }
             }
 
@@ -2101,11 +2112,14 @@ public:
         {
             index_type eid = eltsInfo.first;
             uint16_type edgeid_in_element = eltsInfo.second;
-            auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
-            for( auto const& ldof : M_functionspace->dof()->edgeLocalDof( eid, edgeid_in_element ) )
+            auto const localDofs = M_functionspace->dof()->edgeLocalDof(
+                eid, edgeid_in_element );
+            auto const canonicalIh = this->canonicalEntityLocalInterpolant(
+                eid, Ihloc, localDofs );
+            for( auto const& ldof : localDofs )
             {
                 index_type index= ldof.index();
-                super::operator[]( index ) += s(edgeid_in_element)*Ihloc( ldof.localDofInFace() );
+                super::operator[]( index ) += canonicalIh( ldof.localDof() );
             }
         }
 
@@ -2123,11 +2137,14 @@ public:
             {
                 index_type eid = eltsInfo.first;
                 uint16_type ptid_in_element = eltsInfo.second;
-                auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
+                auto const canonicalIh = this->canonicalPointLocalInterpolant(
+                    eid, ptid_in_element, Ihloc );
                 for( int c = 0; c < (is_product?nComponents:1); ++c )
                 {
                     index_type index = M_functionspace->dof()->localToGlobal( eid, ptid_in_element, c ).index();
-                    super::operator[]( index ) += s(ptid_in_element)*Ihloc( c );
+                    auto const localDof =
+                        M_functionspace->fe()->localDofId( ptid_in_element, c );
+                    super::operator[]( index ) += canonicalIh( localDof );
                 }
             }
 
@@ -2228,11 +2245,16 @@ public:
                 index_type eid = meshElt.id();
 
                 index_type dofp0 = P0h->dof()->localToGlobal( eid, 0, 0 ).index();
-                std::vector<value_type> values ( functionspace_type::fe_type::nLocalDof );
+                const size_type localDofCount =
+                    this->functionSpace()->fe()->localDof();
+                CHECK_GT( localDofCount, 0 )
+                    << "extremeValue requires a non-empty local FE layout";
+                std::vector<value_type> values( localDofCount );
 
                 index_type dofpn = 0;
 
-                for ( uint16_type local_id=0; local_id < functionspace_type::fe_type::nLocalDof; ++local_id )
+                for ( size_type local_id = 0;
+                      local_id < localDofCount; ++local_id )
                 {
                     dofpn = this->functionSpace()->dof()->localToGlobal( eid, local_id, 0 ).index();
                     values[local_id] = this->operator()( dofpn );
@@ -3876,6 +3898,26 @@ public:
      */
     //@{
 
+    /** @brief Default effective order used when no runtime tag is supplied. */
+    [[nodiscard]] static constexpr RuntimeOrder
+    defaultBasisOrder() noexcept
+    {
+        if constexpr ( is_composite )
+            return RuntimeOrder{ 0 };
+        else
+            return defaultOrder<basis_descriptor_type>();
+    }
+
+    /** @brief Reject a static/runtime order disagreement at the factory boundary. */
+    [[nodiscard]] static constexpr RuntimeOrder
+    validatedBasisOrder( RuntimeOrder order )
+    {
+        if constexpr ( is_composite )
+            return order;
+        else
+            return validatedOrder<basis_descriptor_type>( order );
+    }
+
     /**
      * \c FunctionSpace constructor
      *
@@ -3886,15 +3928,16 @@ public:
                    size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                    worldscomm_ptr_t const& _worldsComm = Environment::worldsComm(nSpaces),
                    std::vector<DofTableExtendedType> extendedDofTable = std::vector<DofTableExtendedType>(nSpaces,DofTableExtendedType::DEFAULT),
-                   RuntimeOrder runtime_order = RuntimeOrder{0},
+                   RuntimeOrder runtime_order = defaultBasisOrder(),
                    const std::string& name = "" )
         :
         super( name, _worldsComm[0]->clone() ),
         M_worldsComm( _worldsComm ),
-        M_extendedDofTableComposite( extendedDofTable ),
-        M_runtime_order( runtime_order )
+        M_extendedDofTableComposite( extendedDofTable )
     {
-        this->init( mesh, meshSupport, mesh_components );
+        this->init( mesh, meshSupport, mesh_components,
+                    std::vector<Dof<typename mesh_type::size_type>>{},
+                    validatedBasisOrder( runtime_order ) );
     }
 
     // Constructor
@@ -3909,7 +3952,8 @@ public:
         M_worldsComm( _worldsComm ),
         M_extendedDofTableComposite( extendedDofTable )
     {
-        this->init( mesh, meshSupport, 0, dofindices );
+        this->init( mesh, meshSupport, 0, dofindices,
+                    defaultBasisOrder() );
     }
 
     explicit FunctionSpace( worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
@@ -3935,7 +3979,8 @@ public:
         auto && extended_doftable = args.get_else(_extended_doftable,std::vector<DofTableExtendedType>(nSpaces,DofTableExtendedType::DEFAULT ) );
         auto && range = args.get_else(_range,mesh_support_vector_type());
         // Get runtime order (defaults to 0, used only when basis has is_order_dynamic)
-        RuntimeOrder runtime_order = args.get_else(_runtime_order, RuntimeOrder{0});
+        RuntimeOrder runtime_order = args.get_else(
+            _runtime_order, defaultBasisOrder() );
 
         auto cms = Feel::detail::createMeshSupport<functionspace_type>( mesh, range );
         std::vector<DofTableExtendedType> edt = Feel::detail::createInfoExtendedDofTable<functionspace_type>( extended_doftable );
@@ -3949,7 +3994,7 @@ public:
                                  worldscomm_ptr_t const& worldscomm = Environment::worldsComm(nSpaces),
                                  size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                                  std::vector<DofTableExtendedType> extendedDofTable = std::vector<DofTableExtendedType>(nSpaces,DofTableExtendedType::DEFAULT),
-                                 RuntimeOrder runtime_order = RuntimeOrder{0} )
+                                 RuntimeOrder runtime_order = defaultBasisOrder() )
     {
 
         return pointer_type( new functionspace_type( __m, meshSupport, mesh_components, worldscomm, extendedDofTable, runtime_order ) );
@@ -4004,13 +4049,17 @@ public:
     void init( mesh_ptrtype const& mesh,
                mesh_support_vector_type const& meshSupport,
                size_type mesh_components,
-               std::vector<Dof<typename mesh_type::size_type> > const& dofindices );
+               std::vector<Dof<typename mesh_type::size_type> > const& dofindices,
+               RuntimeOrder basisOrder );
 
     void init( mesh_ptrtype const& mesh,
                mesh_support_vector_type const& meshSupport,
-               size_type mesh_components = MESH_RENUMBER | MESH_CHECK )
+               size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
+               RuntimeOrder basisOrder = defaultBasisOrder() )
     {
-        this->init( mesh, meshSupport, mesh_components, std::vector<Dof<typename mesh_type::size_type> >() );
+        this->init( mesh, meshSupport, mesh_components,
+                    std::vector<Dof<typename mesh_type::size_type> >(),
+                    basisOrder );
     }
 
 
@@ -4421,7 +4470,7 @@ public:
     }
     std::vector<int> basisOrder( mpl::bool_<false> ) const
     {
-        return { basis_type::nOrder };
+        return { static_cast<int>( this->order() ) };
     }
 
     /**
@@ -4432,27 +4481,20 @@ public:
      */
     [[nodiscard]] uint16_type order() const noexcept
     {
-        if constexpr ( !is_composite && requires( basis_type const& fe ) { fe.order(); } )
+        if constexpr ( !is_composite )
         {
             if ( M_ref_fe )
                 return M_ref_fe->order();
         }
         if constexpr ( orderIsDynamic<basis_type> )
         {
-            return M_runtime_order.value;
+            return defaultBasisOrder().value;
         }
         else
         {
-            return basis_type::nOrder;
+            return static_cast<uint16_type>(
+                staticOrderValue<basis_descriptor_type>() );
         }
-    }
-
-    /**
-     * @deprecated Use order() instead.
-     */
-    [[nodiscard]] uint16_type runtimeOrder() const noexcept
-    {
-        return order();
     }
 
     /**
@@ -5366,7 +5408,8 @@ public:
 
             std::vector<index_type> mappingWithFile( dof->nLocalDofWithGhost(), invalid_v<index_type> );
             uint16_type nVerticesInElt = mesh_type::element_type::numVertices;
-            uint16_type nDofByElt = dof_type::nDofPerElement;
+            const uint16_type nDofByElt =
+                static_cast<uint16_type>( dof->nLocalDof() );
             for ( size_type k=0; k<dataReaded.size(); )
             {
                 index_type eltId = dataReaded[k++];
@@ -5412,7 +5455,6 @@ public:
         M_dofOnOff( __fe.M_dofOnOff ),
         M_extendedDofTableComposite( __fe.M_extendedDofTableComposite ),
         M_rt( __fe.M_rt ),
-        M_runtime_order( __fe.M_runtime_order ),
         M_legacyComposite( __fe.M_legacyComposite )
     {
         DVLOG(2) << "copying FunctionSpace\n";
@@ -5712,9 +5754,6 @@ protected:
     /** region tree associated with the mesh */
     mutable boost::optional<region_tree_ptrtype> M_rt;
 
-    //! Runtime order for dynamic order bases (used when basis_type::is_order_dynamic is true)
-    RuntimeOrder M_runtime_order{0};
-
     //mutable boost::prof::basic_profiler<boost::prof::basic_profile_manager<std::string, real_type, boost::high_resolution_timer, boost::prof::empty_logging_policy, boost::prof::default_stats_policy<std::string, real_type> > > M_prof_find_points;
 private:
 
@@ -5735,7 +5774,8 @@ void
 FunctionSpace<A0, A1, A2, A3>::init( mesh_ptrtype const& __m,
                                          mesh_support_vector_type const& meshSupport,
                                          size_type mesh_components,
-                                         std::vector<Dof<typename mesh_type::size_type>> const& dofindices )
+                                         std::vector<Dof<typename mesh_type::size_type>> const& dofindices,
+                                         RuntimeOrder basisOrder )
 {
     Feel::Context ctx( mesh_components );
     DVLOG( 2 ) << "component     MESH_RENUMBER: " << ctx.test( MESH_RENUMBER ) << "\n";
@@ -5755,7 +5795,8 @@ FunctionSpace<A0, A1, A2, A3>::init( mesh_ptrtype const& __m,
         // Dynamic-order bases own their runtime local layout through this instance.
         if constexpr ( requires { basis_type::is_order_dynamic; } && basis_type::is_order_dynamic )
         {
-            M_ref_fe = std::make_shared<basis_type>( M_runtime_order );
+            M_ref_fe = std::make_shared<basis_type>(
+                validatedBasisOrder( basisOrder ) );
         }
         else
         {
@@ -5768,25 +5809,13 @@ FunctionSpace<A0, A1, A2, A3>::init( mesh_ptrtype const& __m,
                 return false;
             else
             {
-                if ( M_ref_fe )
-                {
-                    if constexpr ( requires( reference_element_ptrtype const& fe, uint16_type entity, bool perComponent )
-                                   {
-                                       fe->localDofCountOnEntity( entity, entity, perComponent );
-                                   } && requires { basis_type::reference_convex_type::numEdges; } )
-                    {
-                        for ( uint16_type localEdge = 0; localEdge < basis_type::reference_convex_type::numEdges; ++localEdge )
-                            if ( M_ref_fe->localDofCountOnEntity( 1, localEdge, true ) != 0 )
-                                return true;
-                    }
-                    else if constexpr ( requires( reference_element_ptrtype const& fe ) { fe->dofPerEdge(); } )
-                        return M_ref_fe->dofPerEdge() != 0;
-                }
-
-                if constexpr ( requires { basis_type::nDofPerEdge; } )
-                    return basis_type::nDofPerEdge != 0;
-                else
-                    return false;
+                CHECK( M_ref_fe );
+                for ( uint16_type localEdge = 0;
+                      localEdge < basis_type::reference_convex_type::numEdges;
+                      ++localEdge )
+                    if ( M_ref_fe->localDofCountOnEntity( 1, localEdge, true ) != 0 )
+                        return true;
+                return false;
             }
         };
 
@@ -5796,25 +5825,13 @@ FunctionSpace<A0, A1, A2, A3>::init( mesh_ptrtype const& __m,
                 return false;
             else
             {
-                if ( M_ref_fe )
-                {
-                    if constexpr ( requires( reference_element_ptrtype const& fe, uint16_type facet, bool perComponent )
-                                   {
-                                       fe->localDofCountOnFacet( facet, perComponent );
-                                   } && requires { basis_type::reference_convex_type::numFaces; } )
-                    {
-                        for ( uint16_type localFacet = 0; localFacet < basis_type::reference_convex_type::numFaces; ++localFacet )
-                            if ( M_ref_fe->localDofCountOnFacet( localFacet, true ) != 0 )
-                                return true;
-                    }
-                    else if constexpr ( requires( reference_element_ptrtype const& fe ) { fe->dofPerFace(); } )
-                        return M_ref_fe->dofPerFace() != 0;
-                }
-
-                if constexpr ( requires { basis_type::nDofPerFace; } )
-                    return basis_type::nDofPerFace != 0;
-                else
-                    return false;
+                CHECK( M_ref_fe );
+                for ( uint16_type localFacet = 0;
+                      localFacet < basis_type::reference_convex_type::numFaces;
+                      ++localFacet )
+                    if ( M_ref_fe->localDofCountOnFacet( localFacet, true ) != 0 )
+                        return true;
+                return false;
             }
         };
 
@@ -6158,7 +6175,7 @@ void FunctionSpace<A0, A1, A2, A3>::updateInformationObject( nl::json& p ) const
                                             { "nComponents", nComponents },
                                             { "nComponents1", nComponents1 },
                                             { "nComponents2", nComponents2 },
-                                            { "nLocalDof", fe_type::nLocalDof } } ) );
+                                            { "nLocalDof", M_ref_fe->localDof() } } ) );
             if ( is_tensor2symm )
                 p["/basis/nRealComponents"_json_pointer] = nRealComponents;
         }

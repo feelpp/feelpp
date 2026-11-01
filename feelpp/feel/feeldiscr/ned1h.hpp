@@ -16,6 +16,7 @@
 
 #include <feel/feelpoly/nedelec.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelpoly/fecapabilities.hpp>
 #include <feel/feelpoly/order.hpp>
 
 namespace Feel {
@@ -50,6 +51,7 @@ Ned1h( std::shared_ptr<MeshType> const& mesh,
        RuntimeOrder order,
        DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
 {
+    fe::requireCapability<fe::Family::NedelecFirstKind>( *mesh, order );
     typedef typename meta::Ned1h<MeshType,Order,T>::type space_type;
     return space_type::New( _mesh=mesh,
                             _worldscomm=makeWorldsComm( 1, mesh->worldCommPtr() ),

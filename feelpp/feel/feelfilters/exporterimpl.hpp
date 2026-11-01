@@ -197,6 +197,11 @@ Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix,
     if ( !exporter )
     {
         LOG(INFO) << "[Exporter] The exporter format " << exportername << " Cannot be found. Falling back to Ensight exporter." << std::endl;
+#if defined(FEELPP_HAS_MPIIO)
+        if constexpr ( N <= 2 )
+            exporter = std::make_shared<ExporterEnsightGold<MeshType, N>>( worldComm );
+        else
+#endif
         exporter = std::make_shared<ExporterEnsight<MeshType, N>>( worldComm );
     }
 
@@ -258,6 +263,11 @@ Exporter<MeshType, N>::New( std::string prefix, worldcomm_ptr_t const& worldComm
     if ( !exporter )
     {
         LOG(INFO) << "[Exporter] The exporter format " << estr << " Cannot be found. Falling back to Ensight exporter." << std::endl;
+#if defined(FEELPP_HAS_MPIIO)
+        if constexpr ( N <= 2 )
+            exporter = std::make_shared<ExporterEnsightGold<MeshType, N>>( prefix, worldComm );
+        else
+#endif
         exporter = std::make_shared<ExporterEnsight<MeshType, N>>( prefix, worldComm );
     }
 

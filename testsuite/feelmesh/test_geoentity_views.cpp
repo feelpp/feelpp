@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE( stored_entities_use_lazy_point_facades )
         {
             BOOST_CHECK( !element.hasPointPointerCache() );
             for ( uint16_type localPoint = 0;
-                  localPoint < element.nPointsRuntime();
+                  localPoint < element.nPoints();
                   ++localPoint )
                 BOOST_CHECK_EQUAL(
                     element.point( localPoint ).id(),
@@ -354,16 +354,16 @@ BOOST_AUTO_TEST_CASE( entity_views_rebind_after_mesh_restart )
         archive << *mesh;
     }
 
-    test_mesh_type restored;
+    auto restored = test_mesh_type::New();
     {
         boost::archive::binary_iarchive archive( stream );
-        archive >> restored;
+        archive >> *restored;
     }
 
     auto const restoredView =
-        restored.elementView( sourceElementId );
+        restored->elementView( sourceElementId );
     auto const& restoredElement =
-        restored.element( sourceElementId );
+        restored->element( sourceElementId );
     BOOST_CHECK( !restoredElement.hasPointPointerCache() );
     BOOST_CHECK_EQUAL_COLLECTIONS(
         restoredView.pointIds().begin(),

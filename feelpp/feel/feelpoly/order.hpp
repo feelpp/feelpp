@@ -42,10 +42,12 @@ inline constexpr int Dynamic = -1;
 template <int N>
 struct order_t
 {
+    /** Unmodified compile-time order specification. */
+    static constexpr int order_spec = N;
     /** Compile-time order carried by the tag. */
-    static constexpr int value = N;
+    static constexpr int value = order_spec;
     /** Whether this tag denotes runtime order. */
-    static constexpr bool is_dynamic = (N == Dynamic);
+    static constexpr bool is_dynamic = (order_spec == Dynamic);
     /** Whether this tag denotes compile-time order. */
     static constexpr bool is_static = !is_dynamic;
 };
@@ -108,8 +110,10 @@ class OrderBase
     static_assert( Order >= 0, "OrderBase static order must be non-negative" );
 
   public:
-    /** Compile-time polynomial order. */
-    static constexpr int nOrder = Order;
+    /** Authoritative, unmodified template order specification. */
+    static constexpr int order_spec = Order;
+    /** Compatibility alias for the compile-time polynomial order. */
+    static constexpr int nOrder = order_spec;
     /** Static-order policies never carry runtime order. */
     static constexpr bool is_order_dynamic = false;
     /** Static-order policies expose their order at compile time. */
@@ -118,22 +122,30 @@ class OrderBase
     /** @brief Construct the compile-time order policy. */
     constexpr OrderBase() noexcept = default;
     /**
-     * @brief Accept a runtime tag without changing a compile-time order.
+     * @brief Validate a runtime tag against the compile-time order.
      *
-     * This overload permits generic policy-based construction while retaining
-     * the compile-time order as the single source of truth.
+     * This overload permits generic policy-based construction without silently
+     * accepting a configuration value that disagrees with the static type.
+     * Static order remains storage-free and is still the single source of
+     * truth.
+     *
+     * @throws std::invalid_argument when the supplied order differs from
+     * `Order`.
      */
-    constexpr explicit OrderBase( RuntimeOrder /*unused*/ ) noexcept {}
+    constexpr explicit OrderBase( RuntimeOrder runtimeOrder )
+    {
+        if ( runtimeOrder.value != static_cast<uint16_type>( Order ) )
+            throw std::invalid_argument(
+                "RuntimeOrder disagrees with compile-time order" );
+    }
 
     /** @brief Return the compile-time order as the common unsigned order type. */
     [[nodiscard]] static constexpr uint16_type staticOrder() noexcept
     {
-        return static_cast<uint16_type>( Order );
+        return static_cast<uint16_type>( order_spec );
     }
     /** @brief Return the effective polynomial order. */
     [[nodiscard]] constexpr uint16_type order() const noexcept { return staticOrder(); }
-    /** @brief Return the effective order through the uniform runtime API. */
-    [[nodiscard]] constexpr uint16_type runtimeOrder() const noexcept { return order(); }
 };
 
 /**
@@ -143,8 +155,10 @@ template <>
 class OrderBase<Dynamic>
 {
   public:
-    /** Dynamic-order sentinel. */
-    static constexpr int nOrder = Dynamic;
+    /** Authoritative, unmodified template order specification. */
+    static constexpr int order_spec = Dynamic;
+    /** Compatibility alias for the dynamic-order sentinel. */
+    static constexpr int nOrder = order_spec;
     /** Dynamic policies carry an order in each object. */
     static constexpr bool is_order_dynamic = true;
     /** Dynamic policies do not expose a concrete compile-time order. */
@@ -164,8 +178,6 @@ class OrderBase<Dynamic>
 
     /** @brief Return the effective polynomial order. */
     [[nodiscard]] constexpr uint16_type order() const noexcept { return M_runtimeOrder.value; }
-    /** @brief Return the effective order through the uniform runtime API. */
-    [[nodiscard]] constexpr uint16_type runtimeOrder() const noexcept { return order(); }
 
   protected:
     /** @brief Replace the stored runtime order with a validated tag. */
@@ -202,6 +214,90 @@ inline constexpr bool orderIsDynamic =
 template <typename T>
 inline constexpr bool orderIsStatic = !orderIsDynamic<T>;
 
+/**
+ * @brief Return the public compile-time order exposed by an order-aware type.
+ *
+ * Public FE shells use `nOrder_v`, common order policies use `order_spec`, and
+ * legacy static providers expose only `nOrder`. Keeping that compatibility
+ * priority here prevents consumers from repeating it.
+ */
+template <typename T>
+[[nodiscard]] consteval int
+staticOrderValue()
+{
+    using type = std::remove_cvref_t<T>;
+    static_assert( orderIsStatic<type>,
+                   "staticOrderValue requires a compile-time-order type" );
+
+    if constexpr ( requires { type::nOrder_v; } )
+        return type::nOrder_v;
+    else if constexpr ( requires { type::order_spec; } )
+        return type::order_spec;
+    else
+    {
+        static_assert( requires { type::nOrder; },
+                       "static order provider exposes no order metadata" );
+        return type::nOrder;
+    }
+}
+
+/** @brief Return the default construction order for a static/dynamic type. */
+template <typename T>
+[[nodiscard]] constexpr RuntimeOrder
+defaultOrder() noexcept
+{
+    if constexpr ( orderIsDynamic<T> )
+        return RuntimeOrder{ 0 };
+    else
+        return RuntimeOrder{
+            static_cast<uint16_type>( staticOrderValue<T>() ) };
+}
+
+/**
+ * @brief Validate an effective order against an order-aware type.
+ *
+ * Dynamic types retain the supplied value. Static types require equality with
+ * their public compile-time order and remain storage-free.
+ */
+template <typename T>
+[[nodiscard]] constexpr RuntimeOrder
+validatedOrder( RuntimeOrder order )
+{
+    if constexpr ( orderIsStatic<T> )
+    {
+        if ( order.value !=
+             static_cast<uint16_type>( staticOrderValue<T>() ) )
+            throw std::invalid_argument(
+                "RuntimeOrder disagrees with compile-time order" );
+    }
+    return order;
+}
+
+/**
+ * @brief Construct an order-aware object without duplicating static/dynamic
+ * dispatch.
+ *
+ * Runtime-order types receive the effective order explicitly. Compile-time
+ * types retain their default construction and therefore carry no runtime
+ * storage or branch.
+ *
+ * @tparam T object type exposing the common order policy
+ * @param order effective order, validated for compile-time types
+ * @return an object initialized consistently with its order policy
+ */
+template <typename T>
+[[nodiscard]] T
+makeOrderAware( RuntimeOrder order )
+{
+    if constexpr ( orderIsDynamic<T> )
+        return T{ order };
+    else
+    {
+        (void)validatedOrder<T>( order );
+        return T{};
+    }
+}
+
 namespace detail
 {
 constexpr size_type powInt( size_type base, int exp )
@@ -224,12 +320,116 @@ constexpr size_type binomial( int n, int k )
     return result;
 }
 
+/** Shape selection for the shared nodal-cardinality kernel. */
+enum class NodalCellKind
+{
+    Simplex,
+    Hypercube
+};
+
+/**
+ * @brief Stateless cardinality formulas shared by static and dynamic layouts.
+ *
+ * Shape-independent validation, P0 placement, and entity dispatch live once
+ * here. The `if constexpr` branches contain only the two genuinely different
+ * mathematical formulas.
+ */
+template<NodalCellKind CellKind>
+struct NodalCardinality
+{
+    [[nodiscard]] static constexpr size_type total( int cellDim, int order ) noexcept
+    {
+        if ( cellDim < 0 || order < 0 )
+            return 0;
+        if constexpr ( CellKind == NodalCellKind::Simplex )
+            return binomial( cellDim + order, cellDim );
+        else
+            return powInt( static_cast<size_type>( order + 1 ), cellDim );
+    }
+
+    [[nodiscard]] static constexpr uint16_type onEntity(
+        int cellDim, int entityDim, int order ) noexcept
+    {
+        if ( cellDim < 0 || entityDim < 0 || entityDim > cellDim || order < 0 )
+            return 0;
+        if ( order == 0 )
+            return entityDim == cellDim ? 1 : 0;
+        if ( entityDim == 0 )
+            return 1;
+
+        if constexpr ( CellKind == NodalCellKind::Simplex )
+        {
+            if ( order <= entityDim )
+                return 0;
+            return static_cast<uint16_type>( binomial( order - 1, entityDim ) );
+        }
+        else
+        {
+            if ( order < 2 )
+                return 0;
+            return static_cast<uint16_type>(
+                powInt( static_cast<size_type>( order - 1 ), entityDim ) );
+        }
+    }
+
+    [[nodiscard]] static constexpr uint16_type perVertex( int cellDim, int order ) noexcept
+    {
+        return onEntity( cellDim, 0, order );
+    }
+    [[nodiscard]] static constexpr uint16_type perEdge( int cellDim, int order ) noexcept
+    {
+        return onEntity( cellDim, 1, order );
+    }
+    [[nodiscard]] static constexpr uint16_type perFace( int cellDim, int order ) noexcept
+    {
+        return onEntity( cellDim, 2, order );
+    }
+    [[nodiscard]] static constexpr uint16_type perVolume( int cellDim, int order ) noexcept
+    {
+        return onEntity( cellDim, 3, order );
+    }
+};
+
+using SimplexCardinality = NodalCardinality<NodalCellKind::Simplex>;
+using HypercubeCardinality = NodalCardinality<NodalCellKind::Hypercube>;
+
+/** Largest point/DoF cardinality addressable by the local-index API. */
+inline constexpr size_type maxLocalIndexCardinality =
+    std::numeric_limits<uint16_type>::max();
+
+/**
+ * @brief Narrow a derived count only after checking the local-index range.
+ * @throws std::length_error when `value` cannot be represented by
+ * `uint16_type`.
+ */
+[[nodiscard]] constexpr uint16_type
+checkedLocalIndexValue( size_type value )
+{
+    if ( value > maxLocalIndexCardinality )
+        throw std::length_error(
+            "Derived point/DoF count exceeds the uint16_type local-index limit" );
+    return static_cast<uint16_type>( value );
+}
+
+/**
+ * @brief Validate that a nodal order fits the local point/DoF index model.
+ */
+template <typename Cardinality>
+[[nodiscard]] constexpr RuntimeOrder
+validatedNodalOrder( int cellDim, RuntimeOrder order,
+                     size_type components = 1 )
+{
+    (void)checkedLocalIndexValue(
+        components * Cardinality::total( cellDim, order.value ) );
+    return order;
+}
+
 template <int Dim, int Order>
 constexpr size_type simplexDofStatic()
 {
     static_assert( Dim >= 0, "Dimension must be non-negative" );
     static_assert( Order >= 0, "Order must be non-negative" );
-    return binomial( Dim + Order, Dim );
+    return SimplexCardinality::total( Dim, Order );
 }
 
 template <int Dim, int Order>
@@ -237,191 +437,79 @@ constexpr size_type hypercubeDofStatic()
 {
     static_assert( Dim >= 0, "Dimension must be non-negative" );
     static_assert( Order >= 0, "Order must be non-negative" );
-    return powInt( static_cast<size_type>( Order + 1 ), Dim );
+    return HypercubeCardinality::total( Dim, Order );
 }
 
 template <int Dim>
-inline size_type simplexDofDynamic( int order )
+constexpr size_type simplexDofDynamic( int order ) noexcept
 {
-    if ( order < 0 )
-        return 0;
-    return binomial( Dim + order, Dim );
+    return SimplexCardinality::total( Dim, order );
 }
 
 template <int Dim>
-inline size_type hypercubeDofDynamic( int order )
+constexpr size_type hypercubeDofDynamic( int order ) noexcept
 {
-    if ( order < 0 )
-        return 0;
-    return powInt( static_cast<size_type>( order + 1 ), Dim );
+    return HypercubeCardinality::total( Dim, order );
 }
 
-//
-// Runtime point calculations for dynamic-order simplices
-//
-
-/**
- * @brief Compute number of points for simplex of given dimension and order.
- */
-constexpr size_type simplexTotal( uint16_type dim, uint16_type order )
+constexpr size_type simplexTotal( uint16_type dim, uint16_type order ) noexcept
 {
-    if ( order == 0 )
-        return 1;
-    switch ( dim )
-    {
-    case 0:
-        return 1;
-    case 1:
-        return order + 1;
-    case 2:
-        return ( order + 1 ) * ( order + 2 ) / 2;
-    case 3:
-        return ( order + 1 ) * ( order + 2 ) * ( order + 3 ) / 6;
-    default:
-        return 0;
-    }
+    return SimplexCardinality::total( dim, order );
 }
 
-/**
- * @brief Points per vertex for simplex.
- *
- * For 0D simplex, P0 has one point dof on the unique point/vertex.
- * For higher dimensions, P0 has no vertex dofs.
- */
-constexpr uint16_type simplexPerVertex( uint16_type dim, uint16_type order )
+constexpr uint16_type simplexPerVertex( uint16_type dim, uint16_type order ) noexcept
 {
-    if ( dim == 0 )
-        return 1;
-    return ( order == 0 ) ? 0 : 1;
+    return SimplexCardinality::perVertex( dim, order );
 }
 
-/**
- * @brief Backward-compatible overload (assumes dim > 0 semantics).
- */
-constexpr uint16_type simplexPerVertex( uint16_type order )
+constexpr uint16_type simplexPerVertex( uint16_type order ) noexcept
 {
-    return simplexPerVertex( 1, order );
+    return SimplexCardinality::perVertex( 1, order );
 }
 
-/**
- * @brief Points per edge (interior edge points).
- */
-constexpr uint16_type simplexPerEdge( uint16_type dim, uint16_type order )
+constexpr uint16_type simplexPerEdge( uint16_type dim, uint16_type order ) noexcept
 {
-    if ( dim < 1 )
-        return 0;
-    if ( order == 0 )
-        return ( dim == 1 ) ? 1 : 0;
-    if ( order < 2 )
-        return 0;
-    return order - 1;
+    return SimplexCardinality::perEdge( dim, order );
 }
 
-/**
- * @brief Points per face (interior face points for triangular faces).
- */
-constexpr uint16_type simplexPerFace( uint16_type dim, uint16_type order )
+constexpr uint16_type simplexPerFace( uint16_type dim, uint16_type order ) noexcept
 {
-    if ( dim < 2 )
-        return 0;
-    if ( order == 0 )
-        return ( dim == 2 ) ? 1 : 0;
-    if ( order < 3 )
-        return 0;
-    return ( order - 1 ) * ( order - 2 ) / 2;
+    return SimplexCardinality::perFace( dim, order );
 }
 
-/**
- * @brief Points per volume (interior volume points).
- */
-constexpr uint16_type simplexPerVolume( uint16_type dim, uint16_type order )
+constexpr uint16_type simplexPerVolume( uint16_type dim, uint16_type order ) noexcept
 {
-    if ( dim < 3 )
-        return 0;
-    if ( order == 0 )
-        return ( dim == 3 ) ? 1 : 0;
-    if ( order < 4 )
-        return 0;
-    return ( order - 1 ) * ( order - 2 ) * ( order - 3 ) / 6;
+    return SimplexCardinality::perVolume( dim, order );
 }
 
-//
-// Runtime point calculations for dynamic-order hypercubes
-//
-
-/**
- * @brief Compute number of points for hypercube of given dimension and order.
- * Formula: (order+1)^dim
- */
-constexpr size_type hypercubeTotal( uint16_type dim, uint16_type order )
+constexpr size_type hypercubeTotal( uint16_type dim, uint16_type order ) noexcept
 {
-    return powInt( static_cast<size_type>( order + 1 ), dim );
+    return HypercubeCardinality::total( dim, order );
 }
 
-/**
- * @brief Points per vertex for hypercube.
- *
- * For 0D hypercube, Q0 has one point dof on the unique point/vertex.
- * For higher dimensions, Q0 has no vertex dofs.
- */
-constexpr uint16_type hypercubePerVertex( uint16_type dim, uint16_type order )
+constexpr uint16_type hypercubePerVertex( uint16_type dim, uint16_type order ) noexcept
 {
-    if ( dim == 0 )
-        return 1;
-    return ( order == 0 ) ? 0 : 1;
+    return HypercubeCardinality::perVertex( dim, order );
 }
 
-/**
- * @brief Backward-compatible overload (assumes dim > 0 semantics).
- */
-constexpr uint16_type hypercubePerVertex( uint16_type order )
+constexpr uint16_type hypercubePerVertex( uint16_type order ) noexcept
 {
-    return hypercubePerVertex( 1, order );
+    return HypercubeCardinality::perVertex( 1, order );
 }
 
-/**
- * @brief Points per edge (interior edge points) for hypercube.
- * Formula: order - 1 (for order >= 2), else special handling for order 0/1
- */
-constexpr uint16_type hypercubePerEdge( uint16_type dim, uint16_type order )
+constexpr uint16_type hypercubePerEdge( uint16_type dim, uint16_type order ) noexcept
 {
-    if ( dim < 1 )
-        return 0;
-    if ( order == 0 )
-        return ( dim == 1 ) ? 1 : 0;  // Q0 has 1 point on the element
-    if ( order < 2 )
-        return 0;
-    return order - 1;
+    return HypercubeCardinality::perEdge( dim, order );
 }
 
-/**
- * @brief Points per face (interior face points) for hypercube.
- * Formula: (order - 1)^2 for order >= 2, else special handling
- */
-constexpr uint16_type hypercubePerFace( uint16_type dim, uint16_type order )
+constexpr uint16_type hypercubePerFace( uint16_type dim, uint16_type order ) noexcept
 {
-    if ( dim < 2 )
-        return 0;
-    if ( order == 0 )
-        return ( dim == 2 ) ? 1 : 0;  // Q0 in 2D has 1 interior point
-    if ( order < 2 )
-        return 0;
-    return static_cast<uint16_type>( ( order - 1 ) * ( order - 1 ) );
+    return HypercubeCardinality::perFace( dim, order );
 }
 
-/**
- * @brief Points per volume (interior volume points) for hypercube.
- * Formula: (order - 1)^3 for order >= 2, else special handling
- */
-constexpr uint16_type hypercubePerVolume( uint16_type dim, uint16_type order )
+constexpr uint16_type hypercubePerVolume( uint16_type dim, uint16_type order ) noexcept
 {
-    if ( dim < 3 )
-        return 0;
-    if ( order == 0 )
-        return ( dim == 3 ) ? 1 : 0;  // Q0 in 3D has 1 interior point
-    if ( order < 2 )
-        return 0;
-    return static_cast<uint16_type>( ( order - 1 ) * ( order - 1 ) * ( order - 1 ) );
+    return HypercubeCardinality::perVolume( dim, order );
 }
 
 // Backward-compatible snake_case wrappers.
@@ -517,39 +605,36 @@ constexpr uint16_type hypercube_pts_per_volume( uint16_type dim, uint16_type ord
  * @brief DOF calculator for static or dynamic orders.
  */
 template <int Dim, typename Order>
-struct DofCalculator;
-
-/**
- * @brief Static order specialization.
- */
-template <int Dim, int Order>
-struct DofCalculator<Dim, order_t<Order>>
+struct DofCalculator
 {
+    static_assert( requires {
+        Order::value;
+        Order::is_static;
+        Order::is_dynamic;
+    }, "DofCalculator requires an order tag" );
+
     static constexpr size_type simplex()
+        requires( Order::is_static )
     {
-        return ::Feel::detail::simplexDofStatic<Dim, Order>();
+        return ::Feel::detail::SimplexCardinality::total( Dim, Order::value );
     }
 
     static constexpr size_type hypercube()
+        requires( Order::is_static )
     {
-        return ::Feel::detail::hypercubeDofStatic<Dim, Order>();
-    }
-};
-
-/**
- * @brief Dynamic order specialization.
- */
-template <int Dim>
-struct DofCalculator<Dim, order_t<Dynamic>>
-{
-    static size_type simplex( int order )
-    {
-        return ::Feel::detail::simplexDofDynamic<Dim>( order );
+        return ::Feel::detail::HypercubeCardinality::total( Dim, Order::value );
     }
 
-    static size_type hypercube( int order )
+    static constexpr size_type simplex( int order ) noexcept
+        requires( Order::is_dynamic )
     {
-        return ::Feel::detail::hypercubeDofDynamic<Dim>( order );
+        return ::Feel::detail::SimplexCardinality::total( Dim, order );
+    }
+
+    static constexpr size_type hypercube( int order ) noexcept
+        requires( Order::is_dynamic )
+    {
+        return ::Feel::detail::HypercubeCardinality::total( Dim, order );
     }
 };
 

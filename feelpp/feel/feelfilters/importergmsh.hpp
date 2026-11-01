@@ -367,20 +367,6 @@ public:
     typedef typename mesh_type::face_iterator face_iterator;
     //@}
 
-    //@{
-    /** @name Constants
-     */
-    static inline const uint16_type npoints_per_edge = ( edge_type::numVertices*edge_type::nbPtsPerVertex+
-            edge_type::numEdges*edge_type::nbPtsPerEdge+
-            edge_type::numFaces*edge_type::nbPtsPerFace );
-
-    static inline const uint16_type npoints_per_face = ( face_type::numVertices*face_type::nbPtsPerVertex+
-            face_type::numEdges*face_type::nbPtsPerEdge+
-            face_type::numFaces*face_type::nbPtsPerFace );
-
-    static inline const uint16_type npoints_per_element = element_type::numPoints;
-    //@}
-
     /** @name Constructors, destructor
      */
     //@{
@@ -573,9 +559,6 @@ template<typename MeshType>
 void
 ImporterGmsh<MeshType>::showMe() const
 {
-    DVLOG(2) << "[ImporterGmsh::showMe] npoints_per_element = " << npoints_per_element << "\n";
-    DVLOG(2) << "[ImporterGmsh::showMe]    npoints_per_face = " << npoints_per_face << "\n";
-    DVLOG(2) << "[ImporterGmsh::showMe]    npoints_per_edge = " << npoints_per_edge << "\n";
 }
 
 template<typename MeshType>
@@ -830,6 +813,18 @@ void
 ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 {
     DVLOG(2) << "visit("  << mesh_type::nDim << "D ) starts\n";
+    if ( !mesh )
+        throw std::invalid_argument(
+            "ImporterGmsh requires a non-null mesh" );
+
+    // Validate all order-dependent capabilities before the reader can add a
+    // point or entity. Gmsh files always carry nodal geometry coordinates.
+    [[maybe_unused]] auto const elementOrdering =
+        makeGmshOrdering<element_type>(
+            RuntimeOrder{ mesh->order() } );
+    [[maybe_unused]] auto const faceOrdering =
+        makeGmshOrdering<face_type>(
+            RuntimeOrder{ mesh->order() } );
 
     if ( !M_gmodelName.empty() && ( M_in_memory == true ) )
     {
@@ -842,6 +837,9 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     }
     else
         readFromFile( mesh );
+
+    mesh->adoptGeometryCoefficients(
+        geometry::GeometryRepresentationKind::NodalLagrange );
 }
 
 template<typename MeshType>
@@ -994,6 +992,9 @@ ImporterGmsh<MeshType>::readFromMemory( mesh_type* mesh )
                 case GMSH_TRIANGLE_5:
                 case GMSH_QUADRANGLE:
                 case GMSH_QUADRANGLE_2:
+                case GMSH_QUADRANGLE_3:
+                case GMSH_QUADRANGLE_4:
+                case GMSH_QUADRANGLE_5:
                 {
                     __idGmshToFeel[it_gmshElt.num] = addFace( mesh, it_gmshElt );
                     break;
@@ -1006,6 +1007,9 @@ ImporterGmsh<MeshType>::readFromMemory( mesh_type* mesh )
                 case GMSH_TETRAHEDRON_5:
                 case GMSH_HEXAHEDRON:
                 case GMSH_HEXAHEDRON_2:
+                case GMSH_HEXAHEDRON_3:
+                case GMSH_HEXAHEDRON_4:
+                case GMSH_HEXAHEDRON_5:
                 {
                     __idGmshToFeel[it_gmshElt.num] = addVolume( mesh, it_gmshElt );
                     break;
@@ -1743,6 +1747,9 @@ ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & _
         case GMSH_TRIANGLE_5:
         case GMSH_QUADRANGLE:
         case GMSH_QUADRANGLE_2:
+        case GMSH_QUADRANGLE_3:
+        case GMSH_QUADRANGLE_4:
+        case GMSH_QUADRANGLE_5:
         {
             __idGmshToFeel[it_gmshElt.num] = addFace( mesh, it_gmshElt );
             break;
@@ -1756,6 +1763,9 @@ ImporterGmsh<MeshType>::readFromFileVersion2( mesh_type* mesh, std::ifstream & _
         case GMSH_TETRAHEDRON_5:
         case GMSH_HEXAHEDRON:
         case GMSH_HEXAHEDRON_2:
+        case GMSH_HEXAHEDRON_3:
+        case GMSH_HEXAHEDRON_4:
+        case GMSH_HEXAHEDRON_5:
         {
             __idGmshToFeel[it_gmshElt.num] = addVolume( mesh, it_gmshElt );
             break;
@@ -2520,6 +2530,9 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                     case GMSH_TRIANGLE_5:
                     case GMSH_QUADRANGLE:
                     case GMSH_QUADRANGLE_2:
+                    case GMSH_QUADRANGLE_3:
+                    case GMSH_QUADRANGLE_4:
+                    case GMSH_QUADRANGLE_5:
                     {
                         __idGmshToFeel[it_gmshElt.num] = addFace( mesh, it_gmshElt );
                         break;
@@ -2533,6 +2546,9 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                     case GMSH_TETRAHEDRON_5:
                     case GMSH_HEXAHEDRON:
                     case GMSH_HEXAHEDRON_2:
+                    case GMSH_HEXAHEDRON_3:
+                    case GMSH_HEXAHEDRON_4:
+                    case GMSH_HEXAHEDRON_5:
                     {
                         __idGmshToFeel[it_gmshElt.num] = addVolume( mesh, it_gmshElt );
                         break;
@@ -2725,9 +2741,13 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                     CHECK( itFindGmshId != __idGmshToFeel.end() ) << "no element gmsh with id  " << ghostEltGmshId;
                     size_type ghostEltFeelId = itFindGmshId->second;
                     auto const& elt = mesh->element( ghostEltFeelId );
-                    std::vector<size_type> theindices( npoints_per_element+1 );
+                    auto const pointCount =
+                        elt.nPoints();
+                    std::vector<size_type> theindices(
+                        pointCount + 1 );
                     theindices[0] = ghostEltFeelId;
-                    for ( int p=0;p<npoints_per_element;++ p )
+                    for ( uint16_type p = 0;
+                          p < pointCount; ++p )
                     {
                         auto const& pt = elt.point( p );
                         size_type ptId = pt.id();
@@ -2782,7 +2802,7 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                 }
                 for ( auto const& dataRecvGhostElement : dataRecvGhostElements )
                 {
-                    element_type e;
+                    auto e = mesh->makeElement();
                     e.setId( mesh->elements().size() );
                     e.setProcessIdInPartition( this->worldComm().localRank() );
                     //e.setMarker( __e.physical );
@@ -2792,7 +2812,8 @@ ImporterGmsh<MeshType>::readFromFileVersion4( mesh_type* mesh, std::ifstream & _
                     size_type idOtherPartition = dataRecvGhostElement[0];
                     e.setIdInOtherPartitions( aproc, idOtherPartition );
 
-                    for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
+                    for ( uint16_type jj = 0;
+                          jj < e.nPoints(); ++jj )
                     {
                         //ptseen[mesh->point( __e.indices[jj] ).id()]=1;
                         CHECK( mesh->hasPoint( dataRecvGhostElement[jj+1] ) ) << "point not found with id " << dataRecvGhostElement[jj+1];
@@ -2845,7 +2866,7 @@ template<typename MeshType>
 int
 ImporterGmsh<MeshType>::addEdgeDim1( mesh_type*mesh, Feel::detail::GMSHElement const& __e )
 {
-    element_type e;
+    auto e = mesh->makeElement();
     e.setId( ( false )? __e.num : mesh->elements().size() );
     //e.setWorldComm(this->worldComm());
     e.setProcessIdInPartition( this->worldComm().localRank() );
@@ -2863,7 +2884,8 @@ ImporterGmsh<MeshType>::addEdgeDim1( mesh_type*mesh, Feel::detail::GMSHElement c
          __e.type == GMSH_LINE_4 ||
          __e.type == GMSH_LINE_5 )
     {
-        for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
+        for ( uint16_type jj = 0;
+              jj < e.nPoints(); ++jj )
         {
             point_type & pt = mesh->pointIterator( __e.indices[jj] )->second;
             if (!e.isGhostCell())
@@ -2884,7 +2906,7 @@ template<typename MeshType>
 int
 ImporterGmsh<MeshType>::addEdgeDim2( mesh_type* mesh, Feel::detail::GMSHElement const& __e )
 {
-    face_type e;
+    auto e = mesh->makeFace();
     e.setProcessIdInPartition( this->worldComm().localRank() );
     e.setId( mesh->numFaces() );
     if ( !__e.physical.empty() )
@@ -2900,10 +2922,13 @@ ImporterGmsh<MeshType>::addEdgeDim2( mesh_type* mesh, Feel::detail::GMSHElement 
          __e.type == GMSH_LINE_4 ||
          __e.type == GMSH_LINE_5 )
     {
-        DCHECK( __e.indices.size() == npoints_per_edge )
+        DCHECK( __e.indices.size() == e.nPoints() )
             << "Invalid element indices, "
-            << "indices size : " << __e.indices.size() << " points per edge : " << npoints_per_edge;
-        for ( uint16_type jj = 0; jj < npoints_per_edge; ++jj )
+            << "indices size : " << __e.indices.size()
+            << " points per edge : "
+            << e.nPoints();
+        for ( uint16_type jj = 0;
+              jj < e.nPoints(); ++jj )
         {
             DCHECK( mesh->hasPoint( __e.indices[jj] ) ) << "points not registered in mesh";
             point_type & pt = mesh->pointIterator( __e.indices[jj] )->second;
@@ -2922,7 +2947,7 @@ template<typename MeshType>
 int
 ImporterGmsh<MeshType>::addEdgeDim3( mesh_type*mesh, Feel::detail::GMSHElement const& __e )
 {
-    edge_type e;
+    auto e = mesh->makeEdge();
     e.setProcessIdInPartition( this->worldComm().localRank() );
     e.setId( mesh->numEdges() );
     if ( !__e.physical.empty() )
@@ -2940,7 +2965,8 @@ ImporterGmsh<MeshType>::addEdgeDim3( mesh_type*mesh, Feel::detail::GMSHElement c
          __e.type == GMSH_LINE_4 ||
          __e.type == GMSH_LINE_5 )
     {
-        for ( uint16_type jj = 0; jj < npoints_per_edge; ++jj )
+        for ( uint16_type jj = 0;
+              jj < e.nPoints(); ++jj )
         {
             point_type & pt = mesh->pointIterator( __e.indices[jj] )->second;
             e.setPoint( jj, pt );
@@ -2949,7 +2975,7 @@ ImporterGmsh<MeshType>::addEdgeDim3( mesh_type*mesh, Feel::detail::GMSHElement c
 
     auto [edit,inserted] = mesh->addEdge( std::move(e) );
     auto const& [edid,edgeInserted] = *edit;
-    if ( npoints_per_edge == 2 )
+    if ( e.nPoints() == 2 )
         DVLOG(2) << "added edge with id :" << edgeInserted.id()
                  << " n1: " << edgeInserted.point( 0 ).node()
                  << " n2: " << edgeInserted.point( 1 ).node() << "\n";
@@ -2980,9 +3006,11 @@ template<typename MeshType>
 int
 ImporterGmsh<MeshType>::addFaceDim2( mesh_type* mesh, Feel::detail::GMSHElement const& __e )
 {
-    GmshOrdering<element_type> ordering;
+    auto ordering =
+        makeGmshOrdering<element_type>(
+            RuntimeOrder{ mesh->order() } );
 
-    element_type e;
+    auto e = mesh->makeElement();
     e.setId( ( false )? __e.num : mesh->elements().size() );
     e.setProcessIdInPartition( this->worldComm().localRank() );
     if ( !__e.physical.empty() )
@@ -2996,13 +3024,17 @@ ImporterGmsh<MeshType>::addFaceDim2( mesh_type* mesh, Feel::detail::GMSHElement 
 
     if ( __e.type == GMSH_QUADRANGLE ||
          __e.type == GMSH_QUADRANGLE_2 ||
+         __e.type == GMSH_QUADRANGLE_3 ||
+         __e.type == GMSH_QUADRANGLE_4 ||
+         __e.type == GMSH_QUADRANGLE_5 ||
          __e.type == GMSH_TRIANGLE ||
          __e.type == GMSH_TRIANGLE_2 ||
          __e.type == GMSH_TRIANGLE_3 ||
          __e.type == GMSH_TRIANGLE_4 ||
          __e.type == GMSH_TRIANGLE_5 )
     {
-        for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
+        for ( uint16_type jj = 0;
+              jj < e.nPoints(); ++jj )
         {
             point_type & pt = mesh->pointIterator( __e.indices[jj] )->second;
             if ( !e.isGhostCell() )
@@ -3018,9 +3050,11 @@ template<typename MeshType>
 int
 ImporterGmsh<MeshType>::addFaceDim3( mesh_type* mesh, Feel::detail::GMSHElement const& __e )
 {
-    GmshOrdering<face_type> ordering;
+    auto ordering =
+        makeGmshOrdering<face_type>(
+            RuntimeOrder{ mesh->order() } );
 
-    face_type e;
+    auto e = mesh->makeFace();
     e.setProcessIdInPartition( this->worldComm().localRank() );
     e.setId( mesh->numFaces() );
     if ( !__e.physical.empty() )
@@ -3032,13 +3066,17 @@ ImporterGmsh<MeshType>::addFaceDim3( mesh_type* mesh, Feel::detail::GMSHElement 
 
     if ( __e.type == GMSH_QUADRANGLE ||
          __e.type == GMSH_QUADRANGLE_2 ||
+         __e.type == GMSH_QUADRANGLE_3 ||
+         __e.type == GMSH_QUADRANGLE_4 ||
+         __e.type == GMSH_QUADRANGLE_5 ||
          __e.type == GMSH_TRIANGLE ||
          __e.type == GMSH_TRIANGLE_2 ||
          __e.type == GMSH_TRIANGLE_3 ||
          __e.type == GMSH_TRIANGLE_4 ||
          __e.type == GMSH_TRIANGLE_5 )
     {
-        for ( uint16_type jj = 0; jj < npoints_per_face; ++jj )
+        for ( uint16_type jj = 0;
+              jj < e.nPoints(); ++jj )
         {
             //ptseen[mesh->point( __e.indices[jj] ).id()]=1;
             e.setPoint( ordering.fromGmshId( jj ), mesh->point( __e.indices[jj] ) );
@@ -3078,10 +3116,12 @@ template<typename MeshType>
 int
 ImporterGmsh<MeshType>::addVolumeDim3( mesh_type* mesh, Feel::detail::GMSHElement const& __e )
 {
-    element_type e;
+    auto e = mesh->makeElement();
     e.setId( ( false )? __e.num : mesh->elements().size() );
     e.setProcessIdInPartition( this->worldComm().localRank() );
-    GmshOrdering<element_type> ordering;
+    auto ordering =
+        makeGmshOrdering<element_type>(
+            RuntimeOrder{ mesh->order() } );
     if ( !__e.physical.empty() )
         e.addMarker( __e.physical );
     if ( false )
@@ -3096,13 +3136,17 @@ ImporterGmsh<MeshType>::addVolumeDim3( mesh_type* mesh, Feel::detail::GMSHElemen
     //
     if ( __e.type == GMSH_HEXAHEDRON ||
          __e.type == GMSH_HEXAHEDRON_2 ||
+         __e.type == GMSH_HEXAHEDRON_3 ||
+         __e.type == GMSH_HEXAHEDRON_4 ||
+         __e.type == GMSH_HEXAHEDRON_5 ||
          __e.type == GMSH_TETRAHEDRON ||
          __e.type == GMSH_TETRAHEDRON_2 ||
          __e.type == GMSH_TETRAHEDRON_3 ||
          __e.type == GMSH_TETRAHEDRON_4 ||
          __e.type == GMSH_TETRAHEDRON_5 )
     {
-        for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
+        for ( uint16_type jj = 0;
+              jj < e.nPoints(); ++jj )
         {
             //ptseen[mesh->point( __e.indices[jj] ).id()]=1;
             point_type & pt = mesh->pointIterator( __e.indices[jj] )->second;

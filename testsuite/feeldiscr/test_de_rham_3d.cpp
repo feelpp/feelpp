@@ -295,6 +295,24 @@ checkAffineSequence( std::shared_ptr<affine_mesh_type> const& mesh,
                     rightface( -trans( id( hdivProbe ) ) * N() ) );
         BOOST_CHECK_SMALL( normalJump( hdivField ), 2e-9 );
 
+        if constexpr ( Order == 2 )
+        {
+            auto traceTrial = hcurl->element();
+            auto traceTest = hcurl->element();
+            auto tangentialPenalty = form2(
+                _trial = hcurl, _test = hcurl,
+                _pattern = size_type( Pattern::EXTENDED ) );
+            tangentialPenalty = integrate(
+                _range = internalfaces( mesh ),
+                _expr = inner(
+                    leftfacet( cross( idt( traceTrial ), N() ) ) +
+                        rightfacet( cross( idt( traceTrial ), N() ) ),
+                    leftface( cross( id( traceTest ), N() ) ) +
+                        rightface( cross( id( traceTest ), N() ) ) ) );
+            BOOST_CHECK_SMALL( tangentialPenalty( hcurlField, hcurlField ),
+                               2e-8 );
+        }
+
         // Keep one assembled multi-cell low-order check in addition to the
         // complete one-cell order matrix exercised below.
         if ( Environment::worldComm().localSize() == 1 && Order == 0 )
@@ -315,8 +333,8 @@ checkAffineStaticRuntimeSequence( std::shared_ptr<affine_mesh_type> const& mesh 
 
     BOOST_TEST_CONTEXT( "3D affine static/runtime space contract order " << Order )
     {
-        BOOST_CHECK_EQUAL( hcurlRuntime->basis()->runtimeOrder(), Order );
-        BOOST_CHECK_EQUAL( hdivRuntime->basis()->runtimeOrder(), Order );
+        BOOST_CHECK_EQUAL( hcurlRuntime->basis()->order(), Order );
+        BOOST_CHECK_EQUAL( hdivRuntime->basis()->order(), Order );
         BOOST_CHECK_EQUAL( hcurlRuntime->basis()->localDofCount(),
                            hcurlStatic->basis()->localDofCount() );
         BOOST_CHECK_EQUAL( hdivRuntime->basis()->localDofCount(),
@@ -360,8 +378,8 @@ checkAffineRuntimeSequence( std::shared_ptr<affine_mesh_type> const& mesh )
 {
     auto hcurl = Neh<Dynamic>( mesh, RuntimeOrder{ Order } );
     auto hdiv = RTh<Dynamic>( mesh, RuntimeOrder{ Order } );
-    BOOST_CHECK_EQUAL( hcurl->basis()->runtimeOrder(), Order );
-    BOOST_CHECK_EQUAL( hdiv->basis()->runtimeOrder(), Order );
+    BOOST_CHECK_EQUAL( hcurl->basis()->order(), Order );
+    BOOST_CHECK_EQUAL( hdiv->basis()->order(), Order );
     checkAffineSequence<Order>( mesh, hcurl, hdiv, "runtime" );
 }
 
@@ -547,9 +565,9 @@ BOOST_AUTO_TEST_CASE( affine_runtime_construction_above_validation_envelope )
     BOOST_REQUIRE( hcurl );
     BOOST_REQUIRE( hcurl2 );
     BOOST_REQUIRE( hdiv );
-    BOOST_CHECK_EQUAL( hcurl->basis()->runtimeOrder(), 4 );
-    BOOST_CHECK_EQUAL( hcurl2->basis()->runtimeOrder(), 4 );
-    BOOST_CHECK_EQUAL( hdiv->basis()->runtimeOrder(), 4 );
+    BOOST_CHECK_EQUAL( hcurl->basis()->order(), 4 );
+    BOOST_CHECK_EQUAL( hcurl2->basis()->order(), 4 );
+    BOOST_CHECK_EQUAL( hdiv->basis()->order(), 4 );
     BOOST_CHECK_EQUAL( hcurl->basis()->localDofCount(), 140 );
     BOOST_CHECK_EQUAL( hcurl2->basis()->localDofCount(), 168 );
     BOOST_CHECK_EQUAL( hdiv->basis()->localDofCount(), 120 );

@@ -202,8 +202,9 @@ interpolate( std::shared_ptr<SpaceType> const& space,
                         uint16_type f_ldofId = ldof.first.localDof();
                         if constexpr ( f_fe_type::nComponents > 1 )
                         {
-                            uint16_type comp = f_ldofId/basis_type::nLocalDof;
-                            f_ldofId = space->fe()->dofParent( f_ldofId ) + comp*f_fe_type::nLocalDof;
+                            uint16_type comp = f_ldofId/space->fe()->localDof();
+                            f_ldofId = space->fe()->dofParent( f_ldofId ) +
+                                       comp*f.functionSpace()->fe()->localDof();
                         }
                         DCHECK( f_ldofId < f_indices.size() ) << "something wrong " << f_ldofId << " vs " << f_indices.size();
                         index_type f_index = f_indices[f_ldofId];
@@ -215,7 +216,9 @@ interpolate( std::shared_ptr<SpaceType> const& space,
                         {
                             for ( uint16_type c2=0; c2<interp[c1].size(); ++c2 )
                             {
-                                uint16_type newLocalDofId = ldof.first.localDof()+(c2+f_fe_type::nComponents2*c1)*f_fe_type::nLocalDof;
+                                uint16_type newLocalDofId = ldof.first.localDof()+
+                                    (c2+f_fe_type::nComponents2*c1)*
+                                    f.functionSpace()->fe()->localDof();
                                 DCHECK( newLocalDofId <  f_indices.size() ) << "something wrong " << newLocalDofId << " vs " << f_indices.size();
                                 index_type f_index = f_indices[newLocalDofId];
                                 unwrap_ptr(interp[c1][c2])( index ) = f(f_index);
@@ -243,17 +246,8 @@ interpolate( std::shared_ptr<SpaceType> const& space,
                     __fe->interpolate( expr_evaluator, IhLoc );
 
                     auto canonicalIh = IhLoc;
-                    if ( space->dof()->hasDenseDofTransform( curElt.id() ) )
-                    {
-                        auto const transform = space->dof()->localToGlobalCoefficientTransform( curElt.id() );
-                        canonicalIh = transform.fullPivLu().solve( IhLoc );
-                    }
-                    else
-                    {
-                        auto const& signs = space->dof()->localToGlobalSigns( curElt.id() );
-                        for ( uint16_type i = 0; i < canonicalIh.size(); ++i )
-                            canonicalIh( i ) *= signs( i );
-                    }
+                    space->dof()->mapLocalToCanonicalDofCoefficients(
+                        curElt.id(), canonicalIh );
                     for( auto const& ldof : space->dof()->localDof( curElt.id() ) )
                     {
                         index_type index = ldof.second.index();
@@ -281,23 +275,13 @@ interpolate( std::shared_ptr<SpaceType> const& space,
 
                     std::vector<std::tuple<uint16_type,uint16_type,decltype(__fe->localInterpolant())>> canonicalIhByComp;
                     canonicalIhByComp.reserve( IhLocsByComp.size() );
-                    if ( space->dof()->hasDenseDofTransform( curElt.id() ) )
+                    for ( auto const& [c1,c2,IhLoc] : IhLocsByComp )
                     {
-                        auto const transform = space->dof()->localToGlobalCoefficientTransform( curElt.id() );
-                        auto const transformLu = transform.fullPivLu();
-                        for ( auto const& [c1,c2,IhLoc] : IhLocsByComp )
-                            canonicalIhByComp.emplace_back( c1, c2, transformLu.solve( IhLoc ) );
-                    }
-                    else
-                    {
-                        auto const& signs = space->dof()->localToGlobalSigns( curElt.id() );
-                        for ( auto const& [c1,c2,IhLoc] : IhLocsByComp )
-                        {
-                            auto canonicalIh = IhLoc;
-                            for ( uint16_type i = 0; i < canonicalIh.size(); ++i )
-                                canonicalIh( i ) *= signs( i );
-                            canonicalIhByComp.emplace_back( c1, c2, std::move( canonicalIh ) );
-                        }
+                        auto canonicalIh = IhLoc;
+                        space->dof()->mapLocalToCanonicalDofCoefficients(
+                            curElt.id(), canonicalIh );
+                        canonicalIhByComp.emplace_back(
+                            c1, c2, std::move( canonicalIh ) );
                     }
                     for( auto const& ldof : space->dof()->localDof( curElt.id() ) )
                     {
@@ -412,7 +396,6 @@ interpolate( std::shared_ptr<SpaceType> const& space,
 
                     //for ( uint16_type comp = 0;comp < basis_type::nComponents;++comp )
                     {
-                        //size_type globaldof =  basis_type::nLocalDof*comp+first_dof+dof;
                         //size_type globaldof =  first_dof+ndofcomp*comp+dof;
                         //size_type globaldof =  first_dof+dof;
                         size_type globaldof = dof;

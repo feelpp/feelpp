@@ -177,7 +177,6 @@ public:
             tExpr.update( mapgmc, mapfec );
 
             Eigen::MatrixXd IhLoc = space->fe()->localInterpolants(curCtxIdToPointIds.size(),1);
-            //Eigen::MatrixXd IhLoc = Eigen::MatrixXd::Zero(expr_basis_t::nLocalDof*dimension_v<mesh_type>,gmc->nPoints());
             space->fe()->interpolateBasisFunction( tExpr, IhLoc );
 
 

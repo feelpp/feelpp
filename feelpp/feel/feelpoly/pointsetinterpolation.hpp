@@ -237,6 +237,16 @@ public:
 
     points_type pointsBySubEntity( uint16_type top_dim, uint16_type local_id, bool boundary = 0 ) const
     {
+        // Interior-only interpolation sets have no lower-dimensional entity
+        // partition: all stored coordinates belong to the cell interior.
+        // This also gives the single P0 coordinate its natural cell owner.
+        bool has_entity_partition = false;
+        for ( auto const& entity_points : M_eid )
+            has_entity_partition = has_entity_partition || !entity_points.empty();
+        if ( !boundary && top_dim == topological_dimension && local_id == 0 &&
+             !has_entity_partition )
+            return this->points();
+
         index_map_type index_list = entityToLocal( top_dim, local_id, boundary );
 
         uint16_type matrix_size = 0;

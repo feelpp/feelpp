@@ -82,16 +82,21 @@ public :
 
     static inline const bool is_simplex = Convex::is_simplex;
     static inline const bool is_hypercube = Convex::is_hypercube;
+    using cardinality_type = std::conditional_t<
+        is_simplex,
+        ::Feel::detail::SimplexCardinality,
+        ::Feel::detail::HypercubeCardinality>;
 
     //! @name Static/Dynamic Order Support
     //! @{
-    static constexpr int static_order = Order;
-    static constexpr bool is_order_static = ( Order >= 0 );
-    static constexpr bool is_order_dynamic = !is_order_static;
+    static constexpr int order_spec = order_base_type::order_spec;
+    static constexpr int static_order = order_spec;
+    static constexpr bool is_order_static = order_base_type::is_order_static;
+    static constexpr bool is_order_dynamic = order_base_type::is_order_dynamic;
     //! @}
 
     // For static order, use compile-time convex type; for dynamic, use order 1 as placeholder
-    static constexpr int order_for_convex = is_order_static ? Order : 1;
+    static constexpr int order_for_convex = is_order_static ? order_spec : 1;
     typedef typename std::conditional_t<is_simplex,
             Simplex<Dim, order_for_convex, Dim>,
             Hypercube<Dim, order_for_convex, Dim>> conv_order_type;
@@ -115,91 +120,38 @@ public :
     RefElem RefConv;
 
     using order_base_type::order;
-    using order_base_type::runtimeOrder;
+    using super::nPoints;
 
     /**
-     * @brief Get the number of points at runtime.
+     * @brief Return the mathematical number of points attached to one vertex.
      */
-    [[nodiscard]] uint32_type runtimeNumPoints() const noexcept
+    [[nodiscard]] constexpr uint32_type nPointsOnVertex() const noexcept
     {
-        if constexpr ( is_order_static )
-            return numPoints;
-        else
-        {
-            const auto runtime_order = this->order();
-            if constexpr ( is_simplex )
-                return static_cast<uint32_type>( ::Feel::detail::simplexTotal( Dim, runtime_order ) );
-            else
-                return static_cast<uint32_type>( ::Feel::detail::hypercubeTotal( Dim, runtime_order ) );
-        }
+        return cardinality_type::perVertex( Dim, this->order() );
     }
 
     /**
-     * @brief Get the number of points per vertex at runtime.
+     * @brief Return the mathematical number of points attached to one edge.
      */
-    [[nodiscard]] uint32_type runtimeNbPtsPerVertex() const noexcept
+    [[nodiscard]] constexpr uint32_type nPointsOnEdge() const noexcept
     {
-        if constexpr ( is_order_static )
-            return nbPtsPerVertex;
-        else
-        {
-            const auto runtime_order = this->order();
-            if constexpr ( is_simplex )
-                return ::Feel::detail::simplexPerVertex( Dim, runtime_order );
-            else
-                return ::Feel::detail::hypercubePerVertex( Dim, runtime_order );
-        }
+        return cardinality_type::perEdge( Dim, this->order() );
     }
 
     /**
-     * @brief Get the number of points per edge at runtime.
+     * @brief Return the mathematical number of points attached to one face.
      */
-    [[nodiscard]] uint32_type runtimeNbPtsPerEdge() const noexcept
+    [[nodiscard]] constexpr uint32_type nPointsOnFace() const noexcept
     {
-        if constexpr ( is_order_static )
-            return nbPtsPerEdge;
-        else
-        {
-            const auto runtime_order = this->order();
-            if constexpr ( is_simplex )
-                return ::Feel::detail::simplexPerEdge( Dim, runtime_order );
-            else
-                return ::Feel::detail::hypercubePerEdge( Dim, runtime_order );
-        }
+        return cardinality_type::perFace( Dim, this->order() );
     }
 
     /**
-     * @brief Get the number of points per face at runtime.
+     * @brief Return the mathematical number of points attached to one volume.
      */
-    [[nodiscard]] uint32_type runtimeNbPtsPerFace() const noexcept
+    [[nodiscard]] constexpr uint32_type nPointsOnVolume() const noexcept
     {
-        if constexpr ( is_order_static )
-            return nbPtsPerFace;
-        else
-        {
-            const auto runtime_order = this->order();
-            if constexpr ( is_simplex )
-                return ::Feel::detail::simplexPerFace( Dim, runtime_order );
-            else
-                return ::Feel::detail::hypercubePerFace( Dim, runtime_order );
-        }
-    }
-
-    /**
-     * @brief Get the number of points per volume at runtime.
-     */
-    [[nodiscard]] uint32_type runtimeNbPtsPerVolume() const noexcept
-    {
-        if constexpr ( is_order_static )
-            return nbPtsPerVolume;
-        else
-        {
-            const auto runtime_order = this->order();
-            if constexpr ( is_simplex )
-                return ::Feel::detail::simplexPerVolume( Dim, runtime_order );
-            else
-                return ::Feel::detail::hypercubePerVolume( Dim, runtime_order );
-        }
+        return cardinality_type::perVolume( Dim, this->order() );
     }
 
     //! @}
@@ -211,54 +163,11 @@ public :
     PointSetEquiSpaced( int interior = 0 )
         requires ( is_order_static )
         :
-        super( numPoints, Dim ),
+        super( 0, Dim ),
         order_base_type(),
         M_eid()
     {
-        M_eid.resize( topological_dimension + 1 );
-        M_pt_to_entity.resize( numPoints );
-
-        nodes_type pts( Dim, numPoints );
-
-        if ( interior == 0 && Order > 0 )
-        {
-            // loop on each convex of topological dimension <= to the current convex
-            // where we build the polynomial set
-            for ( uint16_type d = 0, p = 0; d < topological_dimension+1; ++d )
-            {
-                // loop on each entity forming the convex of topological
-                // dimension d
-                for ( int e = RefConv.entityRange( d ).begin();
-                        e < RefConv.entityRange( d ).end();
-                        ++e )
-                {
-                    nodes_type Gt ( makePoints( d, e ) );
-
-                    if ( Gt.size2() )
-                    {
-                        ublas::subrange( pts, 0, Dim, p, p+Gt.size2() ) = Gt;
-
-                        for ( size_type j = 0; j < Gt.size2(); ++j )
-                        {
-                            addToEid( d, p+j );
-                            addToPtE( p+j, std::make_pair( d, e ) );
-                        }
-
-                        p+=Gt.size2();
-                    }
-                }
-            }
-
-            this->setPoints( pts );
-        }
-
-        else if ( interior == 1 && Order > 0 )
-            this->setPoints( makePoints( Dim, 0 ) );
-
-        else if ( Order == 0 )
-            this->setPoints( glas::average( RefConv.vertices() ) );
-
-        this->setName( "equispaced", this->order() );
+        initialize( interior );
     }
 
     /**
@@ -270,51 +179,12 @@ public :
         requires ( is_order_dynamic )
         :
         super( 0, Dim ),  // Will be resized in body
-        order_base_type( ro ),
+        order_base_type(
+            ::Feel::detail::validatedNodalOrder<cardinality_type>(
+                Dim, ro ) ),
         M_eid()
     {
-        const uint32_type npts = runtimeNumPoints();
-
-        M_eid.resize( topological_dimension + 1 );
-        M_pt_to_entity.resize( npts );
-
-        nodes_type pts( Dim, npts );
-
-        if ( interior == 0 && this->order() > 0 )
-        {
-            for ( uint16_type d = 0, p = 0; d < topological_dimension+1; ++d )
-            {
-                for ( int e = RefConv.entityRange( d ).begin();
-                        e < RefConv.entityRange( d ).end();
-                        ++e )
-                {
-                    nodes_type Gt ( makePoints( d, e ) );
-
-                    if ( Gt.size2() )
-                    {
-                        ublas::subrange( pts, 0, Dim, p, p+Gt.size2() ) = Gt;
-
-                        for ( size_type j = 0; j < Gt.size2(); ++j )
-                        {
-                            addToEid( d, p+j );
-                            addToPtE( p+j, std::make_pair( d, e ) );
-                        }
-
-                        p+=Gt.size2();
-                    }
-                }
-            }
-
-            this->setPoints( pts );
-        }
-
-        else if ( interior == 1 && this->order() > 0 )
-            this->setPoints( makePoints( Dim, 0 ) );
-
-        else if ( this->order() == 0 )
-            this->setPoints( glas::average( RefConv.vertices() ) );
-
-        this->setName( "equispaced", this->order() );
+        initialize( interior );
     }
 
     ~PointSetEquiSpaced() override {}
@@ -444,10 +314,10 @@ public :
         index_map_type index_list = entityToLocal( top_dim, local_id, boundary );
 
         // Use runtime point counts for dynamic order support
-        const auto pts_per_vertex = runtimeNbPtsPerVertex();
-        const auto pts_per_edge = runtimeNbPtsPerEdge();
-        const auto pts_per_face = runtimeNbPtsPerFace();
-        const auto pts_per_volume = runtimeNbPtsPerVolume();
+        const auto pts_per_vertex = nPointsOnVertex();
+        const auto pts_per_edge = nPointsOnEdge();
+        const auto pts_per_face = nPointsOnFace();
+        const auto pts_per_volume = nPointsOnVolume();
 
         uint16_type matrix_size = 0;
 
@@ -516,6 +386,87 @@ public :
     FEELPP_DEFINE_VISITABLE();
 
 private:
+
+    /**
+     * @brief Return the complete cell cardinality used while constructing a
+     * full lattice.
+     *
+     * This is deliberately private because `nPoints()` reports the points
+     * actually stored by the object, which may be an interior-only subset.
+     */
+    [[nodiscard]] constexpr uint32_type fullPointCount() const noexcept
+    {
+        return static_cast<uint32_type>(
+            cardinality_type::total( Dim, this->order() ) );
+    }
+
+    /** @brief Build complete or interior-only storage for either order mode. */
+    void initialize( int interior )
+    {
+        if ( interior != 0 && interior != 1 )
+            throw std::invalid_argument(
+                "PointSetEquiSpaced interior selector must be 0 or 1" );
+
+        M_eid.assign( topological_dimension + 1, {} );
+
+        if ( this->order() == 0 )
+        {
+            this->setPoints( glas::average( RefConv.vertices() ) );
+            M_pt_to_entity.resize( this->nPoints() );
+            addToEid( Dim, 0 );
+            addToPtE( 0, std::make_pair( Dim, 0 ) );
+        }
+        else if ( interior == 1 )
+        {
+            this->setPoints( makePoints( Dim, 0 ) );
+            M_pt_to_entity.resize( this->nPoints() );
+            for ( uint16_type point = 0;
+                  point < this->nPoints(); ++point )
+            {
+                addToEid( Dim, point );
+                addToPtE( point, std::make_pair( Dim, 0 ) );
+            }
+        }
+        else
+        {
+            const uint32_type pointCount = fullPointCount();
+            M_pt_to_entity.resize( pointCount );
+            nodes_type points( Dim, pointCount );
+
+            for ( uint16_type entityDim = 0, point = 0;
+                  entityDim < topological_dimension + 1;
+                  ++entityDim )
+            {
+                for ( int entity = RefConv.entityRange( entityDim ).begin();
+                      entity < RefConv.entityRange( entityDim ).end();
+                      ++entity )
+                {
+                    nodes_type entityPoints(
+                        makePoints( entityDim, entity ) );
+                    if ( entityPoints.size2() == 0 )
+                        continue;
+
+                    ublas::subrange(
+                        points, 0, Dim, point,
+                        point + entityPoints.size2() ) = entityPoints;
+                    for ( size_type localPoint = 0;
+                          localPoint < entityPoints.size2();
+                          ++localPoint )
+                    {
+                        addToEid(
+                            entityDim, point + localPoint );
+                        addToPtE(
+                            point + localPoint,
+                            std::make_pair( entityDim, entity ) );
+                    }
+                    point += entityPoints.size2();
+                }
+            }
+            this->setPoints( points );
+        }
+
+        this->setName( "equispaced", this->order() );
+    }
 
     index_map_type M_eid;
     std::vector<range_type> M_pt_to_entity;

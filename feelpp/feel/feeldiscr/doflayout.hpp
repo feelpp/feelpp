@@ -18,6 +18,7 @@
 #include <vector>
 
 #include <feel/feelcore/feeltypes.hpp>
+#include <feel/feelpoly/concepts.hpp>
 #include <feel/feelpoly/hcurlpolynomialset.hpp>
 #include <feel/feelpoly/hdivpolynomialset.hpp>
 
@@ -203,6 +204,67 @@ concept LegacyDofAttachment =
     { attachment.isValid() } -> std::convertible_to<bool>;
 };
 
+/**
+ * @brief Map a simplex-local DoF number to its owning topological entity.
+ *
+ * The entity blocks are ordered vertex, edge, face, then volume.  Both
+ * compile-time and runtime-order FE implementations call this function with
+ * their effective cardinalities, which keeps one topology formula for all
+ * simplex families.
+ */
+template<LegacyDofAttachment Attachment>
+[[nodiscard]] constexpr Attachment
+simplexDofAttachment( uint16_type localDof,
+                      uint16_type topologicalDim,
+                      uint16_type vertexCount,
+                      uint16_type edgeCount,
+                      uint16_type faceCount,
+                      uint16_type dofPerVertex,
+                      uint16_type dofPerEdge,
+                      uint16_type dofPerFace,
+                      uint16_type dofPerVolume,
+                      uint16_type kind ) noexcept
+{
+    const size_type local = localDof;
+    size_type first = 0;
+    auto inEntityBlock = [local, &first]( uint16_type entityCount,
+                                         uint16_type entityDof )
+    {
+        const size_type size = static_cast<size_type>( entityCount )*entityDof;
+        const bool contains = entityDof > 0 && local >= first && local < first+size;
+        const size_type blockFirst = first;
+        first += size;
+        return std::pair{ contains, blockFirst };
+    };
+    auto makeAttachment = [local, kind]( int entityDim,
+                                        size_type blockFirst,
+                                        uint16_type entityDof )
+    {
+        const size_type offset = local-blockFirst;
+        return Attachment{
+            .entityDim = static_cast<int8_type>( entityDim ),
+            .entityId = static_cast<uint16_type>( offset/entityDof ),
+            .ordinal = static_cast<uint16_type>( offset%entityDof ),
+            .kind = kind };
+    };
+
+    if ( auto [contains, blockFirst] = inEntityBlock( vertexCount, dofPerVertex ); contains )
+        return makeAttachment( 0, blockFirst, dofPerVertex );
+    if ( auto [contains, blockFirst] = inEntityBlock( edgeCount, dofPerEdge ); contains )
+        return makeAttachment( 1, blockFirst, dofPerEdge );
+    if ( auto [contains, blockFirst] = inEntityBlock( faceCount, dofPerFace ); contains )
+        return makeAttachment( 2, blockFirst, dofPerFace );
+    if ( auto [contains, blockFirst] = inEntityBlock(
+             topologicalDim == 3 ? uint16_type( 1 ) : uint16_type( 0 ),
+             dofPerVolume ); contains )
+        return makeAttachment( 3, blockFirst, dofPerVolume );
+
+    return Attachment{ .entityDim = -1,
+                       .entityId = Attachment::invalid_id,
+                       .ordinal = Attachment::invalid_id,
+                       .kind = kind };
+}
+
 template<class FE>
 concept FiniteElementDofCardinalityProvider =
     requires( FE const& fe, uint16_type entityDim, uint16_type entityId, uint16_type facetId, bool perComponent )
@@ -211,6 +273,34 @@ concept FiniteElementDofCardinalityProvider =
     { fe.localDofCountOnEntity( entityDim, entityId, perComponent ) } -> std::convertible_to<uint16_type>;
     { fe.localDofCountOnFacet( facetId, perComponent ) } -> std::convertible_to<uint16_type>;
 };
+
+/**
+ * @brief Fixed local DoF count, or zero when the FE order is runtime-selected.
+ *
+ * This is the single compatibility point for storage traits that still need a
+ * compile-time extent.  The type-level `nLocalDof` member is instantiated only
+ * in the statically ordered branch; runtime consumers must query an FE or
+ * DofTable object instead.
+ */
+template<class FE>
+[[nodiscard]] consteval uint16_type
+finiteElementFixedLocalDofCountOrZero(
+    uint16_type componentCount = std::remove_cvref_t<FE>::nComponents )
+{
+    using finite_element_type = std::remove_cvref_t<FE>;
+    static_assert( HasOrderSupport<finite_element_type> );
+    if constexpr ( HasDynamicOrder<finite_element_type> )
+        return 0;
+    else
+    {
+        static_assert( HasStaticOrder<finite_element_type> );
+        if constexpr ( finite_element_type::is_product )
+            return static_cast<uint16_type>(
+                finite_element_type::nLocalDof * componentCount );
+        else
+            return static_cast<uint16_type>( finite_element_type::nLocalDof );
+    }
+}
 
 template<class FE>
 concept FiniteElementDofLayoutProvider =
@@ -268,19 +358,6 @@ concept FiniteElementReferenceTopologyProvider =
     { FE::reference_convex_type::numVertices } -> std::convertible_to<uint16_type>;
 };
 
-template<class FE>
-concept FiniteElementRuntimeSizedDofProvider =
-    FiniteElementReferenceTopologyProvider<FE> &&
-    FiniteElementDofCardinalityProvider<FE> &&
-    FiniteElementDofLayoutProvider<FE> &&
-    FiniteElementDofRepresentativePointProvider<FE> &&
-    FiniteElementDofFunctionalProvider<FE> &&
-    requires( FE const& fe )
-{
-    { fe.order() } -> std::convertible_to<uint16_type>;
-    { fe.runtimeOrder() } -> std::convertible_to<uint16_type>;
-};
-
 /**
  * @brief Minimal mathematical finite-element family contract used by Feel++.
  *
@@ -330,7 +407,9 @@ concept CiarletFiniteElement =
 template<class FE>
 concept ReferenceFiniteElement =
     CiarletFiniteElement<FE> &&
-    FiniteElementRuntimeSizedDofProvider<FE> &&
+    HasDofTopology<FE> &&
+    FiniteElementDofRepresentativePointProvider<FE> &&
+    FiniteElementDofFunctionalProvider<FE> &&
     requires( FE const& fe )
 {
     typename FE::SSpace;

@@ -15,6 +15,7 @@
 #ifndef FEELPP_BILINEARFORMCONTEXT_HPP
 #define FEELPP_BILINEARFORMCONTEXT_HPP 1
 
+
 namespace Feel
 {
 namespace vf
@@ -247,10 +248,10 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     M_eval_expr11( new eval11_expr_type( expr, _gmcExpr, M_test_fec1, M_trial_fec1 ) ),
     M_integrator( im )
 {
-    FEELPP_ASSERT( fusion::at_key<gmc<0> >( M_test_fec0 ).get() != 0 ).error( "invalid test_fec" );
-    FEELPP_ASSERT( fusion::at_key<test_gmc1 >( M_test_fec1 ).get() != 0 ).error( "invalid test_fec" );
-    FEELPP_ASSERT( fusion::at_key<gmc<0> >( M_trial_fec0 ).get() != 0 ).error( "invalid trial_fec" );
-    FEELPP_ASSERT( fusion::at_key<trial_gmc1 >( M_trial_fec1 ).get() != 0 ).error( "invalid trial_fec" );
+    CHECK( fusion::at_key<gmc<0> >( M_test_fec0 ) ) << "invalid test_fec";
+    CHECK( fusion::at_key<test_gmc1 >( M_test_fec1 ) ) << "invalid test_fec";
+    CHECK( fusion::at_key<gmc<0> >( M_trial_fec0 ) ) << "invalid trial_fec";
+    CHECK( fusion::at_key<trial_gmc1 >( M_trial_fec1 ) ) << "invalid trial_fec";
 
     this->initDynamicEigenMatrix();
 }
@@ -303,10 +304,10 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     M_eval_expr11( new eval11_expr_type( expr, _gmcExpr, M_test_fec1, M_trial_fec1 ) ),
     M_integrator( im )
 {
-    FEELPP_ASSERT( fusion::at_key<gmc<0> >( M_test_fec0 ).get() != 0 ).error( "invalid test_fec" );
-    FEELPP_ASSERT( fusion::at_key<test_gmc1 >( M_test_fec1 ).get() != 0 ).error( "invalid test_fec" );
-    FEELPP_ASSERT( fusion::at_key<gmc<0> >( M_trial_fec0 ).get() != 0 ).error( "invalid trial_fec" );
-    FEELPP_ASSERT( fusion::at_key<trial_gmc1 >( M_trial_fec1 ).get() != 0 ).error( "invalid trial_fec" );
+    CHECK( fusion::at_key<gmc<0> >( M_test_fec0 ) ) << "invalid test_fec";
+    CHECK( fusion::at_key<test_gmc1 >( M_test_fec1 ) ) << "invalid test_fec";
+    CHECK( fusion::at_key<gmc<0> >( M_trial_fec0 ) ) << "invalid trial_fec";
+    CHECK( fusion::at_key<trial_gmc1 >( M_trial_fec1 ) ) << "invalid trial_fec";
 
     this->initDynamicEigenMatrix();
 }
@@ -373,14 +374,10 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     M_trial_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( M_trial_fec ) );
     M_trial_fec1 = fusion::make_map<trial_gmc1 >( fusion::at_key<trial_gmc1 >( M_trial_fec ) );
 
-    FEELPP_ASSERT( fusion::at_key<gmc<0> >( M_test_fec0 ).get() != 0 )
-    ( 0 ).error( "invalid test_fec0" );
-    FEELPP_ASSERT( fusion::at_key<gmc<1> >( M_test_fec1 ).get() != 0 )
-    ( 1 ).error( "invalid test_fec1" );
-    FEELPP_ASSERT( fusion::at_key<gmc<0> >( M_trial_fec0 ).get() != 0 )
-    ( 0 ).error( "invalid trial_fec0" );
-    FEELPP_ASSERT( fusion::at_key<gmc<1> >( M_trial_fec1 ).get() != 0 )
-    ( 0 ).error( "invalid trial_fec1" );
+    CHECK( fusion::at_key<gmc<0> >( M_test_fec0 ) ) << "invalid test_fec0";
+    CHECK( fusion::at_key<gmc<1> >( M_test_fec1 ) ) << "invalid test_fec1";
+    CHECK( fusion::at_key<gmc<0> >( M_trial_fec0 ) ) << "invalid trial_fec0";
+    CHECK( fusion::at_key<gmc<1> >( M_trial_fec1 ) ) << "invalid trial_fec1";
 
     M_eval_expr00->update( _gmcExpr, M_test_fec0, M_trial_fec0 );
     if ( M_form.isPatternExtended() )
@@ -455,38 +452,14 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     test_geometric_mapping_context_type const& _gmc = *fusion::at_key<gmc<0> >( M_test_gmc );
     DVLOG(2) << "[BilinearForm::integrate] local assembly in element " << _gmc.id() << "\n";
 #endif /* NDEBUG */
-    const uint16_type nDofTestElt = test_dof_type::is_order_dynamic ? static_cast<uint16_type>( M_test_dof->nLocalDof() ) : test_dof_type::nDofPerElement;
-    const uint16_type nDofTrialElt = trial_dof_type::is_order_dynamic ? static_cast<uint16_type>( M_trial_dof->nLocalDof() ) : trial_dof_type::nDofPerElement;
-    const uint16_type nDofTestComp = [&]()
-    {
-        if constexpr ( test_dof_type::is_order_dynamic )
-        {
-            auto const testFe = M_form.testFiniteElement<UseMortarTest>();
-            if constexpr ( requires { testFe->localDof(); } )
-                return static_cast<uint16_type>( testFe->localDof() );
-            else if constexpr ( requires { testFe->runtimeLocalDof(); } )
-                return static_cast<uint16_type>( testFe->runtimeLocalDof() );
-            else
-                return static_cast<uint16_type>( M_test_dof->nLocalDof()/test_dof_type::nComponents );
-        }
-        else
-            return static_cast<uint16_type>( test_dof_type::fe_type::nLocalDof );
-    }();
-    const uint16_type nDofTrialComp = [&]()
-    {
-        if constexpr ( trial_dof_type::is_order_dynamic )
-        {
-            auto const trialFe = M_form.trialFiniteElement<UseMortarTrial>();
-            if constexpr ( requires { trialFe->localDof(); } )
-                return static_cast<uint16_type>( trialFe->localDof() );
-            else if constexpr ( requires { trialFe->runtimeLocalDof(); } )
-                return static_cast<uint16_type>( trialFe->runtimeLocalDof() );
-            else
-                return static_cast<uint16_type>( M_trial_dof->nLocalDof()/trial_dof_type::nComponents );
-        }
-        else
-            return static_cast<uint16_type>( trial_dof_type::fe_type::nLocalDof );
-    }();
+    const uint16_type nDofTestElt =
+        static_cast<uint16_type>( M_test_dof->nLocalDof() );
+    const uint16_type nDofTrialElt =
+        static_cast<uint16_type>( M_trial_dof->nLocalDof() );
+    const uint16_type nDofTestComp = static_cast<uint16_type>(
+        M_form.testFiniteElement<UseMortarTest>()->localDof() );
+    const uint16_type nDofTrialComp = static_cast<uint16_type>(
+        M_form.trialFiniteElement<UseMortarTrial>()->localDof() );
 
     if ( M_form.isPatternDefault() && boost::is_same<trial_dof_type,test_dof_type>::value &&
          trial_dof_type::is_product && !UseMortar )
@@ -657,8 +630,10 @@ integrate( mpl::int_<2> )
                             mpl::equal_to<mpl::int_<shape::N>,mpl::int_<1> > >::value ),
                           INVALID_TENSOR_SHAPE_SHOULD_BE_RANK_0,
                           ( mpl::int_<shape::M>, mpl::int_<shape::N> ) );
-    const uint16_type nDofTestElt = test_dof_type::is_order_dynamic ? static_cast<uint16_type>( M_test_dof->nLocalDof() ) : test_dof_type::nDofPerElement;
-    const uint16_type nDofTrialElt = trial_dof_type::is_order_dynamic ? static_cast<uint16_type>( M_trial_dof->nLocalDof() ) : trial_dof_type::nDofPerElement;
+    const uint16_type nDofTestElt =
+        static_cast<uint16_type>( M_test_dof->nLocalDof() );
+    const uint16_type nDofTrialElt =
+        static_cast<uint16_type>( M_trial_dof->nLocalDof() );
 
     if ( M_form.isPatternExtended() )
     {
@@ -726,8 +701,10 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     bool useMortarTestAssembly = test_dof_type::is_mortar && M_test_dof->mesh()->isBoundaryElement( _gmcTest.id() );
     bool useMortarTrialAssembly = trial_dof_type::is_mortar && M_trial_dof->mesh()->isBoundaryElement( _gmcTrial.id() );
 #endif
-    const uint16_type nDofTestElt = test_dof_type::is_order_dynamic ? static_cast<uint16_type>( M_test_dof->nLocalDof() ) : test_dof_type::nDofPerElement;
-    const uint16_type nDofTrialElt = trial_dof_type::is_order_dynamic ? static_cast<uint16_type>( M_trial_dof->nLocalDof() ) : trial_dof_type::nDofPerElement;
+    const uint16_type nDofTestElt =
+        static_cast<uint16_type>( M_test_dof->nLocalDof() );
+    const uint16_type nDofTrialElt =
+        static_cast<uint16_type>( M_trial_dof->nLocalDof() );
 
     if constexpr ( UseMortarType == 0 )
     {
@@ -811,36 +788,10 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     index_type trial_eid = elt.second;
     size_type row_start = M_lb.front().globalRowStart();
     size_type col_start = M_lb.front().globalColumnStart();
-    const uint16_type nDofTestComp = [&]()
-    {
-        if constexpr ( test_dof_type::is_order_dynamic )
-        {
-            auto const testFe = M_form.testFiniteElement<UseMortarTest>();
-            if constexpr ( requires { testFe->localDof(); } )
-                return static_cast<uint16_type>( testFe->localDof() );
-            else if constexpr ( requires { testFe->runtimeLocalDof(); } )
-                return static_cast<uint16_type>( testFe->runtimeLocalDof() );
-            else
-                return static_cast<uint16_type>( M_test_dof->nLocalDof()/test_dof_type::nComponents );
-        }
-        else
-            return static_cast<uint16_type>( test_dof_type::fe_type::nLocalDof );
-    }();
-    const uint16_type nDofTrialComp = [&]()
-    {
-        if constexpr ( trial_dof_type::is_order_dynamic )
-        {
-            auto const trialFe = M_form.trialFiniteElement<UseMortarTrial>();
-            if constexpr ( requires { trialFe->localDof(); } )
-                return static_cast<uint16_type>( trialFe->localDof() );
-            else if constexpr ( requires { trialFe->runtimeLocalDof(); } )
-                return static_cast<uint16_type>( trialFe->runtimeLocalDof() );
-            else
-                return static_cast<uint16_type>( M_trial_dof->nLocalDof()/trial_dof_type::nComponents );
-        }
-        else
-            return static_cast<uint16_type>( trial_dof_type::fe_type::nLocalDof );
-    }();
+    const uint16_type nDofTestComp = static_cast<uint16_type>(
+        M_form.testFiniteElement<UseMortarTest>()->localDof() );
+    const uint16_type nDofTrialComp = static_cast<uint16_type>(
+        M_form.trialFiniteElement<UseMortarTrial>()->localDof() );
 
     //
     DCHECK( trial_eid != invalid_v<index_type> )
@@ -860,21 +811,24 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 
     if ( do_less )
     {
+        {
+            M_test_dof->localToGlobalIndices(
+                elt_0, M_form.dofIdToContainerIdTest(), M_local_rows );
+            M_trial_dof->localToGlobalIndices(
+                trial_eid, M_form.dofIdToContainerIdTrial(), M_local_cols );
+            M_test_dof->mapLocalLinearFormToCanonicalDofs(
+                elt_0, M_rep );
+            M_trial_dof->mapLocalTrialColumnsToCanonicalDofs(
+                trial_eid, M_rep );
+        }
         for ( uint16_type c = 0; c < trial_dof_type::nComponents; ++c )
         {
             M_c_rep = M_rep.block( c*nDofTestComp, c*nDofTrialComp,
                                    nDofTestComp, nDofTrialComp );
-            M_c_local_rows.array() = M_test_dof->localToGlobalIndices( elt_0,M_form.dofIdToContainerIdTest() ).array().segment( c*nDofTestComp,
-                                    nDofTestComp );
-            M_c_local_cols.array() = M_trial_dof->localToGlobalIndices( trial_eid,M_form.dofIdToContainerIdTrial() ).array().segment( c*nDofTrialComp,
-                                    nDofTrialComp );
-
-            if ( test_dof_type::is_modal || trial_dof_type::is_modal )
-            {
-                M_c_local_rowsigns = M_test_dof->localToGlobalSigns( elt_0 ).segment( c*nDofTestComp,nDofTestComp );
-                M_c_local_colsigns = M_trial_dof->localToGlobalSigns( trial_eid ).segment( c*nDofTrialComp,nDofTrialComp );
-                M_c_rep.array() *= ( M_c_local_rowsigns*M_c_local_colsigns.transpose() ).array().template cast<value_type>();
-            }
+            M_c_local_rows = M_local_rows.segment( c*nDofTestComp,
+                                                   nDofTestComp );
+            M_c_local_cols = M_local_cols.segment( c*nDofTrialComp,
+                                                   nDofTrialComp );
 
             M_form.addMatrix( M_c_local_rows.data(), M_c_local_rows.size(),
                               M_c_local_cols.data(), M_c_local_cols.size(),
@@ -883,28 +837,15 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     }
     else if constexpr ( UseMortarType == 0 )
     {
-        M_local_rows.array() = M_test_dof->localToGlobalIndices( elt_0, M_form.dofIdToContainerIdTest() ).array();
-        M_local_cols.array() = M_trial_dof->localToGlobalIndices( trial_eid, M_form.dofIdToContainerIdTrial() ).array();
+        M_test_dof->localToGlobalIndices(
+            elt_0, M_form.dofIdToContainerIdTest(), M_local_rows );
+        M_trial_dof->localToGlobalIndices(
+            trial_eid, M_form.dofIdToContainerIdTrial(), M_local_cols );
 
-        if ( test_dof_type::is_modal || trial_dof_type::is_modal ||
-             is_hdiv_conforming<trial_fe_type>::value || is_hdiv_conforming<test_fe_type>::value ||
-             is_hcurl_conforming<trial_fe_type>::value || is_hcurl_conforming<test_fe_type>::value )
-        {
-            if ( M_test_dof->hasDenseDofTransform( elt_0 ) ||
-                 M_trial_dof->hasDenseDofTransform( trial_eid ) )
-            {
-                auto const testTransform = M_test_dof->localToGlobalCoefficientTransform( elt_0 );
-                auto const trialTransform = M_trial_dof->localToGlobalCoefficientTransform( trial_eid );
-                M_rep = testTransform.transpose().template cast<value_type>() * M_rep *
-                        trialTransform.template cast<value_type>();
-            }
-            else
-            {
-                M_local_rowsigns = M_test_dof->localToGlobalSigns( elt_0 );
-                M_local_colsigns = M_trial_dof->localToGlobalSigns( trial_eid );
-                M_rep.array() *= ( M_local_rowsigns*M_local_colsigns.transpose() ).array().template cast<value_type>();
-            }
-        }
+        M_test_dof->mapLocalLinearFormToCanonicalDofs(
+            elt_0, M_rep );
+        M_trial_dof->mapLocalTrialColumnsToCanonicalDofs(
+            trial_eid, M_rep );
 
         M_form.addMatrix( M_local_rows.data(), M_local_rows.size(),
                           M_local_cols.data(), M_local_cols.size(),
@@ -915,15 +856,16 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 #if !defined(NDEBUG)
         CHECK( useMortarTestAssembly && !useMortarTrialAssembly ) << "bad UseMortarType";
 #endif
-        M_mortarTest_local_rows.array() = M_test_dof->localToGlobalIndices( elt_0, M_form.dofIdToContainerIdTest() ).array();
-        M_local_cols.array() = M_trial_dof->localToGlobalIndices( trial_eid, M_form.dofIdToContainerIdTrial() ).array();
+        M_test_dof->localToGlobalIndices(
+            elt_0, M_form.dofIdToContainerIdTest(),
+            M_mortarTest_local_rows );
+        M_trial_dof->localToGlobalIndices(
+            trial_eid, M_form.dofIdToContainerIdTrial(), M_local_cols );
 
-        if ( test_dof_type::is_modal || trial_dof_type::is_modal ||
-             is_hdiv_conforming<trial_fe_type>::value || is_hdiv_conforming<test_fe_type>::value ||
-             is_hcurl_conforming<trial_fe_type>::value || is_hcurl_conforming<test_fe_type>::value )
-        {
-            CHECK(false) << "TODO";
-        }
+        M_test_dof->mapLocalLinearFormToCanonicalDofs(
+            elt_0, M_mortarTest_rep );
+        M_trial_dof->mapLocalTrialColumnsToCanonicalDofs(
+            trial_eid, M_mortarTest_rep );
 
         M_form.addMatrix( M_mortarTest_local_rows.data(), M_mortarTest_local_rows.size(),
                           M_local_cols.data(), M_local_cols.size(),
@@ -937,12 +879,10 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 #endif
         M_local_rows.array() = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
         M_mortarTrial_local_cols.array() = M_trial_dof->localToGlobalIndices( trial_eid ).array() + col_start;
-        if ( test_dof_type::is_modal || trial_dof_type::is_modal ||
-             is_hdiv_conforming<trial_fe_type>::value || is_hdiv_conforming<test_fe_type>::value ||
-             is_hcurl_conforming<trial_fe_type>::value || is_hcurl_conforming<test_fe_type>::value )
-        {
-            CHECK(false) << "TODO";
-        }
+        M_test_dof->mapLocalLinearFormToCanonicalDofs(
+            elt_0, M_mortarTrial_rep );
+        M_trial_dof->mapLocalTrialColumnsToCanonicalDofs(
+            trial_eid, M_mortarTrial_rep );
         M_form.addMatrix( M_local_rows.data(), M_local_rows.size(),
                           M_mortarTrial_local_cols.data(), M_mortarTrial_local_cols.size(),
                           M_mortarTrial_rep.data() );
@@ -971,30 +911,49 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 assemble( std::pair<index_type,index_type> const& elt_0,
           std::pair<index_type,index_type> const& elt_1 )
 {
-    const uint16_type nDofTestElt = test_dof_type::is_order_dynamic ? static_cast<uint16_type>( M_test_dof->nLocalDof() ) : test_dof_type::nDofPerElement;
-    const uint16_type nDofTrialElt = trial_dof_type::is_order_dynamic ? static_cast<uint16_type>( M_trial_dof->nLocalDof() ) : trial_dof_type::nDofPerElement;
+    const uint16_type nDofTestElt =
+        static_cast<uint16_type>( M_test_dof->nLocalDof() );
+    const uint16_type nDofTrialElt =
+        static_cast<uint16_type>( M_trial_dof->nLocalDof() );
 
     index_type test_elt_0 = elt_0.first;
     index_type test_elt_1 = elt_1.first;
     index_type trial_elt_0 = elt_0.second;
     index_type trial_elt_1 = elt_1.second;
 
-    M_local_rows_2.head( nDofTestElt ).array() = M_test_dof->localToGlobalIndices( test_elt_0,M_form.dofIdToContainerIdTest() ).array();
-    M_local_rows_2.tail( nDofTestElt ).array() = M_test_dof->localToGlobalIndices( test_elt_1,M_form.dofIdToContainerIdTest() ).array();
+    M_test_dof->localToGlobalIndices(
+        test_elt_0, M_form.dofIdToContainerIdTest(), M_local_rows );
+    M_local_rows_2.head( nDofTestElt ) = M_local_rows;
+    M_test_dof->localToGlobalIndices(
+        test_elt_1, M_form.dofIdToContainerIdTest(), M_local_rows );
+    M_local_rows_2.tail( nDofTestElt ) = M_local_rows;
 
-    M_local_cols_2.head( nDofTrialElt ).array() = M_trial_dof->localToGlobalIndices( trial_elt_0,M_form.dofIdToContainerIdTrial() ).array();
-    M_local_cols_2.tail( nDofTrialElt ).array() = M_trial_dof->localToGlobalIndices( trial_elt_1,M_form.dofIdToContainerIdTrial() ).array();
+    M_trial_dof->localToGlobalIndices(
+        trial_elt_0, M_form.dofIdToContainerIdTrial(), M_local_cols );
+    M_local_cols_2.head( nDofTrialElt ) = M_local_cols;
+    M_trial_dof->localToGlobalIndices(
+        trial_elt_1, M_form.dofIdToContainerIdTrial(), M_local_cols );
+    M_local_cols_2.tail( nDofTrialElt ) = M_local_cols;
 
-    if ( test_dof_type::is_modal || trial_dof_type::is_modal )
-    {
-        M_local_rowsigns_2.head( nDofTestElt ) = M_test_dof->localToGlobalSigns( test_elt_0 );
-        M_local_rowsigns_2.tail( nDofTestElt ) = M_test_dof->localToGlobalSigns( test_elt_1 );
+    // Face contexts account for diagonal sign orientation themselves. Coupled
+    // moment blocks still need the FE-owned non-diagonal transforms.
+    auto firstTestRows = M_rep_2.topRows( nDofTestElt );
+    auto secondTestRows = M_rep_2.bottomRows( nDofTestElt );
+    M_test_dof->mapLocalLinearFormToCanonicalDofs(
+        test_elt_0, firstTestRows,
+        DofTransformApplication::NonDiagonalOnly );
+    M_test_dof->mapLocalLinearFormToCanonicalDofs(
+        test_elt_1, secondTestRows,
+        DofTransformApplication::NonDiagonalOnly );
 
-        M_local_colsigns_2.head( nDofTrialElt ) = M_trial_dof->localToGlobalSigns( trial_elt_0 );
-        M_local_colsigns_2.tail( nDofTrialElt ) = M_trial_dof->localToGlobalSigns( trial_elt_1 );
-
-        M_rep_2.array() *= ( M_local_rowsigns_2*M_local_colsigns_2.transpose() ).array().template cast<value_type>();
-    }
+    auto firstTrialColumns = M_rep_2.leftCols( nDofTrialElt );
+    auto secondTrialColumns = M_rep_2.rightCols( nDofTrialElt );
+    M_trial_dof->mapLocalTrialColumnsToCanonicalDofs(
+        trial_elt_0, firstTrialColumns,
+        DofTransformApplication::NonDiagonalOnly );
+    M_trial_dof->mapLocalTrialColumnsToCanonicalDofs(
+        trial_elt_1, secondTrialColumns,
+        DofTransformApplication::NonDiagonalOnly );
     if ( M_form.isPatternExtended() )
     {
         M_form.addMatrix( M_local_rows_2.data(), M_local_rows_2.size(),
@@ -1030,16 +989,16 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 
     if constexpr ( UseMortarType == 0 )
     {
-        M_local_rows.array() = M_test_dof->localToGlobalIndices( eltTestId,M_form.dofIdToContainerIdTest() ).array();
-        M_local_cols.array() = M_trial_dof->localToGlobalIndices( eltTrialId,M_form.dofIdToContainerIdTrial() ).array();
+        M_test_dof->localToGlobalIndices(
+            eltTestId, M_form.dofIdToContainerIdTest(), M_local_rows );
+        M_trial_dof->localToGlobalIndices(
+            eltTrialId, M_form.dofIdToContainerIdTrial(), M_local_cols );
         DVLOG(2) << "M_local_rows: " << M_local_rows;
         DVLOG(2) << "M_local_cols: " << M_local_cols;
-        if ( test_dof_type::is_modal || trial_dof_type::is_modal )
-        {
-            M_local_rowsigns = M_test_dof->localToGlobalSigns( eltTestId );
-            M_local_colsigns = M_trial_dof->localToGlobalSigns( eltTrialId );
-            M_rep.array() *= ( M_local_rowsigns*M_local_colsigns.transpose() ).array().template cast<value_type>();
-        }
+        M_test_dof->mapLocalLinearFormToCanonicalDofs(
+            eltTestId, M_rep );
+        M_trial_dof->mapLocalTrialColumnsToCanonicalDofs(
+            eltTrialId, M_rep );
         DVLOG(2) << "add rep : " << M_rep;
         M_form.addMatrix( M_local_rows.data(), M_local_rows.size(),
                           M_local_cols.data(), M_local_cols.size(),
@@ -1050,15 +1009,18 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 #if !defined(NDEBUG)
         CHECK( useMortarTestAssembly && !useMortarTrialAssembly ) << "bad UseMortarType";
 #endif
-        M_mortarTest_local_rows.array() = M_test_dof->localToGlobalIndices( eltTestId,M_form.dofIdToContainerIdTest() ).array();
-        M_local_cols.array() = M_trial_dof->localToGlobalIndices( eltTrialId,M_form.dofIdToContainerIdTrial() ).array();
+        M_test_dof->localToGlobalIndices(
+            eltTestId, M_form.dofIdToContainerIdTest(),
+            M_mortarTest_local_rows );
+        M_trial_dof->localToGlobalIndices(
+            eltTrialId, M_form.dofIdToContainerIdTrial(), M_local_cols );
 
         DVLOG(2) << "M_mortarTest_local_rows: " << M_mortarTest_local_rows;
         DVLOG(2) << "M_local_cols: " << M_local_cols;
-        if ( test_dof_type::is_modal || trial_dof_type::is_modal )
-        {
-            CHECK( false ) << "TODO";
-        }
+        M_test_dof->mapLocalLinearFormToCanonicalDofs(
+            eltTestId, M_mortarTest_rep );
+        M_trial_dof->mapLocalTrialColumnsToCanonicalDofs(
+            eltTrialId, M_mortarTest_rep );
         DVLOG(2) << "add mortarTest rep : " << M_mortarTest_rep;
         M_form.addMatrix( M_mortarTest_local_rows.data(), M_mortarTest_local_rows.size(),
                           M_local_cols.data(), M_local_cols.size(),
@@ -1069,12 +1031,15 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 #if !defined(NDEBUG)
         CHECK( !useMortarTestAssembly && useMortarTrialAssembly ) << "bad UseMortarType";
 #endif
-        M_local_rows.array() = M_test_dof->localToGlobalIndices( eltTestId,M_form.dofIdToContainerIdTest() ).array();
-        M_mortarTrial_local_cols.array() = M_trial_dof->localToGlobalIndices( eltTrialId,M_form.dofIdToContainerIdTrial() ).array();
-        if ( test_dof_type::is_modal || trial_dof_type::is_modal )
-        {
-            CHECK( false ) << "TODO";
-        }
+        M_test_dof->localToGlobalIndices(
+            eltTestId, M_form.dofIdToContainerIdTest(), M_local_rows );
+        M_trial_dof->localToGlobalIndices(
+            eltTrialId, M_form.dofIdToContainerIdTrial(),
+            M_mortarTrial_local_cols );
+        M_test_dof->mapLocalLinearFormToCanonicalDofs(
+            eltTestId, M_mortarTrial_rep );
+        M_trial_dof->mapLocalTrialColumnsToCanonicalDofs(
+            eltTrialId, M_mortarTrial_rep );
         M_form.addMatrix( M_local_rows.data(), M_local_rows.size(),
                           M_mortarTrial_local_cols.data(), M_mortarTrial_local_cols.size(),
                           M_mortarTrial_rep.data() );

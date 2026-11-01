@@ -15,6 +15,7 @@
 #define FEELPP_PCH_H 1
 #include <boost/mp11/utility.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelpoly/fecapabilities.hpp>
 #include <feel/feelpoly/order.hpp>
 
 namespace Feel {
@@ -81,7 +82,7 @@ using Pch_element_type=Pch_element_t<MeshType,Order,T,Pts, Tag>;
  * RuntimeOrder specifies the polynomial degree.
  *
  * @code
- * // Static order P2 (RuntimeOrder ignored)
+ * // Static order P2 (RuntimeOrder must agree with the static type)
  * auto Vh = Pch<2>(mesh, RuntimeOrder(2));
  *
  * // Dynamic order P2
@@ -106,6 +107,7 @@ Pch( std::shared_ptr<MeshType> const& mesh,
      RuntimeOrder order,
      DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
 {
+    fe::requireCapability<fe::Family::Lagrange>( *mesh, order );
     return Pch_type<MeshType, Order, T, Pts, Tag>::New(
         _mesh = mesh,
         _worldscomm = makeWorldsComm( 1, mesh->worldComm() ),
@@ -167,6 +169,8 @@ Pch( std::shared_ptr<MeshType> const& mesh,
      DofTableExtendedType dte = DofTableExtendedType::DEFAULT,
      size_type components = 0 )
 {
+    fe::requireCapability<fe::Family::Lagrange>(
+        *mesh, RuntimeOrder{ static_cast<uint16_type>( Order ) } );
     return Pch_type<MeshType, Order, T, Pts, Tag>::New(
         _mesh = mesh,
         _range = std::forward<RangeType>( rangeElt ),
@@ -202,6 +206,7 @@ Pch( std::shared_ptr<MeshType> const& mesh,
      DofTableExtendedType dte = DofTableExtendedType::DEFAULT,
      size_type components = 0 )
 {
+    fe::requireCapability<fe::Family::Lagrange>( *mesh, order );
     return Pch_type<MeshType, Order, T, Pts, Tag>::New(
         _mesh = mesh,
         _range = std::forward<RangeType>( rangeElt ),

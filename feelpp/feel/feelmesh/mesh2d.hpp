@@ -70,7 +70,7 @@ class Mesh2D
       public MeshBase<IndexT>,
       public Elements<Shape,T>,
       public Points<Shape::nRealDim,T>,
-      public Faces<typename Shape::template shape<1, Shape::nOrder, Shape::nRealDim>,
+      public Faces<typename Shape::template shape<1, Shape::nOrder_v, Shape::nRealDim>,
                    typename Elements<Shape,T>::element_type>
 {
     // check at compilation time that the shape has indeed dimension 2
@@ -112,7 +112,7 @@ class Mesh2D
     typedef typename super_points::points_type points_type;
     typedef typename super_points::point_type point_type;
 
-    typedef Faces<typename Shape::template shape<1, Shape::nOrder, Shape::nRealDim>,
+    typedef Faces<typename Shape::template shape<1, Shape::nOrder_v, Shape::nRealDim>,
                   typename super_elements::element_type>
         super_faces;
     typedef typename super_faces::face_iterator face_iterator;

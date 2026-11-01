@@ -17,7 +17,6 @@
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelpoly/pointsetinterpolation.hpp>
 #include <feel/feelpoly/jacobi.hpp>
-#include <feel/feelpoly/geomap.hpp>
 #include <feel/feelmesh/geond.hpp>
 #include <feel/feelmesh/geo0d.hpp>
 #include <feel/feelpoly/gausslobatto.hpp>

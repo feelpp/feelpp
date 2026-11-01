@@ -24,6 +24,8 @@
 #include <stdexcept>
 #include <string>
 
+#include "fe_parity_checks.hpp"
+
 using namespace Feel;
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
@@ -58,7 +60,7 @@ checkOnParity( StaticSpacePtrType const& staticSpace,
 {
     BOOST_REQUIRE_EQUAL( staticSpace->nDof(), runtimeSpace->nDof() );
     if ( compareOrder )
-        BOOST_CHECK_EQUAL( staticSpace->runtimeOrder(), runtimeSpace->runtimeOrder() );
+        BOOST_CHECK_EQUAL( staticSpace->order(), runtimeSpace->order() );
 
     auto uStatic = staticSpace->element();
     auto uRuntime = runtimeSpace->element();
@@ -69,6 +71,59 @@ checkOnParity( StaticSpacePtrType const& staticSpace,
                                      _expr = idv( uStatic ) - idv( uRuntime ),
                                      _quad = _Q<12>() );
     BOOST_CHECK_SMALL( parityError, tol );
+}
+
+template<typename StaticMatrix, typename RuntimeMatrix>
+void
+checkMatrixParity( StaticMatrix const& staticMatrix,
+                   RuntimeMatrix const& runtimeMatrix,
+                   double tolerance )
+{
+    BOOST_REQUIRE_EQUAL( staticMatrix.size1(), runtimeMatrix.size1() );
+    BOOST_REQUIRE_EQUAL( staticMatrix.size2(), runtimeMatrix.size2() );
+    for ( std::size_t i = 0; i < staticMatrix.size1(); ++i )
+        for ( std::size_t j = 0; j < staticMatrix.size2(); ++j )
+            BOOST_CHECK_SMALL(
+                staticMatrix( i, j )-runtimeMatrix( i, j ), tolerance );
+}
+
+template<typename StaticSpacePtrType, typename RuntimeSpacePtrType,
+         typename MeshPtrType>
+void
+checkReferenceFiniteElementParity( StaticSpacePtrType const& staticSpace,
+                                   RuntimeSpacePtrType const& runtimeSpace,
+                                   MeshPtrType const& mesh )
+{
+    auto const& staticFe = *staticSpace->basis();
+    auto const& runtimeFe = *runtimeSpace->basis();
+    BOOST_REQUIRE_EQUAL( staticFe.localDofCount(), runtimeFe.localDofCount() );
+    checkMatrixParity( staticFe.primal().coeff(),
+                       runtimeFe.primal().coeff(), 1e-12 );
+    checkMatrixParity( staticFe.dual()( staticFe.primal() ),
+                       runtimeFe.dual()( runtimeFe.primal() ), 1e-11 );
+    checkMatrixParity( staticFe.coeff(), runtimeFe.coeff(), 1e-10 );
+    checkMatrixParity( staticFe.points(), runtimeFe.points(), 1e-12 );
+    for ( uint16_type localDof = 0;
+          localDof < staticFe.localDofCount(); ++localDof )
+    {
+        auto const staticAttachment = staticFe.dofAttachment( localDof );
+        auto const runtimeAttachment = runtimeFe.dofAttachment( localDof );
+        BOOST_CHECK_EQUAL( staticAttachment.entityDim,
+                           runtimeAttachment.entityDim );
+        BOOST_CHECK_EQUAL( staticAttachment.entityId,
+                           runtimeAttachment.entityId );
+        BOOST_CHECK_EQUAL( staticAttachment.ordinal,
+                           runtimeAttachment.ordinal );
+        BOOST_CHECK_EQUAL( staticFe.dofFunctionalKind( localDof ),
+                           runtimeFe.dofFunctionalKind( localDof ) );
+    }
+    BOOST_CHECK( !staticFe.dofAttachment(
+                     staticFe.localDofCount() ).isValid() );
+    BOOST_CHECK( !runtimeFe.dofAttachment(
+                     runtimeFe.localDofCount() ).isValid() );
+
+    Feel::test_detail::checkFiniteElementTransformParity(
+        staticSpace, runtimeSpace, mesh );
 }
 
 template<typename SpacePtrType, typename MeshPtrType, typename ExprType>
@@ -193,8 +248,9 @@ checkRtStaticDynamicParityAndExactness( simplex_mesh_ptrtype<Dim> const& mesh )
 
     BOOST_TEST_CONTEXT( "RT dim=" << Dim << " order=" << Order )
     {
-        BOOST_CHECK_EQUAL( rtDynamic->basis()->runtimeOrder(), Order );
+        BOOST_CHECK_EQUAL( rtDynamic->basis()->order(), Order );
         BOOST_CHECK_EQUAL( rtDynamic->basis()->localDofPerComponent(), rtStatic->basis()->localDofPerComponent() );
+        checkReferenceFiniteElementParity( rtStatic, rtDynamic, mesh );
         checkOnParity( rtStatic, rtDynamic, mesh, expr, 1e-11, false );
         checkInterpolationExactness( rtStatic, mesh, expr, 1e-10 );
         checkInterpolationExactness( rtDynamic, mesh, expr, 1e-10 );
@@ -211,8 +267,9 @@ checkBdmStaticDynamicParityAndExactness( simplex_mesh_ptrtype<Dim> const& mesh )
 
     BOOST_TEST_CONTEXT( "BDM dim=" << Dim << " order=" << Order )
     {
-        BOOST_CHECK_EQUAL( bdmDynamic->basis()->runtimeOrder(), Order );
+        BOOST_CHECK_EQUAL( bdmDynamic->basis()->order(), Order );
         BOOST_CHECK_EQUAL( bdmDynamic->basis()->localDofPerComponent(), bdmStatic->basis()->localDofPerComponent() );
+        checkReferenceFiniteElementParity( bdmStatic, bdmDynamic, mesh );
         checkOnParity( bdmStatic, bdmDynamic, mesh, expr, 1e-11, false );
         checkInterpolationExactness( bdmStatic, mesh, expr, 1e-10 );
         checkInterpolationExactness( bdmDynamic, mesh, expr, 1e-10 );
@@ -232,9 +289,10 @@ checkNedelecStaticDynamicParityAndExactness( simplex_mesh_ptrtype<Dim> const& me
 
     BOOST_TEST_CONTEXT( "NED1 dim=" << Dim << " order=" << Order )
     {
-        BOOST_CHECK_EQUAL( nedDynamic->basis()->runtimeOrder(), Order );
+        BOOST_CHECK_EQUAL( nedDynamic->basis()->order(), Order );
         BOOST_CHECK_EQUAL( nedDynamic->basis()->localDofPerComponent(),
                            nedStatic->basis()->localDofPerComponent() );
+        checkReferenceFiniteElementParity( nedStatic, nedDynamic, mesh );
         checkOnParity( nedStatic, nedDynamic, mesh, expr, 2e-10, false );
         checkInterpolationExactness( nedStatic, mesh, expr, 2e-9 );
         checkInterpolationExactness( nedDynamic, mesh, expr, 2e-9 );

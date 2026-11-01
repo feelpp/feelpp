@@ -122,7 +122,7 @@ checkScalarParity( mesh_ptrtype const& mesh, double tol )
     auto VhDynamic = Pch<Dynamic>( mesh, RuntimeOrder{ Order } );
     auto expr = manufacturedScalarExpr<Order>();
 
-    BOOST_REQUIRE_EQUAL( VhDynamic->runtimeOrder(), Order );
+    BOOST_REQUIRE_EQUAL( VhDynamic->order(), Order );
     BOOST_REQUIRE_EQUAL( VhStatic->nDof(), VhDynamic->nDof() );
 
     auto uStatic = project( _space = VhStatic, _expr = expr );
@@ -148,7 +148,7 @@ checkVectorParity( mesh_ptrtype const& mesh, double tol )
     auto VhDynamic = Pdhv<Dynamic>( mesh, RuntimeOrder{ Order } );
     auto expr = manufacturedVectorExpr<Order>();
 
-    BOOST_REQUIRE_EQUAL( VhDynamic->runtimeOrder(), Order );
+    BOOST_REQUIRE_EQUAL( VhDynamic->order(), Order );
     BOOST_REQUIRE_EQUAL( VhStatic->nDof(), VhDynamic->nDof() );
 
     auto uStatic = VhStatic->element();
@@ -176,7 +176,7 @@ checkTensorParity( mesh_ptrtype const& mesh, double tol )
     auto MhDynamic = Pdhm<Dynamic>( mesh, RuntimeOrder{ Order } );
     auto expr = manufacturedTensorExpr<Order>();
 
-    BOOST_REQUIRE_EQUAL( MhDynamic->runtimeOrder(), Order );
+    BOOST_REQUIRE_EQUAL( MhDynamic->order(), Order );
     BOOST_REQUIRE_EQUAL( MhStatic->nDof(), MhDynamic->nDof() );
 
     auto mStatic = MhStatic->element();

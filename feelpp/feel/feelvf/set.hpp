@@ -197,7 +197,10 @@ ElementOnExpr<ElementRange, Elem, OnExpr>::apply()
 
         fe_type const* __fe = M_u.functionSpace()->fe().get();
 
-        gm_ptrtype __gm( new gm_type );
+        auto __gm =
+            M_u.functionSpace()->mesh()->gm();
+        CHECK( __gm )
+            << "Dirichlet interpolation requires a geometric mapping";
 
 
         //
@@ -217,7 +220,9 @@ ElementOnExpr<ElementRange, Elem, OnExpr>::apply()
             {
                 __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
                 //DVLOG(2) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
-                FEELPP_ASSERT( __geopc[__f][__p]->nPoints() ).error( "invalid number of points" );
+                CHECK_GT(
+                    __geopc[__f][__p]->nPoints(), 0 )
+                    << "invalid number of geometric precompute points";
             }
         }
 
@@ -228,19 +233,19 @@ ElementOnExpr<ElementRange, Elem, OnExpr>::apply()
         //t_expr_type expr( M_expr, mapgmc );
 
 
-        DVLOG(2)  << "face_type::numVertices = " << face_type::numVertices << ", fe_type::nDofPerVertex = " << fe_type::nDofPerVertex << "\n"
-                  << "face_type::numEdges = " << face_type::numEdges << ", fe_type::nDofPerEdge = " << fe_type::nDofPerEdge << "\n"
-                  << "face_type::numFaces = " << face_type::numFaces << ", fe_type::nDofPerFace = " << fe_type::nDofPerFace << "\n";
+        DVLOG(2)  << "face_type::numVertices = " << face_type::numVertices << ", dofPerVertex = " << __fe->dofPerVertex() << "\n"
+                  << "face_type::numEdges = " << face_type::numEdges << ", dofPerEdge = " << __fe->dofPerEdge() << "\n"
+                  << "face_type::numFaces = " << face_type::numFaces << ", dofPerFace = " << __fe->dofPerFace() << "\n";
 
         size_type nbFaceDof = invalid_v<size_type>;
 
         if ( !fe_type::is_modal )
-            nbFaceDof = ( face_type::numVertices * fe_type::nDofPerVertex +
-                          face_type::numEdges * fe_type::nDofPerEdge +
-                          face_type::numFaces * fe_type::nDofPerFace );
+            nbFaceDof = ( face_type::numVertices * __fe->dofPerVertex() +
+                          face_type::numEdges * __fe->dofPerEdge() +
+                          face_type::numFaces * __fe->dofPerFace() );
 
         else
-            nbFaceDof = face_type::numVertices * fe_type::nDofPerVertex;
+            nbFaceDof = face_type::numVertices * __fe->dofPerVertex();
 
         DVLOG(2)  << "nbFaceDof = " << nbFaceDof << "\n";
         //const size_type nbFaceDof = __fe->boundaryFE()->points().size2();

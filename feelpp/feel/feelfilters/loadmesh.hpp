@@ -273,17 +273,14 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
             mpi::broadcast( worldcomm->globalComm(), fnamePartitioned, worldcomm->masterRank() );
             m->loadHDF5( fnamePartitioned, update, scale );
         }
-        if constexpr ( _mesh_type::nOrder > 1 )
+        if constexpr ( _mesh_type::is_order_dynamic )
         {
-            if constexpr ( _mesh_type::is_order_dynamic )
-            {
-                if ( m->order() > 1 )
-                    return straightenMesh( m, worldcomm->subWorldCommPtr() );
-            }
-            else if constexpr ( _mesh_type::nOrder > 1 )
-            {
+            if ( m->order() > 1 )
                 return straightenMesh( m, worldcomm->subWorldCommPtr() );
-            }
+        }
+        else if constexpr ( _mesh_type::nOrder > 1 )
+        {
+            return straightenMesh( m, worldcomm->subWorldCommPtr() );
         }
         return m;
     }

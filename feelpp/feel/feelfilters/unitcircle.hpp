@@ -46,6 +46,37 @@ unitCircle( double h = doption(_name="gmsh.hsize") )
 #endif
 }
 
+/**
+ * @brief Build a runtime-order triangular mesh of the unit circle.
+ * @param order positive polynomial order of the geometric mapping
+ * @param h target mesh size
+ * @return unit-circle mesh whose geometric order is selected at runtime
+ */
+inline std::shared_ptr<Mesh<Simplex<2, Dynamic>>>
+unitCircle( RuntimeOrder order,
+            double h = doption( _name = "gmsh.hsize" ) )
+{
+#ifdef FEELPP_HAS_GMSH
+    auto mesh =
+        Mesh<Simplex<2, Dynamic>>::New( order );
+    return createGMSHMesh(
+        _mesh = mesh,
+        _desc = domain(
+            _name = fmt::format(
+                "circle-g{}", order.value ),
+            _shape = "ellipsoid",
+            _dim = 2,
+            _xmin = -1,
+            _ymin = -1,
+            _h = h ) );
+#else
+    LOG( WARNING )
+        << "unitCircle: Feel++ was not built with Gmsh. "
+           "This function returns an empty mesh.";
+    return Mesh<Simplex<2, Dynamic>>::New( order );
+#endif
+}
+
 }
 
 #endif /* FEELPP_UNITCIRCLE_HPP */

@@ -46,10 +46,12 @@ class NodalLagrange : public OrderBase<Order>
     using order_base_type = OrderBase<Order>;
 
   public:
+    /** Authoritative compile-time order specification. */
+    static constexpr int order_spec = order_base_type::order_spec;
     /** Scalar value type. */
     using value_type = T;
     /** Reference convex used by the representation. */
-    using convex_type = Entity<Dim, ( Order == Dynamic ? 1 : Order ), Dim>;
+    using convex_type = Entity<Dim, ( order_spec == Dynamic ? 1 : order_spec ), Dim>;
     /** Matrix whose columns are reference interpolation nodes. */
     using points_type = Eigen::Matrix<T, Dim, Eigen::Dynamic>;
     /** Matrix whose rows are basis functions and columns are points. */
@@ -62,11 +64,14 @@ class NodalLagrange : public OrderBase<Order>
     /** @brief Return the reference dimension. */
     [[nodiscard]] static consteval int dimension() noexcept { return Dim; }
     /** @brief Return whether the polynomial order is selected at runtime. */
-    [[nodiscard]] static consteval bool isOrderDynamic() noexcept { return Order == Dynamic; }
+    [[nodiscard]] static consteval bool isOrderDynamic() noexcept
+    {
+        return order_base_type::is_order_dynamic;
+    }
     /** @brief Return whether the polynomial order is known at compile time. */
     [[nodiscard]] static consteval bool isOrderStatic() noexcept { return !isOrderDynamic(); }
     /** @brief Return the template order, including `Dynamic`. */
-    [[nodiscard]] static consteval int staticOrder() noexcept { return Order; }
+    [[nodiscard]] static consteval int staticOrder() noexcept { return order_spec; }
     /** @brief Return whether exact subdivision is supported. */
     [[nodiscard]] static consteval bool supportsSubdivision() noexcept { return false; }
     /** @brief Return whether coefficient convex-hull bounds are available. */

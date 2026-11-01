@@ -211,7 +211,9 @@ public:
         double dofPtCompareTol = std::max(1e-15,elt.hMin()*1e-5);
         uint16_type localptid_dof = invalid_uint16_type_value;
         bool findPtRelation=false;
-        for ( uint16_type i = 0; i < domain_fe_type::nLocalDof && !findPtRelation ; ++i )
+        for ( uint16_type i = 0;
+              i < this->domainSpace()->fe()->localDof() && !findPtRelation;
+              ++i )
         {
             size_type searchdofid = this->domainSpace()->dof()->localToGlobal( elt.id(),i, 0 ).index();
             auto const& ptDof = boost::get<0>( this->domainSpace()->dof()->dofPoint( searchdofid ) );
@@ -460,22 +462,34 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
     typedef typename image_mesh_type::element_type element_type;
     typedef typename image_mesh_type::face_type face_type;
 
-    static constexpr uint16_type nLocalDofUpToVertices = domain_mesh_type::element_type::numVertices*domain_fe_type::nDofPerVertex;
-    static constexpr uint16_type nDofPerVertexForDivision = domain_fe_type::nDofPerVertex == 0? 1 : domain_fe_type::nDofPerVertex;
+    auto const domainFe = this->domainSpace()->fe();
+    uint16_type const dofPerVertex = domainFe->dofPerVertex();
+    uint16_type const dofPerEdge = domainFe->dofPerEdge();
+    uint16_type const dofPerFace = domainFe->dofPerFace();
+    uint16_type const nLocalDofUpToVertices =
+        domain_mesh_type::element_type::numVertices*dofPerVertex;
+    uint16_type const nDofPerVertexForDivision =
+        dofPerVertex == 0 ? 1 : dofPerVertex;
 
-    static constexpr uint16_type nLocalDofUpToEdges = domain_mesh_type::element_type::numVertices*domain_fe_type::nDofPerVertex + domain_mesh_type::element_type::numEdges*domain_fe_type::nDofPerEdge;
-    static constexpr uint16_type nDofPerEdgeForDivision = domain_fe_type::nDofPerEdge == 0 ? 1 : domain_fe_type::nDofPerEdge;
+    uint16_type const nLocalDofUpToEdges =
+        domain_mesh_type::element_type::numVertices*dofPerVertex +
+        domain_mesh_type::element_type::numEdges*dofPerEdge;
+    uint16_type const nDofPerEdgeForDivision =
+        dofPerEdge == 0 ? 1 : dofPerEdge;
 
-    static constexpr uint16_type nLocalDofUpToFaces =
-        (domain_mesh_type::nDim==1)? domain_mesh_type::element_type::numVertices*domain_fe_type::nDofPerVertex :
-        (domain_mesh_type::nDim==2)? domain_mesh_type::element_type::numVertices*domain_fe_type::nDofPerVertex + domain_mesh_type::element_type::numEdges*domain_fe_type::nDofPerEdge :
-        domain_mesh_type::element_type::numVertices*domain_fe_type::nDofPerVertex + domain_mesh_type::element_type::numEdges*domain_fe_type::nDofPerEdge + domain_mesh_type::element_type::numGeometricFaces*domain_fe_type::nDofPerFace;
-    static const uint16_type nLocalDofBeforeDofsOfTopologicalFaces =
+    uint16_type const nLocalDofUpToFaces =
+        (domain_mesh_type::nDim==1)? domain_mesh_type::element_type::numVertices*dofPerVertex :
+        (domain_mesh_type::nDim==2)? domain_mesh_type::element_type::numVertices*dofPerVertex + domain_mesh_type::element_type::numEdges*dofPerEdge :
+        domain_mesh_type::element_type::numVertices*dofPerVertex + domain_mesh_type::element_type::numEdges*dofPerEdge + domain_mesh_type::element_type::numGeometricFaces*dofPerFace;
+    uint16_type const nLocalDofBeforeDofsOfTopologicalFaces =
         (domain_mesh_type::nDim==1)? 0 :
-        (domain_mesh_type::nDim==2)? domain_mesh_type::element_type::numVertices*domain_fe_type::nDofPerVertex :
-        domain_mesh_type::element_type::numVertices*domain_fe_type::nDofPerVertex + domain_mesh_type::element_type::numEdges*domain_fe_type::nDofPerEdge;
-    static constexpr uint16_type nDofPerTopologicalFace = (domain_mesh_type::nDim==1)?domain_fe_type::nDofPerVertex : (domain_mesh_type::nDim==2)?domain_fe_type::nDofPerEdge : domain_fe_type::nDofPerFace;
-    static constexpr uint16_type nDofPerTopologicalFaceForDivision = nDofPerTopologicalFace == 0? 1 : nDofPerTopologicalFace;
+        (domain_mesh_type::nDim==2)? domain_mesh_type::element_type::numVertices*dofPerVertex :
+        domain_mesh_type::element_type::numVertices*dofPerVertex + domain_mesh_type::element_type::numEdges*dofPerEdge;
+    uint16_type const nDofPerTopologicalFace =
+        (domain_mesh_type::nDim==1)? dofPerVertex :
+        (domain_mesh_type::nDim==2)? dofPerEdge : dofPerFace;
+    uint16_type const nDofPerTopologicalFaceForDivision =
+        nDofPerTopologicalFace == 0 ? 1 : nDofPerTopologicalFace;
 
 
     // inherit the table of markersName

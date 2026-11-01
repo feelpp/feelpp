@@ -17,11 +17,34 @@
 
 #include <Eigen/Core>
 
+#include <cstdint>
 #include <stdexcept>
 #include <utility>
 
 namespace Feel::geometry
 {
+/** @brief Topology family carried by a homogeneous geometry block. */
+enum class GeometryCellKind : std::uint8_t
+{
+    Simplex,
+    Hypercube
+};
+
+/** @brief Mathematical meaning of a geometry block's stored coefficients. */
+enum class GeometryRepresentationKind : std::uint8_t
+{
+    NodalLagrange,
+    BernsteinBezier
+};
+
+/** @brief Return whether a serialized representation value is supported. */
+[[nodiscard]] constexpr bool
+isValidGeometryRepresentation( GeometryRepresentationKind representation ) noexcept
+{
+    return representation == GeometryRepresentationKind::NodalLagrange ||
+           representation == GeometryRepresentationKind::BernsteinBezier;
+}
+
 //!
 //! \enum CoefficientSemantics
 //! \brief Mathematical meaning of geometry coefficients.

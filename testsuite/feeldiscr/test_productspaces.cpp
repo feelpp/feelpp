@@ -519,7 +519,7 @@ BOOST_AUTO_TEST_CASE( test_dynamic_static_mix )
     auto Xh = Pch<1>( mesh );
     auto Yh = Pch<Dynamic>( mesh, RuntimeOrder{ 2 } );
 
-    BOOST_CHECK_EQUAL( Yh->runtimeOrder(), 2 );
+    BOOST_CHECK_EQUAL( Yh->order(), 2 );
 
     auto ps = product( Xh, Yh );
     BOOST_CHECK_EQUAL( ps.numberOfSpaces(), 2 );
@@ -576,10 +576,10 @@ BOOST_AUTO_TEST_CASE( test_dynamic_orders_rectangular_test_trial_spaces )
         auto Uh0 = Pch<Dynamic>( mesh, RuntimeOrder{ order[2] } );
         auto Uh1 = Pch<Dynamic>( mesh, RuntimeOrder{ order[3] } );
 
-        BOOST_CHECK_EQUAL( Vh0->runtimeOrder(), order[0] );
-        BOOST_CHECK_EQUAL( Vh1->runtimeOrder(), order[1] );
-        BOOST_CHECK_EQUAL( Uh0->runtimeOrder(), order[2] );
-        BOOST_CHECK_EQUAL( Uh1->runtimeOrder(), order[3] );
+        BOOST_CHECK_EQUAL( Vh0->order(), order[0] );
+        BOOST_CHECK_EQUAL( Vh1->order(), order[1] );
+        BOOST_CHECK_EQUAL( Uh0->order(), order[2] );
+        BOOST_CHECK_EQUAL( Uh1->order(), order[3] );
 
         auto test = product( Vh0, Vh1 );
         auto trial = product( Uh0, Uh1 );

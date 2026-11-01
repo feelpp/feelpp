@@ -492,10 +492,11 @@ ExporterVTK<MeshType,N>::saveMesh( timeset_ptrtype __ts, mesh_ptrtype mesh, std:
         vtkSmartPointer<vtkelement_type> cell = vtkSmartPointer<vtkelement_type>::New();
 
         auto const& pointsIdsInElt = mp.pointIdsInElements( part );
+        auto const pointsPerElement = mp.pointsPerElement();
         for( index_type i = 0; i < nElt; ++i )
         {
-            for( uint16_type p=0; p < mesh_type::element_type::numPoints; ++p )
-                cell->GetPointIds()->SetId( p, pointsIdsInElt[i*mesh_type::element_type::numPoints+p] - startPtId );
+            for( uint16_type p=0; p < pointsPerElement; ++p )
+                cell->GetPointIds()->SetId( p, pointsIdsInElt[i*pointsPerElement+p] - startPtId );
             out->InsertNextCell( cell->GetCellType(), cell->GetPointIds() );
         }
 

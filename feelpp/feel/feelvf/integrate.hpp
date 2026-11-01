@@ -56,6 +56,9 @@ auto integrate( Ts && ... v )
     auto && quad = args.get_else(_quad,quad_order_from_expression );
     auto && quad1 = args.get_else(_quad1,quad_order_from_expression );
     GeomapStrategyType geomap = args.get_else(_geomap,GeomapStrategyType::GEOMAP_OPT);
+    auto geometryEvaluation = args.get_else(
+        _geometry_evaluation,
+        geometry::geometry_evaluation_strategy::automatic );
     bool use_harts = args.get_else(_use_harts,false);
     bool verbose = args.get_else(_verbose,false);
 
@@ -66,7 +69,10 @@ auto integrate( Ts && ... v )
     auto const& the_im = the_ims.first;
     auto const& the_im1 = the_ims.second;
 
-    auto ret =  integrate_impl( range, the_im , expr,  Feel::detail::geomapStrategy(range,geomap), the_im1, use_harts, quadptloc );
+    auto ret = integrate_impl( range, the_im, expr,
+                               Feel::detail::geomapStrategy( range, geomap ),
+                               geometryEvaluation, the_im1,
+                               use_harts, quadptloc );
 
     if ( verbose )
     {

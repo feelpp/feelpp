@@ -595,6 +595,17 @@ public:
 
     static inline const uint16_type numLocalVertices = super::numVertices;
 
+    /**
+     * @brief Return the geometric point cardinality.
+     *
+     * A zero-dimensional entity is represented by exactly one point,
+     * independently of the geometry order of its parent entity.
+     */
+    [[nodiscard]] constexpr uint16_type nPoints() const noexcept
+    {
+        return geo0d_type::numPoints;
+    }
+
     GeoElement0D() = default;
 
     //! Declares item id and if it is on boundary
@@ -866,11 +877,27 @@ public:
      * inversion to \c size_type
      */
     explicit GeoElement1D( size_type id = 0 )
+        requires( is_order_static )
         :
         super( id ),
         super2(),
         M_vertices()
         //M_vertex_permutation( numLocalVertices )
+    {
+        M_vertices.fill( nullptr );
+    }
+
+    /**
+     * @brief Construct a runtime-order one-dimensional entity.
+     * @param runtimeOrder effective mesh geometry order
+     * @param id entity identifier
+     */
+    explicit GeoElement1D(
+        RuntimeOrder runtimeOrder, size_type id = 0 )
+        requires( is_order_dynamic )
+        : super( id, runtimeOrder ),
+          super2(),
+          M_vertices()
     {
         M_vertices.fill( nullptr );
     }
@@ -1190,6 +1217,7 @@ public:
      * inversion to \c size_type
      */
     explicit GeoElement2D( size_type id = 0 )
+        requires( is_order_static )
         :
         super( id ),
         super2(),
@@ -1198,6 +1226,24 @@ public:
     {
         M_edge_permutation.fill(
             edge_permutation_type( edge_permutation_type::IDENTITY ) );
+    }
+
+    /**
+     * @brief Construct a runtime-order two-dimensional entity.
+     * @param runtimeOrder effective mesh geometry order
+     * @param id entity identifier
+     */
+    explicit GeoElement2D(
+        RuntimeOrder runtimeOrder, size_type id = 0 )
+        requires( is_order_dynamic )
+        : super( id, runtimeOrder ),
+          super2(),
+          M_edges( numLocalEdges, nullptr ),
+          M_edge_permutation()
+    {
+        M_edge_permutation.fill(
+            edge_permutation_type(
+                edge_permutation_type::IDENTITY ) );
     }
 
     /**
@@ -1557,6 +1603,7 @@ public:
      * @param id identifier of the element
      */
     explicit GeoElement3D( size_type id = 0 )
+        requires( is_order_static )
         :
         super( id ),
         super2(),
@@ -1569,6 +1616,29 @@ public:
             edge_permutation_type( edge_permutation_type::IDENTITY ) );
         M_face_permutation.fill(
             face_permutation_type( face_permutation_type::IDENTITY ) );
+    }
+
+    /**
+     * @brief Construct a runtime-order three-dimensional entity.
+     * @param runtimeOrder effective mesh geometry order
+     * @param id entity identifier
+     */
+    explicit GeoElement3D(
+        RuntimeOrder runtimeOrder, size_type id = 0 )
+        requires( is_order_dynamic )
+        : super( id, runtimeOrder ),
+          super2(),
+          M_edges( numLocalEdges, nullptr ),
+          M_faces( numLocalFaces, nullptr ),
+          M_edge_permutation(),
+          M_face_permutation()
+    {
+        M_edge_permutation.fill(
+            edge_permutation_type(
+                edge_permutation_type::IDENTITY ) );
+        M_face_permutation.fill(
+            face_permutation_type(
+                face_permutation_type::IDENTITY ) );
     }
 
     /**

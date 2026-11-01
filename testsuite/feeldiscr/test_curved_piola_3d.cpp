@@ -21,6 +21,8 @@
 #include <feel/feelfilters/unitsphere.hpp>
 #include <feel/feelvf/vf.hpp>
 
+#include "fe_parity_checks.hpp"
+
 #include <string_view>
 
 using namespace Feel;
@@ -163,10 +165,12 @@ void checkHdivFamily( StaticFactory&& makeStatic,
 
     BOOST_TEST_CONTEXT( family << " order " << Order )
     {
-        BOOST_CHECK_EQUAL( runtimeSpace->basis()->runtimeOrder(), Order );
+        BOOST_CHECK_EQUAL( runtimeSpace->basis()->order(), Order );
         BOOST_CHECK_EQUAL( runtimeSpace->basis()->localDofCount(),
                            staticSpace->basis()->localDofCount() );
         BOOST_CHECK_EQUAL( runtimeSpace->nDof(), staticSpace->nDof() );
+        Feel::test_detail::checkFiniteElementTransformParity(
+            staticSpace, runtimeSpace, mesh );
         BOOST_CHECK_SMALL(
             normL2( _range = elements( mesh ),
                     _expr = idv( runtimeField ) - idv( staticField ),
@@ -216,10 +220,12 @@ void checkHcurlFamily( StaticFactory&& makeStatic,
 
     BOOST_TEST_CONTEXT( family << " order " << Order )
     {
-        BOOST_CHECK_EQUAL( runtimeSpace->basis()->runtimeOrder(), Order );
+        BOOST_CHECK_EQUAL( runtimeSpace->basis()->order(), Order );
         BOOST_CHECK_EQUAL( runtimeSpace->basis()->localDofCount(),
                            staticSpace->basis()->localDofCount() );
         BOOST_CHECK_EQUAL( runtimeSpace->nDof(), staticSpace->nDof() );
+        Feel::test_detail::checkFiniteElementTransformParity(
+            staticSpace, runtimeSpace, mesh );
         BOOST_CHECK_SMALL(
             normL2( _range = elements( mesh ),
                     _expr = idv( runtimeField ) - idv( staticField ),

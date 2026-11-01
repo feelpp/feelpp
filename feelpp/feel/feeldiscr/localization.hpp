@@ -48,7 +48,8 @@ public:
     
     static inline const uint16_type nDim = mesh_type::nDim;
     static inline const uint16_type nRealDim = mesh_type::nRealDim;
-    static inline const uint16_type nOrder = mesh_type::nOrder;
+    static inline constexpr int nOrder_v =
+        mesh_type::nOrder_v;
     using value_type = typename mesh_type::value_type;
     using kdtree_type = KDTree;
     using kdtree_ptrtype = std::shared_ptr<KDTree>;
@@ -67,8 +68,8 @@ public:
     //!  geomap inverse
     using gm_inverse_type = std::conditional_t<
         mesh_type::element_type::is_simplex,
-        GeoMapInverse<nDim,nOrder,nRealDim,value_type,Simplex>,
-        GeoMapInverse<nDim,nOrder,nRealDim,value_type,Hypercube>>;
+        GeoMapInverse<nDim,nOrder_v,nRealDim,value_type,Simplex>,
+        GeoMapInverse<nDim,nOrder_v,nRealDim,value_type,Hypercube>>;
     using gmc_inverse_type = typename gm_inverse_type::gic_type;
     
     using gm1_inverse_type = std::conditional_t<
@@ -139,7 +140,9 @@ public:
         {
             DVLOG(2) << "[Mesh::Localization] create Localization tool\n";
             int optNbNeighbor = ioption( _name=(boost::format("mesh%1%d.localisation.nelt-in-leaf-kdtree") % nDim).str() );
-            int usedNbNeighbor = ( optNbNeighbor < 0 )? 2*mesh_type::element_type::numPoints : optNbNeighbor;
+            int usedNbNeighbor = ( optNbNeighbor < 0 )
+                                     ? 2 * mesh_type::element_type::numVertices
+                                     : optNbNeighbor;
             M_kd_tree->nbNearNeighbor( usedNbNeighbor );
 
             M_resultAnalysis.clear();

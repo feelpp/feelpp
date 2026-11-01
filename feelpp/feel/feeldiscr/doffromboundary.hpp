@@ -79,7 +79,8 @@ public:
 
     static inline const bool is_p0_continuous = ( ( nOrder == 0 ) && is_continuous );
 
-    static inline const uint16_type nDofPerElement = mpl::if_<mpl::bool_<is_product>, mpl::int_<fe_type::nLocalDof*nComponents>, mpl::int_<fe_type::nLocalDof> >::type::value;
+    static inline const uint16_type nDofPerElement =
+        finiteElementFixedLocalDofCountOrZero<fe_type>();
 
     //@}
 
@@ -181,59 +182,11 @@ private:
 
     static constexpr bool is_order_dynamic = orderIsDynamic<fe_type>;
 
-    [[nodiscard]] uint16_type runtimeDofPerVertex() const noexcept
+    [[nodiscard]] size_type dofCountOnFace() const noexcept
     {
-        if constexpr ( is_order_dynamic )
-        {
-            if constexpr ( requires( fe_type const& fe ) { fe.dofPerVertex(); } )
-                return M_fe.dofPerVertex();
-            else
-                return M_fe.runtimeDofPerVertex();
-        }
-        else
-            return fe_type::nDofPerVertex;
-    }
-    [[nodiscard]] uint16_type runtimeDofPerEdge() const noexcept
-    {
-        if constexpr ( is_order_dynamic )
-        {
-            if constexpr ( requires( fe_type const& fe ) { fe.dofPerEdge(); } )
-                return M_fe.dofPerEdge();
-            else
-                return M_fe.runtimeDofPerEdge();
-        }
-        else
-            return fe_type::nDofPerEdge;
-    }
-    [[nodiscard]] uint16_type runtimeDofPerFace() const noexcept
-    {
-        if constexpr ( is_order_dynamic )
-        {
-            if constexpr ( requires( fe_type const& fe ) { fe.dofPerFace(); } )
-                return M_fe.dofPerFace();
-            else
-                return M_fe.runtimeDofPerFace();
-        }
-        else
-            return fe_type::nDofPerFace;
-    }
-    [[nodiscard]] uint16_type runtimeLocalDof() const noexcept
-    {
-        if constexpr ( is_order_dynamic )
-        {
-            if constexpr ( requires( fe_type const& fe ) { fe.localDof(); } )
-                return M_fe.localDof();
-            else
-                return M_fe.runtimeLocalDof();
-        }
-        else
-            return fe_type::nLocalDof;
-    }
-    [[nodiscard]] size_type runtimeNDofOnFace() const noexcept
-    {
-        return face_type::numVertices * runtimeDofPerVertex() +
-               face_type::numEdges * runtimeDofPerEdge() +
-               face_type::numFaces * runtimeDofPerFace();
+        return face_type::numVertices * M_fe.dofPerVertex() +
+               face_type::numEdges * M_fe.dofPerEdge() +
+               face_type::numFaces * M_fe.dofPerFace();
     }
 
     [[nodiscard]] bool hasCompleteFiniteElementLayout() const
@@ -366,9 +319,9 @@ private:
         getAdjacentElementAndLocalFace( face, useConnection0, iElAd, iFaEl );
 
         const uint16_type nLocalDof = finiteElementLocalDofCount( M_fe );
-        const uint16_type nDofPerVertex = runtimeDofPerVertex();
-        const uint16_type nDofPerEdge = runtimeDofPerEdge();
-        const uint16_type nDofPerFace = runtimeDofPerFace();
+        const uint16_type nDofPerVertex = M_fe.dofPerVertex();
+        const uint16_type nDofPerEdge = M_fe.dofPerEdge();
+        const uint16_type nDofPerFace = M_fe.dofPerFace();
 
         const size_type ndofFPerComponent = M_fe.localDofCountOnFacet( iFaEl, true );
         if ( nLocalDof == 0 || ndofFPerComponent == 0 )
@@ -444,7 +397,7 @@ private:
                 << " of element " << iElAd;
         }
 
-        size_type ndofF = runtimeNDofOnFace();
+        size_type ndofF = dofCountOnFace();
         CHECK( nFacePts == ndofF ) << "invalid face dof count mismatch " << nFacePts << " vs " << ndofF;
 
         const int ncdof = is_product ? nComponents : 1;
@@ -464,7 +417,7 @@ private:
 
     void addVertexBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc )
     {
-        const uint16_type nDofPerVertex = runtimeDofPerVertex();
+        const uint16_type nDofPerVertex = M_fe.dofPerVertex();
         if ( nDofPerVertex == 0 )
             return;
 
@@ -487,7 +440,7 @@ private:
             return;
         }
 
-        size_type ndofF = runtimeNDofOnFace();
+        size_type ndofF = dofCountOnFace();
         for ( int c = 0; c < ncdof; ++c )
         {
             uint16_type lcc = c * ndofF;
@@ -508,7 +461,7 @@ private:
 
     void addEdgeBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc )
     {
-        const uint16_type nDofPerEdge = runtimeDofPerEdge();
+        const uint16_type nDofPerEdge = M_fe.dofPerEdge();
         if ( nDofPerEdge == 0 || face_type::numEdges == 0 )
             return;
 
@@ -516,9 +469,9 @@ private:
         uint16_type iFaEl;
         getAdjacentElementAndLocalFace( face, useConnection0, iElAd, iFaEl );
 
-        const uint16_type nDofPerVertex = runtimeDofPerVertex();
+        const uint16_type nDofPerVertex = M_fe.dofPerVertex();
         size_type nVerticesF = face_type::numVertices * nDofPerVertex;
-        size_type ndofF = runtimeNDofOnFace();
+        size_type ndofF = dofCountOnFace();
         const int ncdof = is_product ? nComponents : 1;
 
         if constexpr ( nDim == 2 )
@@ -557,7 +510,7 @@ private:
 
     void addFaceBoundaryDof( face_type const& face, bool useConnection0, uint16_type& lc )
     {
-        const uint16_type nDofPerFace = runtimeDofPerFace();
+        const uint16_type nDofPerFace = M_fe.dofPerFace();
         if ( nDofPerFace == 0 || face_type::numFaces == 0 )
             return;
 
@@ -565,10 +518,10 @@ private:
         uint16_type iFaEl;
         getAdjacentElementAndLocalFace( face, useConnection0, iElAd, iFaEl );
 
-        const uint16_type nDofPerVertex = runtimeDofPerVertex();
-        const uint16_type nDofPerEdge = runtimeDofPerEdge();
+        const uint16_type nDofPerVertex = M_fe.dofPerVertex();
+        const uint16_type nDofPerEdge = M_fe.dofPerEdge();
         size_type nVerticesAndEdgeF = face_type::numVertices * nDofPerVertex + face_type::numEdges * nDofPerEdge;
-        size_type ndofF = runtimeNDofOnFace();
+        size_type ndofF = dofCountOnFace();
         const int ncdof = is_product ? nComponents : 1;
 
         for ( int c = 0; c < ncdof; ++c )

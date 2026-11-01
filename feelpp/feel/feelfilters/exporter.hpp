@@ -595,7 +595,9 @@ auto exporter( Ts && ... v )
     std::string const& geo = args.get_else_invocable(_geo, [](){ return soption(_name="exporter.geometry"); } );
     auto && path = args.get_else_invocable(_path, [&name](){ return std::string((std::filesystem::path(Environment::exportsRepository())/std::filesystem::path(soption("exporter.format"))/name).string()); } );
 
-    using exporter_type = Exporter<mesh_type,mesh_type::nOrder>;
+    static constexpr int exporterOrder =
+        mesh_type::is_order_dynamic ? Dynamic : mesh_type::nOrder;
+    using exporter_type = Exporter<mesh_type, exporterOrder>;
 
     auto e =  exporter_type::New( name,mesh->worldCommPtr() );
     e->setPrefix( name );

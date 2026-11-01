@@ -59,9 +59,12 @@
 #include <feel/feelmesh/mesh2d.hpp>
 #include <feel/feelmesh/mesh3d.hpp>
 #include <feel/feeldiscr/mesh_fwd.hpp>
+#include <feel/feeldiscr/submeshcontext.hpp>
 
 #include <feel/feelalg/boundingbox.hpp>
 #include <feel/feelpoly/geomap.hpp>
+#include <feel/feelpoly/geometrydescriptor.hpp>
+#include <feel/feelpoly/geometrypointtopology.hpp>
 #include <feel/feelpoly/geomapinv.hpp>
 #include <feel/feelpoly/order.hpp>
 
@@ -103,17 +106,6 @@ enum class IOStatus
     isLoading,
     isSaving
 };
-
-const size_type EXTRACTION_KEEP_POINTS_IDS = ( 1 << 0 );
-const size_type EXTRACTION_KEEP_EDGES_IDS = ( 1 << 1 );
-const size_type EXTRACTION_KEEP_FACES_IDS = ( 1 << 2 );
-const size_type EXTRACTION_KEEP_VOLUMES_IDS = ( 1 << 3 );
-const size_type EXTRACTION_KEEP_ALL_IDS = ( EXTRACTION_KEEP_POINTS_IDS |
-                                            EXTRACTION_KEEP_EDGES_IDS |
-                                            EXTRACTION_KEEP_FACES_IDS |
-                                            EXTRACTION_KEEP_VOLUMES_IDS );
-const size_type EXTRACTION_KEEP_MESH_RELATION = ( 1 << 4 );
-const size_type EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT = ( 1 << 5 );
 
 } // namespace Feel
 #include <feel/feeldiscr/createsubmesh.hpp>
@@ -211,6 +203,20 @@ class Mesh
     //! @brief Template order parameter value (may be Dynamic = -1)
     static constexpr int nOrder_v = GeoShape::nOrder_v;
 
+    /** Mesh-wide geometric order and representation descriptor. */
+    using geometry_descriptor_type =
+        geometry::GeometryDescriptor<
+            nDim, nOrder_v,
+            geometry::geometryCellKind<GeoShape>>;
+    using geometry_representation_kind =
+        geometry::GeometryRepresentationKind;
+    using geometry_coordinate_matrix_type =
+        Eigen::Matrix<T, nRealDim, Eigen::Dynamic,
+                      nRealDim == 1 ? Eigen::RowMajor : Eigen::ColMajor>;
+    /** Reference-node restrictions shared by static and runtime meshes. */
+    using geometry_point_topology_type =
+        geometry::GeometryPointTopology<GeoShape>;
+
     //! @}
     //!  @name Typedefs
     //!
@@ -284,7 +290,8 @@ class Mesh
     typedef std::shared_ptr<self_type> self_ptrtype;
     typedef self_ptrtype mesh_ptrtype;
 
-    typedef typename element_type::template reference_convex<T>::type reference_convex_type;
+    using reference_convex_type =
+        typename element_type::reference_convex_type;
 
     //! typedef Partitioner<self_type> partitioner_type;
     //! typedef std::shared_ptr<partitioner_type> partitioner_ptrtype;
@@ -320,8 +327,19 @@ class Mesh
     //
     explicit Mesh( std::string const& name,
                    worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
-                   std::string const& props = "00001" )
+                   std::string const& props = "00001",
+                   geometry_representation_kind representation =
+                       geometry_descriptor_type::default_representation )
         requires( is_order_static );
+
+    explicit Mesh(
+        geometry_representation_kind representation,
+        std::string const& name = "",
+        worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
+        std::string const& props = "00001" )
+        requires( is_order_static )
+        : Mesh( name, worldComm, props, representation )
+    {}
 
     explicit Mesh( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(), std::string const& props = "00001"  )
         requires( is_order_static )
@@ -337,8 +355,20 @@ class Mesh
     explicit Mesh( RuntimeOrder runtime_order,
                    std::string const& name = "",
                    worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
-                   std::string const& props = "00001" )
+                   std::string const& props = "00001",
+                   geometry_representation_kind representation =
+                       geometry_descriptor_type::default_representation )
         requires( is_order_dynamic );
+
+    explicit Mesh(
+        RuntimeOrder runtime_order,
+        geometry_representation_kind representation,
+        std::string const& name = "",
+        worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
+        std::string const& props = "00001" )
+        requires( is_order_dynamic )
+        : Mesh( runtime_order, name, worldComm, props, representation )
+    {}
 
     ~Mesh() override {}
 
@@ -382,6 +412,15 @@ class Mesh
         return std::make_shared<mesh_type>( worldComm );
     }
 
+    /** @brief Allocate a static-order mesh with selected coefficient semantics. */
+    static mesh_ptrtype New(
+        geometry_representation_kind representation,
+        worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+        requires( is_order_static )
+    {
+        return std::make_shared<mesh_type>( representation, "", worldComm );
+    }
+
     //!
     //! @brief allocate a new Mesh with runtime order (dynamic order shapes only)
     //! @param runtime_order the polynomial order to use at runtime
@@ -395,16 +434,193 @@ class Mesh
         return std::make_shared<mesh_type>( runtime_order, "", worldComm );
     }
 
+    /** @brief Allocate a runtime-order mesh with selected coefficient semantics. */
+    static mesh_ptrtype New(
+        RuntimeOrder runtime_order,
+        geometry_representation_kind representation,
+        worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+        requires( is_order_dynamic )
+    {
+        return std::make_shared<mesh_type>(
+            runtime_order, representation, "", worldComm );
+    }
+
     //!
     //! @brief Get the runtime order of the mesh
     //! @return the polynomial order (static value for static order meshes, runtime value for dynamic)
     //!
     [[nodiscard]] constexpr uint16_type order() const noexcept
     {
-        if constexpr ( is_order_static )
-            return nOrder;
+        return M_geometryDescriptor.order();
+    }
+
+    /**
+     * @brief Return the order owned by the mesh geometry descriptor.
+     * @return effective geometric polynomial order
+     */
+    [[nodiscard]] uint16_type geometryOrder() const noexcept override
+    {
+        return this->order();
+    }
+
+    /** @brief Return the mesh-wide geometry descriptor. */
+    [[nodiscard]] constexpr geometry_descriptor_type const&
+    geometryDescriptor() const noexcept
+    {
+        return M_geometryDescriptor;
+    }
+
+    /** @brief Return the mathematical meaning of stored geometry coefficients. */
+    [[nodiscard]] geometry_representation_kind
+    geometryRepresentation() const noexcept override
+    {
+        return M_geometryDescriptor.representation();
+    }
+
+    /**
+     * @brief Return all mesh geometry as nodal interpolation coordinates.
+     *
+     * The returned table is suitable for nodal file formats and compatibility
+     * algorithms, independently of the mesh's native storage representation.
+     */
+    [[nodiscard]] geometry_coordinate_matrix_type
+    nodalGeometryCoordinates() const
+    {
+        return this->convertedGeometryCoordinates(
+            this->geometryRepresentation(),
+            geometry_representation_kind::NodalLagrange );
+    }
+
+    /**
+     * @brief Change native geometry representation without changing the map.
+     * @param representation requested coefficient semantics
+     */
+    void setGeometryRepresentation(
+        geometry_representation_kind representation )
+    {
+        geometry_descriptor_type descriptor = [&]()
+        {
+            if constexpr ( is_order_dynamic )
+                return geometry_descriptor_type{
+                    RuntimeOrder{ this->order() }, representation };
+            else
+                return geometry_descriptor_type{ representation };
+        }();
+        if ( representation == this->geometryRepresentation() )
+            return;
+        auto converted = this->convertedGeometryCoordinates(
+            this->geometryRepresentation(), representation );
+        this->editPointCoordinates(
+            [&converted]( auto& coordinates )
+            {
+                coordinates = converted;
+            } );
+        M_geometryDescriptor = descriptor;
+    }
+
+    /**
+     * @brief Adopt coordinates supplied in a known external representation.
+     *
+     * Importers use this once, after topology is complete, to convert nodal
+     * file coordinates into the representation selected by the mesh.
+     */
+    void adoptGeometryCoefficients(
+        geometry_representation_kind sourceRepresentation )
+    {
+        if ( sourceRepresentation == this->geometryRepresentation() )
+            return;
+        auto converted = this->convertedGeometryCoordinates(
+            sourceRepresentation, this->geometryRepresentation() );
+        this->editPointCoordinates(
+            [&converted]( auto& coordinates )
+            {
+                coordinates = converted;
+            } );
+    }
+
+    /**
+     * @brief Return the mesh-wide cell-to-subentity point restrictions.
+     *
+     * The table is generated from the same mathematical point set as the
+     * geometric mapping and is therefore valid for arbitrary effective order.
+     */
+    [[nodiscard]] geometry_point_topology_type const&
+    geometryPointTopology() const
+    {
+        return geometry_point_topology_type::get(
+            RuntimeOrder{ this->order() } );
+    }
+
+    /**
+     * @brief Restore the descriptor of an empty runtime-order mesh.
+     *
+     * Persistence adapters call this before reconstructing points and
+     * connectivity. Changing geometry order after entities exist would make
+     * their coefficient layouts inconsistent and is therefore rejected.
+     *
+     * @param order restored positive geometry order
+     * @throws std::logic_error if mesh entities already exist
+     */
+    void restoreGeometryDescriptor(
+        RuntimeOrder order,
+        geometry_representation_kind representation =
+            geometry_descriptor_type::default_representation )
+    {
+        if ( this->numPoints() != 0 ||
+             this->numElements() != 0 ||
+             this->numFaces() != 0 )
+            throw std::logic_error(
+                "Geometry order can be restored only on an empty mesh" );
+        if constexpr ( is_order_dynamic )
+        {
+            M_geometryDescriptor =
+                geometry_descriptor_type{ order, representation };
+            M_gm = std::make_shared<gm_type>( order );
+            M_gm1 = std::make_shared<gm1_type>();
+        }
         else
-            return M_runtime_order;
+        {
+            if ( order.value != nOrder )
+                throw std::invalid_argument(
+                    "Restored geometry order disagrees with the static mesh type" );
+            M_geometryDescriptor =
+                geometry_descriptor_type{ representation };
+            M_gm = std::make_shared<gm_type>();
+            if constexpr ( nOrder == 1 )
+                M_gm1 = M_gm;
+            else
+                M_gm1 = std::make_shared<gm1_type>();
+        }
+    }
+
+    /**
+     * @brief Construct one element with this mesh's geometry policy.
+     *
+     * Static entities retain their default zero-overhead construction.
+     * Runtime entities receive the mesh-wide order explicitly, which prevents
+     * importers and topology builders from falling back to a placeholder G1
+     * layout.
+     */
+    [[nodiscard]] element_type makeElement() const
+    {
+        return this->template makeGeometricEntity<element_type>();
+    }
+
+    /**
+     * @brief Construct one codimension-one entity with this mesh's geometry
+     * policy.
+     */
+    [[nodiscard]] face_type makeFace() const
+    {
+        return this->template makeGeometricEntity<face_type>();
+    }
+
+    /**
+     * @brief Construct one edge with this mesh's geometry policy.
+     */
+    [[nodiscard]] edge_type makeEdge() const
+    {
+        return this->template makeGeometricEntity<edge_type>();
     }
 
     self_type& operator+=( self_type const& m );
@@ -778,10 +994,10 @@ class Mesh
             // }
 
             std::vector<size_type> numEntitiesGlobalCounter = {numFaceGlobalCounter, numEdgeGlobalCounter, numPointGlobalCounter};
-            if ( nOrder > 1 )
+            if ( this->order() > 1 )
                 numEntitiesGlobalCounter.push_back( numVerticeGlobalCounter );
             std::vector<size_type> maxNumEntities = {neall, nfall, nedall, npall};
-            if ( nOrder > 1 )
+            if ( this->order() > 1 )
                 maxNumEntities.push_back( nvall );
 
             // TODO: we don't need to make a all_reduce now!
@@ -795,13 +1011,13 @@ class Mesh
             M_numGlobalFaces = numEntitiesGlobalCounterGlobal[0];
             M_numGlobalEdges = numEntitiesGlobalCounterGlobal[1];
             M_numGlobalPoints = numEntitiesGlobalCounterGlobal[2];
-            M_numGlobalVertices = ( nOrder > 1 ) ? numEntitiesGlobalCounterGlobal[3] : M_numGlobalPoints;
+            M_numGlobalVertices = ( this->order() > 1 ) ? numEntitiesGlobalCounterGlobal[3] : M_numGlobalPoints;
 
             M_maxNumElements = maxNumEntitiesGlobal[0];
             M_maxNumFaces = maxNumEntitiesGlobal[1];
             M_maxNumEdges = maxNumEntitiesGlobal[2];
             M_maxNumPoints = maxNumEntitiesGlobal[3];
-            M_maxNumVertices = ( nOrder > 1 ) ? maxNumEntitiesGlobal[4] : M_maxNumPoints;
+            M_maxNumVertices = ( this->order() > 1 ) ? maxNumEntitiesGlobal[4] : M_maxNumPoints;
         }
         else
         {
@@ -908,10 +1124,10 @@ class Mesh
             // }
 
             std::vector<size_type> numEntitiesGlobalCounter = {numFaceGlobalCounter, numPointGlobalCounter};
-            if ( nOrder > 1 )
+            if ( this->order() > 1 )
                 numEntitiesGlobalCounter.push_back( numVerticeGlobalCounter );
             std::vector<size_type> maxNumEntities = {neall, nfall, npall};
-            if ( nOrder > 1 )
+            if ( this->order() > 1 )
                 maxNumEntities.push_back( nvall );
 
             // TODO: we don't need to make a all_reduce now!
@@ -925,13 +1141,13 @@ class Mesh
             M_numGlobalFaces = numEntitiesGlobalCounterGlobal[0];
             M_numGlobalEdges = 0;
             M_numGlobalPoints = numEntitiesGlobalCounterGlobal[1];
-            M_numGlobalVertices = ( nOrder > 1 ) ? numEntitiesGlobalCounterGlobal[2] : M_numGlobalPoints;
+            M_numGlobalVertices = ( this->order() > 1 ) ? numEntitiesGlobalCounterGlobal[2] : M_numGlobalPoints;
 
             M_maxNumElements = maxNumEntitiesGlobal[0];
             M_maxNumFaces = maxNumEntitiesGlobal[1];
             M_maxNumEdges = 0;
             M_maxNumPoints = maxNumEntitiesGlobal[2];
-            M_maxNumVertices = ( nOrder > 1 ) ? maxNumEntitiesGlobal[3] : M_maxNumPoints;
+            M_maxNumVertices = ( this->order() > 1 ) ? maxNumEntitiesGlobal[3] : M_maxNumPoints;
         }
         else
         {
@@ -1723,7 +1939,7 @@ public:
         out << "| Shape              |" << Shape << "|\n";
         out << "|---|---|\n";
         out << "| DIM              |" << dimension() << "|\n";
-        out << "| Order              |" << nOrder << "|\n";
+        out << "| Order              |" << this->order() << "|\n";
         out << "| hMin              |" << hMin() << "|\n";
         out << "| hMax              |" << hMax() << "|\n";
         out << "| hAverage              |" << hAverage() << "|\n";
@@ -1954,6 +2170,87 @@ public:
      void removeMarkerNameWithoutEntity();
 
   private:
+    /** Convert the mesh-owned coefficient table through the GeoMap kernel. */
+    [[nodiscard]] geometry_coordinate_matrix_type
+    convertedGeometryCoordinates(
+        geometry_representation_kind sourceRepresentation,
+        geometry_representation_kind targetRepresentation ) const
+    {
+        if ( !geometry::isValidGeometryRepresentation(
+                 sourceRepresentation ) ||
+             !geometry::isValidGeometryRepresentation(
+                 targetRepresentation ) )
+            throw std::invalid_argument(
+                "Unsupported geometry coefficient representation" );
+
+        auto const coordinates =
+            static_cast<super const&>( *this ).pointCoordinates();
+        geometry_coordinate_matrix_type converted = coordinates;
+        if ( sourceRepresentation == targetRepresentation ||
+             coordinates.cols() == 0 )
+            return converted;
+        if ( !M_gm )
+            throw std::logic_error(
+                "Geometry conversion requires an initialized geometric map" );
+
+        std::vector<bool> assigned(
+            static_cast<size_type>( coordinates.cols() ), false );
+        for ( auto element = this->beginElement();
+              element != this->endElement(); ++element )
+        {
+            auto const& entity = element->second;
+            auto const pointCount = entity.nPoints();
+            if ( pointCount != M_gm->nbPoints() )
+                throw std::logic_error(
+                    "Mesh entity geometry disagrees with its geometric map" );
+
+            Eigen::Matrix<value_type, nRealDim, Eigen::Dynamic>
+                localCoordinates( nRealDim, pointCount );
+            std::vector<uint32_type> localIndices( pointCount );
+            for ( uint16_type localPoint = 0;
+                  localPoint < pointCount; ++localPoint )
+            {
+                auto const localIndex = this->pointLocalIndex(
+                    entity.pointIds()[localPoint] );
+                localIndices[localPoint] = localIndex;
+                localCoordinates.col( localPoint ) =
+                    coordinates.col( localIndex );
+            }
+
+            if ( sourceRepresentation ==
+                 geometry_representation_kind::BernsteinBezier )
+                M_gm->convertStoredGeometryToNodal(
+                    localCoordinates, sourceRepresentation );
+            if ( targetRepresentation ==
+                 geometry_representation_kind::BernsteinBezier )
+                M_gm->convertNodalGeometryToStored(
+                    localCoordinates, targetRepresentation );
+
+            for ( uint16_type localPoint = 0;
+                  localPoint < pointCount; ++localPoint )
+            {
+                auto const localIndex = localIndices[localPoint];
+                if ( !assigned[localIndex] )
+                {
+                    converted.col( localIndex ) =
+                        localCoordinates.col( localPoint );
+                    assigned[localIndex] = true;
+                    continue;
+                }
+                value_type const scale = std::max<value_type>(
+                    1, std::max(
+                           converted.col( localIndex ).norm(),
+                           localCoordinates.col( localPoint ).norm() ) );
+                if ( ( converted.col( localIndex ) -
+                       localCoordinates.col( localPoint ) )
+                         .norm() > value_type( 1e-10 ) * scale )
+                    throw std::runtime_error(
+                        "Geometry conversion produced inconsistent shared coefficients" );
+            }
+        }
+        return converted;
+    }
+
     FEELPP_NO_EXPORT void propagateMarkers( mpl::int_<1> ) {}
     FEELPP_NO_EXPORT void propagateMarkers( mpl::int_<2> );
     FEELPP_NO_EXPORT void propagateMarkers( mpl::int_<3> );
@@ -1975,6 +2272,37 @@ public:
     template <class Archive>
     void serialize( Archive& ar, const unsigned int version )
     {
+        uint16_type geometryOrder = this->order();
+        std::uint8_t geometryCellKind =
+            static_cast<std::uint8_t>(
+                geometry_descriptor_type::cellKind );
+        std::uint8_t geometryRepresentation =
+            static_cast<std::uint8_t>(
+                this->geometryRepresentation() );
+
+        ar & geometryOrder;
+        ar & geometryCellKind;
+        ar & geometryRepresentation;
+
+        if constexpr ( Archive::is_loading::value )
+        {
+            if ( geometryCellKind !=
+                 static_cast<std::uint8_t>(
+                     geometry_descriptor_type::cellKind ) )
+                throw std::runtime_error(
+                    "Mesh archive geometry cell kind does not match the mesh type" );
+            auto const restoredRepresentation =
+                static_cast<geometry_representation_kind>(
+                    geometryRepresentation );
+            if ( !geometry::isValidGeometryRepresentation(
+                     restoredRepresentation ) )
+                throw std::runtime_error(
+                    "Mesh archive contains an unsupported geometry representation" );
+
+            this->restoreGeometryDescriptor(
+                RuntimeOrder{ geometryOrder }, restoredRepresentation );
+        }
+
         if ( Archive::is_saving::value )
         {
             DVLOG( 2 ) << "Serializing mesh(saving) ...\n";
@@ -2058,6 +2386,18 @@ public:
     void check() const override;
 
   private:
+
+    /**
+     * @brief Shared static/runtime entity-construction policy.
+     * @tparam EntityType geometric entity type to construct
+     */
+    template <typename EntityType>
+    [[nodiscard]] EntityType makeGeometricEntity() const
+    {
+        return makeOrderAware<EntityType>(
+            RuntimeOrder{ this->order() } );
+    }
+
     //!
     //!  \sa renumber()
     //!
@@ -2219,9 +2559,10 @@ public:
     //! data accessibles in each edges
     std::shared_ptr<GeoNDCommon<typename edge_type::super>> M_geondEdgeCommon;
 
-    //! Runtime order storage (zero overhead for static order meshes)
+    /** Geometry metadata stored once for the homogeneous mesh block. */
     [[no_unique_address]]
-    std::conditional_t<is_order_dynamic, uint16_type, std::monostate> M_runtime_order{};
+    geometry_descriptor_type M_geometryDescriptor;
+
 };
 
 
@@ -2245,6 +2586,9 @@ void Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::createSubmesh( self_type
     DVLOG( 2 ) << "[Mesh<Shape,T>::createSubmesh] start\n";
     //!  make sure it is all empty
     new_mesh.clear();
+    new_mesh.restoreGeometryDescriptor(
+        RuntimeOrder{ this->order() },
+        this->geometryRepresentation() );
     //!  inherit all the markers
     new_mesh.M_markername = this->markerNames();
     for ( auto marker : new_mesh.M_markername )
@@ -2363,7 +2707,13 @@ void Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::createSubmesh( self_type
                     std::cout << "add old point " << old_face.point( p ).id() << " to face \n";
                     std::cout << "new point id " << new_node_numbers[old_elem.point( old_elem.fToP( s,p ) ).id()] << "\n";
 #endif
-                    new_face.setPoint( p, new_mesh.point( new_node_numbers[old_elem.point( old_elem.fToP( s, p ) ).id()] ) );
+                    new_face.setPoint(
+                        p, new_mesh.point(
+                               new_node_numbers[
+                                   old_elem.point(
+                                       old_elem.localPointOnFace(
+                                           s, p ) )
+                                       .id()] ) );
                 }
 
                 new_face.setId( n_new_faces++ );
@@ -2511,15 +2861,21 @@ void Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateInformationObject(
 {
     if ( p.contains( "shape" ) )
         return;
-    p.emplace( "shape", Shape::name() );
+    if constexpr ( is_order_dynamic )
+        p.emplace(
+            "shape",
+            makeOrderAware<shape_type>(
+                RuntimeOrder{ this->order() } ).name() );
+    else
+        p.emplace( "shape", Shape::name() );
     p.emplace( "dim", this->dimension() );
-    p.emplace( "order", this->nOrder );
+    p.emplace( "order", this->order() );
     p.emplace( "real_dim", this->realDimension() );
     p.emplace( "h_min", this->hMin() );
     p.emplace( "h_max", this->hMax() );
     p.emplace( "h_average", this->hAverage() );
     p.emplace( "n_points", this->numGlobalPoints() );
-    if ( nOrder > 1 )
+    if ( this->order() > 1 )
         p.emplace( "n_vertices", this->numGlobalVertices() );
     if ( this->dimension() == 3 )
         p.emplace( "n_edges", this->numGlobalEdges() );
@@ -2558,8 +2914,8 @@ template<typename MeshType>
 class MeshInverse
         : public boost::mp11::mp_if_c<
               MeshType::shape_type::is_simplex,
-              GeoMapInverse<MeshType::nDim, MeshType::nOrder, MeshType::nRealDim, typename MeshType::value_type, Simplex>,
-              GeoMapInverse<MeshType::nDim, MeshType::nOrder, MeshType::nRealDim, typename MeshType::value_type, Hypercube>
+              GeoMapInverse<MeshType::nDim, MeshType::nOrder_v, MeshType::nRealDim, typename MeshType::value_type, Simplex>,
+              GeoMapInverse<MeshType::nDim, MeshType::nOrder_v, MeshType::nRealDim, typename MeshType::value_type, Hypercube>
             >
 {
 public:
@@ -2569,8 +2925,8 @@ public:
     using size_type = typename mesh_t::size_type;
     using super = boost::mp11::mp_if_c<
         MeshType::shape_type::is_simplex,
-        GeoMapInverse<MeshType::nDim, MeshType::nOrder, MeshType::nRealDim, typename MeshType::value_type, Simplex>,
-        GeoMapInverse<MeshType::nDim, MeshType::nOrder, MeshType::nRealDim, typename MeshType::value_type, Hypercube>
+        GeoMapInverse<MeshType::nDim, MeshType::nOrder_v, MeshType::nRealDim, typename MeshType::value_type, Simplex>,
+        GeoMapInverse<MeshType::nDim, MeshType::nOrder_v, MeshType::nRealDim, typename MeshType::value_type, Hypercube>
     >;
     using gic_type = typename super::gic_type;
     using gm_type = typename super::gm_type;

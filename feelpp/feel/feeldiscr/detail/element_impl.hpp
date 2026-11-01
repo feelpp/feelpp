@@ -2323,12 +2323,12 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::onImpl( std::pair<IteratorType,I
     size_type nbFaceDof = invalid_v<size_type>;
 
     if ( !fe_type::is_modal )
-        nbFaceDof = ( face_type::numVertices * fe_type::nDofPerVertex +
-                      face_type::numEdges * fe_type::nDofPerEdge +
-                      face_type::numFaces * fe_type::nDofPerFace );
+        nbFaceDof = ( face_type::numVertices * __fe->dofPerVertex() +
+                      face_type::numEdges * __fe->dofPerEdge() +
+                      face_type::numFaces * __fe->dofPerFace() );
 
     else
-        nbFaceDof = face_type::numVertices * fe_type::nDofPerVertex;
+        nbFaceDof = face_type::numVertices * __fe->dofPerVertex();
 
     DVLOG(2)  << "[projector::operator(MESH_FACES)] nbFaceDof = " << nbFaceDof << "\n";
 #endif
@@ -2774,7 +2774,7 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::onImpl( std::pair<IteratorType,I
     //t_expr_type expr( ex, mapgmc(ctx) );
     auto expr_evaluator = ex.evaluator( vf::mapgmc(ctx) );
 
-    size_type nbVertexDof = fe_type::nDofPerVertex;
+    size_type nbVertexDof = __fe->dofPerVertex();
     DVLOG(3)  << "[projector::operator(MESH_POINTS)] nbVertexDof = " << nbVertexDof << "\n";
 
     auto IhLoc = __fe->vertexLocalInterpolant();

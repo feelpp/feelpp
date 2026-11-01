@@ -196,56 +196,6 @@ private:
 };
 
 template<typename BDMType>
-uint16_type
-runtimeLocalDof( BDMType const& bdm )
-{
-    if constexpr ( requires { bdm.localDofCount(); } )
-        return bdm.localDofCount();
-    else
-        return BDMType::nLocalDof;
-}
-
-template<typename BDMType>
-uint16_type
-runtimeDofPerVertex( BDMType const& bdm )
-{
-    if constexpr ( requires { bdm.dofPerVertex(); } )
-        return bdm.dofPerVertex();
-    else
-        return BDMType::nDofPerVertex;
-}
-
-template<typename BDMType>
-uint16_type
-runtimeDofPerEdge( BDMType const& bdm )
-{
-    if constexpr ( requires { bdm.dofPerEdge(); } )
-        return bdm.dofPerEdge();
-    else
-        return BDMType::nDofPerEdge;
-}
-
-template<typename BDMType>
-uint16_type
-runtimeDofPerFace( BDMType const& bdm )
-{
-    if constexpr ( requires { bdm.dofPerFace(); } )
-        return bdm.dofPerFace();
-    else
-        return BDMType::nDofPerFace;
-}
-
-template<typename BDMType>
-uint16_type
-runtimeDofPerVolume( BDMType const& bdm )
-{
-    if constexpr ( requires { bdm.dofPerVolume(); } )
-        return bdm.dofPerVolume();
-    else
-        return BDMType::nDofPerVolume;
-}
-
-template<typename BDMType>
 void
 checkFiniteEvaluationAtNodes( BDMType const& bdm )
 {
@@ -291,7 +241,7 @@ checkDofAttachmentContract( BDMType const& bdm )
 
     std::array<uint16_type, 4> countByDim = { 0, 0, 0, 0 };
 
-    for ( uint16_type ldof = 0; ldof < runtimeLocalDof( bdm ); ++ldof )
+    for ( uint16_type ldof = 0; ldof < bdm.localDof(); ++ldof )
     {
         BOOST_CHECK_EQUAL( bdm.component( ldof ), 0 );
         BOOST_CHECK_EQUAL( bdm.dofParent( ldof ), ldof );
@@ -309,19 +259,19 @@ checkDofAttachmentContract( BDMType const& bdm )
         {
         case 0:
             BOOST_CHECK_LT( attachment.entityId, BDMType::reference_convex_type::numVertices );
-            BOOST_CHECK_LT( attachment.ordinal, runtimeDofPerVertex( bdm ) );
+            BOOST_CHECK_LT( attachment.ordinal, bdm.dofPerVertex() );
             break;
         case 1:
             BOOST_CHECK_LT( attachment.entityId, BDMType::reference_convex_type::numEdges );
-            BOOST_CHECK_LT( attachment.ordinal, runtimeDofPerEdge( bdm ) );
+            BOOST_CHECK_LT( attachment.ordinal, bdm.dofPerEdge() );
             break;
         case 2:
             BOOST_CHECK_LT( attachment.entityId, BDMType::reference_convex_type::numFaces );
-            BOOST_CHECK_LT( attachment.ordinal, runtimeDofPerFace( bdm ) );
+            BOOST_CHECK_LT( attachment.ordinal, bdm.dofPerFace() );
             break;
         case 3:
             BOOST_CHECK_EQUAL( attachment.entityId, 0 );
-            BOOST_CHECK_LT( attachment.ordinal, runtimeDofPerVolume( bdm ) );
+            BOOST_CHECK_LT( attachment.ordinal, bdm.dofPerVolume() );
             break;
         default:
             BOOST_FAIL( "invalid dof attachment entity dimension" );
@@ -329,12 +279,12 @@ checkDofAttachmentContract( BDMType const& bdm )
     }
 
     BOOST_CHECK_EQUAL( countByDim[0],
-                       static_cast<uint16_type>( BDMType::reference_convex_type::numVertices * runtimeDofPerVertex( bdm ) ) );
+                       static_cast<uint16_type>( BDMType::reference_convex_type::numVertices * bdm.dofPerVertex() ) );
     BOOST_CHECK_EQUAL( countByDim[1],
-                       static_cast<uint16_type>( BDMType::reference_convex_type::numEdges * runtimeDofPerEdge( bdm ) ) );
+                       static_cast<uint16_type>( BDMType::reference_convex_type::numEdges * bdm.dofPerEdge() ) );
     BOOST_CHECK_EQUAL( countByDim[2],
-                       static_cast<uint16_type>( BDMType::reference_convex_type::numFaces * runtimeDofPerFace( bdm ) ) );
-    BOOST_CHECK_EQUAL( countByDim[3], runtimeDofPerVolume( bdm ) );
+                       static_cast<uint16_type>( BDMType::reference_convex_type::numFaces * bdm.dofPerFace() ) );
+    BOOST_CHECK_EQUAL( countByDim[3], bdm.dofPerVolume() );
 }
 
 template<int Order>
@@ -358,7 +308,7 @@ checkBdmDynamicSimplex2d()
     bdm_t bdm{ RuntimeOrder{ Order } };
     BOOST_CHECK_EQUAL( bdm.familyName(), "brezzidouglasmarini" );
     BOOST_CHECK_EQUAL( bdm.order(), Order );
-    BOOST_CHECK_EQUAL( bdm.runtimeOrder(), Order );
+    BOOST_CHECK_EQUAL( bdm.order(), Order );
     BOOST_CHECK_EQUAL( bdm.internalOrder(), Order + 1 );
     BOOST_CHECK_EQUAL( bdm.localDofPerComponent(), bdmSimplex2dDof<Order>() );
     BOOST_CHECK_EQUAL( bdm.dofPerEdge(), Order + 2 );
@@ -379,7 +329,7 @@ checkBdmDynamicSimplex3d()
     bdm_t bdm{ RuntimeOrder{ Order } };
     BOOST_CHECK_EQUAL( bdm.familyName(), "brezzidouglasmarini" );
     BOOST_CHECK_EQUAL( bdm.order(), Order );
-    BOOST_CHECK_EQUAL( bdm.runtimeOrder(), Order );
+    BOOST_CHECK_EQUAL( bdm.order(), Order );
     BOOST_CHECK_EQUAL( bdm.internalOrder(), Order + 1 );
     BOOST_CHECK_EQUAL( bdm.localDofPerComponent(), bdmSimplex3dDof<Order>() );
     BOOST_CHECK_EQUAL( bdm.dofPerEdge(), 0 );
@@ -400,8 +350,8 @@ checkBdm2dInteriorInterpolationOffset( BDMType const& bdm )
     auto Ihloc = bdm.localInterpolant();
     bdm.interpolate( expr, Ihloc );
 
-    const uint16_type firstInternalDof = static_cast<uint16_type>( BDMType::reference_convex_type::numEdges * runtimeDofPerEdge( bdm ) );
-    const uint16_type nInternalDof = runtimeDofPerFace( bdm );
+    const uint16_type firstInternalDof = static_cast<uint16_type>( BDMType::reference_convex_type::numEdges * bdm.dofPerEdge() );
+    const uint16_type nInternalDof = bdm.dofPerFace();
     BOOST_REQUIRE_GT( nInternalDof, 0 );
 
     double interiorNorm = 0.0;
@@ -427,7 +377,7 @@ BOOST_AUTO_TEST_CASE( bdm1_2d_compile_time_sanity )
 
     bdm1_2d_t bdm1;
     BOOST_CHECK_EQUAL( bdm1.familyName(), "brezzidouglasmarini" );
-    BOOST_CHECK_EQUAL( bdm1.runtimeOrder(), 0 );
+    BOOST_CHECK_EQUAL( bdm1.order(), 0 );
     BOOST_CHECK_EQUAL( bdm1.localDofPerComponent(), bdm1_2d_t::nLocalDof );
 
     checkFiniteEvaluationAtNodes( bdm1 );
@@ -449,7 +399,7 @@ BOOST_AUTO_TEST_CASE( bdm1_3d_compile_time_sanity )
 
     bdm1_3d_t bdm1;
     BOOST_CHECK_EQUAL( bdm1.familyName(), "brezzidouglasmarini" );
-    BOOST_CHECK_EQUAL( bdm1.runtimeOrder(), 0 );
+    BOOST_CHECK_EQUAL( bdm1.order(), 0 );
     BOOST_CHECK_EQUAL( bdm1.localDofPerComponent(), bdm1_3d_t::nLocalDof );
 
     checkFiniteEvaluationAtNodes( bdm1 );

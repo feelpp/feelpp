@@ -29,38 +29,38 @@ struct DofTableInfos
     DofTableInfos& operator=( DofTableInfos const& ) = default;
     DofTableInfos& operator=( DofTableInfos && ) = default;
 
-    uint16_type nOrder;
-    uint16_type nDim;
-    uint16_type nRealDim;
-    uint16_type Shape;
-    uint16_type nComponents;
-    uint16_type nComponents1;
-    uint16_type nComponents2;
+    uint16_type nOrder = 0;
+    uint16_type nDim = 0;
+    uint16_type nRealDim = 0;
+    uint16_type Shape = 0;
+    uint16_type nComponents = 0;
+    uint16_type nComponents1 = 0;
+    uint16_type nComponents2 = 0;
 
 
-    bool is_continuous;
-    bool is_discontinuous_locally;
-    bool is_discontinuous_totally;
+    bool is_continuous = false;
+    bool is_discontinuous_locally = false;
+    bool is_discontinuous_totally = false;
 
-    bool is_scalar;
-    bool is_vectorial;
-    bool is_tensor2;
-    bool is_tensor2symm;
-    bool is_modal;
-    bool is_product;
-    uint16_type nRealComponents;
+    bool is_scalar = false;
+    bool is_vectorial = false;
+    bool is_tensor2 = false;
+    bool is_tensor2symm = false;
+    bool is_modal = false;
+    bool is_product = false;
+    uint16_type nRealComponents = 0;
 
-    bool is_p0_continuous;
+    bool is_p0_continuous = false;
 
-    bool is_hdiv_conforming;
-    bool is_hcurl_conforming;
+    bool is_hdiv_conforming = false;
+    bool is_hcurl_conforming = false;
 
-    uint16_type nDofPerEdge;
-    uint16_type nDofPerElement;
+    uint16_type nDofPerEdge = 0;
+    uint16_type nDofPerElement = 0;
 
-    bool is_periodic;
+    bool is_periodic = false;
 
-    uint16_type nDofComponents;
+    uint16_type nDofComponents = 0;
 
     std::string feFamilyName;
 };

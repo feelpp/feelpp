@@ -20,7 +20,8 @@ template<typename VectorType, typename DofTableType, typename RangeType, typenam
 void syncDofs( VectorType & phi, DofTableType const& dofTable, RangeType const& range, FunctionType const& func )
 {
     typedef typename VectorType::value_type value_type;
-    static const uint16_type nDofPerElt = DofTableType::nDofPerElement;
+    const uint16_type nDofPerElt =
+        static_cast<uint16_type>( dofTable.nLocalDof() );
     // If sequential return
     if( dofTable.worldCommPtr()->localSize() == 1 )
         return;

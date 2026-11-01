@@ -74,7 +74,8 @@ public:
     static constexpr bool is_order_dynamic = orderIsDynamic<fe_type>;
     static inline const bool is_p0_continuous = ( ( nOrder == 0 ) && is_continuous );
 
-    static inline const uint16_type nDofPerElement = mpl::if_<mpl::bool_<is_product>, mpl::int_<fe_type::nLocalDof*nComponents1>, mpl::int_<fe_type::nLocalDof> >::type::value;
+    static inline const uint16_type nDofPerElement =
+        finiteElementFixedLocalDofCountOrZero<fe_type>( nComponents1 );
 
     //@}
 
@@ -124,46 +125,10 @@ private:
     fe_type const& M_fe;
 
 private:
-    [[nodiscard]] uint16_type runtimeDofPerVertex() const noexcept
+    [[nodiscard]] size_type dofCountOnEdge() const noexcept
     {
-        if constexpr ( is_order_dynamic )
-        {
-            if constexpr ( requires( fe_type const& fe ) { fe.dofPerVertex(); } )
-                return M_fe.dofPerVertex();
-            else
-                return M_fe.runtimeDofPerVertex();
-        }
-        else
-            return fe_type::nDofPerVertex;
-    }
-    [[nodiscard]] uint16_type runtimeDofPerEdge() const noexcept
-    {
-        if constexpr ( is_order_dynamic )
-        {
-            if constexpr ( requires( fe_type const& fe ) { fe.dofPerEdge(); } )
-                return M_fe.dofPerEdge();
-            else
-                return M_fe.runtimeDofPerEdge();
-        }
-        else
-            return fe_type::nDofPerEdge;
-    }
-    [[nodiscard]] uint16_type runtimeLocalDof() const noexcept
-    {
-        if constexpr ( is_order_dynamic )
-        {
-            if constexpr ( requires( fe_type const& fe ) { fe.localDof(); } )
-                return M_fe.localDof();
-            else
-                return M_fe.runtimeLocalDof();
-        }
-        else
-            return fe_type::nLocalDof;
-    }
-    [[nodiscard]] size_type runtimeNDofOnEdge() const noexcept
-    {
-        return edge_type::numVertices * runtimeDofPerVertex() +
-               edge_type::numEdges * runtimeDofPerEdge();
+        return edge_type::numVertices * M_fe.dofPerVertex() +
+               edge_type::numEdges * M_fe.dofPerEdge();
     }
 
     [[nodiscard]] uint16_type localEdgeDofIndexFromAttachment( uint16_type edge_id,
@@ -211,9 +176,9 @@ private:
             return false;
 
         const uint16_type nLocalDof = finiteElementLocalDofCount( M_fe );
-        const uint16_type nDofPerVertex = runtimeDofPerVertex();
-        const uint16_type nDofPerEdge = runtimeDofPerEdge();
-        const size_type ndofFPerComponent = runtimeNDofOnEdge();
+        const uint16_type nDofPerVertex = M_fe.dofPerVertex();
+        const uint16_type nDofPerEdge = M_fe.dofPerEdge();
+        const size_type ndofFPerComponent = dofCountOnEdge();
         if ( nLocalDof == 0 || ndofFPerComponent == 0 )
             return false;
 
@@ -255,7 +220,7 @@ private:
     template<typename Container>
     void addVertexEdgeDof( size_type el_id, uint16_type edge_id, uint16_type& lc, std::back_insert_iterator<Container> d ) const
     {
-        const uint16_type nDofPerVertex = runtimeDofPerVertex();
+        const uint16_type nDofPerVertex = M_fe.dofPerVertex();
         if ( nDofPerVertex == 0 )
             return;
 
@@ -306,11 +271,11 @@ private:
     template<typename Container>
     void addEdgeEdgeDof( size_type el_id, uint16_type edge_id, uint16_type& lc, std::back_insert_iterator<Container> d ) const
     {
-        const uint16_type nDofPerEdge = runtimeDofPerEdge();
+        const uint16_type nDofPerEdge = M_fe.dofPerEdge();
         if ( nDofPerEdge == 0 || edge_type::numEdges == 0 )
             return;
 
-        const uint16_type nDofPerVertex = runtimeDofPerVertex();
+        const uint16_type nDofPerVertex = M_fe.dofPerVertex();
         size_type nVerticesF = edge_type::numVertices * nDofPerVertex;
         size_type ndofF = ( edge_type::numVertices * nDofPerVertex +
                             edge_type::numEdges * nDofPerEdge );
@@ -341,8 +306,8 @@ DofFromEdge<DofTableType,FEType>::operator()( size_type elid, uint16_type edge_i
     if ( this->addEdgeDofUsingFiniteElementLayout( elid, edge_id, edge_dof ) )
         return edge_dof;
 
-    size_type ndofF = ( edge_type::numVertices * runtimeDofPerVertex() +
-                        edge_type::numEdges * runtimeDofPerEdge() );
+    size_type ndofF = ( edge_type::numVertices * M_fe.dofPerVertex() +
+                        edge_type::numEdges * M_fe.dofPerEdge() );
     edge_dof.reserve( ndofF );
     
     uint16_type lcVertex = 0;

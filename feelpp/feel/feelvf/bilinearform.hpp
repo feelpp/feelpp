@@ -451,8 +451,10 @@ public:
         static constexpr bool hasDynamicOrder = test_dof_type::is_order_dynamic || trial_dof_type::is_order_dynamic;
         static const int nDofPerElementTest = space_1_type::dof_type::nDofPerElement;
         static const int nDofPerElementTrial = space_2_type::dof_type::nDofPerElement;
-        static const int nDofPerComponentTest = test_fe_type::nLocalDof;
-        static const int nDofPerComponentTrial = trial_fe_type::nLocalDof;
+        static const int nDofPerComponentTest =
+            finiteElementFixedLocalDofCountOrZero<test_fe_type>( 1 );
+        static const int nDofPerComponentTrial =
+            finiteElementFixedLocalDofCountOrZero<trial_fe_type>( 1 );
         static constexpr int local_mat_traits = (nDofPerElementTrial == 1) ? Eigen::ColMajor : Eigen::RowMajor;
 
         static const int local_mat_traits_per_component = mpl::if_<mpl::equal_to<mpl::int_<nDofPerComponentTrial>,mpl::int_<1> >,
@@ -643,19 +645,14 @@ public:
 
         void initDynamicEigenMatrix()
         {
-            const int nDofEltTest = hasDynamicOrder ? static_cast<int>( M_test_dof->nLocalDof() ) : nDofPerElementTest;
-            const int nDofEltTrial = hasDynamicOrder ? static_cast<int>( M_trial_dof->nLocalDof() ) : nDofPerElementTrial;
+            const int nDofEltTest = static_cast<int>( M_test_dof->nLocalDof() );
+            const int nDofEltTrial = static_cast<int>( M_trial_dof->nLocalDof() );
             const int nDofCompTest = [&]()
             {
                 if constexpr ( test_dof_type::is_order_dynamic )
                 {
                     auto const testFe = M_form.testFiniteElement<UseMortarTest>();
-                    if constexpr ( requires { testFe->localDof(); } )
-                        return static_cast<int>( testFe->localDof() );
-                    else if constexpr ( requires { testFe->runtimeLocalDof(); } )
-                        return static_cast<int>( testFe->runtimeLocalDof() );
-                    else
-                        return static_cast<int>( M_test_dof->nLocalDof()/test_dof_type::nComponents );
+                    return static_cast<int>( testFe->localDof() );
                 }
                 else
                     return nDofPerComponentTest;
@@ -665,12 +662,7 @@ public:
                 if constexpr ( trial_dof_type::is_order_dynamic )
                 {
                     auto const trialFe = M_form.trialFiniteElement<UseMortarTrial>();
-                    if constexpr ( requires { trialFe->localDof(); } )
-                        return static_cast<int>( trialFe->localDof() );
-                    else if constexpr ( requires { trialFe->runtimeLocalDof(); } )
-                        return static_cast<int>( trialFe->runtimeLocalDof() );
-                    else
-                        return static_cast<int>( M_trial_dof->nLocalDof()/trial_dof_type::nComponents );
+                    return static_cast<int>( trialFe->localDof() );
                 }
                 else
                     return nDofPerComponentTrial;

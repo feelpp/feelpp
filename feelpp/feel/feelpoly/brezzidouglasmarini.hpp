@@ -52,47 +52,66 @@ namespace Feel
 namespace detail
 {
 [[nodiscard]] constexpr uint16_type
-brezziDouglasMariniSimplexInternalOrder( uint16_type publicOrder ) noexcept
+brezziDouglasMariniSimplexInternalOrder( uint16_type publicOrder )
 {
-    return static_cast<uint16_type>( publicOrder + 1 );
+    return checkedLocalIndexValue(
+        static_cast<size_type>( publicOrder ) + 1 );
 }
 
-[[nodiscard]] constexpr uint16_type
-brezziDouglasMariniSimplexFacetDof( uint16_type dim, uint16_type publicOrder ) noexcept
+[[nodiscard]] constexpr size_type
+brezziDouglasMariniSimplexTotalDofSize(
+    uint16_type dim, uint16_type publicOrder ) noexcept
 {
-    const auto internalOrder = brezziDouglasMariniSimplexInternalOrder( publicOrder );
+    const size_type internalOrder =
+        static_cast<size_type>( publicOrder ) + 1;
     return ( dim == 2 )
-               ? static_cast<uint16_type>( internalOrder + 1 )
-               : static_cast<uint16_type>( ( internalOrder + 1 ) * ( internalOrder + 2 ) / 2 );
+               ? ( internalOrder + 1 ) * ( internalOrder + 2 )
+               : ( internalOrder + 1 ) * ( internalOrder + 2 ) *
+                     ( internalOrder + 3 ) / 2;
+}
+
+[[nodiscard]] constexpr RuntimeOrder
+validatedBrezziDouglasMariniSimplexOrder(
+    uint16_type dim, RuntimeOrder publicOrder )
+{
+    (void)checkedLocalIndexValue(
+        static_cast<size_type>( publicOrder.value ) + 1 );
+    (void)checkedLocalIndexValue(
+        brezziDouglasMariniSimplexTotalDofSize(
+            dim, publicOrder.value ) );
+    return publicOrder;
 }
 
 [[nodiscard]] constexpr uint16_type
-brezziDouglasMariniSimplexInteriorDof( uint16_type dim, uint16_type publicOrder ) noexcept
+brezziDouglasMariniSimplexFacetDof( uint16_type dim, uint16_type publicOrder )
 {
-    const auto internalOrder = brezziDouglasMariniSimplexInternalOrder( publicOrder );
+    const size_type internalOrder =
+        static_cast<size_type>( publicOrder ) + 1;
+    return checkedLocalIndexValue(
+        ( dim == 2 )
+            ? internalOrder + 1
+            : ( internalOrder + 1 ) * ( internalOrder + 2 ) / 2 );
+}
+
+[[nodiscard]] constexpr uint16_type
+brezziDouglasMariniSimplexInteriorDof( uint16_type dim, uint16_type publicOrder )
+{
+    const size_type internalOrder =
+        static_cast<size_type>( publicOrder ) + 1;
     if ( internalOrder <= 1 )
         return 0;
-    return ( dim == 2 )
-               ? static_cast<uint16_type>( internalOrder * internalOrder - 1 )
-               : static_cast<uint16_type>( ( internalOrder + 1 ) * ( internalOrder + 2 ) * ( internalOrder - 1 ) / 2 );
+    return checkedLocalIndexValue(
+        ( dim == 2 )
+            ? internalOrder * internalOrder - 1
+            : ( internalOrder + 1 ) * ( internalOrder + 2 ) *
+                  ( internalOrder - 1 ) / 2 );
 }
 
 [[nodiscard]] constexpr uint16_type
-brezziDouglasMariniSimplexTotalDof( uint16_type dim, uint16_type publicOrder ) noexcept
+brezziDouglasMariniSimplexTotalDof( uint16_type dim, uint16_type publicOrder )
 {
-    const auto internalOrder = brezziDouglasMariniSimplexInternalOrder( publicOrder );
-    return ( dim == 2 )
-               ? static_cast<uint16_type>( ( internalOrder + 1 ) * ( internalOrder + 2 ) )
-               : static_cast<uint16_type>( ( internalOrder + 1 ) * ( internalOrder + 2 ) * ( internalOrder + 3 ) / 2 );
-}
-
-template<typename DynamicPolynomialSet, typename SourcePolynomialSet>
-[[nodiscard]] DynamicPolynomialSet
-brezziDouglasMariniDynamicPolynomialSetFrom( SourcePolynomialSet const& source, uint16_type order )
-{
-    DynamicPolynomialSet result( source.coeff(), true );
-    result.setOrder( order );
-    return result;
+    return checkedLocalIndexValue(
+        brezziDouglasMariniSimplexTotalDofSize( dim, publicOrder ) );
 }
 
 } // namespace detail
@@ -124,13 +143,7 @@ public:
     BrezziDouglasMariniPolynomialSet()
         :
         super()
-    {
-        // BDM_k primal space is the full vector polynomial space (P_k)^d.
-        const uint16_type dimPk = convex_type::polyDims( nOrder );
-        Pkp1_v_type Pkp1_v;
-        vectorial_polynomialset_type Pk_v( Pkp1_v.polynomialsUpToDimension( dimPk ) );
-        this->setCoefficient( Pk_v.coeff(), true );
-    }
+    {}
 };
 
 template<uint16_type N,
@@ -166,9 +179,15 @@ public:
 
     explicit BrezziDouglasMariniDynamicPolynomialSet( RuntimeOrder publicOrder )
         :
-        super( RuntimeOrder{ Feel::detail::brezziDouglasMariniSimplexInternalOrder( publicOrder.value ) } )
+        super( RuntimeOrder{
+            Feel::detail::brezziDouglasMariniSimplexInternalOrder(
+                Feel::detail::validatedBrezziDouglasMariniSimplexOrder(
+                    N, publicOrder ).value ) } ),
+        M_publicOrder( publicOrder.value )
     {
-        build( publicOrder.value );
+        CHECK_EQ( this->polynomialDimension(),
+                  Feel::detail::brezziDouglasMariniSimplexTotalDof(
+                      N, publicOrder.value ) );
     }
 
     [[nodiscard]] uint16_type publicOrder() const noexcept
@@ -182,214 +201,7 @@ public:
     }
 
 private:
-    void build( uint16_type publicOrder )
-    {
-        M_publicOrder = publicOrder;
-        const uint16_type internalOrder = Feel::detail::brezziDouglasMariniSimplexInternalOrder( publicOrder );
-        const uint16_type dimPk = convex_type::polyDims( internalOrder );
-
-        Pkp1_v_type Pkp1_v( RuntimeOrder{ internalOrder } );
-        vectorial_polynomialset_type Pk_v =
-            Feel::detail::brezziDouglasMariniDynamicPolynomialSetFrom<vectorial_polynomialset_type>( Pkp1_v.polynomialsUpToDimension( dimPk ),
-                                                                                                     internalOrder );
-        CHECK( Pk_v.polynomialDimension() == Feel::detail::brezziDouglasMariniSimplexTotalDof( N, publicOrder ) )
-            << "Invalid dynamic BDM polynomial dimension: got " << Pk_v.polynomialDimension()
-            << " expected " << Feel::detail::brezziDouglasMariniSimplexTotalDof( N, publicOrder );
-        this->setCoefficient( Pk_v.coeff(), true );
-    }
-
-private:
     uint16_type M_publicOrder = 0;
-};
-
-template<uint16_type N,
-         typename T = double,
-         uint16_type TheTAG = 0>
-class BrezziDouglasMariniNedelecFirstKindDynamicPolynomialSet;
-
-template<typename T,
-         uint16_type TheTAG>
-class BrezziDouglasMariniNedelecFirstKindDynamicPolynomialSet<2, T, TheTAG>
-    :
-    public Feel::detail::OrthonormalPolynomialSet<2, Dynamic, 2, Vectorial, T, TheTAG, Simplex>
-{
-    static constexpr uint16_type N = 2;
-    using super = Feel::detail::OrthonormalPolynomialSet<N, Dynamic, N, Vectorial, T, TheTAG, Simplex>;
-
-public:
-    using value_type = typename super::value_type;
-    using convex_type = typename super::convex_type;
-    using matrix_type = typename super::matrix_type;
-    using points_type = typename super::points_type;
-    using Pkp1_v_type = Feel::detail::OrthonormalPolynomialSet<N, Dynamic, N, Vectorial, T, TheTAG, Simplex>;
-    using Pkp1_s_type = Feel::detail::OrthonormalPolynomialSet<N, Dynamic, N, Scalar, T, TheTAG, Simplex>;
-    using vectorial_polynomialset_type = PolynomialSet<typename super::basis_type, Vectorial, Dynamic>;
-    using scalar_polynomialset_type = PolynomialSet<typename super::basis_type, Scalar, Dynamic>;
-    using scalar_polynomial_type = typename scalar_polynomialset_type::polynomial_type;
-
-    static inline const uint16_type nDim = super::nDim;
-    static inline const int nOrder = Dynamic;
-    static inline const uint16_type nComponents = super::nComponents;
-    static inline const bool is_product = false;
-
-    BrezziDouglasMariniNedelecFirstKindDynamicPolynomialSet()
-        :
-        BrezziDouglasMariniNedelecFirstKindDynamicPolynomialSet( RuntimeOrder{ 0 } )
-    {}
-
-    explicit BrezziDouglasMariniNedelecFirstKindDynamicPolynomialSet( RuntimeOrder publicOrder )
-        :
-        super( RuntimeOrder{ static_cast<uint16_type>( publicOrder.value + 1 ) } )
-    {
-        build( publicOrder.value );
-    }
-
-private:
-    void build( uint16_type publicOrder )
-    {
-        const uint16_type internalOrder = static_cast<uint16_type>( publicOrder + 1 );
-        const uint16_type dimPk = convex_type::polyDims( publicOrder );
-        const uint16_type dimPkm1 = ( publicOrder == 0 ) ? 0 : convex_type::polyDims( publicOrder - 1 );
-
-        Pkp1_v_type Pkp1_v( RuntimeOrder{ internalOrder } );
-        vectorial_polynomialset_type Pk_v =
-            Feel::detail::brezziDouglasMariniDynamicPolynomialSetFrom<vectorial_polynomialset_type>( Pkp1_v.polynomialsUpToDimension( dimPk ),
-                                                                                                     internalOrder );
-
-        Pkp1_s_type Pkp1( RuntimeOrder{ internalOrder } );
-        scalar_polynomialset_type Pk =
-            Feel::detail::brezziDouglasMariniDynamicPolynomialSetFrom<scalar_polynomialset_type>( Pkp1.polynomialsUpToDimension( dimPk ),
-                                                                                                  internalOrder );
-
-        IMGeneral<convex_type::nDim, value_type> im( static_cast<uint16_type>( 2*internalOrder ) );
-        ublas::matrix<value_type> xPkc( nComponents*( dimPk - dimPkm1 ), Pk.coeff().size2() );
-        for ( int l = dimPkm1, i = 0; l < dimPk; ++l, ++i )
-        {
-            for ( int j = 0; j < convex_type::nDim; ++j )
-            {
-                Feel::detail::times_rotx<scalar_polynomial_type> xp( Pk.polynomial( l ), j );
-                ublas::row( xPkc, i*nComponents + j ) =
-                    ublas::row( Feel::project( Pkp1, xp, im ).coeff(), 0 );
-            }
-        }
-
-        vectorial_polynomialset_type xPk( typename super::basis_type(), xPkc, true );
-        xPk.setOrder( internalOrder );
-        auto nedSpace = unite( Pk_v, xPk );
-        const uint16_type expectedDim = static_cast<uint16_type>( ( publicOrder + 1 ) * ( publicOrder + 3 ) );
-        CHECK_GE( nedSpace.polynomialDimension(), expectedDim )
-            << "Invalid dynamic 2D Nedelec first-kind dimension: got " << nedSpace.polynomialDimension()
-            << " expected at least " << expectedDim;
-        if ( nedSpace.polynomialDimension() > expectedDim )
-        {
-            matrix_type coeff( nComponents*expectedDim, nedSpace.coeff().size2() );
-            ublas::subrange( coeff, 0, coeff.size1(), 0, coeff.size2() ) =
-                ublas::subrange( nedSpace.coeff(), 0, coeff.size1(), 0, coeff.size2() );
-            nedSpace = vectorial_polynomialset_type( typename super::basis_type(), coeff, true );
-            nedSpace.setOrder( internalOrder );
-        }
-        this->setCoefficient( nedSpace.coeff(), true );
-    }
-};
-
-template<typename T,
-         uint16_type TheTAG>
-class BrezziDouglasMariniNedelecFirstKindDynamicPolynomialSet<3, T, TheTAG>
-    :
-    public Feel::detail::OrthonormalPolynomialSet<3, Dynamic, 3, Vectorial, T, TheTAG, Simplex>
-{
-    static constexpr uint16_type N = 3;
-    using super = Feel::detail::OrthonormalPolynomialSet<N, Dynamic, N, Vectorial, T, TheTAG, Simplex>;
-
-public:
-    using value_type = typename super::value_type;
-    using convex_type = typename super::convex_type;
-    using matrix_type = typename super::matrix_type;
-    using points_type = typename super::points_type;
-    using Pkp1_v_type = Feel::detail::OrthonormalPolynomialSet<N, Dynamic, N, Vectorial, T, TheTAG, Simplex>;
-    using Pkp1_s_type = Feel::detail::OrthonormalPolynomialSet<N, Dynamic, N, Scalar, T, TheTAG, Simplex>;
-    using vectorial_polynomialset_type = PolynomialSet<typename super::basis_type, Vectorial, Dynamic>;
-    using scalar_polynomialset_type = PolynomialSet<typename super::basis_type, Scalar, Dynamic>;
-
-    static inline const uint16_type nDim = super::nDim;
-    static inline const int nOrder = Dynamic;
-    static inline const uint16_type nComponents = super::nComponents;
-    static inline const bool is_product = false;
-
-    BrezziDouglasMariniNedelecFirstKindDynamicPolynomialSet()
-        :
-        BrezziDouglasMariniNedelecFirstKindDynamicPolynomialSet( RuntimeOrder{ 0 } )
-    {}
-
-    explicit BrezziDouglasMariniNedelecFirstKindDynamicPolynomialSet( RuntimeOrder publicOrder )
-        :
-        super( RuntimeOrder{ static_cast<uint16_type>( publicOrder.value + 1 ) } )
-    {
-        build( publicOrder.value );
-    }
-
-private:
-    void build( uint16_type publicOrder )
-    {
-        const uint16_type internalOrder = static_cast<uint16_type>( publicOrder + 1 );
-        const uint16_type dimPk = convex_type::polyDims( publicOrder );
-        const uint16_type dimPkm1 = ( publicOrder == 0 ) ? 0 : convex_type::polyDims( publicOrder - 1 );
-
-        Pkp1_v_type Pkp1_v( RuntimeOrder{ internalOrder } );
-        vectorial_polynomialset_type Pk_v =
-            Feel::detail::brezziDouglasMariniDynamicPolynomialSetFrom<vectorial_polynomialset_type>( Pkp1_v.polynomialsUpToDimension( dimPk ),
-                                                                                                     internalOrder );
-        vectorial_polynomialset_type Pke_v =
-            Feel::detail::brezziDouglasMariniDynamicPolynomialSetFrom<vectorial_polynomialset_type>( Pkp1_v.polynomialsUpToDimension( dimPk ),
-                                                                                                     internalOrder );
-
-        Pkp1_s_type Pkp1( RuntimeOrder{ internalOrder } );
-
-        IMGeneral<convex_type::nDim, value_type> im( static_cast<uint16_type>( 2*internalOrder ) );
-        ublas::matrix<value_type> xPkcV( nComponents*nComponents*dimPk, Pke_v.coeff().size2() );
-        Eigen::Map<Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>> xPkc( xPkcV.data().begin(),
-                                                                                                  xPkcV.size1(), xPkcV.size2() );
-        xPkc.setZero();
-
-        auto ePkp1 = Pkp1.evaluate( im.points() );
-        auto ePkv = Pk_v.evaluate( im.points() );
-        auto const& X = im.points();
-        auto const& W = im.weights();
-
-        for ( int c = 0; c < convex_type::nDim; ++c )
-        {
-            for ( int l = c*convex_type::nDim + dimPkm1; l < c*convex_type::nDim + dimPk; ++l )
-            {
-                for ( int j = 0; j < convex_type::nDim; ++j )
-                {
-                    for ( int q = 0; q < im.nPoints(); ++q )
-                    {
-                        auto b = W( q )*( X( ( j + 2 )%3, q )*ePkv( l + ( j + 1 )%3, q ) -
-                                           X( ( j + 1 )%3, q )*ePkv( l + ( j + 2 )%3, q ) );
-                        for ( int p = 0; p < xPkc.cols(); ++p )
-                            xPkc( l + j, p ) += b * ePkp1( p, q );
-                    }
-                }
-            }
-        }
-
-        vectorial_polynomialset_type xPk( typename super::basis_type(), xPkcV, true );
-        xPk.setOrder( internalOrder );
-        auto nedSpace = unite( Pke_v, xPk );
-        const uint16_type expectedDim = static_cast<uint16_type>( ( publicOrder + 1 ) * ( publicOrder + 3 ) * ( publicOrder + 4 ) / 2 );
-        CHECK_GE( nedSpace.polynomialDimension(), expectedDim )
-            << "Invalid dynamic 3D Nedelec first-kind dimension: got " << nedSpace.polynomialDimension()
-            << " expected at least " << expectedDim;
-        if ( nedSpace.polynomialDimension() > expectedDim )
-        {
-            matrix_type coeff( nComponents*expectedDim, nedSpace.coeff().size2() );
-            ublas::subrange( coeff, 0, coeff.size1(), 0, coeff.size2() ) =
-                ublas::subrange( nedSpace.coeff(), 0, coeff.size1(), 0, coeff.size2() );
-            nedSpace = vectorial_polynomialset_type( typename super::basis_type(), coeff, true );
-            nedSpace.setOrder( internalOrder );
-        }
-        this->setCoefficient( nedSpace.coeff(), true );
-    }
 };
 
 namespace fem
@@ -417,7 +229,7 @@ public:
     using reference_convex_type = Reference<convex_type, nDim, nDim+nOrder, nDim, value_type>;
     using node_type = typename reference_convex_type::node_type;
     using pointset_type = PointSetType<convex_type, nOrder, value_type>;
-    using interior_polyset_type = BrezziDouglasMariniNedelecFirstKindDynamicPolynomialSet<nDim, value_type>;
+    using interior_polyset_type = Nedelec1DynamicPolynomialSet<nDim, value_type>;
 
     static inline const uint16_type nbPtsPerVertex = 0;
     static inline const uint16_type nbPtsPerEdge = ( nDim == 2 ) ? reference_convex_type::nbPtsPerEdge : 0;
@@ -441,55 +253,31 @@ public:
         :
         super( primal ),
         M_convex_ref(),
-        M_eid( M_convex_ref.topologicalDimension()+1 ),
         M_pts( nDim, numPoints ),
         M_pts_per_face( convex_type::numTopologicalFaces ),
         M_fset( primal )
     {
-        for ( int p = 0, e = M_convex_ref.entityRange( nDim-1 ).begin();
-              e < M_convex_ref.entityRange( nDim-1 ).end();
-              ++e )
-        {
-            points_type Gt( M_convex_ref.makePoints( nDim-1, e ) );
-            M_pts_per_face[e] = Gt;
-
-            if ( Gt.size2() )
+        const uint16_type interiorDof = nDim == 2
+            ? nDofPerFace : nDofPerVolume;
+        auto functionals = Feel::detail::buildHDivSimplexFunctionals(
+            primal, M_convex_ref,
+            nDim == 2 ? nDofPerEdge : nDofPerFace,
+            interiorDof, nLocalDof,
+            static_cast<uint16_type>( 2*( nOrder+1 ) ),
+            M_pts, M_pts_per_face,
+            [this]( uint16_type facet )
+            { return M_convex_ref.makePoints( nDim-1, facet ); },
+            []()
             {
-                ublas::subrange( M_pts, 0, nDim, p, p + Gt.size2() ) = Gt;
-                p += Gt.size2();
-            }
-        }
-
-        typedef Functional<primal_space_type> functional_type;
-        std::vector<functional_type> fset;
-
-        Feel::detail::appendHDivFacetNormalPointFunctionals( primal, M_convex_ref, M_pts_per_face, fset );
-
-        if constexpr ( nOrder > 1 )
-        {
-            interior_polyset_type interiorSet( RuntimeOrder{ static_cast<uint16_type>( nOrder - 2 ) } );
-            const uint16_type nInteriorDof = ( nDim == 2 ) ? nDofPerFace : nDofPerVolume;
-            CHECK( interiorSet.polynomialDimension() == nInteriorDof )
-                << "Invalid BDM interior moments: got " << interiorSet.polynomialDimension()
-                << " expected " << nInteriorDof;
-
-            IM<nDim, 2*( nOrder + 1 ), value_type, Simplex> im;
-            const uint16_type firstInternalDof = ( nDim == 2 )
-                                                 ? reference_convex_type::numEdges * nDofPerEdge
-                                                 : reference_convex_type::numTopologicalFaces * nDofPerFace;
-            const uint16_type requiredPointCount = static_cast<uint16_type>( firstInternalDof + im.nPoints() );
-            if ( M_pts.size2() < requiredPointCount )
-                M_pts.resize( nDim, requiredPointCount, true );
-            ublas::subrange( M_pts, 0, nDim, firstInternalDof, requiredPointCount ) = im.points();
-
-            for ( int i = 0; i < interiorSet.polynomialDimension(); ++i )
+                return interior_polyset_type(
+                    RuntimeOrder{ static_cast<uint16_type>( nOrder-2 ) } );
+            },
+            [&primal]( auto const& polynomial )
             {
-                fset.push_back( Feel::detail::makeHDivOrthonormalIntegralMomentFunctional(
-                    primal, interiorSet.polynomial( i ) ) );
-            }
-        }
-
-        M_fset.setFunctionalSet( fset );
+                return Feel::detail::makeHDivOrthonormalIntegralMomentFunctional(
+                    primal, polynomial );
+            } );
+        M_fset.setFunctionalSet( functionals );
     }
 
     points_type const& points() const
@@ -517,7 +305,6 @@ public:
 
 private:
     reference_convex_type M_convex_ref;
-    std::vector<std::vector<uint16_type>> M_eid;
     points_type M_pts;
     std::vector<points_type> M_pts_per_face;
     FunctionalSet<primal_space_type> M_fset;
@@ -543,7 +330,7 @@ public:
     using reference_convex_type = Reference<convex_type, nDim, 1, nDim, value_type>;
     using node_type = typename reference_convex_type::node_type;
     using pointset_type = PointSetType<convex_type, Dynamic, value_type>;
-    using interior_polyset_type = BrezziDouglasMariniNedelecFirstKindDynamicPolynomialSet<nDim, value_type>;
+    using interior_polyset_type = Nedelec1DynamicPolynomialSet<nDim, value_type>;
 
     static inline const uint16_type nbPtsPerVertex = 0;
     static inline const uint16_type nbPtsPerEdge = ( nDim == 2 ) ? 2 : 0;
@@ -563,60 +350,29 @@ public:
         M_publicOrder( primal.publicOrder() ),
         M_internalOrder( Feel::detail::brezziDouglasMariniSimplexInternalOrder( M_publicOrder ) ),
         M_convex_ref(),
-        M_eid( M_convex_ref.topologicalDimension()+1 ),
         M_pts( nDim, Feel::detail::brezziDouglasMariniSimplexTotalDof( nDim, M_publicOrder ) ),
         M_pts_per_face( convex_type::numTopologicalFaces ),
         M_fset( primal )
     {
-        const uint16_type nFacetDof = runtimeFacetDof();
+        const uint16_type nFacetDof = facetDof();
         pointset_type facetPoints( RuntimeOrder{ static_cast<uint16_type>( nDim + M_internalOrder ) } );
-
-        for ( int p = 0, e = M_convex_ref.entityRange( nDim-1 ).begin();
-              e < M_convex_ref.entityRange( nDim-1 ).end();
-              ++e )
-        {
-            points_type Gt( facetPoints.pointsBySubEntity( nDim-1, e ) );
-            CHECK( Gt.size2() == nFacetDof )
-                << "Invalid BDM dynamic facet point count on facet " << e
-                << ": got " << Gt.size2() << " expected " << nFacetDof;
-            M_pts_per_face[e] = Gt;
-
-            if ( Gt.size2() )
+        auto functionals = Feel::detail::buildHDivSimplexFunctionals(
+            primal, M_convex_ref, nFacetDof, interiorDof(), localDof(),
+            static_cast<uint16_type>( 2*( M_internalOrder+1 ) ),
+            M_pts, M_pts_per_face,
+            [&facetPoints]( uint16_type facet )
+            { return facetPoints.pointsBySubEntity( nDim-1, facet ); },
+            [this]()
             {
-                ublas::subrange( M_pts, 0, nDim, p, p+Gt.size2() ) = Gt;
-                p += Gt.size2();
-            }
-        }
-
-        using functional_type = Functional<primal_space_type>;
-        std::vector<functional_type> fset;
-
-        Feel::detail::appendHDivFacetNormalPointFunctionals( primal, M_convex_ref, M_pts_per_face, fset );
-
-        if ( M_internalOrder > 1 )
-        {
-            interior_polyset_type interiorSet( RuntimeOrder{ static_cast<uint16_type>( M_internalOrder - 2 ) } );
-            const uint16_type nInteriorDof = runtimeInteriorDof();
-            CHECK( interiorSet.polynomialDimension() == nInteriorDof )
-                << "Invalid BDM dynamic interior moments: got " << interiorSet.polynomialDimension()
-                << " expected " << nInteriorDof;
-
-            IMGeneral<nDim, value_type, Simplex> im( static_cast<uint16_type>( 2*( M_internalOrder + 1 ) ) );
-            const uint16_type firstInternalDof = static_cast<uint16_type>( convex_type::numTopologicalFaces * nFacetDof );
-            const uint16_type requiredPointCount = static_cast<uint16_type>( firstInternalDof + im.nPoints() );
-            if ( M_pts.size2() < requiredPointCount )
-                M_pts.resize( nDim, requiredPointCount, true );
-            ublas::subrange( M_pts, 0, nDim, firstInternalDof, requiredPointCount ) = im.points();
-
-            for ( int i = 0; i < interiorSet.polynomialDimension(); ++i )
-                fset.push_back( Feel::detail::makeHDivOrthonormalIntegralMomentFunctional(
-                    primal, interiorSet.polynomial( i ) ) );
-        }
-
-        CHECK( fset.size() == Feel::detail::brezziDouglasMariniSimplexTotalDof( nDim, M_publicOrder ) )
-            << "Invalid BDM dynamic functional count: got " << fset.size()
-            << " expected " << Feel::detail::brezziDouglasMariniSimplexTotalDof( nDim, M_publicOrder );
-        M_fset.setFunctionalSet( fset );
+                return interior_polyset_type( RuntimeOrder{
+                    static_cast<uint16_type>( M_internalOrder-2 ) } );
+            },
+            [&primal]( auto const& polynomial )
+            {
+                return Feel::detail::makeHDivOrthonormalIntegralMomentFunctional(
+                    primal, polynomial );
+            } );
+        M_fset.setFunctionalSet( functionals );
     }
 
     [[nodiscard]] uint16_type publicOrder() const noexcept
@@ -629,17 +385,17 @@ public:
         return M_internalOrder;
     }
 
-    [[nodiscard]] uint16_type runtimeFacetDof() const noexcept
+    [[nodiscard]] uint16_type facetDof() const noexcept
     {
         return Feel::detail::brezziDouglasMariniSimplexFacetDof( nDim, M_publicOrder );
     }
 
-    [[nodiscard]] uint16_type runtimeInteriorDof() const noexcept
+    [[nodiscard]] uint16_type interiorDof() const noexcept
     {
         return Feel::detail::brezziDouglasMariniSimplexInteriorDof( nDim, M_publicOrder );
     }
 
-    [[nodiscard]] uint16_type runtimeLocalDof() const noexcept
+    [[nodiscard]] uint16_type localDof() const noexcept
     {
         return Feel::detail::brezziDouglasMariniSimplexTotalDof( nDim, M_publicOrder );
     }
@@ -671,7 +427,6 @@ private:
     uint16_type M_publicOrder = 0;
     uint16_type M_internalOrder = 1;
     reference_convex_type M_convex_ref;
-    std::vector<std::vector<uint16_type>> M_eid;
     points_type M_pts;
     std::vector<points_type> M_pts_per_face;
     FunctionalSet<primal_space_type> M_fset;
@@ -807,65 +562,13 @@ public:
 
     typename super::DofAttachment dofAttachment( uint16_type localDofId ) const override
     {
-        const uint16_type parentLocalDofId = this->dofParent( localDofId );
-
-        const uint16_type nV = static_cast<uint16_type>( reference_convex_type::numVertices * nDofPerVertex );
-        const uint16_type nE = static_cast<uint16_type>( reference_convex_type::numEdges * nDofPerEdge );
-        const uint16_type nF = static_cast<uint16_type>( reference_convex_type::numFaces * nDofPerFace );
-
-        if constexpr ( nDofPerVertex > 0 )
-        {
-            if ( parentLocalDofId < nV )
-            {
-                return typename super::DofAttachment{
-                    .entityDim = 0,
-                    .entityId = static_cast<uint16_type>( parentLocalDofId / nDofPerVertex ),
-                    .ordinal = static_cast<uint16_type>( parentLocalDofId % nDofPerVertex ),
-                    .kind = this->dofType( localDofId ) };
-            }
-        }
-
-        const uint16_type parentAfterVertex = static_cast<uint16_type>( parentLocalDofId - nV );
-        if constexpr ( nDofPerEdge > 0 )
-        {
-            if ( parentAfterVertex < nE )
-            {
-                return typename super::DofAttachment{
-                    .entityDim = 1,
-                    .entityId = static_cast<uint16_type>( parentAfterVertex / nDofPerEdge ),
-                    .ordinal = static_cast<uint16_type>( parentAfterVertex % nDofPerEdge ),
-                    .kind = this->dofType( localDofId ) };
-            }
-        }
-
-        const uint16_type parentAfterEdge = static_cast<uint16_type>( parentAfterVertex - nE );
-        if constexpr ( nDofPerFace > 0 )
-        {
-            if ( parentAfterEdge < nF )
-            {
-                return typename super::DofAttachment{
-                    .entityDim = 2,
-                    .entityId = static_cast<uint16_type>( parentAfterEdge / nDofPerFace ),
-                    .ordinal = static_cast<uint16_type>( parentAfterEdge % nDofPerFace ),
-                    .kind = this->dofType( localDofId ) };
-            }
-        }
-
-        if constexpr ( nDofPerVolume > 0 )
-        {
-            const uint16_type parentAfterFace = static_cast<uint16_type>( parentAfterEdge - nF );
-            return typename super::DofAttachment{
-                .entityDim = 3,
-                .entityId = 0,
-                .ordinal = static_cast<uint16_type>( parentAfterFace % nDofPerVolume ),
-                .kind = this->dofType( localDofId ) };
-        }
-
-        return typename super::DofAttachment{
-            .entityDim = -1,
-            .entityId = super::DofAttachment::invalid_id,
-            .ordinal = super::DofAttachment::invalid_id,
-            .kind = this->dofType( localDofId ) };
+        return simplexDofAttachment<typename super::DofAttachment>(
+            this->dofParent( localDofId ), nDim,
+            reference_convex_type::numVertices,
+            reference_convex_type::numEdges,
+            reference_convex_type::numFaces,
+            nDofPerVertex, nDofPerEdge, nDofPerFace, nDofPerVolume,
+            this->dofType( localDofId ) );
     }
 
     template<typename ElementType>
@@ -896,53 +599,25 @@ public:
     void interpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
     {
         Ihloc.setZero();
-        auto g = expr.geom();
 
         const uint16_type nFacetDof = ( nDim == 2 ) ? nDofPerEdge : nDofPerFace;
-        Feel::detail::interpolateHDivFacetPointDofs(
-            expr, Ihloc, convex_type::numTopologicalFaces, nFacetDof, n,
-            [&expr, &g]( uint16_type facet, uint16_type point, auto& normal )
-            {
-                const uint16_type elementFacet = g->faceId() == invalid_uint16_type_value
-                    ? facet : g->faceId();
-                expr.geom()->piolaContravariantFacetNormal( elementFacet, point, normal );
-            } );
+        Feel::detail::interpolateHDivFacetDofs(
+            expr, Ihloc, convex_type::numTopologicalFaces, nFacetDof, n );
 
         if constexpr ( nOrder > 1 )
         {
             static const uint16_type interiorOrder = nOrder - 2;
-            typedef BrezziDouglasMariniNedelecFirstKindDynamicPolynomialSet<nDim, value_type, TheTAG> interior_polyset_type;
+            typedef Nedelec1DynamicPolynomialSet<nDim, value_type, TheTAG> interior_polyset_type;
             interior_polyset_type interiorSpace( RuntimeOrder{ interiorOrder } );
 
             IM<nDim, 2*( nOrder + 1 ), value_type, Simplex> im;
-            auto interiorAtQuadPts = interiorSpace.evaluate( im.points() );
-
             const uint16_type nInternalDof = ( nDim == 2 ) ? nDofPerFace : nDofPerVolume;
-            CHECK( interiorSpace.polynomialDimension() == nInternalDof )
-                << "Invalid BDM interior interpolation dimension: got "
-                << interiorSpace.polynomialDimension() << " expected " << nInternalDof;
-
             const int firstInternalDof = ( nDim == 2 )
                                          ? convex_type::numTopologicalFaces * nDofPerEdge
                                          : convex_type::numTopologicalFaces * nDofPerFace;
-            if constexpr ( requires { expr.nPoints(); } )
-            {
-                CHECK( expr.nPoints() >= firstInternalDof + im.nPoints() )
-                    << "BDM interior moment interpolation requires expression values at appended quadrature points: got "
-                    << expr.nPoints() << " points, need " << firstInternalDof + im.nPoints();
-            }
-
-            for ( int l = 0; l < nInternalDof; ++l )
-            {
-                const int dof = firstInternalDof + l;
-            for ( int q = 0; q < im.nPoints(); ++q )
-            {
-                const int exprPoint = firstInternalDof + q;
-                const value_type scal = Feel::detail::hdivInteriorMomentIntegrand(
-                    expr, interiorAtQuadPts, l, q, exprPoint, nComponents );
-                Ihloc( dof ) += im.weight( q ) * scal;
-            }
-        }
+            Feel::detail::interpolateHDivInteriorMomentDofs(
+                expr, Ihloc, interiorSpace, im, firstInternalDof,
+                nInternalDof, nComponents );
         }
     }
 
@@ -952,18 +627,8 @@ public:
     void interpolateBasisFunction( ExprType&& expression,
                                    local_interpolants_type& localMatrix ) const
     {
-        localMatrix.setZero();
-        const uint16_type rowCount =
-            static_cast<uint16_type>( localMatrix.rows() );
-        CHECK_EQ( localMatrix.cols(), nLocalDof );
-        for ( uint16_type row = 0; row < rowCount; ++row )
-        {
-            auto rowExpression =
-                Feel::detail::hdivBasisExpressionRow( expression, row );
-            auto rowValues = this->localInterpolant();
-            this->interpolate( rowExpression, rowValues );
-            localMatrix.row( row ) = rowValues.transpose();
-        }
+        Feel::detail::interpolateBasisFunctionRows(
+            *this, expression, localMatrix );
     }
 
     local_interpolant_type faceLocalInterpolant() const
@@ -974,18 +639,11 @@ public:
     template<typename ExprType>
     void faceInterpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
     {
-        auto g = expr.geom();
         Ihloc.setZero();
 
         const uint16_type nLocalDof = ( nDim == 2 ) ? nDofPerEdge : nDofPerFace;
-        Feel::detail::interpolateHDivFacetPointDofs(
-            expr, Ihloc, 1, nLocalDof, n,
-            [&expr, &g]( uint16_type facet, uint16_type point, auto& normal )
-            {
-                const uint16_type elementFacet = g->faceId() == invalid_uint16_type_value
-                    ? facet : g->faceId();
-                expr.geom()->piolaContravariantFacetNormal( elementFacet, point, normal );
-            } );
+        Feel::detail::interpolateHDivFacetDofs(
+            expr, Ihloc, 1, nLocalDof, n );
     }
 
 protected:
@@ -1022,7 +680,7 @@ public:
     using primal_space_type = typename super::primal_space_type;
     using dual_space_type = typename super::dual_space_type;
     using polyset_type = typename super::polyset_type;
-    using interior_polyset_type = BrezziDouglasMariniNedelecFirstKindDynamicPolynomialSet<nDim, value_type, TheTAG>;
+    using interior_polyset_type = Nedelec1DynamicPolynomialSet<nDim, value_type, TheTAG>;
 
     static inline const bool is_order_static = false;
     static inline const bool is_order_dynamic = true;
@@ -1108,11 +766,6 @@ public:
         return M_publicOrder;
     }
 
-    [[nodiscard]] uint16_type runtimeOrder() const noexcept
-    {
-        return order();
-    }
-
     [[nodiscard]] uint16_type internalOrder() const noexcept
     {
         return Feel::detail::brezziDouglasMariniSimplexInternalOrder( M_publicOrder );
@@ -1120,23 +773,18 @@ public:
 
     [[nodiscard]] uint16_type localDof() const noexcept
     {
-        return runtimeLocalDof();
-    }
-
-    [[nodiscard]] uint16_type runtimeLocalDof() const noexcept
-    {
         return Feel::detail::brezziDouglasMariniSimplexTotalDof( nDim, M_publicOrder );
     }
 
     uint16_type localDofPerComponent() const override
     {
-        return runtimeLocalDof();
+        return localDof();
     }
 
     uint16_type localDofCount( bool perComponent = false ) const override
     {
         (void)perComponent;
-        return runtimeLocalDof();
+        return localDof();
     }
 
     [[nodiscard]] uint16_type dofPerVertex() const noexcept
@@ -1144,19 +792,9 @@ public:
         return 0;
     }
 
-    [[nodiscard]] uint16_type runtimeDofPerVertex() const noexcept
-    {
-        return dofPerVertex();
-    }
-
     [[nodiscard]] uint16_type dofPerEdge() const noexcept
     {
         return ( nDim == 2 ) ? Feel::detail::brezziDouglasMariniSimplexFacetDof( nDim, M_publicOrder ) : 0;
-    }
-
-    [[nodiscard]] uint16_type runtimeDofPerEdge() const noexcept
-    {
-        return dofPerEdge();
     }
 
     [[nodiscard]] uint16_type dofPerFace() const noexcept
@@ -1167,19 +805,9 @@ public:
             return Feel::detail::brezziDouglasMariniSimplexFacetDof( nDim, M_publicOrder );
     }
 
-    [[nodiscard]] uint16_type runtimeDofPerFace() const noexcept
-    {
-        return dofPerFace();
-    }
-
     [[nodiscard]] uint16_type dofPerVolume() const noexcept
     {
         return ( nDim == 3 ) ? Feel::detail::brezziDouglasMariniSimplexInteriorDof( nDim, M_publicOrder ) : 0;
-    }
-
-    [[nodiscard]] uint16_type runtimeDofPerVolume() const noexcept
-    {
-        return dofPerVolume();
     }
 
     [[nodiscard]] uint16_type localFacetDof() const noexcept
@@ -1215,56 +843,13 @@ public:
 
     typename super::DofAttachment dofAttachment( uint16_type localDofId ) const override
     {
-        const uint16_type parentLocalDofId = this->dofParent( localDofId );
-
-        const uint16_type nV = static_cast<uint16_type>( reference_convex_type::numVertices * dofPerVertex() );
-        const uint16_type nE = static_cast<uint16_type>( reference_convex_type::numEdges * dofPerEdge() );
-        const uint16_type nF = static_cast<uint16_type>( reference_convex_type::numFaces * dofPerFace() );
-
-        if ( parentLocalDofId < nV && dofPerVertex() > 0 )
-        {
-            return typename super::DofAttachment{
-                .entityDim = 0,
-                .entityId = static_cast<uint16_type>( parentLocalDofId / dofPerVertex() ),
-                .ordinal = static_cast<uint16_type>( parentLocalDofId % dofPerVertex() ),
-                .kind = this->dofType( localDofId ) };
-        }
-
-        const uint16_type parentAfterVertex = static_cast<uint16_type>( parentLocalDofId - nV );
-        if ( parentAfterVertex < nE && dofPerEdge() > 0 )
-        {
-            return typename super::DofAttachment{
-                .entityDim = 1,
-                .entityId = static_cast<uint16_type>( parentAfterVertex / dofPerEdge() ),
-                .ordinal = static_cast<uint16_type>( parentAfterVertex % dofPerEdge() ),
-                .kind = this->dofType( localDofId ) };
-        }
-
-        const uint16_type parentAfterEdge = static_cast<uint16_type>( parentAfterVertex - nE );
-        if ( parentAfterEdge < nF && dofPerFace() > 0 )
-        {
-            return typename super::DofAttachment{
-                .entityDim = 2,
-                .entityId = static_cast<uint16_type>( parentAfterEdge / dofPerFace() ),
-                .ordinal = static_cast<uint16_type>( parentAfterEdge % dofPerFace() ),
-                .kind = this->dofType( localDofId ) };
-        }
-
-        if ( dofPerVolume() > 0 )
-        {
-            const uint16_type parentAfterFace = static_cast<uint16_type>( parentAfterEdge - nF );
-            return typename super::DofAttachment{
-                .entityDim = 3,
-                .entityId = 0,
-                .ordinal = static_cast<uint16_type>( parentAfterFace % dofPerVolume() ),
-                .kind = this->dofType( localDofId ) };
-        }
-
-        return typename super::DofAttachment{
-            .entityDim = -1,
-            .entityId = super::DofAttachment::invalid_id,
-            .ordinal = super::DofAttachment::invalid_id,
-            .kind = this->dofType( localDofId ) };
+        return simplexDofAttachment<typename super::DofAttachment>(
+            this->dofParent( localDofId ), nDim,
+            reference_convex_type::numVertices,
+            reference_convex_type::numEdges,
+            reference_convex_type::numFaces,
+            dofPerVertex(), dofPerEdge(), dofPerFace(), dofPerVolume(),
+            this->dofType( localDofId ) );
     }
 
     template<typename ElementType>
@@ -1281,61 +866,33 @@ public:
     using local_interpolant_type = Eigen::VectorXd;
     local_interpolant_type localInterpolant( int n = 1 ) const
     {
-        return local_interpolant_type::Zero( n*runtimeLocalDof() );
+        return local_interpolant_type::Zero( n*localDof() );
     }
 
     using local_interpolants_type = Eigen::MatrixXd;
     local_interpolants_type localInterpolants( int p, int n = 1 ) const
     {
-        return local_interpolants_type::Zero( n*runtimeLocalDof(), p );
+        return local_interpolants_type::Zero( n*localDof(), p );
     }
 
     template<typename ExprType>
     void interpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
     {
         Ihloc.setZero();
-        auto g = expr.geom();
 
         const uint16_type nFacetDof = localFacetDof();
-        Feel::detail::interpolateHDivFacetPointDofs(
-            expr, Ihloc, convex_type::numTopologicalFaces, nFacetDof, n,
-            [&expr, &g]( uint16_type facet, uint16_type point, auto& normal )
-            {
-                const uint16_type elementFacet = g->faceId() == invalid_uint16_type_value
-                    ? facet : g->faceId();
-                expr.geom()->piolaContravariantFacetNormal( elementFacet, point, normal );
-            } );
+        Feel::detail::interpolateHDivFacetDofs(
+            expr, Ihloc, convex_type::numTopologicalFaces, nFacetDof, n );
 
         if ( internalOrder() > 1 )
         {
             interior_polyset_type interiorSpace( RuntimeOrder{ static_cast<uint16_type>( internalOrder() - 2 ) } );
             IMGeneral<nDim, value_type, Simplex> im( static_cast<uint16_type>( 2*( internalOrder() + 1 ) ) );
-            auto interiorAtQuadPts = interiorSpace.evaluate( im.points() );
-
             const uint16_type nInternalDof = ( nDim == 2 ) ? dofPerFace() : dofPerVolume();
-            CHECK( interiorSpace.polynomialDimension() == nInternalDof )
-                << "Invalid BDM dynamic interior interpolation dimension: got "
-                << interiorSpace.polynomialDimension() << " expected " << nInternalDof;
-
             const int firstInternalDof = convex_type::numTopologicalFaces * nFacetDof;
-            if constexpr ( requires { expr.nPoints(); } )
-            {
-                CHECK( expr.nPoints() >= firstInternalDof + im.nPoints() )
-                    << "BDM dynamic interior moment interpolation requires expression values at appended quadrature points: got "
-                    << expr.nPoints() << " points, need " << firstInternalDof + im.nPoints();
-            }
-
-            for ( int l = 0; l < nInternalDof; ++l )
-            {
-                const int dof = firstInternalDof + l;
-                for ( int q = 0; q < im.nPoints(); ++q )
-                {
-                    const int exprPoint = firstInternalDof + q;
-                    const value_type scal = Feel::detail::hdivInteriorMomentIntegrand(
-                        expr, interiorAtQuadPts, l, q, exprPoint, nComponents );
-                    Ihloc( dof ) += im.weight( q ) * scal;
-                }
-            }
+            Feel::detail::interpolateHDivInteriorMomentDofs(
+                expr, Ihloc, interiorSpace, im, firstInternalDof,
+                nInternalDof, nComponents );
         }
     }
 
@@ -1345,18 +902,8 @@ public:
     void interpolateBasisFunction( ExprType&& expression,
                                    local_interpolants_type& localMatrix ) const
     {
-        localMatrix.setZero();
-        const uint16_type rowCount =
-            static_cast<uint16_type>( localMatrix.rows() );
-        CHECK_EQ( localMatrix.cols(), runtimeLocalDof() );
-        for ( uint16_type row = 0; row < rowCount; ++row )
-        {
-            auto rowExpression =
-                Feel::detail::hdivBasisExpressionRow( expression, row );
-            auto rowValues = this->localInterpolant();
-            this->interpolate( rowExpression, rowValues );
-            localMatrix.row( row ) = rowValues.transpose();
-        }
+        Feel::detail::interpolateBasisFunctionRows(
+            *this, expression, localMatrix );
     }
 
     local_interpolant_type faceLocalInterpolant() const
@@ -1367,18 +914,11 @@ public:
     template<typename ExprType>
     void faceInterpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
     {
-        auto g = expr.geom();
         Ihloc.setZero();
 
         const uint16_type nLocalDof = localFacetDof();
-        Feel::detail::interpolateHDivFacetPointDofs(
-            expr, Ihloc, 1, nLocalDof, n,
-            [&expr, &g]( uint16_type facet, uint16_type point, auto& normal )
-            {
-                const uint16_type elementFacet = g->faceId() == invalid_uint16_type_value
-                    ? facet : g->faceId();
-                expr.geom()->piolaContravariantFacetNormal( elementFacet, point, normal );
-            } );
+        Feel::detail::interpolateHDivFacetDofs(
+            expr, Ihloc, 1, nLocalDof, n );
     }
 
 protected:
@@ -1431,8 +971,6 @@ public:
         else
             return static_cast<uint16_type>( Order );
     }
-    /** @return public BDM family order. */
-    [[nodiscard]] uint16_type runtimeOrder() const noexcept { return order(); }
 };
 
 } // namespace fem

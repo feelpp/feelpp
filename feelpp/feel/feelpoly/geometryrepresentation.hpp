@@ -19,6 +19,7 @@
 
 #include <feel/feelpoly/bernsteinbezier.hpp>
 #include <feel/feelpoly/geometrycoefficients.hpp>
+#include <feel/feelpoly/geometrydescriptor.hpp>
 #include <feel/feelpoly/geometrymapping.hpp>
 #include <feel/feelpoly/geometrynodallagrange.hpp>
 #include <feel/feelpoly/geometryoperations.hpp>

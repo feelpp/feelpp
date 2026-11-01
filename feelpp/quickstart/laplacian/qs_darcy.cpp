@@ -8,6 +8,7 @@
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/table.hpp>
+#include <feel/feeldiscr/bdmh.hpp>
 #include <feel/feeldiscr/dh.hpp>
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feeldiscr/product.hpp>
@@ -23,6 +24,15 @@
 namespace Feel
 {
 
+struct DarcySpaceDescriptor
+{
+    std::string fluxFamily;
+    int fluxOrder;
+    int pressureOrder;
+    int normalTraceOrder;
+    int divergenceOrder;
+};
+
 inline std::string
 formatScientific( double value )
 {
@@ -36,6 +46,9 @@ makeOptions()
 {
     po::options_description options( "Darcy mixed-formulation options" );
     options.add_options()
+        ( "darcy.flux-family", po::value<std::string>()->default_value( "rt" ), "H(div) flux family: rt or bdm" )
+        ( "darcy.order", po::value<int>()->default_value( 0 ), "mathematical flux order (RT k >= 0, BDM k >= 1)" )
+        ( "darcy.convergence-case", po::value<bool>()->default_value( false )->implicit_value( true ), "use the built-in smooth manufactured convergence case" )
         ( "no-export", po::value<bool>()->default_value( false )->implicit_value( true ), "disable exporter output" )
         ( "rho", po::value<std::string>()->default_value( "1" ), "electric resistivity in rho*j + grad(V) = f" )
         ( "functions.f", po::value<std::string>()->default_value( "{0,0,0}:x:y:z" ), "right hand side in rho*j + grad(V) = f" )
@@ -62,18 +75,17 @@ makeAbout()
     return about;
 }
 
+template<typename MeshType, typename FluxSpacePtr, typename PressureSpacePtr>
 int
-darcyMixed3D()
+darcyMixed3D( std::shared_ptr<MeshType> const& mesh,
+              FluxSpacePtr const& Jh,
+              PressureSpacePtr const& Vh,
+              DarcySpaceDescriptor const& spaceDescriptor,
+              double meshTime )
 {
     using namespace boost::hana::literals;
 
     tic();
-    auto mesh = loadMesh( _mesh = new Mesh<Simplex<3>> );
-    double const meshTime = toc( "mesh generation/loading" );
-
-    tic();
-    auto Jh = Dh<0>( mesh );
-    auto Vh = Pdh<0>( mesh );
     auto Xh = product( Jh, Vh );
     double const spaceTime = toc( "space construction" );
 
@@ -84,11 +96,18 @@ darcyMixed3D()
         << "Dirichlet and Neumann markers must form a disjoint partition of the boundary";
 
     auto rho = expr( soption( "rho" ) );
-    auto f = expr<3, 1>( soption( "functions.f" ) );
-    auto g = expr( soption( "functions.g" ) );
+    bool const useConvergenceCase = boption( "darcy.convergence-case" );
+    std::string const fExpression = useConvergenceCase ? "{0,0,0}:x:y:z" : soption( "functions.f" );
+    std::string const gExpression = useConvergenceCase ? "-30*(x^4+y^4+z^4):x:y:z" : soption( "functions.g" );
+    std::string const potentialExpression = useConvergenceCase ? "x^6+y^6+z^6:x:y:z" : soption( "solution.V" );
+    std::string const fluxExpression = useConvergenceCase
+                                           ? "{-6*x^5,-6*y^5,-6*z^5}:x:y:z"
+                                           : soption( "solution.j" );
+    auto f = expr<3, 1>( fExpression );
+    auto g = expr( gExpression );
     auto jn = expr( soption( "functions.jn" ) );
-    auto Vexact = expr( soption( "solution.V" ) );
-    auto jexact = expr<3, 1>( soption( "solution.j" ) );
+    auto Vexact = expr( potentialExpression );
+    auto jexact = expr<3, 1>( fluxExpression );
 
     auto U = Xh.element();
     auto T = Xh.element();
@@ -97,6 +116,13 @@ darcyMixed3D()
     auto w = T( 0_c );
     auto q = T( 1_c );
 
+    // Select quadrature from the user-facing mathematical order. This keeps
+    // integration identical across the bounded dispatch and a future fully
+    // dynamic H(div) factory, where static expression order is unavailable.
+    int const quadratureOrder = useConvergenceCase
+                                    ? std::max( 2*spaceDescriptor.fluxOrder + 4, 12 )
+                                    : 2*spaceDescriptor.fluxOrder + 4;
+
     tic();
     backend( _rebuild = true );
     auto a = blockform2( Xh, solve::strategy::monolithic, backend(), Pattern::COUPLED );
@@ -104,12 +130,12 @@ darcyMixed3D()
     a.immediateDirichlet();
 
     // Dual mixed formulation: V_D is natural, while j.n is essential in H(div).
-    l( 0_c ) += integrate( _range = elements( mesh ), _expr = inner( f, id( w ) ) );
-    l( 0_c ) += integrate( _range = dirichletFaces, _expr = -Vexact * inner( id( w ), N() ) );
-    l( 1_c ) += integrate( _range = elements( mesh ), _expr = g * id( q ) );
-    a( 0_c, 0_c ) += integrate( _range = elements( mesh ), _expr = rho * inner( idt( j ), id( w ) ) );
-    a( 0_c, 1_c ) += integrate( _range = elements( mesh ), _expr = -idt( V ) * div( w ) );
-    a( 1_c, 0_c ) += integrate( _range = elements( mesh ), _expr = divt( j ) * id( q ) );
+    l( 0_c ) += integrate( _range = elements( mesh ), _expr = inner( f, id( w ) ), _quad = quadratureOrder );
+    l( 0_c ) += integrate( _range = dirichletFaces, _expr = -Vexact * inner( id( w ), N() ), _quad = quadratureOrder );
+    l( 1_c ) += integrate( _range = elements( mesh ), _expr = g * id( q ), _quad = quadratureOrder );
+    a( 0_c, 0_c ) += integrate( _range = elements( mesh ), _expr = rho * inner( idt( j ), id( w ) ), _quad = quadratureOrder );
+    a( 0_c, 1_c ) += integrate( _range = elements( mesh ), _expr = -idt( V ) * div( w ), _quad = quadratureOrder );
+    a( 1_c, 0_c ) += integrate( _range = elements( mesh ), _expr = divt( j ) * id( q ), _quad = quadratureOrder );
     a.row( 0_c ) += on( _range = neumannFaces, _rhs = l( 0_c ), _element = j,
                         _expr = jn * N(), _type = "elimination_symmetric" );
     double const assemblyTime = toc( "space assembly" );
@@ -123,24 +149,31 @@ darcyMixed3D()
 
     auto jh = U( 0_c );
     auto VhSol = U( 1_c );
-    double const errorJ = normL2( _range = elements( mesh ), _expr = idv( jh ) - jexact );
-    double const errorDivJ = normL2( _range = elements( mesh ), _expr = divv( jh ) - div( jexact ) );
-    double const errorV = normL2( _range = elements( mesh ), _expr = idv( VhSol ) - Vexact );
+    double const errorJ = normL2( _range = elements( mesh ), _expr = idv( jh ) - jexact, _quad = quadratureOrder );
+    double const errorDivJ = normL2( _range = elements( mesh ), _expr = divv( jh ) - g, _quad = quadratureOrder );
+    double const errorV = normL2( _range = elements( mesh ), _expr = idv( VhSol ) - Vexact, _quad = quadratureOrder );
     double const darcyError = normL2( _range = elements( mesh ),
-                                      _expr = rho * idv( jh ) + trans( grad<3>( Vexact ) ) - f );
+                                      _expr = rho * idv( jh ) + trans( grad<3>( Vexact ) ) - f,
+                                      _quad = quadratureOrder );
     double const sideFluxResidual = normL2( _range = neumannFaces,
-                                            _expr = inner( idv( jh ), N() ) - jn );
+                                            _expr = inner( idv( jh ), N() ) - jn,
+                                            _quad = quadratureOrder );
     auto massResidualField = project( _space = Vh, _range = elements( mesh ),
-                                      _expr = divv( jh ) - g );
+                                      _expr = divv( jh ) - g, _quad = quadratureOrder );
     double const massResidual = normL2( _range = elements( mesh ),
-                                        _expr = idv( massResidualField ) );
+                                        _expr = idv( massResidualField ), _quad = quadratureOrder );
 
     double const tolerance = doption( "checks.tolerance" );
-    CHECK_LT( massResidual, tolerance ) << "div(j_h) must equal the P0 projection of g cellwise";
+    CHECK_LT( massResidual, tolerance ) << "div(j_h) must equal the compatible pressure-space projection of g cellwise";
     CHECK_LT( sideFluxResidual, tolerance ) << "j_h.n must satisfy the prescribed Neumann data";
 
     Table report;
     report.add_row( { "mesh generation/loading (s)", formatScientific( meshTime ) } );
+    report.add_row( { "flux family", spaceDescriptor.fluxFamily } );
+    report.add_row( { "flux order", std::to_string( spaceDescriptor.fluxOrder ) } );
+    report.add_row( { "pressure order", std::to_string( spaceDescriptor.pressureOrder ) } );
+    report.add_row( { "normal-trace order", std::to_string( spaceDescriptor.normalTraceOrder ) } );
+    report.add_row( { "divergence-image order", std::to_string( spaceDescriptor.divergenceOrder ) } );
     report.add_row( { "space construction (s)", formatScientific( spaceTime ) } );
     report.add_row( { "assembly (s)", formatScientific( assemblyTime ) } );
     report.add_row( { "solve (s)", formatScientific( solveTime ) } );
@@ -151,10 +184,10 @@ darcyMixed3D()
 
     Table diagnostics;
     diagnostics.add_row( { "||j-j_h||_L2", formatScientific( errorJ ) } );
-    diagnostics.add_row( { "||div(j-j_h)||_L2", formatScientific( errorDivJ ) } );
+    diagnostics.add_row( { "||div(j_h)-g||_L2", formatScientific( errorDivJ ) } );
     diagnostics.add_row( { "||V-V_h||_L2", formatScientific( errorV ) } );
     diagnostics.add_row( { "||rho*j_h+grad(V)-f||_L2", formatScientific( darcyError ) } );
-    diagnostics.add_row( { "||P0(div(j_h)-g)||_L2", formatScientific( massResidual ) } );
+    diagnostics.add_row( { "||P_Qh(div(j_h)-g)||_L2", formatScientific( massResidual ) } );
     diagnostics.add_row( { "||j_h.n-j_N||_L2(Neumann)", formatScientific( sideFluxResidual ) } );
     Feel::cout << diagnostics << std::endl;
 
@@ -173,6 +206,70 @@ darcyMixed3D()
     return 0;
 }
 
+template<int Order>
+int
+darcyMixedRt3D( std::shared_ptr<Mesh<Simplex<3>>> const& mesh,
+                double meshTime )
+{
+    auto Jh = RTh<Order>( mesh );
+    auto Vh = Pdh<Order>( mesh );
+    DarcySpaceDescriptor const descriptor{ "RT", Order, Order, Order, Order };
+    return darcyMixed3D( mesh, Jh, Vh, descriptor, meshTime );
+}
+
+template<int ImplementationOrder>
+int
+darcyMixedBdm3D( std::shared_ptr<Mesh<Simplex<3>>> const& mesh,
+                 double meshTime )
+{
+    constexpr int fluxOrder = ImplementationOrder + 1;
+    auto Jh = BDMh<ImplementationOrder>( mesh );
+    auto Vh = Pdh<ImplementationOrder>( mesh );
+    DarcySpaceDescriptor const descriptor{ "BDM", fluxOrder, ImplementationOrder,
+                                            fluxOrder, ImplementationOrder };
+    return darcyMixed3D( mesh, Jh, Vh, descriptor, meshTime );
+}
+
+int
+darcyMixed3D()
+{
+    int const fluxOrder = ioption( "darcy.order" );
+    std::string const fluxFamily = soption( "darcy.flux-family" );
+
+    CHECK_GE( fluxOrder, 0 ) << "darcy.order must be non-negative";
+    CHECK( fluxFamily == "rt" || fluxFamily == "bdm" )
+        << "unsupported darcy.flux-family='" << fluxFamily << "'; expected 'rt' or 'bdm'";
+    CHECK( fluxFamily != "bdm" || fluxOrder >= 1 )
+        << "BDM uses mathematical orders k >= 1; darcy.order=0 is invalid for darcy.flux-family=bdm";
+
+    tic();
+    auto mesh = loadMesh( _mesh = new Mesh<Simplex<3>> );
+    double const meshTime = toc( "mesh generation/loading" );
+
+    if ( fluxFamily == "rt" )
+    {
+        switch ( fluxOrder )
+        {
+        case 0: return darcyMixedRt3D<0>( mesh, meshTime );
+        case 1: return darcyMixedRt3D<1>( mesh, meshTime );
+        case 2: return darcyMixedRt3D<2>( mesh, meshTime );
+        case 3: return darcyMixedRt3D<3>( mesh, meshTime );
+        default:
+            CHECK( false ) << "RT runtime dispatch currently supports darcy.order in [0,3]; got " << fluxOrder;
+        }
+    }
+
+    switch ( fluxOrder )
+    {
+    case 1: return darcyMixedBdm3D<0>( mesh, meshTime );
+    case 2: return darcyMixedBdm3D<1>( mesh, meshTime );
+    case 3: return darcyMixedBdm3D<2>( mesh, meshTime );
+    default:
+        CHECK( false ) << "BDM runtime dispatch currently supports darcy.order in [1,3]; got " << fluxOrder;
+    }
+    return 1;
+}
+
 } // namespace Feel
 
 int
@@ -183,7 +280,7 @@ main( int argc, char** argv )
     try
     {
         po::options_description options = makeOptions();
-        options.add( case_options( 3, "RT0P0" ) );
+        options.add( case_options( 3, "dynamic-compatible-Hdiv-Pdisc" ) );
 
         Environment env( _argc = argc,
                          _argv = argv,

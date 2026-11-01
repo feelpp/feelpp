@@ -9,56 +9,13 @@
 #ifndef FEELPP_FEELPOLY_HDIVINTERPOLATION_HPP
 #define FEELPP_FEELPOLY_HDIVINTERPOLATION_HPP 1
 
+#include <feel/feelpoly/basisinterpolation.hpp>
 #include <feel/feelpoly/piolatransform.hpp>
 
 #include <type_traits>
 
 namespace Feel::detail
 {
-
-/**
- * @brief Present one FE test-basis row as an ordinary H(div) expression.
- *
- * This adapter lets interpolation-matrix assembly reuse the same normal and
- * interior-moment kernels as ordinary RT/BDM interpolation, with runtime
- * cardinalities taken from the destination Eigen matrix.
- */
-template<typename BasisExpression>
-class HDivBasisExpressionRow
-{
-public:
-    using expression_type = std::remove_reference_t<BasisExpression>;
-    using shape = typename expression_type::shape;
-
-    /** Construct a view of one flattened test-basis row. */
-    HDivBasisExpressionRow( expression_type& expression, uint16_type row )
-        : M_expression( expression ), M_row( row )
-    {}
-
-    /** Return the mapped geometry context owned by the expression. */
-    [[nodiscard]] decltype(auto) geom() const { return M_expression.geom(); }
-    /** Return the number of functional support/quadrature samples. */
-    [[nodiscard]] int nPoints() const { return M_expression.nPoints(); }
-    /** Evaluate the selected test-basis row at one sample and component. */
-    [[nodiscard]] decltype(auto) evalq( uint16_type c1,
-                                        uint16_type c2,
-                                        uint16_type q ) const
-    {
-        return M_expression.evaliq( M_row, c1, c2, q );
-    }
-
-private:
-    expression_type& M_expression;
-    uint16_type M_row;
-};
-
-/** Construct a zero-copy H(div) test-basis row expression. */
-template<typename BasisExpression>
-[[nodiscard]] auto
-hdivBasisExpressionRow( BasisExpression& expression, uint16_type row )
-{
-    return HDivBasisExpressionRow<BasisExpression>( expression, row );
-}
 
 /**
  * @brief Apply facet-normal point DoFs to an expression.
@@ -98,6 +55,28 @@ interpolateHDivFacetPointDofs( ExprType const& expr,
                 localValues( point ) += expr.evalq( component, 0, point )*normal( component );
         }
     }
+}
+
+/** Apply the standard contravariant-Piola facet normals to point DoFs. */
+template<typename ExprType, typename LocalVectorType, typename NormalType>
+void
+interpolateHDivFacetDofs( ExprType const& expr,
+                          LocalVectorType& localValues,
+                          uint16_type facetCount,
+                          uint16_type dofPerFacet,
+                          NormalType& normal )
+{
+    auto geometry = expr.geom();
+    interpolateHDivFacetPointDofs(
+        expr, localValues, facetCount, dofPerFacet, normal,
+        [&geometry]( uint16_type facet, uint16_type point, auto& facetNormal )
+        {
+            const uint16_type elementFacet =
+                geometry->faceId() == invalid_uint16_type_value
+                    ? facet : geometry->faceId();
+            geometry->piolaContravariantFacetNormal(
+                elementFacet, point, facetNormal );
+        } );
 }
 
 /**
@@ -163,6 +142,49 @@ hdivInteriorMomentIntegrand( ExprType const& expr,
     }
 
     return result;
+}
+
+/**
+ * @brief Apply all H(div) interior moments for a prepared polynomial space.
+ *
+ * The caller supplies only the order-specific polynomial space and quadrature;
+ * RT/BDM and static/runtime variants share evaluation, validation, Piola
+ * pairing, and accumulation.
+ */
+template<typename ExprType, typename LocalVectorType,
+         typename PolynomialSetType, typename QuadratureType>
+void
+interpolateHDivInteriorMomentDofs( ExprType const& expr,
+                                   LocalVectorType& localValues,
+                                   PolynomialSetType const& polynomialSet,
+                                   QuadratureType const& quadrature,
+                                   int firstInternalDof,
+                                   uint16_type internalDofCount,
+                                   uint16_type componentCount )
+{
+    CHECK_EQ( polynomialSet.polynomialDimension(), internalDofCount )
+        << "Invalid H(div) interior interpolation dimension";
+    if constexpr ( requires { expr.nPoints(); } )
+    {
+        CHECK( expr.nPoints() >= firstInternalDof + quadrature.nPoints() )
+            << "H(div) interior-moment interpolation requires expression values at appended quadrature points: got "
+            << expr.nPoints() << " points, need "
+            << firstInternalDof + quadrature.nPoints();
+    }
+
+    auto const polynomialValues = polynomialSet.evaluate( quadrature.points() );
+    for ( int polynomial = 0; polynomial < internalDofCount; ++polynomial )
+    {
+        const int dof = firstInternalDof + polynomial;
+        for ( int point = 0; point < quadrature.nPoints(); ++point )
+        {
+            const int expressionPoint = firstInternalDof + point;
+            const auto integrand = hdivInteriorMomentIntegrand(
+                expr, polynomialValues, polynomial, point, expressionPoint,
+                componentCount );
+            localValues( dof ) += quadrature.weight( point ) * integrand;
+        }
+    }
 }
 
 } // namespace Feel::detail

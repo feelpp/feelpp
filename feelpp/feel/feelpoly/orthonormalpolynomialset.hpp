@@ -94,17 +94,17 @@ public:
 
     typedef typename super::polynomial_type polynomial_type;
 
-    //!< Number of degrees of freedom per vertex (compile-time, use runtimeDofPerVertex() for dynamic)
+    //!< Number of degrees of freedom per vertex (compile-time, use dofPerVertex() for dynamic)
     static const uint16_type nDofPerVertex = convex_type::nbPtsPerVertex;
-    //!< Number of degrees  of freedom per edge (compile-time, use runtimeDofPerEdge() for dynamic)
+    //!< Number of degrees  of freedom per edge (compile-time, use dofPerEdge() for dynamic)
     static const uint16_type nDofPerEdge = convex_type::nbPtsPerEdge;
-    //!< Number of degrees  of freedom per face (compile-time, use runtimeDofPerFace() for dynamic)
+    //!< Number of degrees  of freedom per face (compile-time, use dofPerFace() for dynamic)
     static const uint16_type nDofPerFace = convex_type::nbPtsPerFace;
 
-    //!< Number of degrees  of freedom per volume (compile-time, use runtimeDofPerVolume() for dynamic)
+    //!< Number of degrees  of freedom per volume (compile-time, use dofPerVolume() for dynamic)
     static const uint16_type nDofPerVolume = convex_type::nbPtsPerVolume;
 
-    //!< Compile-time local DOF count (for static order) - use runtimeLocalDof() for dynamic
+    //!< Compile-time local DOF count (for static order) - use localDof() for dynamic
     static const uint16_type nLocalDof = convex_type::numPoints;
 
     static const uint16_type nDof = nLocalDof;
@@ -124,29 +124,12 @@ public:
     }
 
     /**
-     * @brief Get runtime polynomial order
-     * @deprecated Use order() instead - unified interface handles both static and dynamic cases
-     */
-    [[nodiscard]] uint16_type runtimeOrder() const noexcept
-    {
-        return order();
-    }
-
-    /**
      * @brief Get local DOF count (semantic runtime accessor)
      */
-    [[nodiscard]] uint16_type localDof() const noexcept
+    [[nodiscard]] uint16_type localDof() const
     {
-        return static_cast<uint16_type>( ::Feel::detail::simplexTotal( nDim, this->order() ) );
-    }
-
-    /**
-     * @brief Get runtime local DOF count
-     * @deprecated Use localDof() instead - unified interface handles both static and dynamic cases
-     */
-    [[nodiscard]] uint16_type runtimeLocalDof() const noexcept
-    {
-        return localDof();
+        return ::Feel::detail::checkedLocalIndexValue(
+            ::Feel::detail::simplexTotal( nDim, this->order() ) );
     }
 
     /**
@@ -158,27 +141,11 @@ public:
     }
 
     /**
-     * @deprecated Use dofPerVertex() instead
-     */
-    [[nodiscard]] uint16_type runtimeDofPerVertex() const noexcept
-    {
-        return dofPerVertex();
-    }
-
-    /**
      * @brief Get DOF per edge (semantic runtime accessor)
      */
     [[nodiscard]] uint16_type dofPerEdge() const noexcept
     {
         return ::Feel::detail::simplexPerEdge( nDim, this->order() );
-    }
-
-    /**
-     * @deprecated Use dofPerEdge() instead
-     */
-    [[nodiscard]] uint16_type runtimeDofPerEdge() const noexcept
-    {
-        return dofPerEdge();
     }
 
     /**
@@ -190,14 +157,6 @@ public:
     }
 
     /**
-     * @deprecated Use dofPerFace() instead
-     */
-    [[nodiscard]] uint16_type runtimeDofPerFace() const noexcept
-    {
-        return dofPerFace();
-    }
-
-    /**
      * @brief Get DOF per volume (semantic runtime accessor)
      */
     [[nodiscard]] uint16_type dofPerVolume() const noexcept
@@ -205,13 +164,15 @@ public:
         return ::Feel::detail::simplexPerVolume( nDim, this->order() );
     }
 
-    /**
-     * @deprecated Use dofPerVolume() instead
-     */
-    [[nodiscard]] uint16_type runtimeDofPerVolume() const noexcept
+    /** @brief Get the DOF count on an entity of dimension `entityDim`. */
+    [[nodiscard]] uint16_type dofPerEntity( uint16_type entityDim,
+                                             uint16_type entityIndex = 0 ) const noexcept
     {
-        return dofPerVolume();
+        (void)entityIndex;
+        return ::Feel::detail::SimplexCardinality::onEntity(
+            nDim, entityDim, this->order() );
     }
+
     typedef typename matrix_node<value_type>::type points_type;
 
     /**
@@ -245,7 +206,8 @@ public:
     {
         if constexpr ( is_order_static )
         {
-            const uint16_type n = static_cast<uint16_type>( nComponents * convex_type::polyDims( Order ) );
+            const uint16_type n = ::Feel::detail::checkedLocalIndexValue(
+                static_cast<size_type>( nComponents ) * convex_type::polyDims( Order ) );
             ublas::matrix<value_type> m( n, n );
             Eigen::Map<Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> mMap( m.data().begin(), m.size1(), m.size2() );
             mMap.setIdentity();
@@ -254,7 +216,8 @@ public:
         else
         {
             // For Dynamic with default constructor, use order 1 as default
-            const uint16_type n = static_cast<uint16_type>( nComponents * this->localDof() );
+            const uint16_type n = ::Feel::detail::checkedLocalIndexValue(
+                static_cast<size_type>( nComponents ) * this->localDof() );
             ublas::matrix<value_type> m( n, n );
             Eigen::Map<Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> mMap( m.data().begin(), m.size1(), m.size2() );
             mMap.setIdentity();
@@ -275,10 +238,12 @@ public:
         :
         super( basis_type() )
     {
+        ro = validateOrderAndCardinality( ro );
         // Set runtime order in base PolynomialSet class for isUsingDynamicOrder() check
         this->set_order_value( ro.value );
 
-        const uint16_type n = static_cast<uint16_type>( nComponents * this->localDof() );
+        const uint16_type n = ::Feel::detail::checkedLocalIndexValue(
+            static_cast<size_type>( nComponents ) * this->localDof() );
         ublas::matrix<value_type> m( n, n );
         Eigen::Map<Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> mMap( m.data().begin(), m.size1(), m.size2() );
         mMap.setIdentity();
@@ -288,6 +253,14 @@ public:
     }
 
 private:
+    [[nodiscard]] static RuntimeOrder
+    validateOrderAndCardinality( RuntimeOrder order )
+    {
+        order = ::Feel::detail::validatedNodalOrder<
+            ::Feel::detail::SimplexCardinality>( nDim, order, nComponents );
+        return order;
+    }
+
     /**
      * @brief Initialize symmetric index mapping for tensor2symm case
      */
@@ -295,7 +268,7 @@ private:
     {
         if constexpr ( is_tensor2symm )
         {
-            const uint16_type localDof = runtimeLocalDof();
+            const uint16_type localDof = this->localDof();
             M_unsymm2symm.resize( nComponents * localDof );
             for ( uint16_type l = 0; l < localDof; ++l )
             {
@@ -565,17 +538,17 @@ public:
 
     typedef typename super::polynomial_type polynomial_type;
 
-    //!< Number of degrees of freedom per vertex (compile-time, use runtimeDofPerVertex() for dynamic)
+    //!< Number of degrees of freedom per vertex (compile-time, use dofPerVertex() for dynamic)
     static const uint16_type nDofPerVertex = convex_type::nbPtsPerVertex;
-    //!< Number of degrees  of freedom per edge (compile-time, use runtimeDofPerEdge() for dynamic)
+    //!< Number of degrees  of freedom per edge (compile-time, use dofPerEdge() for dynamic)
     static const uint16_type nDofPerEdge = convex_type::nbPtsPerEdge;
-    //!< Number of degrees  of freedom per face (compile-time, use runtimeDofPerFace() for dynamic)
+    //!< Number of degrees  of freedom per face (compile-time, use dofPerFace() for dynamic)
     static const uint16_type nDofPerFace = convex_type::nbPtsPerFace;
 
-    //!< Number of degrees  of freedom per volume (compile-time, use runtimeDofPerVolume() for dynamic)
+    //!< Number of degrees  of freedom per volume (compile-time, use dofPerVolume() for dynamic)
     static const uint16_type nDofPerVolume = convex_type::nbPtsPerVolume;
 
-    //!< Compile-time local DOF count (for static order) - use runtimeLocalDof() for dynamic
+    //!< Compile-time local DOF count (for static order) - use localDof() for dynamic
     static const uint16_type nLocalDof = convex_type::numPoints;
 
     static const uint16_type nDof = nLocalDof;
@@ -617,29 +590,12 @@ public:
     }
 
     /**
-     * @brief Get runtime polynomial order
-     * @deprecated Use order() instead - unified interface handles both static and dynamic cases
-     */
-    [[nodiscard]] uint16_type runtimeOrder() const noexcept
-    {
-        return order();
-    }
-
-    /**
      * @brief Get local DOF count (semantic runtime accessor)
      */
-    [[nodiscard]] uint16_type localDof() const noexcept
+    [[nodiscard]] uint16_type localDof() const
     {
-        return hypercubePolyDims( nDim, this->order() );
-    }
-
-    /**
-     * @brief Get runtime local DOF count
-     * @deprecated Use localDof() instead - unified interface handles both static and dynamic cases
-     */
-    [[nodiscard]] uint16_type runtimeLocalDof() const noexcept
-    {
-        return localDof();
+        return ::Feel::detail::checkedLocalIndexValue(
+            ::Feel::detail::hypercubeTotal( nDim, this->order() ) );
     }
 
     /**
@@ -651,27 +607,11 @@ public:
     }
 
     /**
-     * @deprecated Use dofPerVertex() instead
-     */
-    [[nodiscard]] uint16_type runtimeDofPerVertex() const noexcept
-    {
-        return dofPerVertex();
-    }
-
-    /**
      * @brief Get DOF per edge (semantic runtime accessor)
      */
     [[nodiscard]] uint16_type dofPerEdge() const noexcept
     {
         return ::Feel::detail::hypercubePerEdge( nDim, this->order() );
-    }
-
-    /**
-     * @deprecated Use dofPerEdge() instead
-     */
-    [[nodiscard]] uint16_type runtimeDofPerEdge() const noexcept
-    {
-        return dofPerEdge();
     }
 
     /**
@@ -683,14 +623,6 @@ public:
     }
 
     /**
-     * @deprecated Use dofPerFace() instead
-     */
-    [[nodiscard]] uint16_type runtimeDofPerFace() const noexcept
-    {
-        return dofPerFace();
-    }
-
-    /**
      * @brief Get DOF per volume (semantic runtime accessor)
      */
     [[nodiscard]] uint16_type dofPerVolume() const noexcept
@@ -698,12 +630,13 @@ public:
         return ::Feel::detail::hypercubePerVolume( nDim, this->order() );
     }
 
-    /**
-     * @deprecated Use dofPerVolume() instead
-     */
-    [[nodiscard]] uint16_type runtimeDofPerVolume() const noexcept
+    /** @brief Get the DOF count on an entity of dimension `entityDim`. */
+    [[nodiscard]] uint16_type dofPerEntity( uint16_type entityDim,
+                                             uint16_type entityIndex = 0 ) const noexcept
     {
-        return dofPerVolume();
+        (void)entityIndex;
+        return ::Feel::detail::HypercubeCardinality::onEntity(
+            nDim, entityDim, this->order() );
     }
 
     /**
@@ -717,7 +650,8 @@ public:
     {
         if constexpr ( is_order_static )
         {
-            const uint16_type n = static_cast<uint16_type>( nComponents * convex_type::polyDims( Order ) );
+            const uint16_type n = ::Feel::detail::checkedLocalIndexValue(
+                static_cast<size_type>( nComponents ) * convex_type::polyDims( Order ) );
             ublas::matrix<value_type> m( n, n );
             Eigen::Map<Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> mMap( m.data().begin(), m.size1(), m.size2() );
             mMap.setIdentity();
@@ -726,7 +660,8 @@ public:
         else
         {
             // For Dynamic with default constructor, use order 1 as default
-            const uint16_type n = static_cast<uint16_type>( nComponents * this->localDof() );
+            const uint16_type n = ::Feel::detail::checkedLocalIndexValue(
+                static_cast<size_type>( nComponents ) * this->localDof() );
             ublas::matrix<value_type> m( n, n );
             Eigen::Map<Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> mMap( m.data().begin(), m.size1(), m.size2() );
             mMap.setIdentity();
@@ -747,10 +682,12 @@ public:
         :
         super( basis_type() )
     {
+        ro = validateOrderAndCardinality( ro );
         // Set runtime order in base PolynomialSet class for isUsingDynamicOrder() check
         this->set_order_value( ro.value );
 
-        const uint16_type n = static_cast<uint16_type>( nComponents * this->localDof() );
+        const uint16_type n = ::Feel::detail::checkedLocalIndexValue(
+            static_cast<size_type>( nComponents ) * this->localDof() );
         ublas::matrix<value_type> m( n, n );
         Eigen::Map<Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> mMap( m.data().begin(), m.size1(), m.size2() );
         mMap.setIdentity();
@@ -760,18 +697,12 @@ public:
     }
 
 private:
-    /**
-     * @brief Compute hypercube polynomial dimensions at runtime
-     * @param dim Spatial dimension
-     * @param order Polynomial order
-     * @return (order+1)^dim
-     */
-    static uint16_type hypercubePolyDims( uint16_type dim, uint16_type order )
+    [[nodiscard]] static RuntimeOrder
+    validateOrderAndCardinality( RuntimeOrder order )
     {
-        uint16_type result = 1;
-        for ( uint16_type d = 0; d < dim; ++d )
-            result *= ( order + 1 );
-        return result;
+        order = ::Feel::detail::validatedNodalOrder<
+            ::Feel::detail::HypercubeCardinality>( nDim, order, nComponents );
+        return order;
     }
 
     /**
@@ -781,7 +712,7 @@ private:
     {
         if constexpr ( is_tensor2symm )
         {
-            const uint16_type localDof = runtimeLocalDof();
+            const uint16_type localDof = this->localDof();
             M_unsymm2symm.resize( nComponents * localDof );
             for ( uint16_type l = 0; l < localDof; ++l )
             {

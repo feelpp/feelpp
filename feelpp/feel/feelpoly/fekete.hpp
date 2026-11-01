@@ -13,9 +13,17 @@
 #ifndef __Fekete_H
 #define __Fekete_H 1
 
+namespace Feel
+{
+template<class Convex, int Order, typename T>
+class PointSetWarpBlend;
+
+template<class Convex, int Order, typename T>
+class PointSetFekete;
+}
+
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelpoly/pointsetinterpolation.hpp>
-#include <feel/feelpoly/geomap.hpp>
 #include <feel/feelpoly/warpblend.hpp>
 #include <feel/feelpoly/gausslobatto.hpp>
 #include <feel/feelpoly/equispaced.hpp>
@@ -30,11 +38,6 @@
 
 namespace Feel
 {
-template< class Convex,
-          int Order,
-          typename T >
-class PointSetWarpBlend;
-
 template< class Convex,
           int Order,
           typename T >
@@ -1257,7 +1260,7 @@ class PointSetFekete : public pointset_fekete_backend_t<Convex, Order, T>, publi
     using order_base_type = OrderBase<Order>;
 public:
     using order_base_type::order;
-    using order_base_type::runtimeOrder;
+    using super::nPoints;
 
     PointSetFekete( int interior = 0 ) : super( interior ), order_base_type() {}
 };
@@ -1300,16 +1303,7 @@ public:
     }
 
     using order_base_type::order;
-    using order_base_type::runtimeOrder;
-
-    [[nodiscard]] uint32_type runtimeNumPoints() const noexcept
-    {
-        const auto runtime_order = this->order();
-        if constexpr ( is_simplex )
-            return static_cast<uint32_type>( ::Feel::detail::simplexTotal( Dim, runtime_order ) );
-        else
-            return static_cast<uint32_type>( ::Feel::detail::hypercubeTotal( Dim, runtime_order ) );
-    }
+    using super::nPoints;
 
     points_type pointsBySubEntity( uint16_type top_dim, uint16_type local_id, bool boundary = 0 ) const
     {

@@ -21,7 +21,10 @@
 #include <feel/feelfilters/unitcircle.hpp>
 #include <feel/feelvf/vf.hpp>
 
+#include "fe_parity_checks.hpp"
+
 #include <string_view>
+#include <type_traits>
 
 using namespace Feel;
 
@@ -36,7 +39,8 @@ auto interpolateField( SpacePtrType const& space,
                        ExprType const& expression )
 {
     auto field = space->element();
-    field.on( _range = elements( mesh ), _expr = expression );
+    field.on( _range = elements( mesh ), _expr = expression,
+              _geomap = GeomapStrategyType::GEOMAP_HO );
     return field;
 }
 
@@ -145,10 +149,12 @@ void checkHdivFamily( StaticFactory&& makeStatic,
 
     BOOST_TEST_CONTEXT( family << " order " << Order )
     {
-        BOOST_CHECK_EQUAL( runtimeSpace->basis()->runtimeOrder(), Order );
+        BOOST_CHECK_EQUAL( runtimeSpace->basis()->order(), Order );
         BOOST_CHECK_EQUAL( runtimeSpace->basis()->localDofCount(),
                            staticSpace->basis()->localDofCount() );
         BOOST_CHECK_EQUAL( runtimeSpace->nDof(), staticSpace->nDof() );
+        Feel::test_detail::checkFiniteElementTransformParity(
+            staticSpace, runtimeSpace, mesh );
         BOOST_CHECK_SMALL(
             normL2( _range = elements( mesh ),
                     _expr = idv( runtimeField ) - idv( staticField ),
@@ -189,17 +195,28 @@ void checkHcurlFamily( StaticFactory&& makeStatic,
     auto staticField = interpolateField( staticSpace, mesh, expression );
     auto runtimeField = interpolateField( runtimeSpace, mesh, expression );
     auto h1 = Pch<Dynamic>( mesh, RuntimeOrder{ Order + 1 } );
-    auto potential = interpolateField(
-        h1, mesh, cst( 0.5 ) + Px() - 0.75 * Py() + 0.2 * Px() * Py() );
+    auto potential = [&]
+    {
+        if constexpr ( Order == 0 )
+            return interpolateField(
+                h1, mesh, cst( 0.5 ) + Px() - 0.75 * Py() );
+        else
+            return interpolateField(
+                h1, mesh,
+                cst( 0.5 ) + Px() - 0.75 * Py() +
+                    0.2 * Px() * Py() );
+    }();
     auto discreteGradient = interpolateField(
         runtimeSpace, mesh, trans( gradv( potential ) ) );
 
     BOOST_TEST_CONTEXT( family << " order " << Order )
     {
-        BOOST_CHECK_EQUAL( runtimeSpace->basis()->runtimeOrder(), Order );
+        BOOST_CHECK_EQUAL( runtimeSpace->basis()->order(), Order );
         BOOST_CHECK_EQUAL( runtimeSpace->basis()->localDofCount(),
                            staticSpace->basis()->localDofCount() );
         BOOST_CHECK_EQUAL( runtimeSpace->nDof(), staticSpace->nDof() );
+        Feel::test_detail::checkFiniteElementTransformParity(
+            staticSpace, runtimeSpace, mesh );
         BOOST_CHECK_SMALL(
             normL2( _range = elements( mesh ),
                     _expr = idv( runtimeField ) - idv( staticField ),
@@ -230,7 +247,7 @@ void checkHcurlFamily( StaticFactory&& makeStatic,
 }
 
 /** Exercise all compatible families for one FE order on geometry order G. */
-template <int G, int Order, typename MeshPtrType>
+template <int Order, typename MeshPtrType>
 void checkOrder( MeshPtrType const& mesh )
 {
     checkHdivFamily<Order>(
@@ -266,10 +283,26 @@ void checkGeometryOrder()
     auto mesh = unitCircle<G>( 0.55 );
     BOOST_REQUIRE( mesh );
     BOOST_REQUIRE_GT( mesh->numGlobalElements(), 0 );
-    checkOrder<G, 0>( mesh );
-    checkOrder<G, 1>( mesh );
-    checkOrder<G, 2>( mesh );
-    checkOrder<G, 3>( mesh );
+    checkOrder<0>( mesh );
+    checkOrder<1>( mesh );
+    checkOrder<2>( mesh );
+    checkOrder<3>( mesh );
+}
+
+/**
+ * @brief Exercise compatible spaces on a truly runtime-order curved mesh.
+ * @param order positive geometric polynomial order
+ */
+void checkRuntimeGeometryOrder( RuntimeOrder order )
+{
+    auto mesh = unitCircle( order, 0.55 );
+    BOOST_REQUIRE( mesh );
+    BOOST_REQUIRE_EQUAL(
+        mesh->order(), order.value );
+    BOOST_REQUIRE_GT(
+        mesh->numGlobalElements(), 0 );
+    checkOrder<0>( mesh );
+    checkOrder<1>( mesh );
 }
 } // namespace
 
@@ -290,6 +323,123 @@ BOOST_AUTO_TEST_CASE( cubic_geometry )
     BOOST_TEST_MESSAGE(
         "cubic mesh validation requires FEELPP_MESH_MAX_ORDER >= 3" );
 #endif
+}
+
+/**
+ * @test Validate FunctionSpace, DoFTable, interpolation, and Piola operations
+ *       on curved geometry whose polynomial order is selected at runtime.
+ */
+BOOST_AUTO_TEST_CASE( runtime_quadratic_and_cubic_geometry )
+{
+    checkRuntimeGeometryOrder( RuntimeOrder{ 2 } );
+    checkRuntimeGeometryOrder( RuntimeOrder{ 3 } );
+}
+
+/**
+ * @test Require equivalent nodal/Bezier storage in scalar PDE assembly and
+ *       compatible Piola transforms on one unchanged curved mesh.
+ */
+BOOST_AUTO_TEST_CASE( nodal_bezier_pde_and_piola_parity )
+{
+    auto mesh = unitCircle<2>( 0.55 );
+    BOOST_REQUIRE( mesh );
+    BOOST_REQUIRE_GT( mesh->numGlobalElements(), 0 );
+    auto const nodalCoordinates = mesh->nodalGeometryCoordinates();
+
+    auto space = Pch<2>( mesh );
+    auto trial = space->element();
+    auto test = space->element();
+    auto nodalMatrix = form2( _trial = space, _test = space );
+    auto nodalVector = form1( _test = space );
+    nodalMatrix = integrate(
+        _range = elements( mesh ),
+        _expr = inner( gradt( trial ), grad( test ) ) +
+                idt( trial ) * id( test ),
+        _quad = _Q<18>(),
+        _geomap = GeomapStrategyType::GEOMAP_HO );
+    nodalVector = integrate(
+        _range = elements( mesh ),
+        _expr = ( cst( 1.0 ) + Px() - 0.5 * Py() ) * id( test ),
+        _quad = _Q<18>(),
+        _geomap = GeomapStrategyType::GEOMAP_HO );
+    nodalMatrix.close();
+    nodalVector.close();
+
+    mesh->setGeometryRepresentation(
+        geometry::GeometryRepresentationKind::BernsteinBezier );
+    BOOST_CHECK(
+        mesh->geometryRepresentation() ==
+        geometry::GeometryRepresentationKind::BernsteinBezier );
+    BOOST_CHECK_SMALL(
+        ( mesh->nodalGeometryCoordinates() - nodalCoordinates ).norm(),
+        2e-11 );
+
+    auto const elementRange = elements( mesh );
+    auto const elementIterator = elementRange.begin();
+    if ( elementIterator != elementRange.end() )
+    {
+        auto const& element = boost::unwrap_ref( *elementIterator );
+        using gm_type =
+            std::remove_reference_t<decltype( *mesh->gm() )>;
+        typename gm_type::Inverse inverse( mesh->gm(), element );
+        typename gm_type::node_t_type referencePoint( 2 );
+        referencePoint( 0 ) = -0.35;
+        referencePoint( 1 ) = -0.25;
+        auto const physicalPoint = mesh->gm()->transform(
+            referencePoint, inverse.G() );
+        auto const inverseResult = inverse.inverse( physicalPoint );
+        BOOST_CHECK( inverseResult.converged() );
+        BOOST_CHECK_SMALL(
+            inverseResult.reference_point( 0 ) - referencePoint( 0 ),
+            2e-10 );
+        BOOST_CHECK_SMALL(
+            inverseResult.reference_point( 1 ) - referencePoint( 1 ),
+            2e-10 );
+    }
+
+    auto bezierMatrix = form2( _trial = space, _test = space );
+    auto bezierVector = form1( _test = space );
+    bezierMatrix = integrate(
+        _range = elements( mesh ),
+        _expr = inner( gradt( trial ), grad( test ) ) +
+                idt( trial ) * id( test ),
+        _quad = _Q<18>(),
+        _geomap = GeomapStrategyType::GEOMAP_HO );
+    bezierVector = integrate(
+        _range = elements( mesh ),
+        _expr = ( cst( 1.0 ) + Px() - 0.5 * Py() ) * id( test ),
+        _quad = _Q<18>(),
+        _geomap = GeomapStrategyType::GEOMAP_HO );
+    bezierMatrix.close();
+    bezierVector.close();
+
+    auto const matrixScale = std::max(
+        { 1., std::abs( nodalMatrix.matrixPtr()->l1Norm() ),
+          std::abs( bezierMatrix.matrixPtr()->l1Norm() ) } );
+    bezierMatrix.matrixPtr()->addMatrix(
+        -1., nodalMatrix.matrixPtr() );
+    bezierMatrix.matrixPtr()->close();
+    BOOST_CHECK_SMALL(
+        bezierMatrix.matrixPtr()->l1Norm() / matrixScale, 2e-11 );
+    BOOST_CHECK_SMALL(
+        bezierMatrix.matrixPtr()->linftyNorm() / matrixScale, 2e-11 );
+
+    auto vectorDifference = bezierVector.vectorPtr()->clone();
+    vectorDifference->add( 1., bezierVector.vectorPtr() );
+    vectorDifference->add( -1., nodalVector.vectorPtr() );
+    vectorDifference->close();
+    auto const vectorScale = std::max(
+        1., nodalVector.vectorPtr()->l2Norm() );
+    BOOST_CHECK_SMALL(
+        vectorDifference->l2Norm() / vectorScale, 2e-11 );
+
+    checkOrder<0>( mesh );
+
+    mesh->setGeometryRepresentation(
+        geometry::GeometryRepresentationKind::NodalLagrange );
+    BOOST_CHECK_SMALL(
+        ( mesh->pointCoordinates() - nodalCoordinates ).norm(),
+        2e-11 );
 }
 
 BOOST_AUTO_TEST_SUITE_END()

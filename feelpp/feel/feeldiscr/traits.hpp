@@ -253,7 +253,7 @@ struct faces_mesh
 {
     using index_t = typename MeshType::index_type;
     using value_type = typename MeshType::value_type;
-    static constexpr int nOrder = MeshType::nOrder;
+    static constexpr int nOrder = MeshType::nOrder_v;
     using type = mp11::mp_if_c<
         is_simplex_mesh_v<MeshType>,
         Mesh<Simplex<2, nOrder, MeshType::nRealDim>, value_type, TheTag, index_t, EnableSharedFromThis>,
@@ -301,7 +301,7 @@ struct facets_mesh
 {
     using index_t = typename MeshType::index_type;
     using value_type = typename MeshType::value_type;
-    static constexpr int nOrder = MeshType::nOrder;
+    static constexpr int nOrder = MeshType::nOrder_v;
     static constexpr int d = MeshType::nDim-1;
     using type = mp11::mp_if_c<
         is_simplex_mesh_v<MeshType>,
@@ -349,7 +349,7 @@ struct edges_mesh
 {
     using index_t = typename MeshType::index_type;
     using value_type = typename MeshType::value_type;
-    static constexpr int nOrder = MeshType::nOrder;
+    static constexpr int nOrder = MeshType::nOrder_v;
     using type = mp11::mp_if_c<
         is_simplex_mesh_v<MeshType>,
         Mesh<Simplex<1, nOrder, MeshType::nRealDim>, value_type, TheTag, index_t, EnableSharedFromThis>,
@@ -397,7 +397,7 @@ struct parent_mesh
 {
     using index_t = typename MeshType::index_type;
     using value_type = typename MeshType::value_type;
-    static constexpr int nOrder = MeshType::nOrder;
+    static constexpr int nOrder = MeshType::nOrder_v;
     static constexpr int d = (MeshType::nDim == MeshType::nRealDim - 1) ? MeshType::nDim + 1 : MeshType::nDim;
     using type = mp11::mp_if_c<
         is_simplex_mesh_v<MeshType>,
@@ -445,7 +445,7 @@ struct trace_mesh
 {
     using index_t = typename MeshType::index_type;
     using value_type = typename MeshType::value_type;
-    static constexpr int nOrder = MeshType::nOrder;
+    static constexpr int nOrder = MeshType::nOrder_v;
     static constexpr int d = (MeshType::nDim == 0) ? 0 : MeshType::nDim - 1;
     using type = mp11::mp_if_c<
         is_simplex_mesh_v<MeshType>,
@@ -493,7 +493,7 @@ struct trace_trace_mesh
 {
     using index_t = typename MeshType::index_type;
     using value_type = typename MeshType::value_type;
-    static constexpr int nOrder = MeshType::nOrder;
+    static constexpr int nOrder = MeshType::nOrder_v;
     static inline constexpr uint16_type nDim = (MeshType::nDim == 1) ? MeshType::nDim - 1 : MeshType::nDim - 2;
     using type = mp11::mp_if_c<
         is_simplex_mesh_v<MeshType>,

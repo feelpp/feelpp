@@ -151,6 +151,80 @@ makeHDivOrthonormalIntegralMomentFunctional( Space const& space,
     return Functional<Space>( space, coefficients );
 }
 
+/**
+ * @brief Build the complete ordered dual of an H(div) simplex element.
+ *
+ * RT and BDM differ only in their interior test space and moment functional.
+ * Those policies are supplied by the caller; facet sampling, point layout,
+ * cardinality checks, and functional ordering remain one mathematical path
+ * for static and runtime orders.
+ */
+template<typename Space, typename ReferenceConvex,
+         typename FacetPointsProvider, typename InteriorSpaceProvider,
+         typename InteriorFunctionalProvider>
+[[nodiscard]] std::vector<Functional<Space>>
+buildHDivSimplexFunctionals(
+    Space const& primal,
+    ReferenceConvex const& referenceConvex,
+    uint16_type facetDof,
+    uint16_type interiorDof,
+    uint16_type totalDof,
+    uint16_type interiorQuadratureOrder,
+    typename Space::points_type& elementPoints,
+    std::vector<typename Space::points_type>& facetPoints,
+    FacetPointsProvider&& facetPointsProvider,
+    InteriorSpaceProvider&& interiorSpaceProvider,
+    InteriorFunctionalProvider&& interiorFunctionalProvider )
+{
+    static constexpr uint16_type Dim = Space::nDim;
+    using value_type = typename Space::value_type;
+    using convex_type = typename ReferenceConvex::super;
+
+    facetPoints.resize( convex_type::numTopologicalFaces );
+    uint32_type pointOffset = 0;
+    for ( int facet = referenceConvex.entityRange( Dim-1 ).begin();
+          facet < referenceConvex.entityRange( Dim-1 ).end(); ++facet )
+    {
+        auto points = facetPointsProvider( static_cast<uint16_type>( facet ) );
+        CHECK_EQ( points.size2(), facetDof )
+            << "invalid H(div) facet point count on facet " << facet;
+        facetPoints[facet] = points;
+        const uint32_type nextPointOffset = pointOffset+points.size2();
+        if ( elementPoints.size2() < nextPointOffset )
+            elementPoints.resize( Dim, nextPointOffset, true );
+        if ( points.size2() )
+            ublas::subrange( elementPoints, 0, Dim,
+                             pointOffset, nextPointOffset ) = points;
+        pointOffset = nextPointOffset;
+    }
+
+    std::vector<Functional<Space>> functionals;
+    functionals.reserve( totalDof );
+    appendHDivFacetNormalPointFunctionals(
+        primal, referenceConvex, facetPoints, functionals );
+
+    if ( interiorDof > 0 )
+    {
+        auto interiorSpace = interiorSpaceProvider();
+        CHECK_EQ( interiorSpace.polynomialDimension(), interiorDof )
+            << "invalid H(div) interior moment count";
+        IMGeneral<Dim, value_type, Simplex> quadrature(
+            interiorQuadratureOrder );
+        const uint32_type nextPointOffset = pointOffset+quadrature.nPoints();
+        if ( elementPoints.size2() < nextPointOffset )
+            elementPoints.resize( Dim, nextPointOffset, true );
+        ublas::subrange( elementPoints, 0, Dim,
+                         pointOffset, nextPointOffset ) = quadrature.points();
+        for ( int i = 0; i < interiorSpace.polynomialDimension(); ++i )
+            functionals.push_back( interiorFunctionalProvider(
+                interiorSpace.polynomial( i ) ) );
+    }
+
+    CHECK_EQ( functionals.size(), totalDof )
+        << "invalid H(div) functional count";
+    return functionals;
+}
+
 } // namespace Feel::detail
 
 #endif // FEELPP_FEELPOLY_HDIVFUNCTIONALS_HPP

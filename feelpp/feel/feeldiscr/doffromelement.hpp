@@ -84,14 +84,8 @@ class DofFromElement
 
     static inline const bool is_p0_continuous = ( ( nOrder == 0 ) && is_continuous );
 
-    static constexpr int numberOfDofPerElement()
-    {
-        if constexpr ( is_product )
-            return fe_type::nLocalDof * nComponents;
-        else
-            return fe_type::nLocalDof;
-    }
-    static inline const uint16_type nDofPerElement = numberOfDofPerElement();
+    static inline const uint16_type nDofPerElement =
+        finiteElementFixedLocalDofCountOrZero<fe_type>();
 
     //@}
 
@@ -161,79 +155,6 @@ class DofFromElement
         mesh_marker_type marker;
     };
 
-    //! @name Runtime DOF count accessors
-    //! @{
-    //! @brief Get DOFs per vertex (runtime-aware)
-    [[nodiscard]] uint16_type runtimeDofPerVertex() const noexcept
-    {
-        if constexpr ( is_order_dynamic )
-        {
-            if constexpr ( requires( fe_type const& fe ) { fe.dofPerVertex(); } )
-                return M_fe.dofPerVertex();
-            else
-                return M_fe.runtimeDofPerVertex();
-        }
-        else
-            return fe_type::nDofPerVertex;
-    }
-
-    //! @brief Get DOFs per edge (runtime-aware)
-    [[nodiscard]] uint16_type runtimeDofPerEdge() const noexcept
-    {
-        if constexpr ( is_order_dynamic )
-        {
-            if constexpr ( requires( fe_type const& fe ) { fe.dofPerEdge(); } )
-                return M_fe.dofPerEdge();
-            else
-                return M_fe.runtimeDofPerEdge();
-        }
-        else
-            return fe_type::nDofPerEdge;
-    }
-
-    //! @brief Get DOFs per face (runtime-aware)
-    [[nodiscard]] uint16_type runtimeDofPerFace() const noexcept
-    {
-        if constexpr ( is_order_dynamic )
-        {
-            if constexpr ( requires( fe_type const& fe ) { fe.dofPerFace(); } )
-                return M_fe.dofPerFace();
-            else
-                return M_fe.runtimeDofPerFace();
-        }
-        else
-            return fe_type::nDofPerFace;
-    }
-
-    //! @brief Get DOFs per volume (runtime-aware)
-    [[nodiscard]] uint16_type runtimeDofPerVolume() const noexcept
-    {
-        if constexpr ( is_order_dynamic )
-        {
-            if constexpr ( requires( fe_type const& fe ) { fe.dofPerVolume(); } )
-                return M_fe.dofPerVolume();
-            else
-                return M_fe.runtimeDofPerVolume();
-        }
-        else
-            return fe_type::nDofPerVolume;
-    }
-
-    //! @brief Get total local DOFs (runtime-aware)
-    [[nodiscard]] uint16_type runtimeLocalDof() const noexcept
-    {
-        if constexpr ( is_order_dynamic )
-        {
-            if constexpr ( requires( fe_type const& fe ) { fe.localDof(); } )
-                return M_fe.localDof();
-            else
-                return M_fe.runtimeLocalDof();
-        }
-        else
-            return fe_type::nLocalDof;
-    }
-    //! @}
-
     [[nodiscard]] size_type canonicalPointId( size_type id ) const
     {
         auto* mesh = M_doftable->mesh();
@@ -249,21 +170,12 @@ class DofFromElement
         auto* mesh = M_doftable->mesh();
         return mesh ? mesh->canonicalFaceId( id ) : id;
     }
-    [[nodiscard]] bool runtimeIsP0Continuous() const noexcept
+    [[nodiscard]] bool isP0Continuous() const noexcept
     {
         if constexpr ( !is_continuous )
             return false;
-        else if constexpr ( is_order_dynamic )
-        {
-            if constexpr ( requires( fe_type const& fe ) { fe.order(); } )
-                return M_fe.order() == 0;
-            else if constexpr ( requires( fe_type const& fe ) { fe.runtimeOrder(); } )
-                return M_fe.runtimeOrder() == 0;
-            else
-                return false;
-        }
         else
-            return is_p0_continuous;
+            return M_fe.order() == 0;
     }
     [[nodiscard]] static constexpr uint16_type feFamilyTag() noexcept
     {
@@ -296,10 +208,10 @@ class DofFromElement
             ? static_cast<uint16_type>( nLocalDof / nLocalDofPerComponent )
             : 1;
 
-        const uint16_type nDofPerVertex = runtimeDofPerVertex();
-        const uint16_type nDofPerEdge = runtimeDofPerEdge();
-        const uint16_type nDofPerFace = runtimeDofPerFace();
-        const uint16_type nDofPerVolume = runtimeDofPerVolume();
+        const uint16_type nDofPerVertex = M_fe.dofPerVertex();
+        const uint16_type nDofPerEdge = M_fe.dofPerEdge();
+        const uint16_type nDofPerFace = M_fe.dofPerFace();
+        const uint16_type nDofPerVolume = M_fe.dofPerVolume();
 
         std::vector<DofInsertEntry> entries;
         entries.reserve( nLocalDof );
@@ -369,7 +281,7 @@ class DofFromElement
                 if constexpr ( nDim == 1 )
                 {
                     entry.localEntity = attachment.ordinal;
-                    setKey( 1, this->runtimeIsP0Continuous() ? 0 : __elt.id(), attachment.ordinal );
+                    setKey( 1, this->isP0Continuous() ? 0 : __elt.id(), attachment.ordinal );
                     entry.globalDof = entry.key.canonicalEntityId * nDofPerEdge + entry.key.ordinal;
                     entry.marker = __elt.hasMarker() ? __elt.marker() : M_emptyMarker;
                 }
@@ -422,7 +334,7 @@ class DofFromElement
                 if constexpr ( nDim == 2 )
                 {
                     entry.localEntity = attachment.ordinal;
-                    setKey( 2, this->runtimeIsP0Continuous() ? 0 : __elt.id(), attachment.ordinal );
+                    setKey( 2, this->isP0Continuous() ? 0 : __elt.id(), attachment.ordinal );
                     entry.globalDof = entry.key.canonicalEntityId * nDofPerFace + entry.key.ordinal;
                     entry.marker = __elt.hasMarker() ? __elt.marker() : M_emptyMarker;
                 }
@@ -469,7 +381,7 @@ class DofFromElement
                     return false;
 
                 entry.localEntity = attachment.ordinal;
-                setKey( 3, this->runtimeIsP0Continuous() ? 0 : __elt.id(), attachment.ordinal );
+                setKey( 3, this->isP0Continuous() ? 0 : __elt.id(), attachment.ordinal );
                 entry.globalDof = entry.key.canonicalEntityId * nDofPerVolume + entry.key.ordinal;
                 entry.marker = __elt.hasMarker() ? __elt.marker() : M_emptyMarker;
                 break;
@@ -532,7 +444,7 @@ class DofFromElement
             return;
 
         // Runtime check for dynamic order
-        const uint16_type nDofPerVertex = runtimeDofPerVertex();
+        const uint16_type nDofPerVertex = M_fe.dofPerVertex();
         if ( nDofPerVertex == 0 )
             return;
 
@@ -569,7 +481,7 @@ class DofFromElement
             return;
 
         // Runtime check for dynamic order
-        const uint16_type nDofPerEdge = runtimeDofPerEdge();
+        const uint16_type nDofPerEdge = M_fe.dofPerEdge();
         if ( nDofPerEdge == 0 )
             return;
 
@@ -583,7 +495,7 @@ class DofFromElement
 
             for ( uint16_type l = 0; l < nDofPerEdge; ++l, ++lc )
             {
-                const size_type gDof = this->runtimeIsP0Continuous() ? l : ie * nDofPerEdge + l;
+                const size_type gDof = this->isP0Continuous() ? l : ie * nDofPerEdge + l;
                 M_doftable->insertDof( ie, lc, l, std::make_tuple( 1, gDof ), processor, next_free_dof, 1, false, global_shift, eltMarker );
             }
 
@@ -717,7 +629,7 @@ class DofFromElement
             return;
 
         // Runtime check for dynamic order
-        const uint16_type nDofPerFace = runtimeDofPerFace();
+        const uint16_type nDofPerFace = M_fe.dofPerFace();
         if ( nDofPerFace == 0 )
             return;
 
@@ -731,7 +643,7 @@ class DofFromElement
 
             for ( uint16_type l = 0; l < nDofPerFace; ++l, ++lc )
             {
-                const size_type gDof = this->runtimeIsP0Continuous() ? l : ie * nDofPerFace + l;
+                const size_type gDof = this->isP0Continuous() ? l : ie * nDofPerFace + l;
                 M_doftable->insertDof( ie, lc, l, std::make_tuple( 2, gDof ), processor, next_free_dof, 1, false, global_shift, eltMarker );
             }
 
@@ -851,7 +763,7 @@ class DofFromElement
             return;
 
         // Runtime check for dynamic order
-        const uint16_type nDofPerVolume = runtimeDofPerVolume();
+        const uint16_type nDofPerVolume = M_fe.dofPerVolume();
         if ( nDofPerVolume == 0 )
             return;
 
@@ -863,7 +775,7 @@ class DofFromElement
 
         for ( uint16_type l = 0; l < nDofPerVolume; ++l, ++lc )
         {
-            const size_type gDof = this->runtimeIsP0Continuous() ? l : ie * nDofPerVolume + l;
+            const size_type gDof = this->isP0Continuous() ? l : ie * nDofPerVolume + l;
             M_doftable->insertDof( ie, lc, l, std::make_tuple( 3, gDof ), processor, next_free_dof, 1, false, global_shift, eltMarker );
         }
 
@@ -924,7 +836,7 @@ void DofFromElement<DofTableType, FEType>::add( element_type const& __elt,
         size_type ie = __elt.id();
 
         const int ncdof = is_product ? nComponents : 1;
-        const uint16_type nLocalDof = runtimeLocalDof();
+        const uint16_type nLocalDof = M_fe.localDof();
 
         for ( uint16_type l = 0; l < nldof; ++l )
         {

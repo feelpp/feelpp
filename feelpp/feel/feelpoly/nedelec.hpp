@@ -215,9 +215,10 @@ nedelecTriangularFaceRTMomentTransform(
 
     RaviartThomasDynamicPolynomialSet<2> moments(
         RuntimeOrder{ static_cast<uint16_type>( publicOrder-1 ) } );
-    const uint16_type latticeDegree = static_cast<uint16_type>( publicOrder+2 );
-    const uint16_type pointCount = static_cast<uint16_type>(
-        ( latticeDegree+1 )*( latticeDegree+2 )/2 );
+    const uint16_type latticeDegree = Feel::detail::checkedLocalIndexValue(
+        static_cast<size_type>( publicOrder ) + 2 );
+    const uint16_type pointCount = Feel::detail::checkedLocalIndexValue(
+        Feel::detail::SimplexCardinality::total( 2, latticeDegree ) );
     typename decltype( moments )::points_type canonicalPoints( 2, pointCount );
     typename decltype( moments )::points_type localPoints( 2, pointCount );
     uint16_type point = 0;
@@ -371,72 +372,116 @@ struct NedelecTraits
 
 namespace detail
 {
-[[nodiscard]] constexpr uint16_type nedelec1InternalOrder( uint16_type publicOrder ) noexcept
+[[nodiscard]] constexpr uint16_type nedelec1InternalOrder( uint16_type publicOrder )
 {
-    return static_cast<uint16_type>( publicOrder + 1 );
+    return checkedLocalIndexValue(
+        static_cast<size_type>( publicOrder ) + 1 );
 }
 
-[[nodiscard]] constexpr uint16_type nedelec1EdgeDof( uint16_type publicOrder ) noexcept
+[[nodiscard]] constexpr size_type
+nedelec1TotalDofSize( uint16_type dim,
+                       uint16_type publicOrder ) noexcept
+{
+    const size_type order = publicOrder;
+    return dim == 2
+               ? ( order + 1 ) * ( order + 3 )
+               : ( order + 1 ) * ( order + 3 ) *
+                     ( order + 4 ) / 2;
+}
+
+[[nodiscard]] constexpr size_type
+nedelec2TotalDofSize( uint16_type dim,
+                       uint16_type publicOrder ) noexcept
+{
+    const size_type order = publicOrder;
+    return dim == 2
+               ? ( order + 2 ) * ( order + 3 )
+               : ( order + 2 ) * ( order + 3 ) *
+                     ( order + 4 ) / 2;
+}
+
+template<NedelecKind Kind>
+[[nodiscard]] constexpr RuntimeOrder
+validatedNedelecSimplexOrder( uint16_type dim,
+                              RuntimeOrder publicOrder )
+{
+    (void)checkedLocalIndexValue(
+        static_cast<size_type>( publicOrder.value ) + 1 );
+    if constexpr ( Kind == NedelecKind::NED1 )
+        (void)checkedLocalIndexValue(
+            nedelec1TotalDofSize( dim, publicOrder.value ) );
+    else
+        (void)checkedLocalIndexValue(
+            nedelec2TotalDofSize( dim, publicOrder.value ) );
+    return publicOrder;
+}
+
+[[nodiscard]] constexpr uint16_type nedelec1EdgeDof( uint16_type publicOrder )
 {
     return nedelec1InternalOrder( publicOrder );
 }
 
-[[nodiscard]] constexpr uint16_type nedelec1FaceDof( uint16_type dim, uint16_type publicOrder ) noexcept
+[[nodiscard]] constexpr uint16_type nedelec1FaceDof( uint16_type dim, uint16_type publicOrder )
 {
-    return dim == 3 ? static_cast<uint16_type>( publicOrder * ( publicOrder + 1 ) ) :
-                      static_cast<uint16_type>( publicOrder * ( publicOrder + 1 ) );
+    const size_type order = publicOrder;
+    return checkedLocalIndexValue( order * ( order + 1 ) );
 }
 
-[[nodiscard]] constexpr uint16_type nedelec1VolumeDof( uint16_type dim, uint16_type publicOrder ) noexcept
+[[nodiscard]] constexpr uint16_type nedelec1VolumeDof( uint16_type dim, uint16_type publicOrder )
 {
+    const size_type order = publicOrder;
     return dim == 3 && publicOrder > 1
-               ? static_cast<uint16_type>( ( publicOrder + 1 ) * publicOrder * ( publicOrder - 1 ) / 2 )
+               ? checkedLocalIndexValue(
+                     ( order + 1 ) * order * ( order - 1 ) / 2 )
                : 0;
 }
 
-[[nodiscard]] constexpr uint16_type nedelec1TotalDof( uint16_type dim, uint16_type publicOrder ) noexcept
+[[nodiscard]] constexpr uint16_type nedelec1TotalDof( uint16_type dim, uint16_type publicOrder )
 {
-    return dim == 2
-               ? static_cast<uint16_type>( ( publicOrder + 1 ) * ( publicOrder + 3 ) )
-               : static_cast<uint16_type>( ( publicOrder + 1 ) * ( publicOrder + 3 ) * ( publicOrder + 4 ) / 2 );
+    return checkedLocalIndexValue(
+        nedelec1TotalDofSize( dim, publicOrder ) );
 }
 
 /** @return ambient polynomial degree of NED2 public order `publicOrder`. */
-[[nodiscard]] constexpr uint16_type nedelec2InternalOrder( uint16_type publicOrder ) noexcept
+[[nodiscard]] constexpr uint16_type nedelec2InternalOrder( uint16_type publicOrder )
 {
-    return static_cast<uint16_type>( publicOrder+1 );
+    return checkedLocalIndexValue(
+        static_cast<size_type>( publicOrder ) + 1 );
 }
 
 /** @return number of pointwise tangential DoFs on one NED2 edge. */
-[[nodiscard]] constexpr uint16_type nedelec2EdgeDof( uint16_type publicOrder ) noexcept
+[[nodiscard]] constexpr uint16_type nedelec2EdgeDof( uint16_type publicOrder )
 {
-    return static_cast<uint16_type>( publicOrder+2 );
+    return checkedLocalIndexValue(
+        static_cast<size_type>( publicOrder ) + 2 );
 }
 
 /** @return number of NED2 face-interior DoFs on one triangular face. */
-[[nodiscard]] constexpr uint16_type nedelec2FaceDof( uint16_type dim, uint16_type publicOrder ) noexcept
+[[nodiscard]] constexpr uint16_type nedelec2FaceDof( uint16_type dim, uint16_type publicOrder )
 {
+    const size_type order = publicOrder;
     return dim == 3
-               ? static_cast<uint16_type>( publicOrder*( publicOrder+2 ) )
+               ? checkedLocalIndexValue( order * ( order + 2 ) )
                : 0;
 }
 
 /** @return number of NED2 cell-interior DoFs. */
-[[nodiscard]] constexpr uint16_type nedelec2CellDof( uint16_type dim, uint16_type publicOrder ) noexcept
+[[nodiscard]] constexpr uint16_type nedelec2CellDof( uint16_type dim, uint16_type publicOrder )
 {
+    const size_type order = publicOrder;
     if ( dim == 2 )
-        return static_cast<uint16_type>( publicOrder*( publicOrder+2 ) );
+        return checkedLocalIndexValue( order * ( order + 2 ) );
     return publicOrder > 1
-               ? static_cast<uint16_type>( publicOrder*( publicOrder-1 )*( publicOrder+2 )/2 )
+               ? checkedLocalIndexValue(
+                     order * ( order - 1 ) * ( order + 2 ) / 2 )
                : 0;
 }
 
 /** @return total local dimension of the full-vector NED2 polynomial space. */
-[[nodiscard]] constexpr uint16_type nedelec2TotalDof( uint16_type dim, uint16_type publicOrder ) noexcept
+[[nodiscard]] constexpr uint16_type nedelec2TotalDof( uint16_type dim, uint16_type publicOrder )
 {
-    return dim == 2
-               ? static_cast<uint16_type>( ( publicOrder+2 )*( publicOrder+3 ) )
-               : static_cast<uint16_type>( ( publicOrder+2 )*( publicOrder+3 )*( publicOrder+4 )/2 );
+    return checkedLocalIndexValue(
+        nedelec2TotalDofSize( dim, publicOrder ) );
 }
 
 template<typename P>
@@ -520,24 +565,10 @@ buildNedelec1PrimalCoefficients( AmbientVector const& ambientVector,
 
     auto const vectorSource = ambientVector.polynomialsUpToDimension( dimPk );
     auto const scalarSource = ambientScalar.polynomialsUpToDimension( dimPk );
-    VectorPolynomialSet pkVector = [&]()
-    {
-        if constexpr ( std::constructible_from<VectorPolynomialSet, decltype( vectorSource )> )
-            return VectorPolynomialSet( vectorSource );
-        else
-            return VectorPolynomialSet( vectorSource.coeff(), true );
-    }();
-    ScalarPolynomialSet pkScalar = [&]()
-    {
-        if constexpr ( std::constructible_from<ScalarPolynomialSet, decltype( scalarSource )> )
-            return ScalarPolynomialSet( scalarSource );
-        else
-            return ScalarPolynomialSet( scalarSource.coeff(), true );
-    }();
-    if constexpr ( requires( VectorPolynomialSet& p ) { p.setOrder( internalOrder ); } )
-        pkVector.setOrder( internalOrder );
-    if constexpr ( requires( ScalarPolynomialSet& p ) { p.setOrder( internalOrder ); } )
-        pkScalar.setOrder( internalOrder );
+    VectorPolynomialSet pkVector = polynomialSetFrom<VectorPolynomialSet>(
+        vectorSource, internalOrder );
+    ScalarPolynomialSet pkScalar = polynomialSetFrom<ScalarPolynomialSet>(
+        scalarSource, internalOrder );
     IMGeneral<Dim, value_type, Simplex> quadrature( static_cast<uint16_type>( 2*internalOrder ) );
 
     if constexpr ( Dim == 2 )
@@ -714,15 +745,8 @@ buildNedelec1Functionals( Space const& primal,
         const uint16_type dimMoment = convex_type::polyDims(
             static_cast<uint16_type>( momentDegree ) );
         auto const source = ambientVector.polynomialsUpToDimension( dimMoment );
-        VectorPolynomialSet moments = [&]()
-        {
-            if constexpr ( std::constructible_from<VectorPolynomialSet, decltype( source )> )
-                return VectorPolynomialSet( source );
-            else
-                return VectorPolynomialSet( source.coeff(), true );
-        }();
-        if constexpr ( requires( VectorPolynomialSet& p ) { p.setOrder( internalOrder ); } )
-            moments.setOrder( internalOrder );
+        VectorPolynomialSet moments = polynomialSetFrom<VectorPolynomialSet>(
+            source, internalOrder );
 
         IMGeneral<Dim, value_type, Simplex> quadrature(
             static_cast<uint16_type>( 2*( internalOrder+1 ) ) );
@@ -1003,7 +1027,10 @@ public:
     Nedelec1DynamicPolynomialSet() : Nedelec1DynamicPolynomialSet( RuntimeOrder{ 0 } ) {}
 
     explicit Nedelec1DynamicPolynomialSet( RuntimeOrder publicOrder )
-        : super( RuntimeOrder{ Feel::detail::nedelec1InternalOrder( publicOrder.value ) } )
+        : super( RuntimeOrder{
+              Feel::detail::nedelec1InternalOrder(
+                  Feel::detail::validatedNedelecSimplexOrder<
+                      NedelecKind::NED1>( N, publicOrder ).value ) } )
     {
         build( publicOrder.value );
     }
@@ -1058,7 +1085,8 @@ public:
 
     explicit Nedelec2DynamicPolynomialSet( RuntimeOrder publicOrder )
         : super( RuntimeOrder{ Feel::detail::nedelec2InternalOrder(
-              publicOrder.value ) } ),
+              Feel::detail::validatedNedelecSimplexOrder<
+                  NedelecKind::NED2>( N, publicOrder ).value ) } ),
           M_publicOrder( publicOrder.value )
     {}
 
@@ -1111,18 +1139,7 @@ public:
     NedelecPolynomialSet()
         :
         super()
-    {
-        VLOG(4) << "[Nedelec2ndKindset] nOrder = " << nOrder << "\n";
-        VLOG(4) << "[Nedelec2ndKindset] O = " << O << "\n";
-        // (P_k)^d
-        Pkp1_v_type Pkp1_v;
-        //vectorial_polynomialset_type Pk_v( Pkp1_v );
-
-        //VLOG(4) << "[Nedelec1stKindPset] after xPkc = " << xPkc << "\n";
-        vectorial_polynomialset_type Pkv( typename super::basis_type(), Pkp1_v.coeff(), true );
-        this->setCoefficient(  Pkv.coeff(), true );
-        //VLOG(4) << "[Nedelec1stKindPset] here 2\n";
-    }
+    {}
 };
 
 namespace fem
@@ -1192,7 +1209,6 @@ public:
         :
         super( primal ),
         M_convex_ref(),
-        M_eid( M_convex_ref.topologicalDimension()+1 ),
         M_pts( nDim, numPoints ),
         M_pts_per_face( nFacesInConvex ),
         M_samplingLayout(),
@@ -1299,7 +1315,6 @@ private:
 
 private:
     reference_convex_type M_convex_ref;
-    std::vector<std::vector<uint16_type> > M_eid;
     points_type M_pts;
     std::vector<points_type> M_pts_per_face;
     Feel::detail::Nedelec1SamplingLayout M_samplingLayout;
@@ -1359,15 +1374,15 @@ public:
           M_publicOrder( primal.publicOrder() ),
           M_internalOrder( Feel::detail::nedelec1InternalOrder( M_publicOrder ) ),
           M_convex_ref(),
-          M_pts( nDim, runtimeLocalDof() ),
+          M_pts( nDim, localDof() ),
           M_pts_per_face( convex_type::numTopologicalFaces ),
           M_samplingLayout(),
           M_fset( primal )
     {
         const uint16_type facetClosureDof = nDim == 2
-            ? runtimeDofPerEdge()
-            : static_cast<uint16_type>( face_type::numTopologicalFaces*runtimeDofPerEdge() +
-                                        runtimeDofPerFace() );
+            ? dofPerEdge()
+            : static_cast<uint16_type>( face_type::numTopologicalFaces*dofPerEdge() +
+                                        dofPerFace() );
         for ( auto& points : M_pts_per_face )
             points.resize( nDim, facetClosureDof );
 
@@ -1385,7 +1400,7 @@ public:
                 [&edgePointSet, this]( uint16_type edge )
                 {
                     auto points = edgePointSet.pointsBySubEntity( 1, edge );
-                    CHECK_EQ( points.size2(), runtimeDofPerEdge() )
+                    CHECK_EQ( points.size2(), dofPerEdge() )
                         << "Invalid NED1 dynamic edge point count on edge " << edge;
                     return points;
                 } );
@@ -1396,25 +1411,25 @@ public:
     [[nodiscard]] uint16_type publicOrder() const noexcept { return M_publicOrder; }
     /** @return internal ambient polynomial order. */
     [[nodiscard]] uint16_type internalOrder() const noexcept { return M_internalOrder; }
-    /** @return runtime number of degrees of freedom on one vertex. */
-    [[nodiscard]] constexpr uint16_type runtimeDofPerVertex() const noexcept { return 0; }
-    /** @return runtime number of degrees of freedom on one edge. */
-    [[nodiscard]] uint16_type runtimeDofPerEdge() const noexcept
+    /** @return number of degrees of freedom on one vertex. */
+    [[nodiscard]] constexpr uint16_type dofPerVertex() const noexcept { return 0; }
+    /** @return number of degrees of freedom on one edge. */
+    [[nodiscard]] uint16_type dofPerEdge() const noexcept
     {
         return Feel::detail::nedelec1EdgeDof( M_publicOrder );
     }
-    /** @return runtime number of face-interior degrees of freedom. */
-    [[nodiscard]] uint16_type runtimeDofPerFace() const noexcept
+    /** @return number of face-interior degrees of freedom. */
+    [[nodiscard]] uint16_type dofPerFace() const noexcept
     {
         return Feel::detail::nedelec1FaceDof( nDim, M_publicOrder );
     }
-    /** @return runtime number of cell-interior degrees of freedom. */
-    [[nodiscard]] uint16_type runtimeDofPerVolume() const noexcept
+    /** @return number of cell-interior degrees of freedom. */
+    [[nodiscard]] uint16_type dofPerVolume() const noexcept
     {
         return nDim == 3 ? Feel::detail::nedelec1VolumeDof( nDim, M_publicOrder ) : 0;
     }
-    /** @return runtime total number of local degrees of freedom. */
-    [[nodiscard]] uint16_type runtimeLocalDof() const noexcept
+    /** @return total number of local degrees of freedom. */
+    [[nodiscard]] uint16_type localDof() const noexcept
     {
         return Feel::detail::nedelec1TotalDof( nDim, M_publicOrder );
     }
@@ -1507,7 +1522,7 @@ public:
             [&edgePointSet, this]( uint16_type edge )
             {
                 auto points = edgePointSet.pointsBySubEntity( 1, edge );
-                CHECK_EQ( points.size2(), runtimeDofPerEdge() );
+                CHECK_EQ( points.size2(), dofPerEdge() );
                 return points;
             } );
         M_functionals.setFunctionalSet( functionals );
@@ -1515,23 +1530,23 @@ public:
 
     [[nodiscard]] uint16_type publicOrder() const noexcept { return M_publicOrder; }
     [[nodiscard]] uint16_type internalOrder() const noexcept { return M_internalOrder; }
-    [[nodiscard]] constexpr uint16_type runtimeDofPerVertex() const noexcept { return 0; }
-    [[nodiscard]] uint16_type runtimeDofPerEdge() const noexcept
+    [[nodiscard]] constexpr uint16_type dofPerVertex() const noexcept { return 0; }
+    [[nodiscard]] uint16_type dofPerEdge() const noexcept
     {
         return Feel::detail::nedelec2EdgeDof( M_publicOrder );
     }
-    [[nodiscard]] uint16_type runtimeDofPerFace() const noexcept
+    [[nodiscard]] uint16_type dofPerFace() const noexcept
     {
         return nDim == 2
             ? Feel::detail::nedelec2CellDof( nDim, M_publicOrder )
             : Feel::detail::nedelec2FaceDof( nDim, M_publicOrder );
     }
-    [[nodiscard]] uint16_type runtimeDofPerVolume() const noexcept
+    [[nodiscard]] uint16_type dofPerVolume() const noexcept
     {
         return nDim == 3
             ? Feel::detail::nedelec2CellDof( nDim, M_publicOrder ) : 0;
     }
-    [[nodiscard]] uint16_type runtimeLocalDof() const noexcept
+    [[nodiscard]] uint16_type localDof() const noexcept
     {
         return Feel::detail::nedelec2TotalDof( nDim, M_publicOrder );
     }
@@ -1569,322 +1584,11 @@ private:
     FunctionalSet<primal_space_type> M_functionals;
 };
 
-
-template<typename Basis,
-         template<class, int, class> class PointSetType>
-class NedelecDualSecondKind
-    :
-public DualBasis<Basis>
-{
-    typedef DualBasis<Basis> super;
-public:
-
-    static inline const uint16_type nDim = super::nDim;
-    static inline const uint16_type nOrder= super::nOrder;
-    static inline const NedelecKind kind = NedelecKind::NED2;
-
-    typedef typename super::primal_space_type primal_space_type;
-    //typedef typename super::primal_space_type::template ChangeOrder<nOrder+1>::type primal_space_type;
-
-    typedef typename primal_space_type::template ChangeOrder<nOrder+1>::type Pkp1_v_type;
-    typedef typename primal_space_type::value_type value_type;
-    typedef typename primal_space_type::points_type points_type;
-    typedef typename primal_space_type::matrix_type matrix_type;
-    // typedef typename primal_space_type::template convex<nDim+nOrder-1>::type convex_type;
-    // typedef Reference<convex_type, nDim, nDim+nOrder-1, nDim, value_type> reference_convex_type;
-
-    typedef typename primal_space_type::template convex<nOrder+2>::type convex_type;
-    typedef Reference<convex_type, nDim, nOrder+2, nDim, value_type> reference_convex_type;
-    typedef typename reference_convex_type::node_type node_type;
-    typedef typename convex_type::topological_face_type face_type;
-
-    uint16_type dim_Pkp1 = convex_type::polyDims( nOrder );
-    uint16_type dim_Pk = convex_type::polyDims( nOrder-1 );
-    uint16_type dim_Pkm1 = ( nOrder==1 )?0:convex_type::polyDims( nOrder-2 );
-
-    typedef PolynomialSet<typename Basis::basis_type,Vectorial> vectorial_polynomialset_type;
-    typedef typename vectorial_polynomialset_type::polynomial_type vectorial_polynomial_type;
-    typedef PolynomialSet<typename Basis::basis_type,Scalar> scalar_polynomialset_type;
-    typedef typename scalar_polynomialset_type::polynomial_type scalar_polynomial_type;
-
-    // point set type associated with the functionals
-    typedef PointSetType<convex_type, nOrder, value_type> pointset_type;
-
-    static inline const uint16_type nbPtsPerVertex = 0;
-    static inline const uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
-    static const uint16_type nbPtsPerFace2D = 0;
-    static const uint16_type nbPtsPerFace3D = 0;
-    static inline const uint16_type nbPtsPerFace = (nDim==2)?nbPtsPerFace2D:nbPtsPerFace3D;
-    static inline const uint16_type nbPtsPerVolume = 0;
-    static inline const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+reference_convex_type::numEdges*nbPtsPerEdge );
-
-    /** Number of degrees of freedom per vertex */
-    static inline const uint16_type nDofPerVertex = 0;
-
-    /** Number of degrees of freedom per edge */
-    static inline const uint16_type nDofPerEdge = nbPtsPerEdge;
-
-    /** Number of degrees of freedom per face */
-    static inline const uint16_type nDofPerFace = nbPtsPerFace;
-
-    /** Number of degrees  of freedom per volume */
-    static inline const uint16_type nDofPerVolume = 0;
-
-    /** Total number of degrees of freedom (equal to refEle::nDof) */
-    //static inline const uint16_type nLocalDof = numPoints;
-    static inline const uint16_type nLocalDof = reference_convex_type::numEdges*nDofPerEdge;
-
-    static constexpr uint16_type nFacesInConvex =
-        ( nDim == 1 ) ? reference_convex_type::numVertices :
-        ( nDim == 2 ) ? reference_convex_type::numEdges :
-                        reference_convex_type::numGeometricFaces;
-
-    NedelecDualSecondKind( primal_space_type const& primal )
-        :
-        super( primal ),
-        M_convex_ref(),
-        M_eid( M_convex_ref.topologicalDimension()+1 ),
-        M_pts( nDim, numPoints ),
-        M_pts_per_face( nFacesInConvex ),
-        M_fset( primal )
-    {
-        CHECK( primal.polynomialDimension() == nLocalDof )
-            << "Invalid Nedelec second-kind primal/dual cardinality: primal dimension "
-            << primal.polynomialDimension() << " differs from dual dimension " << nLocalDof
-            << " in dimension " << nDim << " at internal order " << nOrder;
-        VLOG(4) << "Nedelec finite element(dual): \n";
-        VLOG(4) << " o- dim   = " << nDim << "\n";
-        VLOG(4) << " o- order = " << nOrder << "\n";
-        VLOG(4) << " o- kind = " << static_cast<int>(kind) << "\n";
-        VLOG(4) << " o- numPoints      = " << numPoints << "\n";
-        VLOG(4) << " o- nbPtsPerVertex = " << ( int )nbPtsPerVertex << "\n";
-        VLOG(4) << " o- nbPtsPerEdge   = " << ( int )nbPtsPerEdge << "\n";
-        VLOG(4) << " o- nbPtsPerFace   = " << ( int )nbPtsPerFace << "\n";
-        VLOG(4) << " o- nbPtsPerVolume = " << ( int )nbPtsPerVolume << "\n";
-        VLOG(4) << " o- nLocalDof      = " << nLocalDof << "\n";
-
-        size_type nbDofPerFace = ( nDim == 2 )
-            ? face_type::numEdges*nbPtsPerEdge
-            : face_type::numTopologicalFaces*nbPtsPerEdge + nbPtsPerFace;
-
-        size_type nbEdgesPerFace = ( nDim == 2 )
-            ? face_type::numEdges
-            : face_type::numTopologicalFaces;
-
-        for(auto& m : M_pts_per_face)
-            m.resize(nDim,nbDofPerFace);
-
-        //VLOG(4) << "[Nedelec2ndKind Dual] done 1\n";
-        // compute  \f$ \ell_e( U ) = (U * t[e]) (edge_pts(e)) \f$
-
-        typedef Functional<primal_space_type> functional_type;
-        std::vector<functional_type> fset;
-
-        // loop on each entity forming the convex of topological
-        // dimension 1 ( the edges)
-        int d=1;
-        for ( int p = 0, e = M_convex_ref.entityRange( d ).begin();
-                e < M_convex_ref.entityRange( d ).end();
-                ++e )
-        {
-            // Dof coord on current edge
-            points_type Gt ( M_convex_ref.makePoints( d, e ) ); //center of the edge
-
-            for( int f = M_convex_ref.entityRange( nDim-1 ).begin(); f < M_convex_ref.entityRange( nDim-1 ).end(); ++f)
-                {
-                    // M_pts_per_face[f] : set of dofs on a face (face_type::numTopologicalFaces*nbPtsPerFace)
-                    //for(int k=0; k<face_type::numTopologicalFaces; ++k)
-                    for(int k=0; k<nbEdgesPerFace; ++k)
-                        {
-                            int curEdge;
-                            if( nDim <= 2 )
-                                curEdge = convex_type::f2e(f,f);
-                            else
-                                curEdge = convex_type::f2e(f,k);
-
-                            if( curEdge == e )
-                                {
-                                    ublas::subrange( M_pts_per_face[f], 0, nDim, nbPtsPerEdge*k, nbPtsPerEdge*(k+1) ) = Gt;
-                                }
-                        }
-                }
-
-            // M_pts : set of dofs on an element
-            if ( Gt.size2() )
-            {
-                VLOG(4) << "Gt = " << Gt << "\n";
-                ublas::subrange( M_pts, 0, nDim, p, p+Gt.size2() ) = Gt;
-                p+=Gt.size2();
-            }
-
-            //std::cout << "tangent " << e << ":" << M_convex_ref.tangent( e ) << "\n";
-            node_type dir( nDim );
-            em_node_type<value_type> mappedDir( dir.data().begin(), dir.size() );
-            mappedDir = M_convex_ref.tangent( e );
-
-            // Find extrem points of e (current edge)
-            points_type Gt_ext(2,nDim);
-            ublas::row(Gt_ext,0) = M_convex_ref.edgeVertex( e, 0 );
-            ublas::row(Gt_ext,1) = M_convex_ref.edgeVertex( e, 1 );
-
-            //1 : Find basis functions q0 et q1 of P_k(e)
-            std::vector< ublas::vector<value_type> > q(2);
-
-            ublas::matrix<value_type> Ax(2,2);
-            ublas::matrix<value_type> Ay(2,2);
-            ublas::column(Ax,0) = ublas::column(Gt_ext,0); // When q depends only on x coord
-            ublas::column(Ay,0) = ublas::column(Gt_ext,1); // When q depends only on y coord
-
-            ublas::matrix<value_type> solx(2,2);
-            ublas::matrix<value_type> soly(2,2);
-
-            for(int i=0; i<2; i++)
-                {
-                    Ax(i,Ax.size2() - 1) = 1;
-                    Ay(i,Ay.size2() - 1) = 1;
-                }
-
-            // Solve the systems
-            LU<ublas::matrix<value_type> > lu_x( Ax );
-            LU<ublas::matrix<value_type> > lu_y( Ay );
-            ublas::matrix<value_type> B = ublas::identity_matrix<value_type>( 2,2 );
-            solx = lu_x.solve( B );
-            soly = lu_y.solve( B );
-
-            if(Gt_ext(0,0) == Gt_ext(1,0)) // x is constant on the edge
-                {
-                    for(int i=0; i<q.size(); ++i)
-                        {
-                            q[i].resize(3);
-                            q[i](0) = 0.0;
-                            ublas::project( q[i], ublas::range(1,q[i].size()) ) = ublas::column(soly,i);
-                        }
-                }
-            else if(Gt_ext(0,1) == Gt_ext(1,1)) // y is constant on the edge
-                {
-                    for(int i=0; i<q.size(); ++i)
-                        {
-                            q[i].resize(3);
-                            q[i](0) = solx(0,i);
-                            q[i](1) = 0.0;
-                            q[i](2) = solx(1,i);
-                        }
-                }
-            else
-                {
-                    for(int i=0; i<q.size(); ++i)
-                        {
-                            q[i].resize(3);
-                            q[i](0) = solx(0,i);
-                            q[i](1) = soly(0,i);
-                            q[i](2) = 0.5*solx(1,i) + 0.5*soly(1,i);
-                        }
-                }
-            VLOG(4) << "q0 = " << q[0] << std::endl;
-            VLOG(4) << "q1 = " << q[1] << std::endl;
-
-            // Compute and add associated functionnals ( \int (u.t) q[i], i=0,1 )
-            // dcpe2_type __dcpe2_0( primal, dir, ublas::trans(Gt_ext), q[0]);
-            // dcpe2_type __dcpe2_1( primal, dir, ublas::trans(Gt_ext), q[1]);
-            Feel::detail::appendHCurlWeightedEdgeFunctional( primal, dir, Gt, q[0], fset );
-            Feel::detail::appendHCurlWeightedEdgeFunctional( primal, dir, Gt, q[1], fset );
-        }
-
-#if 0
-        // add integrals of tangential component
-        if ( nOrder-1 > 0 )
-        {
-        }
-        //VLOG(4) << "[Nedelec2ndKind Dual] done 2" << std::endl;
-        // add integral of moments
-        if ( nOrder-2 > 0 )
-        {
-            // we need more equations : add interior moment
-            // indeed the space is orthogonal to Pk-1
-            uint16_type dim_Pkp1 = convex_type::polyDims( nOrder );
-            uint16_type dim_Pk = convex_type::polyDims( nOrder-1 );
-            uint16_type dim_Pm1 = convex_type::polyDims( nOrder-2 );
-
-            Pkp1_v_type Pkp1;
-
-            //TODO : Nedelec 2nd kind uses Raviart-Thomas functionspace instead of Pkm1 (Dkm1)
-            vectorial_polynomialset_type Pkm1 ( Pkp1.polynomialsUpToDimension( dim_Pm1 ) );
-
-            VLOG(4) << "Pkm1 = " << Pkm1.coeff() << "\n";
-            VLOG(4) << "Primal = " << primal.coeff() << "\n";
-            std::cout << "[loop to fill fset] Pkm1.polynomialDimension() = " << Pkm1.polynomialDimension() << std::endl;
-            for ( int i = 0; i < Pkm1.polynomialDimension(); ++i )
-            {
-                typedef functional::IntegralMoment<primal_space_type, vectorial_polynomialset_type> fim_type;
-                //typedef functional::IntegralMoment<Pkp1_v_type, vectorial_polynomialset_type> fim_type;
-                VLOG(4) << "P(" << i << ")=" << Pkm1.polynomial( i ).coeff() << "\n";
-                fset.push_back( fim_type( primal, Pkm1.polynomial( i ) ) );
-            }
-        }
-#endif
-
-        VLOG(4) << "[Nedelec2ndKind Dual] done 3, n fset = " << fset.size() << std::endl;
-        M_fset.setFunctionalSet( fset );
-        VLOG(4) << "[Nedelec2ndKind DUAL matrix] mat = " << M_fset.rep() << "\n";
-        VLOG(4) << "[Nedelec2ndKind Dual] done 4\n";
-
-    }
-
-    /**
-     * \return the point set
-     */
-    //pointset_type const& pointSet() const { return M_pset; }
-
-    points_type const& points() const
-    {
-        VLOG(4) << "ned2 points =" << M_pts << std::endl;
-        return M_pts;
-    }
-
-
-    matrix_type operator()( primal_space_type const& pset ) const
-    {
-        return M_fset( pset );
-    }
-
-    points_type const& points( uint16_type f ) const
-    {
-        return M_pts_per_face[f];
-    }
-    ublas::matrix_column<points_type const> point( uint16_type f, uint32_type __i ) const
-    {
-        return ublas::column( M_pts_per_face[f], __i );
-    }
-    ublas::matrix_column<points_type> point( uint16_type f, uint32_type __i )
-    {
-        return ublas::column( M_pts_per_face[f], __i );
-    }
-
-private:
-    /**
-     * set the pointset at face \c f using points \c n
-     */
-    void setPoints( uint16_type f, points_type const& n )
-    {
-        M_pts_per_face[f].resize( n.size1(), n.size2(), false );
-        M_pts_per_face[f] = n;
-    }
-
-private:
-    reference_convex_type M_convex_ref;
-    std::vector<std::vector<uint16_type> > M_eid;
-    points_type M_pts;
-    std::vector<points_type> M_pts_per_face;
-    FunctionalSet<primal_space_type> M_fset;
-
-
-};
-
 /**
  * @brief Canonical arbitrary-order NED2 dual on triangles/tetrahedra.
  *
- * This replaces the transitional two-point-only dual while retaining that
- * class privately until downstream compatibility has been audited.
+ * Static and runtime-order elements both delegate their edge/face/cell
+ * moments to `buildNedelec2Functionals`.
  */
 template<typename Basis, template<class, int, class> class PointSetType>
 class Nedelec2Dual : public DualBasis<Basis>
@@ -2189,66 +1893,13 @@ public:
 
     typename super::DofAttachment dofAttachment( uint16_type localDofId ) const override
         {
-            // Nedelec is not a product space: local dof id is already the parent dof id.
-            const uint16_type parentLocalDofId = this->dofParent( localDofId );
-
-            const uint16_type nV = static_cast<uint16_type>( reference_convex_type::numVertices * nDofPerVertex );
-            const uint16_type nE = static_cast<uint16_type>( reference_convex_type::numEdges * nDofPerEdge );
-            const uint16_type nF = static_cast<uint16_type>( reference_convex_type::numFaces * nDofPerFace );
-
-            if constexpr ( nDofPerVertex > 0 )
-            {
-                if ( parentLocalDofId < nV )
-                {
-                    return typename super::DofAttachment{
-                        .entityDim = 0,
-                        .entityId = static_cast<uint16_type>( parentLocalDofId / nDofPerVertex ),
-                        .ordinal = static_cast<uint16_type>( parentLocalDofId % nDofPerVertex ),
-                        .kind = this->dofType( localDofId ) };
-                }
-            }
-
-            const uint16_type parentAfterVertex = static_cast<uint16_type>( parentLocalDofId - nV );
-            if constexpr ( nDofPerEdge > 0 )
-            {
-                if ( parentAfterVertex < nE )
-                {
-                    return typename super::DofAttachment{
-                        .entityDim = 1,
-                        .entityId = static_cast<uint16_type>( parentAfterVertex / nDofPerEdge ),
-                        .ordinal = static_cast<uint16_type>( parentAfterVertex % nDofPerEdge ),
-                        .kind = this->dofType( localDofId ) };
-                }
-            }
-
-            const uint16_type parentAfterEdge = static_cast<uint16_type>( parentAfterVertex - nE );
-            if constexpr ( nDofPerFace > 0 )
-            {
-                if ( parentAfterEdge < nF )
-                {
-                    return typename super::DofAttachment{
-                        .entityDim = 2,
-                        .entityId = static_cast<uint16_type>( parentAfterEdge / nDofPerFace ),
-                        .ordinal = static_cast<uint16_type>( parentAfterEdge % nDofPerFace ),
-                        .kind = this->dofType( localDofId ) };
-                }
-            }
-
-            if constexpr ( nDofPerVolume > 0 )
-            {
-                const uint16_type parentAfterFace = static_cast<uint16_type>( parentAfterEdge - nF );
-                return typename super::DofAttachment{
-                    .entityDim = 3,
-                    .entityId = 0,
-                    .ordinal = static_cast<uint16_type>( parentAfterFace % nDofPerVolume ),
-                    .kind = this->dofType( localDofId ) };
-            }
-
-            return typename super::DofAttachment{
-                .entityDim = -1,
-                .entityId = super::DofAttachment::invalid_id,
-                .ordinal = super::DofAttachment::invalid_id,
-                .kind = this->dofType( localDofId ) };
+            return simplexDofAttachment<typename super::DofAttachment>(
+                this->dofParent( localDofId ), nDim,
+                reference_convex_type::numVertices,
+                reference_convex_type::numEdges,
+                reference_convex_type::numFaces,
+                nDofPerVertex, nDofPerEdge, nDofPerFace, nDofPerVolume,
+                this->dofType( localDofId ) );
         }
 
     template<typename ElementType>
@@ -2422,16 +2073,7 @@ public:
     void
     interpolateBasisFunction( ExprType&& expr, local_interpolants_type& Ihloc ) const
     {
-        Ihloc.setZero();
-        const uint16_type rowCount = static_cast<uint16_type>( Ihloc.rows() );
-        CHECK_EQ( Ihloc.cols(), nLocalDof );
-        for ( uint16_type row = 0; row < rowCount; ++row )
-        {
-            auto rowExpression = Feel::detail::hcurlBasisExpressionRow( expr, row );
-            auto rowValues = this->localInterpolant();
-            this->interpolate( rowExpression, rowValues );
-            Ihloc.row( row ) = rowValues.transpose();
-        }
+        Feel::detail::interpolateBasisFunctionRows( *this, expr, Ihloc );
     }
 
     template<typename ExprType>
@@ -2637,8 +2279,6 @@ public:
     [[nodiscard]] std::string familyName() const override { return "nedelec"; }
     /** @return public Nedelec family order. */
     [[nodiscard]] uint16_type order() const noexcept { return M_publicOrder; }
-    /** @return public Nedelec family order. */
-    [[nodiscard]] uint16_type runtimeOrder() const noexcept { return order(); }
     /** @return ambient polynomial degree. */
     [[nodiscard]] uint16_type internalOrder() const noexcept
     {
@@ -2647,17 +2287,17 @@ public:
         else
             return Feel::detail::nedelec2InternalOrder( M_publicOrder );
     }
-    /** @return runtime local cardinality. */
-    [[nodiscard]] uint16_type runtimeLocalDof() const noexcept
+    /** @return local cardinality. */
+    [[nodiscard]] uint16_type localDof() const noexcept
     {
         if constexpr ( Kind == NedelecKind::NED1 )
             return Feel::detail::nedelec1TotalDof( nDim, M_publicOrder );
         else
             return Feel::detail::nedelec2TotalDof( nDim, M_publicOrder );
     }
-    /** @return runtime number of vertex DoFs. */
+    /** @return number of vertex DoFs. */
     [[nodiscard]] constexpr uint16_type dofPerVertex() const noexcept { return 0; }
-    /** @return runtime number of edge DoFs. */
+    /** @return number of edge DoFs. */
     [[nodiscard]] uint16_type dofPerEdge() const noexcept
     {
         if constexpr ( Kind == NedelecKind::NED1 )
@@ -2665,7 +2305,7 @@ public:
         else
             return Feel::detail::nedelec2EdgeDof( M_publicOrder );
     }
-    /** @return runtime number of face-interior DoFs. */
+    /** @return number of face-interior DoFs. */
     [[nodiscard]] uint16_type dofPerFace() const noexcept
     {
         if constexpr ( Kind == NedelecKind::NED1 )
@@ -2675,7 +2315,7 @@ public:
         else
             return Feel::detail::nedelec2FaceDof( nDim, M_publicOrder );
     }
-    /** @return runtime number of volume-interior DoFs. */
+    /** @return number of volume-interior DoFs. */
     [[nodiscard]] uint16_type dofPerVolume() const noexcept
     {
         if constexpr ( nDim != 3 )
@@ -2685,15 +2325,7 @@ public:
         else
             return Feel::detail::nedelec2CellDof( nDim, M_publicOrder );
     }
-    /** @return compatibility alias for dofPerVertex(). */
-    [[nodiscard]] constexpr uint16_type runtimeDofPerVertex() const noexcept { return 0; }
-    /** @return compatibility alias for dofPerEdge(). */
-    [[nodiscard]] uint16_type runtimeDofPerEdge() const noexcept { return dofPerEdge(); }
-    /** @return compatibility alias for dofPerFace(). */
-    [[nodiscard]] uint16_type runtimeDofPerFace() const noexcept { return dofPerFace(); }
-    /** @return compatibility alias for dofPerVolume(). */
-    [[nodiscard]] uint16_type runtimeDofPerVolume() const noexcept { return dofPerVolume(); }
-    /** @return runtime number of DoFs in one facet closure. */
+    /** @return number of DoFs in one facet closure. */
     [[nodiscard]] uint16_type localFacetDof() const noexcept
     {
         if constexpr ( nDim == 2 )
@@ -2702,11 +2334,11 @@ public:
             return static_cast<uint16_type>( face_type::numEdges*dofPerEdge()+dofPerFace() );
     }
 
-    uint16_type localDofPerComponent() const override { return runtimeLocalDof(); }
+    uint16_type localDofPerComponent() const override { return localDof(); }
     uint16_type localDofCount( bool perComponent = false ) const override
     {
         (void)perComponent;
-        return runtimeLocalDof();
+        return localDof();
     }
     uint16_type component( uint16_type /*localDofId*/ ) const override { return 0; }
     uint16_type dofParent( uint16_type localDofId ) const override { return localDofId; }
@@ -2725,42 +2357,13 @@ public:
 
     typename super::DofAttachment dofAttachment( uint16_type localDofId ) const override
     {
-        if ( localDofId >= runtimeLocalDof() )
-            return invalidAttachment( localDofId );
-
-        const uint16_type edgeBlock = static_cast<uint16_type>( convex_type::numEdges*dofPerEdge() );
-        if ( localDofId < edgeBlock )
-            return typename super::DofAttachment{
-                .entityDim = 1,
-                .entityId = static_cast<uint16_type>( localDofId/dofPerEdge() ),
-                .ordinal = static_cast<uint16_type>( localDofId%dofPerEdge() ),
-                .kind = this->dofType( localDofId ) };
-
-        const uint16_type afterEdge = static_cast<uint16_type>( localDofId-edgeBlock );
-        if constexpr ( nDim == 2 )
-        {
-            if ( afterEdge < dofPerFace() )
-                return typename super::DofAttachment{
-                    .entityDim = 2, .entityId = 0, .ordinal = afterEdge,
-                    .kind = this->dofType( localDofId ) };
-        }
-        else
-        {
-            const uint16_type faceBlock =
-                static_cast<uint16_type>( convex_type::numGeometricFaces*dofPerFace() );
-            if ( afterEdge < faceBlock && dofPerFace() > 0 )
-                return typename super::DofAttachment{
-                    .entityDim = 2,
-                    .entityId = static_cast<uint16_type>( afterEdge/dofPerFace() ),
-                    .ordinal = static_cast<uint16_type>( afterEdge%dofPerFace() ),
-                    .kind = this->dofType( localDofId ) };
-            const uint16_type afterFace = static_cast<uint16_type>( afterEdge-faceBlock );
-            if ( afterFace < dofPerVolume() )
-                return typename super::DofAttachment{
-                    .entityDim = 3, .entityId = 0, .ordinal = afterFace,
-                    .kind = this->dofType( localDofId ) };
-        }
-        return invalidAttachment( localDofId );
+        return simplexDofAttachment<typename super::DofAttachment>(
+            this->dofParent( localDofId ), nDim,
+            reference_convex_type::numVertices,
+            reference_convex_type::numEdges,
+            reference_convex_type::numFaces,
+            dofPerVertex(), dofPerEdge(), dofPerFace(), dofPerVolume(),
+            this->dofType( localDofId ) );
     }
 
     template<typename ElementType>
@@ -2794,11 +2397,11 @@ public:
     using local_interpolants_type = Eigen::MatrixXd;
     [[nodiscard]] local_interpolant_type localInterpolant( int n = 1 ) const
     {
-        return local_interpolant_type::Zero( n*runtimeLocalDof() );
+        return local_interpolant_type::Zero( n*localDof() );
     }
     [[nodiscard]] local_interpolants_type localInterpolants( int p, int n = 1 ) const
     {
-        return local_interpolants_type::Zero( n*runtimeLocalDof(), p );
+        return local_interpolants_type::Zero( n*localDof(), p );
     }
     [[nodiscard]] local_interpolant_type faceLocalInterpolant() const
     {
@@ -2848,8 +2451,8 @@ public:
                     static_cast<uint16_type>( momentOrder ) );
                 Pkp1_v_type ambientVector( RuntimeOrder{ internalOrder() } );
                 auto const source = ambientVector.polynomialsUpToDimension( dimMoment );
-                vectorial_polynomialset_type moments( source.coeff(), true );
-                moments.setOrder( internalOrder() );
+                auto moments = Feel::detail::polynomialSetFrom<vectorial_polynomialset_type>(
+                    source, internalOrder() );
                 Feel::detail::interpolateHCurlCellMoments<nDim>(
                     expr, localValues, moments, internalOrder(),
                     sampling.cellFirstDof, sampling.cellPointOffset,
@@ -2879,17 +2482,8 @@ public:
     void interpolateBasisFunction( ExprType&& expression,
                                    local_interpolants_type& localMatrix ) const
     {
-        localMatrix.setZero();
-        const uint16_type rowCount = static_cast<uint16_type>( localMatrix.rows() );
-        CHECK_EQ( localMatrix.cols(), runtimeLocalDof() );
-        for ( uint16_type row = 0; row < rowCount; ++row )
-        {
-            auto rowExpression =
-                Feel::detail::hcurlBasisExpressionRow( expression, row );
-            auto rowValues = this->localInterpolant();
-            this->interpolate( rowExpression, rowValues );
-            localMatrix.row( row ) = rowValues.transpose();
-        }
+        Feel::detail::interpolateBasisFunctionRows(
+            *this, expression, localMatrix );
     }
 
     /** @brief Interpolate the edge trace on a reference facet. */
@@ -2935,70 +2529,9 @@ public:
     }
 
 private:
-    [[nodiscard]] typename super::DofAttachment invalidAttachment( uint16_type localDofId ) const
-    {
-        return typename super::DofAttachment{
-            .entityDim = -1,
-            .entityId = super::DofAttachment::invalid_id,
-            .ordinal = super::DofAttachment::invalid_id,
-            .kind = this->dofType( localDofId ) };
-    }
-
     uint16_type M_publicOrder = 0;
     reference_convex_type M_refconvex;
     mutable ublas::vector<value_type> M_tangent { nDim };
-};
-
-/**
- * @brief Runtime-order compatibility backend for the validated order-zero Nedelec envelope.
- * @tparam Dim reference-simplex dimension
- * @tparam Kind Nedelec family kind
- * @tparam T scalar type
- * @tparam Tag compatibility family tag
- */
-template<uint16_type Dim, NedelecKind Kind, typename T = double, uint16_type Tag = 0>
-class NedelecRuntimeLowOrder : public Nedelec<Dim, 0, Kind, T, Tag>
-{
-    using super = Nedelec<Dim, 0, Kind, T, Tag>;
-
-public:
-    static constexpr bool is_order_static = false;
-    static constexpr bool is_order_dynamic = true;
-
-    NedelecRuntimeLowOrder() = default;
-
-    /** @brief Construct the runtime shell, accepting only the validated order zero. */
-    explicit NedelecRuntimeLowOrder( RuntimeOrder order ) : super()
-    {
-        if ( order.value != 0 )
-            throw std::out_of_range(
-                "Nedelec<Dynamic> currently supports RuntimeOrder{0} only; higher runtime orders require the unified runtime polynomial/moment backend." );
-    }
-
-    /** @return validated public runtime order. */
-    [[nodiscard]] constexpr uint16_type order() const noexcept { return 0; }
-    /** @return validated public runtime order. */
-    [[nodiscard]] constexpr uint16_type runtimeOrder() const noexcept { return order(); }
-
-    /** @return number of order-zero DoFs attached to one vertex. */
-    [[nodiscard]] constexpr uint16_type dofPerVertex() const noexcept { return super::nDofPerVertex; }
-    /** @return number of order-zero DoFs attached to one edge. */
-    [[nodiscard]] constexpr uint16_type dofPerEdge() const noexcept { return super::nDofPerEdge; }
-    /** @return number of order-zero DoFs attached to one face. */
-    [[nodiscard]] constexpr uint16_type dofPerFace() const noexcept { return super::nDofPerFace; }
-    /** @return number of order-zero DoFs attached to one cell interior. */
-    [[nodiscard]] constexpr uint16_type dofPerVolume() const noexcept { return super::nDofPerVolume; }
-
-    /** @return compatibility alias for dofPerVertex(). */
-    [[nodiscard]] constexpr uint16_type runtimeDofPerVertex() const noexcept { return dofPerVertex(); }
-    /** @return compatibility alias for dofPerEdge(). */
-    [[nodiscard]] constexpr uint16_type runtimeDofPerEdge() const noexcept { return dofPerEdge(); }
-    /** @return compatibility alias for dofPerFace(). */
-    [[nodiscard]] constexpr uint16_type runtimeDofPerFace() const noexcept { return dofPerFace(); }
-    /** @return compatibility alias for dofPerVolume(). */
-    [[nodiscard]] constexpr uint16_type runtimeDofPerVolume() const noexcept { return dofPerVolume(); }
-    /** @return number of local DoFs per component. */
-    [[nodiscard]] constexpr uint16_type runtimeLocalDof() const noexcept { return super::nLocalDof; }
 };
 
 namespace detail
@@ -3042,8 +2575,6 @@ public:
         else
             return static_cast<uint16_type>( Order );
     }
-    /** @return public Nedelec family order. */
-    [[nodiscard]] uint16_type runtimeOrder() const noexcept { return order(); }
 };
 
 } // fem

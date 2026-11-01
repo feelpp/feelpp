@@ -16,8 +16,14 @@
 #ifndef FEELPP_DISCR_CREATESUBMESH_HPP
 #define FEELPP_DISCR_CREATESUBMESH_HPP 1
 
-#include <feel/feelmesh/submeshdata.hpp>
+#include <feel/feelcore/commobject.hpp>
+#include <feel/feelcore/context.hpp>
+#include <feel/feeldiscr/submeshcontext.hpp>
+#include <feel/feeldiscr/traits.hpp>
+#include <feel/feelmesh/meshbase.hpp>
 #include <feel/feelmesh/enums.hpp>
+#include <feel/feelmesh/submeshdata.hpp>
+#include <feel/feelpoly/order.hpp>
 
 namespace Feel
 {
@@ -88,7 +94,18 @@ public :
             auto meshRangePtr = M_listRange.front().mesh()->shared_from_this();
             M_smd = std::make_shared<smd_type>( meshRangePtr );
 
-            auto newMesh = std::make_shared<mesh_type>( this->worldCommPtr() );
+            auto newMesh = [&]()
+            {
+                if constexpr ( mesh_type::is_order_dynamic )
+                    return mesh_type::New(
+                        RuntimeOrder{ meshRangePtr->order() },
+                        meshRangePtr->geometryRepresentation(),
+                        this->worldCommPtr() );
+                else
+                    return mesh_type::New(
+                        meshRangePtr->geometryRepresentation(),
+                        this->worldCommPtr() );
+            }();
             // inherit the table of markersName
             for( auto itMark : meshRangePtr->markerNames( ) )
             {
@@ -200,7 +217,7 @@ CreateSubmeshTool<MeshType,IteratorRange>::addMarkedEdgesInSubMesh( typename ran
             if ( oldEdgeIdsDone.find( oldEdgeId ) != oldEdgeIdsDone.end() )
                 continue;
 
-            typename mesh_type::edge_type newEdge;
+            auto newEdge = newMesh.makeEdge();
             newEdge.setId( oldEdgeIdsDone.size() );
             newEdge.setMarkers( oldEdge.markers() );
             newEdge.setProcessIdInPartition( proc_id );
@@ -236,7 +253,7 @@ CreateSubmeshTool<MeshType,IteratorRange>::addMarkedEdgesInSubMesh( typename ran
             if ( oldEdgeIdsDone.find( oldEdgeId ) != oldEdgeIdsDone.end() )
                 continue;
 
-            typename mesh_type::face_type newFace;
+            auto newFace = newMesh.makeFace();
             newFace.setId( oldEdgeIdsDone.size() );
             newFace.setMarkers( oldEdge.markers() );
             newFace.setProcessIdInPartition( proc_id );
@@ -297,7 +314,7 @@ CreateSubmeshTool<MeshType,IteratorRange>::build( mesh_type & newMesh, range_mes
                     continue;
 
                 // create new active element with a copy of marker
-                typename mesh_type::element_type newElem;
+                auto newElem = newMesh.makeElement();
                 newElem.setMarkers( oldElem.markers() );
                 newElem.setProcessIdInPartition( proc_id );
                 newElem.setProcessId( proc_id );
@@ -363,7 +380,7 @@ CreateSubmeshTool<MeshType,IteratorRange>::build( mesh_type & newMesh, range_mes
                     if( oldFaceIdsDone.find( oldFaceId ) != oldFaceIdsDone.end() )
                         continue;
 
-                    typename mesh_type::face_type newFace;
+                    auto newFace = newMesh.makeFace();
                     newFace.setId( n_new_faces++ );
                     newFace.setMarkers( oldFace.markers() );
                     newFace.setProcessIdInPartition( proc_id );
@@ -449,7 +466,7 @@ CreateSubmeshTool<MeshType,IteratorRange>::build( mesh_type & newMesh, range_mes
                     CHECK( oldElem.isOnBoundary() ) << "error : use mpi optimzation subMeshIsOnBoundaryFaces but an internal face is added";
 
                 // create new active element with a copy of marker
-                typename mesh_type::element_type newElem;
+                auto newElem = newMesh.makeElement();
                 newElem.setMarkers( oldElem.markers() );
                 newElem.setProcessIdInPartition( proc_id );
                 newElem.setProcessId( proc_id );
@@ -560,7 +577,7 @@ CreateSubmeshTool<MeshType,IteratorRange>::build( mesh_type & newMesh, range_mes
                     continue;
 
                 // create new active element with a copy of marker
-                typename mesh_type::element_type newElem;
+                auto newElem = newMesh.makeElement();
                 newElem.setMarkers( oldElem.markers() );
                 newElem.setProcessIdInPartition( proc_id );
                 newElem.setProcessId( proc_id );
@@ -701,7 +718,7 @@ CreateSubmeshTool<MeshType,IteratorRange>::updateParallelSubMeshGhost( mesh_type
             {
                 auto const& oldElem = this->entityExtracted<range_type::entities()>( meshRange, currentEltId );
                 // create new active element with a copy of marker
-                element_type newElem;
+                auto newElem = newMesh.makeElement();
                 newElem.setMarkers( oldElem.markers() );
                 newElem.setProcessIdInPartition( proc_id );
                 newElem.setProcessId( rankRecv );
@@ -792,31 +809,24 @@ auto createSubmesh( Ts && ... v )
             >
         >;
 
-    using submeshtool_type =  mp11::mp_if_c<
-        Mode == 0,
-        CreateSubmeshTool<mesh_type,range_type>,
-        CreateSubmeshTool<typename mesh_type::P1_mesh_type,range_type>
-        >;
-    submeshtool_type t( range,worldcomm,update );
-    t.subMeshIsOnBoundaryFaces( only_on_boundary_faces );
-    t.setIsView( view );
-    return t.build(context);
-#if 0
+    auto buildSubmesh = [&]( auto& tool )
+    {
+        tool.subMeshIsOnBoundaryFaces(
+            only_on_boundary_faces );
+        tool.setIsView( view );
+        return tool.build( context );
+    };
+
     if constexpr ( Mode == 0 )
     {
         CreateSubmeshTool<mesh_type,range_type> t( range,worldcomm,update );
-        t.subMeshIsOnBoundaryFaces( only_on_boundary_faces );
-        t.setIsView( view );
-        return t.build(context);
+        return buildSubmesh( t );
     }
     else
     {
         CreateSubmeshTool<typename mesh_type::P1_mesh_type,range_type> t( range,worldcomm,update );
-        t.subMeshIsOnBoundaryFaces( only_on_boundary_faces );
-        t.setIsView( view );
-        return t.build(context);
+        return buildSubmesh( t );
     }
-#endif
 }
 }
 

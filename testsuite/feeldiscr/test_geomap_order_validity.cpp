@@ -17,13 +17,21 @@
 #include <Eigen/Core>
 #include <Eigen/SVD>
 
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+
+#include <feel/feeldiscr/mesh.hpp>
+#include <feel/feelfilters/gmshenums.hpp>
 #include <feel/feelmesh/geond.hpp>
 #include <feel/feelpoly/concepts.hpp>
+#include <feel/feelpoly/geometrydescriptor.hpp>
+#include <feel/feelpoly/geometrypointtopology.hpp>
 #include <feel/feelpoly/geomap.hpp>
 
 #include <array>
 #include <cmath>
 #include <limits>
+#include <sstream>
 #include <utility>
 #include <vector>
 
@@ -484,6 +492,100 @@ void checkAnalyticStaticRuntimeParity()
 }
 
 /**
+ * @brief Validate a runtime-only map above the static build envelope.
+ *
+ * This helper instantiates only `GeoMap<..., Dynamic>` and a dynamic-order
+ * entity. It checks that runtime tabulation, Context derivatives, quality,
+ * and Inverse construction remain mathematical at an order for which the
+ * build provides no corresponding static mesh instantiation.
+ *
+ * @tparam Dim reference dimension
+ * @tparam RealDim ambient physical dimension
+ * @tparam Convex reference-entity family
+ * @param order runtime geometric polynomial order
+ */
+template <int Dim, int RealDim,
+          template <int, int, int> class Convex>
+void checkAnalyticRuntimeOrder( uint16_type order )
+{
+    using geomap_type =
+        GeoMap<Dim, Dynamic, RealDim, double, Convex>;
+    using shape_type = Convex<Dim, Dynamic, RealDim>;
+    using element_type = GeoND<Dim, shape_type>;
+    using point_type = typename element_type::point_type;
+    using node_type = typename point_type::node_type;
+
+    constexpr size_type contextFlags =
+        vm::POINT | vm::JACOBIAN | vm::KB |
+        vm::SECOND_DERIVATIVE;
+    constexpr double tolerance = 2e-9;
+
+    auto geomap =
+        std::make_shared<geomap_type>(
+            RuntimeOrder{ order } );
+    element_type element{ RuntimeOrder{ order } };
+    std::vector<point_type> pointStorage;
+    pointStorage.reserve( geomap->nbPoints() );
+    for ( uint16_type point = 0;
+          point < geomap->nbPoints(); ++point )
+    {
+        auto const physicalNode =
+            analyticMap<Dim, RealDim>(
+                geomap->refNode( point ), order );
+        node_type node( RealDim );
+        for ( int component = 0;
+              component < RealDim; ++component )
+            node( component ) = physicalNode( component );
+        pointStorage.emplace_back(
+            static_cast<uint32_type>( point ), node, false,
+            point < shape_type::numVertices );
+        element.setPoint( point, pointStorage.back() );
+    }
+
+    auto const referencePoints = geomap->points();
+    auto precompute =
+        geomap->preCompute( geomap, referencePoints );
+    auto context =
+        geomap->template context<contextFlags>(
+            element, precompute );
+
+    BOOST_REQUIRE_EQUAL( geomap->order(), order );
+    BOOST_REQUIRE( context->isValid() );
+    BOOST_CHECK( !context->usesAffineStorage() );
+    BOOST_CHECK_EQUAL(
+        context->nComputedPoints(), context->nPoints() );
+
+    for ( int q = 0; q < context->nPoints(); ++q )
+    {
+        auto const referencePoint =
+            ublas::column( referencePoints, q );
+        auto const expectedPoint =
+            analyticMap<Dim, RealDim>(
+                referencePoint, order );
+        auto const expectedJacobian =
+            analyticJacobian<Dim, RealDim>(
+                referencePoint, order );
+        for ( int component = 0;
+              component < RealDim; ++component )
+            BOOST_CHECK_SMALL(
+                context->xReal( q )( component ) -
+                    expectedPoint( component ),
+                tolerance );
+        BOOST_CHECK_SMALL(
+            ( context->jacobianMatrix( q ) -
+              expectedJacobian )
+                .norm(),
+            tolerance );
+        BOOST_CHECK( context->mappingQuality( q ).valid );
+    }
+
+    typename geomap_type::Inverse inverse{
+        geomap, element };
+    BOOST_CHECK_EQUAL(
+        inverse.geometricMapping()->order(), order );
+}
+
+/**
  * @brief Build a two-dimensional simplex context from a supplied mapping.
  * @tparam Order compile-time geometric order
  * @tparam Mapping callable mapping reference points to physical points
@@ -629,6 +731,311 @@ BOOST_AUTO_TEST_CASE( default_and_runtime_order_contract )
 
     BOOST_CHECK_THROW( RuntimeOrder{ -1 }, std::invalid_argument );
     BOOST_CHECK_THROW( ( GeoMap<2, Dynamic>{ RuntimeOrder{ 0 } } ), std::invalid_argument );
+
+    using dynamic_shape_type = Simplex<2, Dynamic>;
+    using dynamic_entity_type = GeoND<2, dynamic_shape_type>;
+    using static_entity_type = GeoND<2, Simplex<2, 2>>;
+    static_assert( dynamic_entity_type::is_order_dynamic );
+    static_assert( dynamic_entity_type::gm_type::is_order_dynamic );
+    static_assert( HasPointCardinality<dynamic_entity_type> );
+    static_assert( HasPointCardinality<static_entity_type> );
+
+    dynamic_entity_type dynamicEntity( RuntimeOrder{ 6 } );
+    dynamic_entity_type parityDynamicEntity( RuntimeOrder{ 2 } );
+    static_entity_type staticEntity;
+    BOOST_CHECK_EQUAL( dynamicEntity.order(), 6 );
+    BOOST_CHECK_EQUAL( dynamicEntity.nPoints(), 28 );
+    BOOST_CHECK_EQUAL(
+        staticEntity.order(), parityDynamicEntity.order() );
+    BOOST_CHECK_EQUAL(
+        staticEntity.nPoints(), parityDynamicEntity.nPoints() );
+
+    GeoEntity<Simplex<2, Dynamic>> dynamicBaseEntity(
+        0, RuntimeOrder{ 4 } );
+    BOOST_CHECK_EQUAL( dynamicBaseEntity.order(), 4 );
+    BOOST_CHECK_EQUAL( dynamicBaseEntity.nPoints(), 15 );
+
+    GeoElement0D<2> pointEntity;
+    BOOST_CHECK_EQUAL( pointEntity.nPoints(), 1 );
+
+    using runtime_descriptor_type =
+        geometry::GeometryDescriptor<
+            2, Dynamic,
+            geometry::GeometryCellKind::Simplex>;
+    static_assert( std::same_as<
+                   runtime_descriptor_type::local_coefficient_index_type,
+                   uint16_type> );
+    static_assert(
+        runtime_descriptor_type::max_local_coefficient_count ==
+        Feel::detail::maxLocalIndexCardinality );
+    runtime_descriptor_type runtimeDescriptor{
+        RuntimeOrder{ 6 } };
+    BOOST_CHECK_EQUAL( runtimeDescriptor.order(), 6 );
+    BOOST_CHECK_EQUAL(
+        runtimeDescriptor.coefficientCount(), 28 );
+    BOOST_CHECK_EQUAL(
+        runtimeDescriptor.measureQuadratureOrder(), 10 );
+    BOOST_CHECK_THROW(
+        runtime_descriptor_type( RuntimeOrder{ 0 } ),
+        std::invalid_argument );
+
+    using runtime_mesh_type =
+        Mesh<Simplex<2, Dynamic>>;
+    auto runtimeMesh =
+        runtime_mesh_type::New(
+            RuntimeOrder{ 6 },
+            geometry::GeometryRepresentationKind::BernsteinBezier );
+    static_assert( runtime_mesh_type::is_order_dynamic );
+    BOOST_REQUIRE( runtimeMesh );
+    BOOST_CHECK_EQUAL( runtimeMesh->order(), 6 );
+    BOOST_CHECK(
+        runtimeMesh->geometryRepresentation() ==
+        geometry::GeometryRepresentationKind::BernsteinBezier );
+    BOOST_CHECK_EQUAL(
+        runtimeMesh->geometryDescriptor().coefficientCount(),
+        28 );
+    BOOST_REQUIRE( runtimeMesh->gm() );
+    BOOST_CHECK_EQUAL( runtimeMesh->gm()->order(), 6 );
+    BOOST_CHECK_EQUAL(
+        runtimeMesh->geometryPointTopology().pointsOnFace(),
+        7 );
+
+    GeoNDCommon<dynamic_entity_type> commonData{
+        runtimeMesh.get() };
+    dynamic_entity_type attachedEntity{
+        RuntimeOrder{ 3 } };
+    BOOST_CHECK_EQUAL( attachedEntity.order(), 3 );
+    BOOST_CHECK_EQUAL( attachedEntity.nPoints(), 10 );
+    attachedEntity.setCommonData( &commonData );
+    BOOST_CHECK_EQUAL( attachedEntity.order(), runtimeMesh->order() );
+    BOOST_CHECK_EQUAL( attachedEntity.nPoints(), 28 );
+    for ( uint16_type face = 0;
+          face < runtime_mesh_type::element_type::numTopologicalFaces;
+          ++face )
+    {
+        std::vector<bool> seen( 28, false );
+        for ( uint16_type point = 0; point < 7; ++point )
+        {
+            auto const cellPoint =
+                runtimeMesh->geometryPointTopology()
+                    .faceToPoint( face, point );
+            BOOST_REQUIRE_LT( cellPoint, 28 );
+            BOOST_CHECK( !seen[cellPoint] );
+            seen[cellPoint] = true;
+        }
+    }
+
+    auto dynamicElement = runtimeMesh->makeElement();
+    auto dynamicFace = runtimeMesh->makeFace();
+    BOOST_CHECK_EQUAL( dynamicElement.order(), 6 );
+    BOOST_CHECK_EQUAL( dynamicElement.nPoints(), 28 );
+    BOOST_CHECK_EQUAL( dynamicFace.order(), 6 );
+    BOOST_CHECK_EQUAL( dynamicFace.nPoints(), 7 );
+    Feel::detail::ReversePoint<
+        Simplex<2, Dynamic>> reversePoint;
+    BOOST_CHECK_EQUAL(
+        reversePoint.operate( 0, 28 ), 2 );
+    BOOST_CHECK_EQUAL(
+        reversePoint.operate( 2, 28 ), 0 );
+    BOOST_CHECK_EQUAL(
+        reversePoint.operate( 3, 28 ), 27 );
+    BOOST_CHECK_EQUAL(
+        reversePoint.operate( 27, 28 ), 3 );
+
+    using runtime_mesh_3d_type =
+        Mesh<Simplex<3, Dynamic>>;
+    auto runtimeMesh3d =
+        runtime_mesh_3d_type::New( RuntimeOrder{ 6 } );
+    auto dynamicElement3d = runtimeMesh3d->makeElement();
+    auto dynamicFace3d = runtimeMesh3d->makeFace();
+    auto dynamicEdge3d = runtimeMesh3d->makeEdge();
+    BOOST_CHECK_EQUAL( dynamicElement3d.order(), 6 );
+    BOOST_CHECK_EQUAL( dynamicElement3d.nPoints(), 84 );
+    BOOST_CHECK_EQUAL( dynamicFace3d.order(), 6 );
+    BOOST_CHECK_EQUAL( dynamicFace3d.nPoints(), 28 );
+    BOOST_CHECK_EQUAL( dynamicEdge3d.order(), 6 );
+    BOOST_CHECK_EQUAL( dynamicEdge3d.nPoints(), 7 );
+    BOOST_CHECK_EQUAL(
+        runtimeMesh3d->geometryPointTopology().pointsOnFace(),
+        28 );
+    BOOST_CHECK_EQUAL(
+        runtimeMesh3d->geometryPointTopology().pointsOnEdge(),
+        7 );
+    for ( uint16_type face = 0;
+          face < runtime_mesh_3d_type::element_type::numTopologicalFaces;
+          ++face )
+    {
+        std::vector<bool> seen( 84, false );
+        for ( uint16_type point = 0; point < 28; ++point )
+        {
+            auto const cellPoint =
+                runtimeMesh3d->geometryPointTopology()
+                    .faceToPoint( face, point );
+            BOOST_REQUIRE_LT( cellPoint, 84 );
+            BOOST_CHECK( !seen[cellPoint] );
+            seen[cellPoint] = true;
+        }
+    }
+
+    using static_simplex_g3_type = Simplex<3, 3, 3>;
+    auto const& staticSimplexTopology =
+        geometry::GeometryPointTopology<
+            static_simplex_g3_type>::get(
+                RuntimeOrder{ 3 } );
+    auto const& runtimeSimplexTopology =
+        geometry::GeometryPointTopology<
+            Simplex<3, Dynamic, 3>>::get(
+                RuntimeOrder{ 3 } );
+    for ( uint16_type face = 0;
+          face < static_simplex_g3_type::numTopologicalFaces;
+          ++face )
+    {
+        for ( uint16_type point = 0; point < 10; ++point )
+        {
+            BOOST_CHECK_EQUAL(
+                staticSimplexTopology.faceToPoint(
+                    face, point ),
+                runtimeSimplexTopology.faceToPoint(
+                    face, point ) );
+            BOOST_CHECK_EQUAL(
+                staticSimplexTopology.faceToPoint(
+                    face, point ),
+                static_simplex_g3_type::f2p(
+                    face, point ) );
+        }
+    }
+
+    using runtime_hypercube_mesh_type =
+        Mesh<Hypercube<2, Dynamic>>;
+    auto runtimeHypercubeMesh =
+        runtime_hypercube_mesh_type::New( RuntimeOrder{ 4 } );
+    auto dynamicHypercube =
+        runtimeHypercubeMesh->makeElement();
+    auto dynamicHypercubeFace =
+        runtimeHypercubeMesh->makeFace();
+    BOOST_CHECK_EQUAL( dynamicHypercube.order(), 4 );
+    BOOST_CHECK_EQUAL( dynamicHypercube.nPoints(), 25 );
+    BOOST_CHECK_EQUAL( dynamicHypercubeFace.order(), 4 );
+    BOOST_CHECK_EQUAL( dynamicHypercubeFace.nPoints(), 5 );
+
+    auto const& runtimeHexahedronTopology =
+        geometry::GeometryPointTopology<
+            Hypercube<3, Dynamic, 3>>::get(
+                RuntimeOrder{ 4 } );
+    BOOST_CHECK_EQUAL(
+        runtimeHexahedronTopology.pointsOnFace(), 25 );
+    BOOST_CHECK_EQUAL(
+        runtimeHexahedronTopology.pointsOnEdge(), 5 );
+    for ( uint16_type face = 0;
+          face < Hypercube<3, Dynamic, 3>::numTopologicalFaces;
+          ++face )
+    {
+        std::vector<bool> seen( 125, false );
+        for ( uint16_type point = 0; point < 25; ++point )
+        {
+            auto const cellPoint =
+                runtimeHexahedronTopology.faceToPoint(
+                    face, point );
+            BOOST_REQUIRE_LT( cellPoint, 125 );
+            BOOST_CHECK( !seen[cellPoint] );
+            seen[cellPoint] = true;
+        }
+    }
+
+    GmshOrdering<Simplex<2, 2>> staticOrdering;
+    GmshOrdering<Simplex<2, Dynamic>> runtimeOrdering{
+        RuntimeOrder{ 2 } };
+    BOOST_CHECK_EQUAL( runtimeOrdering.type(), staticOrdering.type() );
+    BOOST_CHECK_EQUAL( runtimeOrdering.size(), staticOrdering.size() );
+    for ( int point = 0; point < staticOrdering.size(); ++point )
+    {
+        BOOST_CHECK_EQUAL(
+            runtimeOrdering.fromGmshId( point ),
+            staticOrdering.fromGmshId( point ) );
+        BOOST_CHECK_EQUAL(
+            runtimeOrdering.toGmshId( point ),
+            staticOrdering.toGmshId( point ) );
+    }
+    BOOST_CHECK_THROW(
+        ( GmshOrdering<Simplex<2, Dynamic>>{
+            RuntimeOrder{ 6 } } ),
+        std::invalid_argument );
+
+    GmshOrdering<Simplex<3, Dynamic>> tetraG5Ordering{
+        RuntimeOrder{ 5 } };
+    BOOST_CHECK_EQUAL( tetraG5Ordering.size(), 56 );
+    BOOST_CHECK_EQUAL(
+        tetraG5Ordering.fromGmshId( 4 ), 12 );
+    BOOST_CHECK_EQUAL(
+        tetraG5Ordering.fromGmshId( 28 ), 46 );
+    BOOST_CHECK_EQUAL(
+        tetraG5Ordering.fromGmshId( 51 ), 32 );
+
+    GmshOrdering<Hypercube<2, Dynamic>>
+        quadrangleG5Ordering{
+            RuntimeOrder{ 5 } };
+    BOOST_CHECK_EQUAL(
+        quadrangleG5Ordering.type(),
+        GMSH_QUADRANGLE_5 );
+    BOOST_CHECK_EQUAL(
+        quadrangleG5Ordering.size(), 36 );
+    BOOST_CHECK_EQUAL(
+        quadrangleG5Ordering.fromGmshId( 21 ),
+        32 );
+    BOOST_CHECK_EQUAL(
+        quadrangleG5Ordering.fromGmshId( 35 ),
+        26 );
+
+    GmshOrdering<Hypercube<3, Dynamic>>
+        hexahedronG3Ordering{
+            RuntimeOrder{ 3 } };
+    GmshOrdering<Hypercube<3, Dynamic>>
+        hexahedronG5Ordering{
+            RuntimeOrder{ 5 } };
+    BOOST_CHECK_EQUAL(
+        hexahedronG3Ordering.type(),
+        GMSH_HEXAHEDRON_3 );
+    BOOST_CHECK_EQUAL(
+        hexahedronG3Ordering.size(), 64 );
+    BOOST_CHECK_EQUAL(
+        hexahedronG3Ordering.fromGmshId( 40 ),
+        50 );
+    BOOST_CHECK_EQUAL(
+        hexahedronG5Ordering.type(),
+        GMSH_HEXAHEDRON_5 );
+    BOOST_CHECK_EQUAL(
+        hexahedronG5Ordering.size(), 216 );
+    BOOST_CHECK_EQUAL(
+        hexahedronG5Ordering.fromGmshId( 153 ),
+        200 );
+    BOOST_CHECK_EQUAL(
+        hexahedronG5Ordering.fromGmshId( 215 ),
+        178 );
+
+    std::stringstream archiveBuffer;
+    {
+        boost::archive::text_oarchive archive{
+            archiveBuffer };
+        archive << *runtimeMesh;
+    }
+    auto restoredRuntimeMesh =
+        runtime_mesh_type::New( RuntimeOrder{ 1 } );
+    {
+        boost::archive::text_iarchive archive{
+            archiveBuffer };
+        archive >> *restoredRuntimeMesh;
+    }
+    BOOST_CHECK_EQUAL( restoredRuntimeMesh->order(), 6 );
+    BOOST_CHECK(
+        restoredRuntimeMesh->geometryRepresentation() ==
+        geometry::GeometryRepresentationKind::BernsteinBezier );
+    BOOST_REQUIRE( restoredRuntimeMesh->gm() );
+    BOOST_CHECK_EQUAL(
+        restoredRuntimeMesh->gm()->order(), 6 );
+    BOOST_CHECK_EQUAL(
+        restoredRuntimeMesh->geometryDescriptor()
+            .coefficientCount(),
+        28 );
 }
 
 /**
@@ -663,6 +1070,38 @@ BOOST_AUTO_TEST_CASE( analytic_embedded_static_runtime_g1_g2_g3 )
     checkAnalyticStaticRuntimeParity<2, 3, 1, Simplex>();
     checkAnalyticStaticRuntimeParity<2, 3, 2, Simplex>();
     checkAnalyticStaticRuntimeParity<2, 3, 3, Simplex>();
+}
+
+/**
+ * @test Extend static/runtime analytic parity through the validated G4--G5
+ *       envelope in 1D, 2D, 3D, embedded, and tensor-product settings.
+ */
+BOOST_AUTO_TEST_CASE( analytic_static_runtime_g4_g5 )
+{
+    checkAnalyticStaticRuntimeParity<1, 1, 4, Simplex>();
+    checkAnalyticStaticRuntimeParity<1, 1, 5, Simplex>();
+    checkAnalyticStaticRuntimeParity<2, 2, 4, Simplex>();
+    checkAnalyticStaticRuntimeParity<2, 2, 5, Simplex>();
+    checkAnalyticStaticRuntimeParity<3, 3, 4, Simplex>();
+    checkAnalyticStaticRuntimeParity<3, 3, 5, Simplex>();
+    checkAnalyticStaticRuntimeParity<1, 2, 4, Simplex>();
+    checkAnalyticStaticRuntimeParity<1, 2, 5, Simplex>();
+    checkAnalyticStaticRuntimeParity<2, 3, 4, Simplex>();
+    checkAnalyticStaticRuntimeParity<2, 3, 5, Simplex>();
+    checkAnalyticStaticRuntimeParity<2, 2, 4, Hypercube>();
+    checkAnalyticStaticRuntimeParity<2, 2, 5, Hypercube>();
+}
+
+/**
+ * @test Exercise true dynamic G6 maps above the configured static G1--G2
+ *       mesh envelope in volume and embedded-surface settings.
+ */
+BOOST_AUTO_TEST_CASE( analytic_runtime_g6_above_static_envelope )
+{
+    checkAnalyticRuntimeOrder<2, 2, Simplex>( 6 );
+    checkAnalyticRuntimeOrder<3, 3, Simplex>( 6 );
+    checkAnalyticRuntimeOrder<2, 3, Simplex>( 6 );
+    checkAnalyticRuntimeOrder<2, 2, Hypercube>( 6 );
 }
 
 /**

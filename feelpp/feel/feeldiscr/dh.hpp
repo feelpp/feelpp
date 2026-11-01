@@ -16,6 +16,7 @@
 
 #include <feel/feelpoly/raviartthomas.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelpoly/fecapabilities.hpp>
 #include <feel/feelpoly/order.hpp>
 
 namespace Feel {
@@ -46,6 +47,7 @@ Dh( std::shared_ptr<MeshType> const& mesh,
     RuntimeOrder order,
     DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
 {
+    fe::requireCapability<fe::Family::RaviartThomas>( *mesh, order );
     return dh_type<Order,MeshType>::New( _mesh=mesh,
                                          _worldscomm=makeWorldsComm( 1, mesh->worldComm() ),
                                          _extended_doftable=dte,

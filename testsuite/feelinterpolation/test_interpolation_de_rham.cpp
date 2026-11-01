@@ -20,6 +20,7 @@
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
 #include <feel/feelfilters/unitcircle.hpp>
+#include <feel/feelpoly/fecapabilities.hpp>
 #include <feel/feelvf/vf.hpp>
 
 using namespace Feel;
@@ -228,6 +229,31 @@ checkUnrelatedPiolaInterpolationOperators( MeshPtrType const& domainMesh,
                                            bool checkAnalyticFields )
 {
     BOOST_REQUIRE( !imageMesh->isRelatedTo( domainMesh ) );
+    auto const execution = Environment::worldComm().globalSize() > 1
+                               ? fe::Execution::Distributed
+                               : fe::Execution::Serial;
+    auto const rtCapability = fe::capability( {
+        fe::Family::RaviartThomas,
+        geometry::GeometryCellKind::Simplex,
+        2, 1, imageMesh->order(),
+        fe::Operation::UnrelatedMeshTransfer,
+        execution } );
+    auto const nedCapability = fe::capability( {
+        fe::Family::NedelecFirstKind,
+        geometry::GeometryCellKind::Simplex,
+        2, 1, imageMesh->order(),
+        fe::Operation::UnrelatedMeshTransfer,
+        execution } );
+    if ( execution == fe::Execution::Serial )
+    {
+        BOOST_REQUIRE( rtCapability.validated() );
+        BOOST_REQUIRE( nedCapability.validated() );
+    }
+    else
+    {
+        BOOST_REQUIRE( !rtCapability.available() );
+        BOOST_REQUIRE( !nedCapability.available() );
+    }
 
     auto scalarImage = Pdh<1>( imageMesh );
     auto vectorImage = Pdhv<1>( imageMesh );

@@ -212,10 +212,11 @@ concept GeoMapContextConcept = GeometricMappingContextConcept<T>;
  * @brief A finite element basis (shape functions)
  */
 template <typename T>
-concept FEBasisConcept = requires {
+concept FEBasisConcept = HasOrderSupport<T> && requires( T const& basis ) {
     typename T::value_type;
     { T::nDof } -> std::convertible_to<int>;
-    { T::nLocalDof } -> std::convertible_to<int>;
+    { basis.order() } -> std::convertible_to<uint16_type>;
+    { basis.localDof() } -> std::convertible_to<uint16_type>;
 };
 
 /**

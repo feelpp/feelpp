@@ -121,12 +121,11 @@ public:
     FiniteElement( dual_space_type const& pdual )
         :
         super( pdual.primalSpace() ),
-        M_dual( pdual ),
-        M_primal( M_dual.primalSpace() )
+        M_dual( pdual )
     {
         DVLOG(2) << "============================================================\n";
         DVLOG(2) << "New FE \n";
-        ublas::matrix<value_type> A( M_dual( M_primal ) );
+        ublas::matrix<value_type> A( M_dual( M_dual.primalSpace() ) );
         CHECK_EQ( A.size1(), A.size2() )
             << "invalid Ciarlet triple: dual-on-primal matrix must be square";
         //std::cout << "[FiniteElement] A = " << A << "\n";
@@ -152,23 +151,16 @@ public:
 
         this->setCoefficient( ublas::trans( C ) );
 
-        //M_pset = polynomialset_type( M_primal, C );
-
         //std::cout << "coeff = " << M_pset.coeff() << "\n";
         //std::cout << "d_x = " << M_pset.derivate(0).coeff() << "\n";
         //std::cout << "d_x = " << M_pset.derivate(0).coeff() << "\n";
         //std::cout << "d_x = " << M_pset.derivate(0).coeff() << "\n";
         DVLOG(2) << "============================================================\n";
     }
-    FiniteElement( FiniteElement const & fe )
-        :
-        super( fe ),
-        M_dual( fe.M_dual ),
-        M_primal( fe.M_primal )
-    {}
+    FiniteElement( FiniteElement const& ) = default;
+    FiniteElement( FiniteElement&& ) = default;
 
-    ~FiniteElement() override
-    {}
+    ~FiniteElement() override = default;
 
     //@}
 
@@ -176,17 +168,8 @@ public:
      */
     //@{
 
-    self_type& operator=( self_type const& fe )
-    {
-        if ( this != &fe )
-        {
-            super::operator=( fe );
-            M_primal = fe.M_primal;
-            M_dual = fe.M_dual;
-        }
-
-        return *this;
-    }
+    self_type& operator=( self_type const& ) = default;
+    self_type& operator=( self_type&& ) = default;
 
     template<typename AE>
     value_type operator()( uint16_type i, ublas::vector_expression<AE> const& pt ) const
@@ -221,19 +204,11 @@ public:
     [[nodiscard]] uint16_type order() const
     {
         if constexpr ( requires( primal_space_type const& p ) { p.order(); } )
-            return static_cast<uint16_type>( M_primal.order() );
+            return static_cast<uint16_type>( M_dual.primalSpace().order() );
         else if constexpr ( requires( super const& s ) { s.order(); } )
             return static_cast<uint16_type>( static_cast<super const&>( *this ).order() );
         else
             return static_cast<uint16_type>( nOrder );
-    }
-
-    /**
-     * @deprecated Use order() instead
-     */
-    [[nodiscard]] uint16_type runtimeOrder() const
-    {
-        return this->order();
     }
 
     /**
@@ -246,7 +221,7 @@ public:
     [[nodiscard]] uint16_type polynomialDegree() const
     {
         if constexpr ( requires( primal_space_type const& p ) { p.order(); } )
-            return static_cast<uint16_type>( M_primal.order() );
+            return static_cast<uint16_type>( M_dual.primalSpace().order() );
         else
             return static_cast<uint16_type>( primal_space_type::nOrder );
     }
@@ -278,7 +253,7 @@ public:
      */
     primal_space_type const& primal() const
     {
-        return M_primal;
+        return M_dual.primalSpace();
     }
 
     /**
@@ -369,7 +344,8 @@ public:
             return localDofPerComp;
 
         if constexpr ( P::is_product )
-            return static_cast<uint16_type>( super::nComponents * localDofPerComp );
+            return ::Feel::detail::checkedLocalIndexValue(
+                static_cast<size_type>( super::nComponents ) * localDofPerComp );
         else
             return localDofPerComp;
     }
@@ -378,6 +354,30 @@ public:
     [[nodiscard]] uint16_type localDof() const
     {
         return this->localDofCount( true );
+    }
+
+    /** \return per-component cardinality on one reference vertex. */
+    [[nodiscard]] constexpr uint16_type dofPerVertex() const noexcept
+    {
+        return nDofPerVertex;
+    }
+
+    /** \return per-component cardinality on one reference edge. */
+    [[nodiscard]] constexpr uint16_type dofPerEdge() const noexcept
+    {
+        return nDofPerEdge;
+    }
+
+    /** \return per-component cardinality on one reference face. */
+    [[nodiscard]] constexpr uint16_type dofPerFace() const noexcept
+    {
+        return nDofPerFace;
+    }
+
+    /** \return per-component cardinality on one reference volume. */
+    [[nodiscard]] constexpr uint16_type dofPerVolume() const noexcept
+    {
+        return nDofPerVolume;
     }
 
     /** \return per-component cardinality on one reference entity. */
@@ -584,7 +584,6 @@ public:
 private:
 
     dual_space_type M_dual;
-    primal_space_type const& M_primal;
 
 };
 }  // Feel

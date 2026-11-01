@@ -154,10 +154,42 @@ template <typename T>
 concept HasStaticOrder = HasOrderSupport<T> && std::remove_cvref_t<T>::is_order_static;
 
 /**
+ * @brief An order-aware object exposing its effective order uniformly.
+ *
+ * This is the caller-facing contract for both compile-time and runtime order.
+ * Consumers should call `order()` instead of selecting between `nOrder` and a
+ * mode-specific runtime accessor.
+ */
+template <typename T>
+concept EffectiveOrderAware = HasOrderSupport<T> &&
+                              requires(std::remove_cvref_t<T> const& t) {
+                                  { t.order() } -> std::convertible_to<uint16_type>;
+                              };
+
+/**
+ * @brief Detect a static-only `staticOrder()` accessor.
+ *
+ * Dynamic-order types intentionally do not satisfy this concept. Their
+ * effective value is available only from an object through `order()`.
+ */
+template <typename T>
+concept HasStaticOrderAccessor = requires {
+    { std::remove_cvref_t<T>::staticOrder() } -> std::convertible_to<uint16_type>;
+};
+
+/**
+ * @brief An object exposing its effective stored point cardinality.
+ */
+template <typename T>
+concept HasPointCardinality = requires(std::remove_cvref_t<T> const& t) {
+    { t.nPoints() } -> std::convertible_to<std::size_t>;
+};
+
+/**
  * @brief Detect types exposing per-entity dof topology APIs.
  */
 template <typename T>
-concept HasDofTopology = HasOrderSupport<T> &&
+concept HasDofTopology = EffectiveOrderAware<T> &&
                          requires(std::remove_reference_t<T> const& t) {
                              { t.dofPerVertex() } -> std::convertible_to<uint16_type>;
                              { t.dofPerEdge() } -> std::convertible_to<uint16_type>;

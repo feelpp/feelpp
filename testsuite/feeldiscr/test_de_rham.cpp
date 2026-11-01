@@ -169,6 +169,23 @@ checkAffineSequence( std::shared_ptr<affine_mesh_type> const& mesh,
                     rightface( -trans( id( traceProbe ) ) * vec( Tx(), Ty() ) ) );
         BOOST_CHECK_SMALL( tangentialJump( field ), 2e-10 );
 
+        if constexpr ( Order == 0 )
+        {
+            auto traceTrial = hcurl->element();
+            auto traceTest = hcurl->element();
+            auto tangentialPenalty = form2(
+                _trial = hcurl, _test = hcurl,
+                _pattern = size_type( Pattern::EXTENDED ) );
+            tangentialPenalty = integrate(
+                _range = internalfaces( mesh ),
+                _expr =
+                    ( leftfacet( trans( idt( traceTrial ) ) * vec( Tx(), Ty() ) ) +
+                      rightfacet( -trans( idt( traceTrial ) ) * vec( Tx(), Ty() ) ) ) *
+                    ( leftface( trans( id( traceTest ) ) * vec( Tx(), Ty() ) ) +
+                      rightface( -trans( id( traceTest ) ) * vec( Tx(), Ty() ) ) ) );
+            BOOST_CHECK_SMALL( tangentialPenalty( field, field ), 2e-10 );
+        }
+
         // Full coefficient-by-coefficient incidence assembly grows quadratically
         // with the global number of dofs. Orders zero and one exercise the
         // matrix complex; the field-level contracts above retain orders 0--4.
@@ -219,7 +236,7 @@ checkAffineStaticRuntimeSequence( std::shared_ptr<affine_mesh_type> const& mesh 
 
     BOOST_TEST_CONTEXT( "2D affine NED1 static/runtime contract order " << Order )
     {
-        BOOST_CHECK_EQUAL( hcurlRuntime->basis()->runtimeOrder(), Order );
+        BOOST_CHECK_EQUAL( hcurlRuntime->basis()->order(), Order );
         BOOST_CHECK_EQUAL( hcurlRuntime->basis()->localDofCount(),
                            hcurlStatic->basis()->localDofCount() );
         BOOST_CHECK_EQUAL( hcurlRuntime->nDof(), hcurlStatic->nDof() );
@@ -279,8 +296,8 @@ BOOST_AUTO_TEST_CASE( affine_runtime_ned1_construction_above_validation_envelope
 
     BOOST_REQUIRE( hcurl4 );
     BOOST_REQUIRE( hcurl6 );
-    BOOST_CHECK_EQUAL( hcurl4->basis()->runtimeOrder(), 4 );
-    BOOST_CHECK_EQUAL( hcurl6->basis()->runtimeOrder(), 6 );
+    BOOST_CHECK_EQUAL( hcurl4->basis()->order(), 4 );
+    BOOST_CHECK_EQUAL( hcurl6->basis()->order(), 6 );
     BOOST_CHECK_EQUAL( hcurl4->basis()->localDofCount(), 35 );
     BOOST_CHECK_EQUAL( hcurl6->basis()->localDofCount(), 63 );
     BOOST_CHECK_GT( hcurl4->nDof(), 0 );

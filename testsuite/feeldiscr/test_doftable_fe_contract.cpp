@@ -14,6 +14,7 @@
 #include <feel/feelcore/testsuite.hpp>
 
 #include <feel/feeldiscr/bdmh.hpp>
+#include <feel/feeldiscr/concepts.hpp>
 #include <feel/feeldiscr/dh.hpp>
 #include <feel/feeldiscr/doflayout.hpp>
 #include <feel/feeldiscr/doftablebase.hpp>
@@ -30,6 +31,7 @@
 #include <feel/feelpoly/nedelec.hpp>
 #include <feel/feelpoly/raviartthomas.hpp>
 
+#include <algorithm>
 #include <array>
 #include <map>
 #include <numeric>
@@ -344,34 +346,10 @@ checkLocalDescriptorContract( FEType const& fe, std::string const& label )
         }
     }
 
-    auto const nDofPerVertex = [&fe]() -> uint16_type
-    {
-        if constexpr ( requires { fe.runtimeDofPerVertex(); } )
-            return fe.runtimeDofPerVertex();
-        else
-            return FEType::nDofPerVertex;
-    }();
-    auto const nDofPerEdge = [&fe]() -> uint16_type
-    {
-        if constexpr ( requires { fe.runtimeDofPerEdge(); } )
-            return fe.runtimeDofPerEdge();
-        else
-            return FEType::nDofPerEdge;
-    }();
-    auto const nDofPerFace = [&fe]() -> uint16_type
-    {
-        if constexpr ( requires { fe.runtimeDofPerFace(); } )
-            return fe.runtimeDofPerFace();
-        else
-            return FEType::nDofPerFace;
-    }();
-    auto const nDofPerVolume = [&fe]() -> uint16_type
-    {
-        if constexpr ( requires { fe.runtimeDofPerVolume(); } )
-            return fe.runtimeDofPerVolume();
-        else
-            return FEType::nDofPerVolume;
-    }();
+    auto const nDofPerVertex = fe.dofPerVertex();
+    auto const nDofPerEdge = fe.dofPerEdge();
+    auto const nDofPerFace = fe.dofPerFace();
+    auto const nDofPerVolume = fe.dofPerVolume();
 
     BOOST_CHECK_EQUAL( countByDim[0],
                        static_cast<uint16_type>( FEType::reference_convex_type::numVertices * nDofPerVertex ) );
@@ -403,48 +381,8 @@ checkLocalDescriptorContract( FEType const& fe, std::string const& label )
 }
 
 template<typename FEType>
-uint16_type
-testDofPerVertex( FEType const& fe )
-{
-    if constexpr ( requires { fe.runtimeDofPerVertex(); } )
-        return fe.runtimeDofPerVertex();
-    else
-        return FEType::nDofPerVertex;
-}
-
-template<typename FEType>
-uint16_type
-testDofPerEdge( FEType const& fe )
-{
-    if constexpr ( requires { fe.runtimeDofPerEdge(); } )
-        return fe.runtimeDofPerEdge();
-    else
-        return FEType::nDofPerEdge;
-}
-
-template<typename FEType>
-uint16_type
-testDofPerFace( FEType const& fe )
-{
-    if constexpr ( requires { fe.runtimeDofPerFace(); } )
-        return fe.runtimeDofPerFace();
-    else
-        return FEType::nDofPerFace;
-}
-
-template<typename FEType>
-uint16_type
-testDofPerVolume( FEType const& fe )
-{
-    if constexpr ( requires { fe.runtimeDofPerVolume(); } )
-        return fe.runtimeDofPerVolume();
-    else
-        return FEType::nDofPerVolume;
-}
-
-template<typename FEType>
 bool
-testRuntimeP0Continuous( FEType const& fe )
+testP0Continuous( FEType const& fe )
 {
     if constexpr ( !FEType::isContinuous )
         return false;
@@ -578,9 +516,9 @@ checkDescriptorBackedEntityViews( SpacePtrType const& Xh, std::string const& lab
     auto const dof = Xh->dof();
     auto const& fe = *Xh->basis();
 
-    auto const nDofPerVertex = testDofPerVertex( fe );
-    auto const nDofPerEdge = testDofPerEdge( fe );
-    auto const nDofPerFace = testDofPerFace( fe );
+    auto const nDofPerVertex = fe.dofPerVertex();
+    auto const nDofPerEdge = fe.dofPerEdge();
+    auto const nDofPerFace = fe.dofPerFace();
     auto const nFacetDof = static_cast<uint16_type>( dof->nLocalDofOnFacet( true ) );
     auto const nEdgeDof = static_cast<uint16_type>( edge_type::numVertices * nDofPerVertex +
                                                    edge_type::numEdges * nDofPerEdge );
@@ -690,11 +628,11 @@ checkDescriptorKeyLocalToGlobalConsistency( SpacePtrType const& Xh, std::string 
     auto const dof = Xh->dof();
     auto const& fe = *Xh->basis();
 
-    auto const nDofPerVertex = testDofPerVertex( fe );
-    auto const nDofPerEdge = testDofPerEdge( fe );
-    auto const nDofPerFace = testDofPerFace( fe );
-    auto const nDofPerVolume = testDofPerVolume( fe );
-    auto const p0Continuous = testRuntimeP0Continuous( fe );
+    auto const nDofPerVertex = fe.dofPerVertex();
+    auto const nDofPerEdge = fe.dofPerEdge();
+    auto const nDofPerFace = fe.dofPerFace();
+    auto const nDofPerVolume = fe.dofPerVolume();
+    auto const p0Continuous = testP0Continuous( fe );
 
     std::map<DofKey<size_type>, size_type> keyToIndex;
     std::map<size_type, DofKey<size_type>> indexToKey;
@@ -843,9 +781,9 @@ checkDescriptorKeyMpiOwnership( SpacePtrType const& Xh, std::string const& label
     auto const& fe = *Xh->basis();
     auto const myRank = Environment::worldComm().localRank();
 
-    auto const nDofPerVertex = testDofPerVertex( fe );
-    auto const nDofPerEdge = testDofPerEdge( fe );
-    auto const nDofPerFace = testDofPerFace( fe );
+    auto const nDofPerVertex = fe.dofPerVertex();
+    auto const nDofPerEdge = fe.dofPerEdge();
+    auto const nDofPerFace = fe.dofPerFace();
 
     auto familyTag = []() constexpr -> uint16_type
     {
@@ -1120,7 +1058,8 @@ checkDescriptorKeyMpiOwnership( SpacePtrType const& Xh, std::string const& label
 
 template<typename SpacePtrType>
 void
-checkTransformProjectionContract( SpacePtrType const& Xh, std::string const& label )
+checkTransformProjectionContract( SpacePtrType const& Xh, std::string const& label,
+                                  bool expectDenseTransform = false )
 {
     using space_type = typename SpacePtrType::element_type;
     using dof_type = typename space_type::dof_type;
@@ -1136,6 +1075,7 @@ checkTransformProjectionContract( SpacePtrType const& Xh, std::string const& lab
 
     size_type checkedDofs = 0;
     size_type negativeTransforms = 0;
+    size_type denseTransformElements = 0;
     auto rangeElements = elements( mesh, entity_process_t::LOCAL_ONLY );
     for ( auto const& eltWrap : rangeElements )
     {
@@ -1183,12 +1123,94 @@ checkTransformProjectionContract( SpacePtrType const& Xh, std::string const& lab
         }
         auto const coefficientTransform = dof->localToGlobalCoefficientTransform( elt.id() );
         BOOST_CHECK_EQUAL( coefficientTransform.fullPivLu().rank(), coefficientTransform.rows() );
+
+        const Eigen::Index nLocalDof = coefficientTransform.rows();
+        Eigen::VectorXd localCoefficients = Eigen::VectorXd::LinSpaced(
+            nLocalDof, 1., static_cast<double>( nLocalDof ) );
+        auto canonicalCoefficients = localCoefficients;
+        dof->mapLocalToCanonicalDofCoefficients(
+            elt.id(), canonicalCoefficients );
+        BOOST_CHECK_SMALL(
+            ( coefficientTransform * canonicalCoefficients -
+              localCoefficients ).norm(), 1e-10 );
+
+        Eigen::MatrixXd localForms( nLocalDof, 2 );
+        localForms.col( 0 ) = localCoefficients;
+        localForms.col( 1 ) = 2. * localCoefficients.reverse();
+        auto canonicalForms = localForms;
+        dof->mapLocalLinearFormToCanonicalDofs(
+            elt.id(), canonicalForms );
+        BOOST_CHECK_SMALL(
+            ( canonicalForms - coefficientTransform.transpose() * localForms ).norm(),
+            1e-10 );
+
+        Eigen::MatrixXd localMatrix = Eigen::MatrixXd::Identity(
+            nLocalDof, nLocalDof );
+        localMatrix.diagonal() = localCoefficients;
+        auto canonicalMatrix = localMatrix;
+        dof->mapLocalLinearFormToCanonicalDofs(
+            elt.id(), canonicalMatrix );
+        dof->mapLocalTrialColumnsToCanonicalDofs(
+            elt.id(), canonicalMatrix );
+        BOOST_CHECK_SMALL(
+            ( canonicalMatrix - coefficientTransform.transpose() *
+                                localMatrix * coefficientTransform ).norm(),
+            1e-10 );
+
+        std::vector<double> globalCoefficients( dof->nLocalDofWithGhost(), 0. );
+        for ( auto const& localDof : dof->localDof( elt.id() ) )
+            globalCoefficients[localDof.second.index()] =
+                canonicalCoefficients( localDof.first.localDof() );
+        auto const expectedLocalCoefficients =
+            coefficientTransform * canonicalCoefficients;
+        for ( uint16_type localDof = 0; localDof < nLocalDof; ++localDof )
+            BOOST_CHECK_SMALL(
+                dof->localDofCoefficientFromCanonical(
+                    elt.id(), localDof,
+                    [&]( size_type index )
+                    {
+                        return globalCoefficients[index];
+                    } ) - expectedLocalCoefficients( localDof ),
+                1e-10 );
+
+        if ( dof->hasDenseDofTransform( elt.id() ) )
+        {
+            ++denseTransformElements;
+            // A non-double scalar forces an Eigen cast expression. The
+            // transform methods must own it after the source temporary dies.
+            Eigen::VectorXf floatCoefficients = localCoefficients.cast<float>();
+            dof->mapLocalToCanonicalDofCoefficients(
+                elt.id(), floatCoefficients );
+            BOOST_CHECK_SMALL(
+                ( coefficientTransform * floatCoefficients.cast<double>() -
+                  localCoefficients ).norm() / localCoefficients.norm(), 1e-5 );
+
+            Eigen::MatrixXf floatForms = localForms.cast<float>();
+            dof->mapLocalLinearFormToCanonicalDofs( elt.id(), floatForms );
+            BOOST_CHECK_SMALL(
+                ( floatForms.cast<double>() -
+                  coefficientTransform.transpose() * localForms ).norm() /
+                    localForms.norm(), 1e-5 );
+
+            // Rectangular input checks the trial-column transformation
+            // independently of the linear-form row transformation.
+            Eigen::MatrixXf floatTrialColumns = localForms.transpose().cast<float>();
+            dof->mapLocalTrialColumnsToCanonicalDofs(
+                elt.id(), floatTrialColumns );
+            BOOST_CHECK_SMALL(
+                ( floatTrialColumns.cast<double>() -
+                  localForms.transpose() * coefficientTransform ).norm() /
+                    localForms.norm(), 1e-5 );
+        }
     }
 
     mpi::all_reduce( Environment::worldComm(), mpi::inplace( checkedDofs ), std::plus<size_type>() );
     mpi::all_reduce( Environment::worldComm(), mpi::inplace( negativeTransforms ), std::plus<size_type>() );
+    mpi::all_reduce( Environment::worldComm(), mpi::inplace( denseTransformElements ), std::plus<size_type>() );
     BOOST_CHECK_GT( checkedDofs, 0 );
     BOOST_CHECK_GT( negativeTransforms, 0 );
+    if ( expectDenseTransform )
+        BOOST_CHECK_GT( denseTransformElements, 0 );
 }
 
 template<typename SpacePtrType>
@@ -1321,6 +1343,16 @@ BOOST_AUTO_TEST_CASE( phase1_fe_descriptor_contract )
     using bdm_dynamic_type = typename BrezziDouglasMarini<Dynamic>::template apply<2, 2, double, Simplex<2>>::type;
     using cr1_type = typename CrouzeixRaviart<1>::template apply<2, 2, double, Simplex<2>>::type;
 
+    static_assert( HasStaticOrder<lagrange_p2_type> );
+    static_assert( HasDynamicOrder<lagrange_dynamic_type> );
+    static_assert(
+        finiteElementFixedLocalDofCountOrZero<lagrange_p2_type>() ==
+        lagrange_p2_type::nLocalDof );
+    static_assert(
+        finiteElementFixedLocalDofCountOrZero<lagrange_dynamic_type>() == 0 );
+    static_assert( FEBasisConcept<lagrange_p2_type> );
+    static_assert( FEBasisConcept<lagrange_dynamic_type> );
+
     static_assert( FiniteElementDofLayoutProvider<lagrange_p2_type> );
     static_assert( FiniteElementDofLayoutProvider<lagrange_dynamic_type> );
     static_assert( FiniteElementDofLayoutProvider<rt0_type> );
@@ -1331,16 +1363,16 @@ BOOST_AUTO_TEST_CASE( phase1_fe_descriptor_contract )
     static_assert( FiniteElementDofLayoutProvider<bdm0_type> );
     static_assert( FiniteElementDofLayoutProvider<bdm_dynamic_type> );
     static_assert( FiniteElementDofLayoutProvider<cr1_type> );
-    static_assert( FiniteElementRuntimeSizedDofProvider<lagrange_p2_type> );
-    static_assert( FiniteElementRuntimeSizedDofProvider<lagrange_dynamic_type> );
-    static_assert( FiniteElementRuntimeSizedDofProvider<rt0_type> );
-    static_assert( FiniteElementRuntimeSizedDofProvider<rt1_type> );
-    static_assert( FiniteElementRuntimeSizedDofProvider<rt_dynamic_type> );
-    static_assert( FiniteElementRuntimeSizedDofProvider<nedelec0_type> );
-    static_assert( FiniteElementRuntimeSizedDofProvider<nedelec_dynamic_type> );
-    static_assert( FiniteElementRuntimeSizedDofProvider<bdm0_type> );
-    static_assert( FiniteElementRuntimeSizedDofProvider<bdm_dynamic_type> );
-    static_assert( FiniteElementRuntimeSizedDofProvider<cr1_type> );
+    static_assert( HasDofTopology<lagrange_p2_type> );
+    static_assert( HasDofTopology<lagrange_dynamic_type> );
+    static_assert( HasDofTopology<rt0_type> );
+    static_assert( HasDofTopology<rt1_type> );
+    static_assert( HasDofTopology<rt_dynamic_type> );
+    static_assert( HasDofTopology<nedelec0_type> );
+    static_assert( HasDofTopology<nedelec_dynamic_type> );
+    static_assert( HasDofTopology<bdm0_type> );
+    static_assert( HasDofTopology<bdm_dynamic_type> );
+    static_assert( HasDofTopology<cr1_type> );
     static_assert( FiniteElementDofCardinalityProvider<lagrange_p2_type> );
     static_assert( FiniteElementDofCardinalityProvider<lagrange_dynamic_type> );
     static_assert( FiniteElementDofCardinalityProvider<rt0_type> );
@@ -1494,12 +1526,12 @@ BOOST_AUTO_TEST_CASE( phase5c_three_dimensional_facet_group_actions )
     checkTransformProjectionContract( BDMh<Dynamic>( mesh, RuntimeOrder{ 1 } ), "BDMh<Dynamic,P1>,3D" );
     checkTransformProjectionContract( Neh<0>( mesh ), "Neh<0>,3D" );
     checkTransformProjectionContract( Neh<1>( mesh ), "Neh<1>,3D" );
-    checkTransformProjectionContract( Neh<2>( mesh ), "Neh<2>,3D" );
-    checkTransformProjectionContract( Neh<3>( mesh ), "Neh<3>,3D" );
+    checkTransformProjectionContract( Neh<2>( mesh ), "Neh<2>,3D", true );
+    checkTransformProjectionContract( Neh<3>( mesh ), "Neh<3>,3D", true );
     checkTransformProjectionContract( Neh<Dynamic>( mesh, RuntimeOrder{ 0 } ), "Neh<Dynamic,P0>,3D" );
     checkTransformProjectionContract( Neh<Dynamic>( mesh, RuntimeOrder{ 1 } ), "Neh<Dynamic,P1>,3D" );
-    checkTransformProjectionContract( Neh<Dynamic>( mesh, RuntimeOrder{ 2 } ), "Neh<Dynamic,P2>,3D" );
-    checkTransformProjectionContract( Neh<Dynamic>( mesh, RuntimeOrder{ 3 } ), "Neh<Dynamic,P3>,3D" );
+    checkTransformProjectionContract( Neh<Dynamic>( mesh, RuntimeOrder{ 2 } ), "Neh<Dynamic,P2>,3D", true );
+    checkTransformProjectionContract( Neh<Dynamic>( mesh, RuntimeOrder{ 3 } ), "Neh<Dynamic,P3>,3D", true );
 }
 
 BOOST_AUTO_TEST_CASE( phase5b_fe_owned_local_cardinality )
@@ -1521,7 +1553,7 @@ BOOST_AUTO_TEST_CASE( phase7a_runtime_sized_fe_instance_contract )
     auto lagrangeDynamicP2 = Pch<Dynamic>( mesh, RuntimeOrder{ 2 } );
     auto const& lagrangeFe = *lagrangeDynamicP2->basis();
     BOOST_CHECK_EQUAL( lagrangeFe.order(), 2 );
-    BOOST_CHECK_EQUAL( lagrangeFe.runtimeOrder(), 2 );
+    BOOST_CHECK_EQUAL( lagrangeFe.order(), 2 );
     BOOST_CHECK_EQUAL( lagrangeDynamicP2->dof()->nLocalDof(), lagrangeFe.localDofCount() );
     BOOST_CHECK_EQUAL( lagrangeDynamicP2->dof()->nLocalDof( true ), lagrangeFe.localDofCount( true ) );
     BOOST_CHECK_GT( lagrangeFe.localDofCountOnEntity( 1, 0, true ), 0 );
@@ -1530,7 +1562,7 @@ BOOST_AUTO_TEST_CASE( phase7a_runtime_sized_fe_instance_contract )
     auto rtDynamic0 = RTh<Dynamic>( mesh, RuntimeOrder{ 0 } );
     auto const& rtFe = *rtDynamic0->basis();
     BOOST_CHECK_EQUAL( rtFe.order(), 0 );
-    BOOST_CHECK_EQUAL( rtFe.runtimeOrder(), 0 );
+    BOOST_CHECK_EQUAL( rtFe.order(), 0 );
     BOOST_CHECK_EQUAL( rtDynamic0->dof()->nLocalDof(), rtFe.localDofCount() );
     BOOST_CHECK_EQUAL( rtDynamic0->dof()->nLocalDof( true ), rtFe.localDofCount( true ) );
     BOOST_CHECK_GT( rtFe.localDofCountOnFacet( 0, true ), 0 );
@@ -1540,7 +1572,7 @@ BOOST_AUTO_TEST_CASE( phase7a_runtime_sized_fe_instance_contract )
     auto rtDynamic1 = RTh<Dynamic>( mesh, RuntimeOrder{ 1 } );
     auto const& rtFe1 = *rtDynamic1->basis();
     BOOST_CHECK_EQUAL( rtFe1.order(), 1 );
-    BOOST_CHECK_EQUAL( rtFe1.runtimeOrder(), 1 );
+    BOOST_CHECK_EQUAL( rtFe1.order(), 1 );
     BOOST_CHECK_EQUAL( rtFe1.localDofCount(), 8 );
     BOOST_CHECK_EQUAL( rtDynamic1->dof()->nLocalDof(), rtFe1.localDofCount() );
     BOOST_CHECK_GT( rtFe1.localDofCountOnFacet( 0, true ), 0 );
@@ -1549,7 +1581,7 @@ BOOST_AUTO_TEST_CASE( phase7a_runtime_sized_fe_instance_contract )
     auto bdmDynamic1 = BDMh<Dynamic>( mesh, RuntimeOrder{ 1 } );
     auto const& bdmFe1 = *bdmDynamic1->basis();
     BOOST_CHECK_EQUAL( bdmFe1.order(), 1 );
-    BOOST_CHECK_EQUAL( bdmFe1.runtimeOrder(), 1 );
+    BOOST_CHECK_EQUAL( bdmFe1.order(), 1 );
     BOOST_CHECK_EQUAL( bdmFe1.localDofCount(), 12 );
     BOOST_CHECK_EQUAL( bdmDynamic1->dof()->nLocalDof(), bdmFe1.localDofCount() );
     BOOST_CHECK_GT( bdmFe1.localDofCountOnFacet( 0, true ), 0 );
@@ -1558,7 +1590,7 @@ BOOST_AUTO_TEST_CASE( phase7a_runtime_sized_fe_instance_contract )
     auto nedDynamic1 = Neh<Dynamic>( mesh, RuntimeOrder{ 1 } );
     auto const& nedFe1 = *nedDynamic1->basis();
     BOOST_CHECK_EQUAL( nedFe1.order(), 1 );
-    BOOST_CHECK_EQUAL( nedFe1.runtimeOrder(), 1 );
+    BOOST_CHECK_EQUAL( nedFe1.order(), 1 );
     BOOST_CHECK_EQUAL( nedFe1.polynomialDegree(), 2 );
     BOOST_CHECK_EQUAL( nedFe1.localDofCount(), 8 );
     BOOST_CHECK_EQUAL( nedFe1.dofPerEdge(), 2 );
@@ -1572,7 +1604,7 @@ BOOST_AUTO_TEST_CASE( phase7a_runtime_sized_fe_instance_contract )
     auto nedDynamic2 = Neh<Dynamic>( mesh, RuntimeOrder{ 2 } );
     auto const& nedFe2 = *nedDynamic2->basis();
     BOOST_CHECK_EQUAL( nedFe2.order(), 2 );
-    BOOST_CHECK_EQUAL( nedFe2.runtimeOrder(), 2 );
+    BOOST_CHECK_EQUAL( nedFe2.order(), 2 );
     BOOST_CHECK_EQUAL( nedFe2.polynomialDegree(), 3 );
     BOOST_CHECK_EQUAL( nedFe2.localDofCount(), 15 );
     BOOST_CHECK_EQUAL( nedFe2.dofPerEdge(), 3 );
@@ -1608,6 +1640,88 @@ BOOST_AUTO_TEST_CASE( phase6_dof_representative_points )
     checkRepresentativePointContract( RTh<Dynamic>( mesh, RuntimeOrder{ 0 } ), "RTh<Dynamic,P0>", false, DofFunctionalKind::NormalMoment );
     checkRepresentativePointContract( BDMh<0>( mesh ), "BDMh<0>", false, DofFunctionalKind::NormalMoment );
     checkRepresentativePointContract( Neh<0>( mesh ), "Neh<0>", false, DofFunctionalKind::TangentialMoment );
+}
+
+BOOST_AUTO_TEST_CASE( effective_order_metadata_uses_the_fe_instance )
+{
+    auto mesh = makeContractMesh();
+    auto staticP2 = Pch<2>( mesh );
+    auto dynamicP2 = Pch<Dynamic>( mesh, RuntimeOrder{ 2 } );
+
+    BOOST_REQUIRE_EQUAL( staticP2->basisOrder().size(), 1 );
+    BOOST_REQUIRE_EQUAL( dynamicP2->basisOrder().size(), 1 );
+    BOOST_CHECK_EQUAL( staticP2->basisOrder().front(), 2 );
+    BOOST_CHECK_EQUAL( dynamicP2->basisOrder().front(), 2 );
+
+    auto const staticInfos = staticP2->dof()->infos();
+    auto const dynamicInfos = dynamicP2->dof()->infos();
+    BOOST_CHECK_EQUAL( staticInfos.nOrder, 2 );
+    BOOST_CHECK_EQUAL( dynamicInfos.nOrder, 2 );
+    BOOST_CHECK_EQUAL( dynamicInfos.nDofPerElement,
+                       dynamicP2->fe()->localDofCount() );
+    BOOST_CHECK_EQUAL( dynamicInfos.nDofPerEdge,
+                       dynamicP2->fe()->dofPerEdge() );
+    BOOST_CHECK( !dynamicInfos.is_p0_continuous );
+
+    // Parallel continuous P0 numbering is a separate, pre-existing DofTable
+    // limitation. Keep the P0 metadata regression without making this
+    // metadata-only test depend on that unsupported construction path.
+    if ( Environment::worldComm().globalSize() == 1 )
+    {
+        auto dynamicP0 = Pch<Dynamic>( mesh, RuntimeOrder{ 0 } );
+        BOOST_REQUIRE_EQUAL( dynamicP0->basisOrder().size(), 1 );
+        BOOST_CHECK_EQUAL( dynamicP0->basisOrder().front(), 0 );
+        auto const dynamicP0Infos = dynamicP0->dof()->infos();
+        BOOST_CHECK_EQUAL( dynamicP0Infos.nOrder, 0 );
+        BOOST_CHECK( dynamicP0Infos.is_p0_continuous );
+    }
+
+    nl::json staticInformation;
+    nl::json dynamicInformation;
+    staticP2->updateInformationObject( staticInformation );
+    dynamicP2->updateInformationObject( dynamicInformation );
+    BOOST_CHECK_EQUAL(
+        staticInformation.at( "basis" ).at( "order" ).get<int>(), 2 );
+    BOOST_CHECK_EQUAL(
+        dynamicInformation.at( "basis" ).at( "order" ).get<int>(), 2 );
+    BOOST_CHECK_EQUAL(
+        dynamicInformation.at( "basis" ).at( "nLocalDof" ).get<int>(),
+        dynamicP2->fe()->localDof() );
+}
+
+/** Verify mapped local DoF ids reuse caller-owned Eigen storage. */
+BOOST_AUTO_TEST_CASE( mapped_dof_buffer_is_allocation_stable )
+{
+    auto mesh = unitSquare();
+    auto space = Pch<2>( mesh );
+    auto const dof = space->dof();
+    using dof_type = std::decay_t<decltype( *dof )>;
+    std::vector<typename dof_type::size_type> mapping( dof->nLocalDofWithGhost() );
+    std::iota( mapping.begin(), mapping.end(), 0 );
+    std::reverse( mapping.begin(), mapping.end() );
+    typename dof_type::localglobal_indices_type buffer;
+
+    auto range = elements( mesh, entity_process_t::LOCAL_ONLY );
+    auto element = range.begin();
+    BOOST_REQUIRE( element != range.end() );
+    auto const firstId = unwrap_ref( *element ).id();
+
+    dof->localToGlobalIndices( firstId, mapping,
+                               buffer );
+    auto const* storage = buffer.data();
+    auto const expected = dof->localToGlobalIndices(
+        firstId, mapping );
+    BOOST_CHECK( buffer.isApprox( expected ) );
+
+    for ( ; element != range.end(); ++element )
+    {
+        auto const id = unwrap_ref( *element ).id();
+        dof->localToGlobalIndices( id, mapping,
+                                   buffer );
+        BOOST_CHECK_EQUAL( buffer.data(), storage );
+        BOOST_CHECK( buffer.isApprox( dof->localToGlobalIndices(
+            id, mapping ) ) );
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

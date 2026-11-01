@@ -165,6 +165,7 @@ public:
                         size_type geometry = Geometry,
                         size_type shape = Shape,
                         size_type context = MESH_ENTITY_INTERNAL )
+        requires( is_order_static )
         :
         super(),
         M_core{
@@ -177,6 +178,32 @@ public:
         }
     {
     }
+
+    /**
+     * @brief Construct a runtime-order geometric entity.
+     *
+     * @param i entity identifier
+     * @param runtimeOrder effective geometric polynomial order
+     * @param geometry geometric dimension category
+     * @param shape reference-cell shape category
+     * @param context entity ownership/location context
+     */
+    explicit GeoEntity(
+        size_type i, RuntimeOrder runtimeOrder,
+        size_type geometry = Geometry,
+        size_type shape = Shape,
+        size_type context = MESH_ENTITY_INTERNAL )
+        requires( is_order_dynamic )
+        : super( runtimeOrder ),
+          M_core{
+              .id = i,
+              .entityContext =
+                  static_cast<uint32_type>(
+                      ( context << nBitShiftedGeoEntityContext ) |
+                      ( geometry << nBitShiftedReferenceGeometry ) |
+                      ( shape << nBitShiftedReferenceShapes ) )
+          }
+    {}
 
     GeoEntity( GeoEntity const& other )
         :
@@ -516,13 +543,15 @@ public:
     }
 
     /**
-     * number of points on the reference shape
+     * @brief Return the effective number of points on the reference shape.
      *
-     * @return the number of points on the reference shape
+     * Static entities fold this call to the compile-time cardinality. Detached
+     * dynamic entities resolve it from the order stored by their shape policy.
+     * Mesh-aware entities override this method at the `GeoND` layer.
      */
-    [[nodiscard]] constexpr uint16_type nPoints() const
+    [[nodiscard]] constexpr uint16_type nPoints() const noexcept
     {
-        return super::numPoints;
+        return super::nPointsTotal();
     }
 
     /**
@@ -532,10 +561,7 @@ public:
      */
     [[nodiscard]] constexpr uint16_type order() const noexcept
     {
-        if constexpr ( is_order_static )
-            return nOrder;
-        else
-            return super::order();
+        return super::order();
     }
 
     /**

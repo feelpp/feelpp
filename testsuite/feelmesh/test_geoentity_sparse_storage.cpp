@@ -257,6 +257,34 @@ BOOST_AUTO_TEST_CASE( dense_point_coordinates_are_eigen_mapped )
         points.pointCoordinateStorageStatistics()
             .externalLookupEntries,
         3 );
+
+    using line_points_type = Feel::Points<1>;
+    using line_point_type = typename line_points_type::point_type;
+
+    line_points_type linePoints;
+    line_point_type linePoint0( 0 );
+    line_point_type linePoint1( 1 );
+    linePoint0( 0 ) = -1.5;
+    linePoint1( 0 ) = 2.5;
+    BOOST_REQUIRE(
+        linePoints.addPoint( std::move( linePoint0 ) ).second );
+    BOOST_REQUIRE(
+        linePoints.addPoint( std::move( linePoint1 ) ).second );
+
+    auto lineCoordinates =
+        static_cast<line_points_type const&>( linePoints )
+            .pointCoordinates();
+    BOOST_CHECK_EQUAL( lineCoordinates.rows(), 1 );
+    BOOST_CHECK_EQUAL( lineCoordinates.cols(), 2 );
+    BOOST_CHECK_CLOSE( lineCoordinates( 0, 0 ), -1.5, 1e-12 );
+    BOOST_CHECK_CLOSE( lineCoordinates( 0, 1 ), 2.5, 1e-12 );
+
+    linePoints.editPointCoordinates(
+        []( auto& coordinateMap )
+        {
+            coordinateMap( 0, 1 ) = 4.5;
+        } );
+    BOOST_CHECK_CLOSE( linePoints.point( 1 )( 0 ), 4.5, 1e-12 );
 }
 
 /**

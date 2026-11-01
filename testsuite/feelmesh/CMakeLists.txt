@@ -15,6 +15,10 @@ foreach(THETEST entity mesh regiontree mesh_codim1 kdtree P1mesh updatemarker pa
       message(STATUS "compiling feelpp_test_partitioner_metis...")
       feelpp_add_test( ${THETEST} )
     endif()
+  elseif(THETEST STREQUAL "mesh")
+    # This suite now validates runtime G1--G5 simplex/hypercube import,
+    # submeshes, archives, and distributed ownership.
+    feelpp_add_test( ${THETEST} TIMEOUT 900 )
   else()
     feelpp_add_test( ${THETEST} )
   endif()

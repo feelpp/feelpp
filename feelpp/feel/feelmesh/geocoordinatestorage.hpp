@@ -70,10 +70,17 @@ class GeoCoordinateStorage
     using index_type = IndexT;
     /** Dense local point index type. */
     using local_index_type = uint32_type;
-    /** Aligned column-major coordinate matrix type. */
+    /**
+     * Aligned point-column coordinate matrix type.
+     *
+     * Eigen requires a fixed one-row matrix with dynamic columns to be
+     * row-major. Its scalar layout is identical to column-major storage in
+     * one dimension because each point column contains one value.
+     */
     using matrix_type =
         Eigen::Matrix<value_type, RealDim, Eigen::Dynamic,
-                      Eigen::ColMajor>;
+                      RealDim == 1 ? Eigen::RowMajor
+                                   : Eigen::ColMajor>;
     /** Read-only zero-copy coordinate map type. */
     using const_map_type = Eigen::Map<matrix_type const>;
     /** Mutable zero-copy coordinate map type. */

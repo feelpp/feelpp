@@ -221,6 +221,8 @@ class GeoMap
      */
     using representation_policy_type =
         geometry::NodalLagrange<Dim, Order, Entity, value_type>;
+    using bezier_representation_policy_type =
+        geometry::BernsteinBezier<Dim, Order, Entity, value_type>;
     /** Coefficient semantics of the current `GeoMap` compatibility façade. */
     /** @brief Return the coefficient semantics of the compatibility façade. */
     [[nodiscard]] static consteval geometry::CoefficientSemantics
@@ -233,7 +235,12 @@ class GeoMap
     typedef std::shared_ptr<precompute_type> precompute_ptrtype;
 
     typedef typename super::convex_type convex_type;
-    typedef Reference<convex_type, nDim, Order, nDim /*nRealDim*/> reference_convex_type;
+    static constexpr int reference_order =
+        Order == Dynamic ? 1 : Order;
+    typedef Reference<
+        convex_type, nDim, reference_order,
+        nDim /*nRealDim*/>
+        reference_convex_type;
 
     typedef GeoMap<Dim, Order, RealDim, T, Entity, PP> self_type;
     typedef self_type geometric_mapping_type;
@@ -293,6 +300,7 @@ class GeoMap
           M_g_linear( this->nbPoints(), nDim ),
           M_refconvex()
     {
+        initGeometryRepresentation();
         initLinearGradientCache();
     }
 
@@ -306,6 +314,7 @@ class GeoMap
           M_g_linear( this->nbPoints(), nDim ),
           M_refconvex()
     {
+        initGeometryRepresentation();
         initLinearGradientCache();
     }
 
@@ -319,6 +328,7 @@ class GeoMap
           M_g_linear( this->nbPoints(), nDim ),
           M_refconvex()
     {
+        initGeometryRepresentation();
         initLinearGradientCache();
     }
     /**
@@ -354,14 +364,6 @@ class GeoMap
             return static_cast<uint16_type>( static_cast<super const&>( *this ).order() );
         else
             return nOrder;
-    }
-
-    /**
-     * @deprecated Use order() instead
-     */
-    [[nodiscard]] uint16_type runtimeOrder() const noexcept
-    {
-        return this->order();
     }
 
     /**
@@ -413,18 +415,85 @@ class GeoMap
      *
      * @return nodal-Lagrange representation bound to this map's effective order
      */
-    [[nodiscard]] representation_policy_type geometryRepresentation() const
+    [[nodiscard]] representation_policy_type const& geometryRepresentation() const
     {
-        typename representation_policy_type::points_type referenceNodes(
-            nDim, this->points().size2() );
-        for ( Eigen::Index q = 0; q < referenceNodes.cols(); ++q )
-            for ( int d = 0; d < nDim; ++d )
-                referenceNodes( d, q ) = this->points()( d, q );
-        if constexpr ( is_order_dynamic )
-            return representation_policy_type(
-                RuntimeOrder{ this->order() }, std::move( referenceNodes ) );
+        return *M_geometryRepresentation;
+    }
+
+    /**
+     * @brief Convert canonical stored coefficients to nodal interpolation data.
+     * @tparam Matrix writable Eigen- or uBLAS-compatible matrix
+     * @param coefficients component-by-coefficient table, modified in place
+     * @param representation semantics of the stored table
+     */
+    template <typename Matrix>
+    void convertStoredGeometryToNodal(
+        Matrix& coefficients,
+        geometry::GeometryRepresentationKind representation ) const
+    {
+        if ( representation ==
+             geometry::GeometryRepresentationKind::NodalLagrange )
+            return;
+        this->validateRepresentation( representation );
+        if ( this->matrixColumns( coefficients ) != this->nbPoints() )
+            throw std::invalid_argument(
+                "GeoMap geometry conversion has an invalid coefficient count" );
+
+        auto canonical = this->copyToEigen( coefficients );
+        decltype( canonical ) internal( canonical.rows(), canonical.cols() );
+        for ( Eigen::Index coefficient = 0;
+              coefficient < internal.cols(); ++coefficient )
+            internal.col( coefficient ) = canonical.col(
+                M_bernsteinToCanonical[coefficient] );
+        this->copyFromEigen(
+            M_geometryRepresentation->fromBezier( internal ),
+            coefficients );
+    }
+
+    /**
+     * @brief Convert nodal interpolation data to canonical stored coefficients.
+     * @tparam Matrix writable Eigen- or uBLAS-compatible matrix
+     * @param coefficients component-by-coefficient table, modified in place
+     * @param representation requested storage semantics
+     */
+    template <typename Matrix>
+    void convertNodalGeometryToStored(
+        Matrix& coefficients,
+        geometry::GeometryRepresentationKind representation ) const
+    {
+        if ( representation ==
+             geometry::GeometryRepresentationKind::NodalLagrange )
+            return;
+        this->validateRepresentation( representation );
+        if ( this->matrixColumns( coefficients ) != this->nbPoints() )
+            throw std::invalid_argument(
+                "GeoMap geometry conversion has an invalid coefficient count" );
+
+        auto const internal = M_geometryRepresentation->toBezier(
+            this->copyToEigen( coefficients ) );
+        auto canonical = internal;
+        for ( Eigen::Index coefficient = 0;
+              coefficient < internal.cols(); ++coefficient )
+            canonical.col( M_bernsteinToCanonical[coefficient] ) =
+                internal.col( coefficient );
+        this->copyFromEigen( canonical, coefficients );
+    }
+
+    /** @brief Resolve coefficient semantics from an entity or compact view. */
+    template <typename GeometricEntity>
+    [[nodiscard]] static geometry::GeometryRepresentationKind
+    geometryRepresentationOf( GeometricEntity const& entity ) noexcept
+    {
+        if constexpr ( GeometricEntityViewType<GeometricEntity> )
+            return entity.mesh().geometryRepresentation();
+        else if constexpr ( requires { entity.mesh(); } )
+        {
+            auto const* mesh = entity.mesh();
+            return mesh ? mesh->geometryRepresentation()
+                        : geometry::GeometryRepresentationKind::NodalLagrange;
+        }
         else
-            return representation_policy_type( std::move( referenceNodes ) );
+            return geometry::GeometryRepresentationKind::NodalLagrange;
     }
 
     /**
@@ -1264,6 +1333,10 @@ class GeoMap
                         M_G = em_cmatrix_col_type<typename element_type::value_type>( elementNodes.data().begin(), M_G.rows(), M_G.cols() ).template cast<value_type>();
                 }
 
+                if ( !use_vertices )
+                    M_gm->convertStoredGeometryToNodal(
+                        M_G, geometric_mapping_type::geometryRepresentationOf( __e ) );
+
                 M_id = __e.id();
                 M_e_markers = __e.markers();
             }
@@ -1289,6 +1362,9 @@ class GeoMap
                 view.updateVertexCoordinates( M_G );
             else
                 view.updateCoordinates( M_G );
+            if ( !useVertices )
+                M_gm->convertStoredGeometryToNodal(
+                    M_G, geometric_mapping_type::geometryRepresentationOf( view ) );
             M_id = view.id();
             M_e_markers = view.markers();
         }
@@ -3738,6 +3814,8 @@ class GeoMap
               M_B( RealDim, Dim ),
               M_g( M_gm->nbPoints(), Dim )
         {
+            M_gm->convertStoredGeometryToNodal(
+                M_G, geometric_mapping_type::geometryRepresentationOf( ge ) );
             this->init();
         }
 
@@ -3761,6 +3839,8 @@ class GeoMap
               M_g( M_gm->nbPoints(), Dim )
         {
             view.updateCoordinates( M_G );
+            M_gm->convertStoredGeometryToNodal(
+                M_G, geometric_mapping_type::geometryRepresentationOf( view ) );
             this->init();
         }
 
@@ -3845,6 +3925,8 @@ class GeoMap
             requires( !GeometricEntityViewType<GeoElem> )
         {
             M_G = ge.G();
+            M_gm->convertStoredGeometryToNodal(
+                M_G, geometric_mapping_type::geometryRepresentationOf( ge ) );
             this->init();
         }
 
@@ -3857,6 +3939,8 @@ class GeoMap
         void update( View const& view )
         {
             view.updateCoordinates( M_G );
+            M_gm->convertStoredGeometryToNodal(
+                M_G, geometric_mapping_type::geometryRepresentationOf( view ) );
             this->init();
         }
 
@@ -4536,6 +4620,118 @@ class GeoMap
     }; // Inverse
 
   private:
+    template <typename Matrix>
+    [[nodiscard]] static size_type matrixRows( Matrix const& matrix )
+    {
+        if constexpr ( requires { matrix.rows(); } )
+            return static_cast<size_type>( matrix.rows() );
+        else
+            return static_cast<size_type>( matrix.size1() );
+    }
+
+    template <typename Matrix>
+    [[nodiscard]] static size_type matrixColumns( Matrix const& matrix )
+    {
+        if constexpr ( requires { matrix.cols(); } )
+            return static_cast<size_type>( matrix.cols() );
+        else
+            return static_cast<size_type>( matrix.size2() );
+    }
+
+    template <typename Matrix>
+    [[nodiscard]] static Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic>
+    copyToEigen( Matrix const& matrix )
+    {
+        Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> result(
+            matrixRows( matrix ), matrixColumns( matrix ) );
+        for ( Eigen::Index row = 0; row < result.rows(); ++row )
+            for ( Eigen::Index column = 0;
+                  column < result.cols(); ++column )
+                result( row, column ) = matrix( row, column );
+        return result;
+    }
+
+    template <typename Derived, typename Matrix>
+    static void copyFromEigen( Eigen::MatrixBase<Derived> const& source,
+                               Matrix& destination )
+    {
+        if ( matrixRows( destination ) !=
+                 static_cast<size_type>( source.rows() ) ||
+             matrixColumns( destination ) !=
+                 static_cast<size_type>( source.cols() ) )
+            throw std::invalid_argument(
+                "GeoMap geometry conversion matrix dimensions disagree" );
+        for ( Eigen::Index row = 0; row < source.rows(); ++row )
+            for ( Eigen::Index column = 0;
+                  column < source.cols(); ++column )
+                destination( row, column ) = source( row, column );
+    }
+
+    static void validateRepresentation(
+        geometry::GeometryRepresentationKind representation )
+    {
+        if ( !geometry::isValidGeometryRepresentation( representation ) )
+            throw std::invalid_argument(
+                "Unsupported geometry coefficient representation" );
+    }
+
+    /** Build immutable nodal/Bezier conversion metadata once per GeoMap. */
+    void initGeometryRepresentation()
+    {
+        typename representation_policy_type::points_type referenceNodes(
+            nDim, this->points().size2() );
+        for ( Eigen::Index coefficient = 0;
+              coefficient < referenceNodes.cols(); ++coefficient )
+            for ( int direction = 0; direction < nDim; ++direction )
+                referenceNodes( direction, coefficient ) =
+                    this->points()( direction, coefficient );
+
+        if constexpr ( is_order_dynamic )
+            M_geometryRepresentation.emplace(
+                RuntimeOrder{ this->order() }, referenceNodes );
+        else
+            M_geometryRepresentation.emplace( referenceNodes );
+
+        bezier_representation_policy_type bezier = [&]()
+        {
+            if constexpr ( is_order_dynamic )
+                return bezier_representation_policy_type{
+                    RuntimeOrder{ this->order() } };
+            else
+                return bezier_representation_policy_type{};
+        }();
+        auto const controlLocations =
+            bezier.coefficientReferencePoints();
+        M_bernsteinToCanonical.resize( controlLocations.cols() );
+        std::vector<bool> matched(
+            static_cast<size_type>( referenceNodes.cols() ), false );
+        value_type const tolerance =
+            value_type( 64 ) * std::numeric_limits<value_type>::epsilon();
+        for ( Eigen::Index control = 0;
+              control < controlLocations.cols(); ++control )
+        {
+            bool found = false;
+            for ( Eigen::Index canonical = 0;
+                  canonical < referenceNodes.cols(); ++canonical )
+            {
+                if ( matched[canonical] )
+                    continue;
+                if ( ( controlLocations.col( control ) -
+                       referenceNodes.col( canonical ) )
+                         .norm() <= tolerance )
+                {
+                    M_bernsteinToCanonical[control] = canonical;
+                    matched[canonical] = true;
+                    found = true;
+                    break;
+                }
+            }
+            if ( !found )
+                throw std::logic_error(
+                    "GeoMap could not match a Bezier coefficient to its canonical topology slot" );
+        }
+    }
+
     element_gm_ptrtype _elementMap;
     face_gm_ptrtype _boundaryMap;
     matrix_type M_g_linear;
@@ -4543,6 +4739,8 @@ class GeoMap
     friend class Inverse;
 
     reference_convex_type M_refconvex;
+    std::optional<representation_policy_type> M_geometryRepresentation;
+    std::vector<Eigen::Index> M_bernsteinToCanonical;
 };
 
 #include <boost/preprocessor/comparison/less.hpp>
@@ -4561,6 +4759,40 @@ class GeoMap
 template <int Dim, int Order, int RealDim, template <int, int, int> class Entity = Simplex, typename T = double>
 struct GT_Lagrange
 {
+};
+
+/**
+ * @brief Genuine runtime-order Lagrange geometric transformation.
+ *
+ * Static orders retain the generated `GT_Lagrange` specializations below.
+ * The dynamic specialization directly reuses the same `GeoMap` mathematical
+ * kernel and therefore does not dispatch to, or instantiate, a finite list of
+ * static polynomial orders.
+ *
+ * @tparam Dim topological dimension
+ * @tparam RealDim ambient dimension
+ * @tparam Entity reference-cell family
+ * @tparam T coordinate scalar type
+ */
+template <int Dim, int RealDim,
+          template <int, int, int> class Entity, typename T>
+struct GT_Lagrange<Dim, Dynamic, RealDim, Entity, T>
+    : public GeoMap<Dim, Dynamic, RealDim, T, Entity, Lagrange>
+{
+    using super =
+        GeoMap<Dim, Dynamic, RealDim, T, Entity, Lagrange>;
+    using value_type = typename super::value_type;
+    using element_gm_type = typename super::element_gm_type;
+    using face_gm_type = typename super::face_gm_type;
+
+    static constexpr uint16_type nDim = Dim;
+    static constexpr int nOrder_v = Dynamic;
+    static constexpr uint16_type nRealDim = RealDim;
+
+    /** @brief Construct a true runtime-order mapping. */
+    explicit GT_Lagrange( RuntimeOrder order )
+        : super( order )
+    {}
 };
 
 template <int Dim, int Order, int RealDim, typename T = double>

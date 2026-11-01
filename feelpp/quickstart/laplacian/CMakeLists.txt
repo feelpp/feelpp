@@ -46,6 +46,25 @@ feelpp_add_application( darcy_3d SRCS qs_darcy.cpp INCLUDE_IN_ALL DEFS FEELPP_DI
        --no-export )
 feelpp_add_application( darcy_hybrid_3d SRCS qs_darcy_hybrid.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_DARCY_HYBRID_3D INSTALL TESTS )
 
+if ( Python3_EXECUTABLE )
+  add_test(
+    NAME feelpp_qs_darcy_convergence
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/darcy_convergence.py
+      --conforming $<TARGET_FILE:${QS_DARCY_3D}>
+      --hybrid $<TARGET_FILE:${QS_DARCY_HYBRID_3D}>
+      --config ${CMAKE_CURRENT_SOURCE_DIR}/cases/darcy-convergence/darcy-convergence.cfg
+      --output ${CMAKE_CURRENT_BINARY_DIR}/darcy-convergence-ci.csv
+      --pair rt:0 --pair bdm:1
+      --h 0.25 --h 0.18 --h 0.125
+      --formulation conforming --formulation hybrid-monolithic --formulation hybrid-condensed
+      --rate-slack 0.25
+  )
+  set_tests_properties(feelpp_qs_darcy_convergence PROPERTIES
+    LABELS "quickstart;darcy;convergence"
+    TIMEOUT 900
+  )
+endif()
+
 add_dependencies(qs_laplacian
   ${QS_LAPLACIAN_2D}
   ${QS_LAPLACIAN_2DH}

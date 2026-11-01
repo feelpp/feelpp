@@ -28,7 +28,7 @@ struct RunResult
 {
     double h = 0;
     std::size_t nDof = 0;
-    int runtimeOrder = 0;
+    int order = 0;
     double l2 = 0;
     double h1 = 0;
 };
@@ -93,7 +93,7 @@ void printConvergenceTable( std::vector<RunResult> const& results, std::string c
     std::cout << std::left
               << std::setw( 7 ) << "level"
               << std::setw( 14 ) << "h"
-              << std::setw( 10 ) << "runtimeP"
+              << std::setw( 10 ) << "order"
               << std::setw( 12 ) << "nDof"
               << std::setw( 16 ) << "L2"
               << std::setw( 14 ) << "rate(L2)"
@@ -110,12 +110,12 @@ void printConvergenceTable( std::vector<RunResult> const& results, std::string c
 
         auto rateL2Str = rateL2 ? scientific( *rateL2, 4 ) : std::string( "-" );
         auto rateH1Str = rateH1 ? scientific( *rateH1, 4 ) : std::string( "-" );
-        auto runtimeOrder = "P" + std::to_string( r.runtimeOrder );
+        auto orderLabel = "P" + std::to_string( r.order );
 
         std::cout << std::left
                   << std::setw( 7 ) << i
                   << std::setw( 14 ) << scientific( r.h, 4 )
-                  << std::setw( 10 ) << runtimeOrder
+                  << std::setw( 10 ) << orderLabel
                   << std::setw( 12 ) << r.nDof
                   << std::setw( 16 ) << scientific( r.l2, 6 )
                   << std::setw( 14 ) << rateL2Str
@@ -141,8 +141,7 @@ RunResult solveSimplexLaplacian( int order,
         auto const& fe = Vh->dof()->fe();
         std::cout << "dof table local dof/component : " << Vh->dof()->nLocalDof( true ) << "\n";
         std::cout << "dof table local dof/element   : " << Vh->dof()->nLocalDof() << "\n";
-        if constexpr ( requires { fe.runtimeLocalDof(); } )
-            std::cout << "fe runtimeLocalDof            : " << fe.runtimeLocalDof() << "\n";
+        std::cout << "fe localDof                   : " << fe.localDof() << "\n";
         if constexpr ( requires { fe.nbDof(); } )
             std::cout << "fe nbDof                      : " << fe.nbDof() << "\n";
     }
@@ -228,14 +227,10 @@ RunResult solveSimplexLaplacian( int order,
         e->save();
     }
 
-    int runtimeOrder = order;
-    if constexpr ( requires { Vh->runtimeOrder(); } )
-        runtimeOrder = static_cast<int>( Vh->runtimeOrder() );
-
     RunResult result;
     result.h = mesh->hAverage();
     result.nDof = Vh->nDof();
-    result.runtimeOrder = runtimeOrder;
+    result.order = static_cast<int>( Vh->order() );
     result.l2 = l2Display;
     result.h1 = h1Display;
     return result;

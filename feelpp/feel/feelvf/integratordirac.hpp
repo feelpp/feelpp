@@ -15,10 +15,9 @@
 #ifndef __INTEGRATORDIRAC_HPP
 #define __INTEGRATORDIRAC_HPP 1
 
-#include <boost/timer.hpp>
-
-
 #include <feel/feelalg/enums.hpp>
+#include <feel/feeldiscr/mesh.hpp>
+#include <feel/feelmesh/ranges.hpp>
 
 namespace Feel
 {
@@ -42,7 +41,7 @@ public:
     /** @name Typedefs
      */
     //@{
-    static const size_type context = DiracExpr::context;
+    static const size_type context = DiracExpr::context | vm::POINT;
 
     template<typename Func>
     struct HasTestFunction
@@ -56,28 +55,29 @@ public:
         static inline const bool result = DiracExpr::template HasTrialFunction<Func>::result;
     };
 
-    static const size_type iDim = boost::tuples::template element<0, ElementRange>::type::value;
+    static const size_type iDim = ElementRange::iDim();
 
     typedef IntegratorDirac<ElementRange, Pts, DiracExpr> self_type;
 
-    typedef typename boost::tuples::template element<1, ElementRange>::type element_iterator;
+    using mesh_type = typename ElementRange::mesh_t;
+    using mesh_ptrtype = std::shared_ptr<mesh_type>;
+    using element_iterator = typename ElementRange::iterator_t;
 
     typedef Pts points_type;
     typedef DiracExpr expression_type;
     typedef typename expression_type::value_type value_type;
+    using test_basis = typename expression_type::test_basis;
+    using trial_basis = typename expression_type::trial_basis;
 
     struct eval
     {
         //
         // some typedefs
         //
-        typedef typename boost::remove_reference<typename element_iterator::reference>::type const_t;
-        typedef typename boost::remove_const<const_t>::type the_face_element_type;
-        typedef typename the_face_element_type::super2::template Element<the_face_element_type>::type the_element_type;
-        typedef the_element_type element_type;
-        typedef typename the_element_type::gm_type gm_type;
+        using element_type = typename mesh_type::element_type;
+        using gm_type = typename mesh_type::gm_type;
         typedef std::shared_ptr<gm_type> gm_ptrtype;
-        typedef typename gm_type::template Context<expression_type::context, the_element_type> gmc_type;
+        typedef typename gm_type::template Context<element_type> gmc_type;
         typedef std::shared_ptr<gmc_type> gmc_ptrtype;
         typedef typename gm_type::precompute_ptrtype gmcpc_ptrtype;
         //typedef typename eval_expr_type::value_type value_type;
@@ -96,10 +96,11 @@ public:
           typedef mpl::if_<mpl::bool_<shape_type::is_scalar>,
           mpl::identity<value_type>,
           mpl::identity<ublas::vector<value_type,storage_type> > >::type::type ret_type;*/
-        typedef ublas::matrix<value_type> ret_type;
+        typedef Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> ret_type;
     };
 
-    typedef ublas::matrix<value_type> ret_type;
+    using evaluate_type = Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic>;
+    using ret_type = evaluate_type;
     //@}
 
     /** @name Constructors, destructor
@@ -110,8 +111,9 @@ public:
                      Pts const& pts,
                      expression_type const& __expr )
         :
-        M_eltbegin( __elts.template get<1>() ),
-        M_eltend( __elts.template get<2>() ),
+        M_eltbegin( __elts.begin() ),
+        M_eltend( __elts.end() ),
+        M_mesh( __elts.mesh() ),
         M_pts( pts ),
         M_expr( __expr )
     {
@@ -120,6 +122,7 @@ public:
         :
         M_eltbegin( ioe.M_eltbegin ),
         M_eltend( ioe.M_eltend ),
+        M_mesh( ioe.M_mesh ),
         M_pts( ioe.M_pts ),
         M_expr( ioe.M_expr )
     {
@@ -164,6 +167,8 @@ public:
     //! expression is polynomial?
     bool isPolynomial() const { return M_expr.isPolynomial(); }
 
+    expression_type const& expression() const { return M_expr; }
+
     /**
      * assembly routine for Dirichlet condition
      *
@@ -181,7 +186,7 @@ public:
 
     //typename expression_type::template tensor<Geo_t>::value_type
     ret_type
-    evaluate() const
+    evaluate( bool /*parallel*/ = true ) const
     {
         return evaluate( mpl::int_<iDim>() );
     }
@@ -206,6 +211,7 @@ private:
 
     element_iterator M_eltbegin;
     element_iterator M_eltend;
+    mesh_type const* M_mesh;
 
     Pts const& M_pts;
     expression_type M_expr;
@@ -254,10 +260,8 @@ IntegratorDirac<ElementRange, Pts,  DiracExpr>::assemble( std::shared_ptr<Elem1>
     mesh_element_iterator en = M_mesh->endElementWithProcessId( M_mesh->comm().rank() );
 
     // geometric mapping context
-    typedef mesh_type::gm_type gm_type;
-    typedef std::shared_ptr<gm_type> gm_ptrtype;
-    typedef gm_type::Context<vm::POINT, geoelement_type> gmc_type;
-    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
+    using gm_type = typename eval::gm_type;
+    using gmc_ptrtype = typename eval::gmc_ptrtype;
 
     // basis
     typedef space_type::basis_type basis_type;
@@ -303,7 +307,8 @@ IntegratorDirac<ElementRange, Pts,  DiracExpr>::assemble( std::shared_ptr<Elem1>
                 __geopc->update( pts );
                 __c->update( *it, __geopc );
 
-                for ( uint16_type loc_ind=0; loc_ind < basis_type::nLocalDof ; loc_ind++ )
+                for ( uint16_type loc_ind = 0;
+                      loc_ind < __basis->localDof(); ++loc_ind )
                 {
                     for ( uint16_type comp = 0; comp < basis_type::nComponents; ++comp )
                     {
@@ -339,48 +344,56 @@ template<typename Elements, typename Pts, typename DiracExpr>
 typename IntegratorDirac<Elements, Pts, DiracExpr>::ret_type
 IntegratorDirac<Elements, Pts, DiracExpr>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 {
-    mesh_type::Inverse meshinv( M_mesh );
+    typename eval::ret_type res( eval::shape::M, eval::shape::N );
+    res.setZero();
+    if ( M_eltbegin == M_eltend || M_pts.size() == 0 )
+        return res;
 
-    pts_iterator ptit = M_pts.begin();
-    pts_iterator pten = M_pts.end();
+    CHECK( M_mesh ) << "Dirac integration requires an owning mesh range";
+    auto mesh = std::const_pointer_cast<mesh_type>( M_mesh->shared_from_this() );
+    using mesh_inverse_type = MeshInverse<mesh_type>;
+    using mesh_inverse_size_type = typename mesh_inverse_type::size_type;
+    mesh_inverse_type meshinv( mesh );
+
+    auto ptit = M_pts.begin();
+    auto pten = M_pts.end();
 
     /* initialisation of the mesh::inverse data structure */
     for ( size_type ptid = 0; ptit != pten; ++ptit, ++ptid )
     {
-        meshinv.addPointWithId( ptit->node(), ptid );
+        meshinv.addPointWithId( ptit->node(), ptid, 0 );
     }
 
     meshinv.distribute();
 
     std::vector<bool> dof_done( M_pts.size() );
     std::fill( dof_done.begin(), dof_done.end(), false );
-    std::vector<size_type> itab;
-    matrix_node<value_type>::type pts( mesh_type::nDim, 1 );
-    typedef mesh_type::element_type geoelement_type;
-    typedef mesh_type::element_iterator mesh_element_iterator;
-
-    mesh_element_iterator it = M_mesh->beginElementWithProcessId( M_mesh->comm().size() );
-    mesh_element_iterator en = M_mesh->endElementWithProcessId( M_mesh->comm().size() );
+    std::vector<boost::tuple<mesh_inverse_size_type, uint16_type>> itab;
+    typename matrix_node<value_type>::type pts( mesh_type::nDim, 1 );
+    element_iterator it = M_eltbegin;
+    element_iterator en = M_eltend;
 
     // geometric mapping context
-    typedef mesh_type::gm_type gm_type;
-    typedef std::shared_ptr<gm_type> gm_ptrtype;
-    typedef gm_type::Context<vm::POINT, geoelement_type> gmc_type;
-    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
+    using gm_type = typename eval::gm_type;
+    using gmc_ptrtype = typename eval::gmc_ptrtype;
 
     //
     // Precompute some data in the reference element for
     // geometric mapping and reference finite element
     //
-    gm_ptrtype gm( new gm_type );
-    typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( gm, pts ) );
+    auto const& initialElement = boost::unwrap_ref( *it );
+    auto gm = initialElement.gm();
+    CHECK( gm )
+        << "Dirac integration requires a geometric mapping";
+    auto __geopc = gm->preCompute( pts );
 
     // make sure that we have elements to iterate over (return 0
     // otherwise)
     if ( it == en )
         return typename eval::ret_type( eval::shape::M, eval::shape::N );;
 
-    gmc_ptrtype __c( new gmc_type( gm, *it, __geopc ) );
+    gmc_ptrtype __c = gm->template context<context>(
+        initialElement, __geopc, expression().dynamicContext() );
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
     map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
 
@@ -388,14 +401,10 @@ IntegratorDirac<Elements, Pts, DiracExpr>::evaluate( mpl::int_<MESH_ELEMENTS> ) 
     eval_expr_type expr( expression(), mapgmc );
     typedef typename eval_expr_type::shape shape;
 
-    typename eval::ret_type res( eval::shape::M, eval::shape::N );
-    res.clear();
-
-    // size_type first_dof = M_Space->dof()->firstDof();
     for ( ; it != en; ++ it )
     {
-        __c->update( *it, __geopc );
-        meshinv.pointsInConvex( it->id(), itab );
+        auto const& element = boost::unwrap_ref( *it );
+        meshinv.pointsInConvex( element.id(), itab );
 
         if ( itab.size() == 0 )
             continue;
@@ -403,22 +412,24 @@ IntegratorDirac<Elements, Pts, DiracExpr>::evaluate( mpl::int_<MESH_ELEMENTS> ) 
         for ( size_type i = 0; i < itab.size(); ++i )
         {
             // get dof id in target dof table
-            size_type dof = itab[i];
+            size_type const pointId = boost::get<0>( itab[i] );
 
-            if ( !dof_done[dof] )
+            if ( !dof_done[pointId] )
             {
-                dof_done[dof]=true;
-                ublas::column( pts, 0 ) = meshinv.referenceCoords()[dof];
-                element_type::pc_type pc( v.functionSpace()->fe(), pts );
+                dof_done[pointId] = true;
+                auto const referencePoint =
+                    meshinv.referenceCoords().find( pointId );
+                CHECK( referencePoint != meshinv.referenceCoords().end() )
+                    << "missing Dirac reference coordinate";
+                ublas::column( pts, 0 ) = referencePoint->second;
                 __geopc->update( pts );
-                __c->update( *it, __geopc );
+                __c->template update<context>( element );
+                expr.update( mapgmc );
 
                 for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                 {
                     for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
-                    {
-                        //res( c1, c2 ) += ;
-                    }
+                        res( c1, c2 ) += expr.evalq( c1, c2, 0 );
                 }
 
             }

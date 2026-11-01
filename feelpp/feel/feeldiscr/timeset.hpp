@@ -893,6 +893,17 @@ public:
         template<bool IsNodal,typename FunctionType =  std::nullopt_t>
         FEELPP_NO_EXPORT scalar_p1_space_ptrtype scalarFunctionSpace( FunctionType const& func = std::nullopt, typename std::enable_if<IsNodal>::type* = nullptr )
             {
+                auto makeScalarNodalSpace = [this]()
+                {
+                    if constexpr ( N == Dynamic )
+                        return scalar_p1_space_type::New(
+                            _mesh = M_mesh.value(),
+                            _runtime_order = RuntimeOrder{
+                                M_mesh.value()->order() } );
+                    else
+                        return scalar_p1_space_type::New(
+                            _mesh = M_mesh.value() );
+                };
                 if ( !M_ts->M_scalar_p1 )
                 {
                     /*if ( M_ts->M_vector_p1 && M_ts->M_vector_p1->hasCompSpace() )
@@ -909,7 +920,7 @@ public:
                                 }
                         }
                     if ( !M_ts->M_scalar_p1 )
-                        M_ts->M_scalar_p1 = scalar_p1_space_type::New(_mesh=M_mesh.value() );
+                        M_ts->M_scalar_p1 = makeScalarNodalSpace();
                     M_scalar_p1 = M_ts->M_scalar_p1;
                     DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p1 created\n";
                 }
@@ -920,7 +931,7 @@ public:
 
                 if ( M_mesh.value() != M_ts->M_scalar_p1->mesh() && !M_scalar_p1 )
                 {
-                    M_scalar_p1 = scalar_p1_space_type::New(_mesh=M_mesh.value() );
+                    M_scalar_p1 = makeScalarNodalSpace();
                     DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p1 created\n";
                 }
                 return M_scalar_p1;

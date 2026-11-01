@@ -236,7 +236,8 @@ private:
 
     permutation_vector_type matrixToVectorPermutation ( permutation_matrix_type const& P )
     {
-        FEELPP_ASSERT( P.size1() == P.size2() ).error( "invalid permutation" );
+        CHECK_EQ( P.size1(), P.size2() )
+            << "invalid non-square point permutation";
 
         permutation_vector_type v ( P.size1() );
 
@@ -369,7 +370,9 @@ private:
 
     points_type transformToReal( points_type const& Gt )
     {
-        gm_ptrtype _gm_ptr( new gm_type );
+        auto _gm_ptr = M_elt.gm();
+        CHECK( _gm_ptr )
+            << "Mapped point-set transformation requires a geometric mapping";
 
         typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( _gm_ptr, Gt ) );
 

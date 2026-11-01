@@ -17,57 +17,13 @@
 #include <Eigen/Core>
 
 #include <feel/feelcore/feeltypes.hpp>
+#include <feel/feelpoly/basisinterpolation.hpp>
 #include <feel/feelpoly/piolatransform.hpp>
 #include <feel/feelpoly/pointsetquadrature.hpp>
 #include <feel/feelpoly/hcurlmomentpolicy.hpp>
 
 namespace Feel::detail
 {
-
-/**
- * @brief Present one FE test-basis row as an ordinary interpolation expression.
- *
- * Finite-element dual kernels operate on `evalq`, whereas interpolation-matrix
- * assembly evaluates every domain test basis through `evaliq`. This zero-copy
- * adapter lets both operations share exactly the same edge/face/cell
- * functional kernels for static and runtime cardinalities.
- */
-template<typename BasisExpression>
-class HCurlBasisExpressionRow
-{
-public:
-    using expression_type = std::remove_reference_t<BasisExpression>;
-    using shape = typename expression_type::shape;
-
-    /** Construct a view of one flattened test-basis row. */
-    HCurlBasisExpressionRow( expression_type& expression, uint16_type row )
-        : M_expression( expression ), M_row( row )
-    {}
-
-    /** Return the mapped geometry context owned by the expression. */
-    [[nodiscard]] decltype(auto) geom() const { return M_expression.geom(); }
-    /** Return the number of functional support/quadrature samples. */
-    [[nodiscard]] int nPoints() const { return M_expression.nPoints(); }
-    /** Evaluate the selected test-basis row at one sample and component. */
-    [[nodiscard]] decltype(auto) evalq( uint16_type c1,
-                                        uint16_type c2,
-                                        uint16_type q ) const
-    {
-        return M_expression.evaliq( M_row, c1, c2, q );
-    }
-
-private:
-    expression_type& M_expression;
-    uint16_type M_row;
-};
-
-/** Construct a zero-copy H(curl) test-basis row expression. */
-template<typename BasisExpression>
-[[nodiscard]] auto
-hcurlBasisExpressionRow( BasisExpression& expression, uint16_type row )
-{
-    return HCurlBasisExpressionRow<BasisExpression>( expression, row );
-}
 
 /**
  * Apply edge-tangential point DoFs to an expression.

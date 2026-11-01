@@ -26,6 +26,20 @@ FEELPP_ENVIRONMENT_NO_OPTIONS
 
 namespace
 {
+template<typename StaticMatrix, typename RuntimeMatrix>
+void checkMatrixParity( StaticMatrix const& staticMatrix,
+                        RuntimeMatrix const& runtimeMatrix,
+                        double tolerance )
+{
+    BOOST_REQUIRE_EQUAL( staticMatrix.size1(), runtimeMatrix.size1() );
+    BOOST_REQUIRE_EQUAL( staticMatrix.size2(), runtimeMatrix.size2() );
+    for ( std::size_t i = 0; i < staticMatrix.size1(); ++i )
+        for ( std::size_t j = 0; j < staticMatrix.size2(); ++j )
+            BOOST_CHECK_SMALL(
+                staticMatrix( i, j )-runtimeMatrix( i, j ), tolerance );
+}
+
+
 template<uint16_type Dim, uint16_type Order>
 void checkNedelec1PrimalStaticRuntimeParity()
 {
@@ -56,13 +70,13 @@ void checkNedelec1DualStaticRuntimeParity()
     runtime_dual_type runtimeDual( runtimePrimal );
 
     BOOST_CHECK_EQUAL( runtimeDual.publicOrder(), Order );
-    BOOST_CHECK_EQUAL( runtimeDual.runtimeDofPerEdge(),
+    BOOST_CHECK_EQUAL( runtimeDual.dofPerEdge(),
                        Feel::detail::nedelec1EdgeDof( Order ) );
-    BOOST_CHECK_EQUAL( runtimeDual.runtimeDofPerFace(),
+    BOOST_CHECK_EQUAL( runtimeDual.dofPerFace(),
                        Feel::detail::nedelec1FaceDof( Dim, Order ) );
-    BOOST_CHECK_EQUAL( runtimeDual.runtimeDofPerVolume(),
+    BOOST_CHECK_EQUAL( runtimeDual.dofPerVolume(),
                        Dim == 3 ? Feel::detail::nedelec1VolumeDof( Dim, Order ) : 0 );
-    BOOST_CHECK_EQUAL( runtimeDual.runtimeLocalDof(),
+    BOOST_CHECK_EQUAL( runtimeDual.localDof(),
                        Feel::detail::nedelec1TotalDof( Dim, Order ) );
 
     auto const staticMatrix = staticDual( staticPrimal );
@@ -115,11 +129,12 @@ void checkNedelecFiniteElementStaticRuntimeParity()
 
     auto const& staticCoefficients = staticFe.coeff();
     auto const& runtimeCoefficients = runtimeFe.coeff();
-    BOOST_REQUIRE_EQUAL( staticCoefficients.size1(), runtimeCoefficients.size1() );
-    BOOST_REQUIRE_EQUAL( staticCoefficients.size2(), runtimeCoefficients.size2() );
-    for ( std::size_t i = 0; i < staticCoefficients.size1(); ++i )
-        for ( std::size_t j = 0; j < staticCoefficients.size2(); ++j )
-            BOOST_CHECK_SMALL( staticCoefficients( i, j )-runtimeCoefficients( i, j ), 1e-10 );
+    checkMatrixParity( staticFe.primal().coeff(),
+                       runtimeFe.primal().coeff(), 1e-12 );
+    checkMatrixParity( staticFe.dual()( staticFe.primal() ),
+                       runtimeFe.dual()( runtimeFe.primal() ), 1e-11 );
+    checkMatrixParity( staticCoefficients, runtimeCoefficients, 1e-10 );
+    checkMatrixParity( staticFe.points(), runtimeFe.points(), 1e-12 );
 
     for ( uint16_type localDof = 0; localDof < runtimeFe.localDofCount(); ++localDof )
     {
@@ -131,6 +146,10 @@ void checkNedelecFiniteElementStaticRuntimeParity()
         BOOST_CHECK_EQUAL( runtimeFe.dofFunctionalKind( localDof ),
                            staticFe.dofFunctionalKind( localDof ) );
     }
+    BOOST_CHECK( !staticFe.dofAttachment(
+                     staticFe.localDofCount() ).isValid() );
+    BOOST_CHECK( !runtimeFe.dofAttachment(
+                     runtimeFe.localDofCount() ).isValid() );
 
     typename static_fe_type::points_type points( Dim, 3 );
     for ( uint16_type component = 0; component < Dim; ++component )
@@ -157,6 +176,7 @@ void checkNedelecFiniteElementStaticRuntimeParity()
 } // namespace
 
 BOOST_AUTO_TEST_SUITE( fe_runtime_contract_suite )
+
 
 BOOST_AUTO_TEST_CASE( nedelec1_dynamic_primal_matches_static_dimensions )
 {

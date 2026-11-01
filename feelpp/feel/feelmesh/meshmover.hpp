@@ -257,7 +257,7 @@ MeshMover<MeshType>::applyGhostElements( mesh_ptrtype& imesh,
             size_type eltId = std::get<0>( dataRecvByElt );
             auto const& pointsData = std::get<1>( dataRecvByElt );
             auto & eltModified = imesh->elementIterator( eltId )->second;
-            for ( uint16_type p=0;p<mesh_type::element_type::numPoints;++p )
+            for ( uint16_type p = 0; p < eltModified.nPoints(); ++p )
             {
                 size_type ptId = eltModified.point( p ).id();
                 if ( points_done.find( ptId ) == points_done.end() )

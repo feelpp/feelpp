@@ -367,7 +367,8 @@ public:
     typedef T value_type;
 
     static inline const uint32_type Dim = Convex::nDim;
-    static inline const uint32_type nPoints = Order+1;
+    // Do not hide PointSet::nPoints(), which reports the stored cardinality.
+    static inline const uint32_type nPoints1D = Order+1;
     static inline const uint32_type topological_dimension = Convex::topological_dimension;
     static inline const uint32_type nRealDim = Convex::nRealDim;
 

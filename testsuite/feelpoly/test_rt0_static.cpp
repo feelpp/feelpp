@@ -228,56 +228,6 @@ checkReferenceRtInterpolationExactness( RTType const& rt )
 }
 
 template<typename RTType>
-uint16_type
-runtimeLocalDof( RTType const& rt )
-{
-    if constexpr ( requires { rt.localDofCount(); } )
-        return rt.localDofCount();
-    else
-        return RTType::nLocalDof;
-}
-
-template<typename RTType>
-uint16_type
-runtimeDofPerVertex( RTType const& rt )
-{
-    if constexpr ( requires { rt.dofPerVertex(); } )
-        return rt.dofPerVertex();
-    else
-        return RTType::nDofPerVertex;
-}
-
-template<typename RTType>
-uint16_type
-runtimeDofPerEdge( RTType const& rt )
-{
-    if constexpr ( requires { rt.dofPerEdge(); } )
-        return rt.dofPerEdge();
-    else
-        return RTType::nDofPerEdge;
-}
-
-template<typename RTType>
-uint16_type
-runtimeDofPerFace( RTType const& rt )
-{
-    if constexpr ( requires { rt.dofPerFace(); } )
-        return rt.dofPerFace();
-    else
-        return RTType::nDofPerFace;
-}
-
-template<typename RTType>
-uint16_type
-runtimeDofPerVolume( RTType const& rt )
-{
-    if constexpr ( requires { rt.dofPerVolume(); } )
-        return rt.dofPerVolume();
-    else
-        return RTType::nDofPerVolume;
-}
-
-template<typename RTType>
 void
 checkDofAttachmentContract( RTType const& rt )
 {
@@ -285,7 +235,7 @@ checkDofAttachmentContract( RTType const& rt )
 
     std::array<uint16_type, 4> countByDim = { 0, 0, 0, 0 };
 
-    for ( uint16_type ldof = 0; ldof < runtimeLocalDof( rt ); ++ldof )
+    for ( uint16_type ldof = 0; ldof < rt.localDof(); ++ldof )
     {
         BOOST_CHECK_EQUAL( rt.component( ldof ), 0 );
         BOOST_CHECK_EQUAL( rt.dofParent( ldof ), ldof );
@@ -303,19 +253,19 @@ checkDofAttachmentContract( RTType const& rt )
         {
         case 0:
             BOOST_CHECK_LT( attachment.entityId, RTType::reference_convex_type::numVertices );
-            BOOST_CHECK_LT( attachment.ordinal, runtimeDofPerVertex( rt ) );
+            BOOST_CHECK_LT( attachment.ordinal, rt.dofPerVertex() );
             break;
         case 1:
             BOOST_CHECK_LT( attachment.entityId, RTType::reference_convex_type::numEdges );
-            BOOST_CHECK_LT( attachment.ordinal, runtimeDofPerEdge( rt ) );
+            BOOST_CHECK_LT( attachment.ordinal, rt.dofPerEdge() );
             break;
         case 2:
             BOOST_CHECK_LT( attachment.entityId, RTType::reference_convex_type::numFaces );
-            BOOST_CHECK_LT( attachment.ordinal, runtimeDofPerFace( rt ) );
+            BOOST_CHECK_LT( attachment.ordinal, rt.dofPerFace() );
             break;
         case 3:
             BOOST_CHECK_EQUAL( attachment.entityId, 0 );
-            BOOST_CHECK_LT( attachment.ordinal, runtimeDofPerVolume( rt ) );
+            BOOST_CHECK_LT( attachment.ordinal, rt.dofPerVolume() );
             break;
         default:
             BOOST_FAIL( "invalid dof attachment entity dimension" );
@@ -323,12 +273,12 @@ checkDofAttachmentContract( RTType const& rt )
     }
 
     BOOST_CHECK_EQUAL( countByDim[0],
-                       static_cast<uint16_type>( RTType::reference_convex_type::numVertices * runtimeDofPerVertex( rt ) ) );
+                       static_cast<uint16_type>( RTType::reference_convex_type::numVertices * rt.dofPerVertex() ) );
     BOOST_CHECK_EQUAL( countByDim[1],
-                       static_cast<uint16_type>( RTType::reference_convex_type::numEdges * runtimeDofPerEdge( rt ) ) );
+                       static_cast<uint16_type>( RTType::reference_convex_type::numEdges * rt.dofPerEdge() ) );
     BOOST_CHECK_EQUAL( countByDim[2],
-                       static_cast<uint16_type>( RTType::reference_convex_type::numFaces * runtimeDofPerFace( rt ) ) );
-    BOOST_CHECK_EQUAL( countByDim[3], runtimeDofPerVolume( rt ) );
+                       static_cast<uint16_type>( RTType::reference_convex_type::numFaces * rt.dofPerFace() ) );
+    BOOST_CHECK_EQUAL( countByDim[3], rt.dofPerVolume() );
 }
 
 template<int Order>
@@ -359,7 +309,7 @@ checkRtSimplex2d()
 
     rt_t rt;
     BOOST_CHECK_EQUAL( rt.familyName(), "raviartthomas" );
-    BOOST_CHECK_EQUAL( rt.runtimeOrder(), Order );
+    BOOST_CHECK_EQUAL( rt.order(), Order );
     BOOST_CHECK_EQUAL( rt.localDofPerComponent(), rtSimplex2dDof<Order>() );
     if constexpr ( Order == 0 )
         BOOST_CHECK_EQUAL( rt.nbPoints(), rtSimplex2dDof<Order>() );
@@ -392,7 +342,7 @@ checkRtSimplex3d()
 
     rt_t rt;
     BOOST_CHECK_EQUAL( rt.familyName(), "raviartthomas" );
-    BOOST_CHECK_EQUAL( rt.runtimeOrder(), Order );
+    BOOST_CHECK_EQUAL( rt.order(), Order );
     BOOST_CHECK_EQUAL( rt.localDofPerComponent(), rtSimplex3dDof<Order>() );
     if constexpr ( Order == 0 )
         BOOST_CHECK_EQUAL( rt.nbPoints(), rtSimplex3dDof<Order>() );
@@ -438,7 +388,7 @@ checkRtDynamicSimplex2d()
     rt_t rt{ RuntimeOrder{ Order } };
     BOOST_CHECK_EQUAL( rt.familyName(), "raviartthomas" );
     BOOST_CHECK_EQUAL( rt.order(), Order );
-    BOOST_CHECK_EQUAL( rt.runtimeOrder(), Order );
+    BOOST_CHECK_EQUAL( rt.order(), Order );
     BOOST_CHECK_EQUAL( rt.internalOrder(), Order + 1 );
     BOOST_CHECK_EQUAL( rt.localDofPerComponent(), rtSimplex2dDof<Order>() );
     BOOST_CHECK_EQUAL( rt.localDofCount(), rtSimplex2dDof<Order>() );
@@ -470,7 +420,7 @@ checkRtDynamicSimplex3d()
     rt_t rt{ RuntimeOrder{ Order } };
     BOOST_CHECK_EQUAL( rt.familyName(), "raviartthomas" );
     BOOST_CHECK_EQUAL( rt.order(), Order );
-    BOOST_CHECK_EQUAL( rt.runtimeOrder(), Order );
+    BOOST_CHECK_EQUAL( rt.order(), Order );
     BOOST_CHECK_EQUAL( rt.internalOrder(), Order + 1 );
     BOOST_CHECK_EQUAL( rt.localDofPerComponent(), rtSimplex3dDof<Order>() );
     BOOST_CHECK_EQUAL( rt.localDofCount(), rtSimplex3dDof<Order>() );
@@ -507,7 +457,7 @@ BOOST_AUTO_TEST_CASE( rt0_2d_compile_time_sanity )
 
     rt0_2d_t rt0;
     BOOST_CHECK_EQUAL( rt0.familyName(), "raviartthomas" );
-    BOOST_CHECK_EQUAL( rt0.runtimeOrder(), 0 );
+    BOOST_CHECK_EQUAL( rt0.order(), 0 );
     BOOST_CHECK_EQUAL( rt0.localDofPerComponent(), 3 );
 
     checkFiniteEvaluationAtNodes( rt0 );
@@ -524,7 +474,7 @@ BOOST_AUTO_TEST_CASE( rt0_3d_compile_time_sanity )
 
     rt0_3d_t rt0;
     BOOST_CHECK_EQUAL( rt0.familyName(), "raviartthomas" );
-    BOOST_CHECK_EQUAL( rt0.runtimeOrder(), 0 );
+    BOOST_CHECK_EQUAL( rt0.order(), 0 );
     BOOST_CHECK_EQUAL( rt0.localDofPerComponent(), 4 );
 
     checkFiniteEvaluationAtNodes( rt0 );
@@ -599,9 +549,9 @@ BOOST_AUTO_TEST_CASE( rt_dynamic_simplex_orders_sanity )
     rt0_dynamic_3d_t rt0_3d{ RuntimeOrder{ 0 } };
 
     BOOST_CHECK_EQUAL( rt0_2d.familyName(), "raviartthomas" );
-    BOOST_CHECK_EQUAL( rt0_2d.runtimeOrder(), 0 );
+    BOOST_CHECK_EQUAL( rt0_2d.order(), 0 );
     BOOST_CHECK_EQUAL( rt0_2d.localDofPerComponent(), rt0_static_2d_t::nLocalDof );
-    BOOST_CHECK_EQUAL( rt0_3d.runtimeOrder(), 0 );
+    BOOST_CHECK_EQUAL( rt0_3d.order(), 0 );
     BOOST_CHECK_EQUAL( rt0_3d.localDofPerComponent(), rt0_static_3d_t::nLocalDof );
 
     checkFiniteEvaluationAtNodes( rt0_2d );

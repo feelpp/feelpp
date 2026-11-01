@@ -170,11 +170,28 @@ class BernsteinBezier : public OrderBase<Order>
         std::array<uint16_type, Dim + 1>, std::array<uint16_type, Dim>>;
     using multi_indices_type = std::vector<multi_index_type>;
 
+    [[nodiscard]] static RuntimeOrder
+    validatedRepresentationOrder( RuntimeOrder order )
+    {
+        order = validatedOrder<BernsteinBezier>( order );
+        if ( order.value < 1 )
+            throw std::invalid_argument(
+                "A geometry representation order must be at least one" );
+        if constexpr ( Feel::is_simplex_v<Entity<Dim, 1, Dim>> )
+            return Feel::detail::validatedNodalOrder<
+                Feel::detail::SimplexCardinality>( Dim, order );
+        else
+            return Feel::detail::validatedNodalOrder<
+                Feel::detail::HypercubeCardinality>( Dim, order );
+    }
+
   public:
+    /** Authoritative compile-time order specification. */
+    static constexpr int order_spec = order_base_type::order_spec;
     /** Scalar value type. */
     using value_type = T;
     /** Reference convex used by the representation. */
-    using convex_type = Entity<Dim, ( Order == Dynamic ? 1 : Order ), Dim>;
+    using convex_type = Entity<Dim, ( order_spec == Dynamic ? 1 : order_spec ), Dim>;
     /** Matrix whose columns are reference points. */
     using points_type = Eigen::Matrix<T, Dim, Eigen::Dynamic>;
     /** Matrix whose rows are basis functions and columns are points. */
@@ -187,11 +204,14 @@ class BernsteinBezier : public OrderBase<Order>
     /** @brief Return the reference dimension. */
     [[nodiscard]] static consteval int dimension() noexcept { return Dim; }
     /** @brief Return whether the polynomial order is selected at runtime. */
-    [[nodiscard]] static consteval bool isOrderDynamic() noexcept { return Order == Dynamic; }
+    [[nodiscard]] static consteval bool isOrderDynamic() noexcept
+    {
+        return order_base_type::is_order_dynamic;
+    }
     /** @brief Return whether the polynomial order is known at compile time. */
     [[nodiscard]] static consteval bool isOrderStatic() noexcept { return !isOrderDynamic(); }
     /** @brief Return the template order, including `Dynamic`. */
-    [[nodiscard]] static consteval int staticOrder() noexcept { return Order; }
+    [[nodiscard]] static consteval int staticOrder() noexcept { return order_spec; }
     /** @brief Return whether exact de Casteljau subdivision is supported. */
     [[nodiscard]] static consteval bool supportsSubdivision() noexcept { return Dim == 1; }
     /** @brief Return whether coefficient convex-hull bounds are available. */
@@ -220,13 +240,9 @@ class BernsteinBezier : public OrderBase<Order>
      * @throws std::invalid_argument for order zero or a static-order mismatch
      */
     explicit BernsteinBezier( RuntimeOrder order )
-        : order_base_type( order ), M_multiIndices( makeMultiIndices( order.value ) )
+        : order_base_type( validatedRepresentationOrder( order ) ),
+          M_multiIndices( makeMultiIndices( order.value ) )
     {
-        if ( order.value < 1 )
-            throw std::invalid_argument( "A geometry representation order must be at least one" );
-        if constexpr ( Order != Dynamic )
-            if ( order.value != Order )
-                throw std::invalid_argument( "Runtime order disagrees with static geometry representation" );
     }
 
     /** @brief Return the effective polynomial order. */
@@ -242,6 +258,38 @@ class BernsteinBezier : public OrderBase<Order>
             return Feel::detail::simplexTotal( Dim, this->order() );
         else if constexpr ( isHypercube() )
             return Feel::detail::hypercubeTotal( Dim, this->order() );
+    }
+
+    /**
+     * @brief Return the canonical reference location of each control point.
+     *
+     * Columns follow the internal Bernstein multi-index ordering. Consumers
+     * can match these locations against their topological point ordering
+     * without depending on the representation's private index layout.
+     */
+    [[nodiscard]] points_type coefficientReferencePoints() const
+    {
+        points_type result(
+            Dim, static_cast<Eigen::Index>( M_multiIndices.size() ) );
+        T const inverseOrder = T( 1 ) / T( this->order() );
+        for ( size_type coefficient = 0;
+              coefficient < M_multiIndices.size(); ++coefficient )
+        {
+            for ( int direction = 0; direction < Dim; ++direction )
+            {
+                uint16_type const index = [&]()
+                {
+                    if constexpr ( isSimplex() )
+                        return M_multiIndices[coefficient][direction + 1];
+                    else
+                        return M_multiIndices[coefficient][direction];
+                }();
+                result( direction,
+                        static_cast<Eigen::Index>( coefficient ) ) =
+                    T( 2 ) * T( index ) * inverseOrder - T( 1 );
+            }
+        }
+        return result;
     }
 
     /** @brief Return a stable human-readable representation name. */

@@ -452,7 +452,9 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onElements( std::shared_
                 expr_evaluator.update( mapgmc( ctx ) );
                 fe->interpolate( expr_evaluator, IhLoc );
 
-                auto const& s = dof->localToGlobalSigns( curElt.id() );
+                auto canonicalIh = IhLoc;
+                dof->mapLocalToCanonicalDofCoefficients(
+                    curElt.id(), canonicalIh );
                 for( auto const& ldof : dof->localDof( curElt.id() ) )
                 {
                     //size_type index = ldof.second.index();
@@ -462,7 +464,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onElements( std::shared_
                         continue;
 
                     uint16_type thelocdof = ldof.first.localDof();
-                    double __value = s(thelocdof)*IhLoc( thelocdof );
+                    double __value = canonicalIh( thelocdof );
 
                     if ( vf::isEliminationDirichlet( M_on_strategy ) || vf::isPenalisationDirichlet( M_on_strategy ) )
                     {
@@ -583,17 +585,17 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onFaces( std::shared_ptr
 
         auto expr_evaluator = M_expr.evaluator( vf::mapgmc(ctx) );
 
-        DVLOG(2)  << "face_type::numVertices = " << face_type::numVertices << ", fe_type::nDofPerVertex = " << fe_type::nDofPerVertex << "\n"
-                  << "face_type::numEdges = " << face_type::numEdges << ", fe_type::nDofPerEdge = " << fe_type::nDofPerEdge << "\n"
-                  << "face_type::numFaces = " << face_type::numFaces << ", fe_type::nDofPerFace = " << fe_type::nDofPerFace << "\n";
+        DVLOG(2)  << "face_type::numVertices = " << face_type::numVertices << ", dofPerVertex = " << __fe->dofPerVertex() << "\n"
+                  << "face_type::numEdges = " << face_type::numEdges << ", dofPerEdge = " << __fe->dofPerEdge() << "\n"
+                  << "face_type::numFaces = " << face_type::numFaces << ", dofPerFace = " << __fe->dofPerFace() << "\n";
 #if 0
         index_type nbFaceDof = invalid_v<index_type>;
         if ( !fe_type::is_modal )
-            nbFaceDof = ( face_type::numVertices * fe_type::nDofPerVertex +
-                          face_type::numEdges * fe_type::nDofPerEdge +
-                          face_type::numFaces * fe_type::nDofPerFace );
+            nbFaceDof = ( face_type::numVertices * __fe->dofPerVertex() +
+                          face_type::numEdges * __fe->dofPerEdge() +
+                          face_type::numFaces * __fe->dofPerFace() );
         else
-            nbFaceDof = face_type::numVertices * fe_type::nDofPerVertex;
+            nbFaceDof = face_type::numVertices * __fe->dofPerVertex();
         DVLOG(2)  << "nbFaceDof = " << nbFaceDof << "\n";
         //const index_type nbFaceDof = __fe->boundaryFE()->points().size2();
 #endif

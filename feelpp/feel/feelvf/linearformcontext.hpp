@@ -426,26 +426,15 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
 
     if constexpr ( !UseMortar )
     {
-        M_local_rows = M_test_dof->localToGlobalIndices( elt_0, M_form.dofIdToContainerId() ).array();
+        M_test_dof->localToGlobalIndices(
+            elt_0, M_form.dofIdToContainerId(), M_local_rows );
 
 #if !defined(NDEBUG)
         DVLOG(2) << "lf dof (elt=" << elt_0 << ") = " << M_local_rows << "\n";
 #endif
-        if ( test_dof_type::is_modal || is_hdiv_conforming<test_fe_type>::value || is_hcurl_conforming<test_fe_type>::value )
-        {
-            DVLOG(2) << "rep = " << M_rep;
-            if ( M_test_dof->hasDenseDofTransform( elt_0 ) )
-            {
-                auto const transform = M_test_dof->localToGlobalCoefficientTransform( elt_0 );
-                M_rep = transform.transpose().template cast<value_type>() * M_rep;
-            }
-            else
-            {
-                M_local_rowsigns = M_test_dof->localToGlobalSigns( elt_0 );
-                M_rep.array() *= M_local_rowsigns.array().template cast<value_type>();
-            }
-            DVLOG(2) << "rep after sign change = " << M_rep;
-        }
+        DVLOG(2) << "rep = " << M_rep;
+        M_test_dof->mapLocalLinearFormToCanonicalDofs( elt_0, M_rep );
+        DVLOG(2) << "rep after dof transform = " << M_rep;
         M_form.addVector( M_local_rows.data(), M_local_rows.size(),
                           M_rep.data(), elt_0 );
     }
@@ -454,11 +443,10 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
 #if !defined(NDEBUG)
         CHECK( M_test_dof->mesh()->isBoundaryElement( elt_0 ) ) << "element in context must be on boundary";
 #endif
-        M_mortar_local_rows = M_test_dof->localToGlobalIndices( elt_0, M_form.dofIdToContainerId() ).array();
-        if ( test_dof_type::is_modal || is_hdiv_conforming<test_fe_type>::value || is_hcurl_conforming<test_fe_type>::value )
-        {
-            CHECK( false ) << "TODO";
-        }
+        M_test_dof->localToGlobalIndices(
+            elt_0, M_form.dofIdToContainerId(), M_mortar_local_rows );
+        M_test_dof->mapLocalLinearFormToCanonicalDofs(
+            elt_0, M_rep_mortar );
         M_form.addVector( M_mortar_local_rows.data(), M_mortar_local_rows.size(),
                           M_rep_mortar.data(), elt_0 );
     }
@@ -468,25 +456,26 @@ template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprCo
 void
 LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::assemble( index_type elt_0, index_type elt_1 )
 {
-    const uint16_type nDofTestElt = test_dof_type::is_order_dynamic
-                                    ? static_cast<uint16_type>( M_test_dof->nLocalDof() )
-                                    : test_dof_type::nDofPerElement;
+    const uint16_type nDofTestElt =
+        static_cast<uint16_type>( M_test_dof->nLocalDof() );
     if ( M_local_rows_2.size() != 2*nDofTestElt )
         M_local_rows_2.resize( 2*nDofTestElt );
 
-    M_local_rows_2.head( nDofTestElt ).array() = M_test_dof->localToGlobalIndices( elt_0, M_form.dofIdToContainerId() ).array();
-    M_local_rows_2.tail( nDofTestElt ).array() = M_test_dof->localToGlobalIndices( elt_1, M_form.dofIdToContainerId() ).array();
+    M_test_dof->localToGlobalIndices(
+        elt_0, M_form.dofIdToContainerId(), M_local_rows );
+    M_local_rows_2.head( nDofTestElt ) = M_local_rows;
+    M_test_dof->localToGlobalIndices(
+        elt_1, M_form.dofIdToContainerId(), M_local_rows );
+    M_local_rows_2.tail( nDofTestElt ) = M_local_rows;
 
-    if ( test_dof_type::is_modal )
-    {
-        if ( M_local_rowsigns_2.size() != 2*nDofTestElt )
-            M_local_rowsigns_2.resize( 2*nDofTestElt );
-
-        M_local_rowsigns_2.head( nDofTestElt ) = M_test_dof->localToGlobalSigns( elt_0 );
-        M_local_rowsigns_2.tail( nDofTestElt ) = M_test_dof->localToGlobalSigns( elt_1 );
-
-        M_rep_2.array() *= M_local_rowsigns_2.array().template cast<value_type>();
-    }
+    // Face contexts account for diagonal sign orientation themselves. Coupled
+    // moment blocks still need the FE-owned non-diagonal transform.
+    auto firstRows = M_rep_2.head( nDofTestElt );
+    auto secondRows = M_rep_2.tail( nDofTestElt );
+    M_test_dof->mapLocalLinearFormToCanonicalDofs(
+        elt_0, firstRows, DofTransformApplication::NonDiagonalOnly );
+    M_test_dof->mapLocalLinearFormToCanonicalDofs(
+        elt_1, secondRows, DofTransformApplication::NonDiagonalOnly );
     M_rep = M_rep_2.head( nDofTestElt );
     M_form.addVector( M_local_rows_2.data(), nDofTestElt,
                       M_rep.data(), elt_0 );//(nDimTest>nDimTrial)?test_elt_0:trial_elt_0 );

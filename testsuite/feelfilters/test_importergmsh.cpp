@@ -466,5 +466,82 @@ BOOST_AUTO_TEST_CASE( supportedgmshmesh_import )
       }
 }
 
+/** @test Round-trip dynamic quadratic Bezier geometry through nodal Gmsh I/O. */
+BOOST_AUTO_TEST_CASE( dynamic_bezier_geometry_roundtrip )
+{
+    if ( Environment::isParallel() )
+        return;
+
+    using mesh_type = Mesh<Simplex<2, Dynamic>>;
+    auto mesh = mesh_type::New( RuntimeOrder{ 2 } );
+    mesh = createGMSHMesh(
+        _mesh = mesh,
+        _desc = domain(
+            _name = "dynamic-bezier-gmsh-roundtrip",
+            _shape = "ellipsoid", _dim = 2,
+            _xmin = -1., _ymin = -1., _h = 0.45 ) );
+    BOOST_REQUIRE( mesh );
+    BOOST_REQUIRE_GT( mesh->numGlobalElements(), 0 );
+    auto const expectedCoordinates =
+        mesh->nodalGeometryCoordinates();
+    mesh->setGeometryRepresentation(
+        geometry::GeometryRepresentationKind::BernsteinBezier );
+
+    auto const filename =
+        ( Environment::repository().directory() /
+          "dynamic-bezier-roundtrip.msh" )
+            .string();
+    saveGMSHMesh( _mesh = mesh, _filename = filename );
+
+    auto restored = mesh_type::New(
+        RuntimeOrder{ 2 },
+        geometry::GeometryRepresentationKind::BernsteinBezier );
+    restored = loadGMSHMesh(
+        _mesh = restored, _filename = filename,
+        _update = MESH_CHECK | MESH_UPDATE_FACES |
+                  MESH_UPDATE_EDGES );
+    BOOST_REQUIRE( restored );
+    BOOST_CHECK_EQUAL( restored->order(), 2 );
+    BOOST_CHECK(
+        restored->geometryRepresentation() ==
+        geometry::GeometryRepresentationKind::BernsteinBezier );
+    BOOST_CHECK_SMALL(
+        ( restored->nodalGeometryCoordinates() -
+          expectedCoordinates )
+            .norm(),
+        2e-10 );
+
+    auto const originalArea =
+        integrate( _range = elements( mesh ), _expr = cst( 1. ),
+                   _geomap = GeomapStrategyType::GEOMAP_HO )
+            .evaluate()( 0, 0 );
+    auto const restoredArea =
+        integrate( _range = elements( restored ), _expr = cst( 1. ),
+                   _geomap = GeomapStrategyType::GEOMAP_HO )
+            .evaluate()( 0, 0 );
+    BOOST_CHECK_SMALL( originalArea - restoredArea, 2e-11 );
+}
+
+/** @test Reject unsupported Gmsh orders and representation tags pre-mutation. */
+BOOST_AUTO_TEST_CASE( geometry_capability_rejection_is_early )
+{
+    using mesh_type = Mesh<Simplex<2, Dynamic>>;
+    auto unsupportedOrder =
+        mesh_type::New( RuntimeOrder{ 6 } );
+    ImporterGmsh<mesh_type> importer(
+        "unsupported-order-is-validated-before-file-access.msh" );
+    BOOST_CHECK_THROW(
+        importer.visit( unsupportedOrder.get() ),
+        std::invalid_argument );
+    BOOST_CHECK_EQUAL( unsupportedOrder->numPoints(), 0 );
+    BOOST_CHECK_EQUAL( unsupportedOrder->numElements(), 0 );
+
+    BOOST_CHECK_THROW(
+        mesh_type::New(
+            RuntimeOrder{ 2 },
+            static_cast<geometry::GeometryRepresentationKind>( 255 ) ),
+        std::invalid_argument );
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()

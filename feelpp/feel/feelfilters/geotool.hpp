@@ -1175,6 +1175,8 @@ public :
             int format = args.get_else_invocable( _format, [](){ return ioption(_name="gmsh.format"); } );
             bool straighten = args.get_else( _straighten, true );
             int refine = args.get_else( _refine, 0 );
+            bool forceRebuild =
+                args.get_else( _force_rebuild, false );
             worldcomm_ptr_t worldcomm = args.get_else( _worldcomm, mesh->worldCommPtr() );
             int partitions = args.get_else( _partitions, worldcomm->size() );
             int partition_file =args.get_else( _partition_file, 0 );
@@ -1192,7 +1194,9 @@ public :
             this->cleanOstr();
             this->zeroCpt();
 
-            auto gmshDesc = std::make_shared<Gmsh>( _mesh_type::nDim, _mesh_type::nOrder, worldcomm );
+            auto gmshDesc = std::make_shared<Gmsh>(
+                _mesh_type::nDim, mesh->order(),
+                worldcomm );
             gmshDesc->setRecombine( _mesh_type::shape_type::is_hypercube );
             gmshDesc->setPrefix( name );
 
@@ -1214,6 +1218,7 @@ public :
                                               _format=format,
                                               _straighten=straighten,
                                               _refine=refine,
+                                              _force_rebuild=forceRebuild,
                                               _worldcomm=worldcomm,
                                               _partitions=partitions,
                                               _update=update );

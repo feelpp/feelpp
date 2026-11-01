@@ -238,6 +238,7 @@ public:
                 Im const& __im,
                 expression_type const& __expr,
                 GeomapStrategyType gt,
+                geometry::geometry_evaluation_strategy geometryEvaluation,
                 Im2 const& __im2,
                 bool use_harts,
                 std::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > qpl )
@@ -250,6 +251,7 @@ public:
         M_im2( __im2 ),
         M_expr( __expr ),
         M_gt( gt ),
+        M_geometry_evaluation( geometryEvaluation ),
         M_use_harts( use_harts ),
         M_QPL( qpl )
     {
@@ -266,6 +268,7 @@ public:
                 Im const& __im,
                 expression_type const& __expr,
                 GeomapStrategyType gt,
+                geometry::geometry_evaluation_strategy geometryEvaluation,
                 Im2 const& __im2,
                 bool use_harts,
                 std::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > qpl )
@@ -276,6 +279,7 @@ public:
         M_im2( __im2 ),
         M_expr( __expr ),
         M_gt( gt ),
+        M_geometry_evaluation( geometryEvaluation ),
         M_use_harts( use_harts ),
         M_QPL( qpl )
     {
@@ -298,6 +302,7 @@ public:
         M_im2( __vfi.M_im2 ),
         M_expr( __vfi.M_expr ),
         M_gt( __vfi.M_gt ),
+        M_geometry_evaluation( __vfi.M_geometry_evaluation ),
         M_use_harts( __vfi.M_use_harts ),
         M_QPL( __vfi.M_QPL )
     {
@@ -357,7 +362,10 @@ public:
 
 
             //BOOST_STATIC_ASSERT( ( boost::is_same<expr_type,e_type> ) );
-            auto i = Integrator<Elements, quad_type, expr_type, quad1_type>( M_elts, quad, new_expr, M_gt, quad1, M_use_harts, quadptloc_ptrtype() );
+            auto i = Integrator<Elements, quad_type, expr_type, quad1_type>(
+                M_elts, quad, new_expr, M_gt, M_geometry_evaluation,
+                quad1, M_use_harts,
+                quadptloc_ptrtype() );
             DLOG(INFO) << " -- M_elts size=" << M_elts.size() << "\n";
             DLOG(INFO) << " -- nelts=" << std::distance( M_eltbegin, M_eltend ) << "\n";
             DLOG(INFO) << " -- integrate: quad = " << i.im().nPoints() << "\n";
@@ -673,6 +681,8 @@ private:
     mutable im2_type M_im2;
     expression_type   M_expr;
     GeomapStrategyType M_gt;
+    /** Geometry kernel selected below the variational DSEL. */
+    geometry::geometry_evaluation_strategy M_geometry_evaluation;
     bool M_use_harts;
     mutable std::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > M_QPL;
     //     mutable boost::prof::basic_profiler<boost::prof::basic_profile_manager<std::string, double, boost::high_resolution_timer, boost::prof::empty_logging_policy, boost::prof::default_stats_policy<std::string, double> > > M_profile_local_assembly;
@@ -796,7 +806,6 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 {
     tic();
     DLOG(INFO) << "[integrator::assemble FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<true>\n";
-
     //
     // some typedefs
     //
@@ -867,6 +876,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
             // Precompute some data in the reference element for geometric mapping and reference finite element
             auto __geopc = __form.gm()->preCompute( this->im().points() );
             __c = __form.gm()->template context<eval::gmc_context_v>( eltTestInit, __geopc, this->expression().dynamicContext() );
+            __c->setGeometryEvaluationStrategy(
+                M_geometry_evaluation );
             auto mapgmc = vf::mapgmc(__c);
             formc = std::make_shared<form_context_type>( __form, mapgmc, mapgmc, mapgmc,
                                                          this->expression(), this->im() );
@@ -879,6 +890,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
         {
             auto __geopc1 = __form.gm1()->preCompute( this->im2().points() );
             __c1 = __form.gm1()->template context<eval::gmc_context_v>( eltTestInit, __geopc1, this->expression().dynamicContext() );
+            __c1->setGeometryEvaluationStrategy(
+                M_geometry_evaluation );
             auto mapgmc1 = vf::mapgmc(__c1);
             formc1 = std::make_shared<form1_context_type>( __form, mapgmc1, mapgmc1, mapgmc1,
                                                            this->expression(), this->im2() );
@@ -1017,7 +1030,6 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     } // end loop on list of elements
 
     toc("Integrator::assemble form MESH_ELEMENTS", Environment::logVerbosityLevel()>1);
-
 
 }
 
@@ -3079,7 +3091,6 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
         for ( permutation_type __p( permutation_type::IDENTITY );
               __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
         {
-            //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
             __geopc[__f][__p] = pc_ptrtype(  new pc_type( __form.gm(), this->im().fpoints(__f, __p.value() ) ) );
             __geopc1[__f][__p] = pc1_ptrtype(  new pc1_type( __form.gm1(), this->im2().fpoints(__f, __p.value() ) ) );
         }
@@ -3401,7 +3412,6 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                 for ( permutation_type __p( permutation_type::IDENTITY );
                       __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
                 {
-                    //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
                     __geopc[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( faceInit.element( 0 ).gm(), imRange.fpoints(__f, __p.value() ) ) );
                     __geopc1[__f][__p] = pc1_expr_ptrtype(  new pc1_expr_type( faceInit.element( 0 ).gm1(), im1Range.fpoints(__f, __p.value() ) ) );
                 }
@@ -3615,7 +3625,6 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                 for ( permutation_type __p( permutation_type::IDENTITY );
                       __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
                 {
-                    //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
                     __geopc[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( faceInit.element( 0 ).gm(), imRange.fpoints(__f, __p.value() ) ) );
                     __geopc1[__f][__p] = pc1_expr_ptrtype(  new pc1_expr_type( faceInit.element( 0 ).gm1(), im1Range.fpoints(__f, __p.value() ) ) );
                 }
@@ -3785,7 +3794,6 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
         for ( permutation_type __p( permutation_type::IDENTITY );
               __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
         {
-            //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
             __geopcExpr[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( faceInit.element( 0 ).gm(), imRange.fpoints(__f, __p.value() ) ) );
 
         }
@@ -4018,7 +4026,6 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
         for ( permutation_type __p( permutation_type::IDENTITY );
               __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
         {
-            //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
             __geopcExpr[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( faceInit.element( 0 ).gm(), imRange.fpoints(__f, __p.value() ) ) );
 
         }
@@ -4281,7 +4288,6 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
         for ( permutation_type __p( permutation_type::IDENTITY );
               __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
         {
-            //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
             __geopcExpr[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( faceInit.element( 0 ).gm(), imRange.fpoints(__f, __p.value() ) ) );
         }
     }
@@ -4624,7 +4630,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
     tic();
 
 #if defined(FEELPP_HAS_HARTS)
-        if ( boption(_name="parallel.cpu.enable") && soption(_name="parallel.cpu.impl").find("harts.") == 0 )
+    if ( boption(_name="parallel.cpu.enable") && soption(_name="parallel.cpu.impl").find("harts.") == 0 )
         {
             RunTimeSystem::PerfCounterMng<std::string> perf_mng ;
             perf_mng.init("total") ;
@@ -5607,7 +5613,6 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
              for ( permutation_type __p( permutation_type::IDENTITY );
                    __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
              {
-                 //FEELPP_ASSERT( ppts[__f][__p]->size2() != 0 ).warn( "invalid quadrature type" );
                  __geopc[__f][__p] = pc_ptrtype(  new pc_type( gm, ppts[__f].find( __p )->second ) );
              }
          }
@@ -5672,8 +5677,9 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
              }
              if ( faceConnection.isConnectedTo1() )
              {
-                 FEELPP_ASSERT( faceConnection.isOnBoundary() == false   )
-                     ( faceConnection.id() ).error( "face on boundary but connected on both sides" );
+                 CHECK( !faceConnection.isOnBoundary() )
+                     << "face " << faceConnection.id()
+                     << " is on the boundary but connected on both sides";
                  uint16_type __face_id_in_elt_0 = faceConnection.pos_first();
                  uint16_type __face_id_in_elt_1 = faceConnection.pos_second();
 
@@ -5763,6 +5769,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                      Im const& im,
                      ExprT const& expr,
                      GeomapStrategyType const& gt,
+                     geometry::geometry_evaluation_strategy geometryEvaluation,
                      Im2 const& im2,
                      bool use_harts,
                      std::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT > > quadptloc
@@ -5775,7 +5782,9 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
      using element_iterator = typename range_type::iterator_t;
      static constexpr uint16_type geoOrder = range_type::element_t::nOrder;
      LOG_IF(WARNING, gt != GeomapStrategyType::GEOMAP_HO && geoOrder == 1 ) << "you use a non standard geomap : ";
-     return Expr<expr_t>( expr_t( elts, im, expr, gt, im2, use_harts, quadptloc ) );
+     return Expr<expr_t>( expr_t( elts, im, expr, gt, geometryEvaluation,
+                                  im2, use_harts,
+                                  quadptloc ) );
  }
 
 

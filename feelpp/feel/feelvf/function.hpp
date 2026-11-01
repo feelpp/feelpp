@@ -184,30 +184,49 @@ public:
         value_type
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return M_fun( c1, c2, M_gmc->xReal( q ), M_gmc->unitNormal( q ) );
+            return this->evaluate( c1, c2, q );
         }
         template<int PatternContext>
         value_type
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
         {
-            return M_fun( c1, c2, M_gmc->xReal( q ), M_gmc->unitNormal( q ) );
+            return this->evaluate( c1, c2, q );
         }
 
 
 
         value_type
-        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
+        evaliq( uint16_type /*i*/, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return M_fun( c1, c2, M_gmc->xReal( q ), M_gmc->unitNormal( q ) );
+            return this->evaluate( c1, c2, q );
         }
 
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return M_fun( c1, c2, M_gmc->xReal( q ), M_gmc->unitNormal( q ) );
+            return this->evaluate( c1, c2, q );
         }
 
+    private:
+        value_type
+        evaluate( uint16_type c1, uint16_type c2, uint16_type q ) const
+        {
+            if constexpr ( expression_type::context & vm::NORMAL )
+                return M_fun( c1, c2, M_gmc->xReal( q ),
+                              M_gmc->unitNormal( q ) );
+            else
+            {
+                // The legacy functor signature always accepts a normal, even
+                // when its context declares that the argument is unused.
+                using normal_type =
+                    eigen_vector_type<gmc_type::nDim, value_type>;
+                static const normal_type unusedNormal = normal_type::Zero();
+                return M_fun( c1, c2, M_gmc->xReal( q ), unusedNormal );
+            }
+        }
+
+    public:
         Func M_fun;
         gmc_ptrtype M_gmc;
     };

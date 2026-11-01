@@ -30,12 +30,12 @@ struct FiniteElementFamilyDescriptor
     static_assert( Order == Dynamic || Order >= 0,
                    "finite-element family order must be non-negative or Dynamic" );
 
-    static constexpr bool is_order_static = Order != Dynamic; /**< Whether order is known at compile time. */
-    static constexpr bool is_order_dynamic = !is_order_static; /**< Whether order is supplied at construction. */
-    static constexpr int order_spec = Order; /**< Unmodified public order specification. */
-    static constexpr uint16_type nOrder = is_order_static ? static_cast<uint16_type>( Order ) : 0; /**< Legacy static-order value. */
-    static constexpr uint16_type TAG = Tag; /**< Legacy family tag. */
     using order_policy_type = OrderBase<Order>; /**< Storage/evaluation order strategy. */
+    static constexpr int order_spec = order_policy_type::order_spec; /**< Unmodified public order specification. */
+    static constexpr bool is_order_static = order_policy_type::is_order_static; /**< Whether order is known at compile time. */
+    static constexpr bool is_order_dynamic = order_policy_type::is_order_dynamic; /**< Whether order is supplied at construction. */
+    static constexpr uint16_type nOrder = is_order_static ? static_cast<uint16_type>( order_spec ) : 0; /**< Legacy static-order value. */
+    static constexpr uint16_type TAG = Tag; /**< Legacy family tag. */
 };
 
 } // namespace Feel

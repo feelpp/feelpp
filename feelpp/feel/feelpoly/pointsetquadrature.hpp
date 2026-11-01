@@ -115,7 +115,6 @@ public :
         return is_face_im;
     }
     using order_base_type::order;
-    using order_base_type::runtimeOrder;
 
     std::string const& name() const noexcept { return M_name; }
 

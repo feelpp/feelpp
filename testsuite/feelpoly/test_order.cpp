@@ -16,13 +16,76 @@
 #define BOOST_TEST_MODULE test_order
 #include <feel/feelcore/testsuite.hpp>
 
+#include <feel/feelmesh/hypercube.hpp>
+#include <feel/feelmesh/simplex.hpp>
 #include <feel/feelpoly/order.hpp>
 #include <feel/feelpoly/concepts.hpp>
 #include <feel/feelpoly/doftopology.hpp>
 
+#include <type_traits>
+
 using namespace Feel;
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
+
+namespace
+{
+template<typename StaticShape, typename DynamicShape, typename Cardinality>
+void checkShapeOrderAndCardinalityOwnership()
+{
+    static_assert( StaticShape::order_spec >= 0 );
+    static_assert( DynamicShape::order_spec == Dynamic );
+    static_assert( std::is_base_of_v<OrderBase<StaticShape::order_spec>, StaticShape> );
+    static_assert( std::is_base_of_v<OrderBase<Dynamic>, DynamicShape> );
+    static_assert(
+        StaticShape::numPoints_static ==
+        Cardinality::total( StaticShape::nDim, StaticShape::order_spec ) );
+    static_assert(
+        StaticShape::nbPtsPerVertex_static ==
+        Cardinality::perVertex( StaticShape::nDim, StaticShape::order_spec ) );
+    static_assert(
+        StaticShape::nbPtsPerEdge_static ==
+        Cardinality::perEdge( StaticShape::nDim, StaticShape::order_spec ) );
+    static_assert(
+        StaticShape::nbPtsPerFace_static ==
+        Cardinality::perFace( StaticShape::nDim, StaticShape::order_spec ) );
+    static_assert(
+        StaticShape::nbPtsPerVolume_static ==
+        Cardinality::perVolume( StaticShape::nDim, StaticShape::order_spec ) );
+
+    StaticShape staticShape;
+    DynamicShape dynamicShape( RuntimeOrder{ StaticShape::order_spec } );
+    BOOST_CHECK_EQUAL( staticShape.order(), dynamicShape.order() );
+    BOOST_CHECK_EQUAL( staticShape.nPointsTotal(), dynamicShape.nPointsTotal() );
+    BOOST_CHECK_EQUAL( staticShape.nPointsOnVertex(), dynamicShape.nPointsOnVertex() );
+    BOOST_CHECK_EQUAL( staticShape.nPointsOnEdge(), dynamicShape.nPointsOnEdge() );
+    BOOST_CHECK_EQUAL( staticShape.nPointsOnFace(), dynamicShape.nPointsOnFace() );
+    BOOST_CHECK_EQUAL( staticShape.nPointsOnVolume(), dynamicShape.nPointsOnVolume() );
+
+    dynamicShape.clearDetachedOrder();
+    BOOST_CHECK_EQUAL( dynamicShape.order(), 0 );
+}
+
+template<typename StaticTopology, typename DynamicTopology>
+void checkTopologyOrderAndCardinalityOwnership()
+{
+    static_assert( StaticTopology::order_spec >= 0 );
+    static_assert( DynamicTopology::order_spec == Dynamic );
+    static_assert( std::is_empty_v<StaticTopology> );
+    static_assert( sizeof( DynamicTopology ) == sizeof( RuntimeOrder ) );
+
+    constexpr StaticTopology staticTopology;
+    constexpr DynamicTopology dynamicTopology(
+        RuntimeOrder{ StaticTopology::order_spec } );
+    static_assert( staticTopology.localDof() == dynamicTopology.localDof() );
+    static_assert( staticTopology.dofPerVertex() == dynamicTopology.dofPerVertex() );
+    static_assert( staticTopology.dofPerEdge() == dynamicTopology.dofPerEdge() );
+    static_assert( staticTopology.dofPerFace() == dynamicTopology.dofPerFace() );
+    static_assert( staticTopology.dofPerVolume() == dynamicTopology.dofPerVolume() );
+
+    BOOST_CHECK_EQUAL( staticTopology.localDof(), dynamicTopology.localDof() );
+}
+} // namespace
 
 BOOST_AUTO_TEST_SUITE( order_suite )
 
@@ -31,6 +94,8 @@ BOOST_AUTO_TEST_SUITE( order_suite )
 //
 BOOST_AUTO_TEST_CASE( test_order_t_static )
 {
+    static_assert( order_t<0>::order_spec == 0 );
+    static_assert( order_t<5>::order_spec == 5 );
     // Static order values
     static_assert( order_t<0>::value == 0, "order_t<0>::value should be 0" );
     static_assert( order_t<1>::value == 1, "order_t<1>::value should be 1" );
@@ -48,6 +113,7 @@ BOOST_AUTO_TEST_CASE( test_order_t_static )
 
 BOOST_AUTO_TEST_CASE( test_order_t_dynamic )
 {
+    static_assert( order_t<Dynamic>::order_spec == Dynamic );
     // Dynamic order
     static_assert( order_t<Dynamic>::value == Dynamic, "order_t<Dynamic>::value should be Dynamic" );
     static_assert( order_t<Dynamic>::value == -1, "order_t<Dynamic>::value should be -1" );
@@ -68,6 +134,10 @@ BOOST_AUTO_TEST_CASE( test_runtime_order_checked )
 
 BOOST_AUTO_TEST_CASE( test_order_base )
 {
+    static_assert( OrderBase<2>::order_spec == 2 );
+    static_assert( OrderBase<Dynamic>::order_spec == Dynamic );
+    static_assert( std::is_empty_v<OrderBase<2>> );
+    static_assert( sizeof( OrderBase<Dynamic> ) == sizeof( RuntimeOrder ) );
     static_assert( OrderBase<2>::is_order_static, "OrderBase<2> should be static" );
     static_assert( !OrderBase<2>::is_order_dynamic, "OrderBase<2> should not be dynamic" );
     static_assert( OrderBase<Dynamic>::is_order_dynamic, "OrderBase<Dynamic> should be dynamic" );
@@ -75,11 +145,30 @@ BOOST_AUTO_TEST_CASE( test_order_base )
 
     constexpr OrderBase<2> staticOrder;
     static_assert( staticOrder.order() == 2, "static order mismatch" );
-    static_assert( staticOrder.runtimeOrder() == 2, "static runtimeOrder mismatch" );
+    static_assert( staticOrder.order() == 2, "static order mismatch" );
+    constexpr OrderBase<2> matchingStaticOrder( RuntimeOrder{ 2 } );
+    static_assert( matchingStaticOrder.order() == 2 );
+    BOOST_CHECK_THROW( ( OrderBase<2>{ RuntimeOrder{ 3 } } ),
+                       std::invalid_argument );
 
     const OrderBase<Dynamic> dynamicOrder( RuntimeOrder( 4 ) );
     BOOST_CHECK_EQUAL( dynamicOrder.order(), 4 );
-    BOOST_CHECK_EQUAL( dynamicOrder.runtimeOrder(), 4 );
+    BOOST_CHECK_EQUAL( dynamicOrder.order(), 4 );
+}
+
+BOOST_AUTO_TEST_CASE( test_authoritative_order_and_cardinality_ownership )
+{
+    checkShapeOrderAndCardinalityOwnership<
+        Simplex<3, 3>, Simplex<3, Dynamic>, detail::SimplexCardinality>();
+    checkShapeOrderAndCardinalityOwnership<
+        Hypercube<3, 3>, Hypercube<3, Dynamic>, detail::HypercubeCardinality>();
+
+    checkTopologyOrderAndCardinalityOwnership<
+        DofTopology<SimplexTag, 3, 3>,
+        DofTopology<SimplexTag, 3, Dynamic>>();
+    checkTopologyOrderAndCardinalityOwnership<
+        DofTopology<HypercubeTag, 3, 3>,
+        DofTopology<HypercubeTag, 3, Dynamic>>();
 }
 
 BOOST_AUTO_TEST_CASE( test_doftopology_simplex )
@@ -419,6 +508,41 @@ BOOST_AUTO_TEST_CASE( test_high_order_dofs )
     static_assert( detail::hypercubeDofStatic<3, 5>() == 216, "3D Q5: 216 DOFs" );
 
     BOOST_CHECK( true );
+}
+
+BOOST_AUTO_TEST_CASE( test_local_index_cardinality_boundaries )
+{
+    using simplex_topology = DofTopology<SimplexTag, 3, Dynamic>;
+    using hypercube_topology = DofTopology<HypercubeTag, 3, Dynamic>;
+    using simplex_shape = Simplex<3, Dynamic>;
+    using hypercube_shape = Hypercube<3, Dynamic>;
+
+    const simplex_topology simplexAtLimit( RuntimeOrder{ 71 } );
+    BOOST_CHECK_EQUAL( simplexAtLimit.localDof(), 64824 );
+    BOOST_CHECK_THROW( simplex_topology( RuntimeOrder{ 72 } ),
+                       std::length_error );
+    BOOST_CHECK_THROW( simplex_shape( RuntimeOrder{ 72 } ),
+                       std::length_error );
+
+    const hypercube_topology hypercubeAtLimit( RuntimeOrder{ 39 } );
+    BOOST_CHECK_EQUAL( hypercubeAtLimit.localDof(), 64000 );
+    BOOST_CHECK_THROW( hypercube_topology( RuntimeOrder{ 40 } ),
+                       std::length_error );
+    BOOST_CHECK_THROW( hypercube_shape( RuntimeOrder{ 40 } ),
+                       std::length_error );
+
+    BOOST_CHECK_EQUAL(
+        detail::checkedLocalIndexValue(
+            3 * detail::SimplexCardinality::total( 3, 48 ) ),
+        62475 );
+    BOOST_CHECK_THROW(
+        (void)detail::checkedLocalIndexValue(
+            3 * detail::SimplexCardinality::total( 3, 49 ) ),
+        std::length_error );
+
+    BOOST_CHECK_EQUAL( detail::maxLocalIndexCardinality, 65535 );
+    BOOST_CHECK_THROW(
+        (void)detail::checkedLocalIndexValue( 65536 ), std::length_error );
 }
 
 BOOST_AUTO_TEST_SUITE_END()

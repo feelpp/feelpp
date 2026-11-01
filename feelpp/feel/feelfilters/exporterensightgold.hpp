@@ -168,6 +168,9 @@ private:
     //! init the ensight exporter
     FEELPP_NO_EXPORT void init();
 
+    //! select format element names from the effective mesh order
+    FEELPP_NO_EXPORT void updateElementTypes( uint16_type order ) const;
+
     //! write the '' file for ensight
     FEELPP_NO_EXPORT void writeSoSFile() const;
 
@@ -194,8 +197,8 @@ private:
 
 private:
     mutable std::string M_filename;
-    std::string M_element_type;
-    std::string M_face_type;
+    mutable std::string M_element_type;
+    mutable std::string M_face_type;
     bool M_mergeTimeSteps;
     int M_packTimeSteps;
 

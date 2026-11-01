@@ -11,6 +11,11 @@
 //! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 //! @date 05 Feb 2017
 
+/**
+//! @file
+//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+//! @date 05 Feb 2017
+ */
 #ifndef FEELPP_MESHBASE_HPP
 #define FEELPP_MESHBASE_HPP 1
 
@@ -23,6 +28,7 @@
 #include <feel/feeltiming/tic.hpp>
 #include <feel/feelmesh/submeshdata.hpp>
 #include <feel/feelmesh/meshsupportbase.hpp>
+#include <feel/feelpoly/geometrycoefficients.hpp>
 
 #if defined(FEELPP_HAS_VTK)
 #include <feel/feelcore/disablewarnings.hpp>
@@ -154,6 +160,25 @@ public:
 
     //! return current shared_ptr of type MeshBase
     virtual std::shared_ptr<const MeshBase<IndexT>> shared_from_this_meshbase() const = 0;
+
+    /**
+     * @brief Return the mesh-wide geometric polynomial order.
+     *
+     * Derived dynamic-order meshes override this observer with the order held
+     * by their geometry descriptor. The affine default preserves legacy
+     * mesh-base implementations.
+     */
+    [[nodiscard]] virtual uint16_type geometryOrder() const noexcept
+    {
+        return 1;
+    }
+
+    /** @brief Return the mathematical meaning of mesh geometry coefficients. */
+    [[nodiscard]] virtual geometry::GeometryRepresentationKind
+    geometryRepresentation() const noexcept
+    {
+        return geometry::GeometryRepresentationKind::NodalLagrange;
+    }
 
     /**
      * \return \p true if the mesh is ready for use, \p false

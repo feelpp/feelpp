@@ -20,6 +20,7 @@
 #include <boost/preprocessor/list/first_n.hpp>
 #include <cmath>
 #include <limits>
+#include <optional>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -126,7 +127,10 @@ void print( MeshT* m )
 
 // Constructor (static order).
 template <typename Shape, typename T, int Tag, typename IndexT, bool EnableSharedFromThis>
-Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::Mesh( std::string const& name, worldcomm_ptr_t const& worldComm, std::string const& props )
+Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::Mesh(
+    std::string const& name, worldcomm_ptr_t const& worldComm,
+    std::string const& props,
+    geometry_representation_kind representation )
     requires( is_order_static )
     : super( name, worldComm ),
       M_numGlobalElements( 0 ),
@@ -137,7 +141,8 @@ Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::Mesh( std::string const& name
       M_substructuring( false ),
       M_structure_property( props ),
       //M_part(),
-      M_tool_localization( std::make_shared<Localization<self_type>>() )
+      M_tool_localization( std::make_shared<Localization<self_type>>() ),
+      M_geometryDescriptor( representation )
 {
     VLOG( 2 ) << "[Mesh] constructor called (static order = " << nOrder << ")\n";
     CHECK( this->hasWorldComm() ) << "Invalid mesh worldComm";
@@ -148,18 +153,19 @@ template <typename Shape, typename T, int Tag, typename IndexT, bool EnableShare
 Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::Mesh( RuntimeOrder runtime_order,
                                                           std::string const& name,
                                                           worldcomm_ptr_t const& worldComm,
-                                                          std::string const& props )
+                                                          std::string const& props,
+                                                          geometry_representation_kind representation )
     requires( is_order_dynamic )
     : super( name, worldComm ),
       M_numGlobalElements( 0 ),
       M_gm( new gm_type( runtime_order ) ),
-      M_gm1( runtime_order.value == 1 ? M_gm : gm1_ptrtype( new gm1_type ) ),
+      M_gm1( new gm1_type ),
       M_meas( 0 ),
       M_measbdy( 0 ),
       M_substructuring( false ),
       M_structure_property( props ),
       M_tool_localization( std::make_shared<Localization<self_type>>() ),
-      M_runtime_order( runtime_order.value )
+      M_geometryDescriptor( runtime_order, representation )
 {
     VLOG( 2 ) << "[Mesh] constructor called (dynamic order = " << runtime_order.value << ")\n";
     CHECK( this->hasWorldComm() ) << "Invalid mesh worldComm";
@@ -195,6 +201,11 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUse()
         //! set the number of partition.
         //! NOTE: currently, we use same concept for process id and partition id. Maybe, it will be usefull to define that process id can contains one or several partitions.
         this->setNumberOfPartitions( this->worldComm().localSize( ) );
+
+        // Rebind entities copied, merged, or restored from another mesh before
+        // any topology pass dereferences their compact point connectivity.
+        // A second call below binds faces and edges created by those passes.
+        this->updateCommonDataInEntities();
 
         element_iterator iv, en;
 
@@ -275,7 +286,7 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUse()
                 {
                     for ( uint16_type localPoint = 0;
                           localPoint <
-                              eltModified.nPointsRuntime();
+                              eltModified.nPoints();
                           ++localPoint )
                     {
                         auto& point =
@@ -309,7 +320,7 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUse()
         // update number of vertices
         if ( this->numVertices() == 0 )
         {
-            if ( nOrder == 1 )
+            if ( this->order() == 1 )
                 this->setNumVertices( this->numPoints() );
             else
             {
@@ -379,7 +390,7 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUse()
     {
         tic();
         M_gm->initCache( this );
-        if ( nOrder > 1 )
+        if ( this->order() > 1 )
             M_gm1->initCache( this );
         M_is_gm_cached = true;
         toc( "Mesh::updateForUse update geomap cache", Environment::logVerbosityLevel() > 0 );
@@ -405,7 +416,7 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateForUseAfterMoving
     if ( this->gm()->isCached() )
     {
         this->gm()->initCache( this/*imesh.get()*/ );
-        if ( mesh_type::nOrder > 1 )
+        if ( this->order() > 1 )
             this->gm1()->initCache( this/*imesh.get()*/ );
     }
 
@@ -440,14 +451,15 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateMeasures()
 
     typedef typename element_type::quad_meas_type quad_meas_type;
     typedef typename element_type::quad_meas1_type quad_meas1_type;
-    quad_meas_type thequad = element_type::imMeasure();
+    quad_meas_type thequad(
+        this->geometryDescriptor().measureQuadratureOrder() );
     quad_meas1_type thequad1 = element_type::imMeasureOrder1();
     typename gm_type::precompute_ptrtype pc;
     typename gm_type::faces_precompute_type pcf;
     typename gm1_type::precompute_ptrtype pc1;
     typename gm1_type::faces_precompute_type pcf1;
     // assume that a high order mesh is straightened (probably we need to store this info in the mesh)
-    bool meshIsStraightened = ( nOrder > 1 );
+    bool meshIsStraightened = ( this->order() > 1 );
     bool updateMeasureWithPc = true;
     if ( updateMeasureWithPc )
     {
@@ -631,7 +643,8 @@ void
             return;
 
         // update points
-        for ( int i = 0; i < face_type::numPoints; ++i )
+        for ( uint16_type i = 0;
+              i < f.nPoints(); ++i )
         {
             if ( !f.point( i ).hasMarker() )
             {
@@ -936,7 +949,7 @@ void
     }
     renumber( node_map, mpl::int_<nDim>() );
 
-    if ( Shape == SHAPE_TETRA && nOrder==1 )
+    if ( Shape == SHAPE_TETRA && this->order() == 1 )
     {
         localrenumber();
 
@@ -1128,7 +1141,8 @@ void
     for ( uint16_type j = 0; j < _numLocalFaces; j++ )
     {
         for ( int f = 0; f < face_type::numVertices; ++f )
-            myfToP[j * face_type::numVertices + f] = ( nDim == 1 ) ? j : /*iv->*/ element_type::fToP( j, f );
+            myfToP[j * face_type::numVertices + f] =
+                this->geometryPointTopology().faceToPoint( j, f );
     }
 
     // std::vector< std::set<size_type> > pointsFromFace( this->numLocalFaces() );
@@ -1173,7 +1187,8 @@ void
                     lids[f] = pointIdInElt[myfToP[j * face_type::numVertices + f]];
 
 #if !defined( NDEBUG )
-                    VLOG( 3 ) << "add point local id " << f << " to face " << j << " " << elt.fToP( j, f )
+                    VLOG( 3 ) << "add point local id " << f << " to face " << j << " "
+                              << this->geometryPointTopology().faceToPoint( j, f )
                               << " global id " << myfToP[j * face_type::numVertices + f] /*__element.point( pt_localid ).id()*/ << "\n";
 #endif
                 }
@@ -1188,14 +1203,17 @@ void
                 {
                     DVLOG( 2 ) << "creating a new face : " << next_face << "\n";
 
-                    face_type newFace;
+                    auto newFace = this->makeFace();
                     newFace.setId( next_face++ );
                     newFace.setProcessIdInPartition( currentPid );
                     newFace.setProcessId( eltPid );
                     newFace.setOnBoundary( true, face_type::nDim );
                     newFace.setConnection0( boost::make_tuple( &elt, j ) );
-                    for ( size_type k = 0; k < face_type::numPoints; ++k )
-                        newFace.setPoint( k, elt.point( /*ele.*/ element_type::fToP( j, k ) ) );
+                    for ( size_type k = 0; k < newFace.nPoints(); ++k )
+                        newFace.setPoint(
+                            k, elt.point(
+                                   this->geometryPointTopology()
+                                       .faceToPoint( j, k ) ) );
                     if ( updateComponentAddElements )
                         newFace.addElement( eltId );
                     auto res = this->addFace( newFace );
@@ -1343,7 +1361,7 @@ void
     toc( "Mesh.updateEntitiesCoDimensionOne.add_faces_from_elements", Environment::logVerbosityLevel() > 1 );
     DVLOG( 2 ) << "[Mesh::updateFaces] finish elements loop";
 
-    if ( !(nDim == 1 && nOrder > 1) ) // not remove faces in this case (can be internal point)
+    if ( !( nDim == 1 && this->order() > 1 ) ) // not remove faces in this case (can be internal point)
     {
         tic();
         // clean faces not connected to an element
@@ -1380,7 +1398,8 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensi
     for ( uint16_type j = 0; j < _numLocalFaces; j++ )
     {
         for ( int f = 0; f < face_type::numVertices; ++f )
-            myfToP[j * face_type::numVertices + f] = ( nDim == 1 ) ? j : /*iv->*/ element_type::fToP( j, f );
+            myfToP[j * face_type::numVertices + f] =
+                this->geometryPointTopology().faceToPoint( j, f );
     }
 
     const bool updateComponentAddElements = this->components().test( MESH_ADD_ELEMENTS_INFO );
@@ -1547,7 +1566,7 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensi
                                 }
                                 if ( isFaceConnectedToInterProcess )
                                 {
-                                    face_type newFace;
+                                    auto newFace = this->makeFace();
                                     newFace.setId( next_face++ );
                                     newFace.setProcessIdInPartition( currentPid );
                                     // force processId equal to M_comm.rank() if face on interprocessfaces
@@ -1557,8 +1576,12 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensi
                                     uint16_type posElt0 = std::get<1>( f2eVal );
                                     newFace.setConnection0( boost::make_tuple( elt0, posElt0 ) );
                                     newFace.setConnection1( boost::make_tuple( eltPtr, j ) );
-                                    for ( size_type k = 0; k < face_type::numPoints; ++k )
-                                        newFace.setPoint( k, elt0->point( /*ele.*/ element_type::fToP( posElt0, k ) ) );
+                                    for ( size_type k = 0; k < newFace.nPoints(); ++k )
+                                        newFace.setPoint(
+                                            k, elt0->point(
+                                                   this->geometryPointTopology()
+                                                       .faceToPoint(
+                                                           posElt0, k ) ) );
 
                                     if ( updateComponentAddElements )
                                     {
@@ -1595,14 +1618,17 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateEntitiesCoDimensi
                 continue;
             if ( elt.hasNeighbor( j ) )
                 continue;
-            face_type newFace;
+            auto newFace = this->makeFace();
             newFace.setId( next_face++ );
             newFace.setProcessIdInPartition( currentPid );
             newFace.setProcessId( eltPid );
             newFace.setOnBoundary( true, face_type::nDim );
             newFace.setConnection0( boost::make_tuple( &elt, j ) );
-            for ( size_type k = 0; k < face_type::numPoints; ++k )
-                newFace.setPoint( k, elt.point( /*ele.*/ element_type::fToP( j, k ) ) );
+            for ( size_type k = 0; k < newFace.nPoints(); ++k )
+                newFace.setPoint(
+                    k, elt.point(
+                           this->geometryPointTopology()
+                               .faceToPoint( j, k ) ) );
             if ( updateComponentAddElements )
                 newFace.addElement( eltId );
             auto res = this->addFace( newFace );
@@ -1722,7 +1748,8 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateAdjacencyElements
     for ( uint16_type j = 0; j < this->numLocalFaces(); j++ )
     {
         for ( int f = 0; f < face_type::numVertices; ++f )
-            myfToP[j * face_type::numVertices + f] = ( nDim == 1 ) ? j : /*iv->*/ element_type::fToP( j, f );
+            myfToP[j * face_type::numVertices + f] =
+                this->geometryPointTopology().faceToPoint( j, f );
     }
 
     bool faceinserted = false;
@@ -1778,19 +1805,24 @@ template <typename Shape, typename T, int Tag, typename IndexT, bool EnableShare
 void Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::
     fixPointDuplicationInHOMesh( element_type& elt, face_type const& face )
 {
-    if constexpr ( nDim != 3 || nOrder < 3 )
+    if constexpr ( nDim != 3 )
         return;
     else
     {
-        constexpr uint16_type firstFaceInteriorPoint =
-            face_type::numVertices * face_type::nbPtsPerVertex +
-            face_type::numEdges * face_type::nbPtsPerEdge;
-        static_assert( firstFaceInteriorPoint < face_type::numPoints,
-                       "a three-dimensional order >= 3 cell must have "
-                       "face-interior geometric nodes" );
+        if ( this->order() < 3 )
+            return;
+        uint16_type const firstFaceInteriorPoint =
+            face_type::numVertices +
+            face_type::numEdges * ( this->order() - 1 );
+        uint16_type const facePointCount =
+            face.nPoints();
+        CHECK_LT( firstFaceInteriorPoint, facePointCount )
+            << "a three-dimensional order >= 3 cell must have "
+               "face-interior geometric nodes";
 
         auto const localFace = face.pos_second();
-        std::array<bool, face_type::numPoints> facePointMatched{};
+        std::vector<bool> facePointMatched(
+            facePointCount, false );
         double const faceScale = std::max( 1.0, elt.hFace( localFace ) );
         double const matchingTolerance =
             128.0 * std::numeric_limits<double>::epsilon() * faceScale;
@@ -1798,17 +1830,18 @@ void Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::
             matchingTolerance * matchingTolerance;
 
         for ( uint16_type k = firstFaceInteriorPoint;
-              k < face_type::numPoints; ++k )
+              k < facePointCount; ++k )
         {
             auto const elementPointIndex =
-                element_type::fToP( localFace, k );
+                this->geometryPointTopology().faceToPoint(
+                    localFace, k );
             auto const& elementPoint = elt.point( elementPointIndex );
 
             uint16_type nearestFacePoint = invalid_uint16_type_value;
             double nearestDistanceSquared =
                 std::numeric_limits<double>::max();
             for ( uint16_type candidate = firstFaceInteriorPoint;
-                  candidate < face_type::numPoints; ++candidate )
+                  candidate < facePointCount; ++candidate )
             {
                 if ( facePointMatched[candidate] )
                     continue;
@@ -1917,7 +1950,8 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateOnBoundary()
         {
             modifyEdgesOnBoundary( face );
             // loop over face points
-            for ( int f = 0; f < face_type::numPoints; ++f )
+            for ( uint16_type f = 0;
+                  f < face.nPoints(); ++f )
             {
                 auto& point = face.point( f );
                 if ( !point.isOnBoundary() )
@@ -2847,23 +2881,21 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::encode()
         M_enc_pts[pt.id() + 1] = boost::make_tuple( pt.isOnBoundary(), pt.tags(), pts );
     }
     M_enc_elts.clear();
+    M_enc_faces.clear();
 
     auto allmarkedfaces = boundaryfaces( this->shared_from_this() );
     auto face_it = allmarkedfaces.begin();
     auto face_end = allmarkedfaces.end();
 
-    int elem_number = 1;
-
-    GmshOrdering<element_type> ordering;
-
-    GmshOrdering<face_type> ordering_face;
     // save the faces
 
     for ( ; face_it != face_end; ++face_it )
     {
         auto const& curface = boost::unwrap_ref( *face_it );
         std::vector<int> faces;
-        faces.push_back( ordering_face.type() );
+        // Negative one identifies the native Feel++ connectivity order.
+        // Geometry metadata is serialized once by Mesh::serialize().
+        faces.push_back( -1 );
         faces.push_back( 4 + curface.numberOfPartitions() );
         faces.push_back( curface.hasMarker() ? curface.marker().value() : 0 );
         faces.push_back( curface.hasMarker2() ? curface.marker2().value() : 0 );
@@ -2871,8 +2903,8 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::encode()
         faces.push_back( curface.processId() );
         for ( auto const& [pid,eid] : curface.neighborProcessIds() )
             faces.push_back(-pid);
-        for ( uint16_type p = 0; p < face_type::numPoints; ++p )
-            faces.push_back( curface.point( ordering_face.fromGmshId( p ) ).id() + 1 );
+        for ( size_type p = 0; p < curface.nPoints(); ++p )
+            faces.push_back( curface.point( p ).id() + 1 );
 
         M_enc_faces[curface.id()] = faces;
     } // faces
@@ -2884,7 +2916,7 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::encode()
     {
         auto const& curelt = boost::unwrap_ref( *elt_it );
         std::vector<int> elts;
-        elts.push_back( ordering.type() );
+        elts.push_back( -1 );
         elts.push_back( 4 + curelt.numberOfPartitions() );
         elts.push_back( curelt.hasMarker() ? curelt.marker().value() : 0 );
         elts.push_back( curelt.hasMarker2() ? curelt.marker2().value() : 0 );
@@ -2892,8 +2924,8 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::encode()
         elts.push_back( curelt.processId() );
         for ( auto const& [pid,eid] : curelt.neighborProcessIds() )
             elts.push_back(-pid);
-        for ( uint16_type p = 0; p < element_type::numPoints; ++p )
-            elts.push_back( curelt.point( ordering.fromGmshId( p ) ).id() + 1 );
+        for ( size_type p = 0; p < curelt.nPoints(); ++p )
+            elts.push_back( curelt.point( p ).id() + 1 );
         elts.push_back( curelt.nNeighbors() );
         for ( uint16_type localFace = 0;
               localFace < curelt.nNeighbors(); ++localFace )
@@ -2937,11 +2969,6 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::decode()
     LOG( INFO ) << "decode=   " << MeshBase<IndexT>::worldComm().size() << "\n";
     LOG( INFO ) << "decode=   " << MeshBase<IndexT>::worldComm().subWorldComm().localRank() << "\n";
 #endif
-    static const uint16_type npoints_per_face = ( face_type::numVertices * face_type::nbPtsPerVertex +
-                                                  face_type::numEdges * face_type::nbPtsPerEdge +
-                                                  face_type::numFaces * face_type::nbPtsPerFace );
-
-    static const uint16_type npoints_per_element = element_type::numPoints;
     for ( auto pt_it = M_enc_pts.begin(), pt_en = M_enc_pts.end();
           pt_it != pt_en; ++pt_it )
     {
@@ -2959,10 +2986,21 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::decode()
     for ( auto face_it = M_enc_faces.begin(), face_en = M_enc_faces.end();
           face_it != face_en; ++face_it )
     {
-        face_type pf;
-        GmshOrdering<face_type> ordering;
-        CHECK_EQ( ordering.type(), face_it->second[0] )
-            << "invalid mesh face type";
+        auto pf = this->makeFace();
+        bool const usesNativeOrdering =
+            face_it->second[0] == -1;
+        std::optional<GmshOrdering<face_type>>
+            legacyOrdering;
+        if ( !usesNativeOrdering )
+        {
+            legacyOrdering.emplace(
+                makeGmshOrdering<face_type>(
+                    RuntimeOrder{ this->order() } ) );
+            if ( legacyOrdering->type() !=
+                 face_it->second[0] )
+                throw std::runtime_error(
+                    "Invalid legacy mesh face type" );
+        }
         std::vector<int> tags( face_it->second[1] );
         for ( int i = 0; i < tags.size(); ++i )
             tags[i] = face_it->second[2 + i];
@@ -2973,9 +3011,18 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::decode()
         //pf.setIdInPartition( MeshBase<IndexT>::worldComm().localRank(),pf.id() );
 
         const int shift = face_it->second[1] + 1;
-        for ( uint16_type jj = 0; jj < npoints_per_face; ++jj )
+        for ( size_type jj = 0; jj < pf.nPoints(); ++jj )
         {
-            pf.setPoint( ordering.fromGmshId( jj ), this->point( face_it->second[shift + jj] - 1 ) );
+            auto const localPoint =
+                usesNativeOrdering
+                    ? jj
+                    : static_cast<size_type>(
+                          legacyOrdering->fromGmshId(
+                              static_cast<int>( jj ) ) );
+            pf.setPoint(
+                localPoint,
+                this->point(
+                    face_it->second[shift + jj] - 1 ) );
         }
         this->addFace( std::move( pf ) );
     }
@@ -2983,10 +3030,21 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::decode()
     for ( auto elt_it = M_enc_elts.begin(), elt_en = M_enc_elts.end();
           elt_it != elt_en; ++elt_it )
     {
-        element_type pv;
-        GmshOrdering<element_type> ordering;
-        CHECK_EQ( ordering.type(), elt_it->second[0] )
-            << "invalid mesh element type";
+        auto pv = this->makeElement();
+        bool const usesNativeOrdering =
+            elt_it->second[0] == -1;
+        std::optional<GmshOrdering<element_type>>
+            legacyOrdering;
+        if ( !usesNativeOrdering )
+        {
+            legacyOrdering.emplace(
+                makeGmshOrdering<element_type>(
+                    RuntimeOrder{ this->order() } ) );
+            if ( legacyOrdering->type() !=
+                 elt_it->second[0] )
+                throw std::runtime_error(
+                    "Invalid legacy mesh element type" );
+        }
         std::vector<int> tags( elt_it->second[1] );
         for ( int i = 0; i < tags.size(); ++i )
             tags[i] = elt_it->second[2 + i];
@@ -2996,12 +3054,21 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::decode()
         //pv.setIdInPartition( MeshBase<IndexT>::worldComm().localRank(),pv.id() );
 
         const int shift = elt_it->second[1] + 1;
-        for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
+        for ( size_type jj = 0; jj < pv.nPoints(); ++jj )
         {
-            pv.setPoint( ordering.fromGmshId( jj ), this->point( elt_it->second[shift + jj] - 1 ) );
+            auto const localPoint =
+                usesNativeOrdering
+                    ? jj
+                    : static_cast<size_type>(
+                          legacyOrdering->fromGmshId(
+                              static_cast<int>( jj ) ) );
+            pv.setPoint(
+                localPoint,
+                this->point(
+                    elt_it->second[shift + jj] - 1 ) );
         }
         auto const neighborOffset =
-            static_cast<size_type>( shift ) + npoints_per_element;
+            static_cast<size_type>( shift ) + pv.nPoints();
         if ( neighborOffset < elt_it->second.size() )
         {
             auto const neighborCount =
@@ -3039,9 +3106,13 @@ void  Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::decode()
     // LOG(INFO) << "distance marker faces: "<< std::distance( this->beginFaceWithMarker(), this->endFaceWithMarker() ) << "\n";
     // LOG(INFO) << "distance marker2 faces: "<< std::distance( this->beginFaceWithMarker2(), this->endFaceWithMarker2() ) << "\n";
 
-    //this->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
-    //this->updateForUse();
-    //std::cout<<"decode=   " << MeshBase<IndexT>::worldComm().localSize() << std::endl;
+    this->components().reset();
+    this->components().set(
+        MESH_UPDATE_EDGES |
+        MESH_UPDATE_FACES |
+        MESH_CHECK );
+    this->setUpdatedForUse( false );
+    this->updateForUse();
     this->setSubStructuring( true );
 }
 
@@ -3050,18 +3121,32 @@ std::shared_ptr<Mesh<Shape, T, TheTag>>
 merge( std::shared_ptr<Mesh<Shape, T, Tag1>> m1,
        std::shared_ptr<Mesh<Shape, T, Tag2>> m2 )
 {
-    std::shared_ptr<Mesh<Shape, T, TheTag>> m( new Mesh<Shape, T, TheTag> );
+    using output_mesh_type = Mesh<Shape, T, TheTag>;
+    CHECK( m1 && m2 ) << "Cannot merge null meshes";
+    CHECK_EQ( m1->order(), m2->order() )
+        << "Cannot merge meshes with different geometry orders";
+
+    auto m = [&]()
+    {
+        if constexpr ( output_mesh_type::is_order_dynamic )
+            return output_mesh_type::New(
+                RuntimeOrder{ m1->order() },
+                m1->worldCommPtr() );
+        else
+            return output_mesh_type::New(
+                m1->worldCommPtr() );
+    }();
 
     // add the points
 
     size_type shift_p = std::distance( m1->beginPoint(), m1->endPoint() );
     for ( auto it = m1->beginPoint(), en = m1->endPoint(); it != en; ++it )
     {
-        m->addPoint( *it );
+        m->addPoint( it->second );
     }
     for ( auto it = m2->beginPoint(), en = m2->endPoint(); it != en; ++it )
     {
-        auto p = *it;
+        auto p = it->second;
         // shift id
         p.setId( shift_p + p.id() );
         m->addPoint( p );
@@ -3071,16 +3156,23 @@ merge( std::shared_ptr<Mesh<Shape, T, Tag1>> m1,
     typedef typename Mesh<Shape, T, TheTag>::face_type face_type;
     typedef typename Mesh<Shape, T, TheTag>::element_type element_type;
 
-    auto addface = [&]( std::shared_ptr<Mesh<Shape, T, TheTag>> m, face_iterator it, size_type shift ) {
-        face_type pf = *it;
+    auto addface = [&]( std::shared_ptr<Mesh<Shape, T, TheTag>> m,
+                        face_iterator it,
+                        size_type faceShift,
+                        size_type pointShift ) {
+        auto const& sourceFace = it->second;
+        face_type pf = sourceFace;
         pf.disconnect();
+        pf.setId( faceShift + sourceFace.id() );
         pf.setOnBoundary( true );
-        const uint16_type npoints_per_face = ( face_type::numVertices * face_type::nbPtsPerVertex +
-                                               face_type::numEdges * face_type::nbPtsPerEdge +
-                                               face_type::numFaces * face_type::nbPtsPerFace );
-        for ( uint16_type jj = 0; jj < npoints_per_face; ++jj )
+        for ( uint16_type jj = 0;
+              jj < pf.nPoints(); ++jj )
         {
-            pf.setPoint( jj, m->point( shift + it->point( jj ).id() ) );
+            pf.setPoint(
+                jj,
+                m->point(
+                    pointShift +
+                    sourceFace.point( jj ).id() ) );
         }
         m->addFace( pf );
     };
@@ -3088,18 +3180,17 @@ merge( std::shared_ptr<Mesh<Shape, T, Tag1>> m1,
     size_type shift_f = std::distance( m1->beginFace(), m1->endFace() );
     for ( auto it = m1->beginFace(), en = m1->endFace(); it != en; ++it )
     {
-        addface( m, it, 0 );
+        addface( m, it, 0, 0 );
     }
     for ( auto it = m2->beginFace(), en = m2->endFace(); it != en; ++it )
     {
         // don't forget to shift the point id in the face
-        addface( m, it, shift_p );
+        addface( m, it, shift_f, shift_p );
     }
     // add the elements
     auto addelement = [&]( std::shared_ptr<Mesh<Shape, T, TheTag>> m, element_iterator it, size_type shift_f, size_type shift_p ) {
-        element_type pf = *it;
-
-        static const uint16_type npoints_per_element = element_type::numPoints;
+        auto const& sourceElement = it->second;
+        element_type pf = sourceElement;
 
 #if 0
             for ( uint16_type jj = 0; jj < pf.numLocalFaces; ++jj )
@@ -3107,9 +3198,14 @@ merge( std::shared_ptr<Mesh<Shape, T, Tag1>> m1,
                 pf.setFace( jj, m->face( shift_f+it->face(jj).id() ) );
             }
 #endif
-        for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
+        for ( uint16_type jj = 0;
+              jj < pf.nPoints(); ++jj )
         {
-            pf.setPoint( jj, m->point( shift_p + it->point( jj ).id() ) );
+            pf.setPoint(
+                jj,
+                m->point(
+                    shift_p +
+                    sourceElement.point( jj ).id() ) );
         }
         m->addElement( pf );
     };
