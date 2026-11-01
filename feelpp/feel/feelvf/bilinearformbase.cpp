@@ -6,10 +6,6 @@
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
-//! @file
-//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-//! @date 24 Sep 2017
-
 #define FEELPP_BILINEARFORMBASE_NOEXTERN 1
 #include <feel/feelvf/bilinearformbase.hpp>
 

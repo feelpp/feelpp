@@ -898,8 +898,13 @@ public:
      */
     //@{
 
-    // close vector
-    void close() { M_F->close(); }
+    /**
+     * @brief Close the assembled vector.
+     */
+    void close()
+    {
+        M_F->close();
+    }
 
     /**
      * Set the function space from which the linear form takes its
@@ -963,6 +968,8 @@ public:
         M_F->addVector( i, n, v, K, K2 );
     }
 
+
+
     /**
      * set value \p v at position (\p i) of the vector
      * associated with the linear form
@@ -1003,6 +1010,7 @@ private:
     value_type M_threshold;
 
     std::vector<size_type> const* M_dofIdToContainerId;
+
 
 };
 

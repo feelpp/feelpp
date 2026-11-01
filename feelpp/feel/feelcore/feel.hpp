@@ -6,10 +6,6 @@
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
-//! @file
-//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-//! @date 05 Feb 2017
-
 # ifndef __cplusplus
 # error You must use C++ for Feel
 # endif

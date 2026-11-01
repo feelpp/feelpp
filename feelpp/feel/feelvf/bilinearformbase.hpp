@@ -6,10 +6,6 @@
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
-//! @file
-//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-//! @date 23 Sep 2017
-
 #ifndef FEELPP_VF_BILINEARFORMBASE_H
 #define FEELPP_VF_BILINEARFORMBASE_H
 
@@ -376,8 +372,12 @@ public:
     //@{
 
 
-    // Close the assembled base operator only. Deferred Dirichlet constraints
-    // remain logical form state until materialized explicitly.
+    /**
+     * @brief Close the assembled base operator.
+     *
+     * Deferred Dirichlet constraints remain logical form state until
+     * materialized explicitly.
+     */
     void close()
         {
             this->get(); // futures
@@ -881,6 +881,8 @@ public:
                     value_type* data,
                     size_type K  = 0,
                     size_type K2 = invalid_v<size_type> );
+
+
 
 
     /**
