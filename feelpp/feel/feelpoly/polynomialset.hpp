@@ -667,9 +667,11 @@ public:
         matrix_type coeff;
         coeff = ublas::prod( M_coeff, basisD( l ) );
 
-        self_type deriv( Poly(), coeff, true );
-        if constexpr ( is_order_dynamic )
-            deriv.setOrder( this->order() );
+        // Differentiation changes the coefficients within the same expansion
+        // basis. Preserve its effective order, including runtime orders carried
+        // by a statically typed base of a dynamic finite element.
+        self_type deriv( *this );
+        deriv.setCoefficient( coeff, true );
         return deriv;
     }
 

@@ -1,4 +1,4 @@
-###  CMakeLists.txt; coding: utf-8 ---
+# -*- mode: cmake; coding: utf-8 -*-
 
 # SPDX-FileContributor: <christophe.prudhomme@feelpp.org>
 # SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>

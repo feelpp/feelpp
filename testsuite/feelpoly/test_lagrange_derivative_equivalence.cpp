@@ -1,26 +1,10 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2026-02-14
-
-  Copyright (C) 2026 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 /**
    \file test_lagrange_derivative_equivalence.cpp
    \brief Dedicated tests for compile-time vs runtime Lagrange derivative equivalence
@@ -72,7 +56,6 @@ template <typename FEStaticType, typename FEDynamicType, typename PointsType>
 void checkDerivativeAgreement( FEStaticType const& fe_static,
                                FEDynamicType const& fe_dynamic,
                                PointsType const& pts,
-                               uint16_type order,
                                double tol,
                                std::string const& label )
 {
@@ -91,25 +74,32 @@ void checkDerivativeAgreement( FEStaticType const& fe_static,
                            tol,
                            label + " d/dx" + std::to_string( c ) + " via derivate(points)" );
 
-        auto const dpoly_static = fe_static.derivate( c ).evaluate( pts );
+        auto const derivative_static = fe_static.derivate( c );
+        auto const derivative_dynamic = fe_dynamic.derivate( c );
+        BOOST_TEST_CONTEXT( label + " derivative expansion order" )
+        {
+            BOOST_CHECK_EQUAL( derivative_static.order(), fe_static.order() );
+            BOOST_CHECK_EQUAL( derivative_dynamic.order(), fe_dynamic.order() );
+        }
+        auto const dpoly_static = derivative_static.evaluate( pts );
         checkMatricesNear( d_static[c],
                            dpoly_static,
                            tol,
                            label + " d/dx" + std::to_string( c ) + " static internal consistency" );
 
-        // Runtime derivate(i) remains less robust for higher orders; check it for low order.
-        if ( order <= 2 )
-        {
-            auto const dpoly_dynamic = fe_dynamic.derivate( c ).evaluate( pts );
-            checkMatricesNear( dpoly_static,
-                               dpoly_dynamic,
-                               tol,
-                               label + " d/dx" + std::to_string( c ) + " via derivate(i).evaluate(points)" );
-            checkMatricesNear( d_dynamic[c],
-                               dpoly_dynamic,
-                               tol,
-                               label + " d/dx" + std::to_string( c ) + " runtime internal consistency" );
-        }
+        auto const dpoly_dynamic = derivative_dynamic.evaluate( pts );
+        checkMatricesNear( dpoly_static,
+                           dpoly_dynamic,
+                           tol,
+                           label + " d/dx" + std::to_string( c ) + " via derivate(i).evaluate(points)" );
+        checkMatricesNear( d_dynamic[c],
+                           dpoly_dynamic,
+                           tol,
+                           label + " d/dx" + std::to_string( c ) + " runtime internal consistency" );
+        checkMatricesNear( derivative_dynamic.derivate( c ).evaluate( pts ),
+                           fe_dynamic.derivate( c, c, pts ),
+                           tol,
+                           label + " d2/dx" + std::to_string( c ) + "2 chained runtime derivative" );
     }
 }
 
@@ -129,8 +119,8 @@ void checkStaticRuntimeDerivativeAgreement( double tol )
 
     const std::string prefix = "Dim=" + std::to_string( Dim ) + " P" + std::to_string( Order ) + " ";
 
-    checkDerivativeAgreement( fe_static, fe_dynamic, pts_static, static_cast<uint16_type>( Order ), tol, prefix + "derivatives on static nodes" );
-    checkDerivativeAgreement( fe_static, fe_dynamic, pts_dynamic, static_cast<uint16_type>( Order ), tol, prefix + "derivatives on dynamic nodes" );
+    checkDerivativeAgreement( fe_static, fe_dynamic, pts_static, tol, prefix + "derivatives on static nodes" );
+    checkDerivativeAgreement( fe_static, fe_dynamic, pts_dynamic, tol, prefix + "derivatives on dynamic nodes" );
 
     ublas::matrix<double> probePts( Dim, 4 );
     const std::size_t nPts = pts_static.size2();
@@ -143,7 +133,7 @@ void checkStaticRuntimeDerivativeAgreement( double tol )
         for ( std::size_t d = 0; d < probePts.size1(); ++d )
             probePts( d, j ) = 0.5 * pts_static( d, j0 ) + 0.3 * pts_static( d, j1 ) + 0.2 * pts_static( d, j2 );
     }
-    checkDerivativeAgreement( fe_static, fe_dynamic, probePts, static_cast<uint16_type>( Order ), tol, prefix + "derivatives on probe points" );
+    checkDerivativeAgreement( fe_static, fe_dynamic, probePts, tol, prefix + "derivatives on probe points" );
 }
 }
 
