@@ -15,6 +15,7 @@
 #ifndef __LinearFormContext_H
 #define __LinearFormContext_H 1
 
+#include <feel/feelvf/detail/localform_tensor.hpp>
 
 namespace Feel
 {
@@ -296,6 +297,15 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
         // Resize M_rep for dynamic-size types
         if ( M_rep.size() != rtNDof )
             M_rep = local_vector_type::Zero( rtNDof );
+        if constexpr (
+            detail::LocalLinearTensorEvaluable<
+                eval0_expr_type, typename IM::vector_type,
+                local_vector_type> )
+        {
+            M_eval0_expr->evaluateLocalLinearTensor(
+                M_integrator.integrationWeights(), M_rep );
+            return;
+        }
         for ( uint16_type i = 0; i < rtNDof; ++i )
         {
             M_rep( i ) = M_integrator( *M_eval0_expr, i, 0, 0 );

@@ -77,9 +77,8 @@ BilinearFormBase<T>::addMatrix( int* rows, int nrows,
                                 size_type K,
                                 size_type K2)
 {
-    this->invalidateMaterializedDeferredDirichlet();
     std::lock_guard<std::mutex> guard(b_mutex);
-    //std::cout << "add matrix\n";
+    this->invalidateMaterializedDeferredDirichlet();
     M_matrix->addMatrix( rows, nrows, cols, ncols, data, K, K2 );
 }
 

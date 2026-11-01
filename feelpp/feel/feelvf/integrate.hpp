@@ -60,6 +60,8 @@ auto integrate( Ts && ... v )
         _geometry_evaluation,
         geometry::geometry_evaluation_strategy::automatic );
     bool use_harts = args.get_else(_use_harts,false);
+    auto localFormLowering = args.get_else(
+        _local_form_lowering, vf::local_form_lowering::automatic );
     bool verbose = args.get_else(_verbose,false);
 
     using _integrate_helper_type = Feel::detail::integrate_type<decltype(expr),decltype(range),decltype(quad),decltype(quad1)>;
@@ -72,7 +74,7 @@ auto integrate( Ts && ... v )
     auto ret = integrate_impl( range, the_im, expr,
                                Feel::detail::geomapStrategy( range, geomap ),
                                geometryEvaluation, the_im1,
-                               use_harts, quadptloc );
+                               use_harts, quadptloc, localFormLowering );
 
     if ( verbose )
     {

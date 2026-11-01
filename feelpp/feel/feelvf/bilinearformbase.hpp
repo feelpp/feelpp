@@ -14,6 +14,7 @@
 #define FEELPP_VF_BILINEARFORMBASE_H
 
 #include <future>
+#include <mutex>
 
 
 #include <feel/feelconfig.h>

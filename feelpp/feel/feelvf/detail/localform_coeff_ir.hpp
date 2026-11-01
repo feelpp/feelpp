@@ -16,6 +16,7 @@
 #include <algorithm>
 
 #include <feel/feelvf/detail/localform_base.hpp>
+#include <feel/feelpoly/quadratureevaluation.hpp>
 
 namespace Feel
 {
@@ -205,6 +206,29 @@ public:
         {
             return M_expr.evalq( c1, c2, q );
         }
+        /**
+         * @brief Evaluate this scalar coefficient over a quadrature block.
+         * @param request component indices; test/trial indices are ignored
+         * @param values caller-owned output vector
+         */
+        void evaluateQuadratureBatch(
+            quadrature::evaluation_request const& request,
+            Eigen::Ref<Eigen::Matrix<value_type, Eigen::Dynamic, 1>> values ) const
+        {
+            if constexpr ( std::is_same_v<leaf_tag, localform_coeff_constant_leaf_tag> )
+            {
+                values.setConstant( M_expr.evalq( request.component1,
+                                                  request.component2, 0 ) );
+            }
+            else
+            {
+                quadrature::evaluateBatchOrFallback(
+                    M_expr,
+                    quadrature::evaluation_request::value(
+                        request.component1, request.component2 ),
+                    values );
+            }
+        }
         eval_map_type evalq( uint16_type q ) const
         {
             M_evalBuffer( 0, 0 ) = evalq( 0, 0, q );
@@ -378,6 +402,25 @@ public:
         {
             return M_innerExpr.evalq( c1, c2, q ) != value_type( 0 ) ? value_type( 1 ) : value_type( 0 );
         }
+        /**
+         * @brief Evaluate the characteristic coefficient over a quadrature block.
+         * @param request component indices; test/trial indices are ignored
+         * @param values caller-owned output vector
+         */
+        void evaluateQuadratureBatch(
+            quadrature::evaluation_request const& request,
+            Eigen::Ref<Eigen::Matrix<value_type, Eigen::Dynamic, 1>> values ) const
+        {
+            M_batchBuffer.resize( values.size() );
+            quadrature::evaluateBatchOrFallback(
+                M_innerExpr,
+                quadrature::evaluation_request::value(
+                    request.component1, request.component2 ),
+                M_batchBuffer );
+            values.array() =
+                ( M_batchBuffer.array() != value_type( 0 ) )
+                    .select( value_type( 1 ), value_type( 0 ) );
+        }
         eval_map_type evalq( uint16_type q ) const
         {
             M_evalBuffer( 0, 0 ) = evalq( 0, 0, q );
@@ -386,6 +429,7 @@ public:
 
         inner_tensor_type M_innerExpr;
         mutable eval_matrix_type M_evalBuffer;
+        mutable Eigen::Matrix<value_type, Eigen::Dynamic, 1> M_batchBuffer;
     };
 
 private:
@@ -623,6 +667,32 @@ public:
         {
             return op_type::apply( M_leftExpr.evalq( c1, c2, q ), M_rightExpr.evalq( c1, c2, q ) );
         }
+        /**
+         * @brief Evaluate this normalized binary coefficient over a point block.
+         * @param request component indices; test/trial indices are ignored
+         * @param values caller-owned output vector
+         */
+        void evaluateQuadratureBatch(
+            quadrature::evaluation_request const& request,
+            Eigen::Ref<Eigen::Matrix<value_type, Eigen::Dynamic, 1>> values ) const
+        {
+            M_leftBatch.resize( values.size() );
+            M_rightBatch.resize( values.size() );
+            auto const valueRequest = quadrature::evaluation_request::value(
+                request.component1, request.component2 );
+            quadrature::evaluateBatchOrFallback( M_leftExpr, valueRequest,
+                                                  M_leftBatch );
+            quadrature::evaluateBatchOrFallback( M_rightExpr, valueRequest,
+                                                  M_rightBatch );
+            if constexpr ( std::is_same_v<BinaryOpTag, localform_coeff_add_op_tag> )
+                values = M_leftBatch + M_rightBatch;
+            else if constexpr ( std::is_same_v<BinaryOpTag, localform_coeff_mul_op_tag> )
+                values.array() = M_leftBatch.array() * M_rightBatch.array();
+            else
+                values.array() =
+                    ( M_leftBatch.array() > M_rightBatch.array() )
+                        .select( value_type( 1 ), value_type( 0 ) );
+        }
         eval_map_type evalq( uint16_type q ) const
         {
             M_evalBuffer( 0, 0 ) = evalq( 0, 0, q );
@@ -632,6 +702,8 @@ public:
         left_tensor_type M_leftExpr;
         right_tensor_type M_rightExpr;
         mutable eval_matrix_type M_evalBuffer;
+        mutable Eigen::Matrix<value_type, Eigen::Dynamic, 1> M_leftBatch;
+        mutable Eigen::Matrix<value_type, Eigen::Dynamic, 1> M_rightBatch;
     };
 
 private:

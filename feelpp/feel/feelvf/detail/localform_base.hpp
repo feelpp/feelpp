@@ -24,6 +24,14 @@ namespace Feel
 {
 namespace vf
 {
+/**
+ * Control recognition of local forms during assembly.
+ * automatic preserves scalar mass/source dispatch; enabled also selects the
+ * experimental contractions; disabled keeps the original expression evaluator.
+ * Expressions explicitly lowered by the caller remain lowered in every mode.
+ */
+enum class local_form_lowering { automatic, enabled, disabled };
+
 namespace detail
 {
 
@@ -37,8 +45,64 @@ template<typename T1, typename T2>
 inline constexpr bool same_or_void_v =
     std::is_void_v<T1> || std::is_void_v<T2> || std::is_same_v<T1, T2>;
 
-template<typename TestSpaceType, typename TrialSpaceType, typename CoefficientExprType>
-class LoweredScalarMassExpr;
+struct scalar_mass_contraction;
+struct vector_mass_contraction;
+struct scalar_h1_stiffness_contraction;
+struct anisotropic_scalar_h1_stiffness_contraction;
+struct curl_curl_contraction;
+struct divergence_divergence_contraction;
+struct value_divergence_contraction;
+struct divergence_value_contraction;
+
+template<typename TestSpaceType, typename TrialSpaceType,
+         typename CoefficientExprType, typename ContractionType>
+class LoweredScalarBilinearExpr;
+
+template<typename TestSpaceType, typename TrialSpaceType,
+         typename CoefficientExprType>
+using LoweredScalarMassExpr =
+    LoweredScalarBilinearExpr<TestSpaceType, TrialSpaceType,
+                              CoefficientExprType, scalar_mass_contraction>;
+
+template<typename TestSpaceType, typename TrialSpaceType,
+         typename CoefficientExprType>
+using LoweredScalarStiffnessExpr =
+    LoweredScalarBilinearExpr<TestSpaceType, TrialSpaceType,
+                              CoefficientExprType,
+                              scalar_h1_stiffness_contraction>;
+
+template<typename TestSpaceType, typename TrialSpaceType,
+         typename CoefficientExprType>
+using LoweredVectorMassExpr =
+    LoweredScalarBilinearExpr<TestSpaceType, TrialSpaceType,
+                              CoefficientExprType, vector_mass_contraction>;
+
+template<typename TestSpaceType, typename TrialSpaceType,
+         typename CoefficientExprType>
+using LoweredCurlCurlExpr =
+    LoweredScalarBilinearExpr<TestSpaceType, TrialSpaceType,
+                              CoefficientExprType, curl_curl_contraction>;
+
+template<typename TestSpaceType, typename TrialSpaceType,
+         typename CoefficientExprType>
+using LoweredDivDivExpr =
+    LoweredScalarBilinearExpr<TestSpaceType, TrialSpaceType,
+                              CoefficientExprType,
+                              divergence_divergence_contraction>;
+
+template<typename TestSpaceType, typename TrialSpaceType,
+         typename CoefficientExprType>
+using LoweredValueDivExpr =
+    LoweredScalarBilinearExpr<TestSpaceType, TrialSpaceType,
+                              CoefficientExprType,
+                              value_divergence_contraction>;
+
+template<typename TestSpaceType, typename TrialSpaceType,
+         typename CoefficientExprType>
+using LoweredDivValueExpr =
+    LoweredScalarBilinearExpr<TestSpaceType, TrialSpaceType,
+                              CoefficientExprType,
+                              divergence_value_contraction>;
 
 template<typename SpaceType, typename CoefficientExprType>
 class LoweredScalarSourceExpr;
@@ -46,8 +110,12 @@ class LoweredScalarSourceExpr;
 template<typename T>
 struct is_lowered_localform_expr : std::false_type {};
 
-template<typename TestSpaceType, typename TrialSpaceType, typename CoefficientExprType>
-struct is_lowered_localform_expr<LoweredScalarMassExpr<TestSpaceType, TrialSpaceType, CoefficientExprType>> : std::true_type {};
+template<typename TestSpaceType, typename TrialSpaceType,
+         typename CoefficientExprType, typename ContractionType>
+struct is_lowered_localform_expr<
+    LoweredScalarBilinearExpr<TestSpaceType, TrialSpaceType,
+                              CoefficientExprType, ContractionType>>
+    : std::true_type {};
 
 template<typename SpaceType, typename CoefficientExprType>
 struct is_lowered_localform_expr<LoweredScalarSourceExpr<SpaceType, CoefficientExprType>> : std::true_type {};

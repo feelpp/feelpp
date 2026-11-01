@@ -15,6 +15,7 @@
 #ifndef FEELPP_BILINEARFORMCONTEXT_HPP
 #define FEELPP_BILINEARFORMCONTEXT_HPP 1
 
+#include <feel/feelvf/detail/localform_tensor.hpp>
 
 namespace Feel
 {
@@ -460,6 +461,19 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
         M_form.testFiniteElement<UseMortarTest>()->localDof() );
     const uint16_type nDofTrialComp = static_cast<uint16_type>(
         M_form.trialFiniteElement<UseMortarTrial>()->localDof() );
+
+    // Canonical local tensors fill the existing assembler-owned matrix. All
+    // orientation transforms, local signs, and sparse insertion below remain
+    // shared with the pointwise and quadrature-block fallback paths.
+    if constexpr (
+        UseMortarType == 0 &&
+        detail::LocalBilinearTensorEvaluable<
+            eval00_expr_type, typename IM::vector_type, local_matrix_type> )
+    {
+        M_eval_expr00->evaluateLocalBilinearTensor(
+            M_integrator.integrationWeights(), M_rep );
+        return;
+    }
 
     if ( M_form.isPatternDefault() && boost::is_same<trial_dof_type,test_dof_type>::value &&
          trial_dof_type::is_product && !UseMortar )

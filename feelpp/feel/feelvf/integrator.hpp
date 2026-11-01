@@ -241,7 +241,8 @@ public:
                 geometry::geometry_evaluation_strategy geometryEvaluation,
                 Im2 const& __im2,
                 bool use_harts,
-                std::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > qpl )
+                std::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > qpl,
+                local_form_lowering localFormLowering = local_form_lowering::automatic )
         :
         M_elts(),
         M_eltbegin( elts.begin() ),
@@ -252,6 +253,7 @@ public:
         M_expr( __expr ),
         M_gt( gt ),
         M_geometry_evaluation( geometryEvaluation ),
+        M_local_form_lowering( localFormLowering ),
         M_use_harts( use_harts ),
         M_QPL( qpl )
     {
@@ -271,7 +273,8 @@ public:
                 geometry::geometry_evaluation_strategy geometryEvaluation,
                 Im2 const& __im2,
                 bool use_harts,
-                std::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > qpl )
+                std::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > qpl,
+                local_form_lowering localFormLowering = local_form_lowering::automatic )
         :
         M_elts( elts ),
         M_wc( Environment::worldCommPtr() ),
@@ -280,6 +283,7 @@ public:
         M_expr( __expr ),
         M_gt( gt ),
         M_geometry_evaluation( geometryEvaluation ),
+        M_local_form_lowering( localFormLowering ),
         M_use_harts( use_harts ),
         M_QPL( qpl )
     {
@@ -303,6 +307,7 @@ public:
         M_expr( __vfi.M_expr ),
         M_gt( __vfi.M_gt ),
         M_geometry_evaluation( __vfi.M_geometry_evaluation ),
+        M_local_form_lowering( __vfi.M_local_form_lowering ),
         M_use_harts( __vfi.M_use_harts ),
         M_QPL( __vfi.M_QPL )
     {
@@ -365,7 +370,7 @@ public:
             auto i = Integrator<Elements, quad_type, expr_type, quad1_type>(
                 M_elts, quad, new_expr, M_gt, M_geometry_evaluation,
                 quad1, M_use_harts,
-                quadptloc_ptrtype() );
+                quadptloc_ptrtype(), M_local_form_lowering );
             DLOG(INFO) << " -- M_elts size=" << M_elts.size() << "\n";
             DLOG(INFO) << " -- nelts=" << std::distance( M_eltbegin, M_eltend ) << "\n";
             DLOG(INFO) << " -- integrate: quad = " << i.im().nPoints() << "\n";
@@ -683,6 +688,7 @@ private:
     GeomapStrategyType M_gt;
     /** Geometry kernel selected below the variational DSEL. */
     geometry::geometry_evaluation_strategy M_geometry_evaluation;
+    local_form_lowering M_local_form_lowering;
     bool M_use_harts;
     mutable std::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > M_QPL;
     //     mutable boost::prof::basic_profiler<boost::prof::basic_profile_manager<std::string, double, boost::high_resolution_timer, boost::prof::empty_logging_policy, boost::prof::default_stats_policy<std::string, double> > > M_profile_local_assembly;
@@ -5773,7 +5779,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                      Im2 const& im2,
                      bool use_harts,
                      std::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT > > quadptloc
-                     = std::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT > >() )
+                     = std::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT > >(),
+                     local_form_lowering localFormLowering = local_form_lowering::automatic )
  {
 
      typedef typename Feel::detail::quadptlocrangetype< Elts >::type range_type;
@@ -5784,7 +5791,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
      LOG_IF(WARNING, gt != GeomapStrategyType::GEOMAP_HO && geoOrder == 1 ) << "you use a non standard geomap : ";
      return Expr<expr_t>( expr_t( elts, im, expr, gt, geometryEvaluation,
                                   im2, use_harts,
-                                  quadptloc ) );
+                                  quadptloc, localFormLowering ) );
  }
 
 

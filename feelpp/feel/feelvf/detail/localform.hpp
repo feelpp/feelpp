@@ -8,7 +8,7 @@
 
 /**
    \file localform.hpp
-   \brief Internal lowered local-form wrappers for the first Phase 2 seam.
+   \brief Internal lowered local-form expression and contraction API.
  */
 #ifndef FEELPP_VF_DETAIL_LOCALFORM_HPP
 #define FEELPP_VF_DETAIL_LOCALFORM_HPP 1
