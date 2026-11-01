@@ -35,7 +35,10 @@ def cfpdes(dim=2, worldComm=None, keyword="cfpdes", prefix="cfpdes", subprefix="
     if modelRep is None:
         modelRep = ModelBaseRepository()
     pdes = _cfpdes[key](prefix=prefix, keyword=keyword, worldComm=worldComm, subprefix=subprefix, modelRep=modelRep)
-    pdes.pde = lambda nameeq: pde(pdes,nameeq)
+    # Install the convenience method on the extension type rather than on the
+    # instance.  An instance lambda captures pdes and creates a reference cycle,
+    # which can keep PETSc-backed toolbox objects alive until Environment teardown.
+    type(pdes).pde = pde
     return pdes
 
 

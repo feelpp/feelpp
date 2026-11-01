@@ -3,7 +3,7 @@ set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testvf")
 set(FEELPP_VF_TEST_TARGETS)
 
 set(FEELPP_VF_SIMPLE_TESTS
-    ginac
+    symbolic_ad_expr
     vf_operators
     inner_curl
     inner_laplacian
@@ -28,7 +28,11 @@ foreach(t ${FEELPP_VF_SIMPLE_TESTS})
     list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
 endforeach()
 
-feelpp_add_test( expr CFG test_expr.cfg PYTHON test_expr.py )
+feelpp_add_test( ginac TIMEOUT 600 )
+list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
+
+feelpp_add_test( expr CFG test_expr.cfg PYTHON test_expr.py
+    CLI "--repository.prefix=${CMAKE_CURRENT_BINARY_DIR}/test_expr_repository_np_$np" )
 list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
 
 feelpp_add_test( ginac_jit_cache NO_MPI_TEST TIMEOUT 180 )

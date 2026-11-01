@@ -1757,6 +1757,48 @@ Environment::setConfigFile( std::string const& cfgfile )
 {
     setConfigFiles( std::vector<std::string>{ cfgfile } );
 }
+
+void
+Environment::addOptions( po::options_description const& desc )
+{
+    if ( !S_desc )
+        throw std::logic_error(
+            "Environment::addOptions requires an initialized Environment" );
+
+    bool anyRegistered = false;
+    bool allRegistered = true;
+    for ( auto const& option : desc.options() )
+    {
+        bool const registered =
+            S_desc->find_nothrow( option->long_name(), false ) != nullptr;
+        anyRegistered = anyRegistered || registered;
+        allRegistered = allRegistered && registered;
+    }
+
+    if ( allRegistered )
+        return;
+    if ( anyRegistered )
+        throw std::invalid_argument(
+            "Environment::addOptions received a partially registered option description" );
+
+    S_desc->add( desc );
+    po::store(
+        po::command_line_parser( S_argc, S_argv )
+            .options( desc )
+            .allow_unregistered()
+            .run(),
+        S_vm );
+
+    for ( auto& config : S_configFiles )
+    {
+        auto& stream = std::get<1>( config );
+        stream.clear();
+        stream.seekg( 0 );
+        po::store( po::parse_config_file( stream, desc, true ), S_vm );
+    }
+    po::notify( S_vm );
+}
+
 bool
 Environment::initialized()
 {

@@ -4117,6 +4117,15 @@ public:
         }
     }
 
+    /**
+     * @brief Refresh mesh-dependent function-space data after a mesh change.
+     * @param mesh_changes kind of mesh change to process
+     */
+    void updateAfterMeshChange( MESH_CHANGES mesh_changes ) override
+    {
+        ( *this )( mesh_changes );
+    }
+
 
     //@}
 

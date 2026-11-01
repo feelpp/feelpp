@@ -51,7 +51,8 @@ using threading = NA::named_argument_t<struct threading_tag>;
 
 
 using matrix = NA::named_argument_t<struct matrix_tag>;
-using auxiliary_matrix = NA::named_argument_t<struct auxiliary_matrix_tag>;
+using auxiliary_matrices = NA::named_argument_t<struct auxiliary_matrices_tag>;
+using dirichlet_inplace = NA::named_argument_t<struct dirichlet_inplace_tag>;
 using buildGraphWithTranspose = NA::named_argument_t<struct buildGraphWithTranspose_tag>;
 using matrixA = NA::named_argument_t<struct matrixA_tag>;
 using matrixB = NA::named_argument_t<struct matrixB_tag>;
@@ -204,6 +205,8 @@ using selector = NA::named_argument_t<struct selector_tag>;
 using quadptloc = NA::named_argument_t<struct quadptloc_tag>;
 
 using extended_doftable = NA::named_argument_t<struct extended_doftable_tag>;
+//! Named argument selecting a FunctionSpaceReusePolicy for a factory request.
+using fspace_reuse_policy = NA::named_argument_t<struct fspace_reuse_policy_tag>;
 
 
 
@@ -374,7 +377,8 @@ inline constexpr auto& _threading = NA::identifier<na::threading>;
 
 
 inline constexpr auto& _matrix = NA::identifier<na::matrix>;
-inline constexpr auto& _auxiliary_matrix = NA::identifier<na::auxiliary_matrix>;
+inline constexpr auto& _auxiliary_matrices = NA::identifier<na::auxiliary_matrices>;
+inline constexpr auto& _dirichlet_inplace = NA::identifier<na::dirichlet_inplace>;
 inline constexpr auto& _buildGraphWithTranspose = NA::identifier<na::buildGraphWithTranspose>;
 inline constexpr auto& _matrixA = NA::identifier<na::matrixA>;
 inline constexpr auto& _matrixB = NA::identifier<na::matrixB>;
@@ -521,6 +525,8 @@ inline constexpr auto& _arg = NA::identifier<na::arg>;
 inline constexpr auto& _quadptloc = NA::identifier<na::quadptloc>;
 
 inline constexpr auto& _extended_doftable = NA::identifier<na::extended_doftable>;
+//! Function-space factory keyword associated with na::fspace_reuse_policy.
+inline constexpr auto& _fspace_reuse_policy = NA::identifier<na::fspace_reuse_policy>;
 
 
 

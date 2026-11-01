@@ -147,7 +147,7 @@ public:
                              >::type::value;
 
 
-    typedef mpl::vector<details::point<orderSquare>, details::line<orderSquare>, details::quad<orderSquare>, details::hexa<orderSquare> > map_entity_to_point_t;
+    typedef mpl::vector<Feel::details::point<orderSquare>, Feel::details::line<orderSquare>, Feel::details::quad<orderSquare>, Feel::details::hexa<orderSquare> > map_entity_to_point_t;
     typedef typename mpl::at<map_entity_to_point_t, mpl::int_<nDim> >::type edge_to_point_t;
     typedef typename mpl::at<map_entity_to_point_t, mpl::int_<nDim> >::type face_to_point_t;
     typedef typename mpl::at<map_entity_to_point_t, mpl::int_<nDim> >::type face_to_edge_t;

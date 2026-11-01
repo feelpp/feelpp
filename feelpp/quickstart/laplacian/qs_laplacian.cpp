@@ -19,7 +19,7 @@
 //! @file
 //! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 //! @date 10 Apr 2017
-//! @copyright 2017 Feel++ Consortium
+//! @copyright 2017-2026 University of Strasbourg
 //!
 // tag::global[]
 #include <feel/feelcore/environment.hpp>
@@ -66,6 +66,10 @@ int cg_laplacian_app()
         Vh = Pch<SpaceOrder>( mesh, elements(mesh, vf::expr(soption("marker.levelset")) ), runtimeOrder );
     else
         Vh = Pch<SpaceOrder>( mesh, runtimeOrder );
+
+    Feel::cout << fmt::format( "MESH_STATS elements={} points={} dofs={} order={} mpi_ranks={}\n",
+                              mesh->numGlobalElements(), mesh->numGlobalPoints(), Vh->nDof(),
+                              Order, Environment::worldComm().globalSize() );
 
     std::map<std::string,std::string> inputs{{"dim",std::to_string(dimension(mesh))},
                                             {"k",soption("k")},{"r_1",soption("r_1")},{"u",""},{"un",soption("un")},{"f",soption("f")},{"g",soption("g")},{"r_2",soption("r_2")}};
@@ -163,7 +167,7 @@ int cg_laplacian_app()
         if ( opt_u )
         {
             e->add( "p", *opt_u );
-            e->add( "u", -k*vf::gradv(*opt_u), "element" );
+            e->add( "u", -k * vf::gradv( *opt_u ), elements( support( Vh ) ), "element" );
         }
         e->add( "k", k );
         e->add( "f", f );

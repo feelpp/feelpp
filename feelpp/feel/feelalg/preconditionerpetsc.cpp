@@ -132,7 +132,6 @@ namespace
 using hpddm_has_neumann_mat_t = PetscErrorCode (*)( PC, PetscBool );
 using hpddm_set_auxiliary_mat_t = PetscErrorCode (*)( PC, IS, Mat, PetscErrorCode (*)(Mat, PetscReal, Vec, Vec, PetscReal, IS, void *), void * );
 using hpddm_set_coarse_correction_type_t = PetscErrorCode (*)( PC, PCHPDDMCoarseCorrectionType );
-using hpddm_set_st_share_sub_ksp_t = PetscErrorCode (*)( PC, PetscBool );
 
 hpddm_set_auxiliary_mat_t
 hpddmSetAuxiliaryMatFn()
@@ -155,12 +154,6 @@ hpddmSetCoarseCorrectionTypeFn()
     return fn;
 }
 
-hpddm_set_st_share_sub_ksp_t
-hpddmSetSTShareSubKSPFn()
-{
-    static hpddm_set_st_share_sub_ksp_t fn = petscHpddmSymbol<hpddm_set_st_share_sub_ksp_t>( "PCHPDDMSetSTShareSubKSP" );
-    return fn;
-}
 #endif
 } // namespace
 
@@ -204,8 +197,6 @@ PreconditionerPetsc<T>::PreconditionerPetsc ( PreconditionerPetsc const& p )
     M_auxiliaryIndexSet( p.M_auxiliaryIndexSet )
 {
 }
-
-
 
 template <typename T>
 PreconditionerPetsc<T>::~PreconditionerPetsc ()
@@ -1375,19 +1366,23 @@ getOptionsDescHPDDM( std::string const& prefix, std::string const& sub )
           "ask PETSc HPDDM to define subdomains from the auxiliary IS" )
         ( prefixvm( prefix,pcctx+"hpddm-share-sub-ksp" ).c_str(),
           Feel::po::value<bool>()->default_value( false ),
-          "share the subdomain KSP with the SLEPc ST when supported by HPDDM" )
+          "share the subdomain KSP with the SLEPc ST when supported by HPDDM; "
+          "requires defined subdomains and a MUMPS or MKL PARDISO LU/Cholesky local solver" )
         ( prefixvm( prefix,pcctx+"hpddm-coarse-correction" ).c_str(),
           Feel::po::value<std::string>()->default_value( "deflated" ),
           "HPDDM coarse correction type: deflated, additive, balanced, none" )
         ( prefixvm( prefix,pcctx+"hpddm-levels-1-eps-nev" ).c_str(),
           Feel::po::value<int>(),
           "enable the fine-level HPDDM eigensolver and request this many eigenpairs for the first coarse space" )
+        ( prefixvm( prefix,pcctx+"hpddm-levels-1-st-pc-type" ).c_str(),
+          Feel::po::value<std::string>(),
+          "HPDDM fine-level spectral transformation PC type; use mat for a fully algebraic two-level method" )
         ( prefixvm( prefix,pcctx+"hpddm-levels-1-eps-use-inertia" ).c_str(),
           Feel::po::value<bool>()->default_value( false ),
           "ask the fine-level HPDDM eigensolver to use inertia when supported by PETSc/SLEPc" )
         ( prefixvm( prefix,pcctx+"hpddm-levels-1-eps-threshold-absolute" ).c_str(),
           Feel::po::value<double>(),
-          "set an absolute threshold for selecting fine-level HPDDM eigenvectors" );
+          "set the absolute threshold that enables adaptive fine-level HPDDM eigenvector selection" );
 
     return _options;
 }
@@ -2588,6 +2583,7 @@ ConfigurePCHPDDM::ConfigurePCHPDDM( PC& pc, PreconditionerPetsc<double> * precFe
     M_shareSubKSP( option(_name="pc-hpddm-share-sub-ksp",_prefix=prefix,_sub=sub,_vm=this->vm()).as<bool>() ),
     M_coarseCorrection( option(_name="pc-hpddm-coarse-correction",_prefix=prefix,_sub=sub,_vm=this->vm()).as<std::string>() ),
     M_levels1EpsNev( getOptionIfAvalaible<int>::apply(_name="pc-hpddm-levels-1-eps-nev",_prefix=prefix,_sub=sub,_vm=this->vm()) ),
+    M_levels1StPcType( getOptionIfAvalaible<std::string>::apply(_name="pc-hpddm-levels-1-st-pc-type",_prefix=prefix,_sub=sub,_vm=this->vm()) ),
     M_levels1EpsUseInertia( option(_name="pc-hpddm-levels-1-eps-use-inertia",_prefix=prefix,_sub=sub,_vm=this->vm()).as<bool>() ),
     M_levels1EpsThresholdAbsolute( getOptionIfAvalaible<double>::apply(_name="pc-hpddm-levels-1-eps-threshold-absolute",_prefix=prefix,_sub=sub,_vm=this->vm()) )
 {
@@ -2638,6 +2634,9 @@ ConfigurePCHPDDM::run( PC& pc )
         if ( M_levels1EpsNev && *M_levels1EpsNev > 0 )
             petscOptionsValueToAdd.emplace_back( (boost::format("-%1%pc_hpddm_levels_1_eps_nev")%petscPrefixStr).str(),
                                                  boost::lexical_cast<std::string>(*M_levels1EpsNev) );
+        if ( M_levels1StPcType && !M_levels1StPcType->empty() )
+            petscOptionsValueToAdd.emplace_back( (boost::format("-%1%pc_hpddm_levels_1_st_pc_type")%petscPrefixStr).str(),
+                                                 *M_levels1StPcType );
         if ( M_levels1EpsUseInertia )
             petscOptionsValueToAdd.emplace_back( (boost::format("-%1%pc_hpddm_levels_1_eps_use_inertia")%petscPrefixStr).str(), "true" );
         if ( M_levels1EpsThresholdAbsolute )
@@ -2678,8 +2677,6 @@ ConfigurePCHPDDM::run( PC& pc )
         auto const& rowMap = this->precFeel()->hpddmAuxiliaryMatrix()->mapRowPtr();
         CHECK( rowMap ) << "HPDDM auxiliary matrix row map is not available";
         auto const& gpToGc = rowMap->mapGlobalProcessToGlobalCluster();
-        CHECK( !gpToGc.empty() )
-            << "invalid row map for HPDDM auxiliary matrix: empty process-to-cluster map";
 
         IS hpddmAuxiliaryIS = nullptr;
         if ( hasHpddmAuxiliaryIS )
@@ -2693,9 +2690,9 @@ ConfigurePCHPDDM::run( PC& pc )
             std::transform( gpToGc.begin(), gpToGc.end(),
                             hpddmLocalRows.begin(),
                             []( auto dof ) { return static_cast<PetscInt>( dof ); } );
-            this->check( ISCreateGeneral( this->worldComm().globalComm(),
+            this->check( ISCreateGeneral( PETSC_COMM_SELF,
                                           static_cast<PetscInt>( hpddmLocalRows.size() ),
-                                          hpddmLocalRows.data(),
+                                          hpddmLocalRows.empty() ? nullptr : hpddmLocalRows.data(),
                                           PETSC_COPY_VALUES, &hpddmAuxiliaryIS ) );
         }
 
@@ -2743,20 +2740,19 @@ ConfigurePCHPDDM::run( PC& pc )
         else if ( M_coarseCorrection != "deflated" )
             LOG(WARNING) << "PETSc advertises PCHPDDM but does not export PCHPDDMSetCoarseCorrectionType; keeping PETSc default coarse correction";
 
-        if ( auto fn = hpddmSetSTShareSubKSPFn() )
-            this->check( fn( pc, M_shareSubKSP ? PETSC_TRUE : PETSC_FALSE ) );
-        else if ( M_shareSubKSP )
-            LOG(WARNING) << "PETSc advertises PCHPDDM but does not export PCHPDDMSetSTShareSubKSP; ignoring pc-hpddm-share-sub-ksp";
+        // Do not call PCHPDDMSetSTShareSubKSP() after PCSetFromOptions().
+        // PETSc validates this request while parsing options and disables it
+        // when subdomains are not defined or the local factorization cannot be
+        // shared. Re-enabling the flag here bypasses those checks and leaves
+        // HPDDM with an invalid sub-KSP, which can segfault in PCSetUp().
     }
 
-    for ( std::string const& key : petscOptionsValueAdded )
-    {
-#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,7,0 )
-        this->check( PetscOptionsClearValue( NULL, key.c_str() ) );
-#else
-        this->check( PetscOptionsClearValue( key.c_str() ) );
-#endif
-    }
+    // Keep injected HPDDM options alive for the lifetime of the solve. PETSc
+    // reads some of them again in PCSetUp() (notably levels_1_st_pc_type), and
+    // a later PCSetFromOptions() reparses the eigenpair selection. Clearing
+    // them here silently turns a requested algebraic two-level method back
+    // into a one-level method. The PETSc prefix keeps independent solver
+    // configurations isolated.
 #else
     CHECK( false ) << "hpddm supported only when PETSc exposes PCHPDDM";
 #endif

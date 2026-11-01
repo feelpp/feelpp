@@ -247,6 +247,15 @@ public:
             {}
 
 
+        Eigen::Map<const Eigen::Matrix<value_type, shape::M, shape::N>>
+        evalijq( uint16_type i, uint16_type j, uint16_type q ) const
+        {
+            Feel::detail::ignore_unused_variable_warning( i );
+            Feel::detail::ignore_unused_variable_warning( j );
+            Feel::detail::ignore_unused_variable_warning( q );
+            return Eigen::Map<const Eigen::Matrix<value_type, shape::M, shape::N>>( M_values.data() );
+        }
+
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
@@ -274,11 +283,24 @@ public:
             Feel::detail::ignore_unused_variable_warning( q );
             return eval( c1, c2, mpl::int_<shape::rank>() );
         }
+        Eigen::Map<const Eigen::Matrix<value_type, shape::M, shape::N>>
+        evaliq( uint16_type i, uint16_type q ) const
+        {
+            Feel::detail::ignore_unused_variable_warning( i );
+            Feel::detail::ignore_unused_variable_warning( q );
+            return Eigen::Map<const Eigen::Matrix<value_type, shape::M, shape::N>>( M_values.data() );
+        }
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
         {
             Feel::detail::ignore_unused_variable_warning( q );
             return eval( c1, c2, mpl::int_<shape::rank>() );
+        }
+        Eigen::Map<const Eigen::Matrix<value_type, shape::M, shape::N>>
+        evalq( uint16_type q ) const
+        {
+            Feel::detail::ignore_unused_variable_warning( q );
+            return Eigen::Map<const Eigen::Matrix<value_type, shape::M, shape::N>>( M_values.data() );
         }
     private:
         value_type

@@ -269,6 +269,9 @@ endif()
 if (FEELPP_ENABLE_PYTHON)
   add_subdirectory(feelpp/python)
 endif()
+if (TARGET pyfeelpptoolboxes AND TARGET pyfeelpp)
+  add_dependencies(pyfeelpptoolboxes pyfeelpp)
+endif()
 # toolboxes/python and mor/python are added by their parent CMakeLists.txt
 
 #

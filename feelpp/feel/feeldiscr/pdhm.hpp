@@ -30,6 +30,7 @@
 #define FEELPP_PDHM_H 1
 
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/functionspacemanager.hpp>
 #include <feel/feelpoly/order.hpp>
 
 namespace Feel {
@@ -109,10 +110,17 @@ Pdhm( std::shared_ptr<MeshType> mesh,
       RuntimeOrder order,
       DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
 {
-    return Pdhm_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
-                                                      _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
-                                                      _extended_doftable=dte,
-                                                      _runtime_order=order );
+    using space_type = Pdhm_type<MeshType,Order,T,Pts,Tag>;
+    order = validatedOrder<typename space_type::reference_element_type>( order );
+    return getOrCreateWholeMeshFunctionSpace<space_type>(
+        mesh, dte, FunctionSpaceReusePolicy::automatic,
+        [&]()
+        {
+            return space_type::New( _mesh=mesh,
+                                   _worldscomm=makeWorldsComm( 1, mesh->worldComm() ),
+                                   _extended_doftable=dte,
+                                   _runtime_order=order );
+        }, Order == Dynamic ? static_cast<int>( order.value ) : -1 );
 }
 
 template<int Order = Dynamic,
@@ -146,10 +154,17 @@ Pdhms( std::shared_ptr<MeshType> const& mesh,
        RuntimeOrder order,
        DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
 {
-    return Pdhms_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
-                                                      _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
-                                                      _extended_doftable=dte,
-                                                      _runtime_order=order );
+    using space_type = Pdhms_type<MeshType,Order,T,Pts,Tag>;
+    order = validatedOrder<typename space_type::reference_element_type>( order );
+    return getOrCreateWholeMeshFunctionSpace<space_type>(
+        mesh, dte, FunctionSpaceReusePolicy::automatic,
+        [&]()
+        {
+            return space_type::New( _mesh=mesh,
+                                   _worldscomm=makeWorldsComm( 1, mesh->worldComm() ),
+                                   _extended_doftable=dte,
+                                   _runtime_order=order );
+        }, Order == Dynamic ? static_cast<int>( order.value ) : -1 );
 }
 
 template<int Order,
@@ -168,6 +183,81 @@ Pdhms( std::shared_ptr<MeshType> const& mesh,
                                             dte );
 }
 
+
+
+/** @brief Managed whole-mesh factory; dynamic orders require `_runtime_order`. */
+template<int Order,
+         typename T = double,
+         template<class, int, class> class Pts = PointSetFekete,
+         int Tag = 0,
+         typename... Ts>
+    requires ( sizeof...( Ts ) != 0 ) && ( NA::is_named_argument_v<Ts> && ... )
+inline auto
+Pdhm( Ts&&... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>( v )... );
+    auto mesh = args.get( _mesh );
+    auto dte = args.get_else( _extended_doftable, DofTableExtendedType::DEFAULT );
+    auto policy = args.get_else( _fspace_reuse_policy,
+                                 FunctionSpaceReusePolicy::automatic );
+    using mesh_type = typename std::decay_t<decltype( mesh )>::element_type;
+    using space_type = Pdhm_type<mesh_type,Order,T,Pts,Tag>;
+    auto order = [&]()
+    {
+        if constexpr ( Order == Dynamic )
+            return args.get( _runtime_order );
+        else
+            return args.get_else( _runtime_order, RuntimeOrder{ Order } );
+    }();
+    order = validatedOrder<typename space_type::reference_element_type>( order );
+    return getOrCreateWholeMeshFunctionSpace<space_type>(
+        mesh, dte,
+        policy,
+        [&]()
+        {
+            return space_type::New( _mesh=mesh,
+                                   _worldscomm=makeWorldsComm( 1, mesh->worldComm() ),
+                                   _extended_doftable=dte,
+                                   _runtime_order=order );
+        }, Order == Dynamic ? static_cast<int>( order.value ) : -1 );
+}
+
+/** @brief Managed whole-mesh factory; dynamic orders require `_runtime_order`. */
+template<int Order,
+         typename T = double,
+         template<class, int, class> class Pts = PointSetFekete,
+         int Tag = 0,
+         typename... Ts>
+    requires ( sizeof...( Ts ) != 0 ) && ( NA::is_named_argument_v<Ts> && ... )
+inline auto
+Pdhms( Ts&&... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>( v )... );
+    auto mesh = args.get( _mesh );
+    auto dte = args.get_else( _extended_doftable, DofTableExtendedType::DEFAULT );
+    auto policy = args.get_else( _fspace_reuse_policy,
+                                 FunctionSpaceReusePolicy::automatic );
+    using mesh_type = typename std::decay_t<decltype( mesh )>::element_type;
+    using space_type = Pdhms_type<mesh_type,Order,T,Pts,Tag>;
+    auto order = [&]()
+    {
+        if constexpr ( Order == Dynamic )
+            return args.get( _runtime_order );
+        else
+            return args.get_else( _runtime_order, RuntimeOrder{ Order } );
+    }();
+    order = validatedOrder<typename space_type::reference_element_type>( order );
+    return getOrCreateWholeMeshFunctionSpace<space_type>(
+        mesh, dte,
+        policy,
+        [&]()
+        {
+            return space_type::New( _mesh=mesh,
+                                   _worldscomm=makeWorldsComm( 1, mesh->worldComm() ),
+                                   _extended_doftable=dte,
+                                   _runtime_order=order );
+        }, Order == Dynamic ? static_cast<int>( order.value ) : -1 );
+}
 
 } // Feel
 

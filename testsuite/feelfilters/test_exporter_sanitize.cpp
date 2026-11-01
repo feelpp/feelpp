@@ -88,8 +88,9 @@ BOOST_DATA_TEST_CASE( test_1, bdata::make( sanitize_expectation_indices ), expec
     e->add( "u ;)[ ", u );
     e->add( "v**v ", v );
 
-    auto it = e->step(0)->beginNodal();
-    auto en = e->step(0)->endNodal();
+    BOOST_CHECK_EQUAL(e->defaultTimeSet()->numberOfSteps(),0);
+    auto it = e->staticFields()->beginNodal();
+    auto en = e->staticFields()->endNodal();
     std::vector<std::string> sanitized_names;
     for ( ; it != en; ++it )
         sanitized_names.push_back( it->second.second[0][0]->name() );

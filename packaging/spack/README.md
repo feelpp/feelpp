@@ -59,6 +59,10 @@ Current environment roles:
 - `environments/cpu/openmpi/`
   - the first supported shared environment
   - focused on the immediate CPU/OpenMPI PETSc/HPDDM workflow
+- `environments/cpu/openmpi5/`
+  - portable OpenMPI 5 validation environment for Gaya and LUMI-C
+  - enables UCX and OFI; LUMI supplies its HPE libfabric/CXI provider through
+    site-local Spack configuration
 - `environments/cpu/openmpi-macosx/`
   - macOS CPU/OpenMPI environment without UCX/CMA
   - uses OpenBLAS for BLAS/LAPACK to avoid the macOS Accelerate/MUMPS crash path

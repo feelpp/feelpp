@@ -142,6 +142,16 @@ public:
         return M_expr;
     }
 
+    /**
+     * @brief Row component selected from the parent expression.
+     */
+    int component1() const noexcept { return M_c1; }
+
+    /**
+     * @brief Column component selected from the parent expression.
+     */
+    int component2() const noexcept { return M_c2; }
+
     evaluate_type
     evaluate( bool p ) const
         {

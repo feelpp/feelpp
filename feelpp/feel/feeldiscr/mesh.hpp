@@ -54,6 +54,7 @@
 #include <feel/feelmesh/enums.hpp>
 #include <feel/feelmesh/entityview.hpp>
 #include <feel/feelmesh/filters.hpp>
+#include <feel/feelmesh/compactmarkerfragmentation.hpp>
 #include <feel/feelmesh/mesh0d.hpp>
 #include <feel/feelmesh/mesh1d.hpp>
 #include <feel/feelmesh/mesh2d.hpp>
@@ -1263,23 +1264,28 @@ class Mesh
                 collectPointMarkerIds.insert( pointMarkers );
             }
 
-            mpi::all_reduce( MeshBase<>::worldComm().localComm(), mpi::inplace( collectMarkerIds.data() ), collectMarkerIds.size(), UpdateSetForAllReduce<std::set<_marker_element_type>>() );
-
-            for (int cd=0;cd<ets.size();++cd )
-            {
-                ElementsType et = ets[cd];
-                M_meshFragmentationByMarker[et].clear();
-                auto & mfbym = M_meshFragmentationByMarker[et];
-                int fragmentId = 0;
-                for ( _marker_element_type const& mIds : collectMarkerIds[cd] )
-                    mfbym.emplace( fragmentId++, mIds );
-            }
+            /**
+             * Rebuild global marker fragments one codimension at a time. The
+             * compact MPI representation keeps only the final mapping on every
+             * rank and consumes the local marker collections.
+             */
+            M_meshFragmentationByMarker.clear();
+            for ( std::size_t cd = 0; cd < ets.size(); ++cd )
+                M_meshFragmentationByMarker[ets[cd]] =
+                    Feel::detail::globalMarkerFragments( collectMarkerIds[cd], MeshBase<>::worldComm().localComm() );
         }
 
-    //! return mesh fragmentation : mapping fragment id to elements marker ids
+    /**
+     * @brief Returns the fragment-to-marker mapping for one entity type.
+     * @param et Entity type, defaulting to mesh elements.
+     * @return A mapping from fragment identifiers to marker combinations.
+     */
     std::map<int,typename element_type::marker_type> const& meshFragmentationByMarker( ElementsType et = ElementsType::MESH_ELEMENTS ) const { return M_meshFragmentationByMarker.find( et )->second; }
 
-    //! return mesh fragmentation : mapping fragment id to elements marker ids for all entities
+    /**
+     * @brief Returns fragment-to-marker mappings for every mesh entity type.
+     * @return Mappings indexed by entity type then fragment identifier.
+     */
     std::map<ElementsType, std::map<int,typename element_type::marker_type>> const& meshFragmentationByMarkerByEntity() const { return M_meshFragmentationByMarker; }
 
     //! !

@@ -149,7 +149,8 @@ Exporter<MeshType, N>::Exporter( Exporter const & __ex )
     M_path( __ex.M_path ),
     M_ex_geometry( __ex.M_ex_geometry )
 {
-
+    if (__ex.hasStaticFields())
+        throw std::logic_error("copying an exporter with immutable dataset fields is unsupported");
 }
 
 template<typename MeshType, int N>
@@ -216,6 +217,7 @@ Exporter<MeshType, N>::New( po::variables_map const& vm, std::string prefix, wor
 {
     return New( prefix, worldComm );
 }
+
 template<typename MeshType, int N>
 std::shared_ptr<Exporter<MeshType, N> >
 Exporter<MeshType, N>::New( std::string prefix, worldcomm_ptr_t const& worldComm )

@@ -39,8 +39,9 @@ class CliTests(VersionRepoMixin, unittest.TestCase):
 
     def test_cli_parses_release_dist_and_dry_run(self) -> None:
         parser = build_version_parser()
-        args = parser.parse_args(["release", "0.111.0-preview.13", "--dist", "noble", "--dist", "trixie", "--dry-run"])
+        args = parser.parse_args(["release", "0.111.0-preview.13", "--dist", "noble", "--dist", "trixie", "--spack", "openmpi5", "--dry-run"])
         self.assertEqual(args.dist, ["noble", "trixie"])
+        self.assertEqual(args.spack, ["openmpi5"])
         self.assertTrue(args.dry_run)
         self.assertFalse(args.pretty)
 
@@ -118,4 +119,3 @@ class CliTests(VersionRepoMixin, unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

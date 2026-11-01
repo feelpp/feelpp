@@ -469,15 +469,11 @@ extern "C"
 
         const PetscScalar *xa;
         VecGetArrayRead( x, &xa );
-        Eigen::Matrix<double, Eigen::Dynamic, 1> x_copy( size );
-        for ( int i = 0; i < size; ++i )
-            x_copy( i ) = static_cast<double>( xa[i] );
-        VecRestoreArrayRead( x, &xa );
 
         double *ra;
         VecGetArray( r, &ra );
 
-        Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic , 1> > map_x ( x_copy.data(),size );
+        Feel::SolverNonLinearPetsc<double>::map_dense_const_vector_type map_x ( xa,size );
 
         Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic , 1> > map_r ( ra,size );
 
@@ -488,6 +484,7 @@ extern "C"
         //LOG(INFO) << "dense_residual after update map_r = \n" << map_r << "\n";
 
         VecRestoreArray( r, &ra );
+        VecRestoreArrayRead( x, &xa );
 
         return ierr;
     }
@@ -510,12 +507,8 @@ extern "C"
         VecGetSize( x,&size );
         const PetscScalar *xa;
         VecGetArrayRead( x, &xa );
-        Eigen::Matrix<double, Eigen::Dynamic, 1> x_copy( size );
-        for ( int i = 0; i < size; ++i )
-            x_copy( i ) = static_cast<double>( xa[i] );
-        VecRestoreArrayRead( x, &xa );
 
-        Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> > map_x ( x_copy.data(),size );
+        Feel::SolverNonLinearPetsc<double>::map_dense_const_vector_type map_x ( xa,size );
 
 
         int size1;
@@ -545,8 +538,6 @@ extern "C"
         if ( solver->map_dense_jacobian != NULL ) solver->map_dense_jacobian ( map_x, map_jac );
 
         //LOG(INFO) << "dense_jacobian map_jac = \n" << map_jac << "\n";
-
-
 #if PETSC_VERSION_LESS_THAN(3,4,0)
         MatRestoreArray(*jac, &ja);
 #elif PETSC_VERSION_LESS_THAN(3,5,0)
@@ -554,6 +545,7 @@ extern "C"
 #else
         MatDenseRestoreArray(jac, &ja);
 #endif
+        VecRestoreArrayRead( x, &xa );
 
         /*
           Assemble matrix
@@ -1080,9 +1072,14 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     VecNorm( res, NORM_2, &valfnorm );
 #endif
 
-    for ( int i=0; i<50/*n_iterations+1*/; i++ )
+    PetscReal* recorded_history = nullptr;
+    PetscInt* recorded_hist_its = nullptr;
+    PetscInt history_size = 0;
+    ierr = SNESGetConvergenceHistory( M_snes, &recorded_history, &recorded_hist_its, &history_size );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+    for ( PetscInt i = 0; i < history_size; ++i )
     {
-        LOG(INFO) << "iteration " << i << ": Linear iterations : " << hist_its[i] << " Function norm = " << history[i] << "\n";
+        LOG(INFO) << "iteration " << i << ": Linear iterations : " << recorded_hist_its[i] << " Function norm = " << recorded_history[i] << "\n";
     }
 
     SNESConvergedReason reason;
@@ -1209,13 +1206,13 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
 
 #endif
 
-    double* a;
-    VecGetArray( petsc_x , &a );
+    const PetscScalar* a;
+    VecGetArrayRead( petsc_x , &a );
 
     for ( int i = 0; i < ( int )x_in.size(); ++i )
         x_in[i] = a[i];
 
-    VecRestoreArray( petsc_x , &a );
+    VecRestoreArrayRead( petsc_x , &a );
 
     PETSc::VecDestroy( petsc_x );
     PETSc::VecDestroy( petsc_r );

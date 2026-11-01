@@ -1,25 +1,16 @@
-//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-//!
-//! This file is part of the Feel++ library
-//!
-//! This library is free software; you can redistribute it and/or
-//! modify it under the terms of the GNU Lesser General Public
-//! License as published by the Free Software Foundation; either
-//! version 2.1 of the License, or (at your option) any later version.
-//!
-//! This library is distributed in the hope that it will be useful,
-//! but WITHOUT ANY WARRANTY; without even the implied warranty of
-//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//! Lesser General Public License for more details.
-//!
-//! You should have received a copy of the GNU Lesser General Public
-//! License along with this library; if not, write to the Free Software
-//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-//!
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+
+    SPDX-FileCopyrightText: 2017 Feel++ Consortium
+    SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
+
+    SPDX-License-Identifier: LGPL-3.0-or-later
+*/
+
 //! @file
 //! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 //! @date 19 Aug 2017
-//! @copyright 2017 Feel++ Consortium
 //!
 #ifndef FEELPP_REFSIMPLEX_HPP
 #define FEELPP_REFSIMPLEX_HPP 1
@@ -787,7 +778,7 @@ public:
         // point is in the simplex the measure are all
         // positive. In the case the point is outside the simplex
         // the measure is negative
-        double meas_times = details::det( M, mpl::int_<nDim+1>() );
+        double meas_times = Feel::details::det( M, mpl::int_<nDim+1>() );
 
         for ( int n = 0; n < numVertices; ++n )
         {
@@ -798,7 +789,7 @@ public:
 
             // multiply by -1 such that the volume of the
             // reference is > 0
-            D( n )= meas_times*details::det( M, mpl::int_<nDim+1>() );
+            D( n )= meas_times*Feel::details::det( M, mpl::int_<nDim+1>() );
 
             //std::cout.setf( std::ios::scientific );
             //std::cout.precision( 10 );
@@ -1160,7 +1151,7 @@ Reference<Simplex<Dim, Order, RDim>, Dim, Order, RDim, T>::computeMeasure()
             break;
         }
         if ( nDim > 0 )
-            M_meas = math::abs( details::det( M, mpl::int_<nDim>() ) )/factor;
+            M_meas = math::abs( Feel::details::det( M, mpl::int_<nDim>() ) )/factor;
         else
             M_meas = 0;
     }

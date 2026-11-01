@@ -16,6 +16,7 @@
 #include <boost/property_tree/json_parser.hpp>
 
 #include <feel/feelcore/hdf5.hpp>
+#include <feel/feelfilters/partitionmetadata.hpp>
 #include <feel/feelmesh/meshpartitionset.hpp>
 
 namespace Feel
@@ -200,12 +201,19 @@ private:
     //@{
 
     /**
-     * write meta data
+     * @brief Writes JSON metadata for the partitioned mesh.
+     * @param mesh Mesh that provides partition, physical-name and fragmentation metadata.
      */
     FEELPP_NO_EXPORT void writeMetaData( mesh_ptrtype mesh );
 
     /**
-     * read meta data
+     * @brief Reads JSON metadata and prepares fragment lookups for @p mesh.
+     *
+     * Legacy metadata without explicit fragmentation maps physical marker IDs
+     * directly to fragments.
+     *
+     * @param mesh Mesh receiving physical names and the partition count.
+     * @throw std::runtime_error if the metadata file cannot be read or is invalid.
      */
     FEELPP_NO_EXPORT void readMetaData( mesh_ptrtype mesh );
 
@@ -245,10 +253,10 @@ private:
     std::map<rank_type,size_type> M_numLocalMarkedEdges, M_markedEdgesOffSet;
     std::map<rank_type,size_type> M_numLocalMarkedPoints, M_markedPointsOffSet;
 
-    // used for the writer
+    /** @brief Maps writer-side marker combinations to fragment identifiers. */
     std::map<ElementsType,std::map<marker_type,int>> M_mapMarkerToFragmentId;
-    // used for the reader
-    std::map<ElementsType,std::map<int,marker_type>> M_mapFragmentIdToMarker;
+    /** @brief Provides reader-side sparse fragment-to-marker lookups by entity type. */
+    std::map<ElementsType,Feel::detail::PartitionMarkerTable<flag_type>> M_mapFragmentIdToMarker;
 
     //HDF5 I/O filter
     HDF5 M_HDF5IO;
@@ -359,7 +367,7 @@ void PartitionIO<MeshType>::writeMetaData (mesh_ptrtype meshParts)
     for( auto const& m : meshParts->markerNames() )
         j_physicals[m.first] = m.second;
     if ( !j_physicals.is_null() )
-        ptMesh["physicals"] = j_physicals;
+        ptMesh["physicals"] = std::move( j_physicals );
 
     std::map<ElementsType,int> mapElementsTypeToCoDim = { { ElementsType::MESH_ELEMENTS, 0 },
                                                           { ElementsType::MESH_FACES, 1 },
@@ -375,13 +383,13 @@ void PartitionIO<MeshType>::writeMetaData (mesh_ptrtype meshParts)
             for ( auto const& [fragId,marker] : fragMapping )
                 j_frag_et[std::to_string(fragId)] = marker;
             if ( !j_frag_et.is_null() )
-                j_fragmentation[std::to_string(mapElementsTypeToCoDim.at(et))] = j_frag_et;
+                j_fragmentation[std::to_string(mapElementsTypeToCoDim.at(et))] = std::move( j_frag_et );
         }
         if ( !j_fragmentation.is_null() )
-            ptMesh["fragmentation"] = j_fragmentation;
+            ptMesh["fragmentation"] = std::move( j_fragmentation );
     }
     std::ofstream o(M_filename);
-    o << pt.dump(/*1*/);
+    o << pt;
 #endif
 }
 template<typename MeshType>
@@ -438,6 +446,13 @@ void PartitionIO<MeshType>::read (mesh_ptrtype meshParts, size_type ctxMeshUpdat
     M_HDF5IO.closeFile();
     toc("PartitionIO reading hdf5 file",Environment::logVerbosityLevel()>0);
 
+    // These are reader scratch data, not mesh state. Release capacities before
+    // connectivity construction and global fragmentation (the next memory peak).
+    M_mapFragmentIdToMarker.clear();
+    std::vector<unsigned int>().swap( M_uintBuffer );
+    std::vector<value_type>().swap( M_realBuffer );
+    mapGhostHdf5IdToFeelId.clear();
+
     prepareUpdateForUseStep1();
     prepareUpdateForUseStep2();
 
@@ -448,47 +463,21 @@ void PartitionIO<MeshType>::read (mesh_ptrtype meshParts, size_type ctxMeshUpdat
     toc("PartitionIO mesh update for use",Environment::logVerbosityLevel()>0);
 }
 template<typename MeshType>
-void PartitionIO<MeshType>::readMetaData (mesh_ptrtype meshParts)
+void PartitionIO<MeshType>::readMetaData( mesh_ptrtype meshParts )
 {
-#if 0
-    pt::ptree pt;
-    pt::read_json(M_filename, pt);
-    //M_h5_filename = pt.get<std::string>("mesh.h5");
-    //if ( fs::exist( fs::path(M_filename).parent_path()/ fs::path(M_h5_filename) ) )
-    meshParts->setNumberOfPartitions(pt.get("mesh.partition.n",meshParts->worldComm().globalSize()));
-    auto physicals = pt.get_child_optional("mesh.physicals");
-
-    if ( physicals )
-    {
-        for (auto& item : pt.get_child("mesh.physicals"))
+    std::ifstream input( M_filename );
+    if ( !input )
+        throw std::runtime_error( "cannot open mesh partition metadata: " + M_filename );
+    Feel::detail::PartitionMetadataReader<flag_type> metadata(
+        [&meshParts]( std::string const& name, int id, int dimension )
         {
-            std::string v = item.second.data();//item.get<std::string>();
-            LOG(INFO) << "name: " << item.first << " " << v;
-            typedef std::vector< std::string > split_vector_type;
-
-            split_vector_type SplitVec;
-            boost::split( SplitVec, v, boost::is_any_of(" "), boost::token_compress_on );
-            std::vector<size_type> m;
-            std::for_each( SplitVec.begin(), SplitVec.end(),
-                           [&m]( std::string const& s )
-                           {
-                              m.push_back( std::stoi( s ) );
-                           } );
-            meshParts->addMarkerName( std::make_pair( item.first, m ) );
-
-        }
-    }
-#else
-    std::ifstream is(M_filename);
-    nl::json pt;
-    is >> pt;
-
-    nl::json const& j_mesh = pt.at("mesh");
-
-    if ( j_mesh.contains( "geometry" ) )
+            meshParts->addMarkerName( std::make_pair( name, std::vector<size_type>{ size_type( id ), size_type( dimension ) } ) );
+        } );
+    metadata.read( input );
+    if ( metadata.M_geometry.has_value() )
     {
         auto const& geometryMetadata =
-            j_mesh.at( "geometry" );
+            *metadata.M_geometry;
         auto const archivedOrder =
             geometryMetadata.at( "order" )
                 .template get<uint16_type>();
@@ -516,100 +505,38 @@ void PartitionIO<MeshType>::readMetaData (mesh_ptrtype meshParts)
             RuntimeOrder{ archivedOrder }, restoredRepresentation );
     }
 
-    if ( j_mesh.contains( "h5" ) )
+    if ( metadata.M_h5Filename )
     {
-        std::string const& h5filename = j_mesh.at( "h5" ).template get<std::string>();
-        fs::path filenamefs = fs::path( M_filename );
-        if ( filenamefs.is_relative() )
-            M_h5_filename = (fs::current_path()/fs::path(h5filename)).string();
-        else
-            M_h5_filename = (filenamefs.parent_path() / fs::path( h5filename )).string();
+        fs::path filename( M_filename );
+        M_h5_filename = ( ( filename.is_relative() ? fs::current_path() : filename.parent_path() ) / fs::path( *metadata.M_h5Filename ) ).string();
     }
+    meshParts->setNumberOfPartitions( metadata.M_partitions.value_or( meshParts->worldComm().globalSize() ) );
 
-    int nPart = meshParts->worldComm().globalSize();
+    std::map<int, ElementsType> entityByCodimension;
+    if constexpr ( mesh_type::nDim >= 1 )
+        entityByCodimension[0] = ElementsType::MESH_ELEMENTS;
+    if constexpr ( mesh_type::nDim >= 2 )
+        entityByCodimension[1] = ElementsType::MESH_FACES;
+    if constexpr ( mesh_type::nDim >= 3 )
+        entityByCodimension[2] = ElementsType::MESH_EDGES;
+    entityByCodimension[mesh_type::nDim] = ElementsType::MESH_POINTS;
 
-    if ( j_mesh.contains("/partition/n"_json_pointer) )
+    M_mapFragmentIdToMarker.clear();
+    for ( auto const& [codimension, entity] : entityByCodimension )
+        M_mapFragmentIdToMarker[entity];
+    if ( metadata.M_hasFragmentation )
     {
-        nl::json const& j_nPartition = j_mesh.at("/partition/n"_json_pointer);
-        if ( j_nPartition.is_number_integer() )
-            nPart = j_nPartition.template get<int>();
-        else
-            nPart = std::stoi( j_nPartition.template get<std::string>() );
-    }
-    meshParts->setNumberOfPartitions( nPart );
-
-    if ( j_mesh.contains( "physicals" ) )
-    {
-        auto const& j_physicals = j_mesh.at( "physicals" );
-        for ( auto const& [markerName,j_markerData] : j_physicals.items() )
-        {
-            size_type markerId = invalid_v<size_type>;
-            size_type markerDim = invalid_v<size_type>;
-            if ( j_markerData.is_array() )
-            {
-                CHECK( j_markerData.size() == 2 ) << "wrong number of info";
-                auto const& j_markerId = j_markerData.at(0);
-                auto const& j_markerDim = j_markerData.at(1);
-                markerId = j_markerId.is_number_integer()? j_markerId.template get<int>() : std::stoi(j_markerId.template get<std::string>());
-                markerDim = j_markerDim.is_number_integer()? j_markerDim.template get<int>() : std::stoi(j_markerDim.template get<std::string>());
-            }
-            else if ( j_markerData.is_string() )
-            {
-                std::string const& v = j_markerData.template get<std::string>();
-                std::vector<std::string> splitVec;
-                boost::split( splitVec, v, boost::is_any_of(" "), boost::token_compress_on );
-                CHECK( splitVec.size() == 2 ) << "wrong number of info";
-                markerId = std::stoi( splitVec[0] );
-                markerDim = std::stoi( splitVec[1] );
-            }
-            CHECK( markerId != invalid_v<size_type> && markerDim != invalid_v<size_type> ) << "something wrong";
-            meshParts->addMarkerName( std::make_pair( markerName, std::vector<size_type>({ markerId,markerDim }) ) );
-        }
-    }
-
-
-    std::map<int,ElementsType> mapCoDimToElementsType;
-    if ( mesh_type::nDim >= 1 )
-        mapCoDimToElementsType[0] = ElementsType::MESH_ELEMENTS;
-    if ( mesh_type::nDim >= 2 )
-        mapCoDimToElementsType[1] = ElementsType::MESH_FACES;
-    if ( mesh_type::nDim >= 3 )
-        mapCoDimToElementsType[2] = ElementsType::MESH_EDGES;
-    mapCoDimToElementsType[mesh_type::nDim] = ElementsType::MESH_POINTS;
-
-    for ( auto const& [codim,et] : mapCoDimToElementsType )
-        M_mapFragmentIdToMarker[et];
-
-    if ( j_mesh.contains( "fragmentation" ) )
-    {
-        auto const& j_frag = j_mesh.at( "fragmentation" );
-        for ( auto const& [codimStr,j_fragOnET] : j_frag.items() )
-        {
-            auto & mapUp = M_mapFragmentIdToMarker[ mapCoDimToElementsType.at( std::stoi(codimStr) ) ];
-            for ( auto const& [fragIdStr,j_fragMarker] : j_fragOnET.items() )
-            {
-                CHECK( j_fragMarker.is_array() ) << "aie";
-                marker_type marker;
-                for ( auto const& [j_fragMarkerkey,j_fragMarkerval] : j_fragMarker.items() )
-                    marker.insert( j_fragMarkerval.template get<int>() );
-                mapUp.emplace( std::stoi(fragIdStr), std::move( marker ) );
-            }
-        }
+        for ( auto& [codimension, table] : metadata.M_fragments )
+            M_mapFragmentIdToMarker.at( entityByCodimension.at( codimension ) ) = std::move( table );
     }
     else
     {
-        // old version markerId = fragmentId
-        for ( auto const& [markerName,markerData] : meshParts->markerNames() )
-        {
-            //auto const& [markerId,markerDim] = markerData;
-            auto const& markerId = markerData[0];
-            auto const& markerDim = markerData[1];
-            int codim = mesh_type::nDim - markerDim;
-            auto & mapUp = M_mapFragmentIdToMarker[mapCoDimToElementsType[codim]];
-            mapUp.emplace( markerId, marker_type{markerId} );
-        }
+        // Legacy format: fragment ID equals physical marker ID.
+        for ( auto const& [name, marker] : meshParts->markerNames() )
+            M_mapFragmentIdToMarker.at( entityByCodimension.at( mesh_type::nDim - marker[1] ) ).append( marker[0], { flag_type( marker[0] ) } );
+        for ( auto& [entity, table] : M_mapFragmentIdToMarker )
+            table.finalize();
     }
-#endif
 }
 template<typename MeshType>
 void PartitionIO<MeshType>::writeStats()
@@ -1032,7 +959,7 @@ void PartitionIO<MeshType>::writeMarkedSubEntities()
             localDims[0] = localDims[1];
             localDims[1] = 1;
             offset[0] = offset[1];
-            offset[1] = 1;
+            offset[1] = 0;
         }
         M_uintBuffer.resize( localDims[0]*localDims[1], 0 );
         if ( !M_uintBuffer.empty() )
@@ -1296,7 +1223,7 @@ void PartitionIO<MeshType>::readElements( std::vector<rank_type> const& partIds,
 
                 //size_type id = M_uintBuffer[currentBufferIndex++];
                 int fragId = M_uintBuffer[currentBufferIndex++];
-                marker_type const& marker = mapFragmentIdToMarker_elements.at( fragId );
+                auto const marker = mapFragmentIdToMarker_elements.at( fragId );
                 //e.setId( id );
                 e.setProcessIdInPartition( processId/*partId*/ );
                 e.setMarker( marker );
@@ -1409,7 +1336,7 @@ namespace detail
 {
 template<typename MeshType>
 void updateMarkedSubEntitiesMesh( std::vector<unsigned int> const& buffer, std::tuple<size_type,size_type,size_type> const& numLocalSubEntities,
-                                  std::map<ElementsType,std::map<int,typename MeshType::element_type::marker_type>> const& mapFragmentIdToMarker,
+                                  std::map<ElementsType,PartitionMarkerTable<flag_type>> const& mapFragmentIdToMarker,
                                   MeshType & mesh )
 {
     size_type currentBufferIndex = 0;

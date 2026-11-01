@@ -123,7 +123,8 @@ ARG SPACK_BUILD_JOBS={build_jobs}
 ARG SPACK_CONCURRENT_PACKAGES={concurrent_packages}
 RUN git clone --branch "${{SPACK_REF}}" --depth=1 https://github.com/spack/spack.git /opt/spack
 
-ENV SPACK_ROOT=/opt/spack \\
+ENV FEELPP_REPO_ROOT=/opt/feelpp \\
+    SPACK_ROOT=/opt/spack \\
     SPACK_USER_CONFIG_PATH=/opt/spack-user \\
     SPACK_USER_CACHE_PATH=/opt/spack-user-cache
 
@@ -140,6 +141,7 @@ RUN mkdir -p "$SPACK_USER_CONFIG_PATH" "$SPACK_USER_CACHE_PATH" \\
     && spack clean --all
 
 RUN cat >/etc/profile.d/feelpp-spack.sh <<'EOF'
+export FEELPP_REPO_ROOT=/opt/feelpp
 export SPACK_ROOT=/opt/spack
 export SPACK_USER_CONFIG_PATH=/opt/spack-user
 export SPACK_USER_CACHE_PATH=/opt/spack-user-cache

@@ -520,6 +520,18 @@ class CliTests(unittest.TestCase):
         presets_payload = json.loads(presets_path.read_text(encoding="utf-8"))
         spack_preset = next(p for p in presets_payload["configurePresets"] if p["name"] == "spack")
         self.assertEqual(spack_preset["cacheVariables"]["FEELPP_ENABLE_OMC"], "OFF")
+        configure_preset_names = {
+            preset["name"] for preset in presets_payload["configurePresets"]
+        }
+        build_preset_names = {preset["name"] for preset in presets_payload["buildPresets"]}
+        test_preset_names = {preset["name"] for preset in presets_payload["testPresets"]}
+        for name in (
+            "release-clang-spack-cpu-openmpi",
+            "release-clang-spack-cpu-openmpi5",
+        ):
+            self.assertIn(name, configure_preset_names)
+            self.assertIn(name, build_preset_names)
+            self.assertIn(name, test_preset_names)
         gmsh_overlay = (
             self.repo_root()
             / "packaging"
@@ -536,6 +548,32 @@ class CliTests(unittest.TestCase):
         self.assertIn('depends_on("libxcursor"', gmsh_overlay_contents)
         self.assertIn('depends_on("libxinerama"', gmsh_overlay_contents)
         self.assertIn('depends_on("libxft"', gmsh_overlay_contents)
+
+    def test_repo_spack_openmpi5_environment_enables_ucx_and_ofi(self) -> None:
+        manifest_path = (
+            self.repo_root()
+            / "packaging"
+            / "spack"
+            / "environments"
+            / "cpu"
+            / "openmpi5"
+            / "spack.yaml"
+        )
+        payload = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+        spack = payload["spack"]
+        self.assertEqual(
+            spack["packages"]["mpi"]["require"],
+            ["openmpi@5 fabrics=cma,ofi,ucx schedulers=slurm"],
+        )
+        self.assertIn(
+            "openmpi@5 fabrics=cma,ofi,ucx schedulers=slurm "
+            "^ucx~rocm+cma+thread_multiple+verbs+rc+ud+rdmacm+mlx5_dv",
+            spack["specs"],
+        )
+        self.assertEqual(
+            spack["view"],
+            "$user_cache_path/views/feelpp/cpu-openmpi5",
+        )
 
     def test_spack_image_bake_writes_bake_ready_context(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -600,6 +638,10 @@ class CliTests(unittest.TestCase):
             self.assertTrue(bake_file.is_file())
             self.assertIn(
                 "COPY packaging/spack /opt/feelpp/packaging/spack",
+                dockerfile.read_text(encoding="utf-8"),
+            )
+            self.assertIn(
+                "FEELPP_REPO_ROOT=/opt/feelpp",
                 dockerfile.read_text(encoding="utf-8"),
             )
             self.assertIn(
@@ -810,7 +852,7 @@ spack:
             )
             self.assertEqual(
                 bake_payload["target"]["feelpp-full"]["args"]["CMAKE_PRESET"],
-                "release-clang-spack",
+                "release-clang-spack-cpu-openmpi",
             )
             self.assertEqual(
                 bake_payload["target"]["feelpp-full"]["contexts"]["feelpp_source"],

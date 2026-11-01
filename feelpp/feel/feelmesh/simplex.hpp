@@ -79,7 +79,7 @@ private:
         }
     inline static constexpr int orderTriangle = computeOrderTriangle();
 
-    typedef mpl::vector<details::point<orderTriangle>, details::line<orderTriangle>, details::triangle<orderTriangle>, details::tetra<orderTriangle> > map_entity_to_point_t;
+    typedef mpl::vector<Feel::details::point<orderTriangle>, Feel::details::line<orderTriangle>, Feel::details::triangle<orderTriangle>, Feel::details::tetra<orderTriangle> > map_entity_to_point_t;
 
     typedef mpl::vector_c<uint16_type, 0, 1, 2, 6> permutations_t;
 

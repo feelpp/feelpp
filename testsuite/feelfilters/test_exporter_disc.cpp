@@ -56,7 +56,8 @@ std::string exporterOccDescription<2>( double h )
     ostr << "SetFactory(\"OpenCASCADE\");\n"
          << "Mesh.CharacteristicLengthMin = " << h << ";\n"
          << "Mesh.CharacteristicLengthMax = " << h << ";\n"
-         << "eps = 1e-9;\n"
+         // OpenCASCADE expands entity bounding boxes by approximately 1e-7.
+         << "eps = 1e-6;\n"
          << "Rectangle(1) = {0,0,0,0.5,1};\n"
          << "Rectangle(2) = {0.5,0,0,1,1};\n"
          << "Rectangle(3) = {1.5,0,0,0.5,1};\n"
@@ -74,7 +75,8 @@ std::string exporterOccDescription<3>( double h )
     ostr << "SetFactory(\"OpenCASCADE\");\n"
          << "Mesh.CharacteristicLengthMin = " << h << ";\n"
          << "Mesh.CharacteristicLengthMax = " << h << ";\n"
-         << "eps = 1e-9;\n"
+         // Keep the selection margin larger than the CAD bounding-box tolerance.
+         << "eps = 1e-6;\n"
          << "Box(1) = {0,0,0,0.5,1,0.5};\n"
          << "Box(2) = {0.5,0,0,1,1,0.5};\n"
          << "Box(3) = {1.5,0,0,0.5,1,0.5};\n"
@@ -186,6 +188,8 @@ BOOST_DATA_TEST_CASE( test_2, bdata::make( std::array<int,2>{ { 2,3 } } ), dim )
     mesh_ptrtype mesh;
     double meshSize = doption(_name="gmsh.hsize");
     mesh = createExporterOccMesh<nDim>( meshSize, std::format( "test_2_domain{}d_occ", nDim ) );
+    for ( auto const* region : { "Omega1", "Omega2", "Omega3" } )
+        BOOST_REQUIRE_GT( nelements( markedelements( mesh, region ), true ), 0 );
 
     auto VhScalar = Pch<2>( mesh );
     auto uScalar = VhScalar->element();
@@ -252,15 +256,18 @@ BOOST_DATA_TEST_CASE( test_2, bdata::make( std::array<int,2>{ { 2,3 } } ), dim )
     //e->add( "wTensor2", wTensor2 );
     e->add( "wTensor2Symm", wTensor2Symm );
 
-    e->add( "expr1Scalar", vf::inner(vf::P()), markedelements(mesh,"Omega1") );
-    e->add( "expr1Scalar", vf::inner(vf::P()), markedelements(mesh,"Omega2") );
-    e->add( "expr1Scalar", vf::inner(vf::P()), markedelements(mesh,"Omega3") );
-
-    e->add( "expr2Scalar", cst(1.), markedelements(mesh,"Omega1"), "element" );
-    e->add( "expr2Scalar", cst(2.), markedelements(mesh,"Omega2"), "element" );
-    e->add( "expr2Scalar", cst(3.), markedelements(mesh,"Omega3"), "element" );
-
-    e->add( "expr3Vectorial", vf::P(), std::set<std::string>{"nodal","element"} );
+    // Interpolate each expression directly into one immutable export snapshot.
+    e->add( "expr1Scalar", vf::inner( vf::P() ), markedelements( mesh, { "Omega1", "Omega2", "Omega3" } ) );
+    e->add( "expr2Scalar",
+            cst( 1. ) * ( emarker() == mesh->markerName( "Omega1" ) ) +
+                cst( 2. ) * ( emarker() == mesh->markerName( "Omega2" ) ) +
+                cst( 3. ) * ( emarker() == mesh->markerName( "Omega3" ) ),
+            "element" );
+    e->add( "expr3Vectorial", vf::P(), std::set<std::string>{ "nodal", "element" } );
+    BOOST_CHECK_EQUAL( e->defaultTimeSet()->numberOfSteps(), 0 );
+    auto const& exportedRegions = e->staticFields()->element( "expr2Scalar" ).second[0][0];
+    BOOST_CHECK_CLOSE( exportedRegions->min(), 1., 1e-8 );
+    BOOST_CHECK_CLOSE( exportedRegions->max(), 3., 1e-8 );
     e->save();
 
 

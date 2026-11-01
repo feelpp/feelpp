@@ -6,6 +6,8 @@
 
 add_custom_target( benchs )
 
+add_subdirectory( functionspace_manager )
+
 feelpp_add_application( env SRCS 01-env.cpp LINK_LIBRARIES  benchmark EXEC B_ENV )
 feelpp_add_application( mesh SRCS 02-mesh.cpp LINK_LIBRARIES  benchmark EXEC B_MESH )
 feelpp_add_application( space SRCS 03-space.cpp LINK_LIBRARIES  benchmark EXEC B_SPACE )
@@ -16,4 +18,5 @@ add_subdirectory( feelpoly )
 if ( FEELPP_ENABLE_SPECX )
     feelpp_add_application( specx SRCS 99-specx.cpp LINK_LIBRARIES Feelpp::feelpp_specx )
 endif()
-add_dependencies( benchs ${B_ENV} ${B_MESH} ${B_SPACE} ${B_INTEGRATE} benchs-feelpoly )
+add_dependencies( benchs ${B_ENV} ${B_MESH} ${B_SPACE} ${B_INTEGRATE} ${B_GMC}
+                  ${B_FSPACE_MANAGER_BASELINE} ${B_FSPACE_MANAGER} benchs-feelpoly )

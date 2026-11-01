@@ -1,26 +1,11 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-  This file is part of the Feel library
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-10-06
+    SPDX-FileCopyrightText: 2007 Joseph Fourier University
+    SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
 
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2007 Université Joseph Fourier Grenoble 1
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    SPDX-License-Identifier: LGPL-3.0-or-later
 */
 /**
    \file dubiner.hpp
@@ -780,7 +765,7 @@ Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluateRu
     const size_type ndof = ( order + 1 ) * ( order + 2 ) / 2;
     matrix_type res( ndof, __pts.size2() );
 
-    details::etas<TRIANGLE, value_type> etas( __pts );
+    Feel::details::etas<TRIANGLE, value_type> etas( __pts );
     ublas::vector<value_type> eta1s = ublas::row( etas(), 0 );
     ublas::vector<value_type> eta2s = ublas::row( etas(), 1 );
 
@@ -795,7 +780,7 @@ Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluateRu
     }
 
     // Use runtime scalings
-    matrix_type scalings = details::scalingsRuntime( order, eta2s );
+    matrix_type scalings = Feel::details::scalingsRuntime( order, eta2s );
 
     for ( uint16_type cur = 0, k = 0; k <= order; ++k )
     {
@@ -840,7 +825,7 @@ Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluateRu
     DCHECK( __pts.size1() == 3 ) << "invalid space dimension for point set, should be 3, it is currently "
                                   << __pts.size1();
 
-    details::etas<TETRAHEDRON, value_type> etas( __pts );
+    Feel::details::etas<TETRAHEDRON, value_type> etas( __pts );
     ublas::vector<value_type> eta1s = ublas::row( etas(), 0 );
     ublas::vector<value_type> eta2s = ublas::row( etas(), 1 );
     ublas::vector<value_type> eta3s = ublas::row( etas(), 2 );
@@ -864,8 +849,8 @@ Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluateRu
     }
 
     // Use runtime scalings
-    matrix_type scalings2 = details::scalingsRuntime( order, eta2s );
-    matrix_type scalings3 = details::scalingsRuntime( order, eta3s );
+    matrix_type scalings2 = Feel::details::scalingsRuntime( order, eta2s );
+    matrix_type scalings3 = Feel::details::scalingsRuntime( order, eta3s );
 
     for ( uint16_type cur = 0, k = 0; k <= order; ++k )
     {
@@ -922,7 +907,7 @@ Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivateRu
     res[0].resize( ndof, __pts().size2() );
     res[1].resize( ndof, __pts().size2() );
 
-    details::etas<TRIANGLE, value_type> etas( __pts );
+    Feel::details::etas<TRIANGLE, value_type> etas( __pts );
     ublas::vector<value_type> eta1s = ublas::row( etas(), 0 );
     ublas::vector<value_type> eta2s = ublas::row( etas(), 1 );
 
@@ -940,7 +925,7 @@ Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivateRu
         dbs[i] = dyna::JacobiBatchDerivation( order - i, value_type( 2 * i + 1 ), value_type( 0 ), eta2s );
     }
 
-    matrix_type scalings = details::scalingsRuntime( order, eta2s );
+    matrix_type scalings = Feel::details::scalingsRuntime( order, eta2s );
     ublas::vector<value_type> one( ublas::scalar_vector<value_type>( eta1s.size(), value_type( 1 ) ) );
     ublas::vector<value_type> tmp( ublas::scalar_vector<value_type>( eta1s.size(), value_type( 1 ) ) );
 
@@ -1014,7 +999,7 @@ Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivateRu
 
     FEELPP_ASSERT( __pts().size1() == 3 )( __pts().size1() ).error( "invalid space dimension" );
 
-    details::etas<TETRAHEDRON, value_type> etas( __pts );
+    Feel::details::etas<TETRAHEDRON, value_type> etas( __pts );
     ublas::vector<value_type> eta1s = ublas::row( etas(), 0 );
     ublas::vector<value_type> eta2s = ublas::row( etas(), 1 );
     ublas::vector<value_type> eta3s = ublas::row( etas(), 2 );
@@ -1044,8 +1029,8 @@ Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivateRu
         }
     }
 
-    matrix_type scalings2 = details::scalingsRuntime( order, eta2s );
-    matrix_type scalings3 = details::scalingsRuntime( order, eta3s );
+    matrix_type scalings2 = Feel::details::scalingsRuntime( order, eta2s );
+    matrix_type scalings3 = Feel::details::scalingsRuntime( order, eta3s );
 
     ublas::vector<value_type> one( ublas::scalar_vector<value_type>( eta1s.size(), value_type( 1 ) ) );
     ublas::vector<value_type> tmp( ublas::scalar_vector<value_type>( eta1s.size(), value_type( 1 ) ) );

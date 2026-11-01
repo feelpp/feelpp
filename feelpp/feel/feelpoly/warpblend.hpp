@@ -280,7 +280,7 @@ private :
         vector_type gx( Order+1 );
         vector_type gw( Order+1 );
 
-        details::dyna::gausslobattojacobi<value_type, vector_type, vector_type>( Order+1, gw, gx );
+        Feel::details::dyna::gausslobattojacobi<value_type, vector_type, vector_type>( Order+1, gw, gx );
 
         return gx;
     }

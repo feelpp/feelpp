@@ -16,6 +16,8 @@
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/product.hpp>
 #include <feel/feelalg/backendpetsc.hpp>
@@ -44,6 +46,7 @@ struct DirichletStrategyCase
     std::string label;
     std::string type;
     double tolerance;
+    bool storesColumns;
 };
 
 std::ostream& operator<<( std::ostream& os, DirichletStrategyCase const& strategy )
@@ -53,9 +56,11 @@ std::ostream& operator<<( std::ostream& os, DirichletStrategyCase const& strateg
 }
 
 auto const monolithicDirichletStrategies = std::array{
-    DirichletStrategyCase{ .label = "elimination", .type = "elimination", .tolerance = 1e-10 },
-    DirichletStrategyCase{ .label = "elimination_symmetric", .type = "elimination_symmetric", .tolerance = 1e-10 },
-    DirichletStrategyCase{ .label = "penalisation", .type = "penalisation", .tolerance = 1e-8 }
+    DirichletStrategyCase{ .label = "elimination", .type = "elimination", .tolerance = 1e-10, .storesColumns = false },
+    DirichletStrategyCase{ .label = "elimination_symmetric", .type = "elimination_symmetric", .tolerance = 1e-10, .storesColumns = true },
+    DirichletStrategyCase{ .label = "elimination_keep_diagonal", .type = "elimination_keep_diagonal", .tolerance = 1e-10, .storesColumns = false },
+    DirichletStrategyCase{ .label = "elimination_symmetric_keep_diagonal", .type = "elimination_symmetric_keep_diagonal", .tolerance = 1e-10, .storesColumns = true },
+    DirichletStrategyCase{ .label = "penalisation", .type = "penalisation", .tolerance = 1e-8, .storesColumns = false }
 };
 
 auto const eliminationStrategy = monolithicDirichletStrategies.front();
@@ -65,11 +70,13 @@ struct DeferredDirichletMaterializationCounters
 {
     int baseCloseCalls = 0;
     int zeroRowsCalls = 0;
+    int cloneCalls = 0;
 
     void reset() noexcept
     {
         baseCloseCalls = 0;
         zeroRowsCalls = 0;
+        cloneCalls = 0;
     }
 };
 
@@ -99,6 +106,7 @@ public:
 
     clone_ptrtype clone() const override
     {
+        ++M_counters->cloneCalls;
         return std::make_shared<CountingMatrixSparse>( M_inner->clone(), M_counters, false );
     }
 
@@ -449,7 +457,7 @@ makeAbout()
                      "0.2",
                      "test product of spaces",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2016 Feel++ Consortium" );
+                     "Copyright (c) 2016-2026 University of Strasbourg" );
 
     about.addAuthor( "C Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
@@ -1202,7 +1210,7 @@ BOOST_AUTO_TEST_CASE( test4 )
     ex->add(alphabet[2],U(2_c));
     for(int i = 0; i < ps->numberOfSpaces(); ++i )
     {
-        ex->add(alphabet[i+2],U(3_c,i));
+        ex->add( alphabet[i + 3], U( 3_c, i ) );
         //U[i].printMatlab(alphabet[i]+".m");
     }
     ex->save();
@@ -1377,6 +1385,7 @@ BOOST_DATA_TEST_CASE( test_row_dirichlet_manual_apply_blockform,
     auto a = blockform2( ps, solve::strategy::monolithic, backend() );
     auto l = blockform1( ps, solve::strategy::monolithic, backend() );
     a.deferDirichlet();
+    a.setDirichletInPlace( false );
 
     a( 0_c, 0_c ) += integrate( _range=elements( mesh ),
                                 _expr=inner( gradt( u ), grad( v ) ) + idt( u ) * id( v ) );
@@ -1429,7 +1438,6 @@ BOOST_DATA_TEST_CASE( test_row_dirichlet_manual_apply_blockform,
                                      _expr=idv( solution( 0_c ) ) );
     double const eastError = normL2( _range=markedfaces( mesh, "EAST" ),
                                      _expr=idv( solution( 0_c ) ) - cst( 1.0 ) );
-
     BOOST_CHECK_SMALL( westError, strategy.tolerance );
     BOOST_CHECK_SMALL( eastError, strategy.tolerance );
 }
@@ -1441,7 +1449,11 @@ BOOST_DATA_TEST_CASE( test_row_dirichlet_rhs_reuse_refresh_blockform,
     using namespace Feel;
     using namespace vf;
 
-    auto mesh = loadMesh( _mesh=new Mesh<Simplex<2>> );
+    auto mesh = createGMSHMesh(
+        _mesh=new Mesh<Simplex<2>>,
+        _desc=domain( _name="productspace-dirichlet-reuse",
+                      _shape="hypercube", _dim=2,
+                      _substructuring=true ) );
     auto Xh = Pch<1>( mesh );
     auto Yh = Pch<1>( mesh );
     auto ps = product( Xh, Yh );
@@ -1483,6 +1495,7 @@ BOOST_DATA_TEST_CASE( test_row_dirichlet_rhs_reuse_refresh_blockform,
                         _expr=cst( 1.0 ),
                         _type=strategy.type );
 
+    auto const operatorMatrix = a.baseMatrixPtr();
     auto constrainedVector = a.constrainedVectorPtr( l );
     auto constrainedSnapshot = vf::cloneVectorWithValues( constrainedVector );
     auto rhsVector = l.vectorPtr()->getVector();
@@ -1509,9 +1522,58 @@ BOOST_DATA_TEST_CASE( test_row_dirichlet_rhs_reuse_refresh_blockform,
                                      _expr=idv( solution( 0_c ) ) );
     double const eastError = normL2( _range=markedfaces( mesh, "EAST" ),
                                      _expr=idv( solution( 0_c ) ) - cst( 1.0 ) );
+    // The registered MPI test uses iterative GASM; keep the solution check
+    // consistent with its solve tolerance while the algebraic invariants
+    // above remain exact.
+    double const solveTolerance = std::max( strategy.tolerance, 1e-8 );
 
-    BOOST_CHECK_SMALL( westError, strategy.tolerance );
-    BOOST_CHECK_SMALL( eastError, strategy.tolerance );
+    BOOST_CHECK_SMALL( westError, solveTolerance );
+    BOOST_CHECK_SMALL( eastError, solveTolerance );
+
+    // Refresh both prescribed values without reassembling or cloning the
+    // operator. Only symmetric elimination may retain sparse column entries.
+    auto updatedRhs = blockform1( ps, solve::strategy::monolithic, backend() );
+    updatedRhs( 0_c ) += integrate( _range=elements( mesh ),
+                                    _expr=cst( 1.0 ) * id( v ) );
+    updatedRhs( 1_c ) += integrate( _range=elements( mesh ),
+                                    _expr=cst( 2.0 ) * id( q ) );
+    updatedRhs.close();
+    a.row( 0_c ) += on( _range=markedfaces( mesh, "WEST" ),
+                        _rhs=updatedRhs( 0_c ),
+                        _element=u,
+                        _expr=cst( 0.25 ),
+                        _type=strategy.type );
+    a.row( 0_c ) += on( _range=markedfaces( mesh, "EAST" ),
+                        _rhs=updatedRhs( 0_c ),
+                        _element=u,
+                        _expr=cst( 1.5 ),
+                        _type=strategy.type );
+
+    auto updatedSolution = ps.element();
+    a.solve( _solution=updatedSolution, _rhs=updatedRhs );
+    BOOST_CHECK( a.activeMatrixPtr( updatedRhs ) == operatorMatrix );
+    BOOST_CHECK( !a.hasUnconstrainedMatrix() );
+
+    auto globalStoredColumnEntries = a.localStoredDirichletColumnEntryCount();
+    mpi::all_reduce( Environment::worldComm(), mpi::inplace( globalStoredColumnEntries ),
+                     std::plus<std::size_t>() );
+    if ( strategy.storesColumns )
+    {
+        BOOST_CHECK_GT( globalStoredColumnEntries, 0 );
+    }
+    else
+    {
+        BOOST_CHECK_EQUAL( globalStoredColumnEntries, 0 );
+    }
+
+    double const updatedWestError = normL2(
+        _range=markedfaces( mesh, "WEST" ),
+        _expr=idv( updatedSolution( 0_c ) ) - cst( 0.25 ) );
+    double const updatedEastError = normL2(
+        _range=markedfaces( mesh, "EAST" ),
+        _expr=idv( updatedSolution( 0_c ) ) - cst( 1.5 ) );
+    BOOST_CHECK_SMALL( updatedWestError, solveTolerance );
+    BOOST_CHECK_SMALL( updatedEastError, solveTolerance );
 }
 
 #if defined( FEELPP_HAS_PETSC_H )
@@ -1549,6 +1611,7 @@ BOOST_AUTO_TEST_CASE( test_row_dirichlet_call_count_target_blockform_monolithic 
     BOOST_CHECK( !a.hasMaterializedConstrainedOperator() );
 
     counters->reset();
+    auto rhsSnapshot = vf::cloneVectorWithValues( l.vectorPtr()->getVector() );
     auto constrainedMatrix = a.activeMatrixPtr( l );
     auto constrainedVector = a.activeVectorPtr( l );
     auto constrainedMatrixAgain = a.activeMatrixPtr( l );
@@ -1557,11 +1620,19 @@ BOOST_AUTO_TEST_CASE( test_row_dirichlet_call_count_target_blockform_monolithic 
     BOOST_CHECK( constrainedMatrix );
     BOOST_CHECK( constrainedVector );
     BOOST_CHECK( a.hasMaterializedConstrainedOperator() );
-    BOOST_CHECK( constrainedMatrix != baseMatrix );
+    BOOST_CHECK( constrainedMatrix == baseMatrix );
+    BOOST_CHECK( !a.hasUnconstrainedMatrix() );
     BOOST_CHECK( dynamic_cast<CountingMatrixSparse<double>*>( constrainedMatrix.get() ) != nullptr );
-    BOOST_CHECK_EQUAL( counters->baseCloseCalls, 1 );
+    BOOST_CHECK_EQUAL( counters->baseCloseCalls, 2 );
+    BOOST_CHECK_EQUAL( counters->cloneCalls, 0 );
+    BOOST_CHECK_EQUAL( counters->zeroRowsCalls, 1 );
     BOOST_CHECK_EQUAL( constrainedMatrix.get(), constrainedMatrixAgain.get() );
     BOOST_CHECK_EQUAL( constrainedVector.get(), constrainedVectorAgain.get() );
+    auto rhsDelta = vf::cloneVectorWithValues( l.vectorPtr()->getVector() );
+    rhsDelta->add( -1.0, *rhsSnapshot );
+    if ( !rhsDelta->closed() )
+        rhsDelta->close();
+    BOOST_CHECK_SMALL( rhsDelta->linftyNorm(), 1e-14 );
 }
 
 BOOST_AUTO_TEST_CASE( test_row_dirichlet_single_apply_zero_rows_count_blockform_monolithic )
