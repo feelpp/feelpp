@@ -91,10 +91,6 @@ while [ -n "$1" ]; do
        MPI_ROOT=`echo $1 | sed "s,^--mpi-dir=\(.*\),\1,"`
        export MPI_ROOT
        ;;
-   --tbb-dir=*)
-       TBB_ROOT=`echo $1 | sed "s,^--tbb-dir=\(.*\),\1,"`
-       export MPI_ROOT
-       ;;
    --mkl-dir=*)
        MKL_ROOT=`echo $1 | sed "s,^--mkl-dir=\(.*\),\1,"`
        export MKL_ROOT
@@ -236,10 +232,6 @@ fi
 if [ "X${CUDA_ROOT}" != "X" ]; then
 echo "set(CUDA_INCLUDE_PATH            \"${CUDA_ROOT}/cuda/include\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
 echo "set(CUDA_LIBRARY_PATH            \"${CUDA_ROOT}/cuda/lib64\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
-fi
-if [ "X${TBB_ROOT}" != "X" ]; then
-echo "set(TBB_INCLUDE_PATH             \"${TBB_ROOT}/include\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
-echo "set(TBB_LIBRARY_PATH             \"${TBB_ROOT}/lib\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure
 fi
 if [ "X${BOOST_ROOT}" != "X" ]; then
 echo "set(BOOST_INCLUDE_PATH           \"${BOOST_ROOT}/include\" CACHE PATH \"root directory\" FORCE)" >> cmake.configure

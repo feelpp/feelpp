@@ -689,12 +689,6 @@ Environment::Environment( int argc, char** argv,
 #endif
     }
 
-#if defined( FEELPP_HAS_TBB )
-    int n = tbb::task_scheduler_init::default_num_threads();
-    //int n = 2;
-    //VLOG(2) << "[Feel++] TBB running with " << n << " threads\n";
-    //tbb::task_scheduler_init init(2);
-#endif
 
     // Note: verbosity is now handled in Environment::startLogging() for spdlog
     // or by glog directly when FEELPP_HAS_SPDLOG is not defined

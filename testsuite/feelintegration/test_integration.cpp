@@ -1286,28 +1286,7 @@ BOOST_AUTO_TEST_CASE( test_integration_1 )
 {
     BOOST_TEST_MESSAGE( "Test integration Circle" );
     Feel::test_integration_circle<double> t;
-#if defined( FEELPP_HAS_TBB )
-    //int n = tbb::task_scheduler_init::default_num_threads();
-    int n = 1 ;
-
-    for ( int p=1; p<=n; ++p )
-    {
-        BOOST_TEST_MESSAGE( "[test_integration_1] start tests with nthreads = " << p );
-
-        tbb::task_scheduler_init init( p );
-        tbb::tick_count t0 = tbb::tick_count::now();
-
-        t();
-
-        tbb::tick_count t1 = tbb::tick_count::now();
-        double t = ( t1-t0 ).seconds();
-
-        BOOST_TEST_MESSAGE( "[test_integration_1] start tests with " << p << " threads, time=" << t << "seconds\n" );
-    }
-
-#else
     t();
-#endif // FEELPP_HAS_TBB
     BOOST_TEST_MESSAGE( "Test integration Circle Done" );
 }
 

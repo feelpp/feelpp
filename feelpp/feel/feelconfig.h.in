@@ -154,12 +154,6 @@
 /* Define to 1 if you have the <sys/types.h> header file. */
 #cmakedefine FEELPP_HAS_SYS_TYPES_H
 
-/* Define to 1 if you have tbb. */
-#cmakedefine FEELPP_HAS_TBB
-
-/* Define to 1 if you have the <tbb.h> header file. */
-#cmakedefine FEELPP_HAS_TBB_H
-
 /* Define to 1 if you have harts. */
 #cmakedefine FEELPP_HAS_HARTS
 

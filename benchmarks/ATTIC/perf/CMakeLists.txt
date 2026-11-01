@@ -28,10 +28,6 @@ add_executable( feel_perf
   )
 target_link_libraries(feel_perf feelpp ${FEELPP_LIBRARIES} )
 
-add_executable( feel_perf2
-  perf2.cpp
-  )
-target_link_libraries(feel_perf2 feelpp ${FEELPP_LIBRARIES} )
 
 add_subdirectory(laplacian)
 add_subdirectory(dar)

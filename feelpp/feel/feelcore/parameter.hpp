@@ -287,9 +287,7 @@ using initial_theta = NA::named_argument_t<struct initial_theta_tag>;
 using min_theta = NA::named_argument_t<struct min_theta_tag>;
 using forceRelaxation = NA::named_argument_t<struct forceRelaxation_tag>;
 
-using use_tbb = NA::named_argument_t<struct use_tbb_tag>;
 using use_harts = NA::named_argument_t<struct use_harts_tag>;
-using grainsize = NA::named_argument_t<struct grainsize_tag>;
 using partitioner = NA::named_argument_t<struct partitioner_tag>;
 
 using save = NA::named_argument_t<struct save_tag>;
@@ -604,9 +602,7 @@ inline constexpr auto& _initial_theta = NA::identifier<na::initial_theta>;
 inline constexpr auto& _min_theta = NA::identifier<na::min_theta>;
 inline constexpr auto& _forceRelaxation = NA::identifier<na::forceRelaxation>;
 
-inline constexpr auto& _use_tbb = NA::identifier<na::use_tbb>;
 inline constexpr auto& _use_harts = NA::identifier<na::use_harts>;
-inline constexpr auto& _grainsize = NA::identifier<na::grainsize>;
 inline constexpr auto& _partitioner = NA::identifier<na::partitioner>;
 
 inline constexpr auto& _save = NA::identifier<na::save>;

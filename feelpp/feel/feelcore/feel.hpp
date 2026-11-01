@@ -148,14 +148,6 @@
 
 #include <feel/feelcore/serialization.hpp>
 
-#if defined( FEELPP_HAS_TBB )
-#include <tbb/tick_count.h>
-#include <tbb/blocked_range.h>
-#include <tbb/parallel_for.h>
-#include <tbb/parallel_reduce.h>
-#include <tbb/task_scheduler_init.h>
-#include <tbb/mutex.h>
-#endif // FEELPP_HAS_TBB
 
 
 

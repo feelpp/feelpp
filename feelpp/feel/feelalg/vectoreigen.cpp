@@ -24,10 +24,6 @@
 
 #include <feel/feelalg/vectoreigen.hpp>
 
-#if defined( FEELPP_HAS_TBB )
-#include <parallel_for.h>
-#include <blocked_range.h>
-#endif // FEELPP_HAS_TBB
 
 namespace Feel
 {
@@ -454,43 +450,16 @@ VectorEigen<T>::checkInvariant() const
                        this->localSize(), this->size());
 }
 
-namespace detail
-{
-#if defined(FEELPP_HAS_TBB)
-template<typename VectorType>
-struct Sqrt
-{
-    VectorType M_in;
-    VectorType& M_out;
-    Sqrt( VectorType const& _in, VectorType& _out )
-        :
-        M_in( _in ), M_out( _out )
-    { }
-    void operator() ( const tbb::blocked_range<size_t>& r ) const
-    {
-        for ( size_t i = r.begin(); i != r.end(); ++i )
-        {
-            M_out[i] = math::sqrt( M_in[i] );
-        }
-    }
-};
-#endif // FEELPP_HAS_TBB
-} //detail
 template <typename T>
 typename VectorEigen<T>::this_type
 VectorEigen<T>::sqrt() const
 {
     this_type _tmp( this->mapPtr() );
 
-#if defined( FEELPP_HAS_TBB )
-    tbb::parallel_for( tbb::blocked_range<size_t>( 0, this->localSize() ),
-                       detail::Sqrt<this_type>( *this, _tmp ) );
-#else
 
     for ( int i = 0; i < ( int )this->localSize(); ++i )
         _tmp[i] = math::sqrt( this->operator[]( i ) );
 
-#endif // FEELPP_HAS_TBB
 
     return _tmp;
 }

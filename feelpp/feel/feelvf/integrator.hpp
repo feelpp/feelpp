@@ -239,7 +239,7 @@ public:
                 expression_type const& __expr,
                 GeomapStrategyType gt,
                 Im2 const& __im2,
-                bool use_tbb, bool use_harts, int grainsize, std::string const& partitioner,
+                bool use_harts,
                 std::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > qpl )
         :
         M_elts(),
@@ -250,10 +250,7 @@ public:
         M_im2( __im2 ),
         M_expr( __expr ),
         M_gt( gt ),
-        M_use_tbb( use_tbb ),
         M_use_harts( use_harts ),
-        M_grainsize( grainsize ),
-        M_partitioner( partitioner ),
         M_QPL( qpl )
     {
         if ( !M_wc )
@@ -270,7 +267,7 @@ public:
                 expression_type const& __expr,
                 GeomapStrategyType gt,
                 Im2 const& __im2,
-                bool use_tbb, bool use_harts, int grainsize, std::string const& partitioner,
+                bool use_harts,
                 std::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > qpl )
         :
         M_elts( elts ),
@@ -279,10 +276,7 @@ public:
         M_im2( __im2 ),
         M_expr( __expr ),
         M_gt( gt ),
-        M_use_tbb( use_tbb ),
         M_use_harts( use_harts ),
-        M_grainsize( grainsize ),
-        M_partitioner( partitioner ),
         M_QPL( qpl )
     {
         DLOG(INFO) << "Integrator constructor from expression\n";
@@ -304,10 +298,7 @@ public:
         M_im2( __vfi.M_im2 ),
         M_expr( __vfi.M_expr ),
         M_gt( __vfi.M_gt ),
-        M_use_tbb( __vfi.M_use_tbb ),
         M_use_harts( __vfi.M_use_harts ),
-        M_grainsize( __vfi.M_grainsize ),
-        M_partitioner( __vfi.M_partitioner ),
         M_QPL( __vfi.M_QPL )
     {
         DLOG(INFO) << "Integrator copy constructor\n";
@@ -366,7 +357,7 @@ public:
 
 
             //BOOST_STATIC_ASSERT( ( boost::is_same<expr_type,e_type> ) );
-            auto i = Integrator<Elements, quad_type, expr_type, quad1_type>( M_elts, quad, new_expr, M_gt, quad1, M_use_tbb, M_use_harts, M_grainsize, M_partitioner, quadptloc_ptrtype() );
+            auto i = Integrator<Elements, quad_type, expr_type, quad1_type>( M_elts, quad, new_expr, M_gt, quad1, M_use_harts, quadptloc_ptrtype() );
             DLOG(INFO) << " -- M_elts size=" << M_elts.size() << "\n";
             DLOG(INFO) << " -- nelts=" << std::distance( M_eltbegin, M_eltend ) << "\n";
             DLOG(INFO) << " -- integrate: quad = " << i.im().nPoints() << "\n";
@@ -552,196 +543,6 @@ public:
         }
     }
 
-#if defined( FEELPP_HAS_TBB )
-    template<typename FormType, typename ExprType, typename IMType, typename EltType>
-    class Context
-    {
-    public:
-        //
-        // some typedefs
-        //
-        typedef typename eval::gm_type gm_type;
-        typedef typename eval::gmc_type gmc_type;
-        typedef typename eval::gmpc_type gmpc_type;
-        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
-        typedef std::shared_ptr<gmpc_type> gmpc_ptrtype;
-        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-        typedef typename FormType::template Context<map_gmc_type, expression_type, im_type> form_context_type;
-        //typedef vf::detail::FormContextBase<map_gmc_type,im_type> fcb_type;
-        typedef form_context_type fcb_type;
-        typedef std::shared_ptr<fcb_type> fcb_ptrtype;
-
-
-        Context( FormType& _form,
-                 ExprType const& _expr,
-                 IMType const& _im,
-                 EltType const& _elt )
-            :
-            M_geopc( new gmpc_type( _form.gm(), _im.points() ) ),
-            M_c( new gmc_type( _form.gm(), _elt, M_geopc, invalid_uint16_type_value, _expr.dynamicContext()  ) ),
-            M_formc( new form_context_type( _form,
-                                            fusion::make_pair<vf::detail::gmc<0> >( M_c ),
-                                            fusion::make_pair<vf::detail::gmc<0> >( M_c ),
-                                            _expr,
-                                            _im ) )
-
-        {
-        }
-        Context( Context const& c )
-            :
-            M_geopc( new gmpc_type( *c.M_geopc ) ),
-            M_c( new gmc_type( *c.M_c ) ),
-            M_formc( new form_context_type( *c.M_formc ) )
-        {
-        }
-        //std::vector<boost::reference_wrapper<const typename mesh_type::element_type> > _v;
-        typedef typename std::vector<boost::reference_wrapper<const typename eval::element_type> >::iterator elt_iterator;
-        void operator() ( const tbb::blocked_range<elt_iterator>& r ) const
-        {
-#if 1
-            tbb::mutex m;
-            tbb::mutex::scoped_lock lock( m  );
-            lock.release();
-            auto  mapgmc = fusion::make_pair<vf::detail::gmc<0> >( M_c );
-
-            for ( auto _elt = r.begin(); _elt != r.end(); ++_elt )
-            {
-                M_c->update( *_elt );
-                M_formc->update( mapgmc, mapgmc );
-                M_formc->integrate();
-                lock.acquire( m );
-                M_formc->assemble();
-                lock.release();
-            }
-
-#else
-
-            for ( auto _elt = r.begin(); _elt != r.end(); ++_elt )
-            {
-                M_c->update( *_elt );
-                M_formc->update( fusion::make_pair<vf::detail::gmc<0> >( M_c ),
-                                 fusion::make_pair<vf::detail::gmc<0> >( M_c ) );
-                M_formc->integrate();
-            }
-
-#endif
-        }
-        mutable gmpc_ptrtype M_geopc;
-        mutable gmc_ptrtype M_c;
-        mutable fcb_ptrtype M_formc;
-
-    };
-
-    template<typename ExprType, typename IMType, typename EltType>
-    class ContextEvaluate
-    {
-    public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-        //
-        // some typedefs
-        //
-        typedef ExprType expression_type;
-        typedef typename eval::gm_type gm_type;
-        typedef std::shared_ptr<gm_type> gm_ptrtype;
-        typedef typename eval::gmc_type gmc_type;
-        typedef typename eval::gmpc_type gmpc_type;
-        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
-        typedef std::shared_ptr<gmpc_type> gmpc_ptrtype;
-        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-        typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
-        typedef typename eval_expr_type::shape shape;
-        typedef IMType im_type;
-        typedef typename eval::matrix_type value_type;
-        ContextEvaluate( ExprType const& _expr,
-                         IMType const& _im,
-                         EltType const& _elt )
-            :
-            M_gm( new gm_type( *_elt.gm() ) ),
-            M_geopc( new gmpc_type( M_gm, _im.points() ) ),
-            M_c( new gmc_type( M_gm, _elt, M_geopc, invalid_uint16_type_value, _expr.dynamicContext() ) ),
-            M_expr( _expr, map_gmc_type( fusion::make_pair<vf::detail::gmc<0> >( M_c ) ) ),
-            M_im( _im ),
-            M_ret( eval::matrix_type::Zero() )
-        {
-        }
-        ContextEvaluate( ContextEvaluate& c, tbb::split )
-            :
-            M_gm( new gm_type( *c.M_gm ) ),
-            //M_geopc( new gmpc_type( M_gm, c.M_im.points() ) ),
-            M_geopc( c.M_geopc ),
-            M_c( new gmc_type( M_gm, c.M_c->element(), M_geopc, invalid_uint16_type_value, c.M_expr.dynamicContext() ) ),
-            M_expr( c.M_expr ),
-            M_im( c.M_im ),
-            M_ret( eval::matrix_type::Zero() )
-        {}
-
-        ContextEvaluate( ContextEvaluate const& c )
-            :
-            M_gm( new gm_type( *c.M_gm ) ),
-            //M_geopc( new gmpc_type( M_gm, c.M_im.points() ) ),
-            M_geopc( c.M_geopc ),
-            M_c( new gmc_type( M_gm, c.M_c->element(), M_geopc; invalid_uint16_type_value, c.M_expr.dynamicContext() ) ),
-            M_expr( c.M_expr ),
-            M_im( c.M_im ),
-            M_ret( c.M_ret )
-        {
-        }
-        //std::vector<boost::reference_wrapper<const typename mesh_type::element_type> > _v;
-        typedef typename std::vector<boost::reference_wrapper<const typename eval::element_type> >::iterator elt_iterator;
-        void operator() ( const tbb::blocked_range<elt_iterator>& r )
-        {
-#if 1
-
-            for ( auto _elt = r.begin(); _elt != r.end(); ++_elt )
-            {
-                M_c->update( *_elt );
-                map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( M_c ) );
-
-                M_expr.update( mapgmc );
-                M_im.update( *M_c );
-
-#if 1
-
-                for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
-                    for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
-                    {
-                        M_ret( c1,c2 ) += M_im( M_expr, c1, c2 );
-                    }
-
-#endif
-            }
-
-#else
-#if 0
-
-            for ( int i = 0; i < 10000; ++i )
-                for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
-                    for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
-                    {
-                        M_ret( c1,c2 ) += i*i; //M_im( M_expr, c1, c2 );
-                    }
-
-#endif
-#endif
-        }
-        void join( ContextEvaluate const& other )
-        {
-            M_ret += other.M_ret;
-        }
-
-        value_type result() const
-        {
-            return M_ret;
-        }
-
-        gm_ptrtype M_gm;
-        gmpc_ptrtype M_geopc;
-        gmc_ptrtype M_c;
-        eval_expr_type M_expr;
-        im_type M_im;
-        value_type M_ret;
-    };
-#endif // FEELPP_HAS_TBB
 
     //@}
 
@@ -872,10 +673,7 @@ private:
     mutable im2_type M_im2;
     expression_type   M_expr;
     GeomapStrategyType M_gt;
-    bool M_use_tbb;
     bool M_use_harts;
-    int M_grainsize;
-    std::string M_partitioner;
     mutable std::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > M_QPL;
     //     mutable boost::prof::basic_profiler<boost::prof::basic_profile_manager<std::string, double, boost::high_resolution_timer, boost::prof::empty_logging_policy, boost::prof::default_stats_policy<std::string, double> > > M_profile_local_assembly;
 
@@ -999,261 +797,228 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     tic();
     DLOG(INFO) << "[integrator::assemble FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<true>\n";
 
-#if defined(FEELPP_HAS_TBB)
+    //
+    // some typedefs
+    //
+    typedef typename eval::gm_type gm_type;
+    typedef typename eval::gmc_type gmc_type;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+    typedef typename FormType::template Context<map_gmc_type, expression_type, im_type> form_context_type;
+    typedef form_context_type fcb_type;
+    using focb_ptrtype = std::shared_ptr<fcb_type>;
 
-    //std::cout << "Integrator Uses TBB: " << M_use_tbb << "\n";
-    if ( !M_use_tbb )
-#else
-        if ( 1 )
-#endif
+    typedef typename eval::gm1_type gm1_type;
+    typedef typename eval::gmc1_type gmc1_type;
+    typedef std::shared_ptr<gmc1_type> gmc1_ptrtype;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
+    typedef typename FormType::template Context<map_gmc1_type, expression_type, im2_type> form1_context_type;
+    typedef form1_context_type fcb1_type;
+    using focb1_ptrtype = std::shared_ptr<fcb1_type>;
+
+    // mortar context
+    constexpr bool has_mortar_test = FormType::test_space_type::is_mortar;
+    constexpr bool has_mortar_trial = FormType::trial_space_type::is_mortar;
+    static const int mortarTag = (has_mortar_test && has_mortar_trial)? 3 : ( (has_mortar_test)? 1 : ( (has_mortar_trial)? 2 : 0 ) );
+
+    typedef typename FormType::template Context<map_gmc_type, expression_type, im_type,map_gmc_type,map_gmc_type,mortarTag> form_mortar_context_type;
+    typedef typename FormType::template Context<map_gmc1_type, expression_type, im2_type,map_gmc1_type,map_gmc1_type,mortarTag> form1_mortar_context_type;
+    using mortar_focb_ptrtype = std::shared_ptr<form_mortar_context_type>;
+    using mortar_focb1_ptrtype = std::shared_ptr<form1_mortar_context_type>;
+
+    bool useGeomapHO = (M_gt == GeomapStrategyType::GEOMAP_HO) || (M_gt == GeomapStrategyType::GEOMAP_OPT );
+    bool useGeomapO1 = (M_gt == GeomapStrategyType::GEOMAP_O1) || (M_gt == GeomapStrategyType::GEOMAP_OPT );
+
+    gmc_ptrtype __c;
+    focb_ptrtype formc;
+    gmc1_ptrtype __c1;
+    focb1_ptrtype formc1;
+    mortar_focb_ptrtype formcm;
+    mortar_focb1_ptrtype formc1m;
+    size_type nElt_ho = 0, nElt_o1 = 0;
+
+    for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
+    {
+        element_iterator it = lit->begin();
+        element_iterator en = lit->end();
+        DLOG(INFO) << "integrating over " << std::distance( it, en )  << " elements\n";
+
+        // check that we have elements to iterate over
+        if ( it == en )
+            continue;
+
+        auto const& eltInit = boost::unwrap_ref( *it );
+
+        bool rangeAndTestUseSameMesh = eltInit.mesh()->isSameMesh( __form.testSpace()->mesh() );
+
+        size_type idEltTestInit = eltInit.id();
+        if ( !rangeAndTestUseSameMesh )
         {
-            //
-            // some typedefs
-            //
-            typedef typename eval::gm_type gm_type;
-            typedef typename eval::gmc_type gmc_type;
-            typedef std::shared_ptr<gmc_type> gmc_ptrtype;
-            typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-            typedef typename FormType::template Context<map_gmc_type, expression_type, im_type> form_context_type;
-            typedef form_context_type fcb_type;
-            using focb_ptrtype = std::shared_ptr<fcb_type>;
+            if ( eltInit.mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
+                idEltTestInit = eltInit.mesh()->subMeshToMesh( idEltTestInit );
+            else if ( __form.testSpace()->mesh()->isSubMeshFrom( eltInit.mesh() ) )
+                idEltTestInit = __form.testSpace()->mesh()->meshToSubMesh( idEltTestInit );
+        }
 
-            typedef typename eval::gm1_type gm1_type;
-            typedef typename eval::gmc1_type gmc1_type;
-            typedef std::shared_ptr<gmc1_type> gmc1_ptrtype;
-            typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
-            typedef typename FormType::template Context<map_gmc1_type, expression_type, im2_type> form1_context_type;
-            typedef form1_context_type fcb1_type;
-            using focb1_ptrtype = std::shared_ptr<fcb1_type>;
+        auto const& eltTestInit = rangeAndTestUseSameMesh? eltInit :  __form.testSpace()->mesh()->element( idEltTestInit );
 
-            // mortar context
-            constexpr bool has_mortar_test = FormType::test_space_type::is_mortar;
-            constexpr bool has_mortar_trial = FormType::trial_space_type::is_mortar;
-            static const int mortarTag = (has_mortar_test && has_mortar_trial)? 3 : ( (has_mortar_test)? 1 : ( (has_mortar_trial)? 2 : 0 ) );
+        if ( useGeomapHO && !__c )
+        {
+            // Precompute some data in the reference element for geometric mapping and reference finite element
+            auto __geopc = __form.gm()->preCompute( this->im().points() );
+            __c = __form.gm()->template context<eval::gmc_context_v>( eltTestInit, __geopc, this->expression().dynamicContext() );
+            auto mapgmc = vf::mapgmc(__c);
+            formc = std::make_shared<form_context_type>( __form, mapgmc, mapgmc, mapgmc,
+                                                         this->expression(), this->im() );
+            if constexpr ( mortarTag > 0 )
+                 formcm = std::make_shared<form_mortar_context_type>( __form, mapgmc, mapgmc, mapgmc,
+                                                                      this->expression(), this->im() );
+        }
 
-            typedef typename FormType::template Context<map_gmc_type, expression_type, im_type,map_gmc_type,map_gmc_type,mortarTag> form_mortar_context_type;
-            typedef typename FormType::template Context<map_gmc1_type, expression_type, im2_type,map_gmc1_type,map_gmc1_type,mortarTag> form1_mortar_context_type;
-            using mortar_focb_ptrtype = std::shared_ptr<form_mortar_context_type>;
-            using mortar_focb1_ptrtype = std::shared_ptr<form1_mortar_context_type>;
+        if ( useGeomapO1 && !__c1 )
+        {
+            auto __geopc1 = __form.gm1()->preCompute( this->im2().points() );
+            __c1 = __form.gm1()->template context<eval::gmc_context_v>( eltTestInit, __geopc1, this->expression().dynamicContext() );
+            auto mapgmc1 = vf::mapgmc(__c1);
+            formc1 = std::make_shared<form1_context_type>( __form, mapgmc1, mapgmc1, mapgmc1,
+                                                           this->expression(), this->im2() );
+            if constexpr ( mortarTag > 0 )
+                  formc1m = std::make_shared<form1_mortar_context_type>( __form, mapgmc1, mapgmc1, mapgmc1,
+                                                                         this->expression(), this->im2() );
+        }
 
-            bool useGeomapHO = (M_gt == GeomapStrategyType::GEOMAP_HO) || (M_gt == GeomapStrategyType::GEOMAP_OPT );
-            bool useGeomapO1 = (M_gt == GeomapStrategyType::GEOMAP_O1) || (M_gt == GeomapStrategyType::GEOMAP_OPT );
+        //int nelt = std::distance( this->beginElement(), this->endElement() );
 
-            gmc_ptrtype __c;
-            focb_ptrtype formc;
-            gmc1_ptrtype __c1;
-            focb1_ptrtype formc1;
-            mortar_focb_ptrtype formcm;
-            mortar_focb1_ptrtype formc1m;
-            size_type nElt_ho = 0, nElt_o1 = 0;
+        //
+        // start the real intensive job:
+        // -# iterate over all elements to integrate over
+        // -# construct the associated geometric mapping with the reference element
+        // -# loop over quadrature loop and assemble the local matrix associated with the bilinear form
+        // -# assemble the local contribution in the global representation of the bilinear form
+        //
+        const bool updateCtxAndIntegrate = !(__form.testSpace()->mesh()->isCartesian()  &&
+                                             ( !hasPOINT(__c->dynamicContext() ) && !hasINTERPOLANT(__c->dynamicContext()) ) );
 
-            for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
+        for ( ; it != en; ++it )
+        {
+            auto const& eltCur = boost::unwrap_ref( *it );
+
+            size_type idElt = eltCur.id();
+            if ( !rangeAndTestUseSameMesh )
             {
-                element_iterator it = lit->begin();
-                element_iterator en = lit->end();
-                DLOG(INFO) << "integrating over " << std::distance( it, en )  << " elements\n";
+                if ( eltCur.mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
+                    idElt = eltCur.mesh()->subMeshToMesh( idElt );
+                else if ( __form.testSpace()->mesh()->isSubMeshFrom( eltCur.mesh() ) )
+                    idElt = __form.testSpace()->mesh()->meshToSubMesh( idElt );
+            }
 
-                // check that we have elements to iterate over
-                if ( it == en )
+            if ( useGeomapHO )
+            {
+                if ( formc->isZero( idElt ) )
                     continue;
+            }
+            else
+            {
+                if ( formc1->isZero( idElt ) )
+                    continue;
+            }
 
-                auto const& eltInit = boost::unwrap_ref( *it );
+            auto const& eltTest = rangeAndTestUseSameMesh? eltCur : __form.testSpace()->mesh()->element( idElt );
 
-                bool rangeAndTestUseSameMesh = eltInit.mesh()->isSameMesh( __form.testSpace()->mesh() );
+            // 0 : ho , 1 -> o1, 2 -> mortar ho, 3 -> mortar o1
+            int currentAssemblyType = 0;
+            switch ( M_gt )
+            {
+            default:
+            case GeomapStrategyType::GEOMAP_HO:
+                currentAssemblyType = 0;
+                break;
+            case GeomapStrategyType::GEOMAP_O1:
+                currentAssemblyType = 1;
+                break;
+            case GeomapStrategyType::GEOMAP_OPT:
+                if ( eltCur.isOnBoundary() )
+                    currentAssemblyType = 0;
+                else
+                    currentAssemblyType = 1;
+                break;
+            }
 
-                size_type idEltTestInit = eltInit.id();
-                if ( !rangeAndTestUseSameMesh )
+            bool useMortarAssembly = false;
+            if constexpr ( mortarTag > 0 )
+            {
+                if ( currentAssemblyType == 0 )
+                    useMortarAssembly = ( has_mortar_test && eltTest.isOnBoundary() ) || ( has_mortar_trial && formc->trialElementIsOnBoundary( idElt ) );
+                else
+                    useMortarAssembly = ( has_mortar_test && eltTest.isOnBoundary() ) || ( has_mortar_trial && formc1->trialElementIsOnBoundary( idElt ) );
+                if ( useMortarAssembly )
+                    currentAssemblyType += 2;
+            }
+
+
+            switch ( currentAssemblyType )
+            {
+            default:
+            case 0:
+                //Feel::cout << "update ctx and integrate HO" << std::endl;
+                if ( updateCtxAndIntegrate || ( nElt_ho == 0 ) )
                 {
-                    if ( eltInit.mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
-                        idEltTestInit = eltInit.mesh()->subMeshToMesh( idEltTestInit );
-                    else if ( __form.testSpace()->mesh()->isSubMeshFrom( eltInit.mesh() ) )
-                        idEltTestInit = __form.testSpace()->mesh()->meshToSubMesh( idEltTestInit );
+                    __c->template update<eval::gmc_context_v>( eltTest );
+                    auto mapgmc = vf::mapgmc( __c );
+                    formc->update( mapgmc, mapgmc, mapgmc );
+                    formc->integrate();
                 }
-
-                auto const& eltTestInit = rangeAndTestUseSameMesh? eltInit :  __form.testSpace()->mesh()->element( idEltTestInit );
-
-                if ( useGeomapHO && !__c )
+                else
                 {
-                    // Precompute some data in the reference element for geometric mapping and reference finite element
-                    auto __geopc = __form.gm()->preCompute( this->im().points() );
-                    __c = __form.gm()->template context<eval::gmc_context_v>( eltTestInit, __geopc, this->expression().dynamicContext() );
-                    auto mapgmc = vf::mapgmc(__c);
-                    formc = std::make_shared<form_context_type>( __form, mapgmc, mapgmc, mapgmc,
-                                                                 this->expression(), this->im() );
-                    if constexpr ( mortarTag > 0 )
-                         formcm = std::make_shared<form_mortar_context_type>( __form, mapgmc, mapgmc, mapgmc,
-                                                                              this->expression(), this->im() );
+                    __c->setElement( eltTest );
                 }
-
-                if ( useGeomapO1 && !__c1 )
+                formc->assemble();
+                ++nElt_ho;
+                break;
+            case 1:
+                if ( updateCtxAndIntegrate || ( nElt_o1 == 0 )  )
                 {
-                    auto __geopc1 = __form.gm1()->preCompute( this->im2().points() );
-                    __c1 = __form.gm1()->template context<eval::gmc_context_v>( eltTestInit, __geopc1, this->expression().dynamicContext() );
-                    auto mapgmc1 = vf::mapgmc(__c1);
-                    formc1 = std::make_shared<form1_context_type>( __form, mapgmc1, mapgmc1, mapgmc1,
-                                                                   this->expression(), this->im2() );
-                    if constexpr ( mortarTag > 0 )
-                          formc1m = std::make_shared<form1_mortar_context_type>( __form, mapgmc1, mapgmc1, mapgmc1,
-                                                                                 this->expression(), this->im2() );
+                    __c1->template update<eval::gmc_context_v>( eltTest );
+                    auto mapgmc1 = vf::mapgmc( __c1 );
+                    formc1->update( mapgmc1, mapgmc1, mapgmc1 );
+                    formc1->integrate();
                 }
-
-                //int nelt = std::distance( this->beginElement(), this->endElement() );
-
-                //
-                // start the real intensive job:
-                // -# iterate over all elements to integrate over
-                // -# construct the associated geometric mapping with the reference element
-                // -# loop over quadrature loop and assemble the local matrix associated with the bilinear form
-                // -# assemble the local contribution in the global representation of the bilinear form
-                //
-                const bool updateCtxAndIntegrate = !(__form.testSpace()->mesh()->isCartesian()  &&
-                                                     ( !hasPOINT(__c->dynamicContext() ) && !hasINTERPOLANT(__c->dynamicContext()) ) );
-
-                for ( ; it != en; ++it )
+                else
                 {
-                    auto const& eltCur = boost::unwrap_ref( *it );
-
-                    size_type idElt = eltCur.id();
-                    if ( !rangeAndTestUseSameMesh )
-                    {
-                        if ( eltCur.mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
-                            idElt = eltCur.mesh()->subMeshToMesh( idElt );
-                        else if ( __form.testSpace()->mesh()->isSubMeshFrom( eltCur.mesh() ) )
-                            idElt = __form.testSpace()->mesh()->meshToSubMesh( idElt );
-                    }
-
-                    if ( useGeomapHO )
-                    {
-                        if ( formc->isZero( idElt ) )
-                            continue;
-                    }
-                    else
-                    {
-                        if ( formc1->isZero( idElt ) )
-                            continue;
-                    }
-
-                    auto const& eltTest = rangeAndTestUseSameMesh? eltCur : __form.testSpace()->mesh()->element( idElt );
-
-                    // 0 : ho , 1 -> o1, 2 -> mortar ho, 3 -> mortar o1
-                    int currentAssemblyType = 0;
-                    switch ( M_gt )
-                    {
-                    default:
-                    case GeomapStrategyType::GEOMAP_HO:
-                        currentAssemblyType = 0;
-                        break;
-                    case GeomapStrategyType::GEOMAP_O1:
-                        currentAssemblyType = 1;
-                        break;
-                    case GeomapStrategyType::GEOMAP_OPT:
-                        if ( eltCur.isOnBoundary() )
-                            currentAssemblyType = 0;
-                        else
-                            currentAssemblyType = 1;
-                        break;
-                    }
-
-                    bool useMortarAssembly = false;
-                    if constexpr ( mortarTag > 0 )
-                    {
-                        if ( currentAssemblyType == 0 )
-                            useMortarAssembly = ( has_mortar_test && eltTest.isOnBoundary() ) || ( has_mortar_trial && formc->trialElementIsOnBoundary( idElt ) );
-                        else
-                            useMortarAssembly = ( has_mortar_test && eltTest.isOnBoundary() ) || ( has_mortar_trial && formc1->trialElementIsOnBoundary( idElt ) );
-                        if ( useMortarAssembly )
-                            currentAssemblyType += 2;
-                    }
+                    __c1->setElement( eltTest );
+                }
+                formc1->assemble();
+                ++nElt_o1;
+                break;
+            case 2: // mortar ho
+                if constexpr ( mortarTag > 0 )
+                {
+                    __c->template update<eval::gmc_context_v>( eltTest );
+                    auto mapgmc = vf::mapgmc( __c );
+                    formcm->update( mapgmc, mapgmc, mapgmc );
+                    formcm->integrate();
+                    formcm->assemble();
+                }
+                break;
+            case 3: //mortar o1
+                if constexpr ( mortarTag > 0 )
+                {
+                    __c1->template update<eval::gmc_context_v>( eltTest );
+                    auto mapgmc = vf::mapgmc( __c1 );
+                    formc1m->update( mapgmc, mapgmc, mapgmc );
+                    formc1m->integrate();
+                    formc1m->assemble();
+                }
+                break;
+            }
 
 
-                    switch ( currentAssemblyType )
-                    {
-                    default:
-                    case 0:
-                        //Feel::cout << "update ctx and integrate HO" << std::endl;
-                        if ( updateCtxAndIntegrate || ( nElt_ho == 0 ) )
-                        {
-                            __c->template update<eval::gmc_context_v>( eltTest );
-                            auto mapgmc = vf::mapgmc( __c );
-                            formc->update( mapgmc, mapgmc, mapgmc );
-                            formc->integrate();
-                        }
-                        else
-                        {
-                            __c->setElement( eltTest );
-                        }
-                        formc->assemble();
-                        ++nElt_ho;
-                        break;
-                    case 1:
-                        if ( updateCtxAndIntegrate || ( nElt_o1 == 0 )  )
-                        {
-                            __c1->template update<eval::gmc_context_v>( eltTest );
-                            auto mapgmc1 = vf::mapgmc( __c1 );
-                            formc1->update( mapgmc1, mapgmc1, mapgmc1 );
-                            formc1->integrate();
-                        }
-                        else
-                        {
-                            __c1->setElement( eltTest );
-                        }
-                        formc1->assemble();
-                        ++nElt_o1;
-                        break;
-                    case 2: // mortar ho
-                        if constexpr ( mortarTag > 0 )
-                        {
-                            __c->template update<eval::gmc_context_v>( eltTest );
-                            auto mapgmc = vf::mapgmc( __c );
-                            formcm->update( mapgmc, mapgmc, mapgmc );
-                            formcm->integrate();
-                            formcm->assemble();
-                        }
-                        break;
-                    case 3: //mortar o1
-                        if constexpr ( mortarTag > 0 )
-                        {
-                            __c1->template update<eval::gmc_context_v>( eltTest );
-                            auto mapgmc = vf::mapgmc( __c1 );
-                            formc1m->update( mapgmc, mapgmc, mapgmc );
-                            formc1m->integrate();
-                            formc1m->assemble();
-                        }
-                        break;
-                    }
+        } // end loop on elements
+    } // end loop on list of elements
+
+    toc("Integrator::assemble form MESH_ELEMENTS", Environment::logVerbosityLevel()>1);
 
 
-                } // end loop on elements
-            } // end loop on list of elements
-
-            toc("Integrator::assemble form MESH_ELEMENTS", Environment::logVerbosityLevel()>1);
-        }
-
-#if defined( FEELPP_HAS_TBB )
-
-        else
-        {
-            element_iterator it = this->beginElement();
-            element_iterator en = this->endElement();
-
-            if ( it == en )
-                return;
-
-            std::vector<boost::reference_wrapper<const typename eval::element_type> > _v;
-
-            for ( auto _it = it; _it != en; ++_it )
-                _v.push_back( boost::cref( *_it ) );
-
-            //tbb::blocked_range<decltype(_v.begin())> r( _v.begin(), _v.end(), M_grainsize );
-            tbb::blocked_range<decltype( _v.begin() )> r( _v.begin(), _v.end(), std::distance( it, en ) );
-            Context<FormType,expression_type, im_type, typename eval::the_element_type> thecontext ( __form,
-                                                                                                     this->expression(),
-                                                                                                     this->im(),
-                                                                                                     *it );
-            tbb::parallel_for( r,  thecontext );
-        }
-
-#endif // FEELPP_HAS_TBB
 }
 
 template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
@@ -4858,37 +4623,6 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                 << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
     tic();
 
-#if defined(FEELPP_HAS_TBB)
-    if ( boption(_name="parallel.cpu.enable") && M_use_tbb )
-    {
-        //std::cout << "Integrator Uses TBB: " << M_use_tbb << "\n";
-        element_iterator it = this->beginElement();
-        element_iterator en = this->endElement();
-        typedef ContextEvaluate<expression_type, im_type, typename eval::the_element_type> context_type;
-
-        if ( it == en )
-            return eval::zero();
-
-        std::vector<boost::reference_wrapper<const typename eval::element_type> > _v;
-
-        for ( auto _it = it; _it != en; ++_it )
-            _v.push_back( boost::cref( _it->second ) );
-
-        tbb::blocked_range<decltype( _v.begin() )> r( _v.begin(), _v.end(), M_grainsize );
-        context_type thecontext( this->expression(), this->im(), it->second );
-
-        if ( M_partitioner == "auto" )
-            tbb::parallel_reduce( r,  thecontext );
-
-        else if ( M_partitioner == "simple" )
-            tbb::parallel_reduce( r,  thecontext, tbb::simple_partitioner() );
-
-        //else if ( M_partitioner == "affinity" )
-        //tbb::parallel_reduce( r,  thecontext, tbb::affinity_partitioner() );
-        return thecontext.result();
-    }
-    else
-#endif // defined(FEELPP_HAS_TBB)
 #if defined(FEELPP_HAS_HARTS)
         if ( boption(_name="parallel.cpu.enable") && soption(_name="parallel.cpu.impl").find("harts.") == 0 )
         {
@@ -6030,10 +5764,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                      ExprT const& expr,
                      GeomapStrategyType const& gt,
                      Im2 const& im2,
-                     bool use_tbb,
                      bool use_harts,
-                     int grainsize,
-                     std::string const& partitioner,
                      std::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT > > quadptloc
                      = std::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT > >() )
  {
@@ -6044,7 +5775,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
      using element_iterator = typename range_type::iterator_t;
      static constexpr uint16_type geoOrder = range_type::element_t::nOrder;
      LOG_IF(WARNING, gt != GeomapStrategyType::GEOMAP_HO && geoOrder == 1 ) << "you use a non standard geomap : ";
-     return Expr<expr_t>( expr_t( elts, im, expr, gt, im2, use_tbb, use_harts, grainsize, partitioner, quadptloc ) );
+     return Expr<expr_t>( expr_t( elts, im, expr, gt, im2, use_harts, quadptloc ) );
  }
 
 

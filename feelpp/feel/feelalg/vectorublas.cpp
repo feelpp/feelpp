@@ -369,28 +369,6 @@ typename VectorUblasBase<T>::value_type VectorUblasBase<T>::dot( const Vector<T>
     return globalRes;
 }
 
-namespace helpers {
-#if defined(FEELPP_HAS_TBB)
-template<typename VectorType>
-struct Sqrt
-{
-    VectorType M_in;
-    VectorType& M_out;
-    Sqrt( VectorType const& _in, VectorType& _out )
-        :
-        M_in( _in ), M_out( _out )
-    { }
-    void operator() ( const tbb::blocked_range<size_t>& r ) const
-    {
-        for ( size_t i = r.begin(); i != r.end(); ++i )
-        {
-            M_out[i] = math::sqrt( M_in[i] );
-        }
-    }
-};
-#endif // FEELPP_HAS_TBB
-}
-
 template< typename T >
 std::unique_ptr<VectorUblasBase<T>>
 VectorUblasBase<T>::sqrt() const
@@ -398,13 +376,8 @@ VectorUblasBase<T>::sqrt() const
     std::unique_ptr<VectorUblasBase<T>> sqrtV( this->emptyPtr() );
     sqrtV->init( this->mapPtr() );
 
-#if defined( FEELPP_HAS_TBB )
-    tbb::parallel_for( tbb::blocked_range<size_t>( 0, this->localSize() ),
-                       helpers::Sqrt<this_type>( *this, *sqrtV ) );
-#else
     for ( size_type i = 0; i < this->localSize(); ++i )
         sqrtV->operator()(i) = math::sqrt( this->operator()( i ) );
-#endif // FEELPP_HAS_TBB
 
     return sqrtV;
 }

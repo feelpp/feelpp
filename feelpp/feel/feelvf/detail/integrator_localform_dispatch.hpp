@@ -33,7 +33,7 @@ Integrator<Elements, Im, Expr, Im2>::tryAssembleLoweredScalarLocalform( std::sha
         using lowered_quadptloc_ptrtype = std::shared_ptr<QuadPtLocalization<Elements, Im, lowered_expr_type> >;
         auto lowered_integrator =
             Integrator<Elements, Im, lowered_expr_type, Im2>( M_elts, M_im, lowered_expr, M_gt, M_im2,
-                                                              M_use_tbb, M_use_harts, M_grainsize, M_partitioner,
+                                                              M_use_harts,
                                                               lowered_quadptloc_ptrtype{} );
         lowered_integrator.setBeginElement( M_eltbegin );
         lowered_integrator.setEndElement( M_eltend );
@@ -61,7 +61,7 @@ Integrator<Elements, Im, Expr, Im2>::tryAssembleLoweredScalarLocalform( std::sha
         using lowered_quadptloc_ptrtype = std::shared_ptr<QuadPtLocalization<Elements, Im, lowered_expr_type> >;
         auto lowered_integrator =
             Integrator<Elements, Im, lowered_expr_type, Im2>( M_elts, M_im, lowered_expr, M_gt, M_im2,
-                                                              M_use_tbb, M_use_harts, M_grainsize, M_partitioner,
+                                                              M_use_harts,
                                                               lowered_quadptloc_ptrtype{} );
         lowered_integrator.setBeginElement( M_eltbegin );
         lowered_integrator.setEndElement( M_eltend );

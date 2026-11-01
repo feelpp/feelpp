@@ -29,15 +29,11 @@ double normL2( Ts && ... v )
     auto && quad = args.get_else( _quad, quad_order_from_expression );
     auto && quad1 = args.get_else( _quad1, quad_order_from_expression );
     GeomapStrategyType geomap = args.get_else( _geomap,GeomapStrategyType::GEOMAP_OPT );
-    bool use_tbb = args.get_else( _use_tbb, false );
     bool use_harts = args.get_else( _use_harts, false );
-    int grainsize = args.get_else( _grainsize, 100 );
-    std::string const& partitioner = args.get_else( _partitioner, "auto");
     bool verbose = args.get_else( _verbose, false );
 
     double a = integrate( _range=range, _expr=inner(expr), _quad=quad, _geomap=geomap,
-                          _quad1=quad1, _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
-                          _partitioner=partitioner, _verbose=verbose ).evaluate(parallel)( 0, 0 );
+                          _quad1=quad1, _use_harts=use_harts, _verbose=verbose ).evaluate(parallel)( 0, 0 );
     LOG_IF( WARNING, a < 0 ) << "normL2 squared negative " << a;
     return math::sqrt( math::abs(a) );
 }

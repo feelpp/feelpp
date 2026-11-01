@@ -56,10 +56,7 @@ auto integrate( Ts && ... v )
     auto && quad = args.get_else(_quad,quad_order_from_expression );
     auto && quad1 = args.get_else(_quad1,quad_order_from_expression );
     GeomapStrategyType geomap = args.get_else(_geomap,GeomapStrategyType::GEOMAP_OPT);
-    bool use_tbb = args.get_else(_use_tbb,false);
     bool use_harts = args.get_else(_use_harts,false);
-    int grainsize = args.get_else(_grainsize,100);
-    std::string const& partitioner = args.get_else(_partitioner, "auto");
     bool verbose = args.get_else(_verbose,false);
 
     using _integrate_helper_type = Feel::detail::integrate_type<decltype(expr),decltype(range),decltype(quad),decltype(quad1)>;
@@ -69,7 +66,7 @@ auto integrate( Ts && ... v )
     auto const& the_im = the_ims.first;
     auto const& the_im1 = the_ims.second;
 
-    auto ret =  integrate_impl( range, the_im , expr,  Feel::detail::geomapStrategy(range,geomap), the_im1, use_tbb, use_harts, grainsize, partitioner, quadptloc );
+    auto ret =  integrate_impl( range, the_im , expr,  Feel::detail::geomapStrategy(range,geomap), the_im1, use_harts, quadptloc );
 
     if ( verbose )
     {

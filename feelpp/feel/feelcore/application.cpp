@@ -136,13 +136,6 @@ Application::initTrilinos()
 void
 Application::initMPI( int argc, char** argv, MPI_Comm comm )
 {
-#if defined( FEELPP_HAS_TBB )
-    int n = tbb::task_scheduler_init::default_num_threads();
-#else
-    int n = 1 ;
-#endif
-    DVLOG(2) << "[Feel++] TBB running with " << n << " threads\n";
-    //tbb::task_scheduler_init init(1);
 
 #if defined( FEELPP_HAS_MPI_H )
 
