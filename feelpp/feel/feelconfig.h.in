@@ -1,3 +1,10 @@
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Alexandre Ancel <alexandre.ancel@cemosis.fr>
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
 #ifndef _FEELPP_CONFIG_H_
 #define _FEELPP_CONFIG_H_
 

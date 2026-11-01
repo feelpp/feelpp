@@ -1,14 +1,13 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Gilles Steiner <gilles.steiner@epfl.ch>
+ *
+ * SPDX-FileCopyrightText: 2006-2011 Université Joseph Fourier Grenoble 1
+ * SPDX-FileCopyrightText: 2011-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-    SPDX-FileContributor: Gilles Steiner <gilles.steiner@epfl.ch>
-
-    SPDX-FileCopyrightText: 2005, 2006 EPFL
-    SPDX-FileCopyrightText: 2006-2011 Université Joseph Fourier Grenoble 1
-    SPDX-FileCopyrightText: 2011-2026 University of Strasbourg
-
-    SPDX-License-Identifier: LGPL-3.0-or-later
-*/
 #ifndef FEELPP_POLYNOMIALSET_HPP
 #define FEELPP_POLYNOMIALSET_HPP 1
 

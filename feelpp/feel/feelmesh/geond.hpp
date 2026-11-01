@@ -1,15 +1,14 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2001-2004 INRIA
+ * SPDX-FileCopyrightText: 2008 Université Joseph Fourier
+ * SPDX-FileCopyrightText: 2001-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-
-    SPDX-FileCopyrightText: 2001-2004 EPFL
-    SPDX-FileCopyrightText: 2001-2004 INRIA
-    SPDX-FileCopyrightText: 2001-2004 Politecnico di Milano
-    SPDX-FileCopyrightText: 2008 Université Joseph Fourier
-    SPDX-FileCopyrightText: 2011-2016, 2026 University of Strasbourg
-
-    SPDX-License-Identifier: LGPL-3.0-or-later
-*/
 /**
   @file geond.hpp
   @brief Multi-dimensional geometric entities with C++20/23 and Dynamic order support

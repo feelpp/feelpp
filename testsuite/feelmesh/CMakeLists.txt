@@ -1,3 +1,11 @@
+# SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+# SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+# SPDX-FileContributor: Alexandre Ancel <alexandre.ancel@cemosis.fr>
+#
+# SPDX-FileCopyrightText: 2009-2026 University of Strasbourg
+#
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
 set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testmesh")
 foreach(THETEST entity mesh regiontree mesh_codim1 kdtree P1mesh updatemarker partitioner_metis elementswithmarkedfaces meshmover convex meshfilters ranges )
 

@@ -1,10 +1,9 @@
-#
 # SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+# SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
 #
 # SPDX-FileCopyrightText: 2026 University of Strasbourg
 #
 # SPDX-License-Identifier: LGPL-3.0-or-later
-#
 
 set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testdiscr")
 

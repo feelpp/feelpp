@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+#
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
 usage()
 {
   msg=$1

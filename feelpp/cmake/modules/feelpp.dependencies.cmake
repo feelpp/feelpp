@@ -1,3 +1,8 @@
+# SPDX-FileContributor: Alexandre Ancel <alexandre.ancel@cemosis.fr>
+# SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+#
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
 # - Find Feel
 # This module looks for Feel (Library for the Finite Element Method) support
 # it will define the following values
