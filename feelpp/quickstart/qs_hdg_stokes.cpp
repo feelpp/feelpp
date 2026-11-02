@@ -1,28 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-  This file is part of the Feel++ library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-             Daniele Prada <daniele.prada85@gmail.com>
-			 Lorenzo Sala <sala@unistra.fr>
-       Date: 2016-02-10
-
-  Copyright (C) 2016-present Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Daniele Prada <daniele.prada85@gmail.com>
+ * SPDX-FileContributor: Lorenzo Sala <sala@unistra.fr>
+ * SPDX-FileContributor: Philippe Ricka <rickaphilippe@gmail.com>
+ * SPDX-FileCopyrightText: 2016-2026 University of Strasbourg
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 #include <fmt/core.h>
 #include <feel/feelcore/environment.hpp>
 //#include <feel/feelpoly/raviartthomas.hpp>
@@ -40,6 +23,7 @@
 #include <feel/feelvf/eig.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelpython/pyexpr.hpp>
+#include "discretization.hpp"
 
 namespace Feel {
 
@@ -69,7 +53,8 @@ makeOptions()
 #endif
         ( "potential", po::value<std::string>()->default_value( "0" ), "pressure is given" )
         ( "order", po::value<int>()->default_value( 1 ), "approximation order"  )
-        ( "quad", po::value<int>()->default_value( 4 ), "quadrature order for rhs and norms"  )
+        ( "geometry.order", po::value<int>()->default_value( 1 ), "mesh geometric transformation order" )
+        ( "quad", po::value<int>()->default_value( 0 ), "quadrature order for rhs and norms (0: automatic)" )
         ( "exact", po::value<bool>()->default_value( true ), "velocity is give and provides the exact solution or an approximation"  )
         ( "use-near-null-space", po::value<bool>()->default_value( false ), "use near-null-space for AMG"  )
         ( "use-null-space", po::value<bool>()->default_value( false ), "use null-space for AMG"  )
@@ -161,20 +146,27 @@ fillStokesPolynomialManufacturedSolution( std::map<std::string,std::string>& loc
 }
 
 
-template<int Dim, int OrderG = 1>
+template<int Dim>
 int hdg_stokes( std::map<std::string,std::string>& locals )
 {
 
-	typedef Simplex<Dim,OrderG> convex_type;
+	typedef Simplex<Dim,Dynamic> convex_type;
 	//! mesh type
     typedef Mesh<convex_type> mesh_type;
     using Feel::cout;
 
     auto tau_constant =  cst(doption("hdg.tau.constant"));
     int tau_order =  ioption("hdg.tau.order");
+    int quadratureOrder = ioption( "quad" );
+    CHECK_GE( quadratureOrder, 0 ) << "quad must be non-negative";
+    if ( quadratureOrder == 0 )
+        quadratureOrder = quad_order_from_expression;
     int order = ioption( "order" );
     CHECK( order >= 1 ) << "HDG approximation order must be >= 1";
     auto runtimeOrder = RuntimeOrder::checked( order );
+    int geometryOrder = ioption( "geometry.order" );
+    CHECK( geometryOrder >= 1 ) << "Mesh geometry order must be >= 1";
+    auto runtimeGeometryOrder = RuntimeOrder::checked( geometryOrder );
     auto mu = expr("1");//locals.at("mu"));
 
 #if 0
@@ -191,7 +183,8 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     auto Pi = M_PI;
 
     tic();
-    auto mesh = loadMesh( _mesh=new Mesh<Simplex<Dim>> );
+    auto mesh = loadMesh( _mesh=new mesh_type( runtimeGeometryOrder ) );
+    quickstart::checkMeshOrder( mesh );
     toc("mesh",true);
 
     // ****** Hybrid-mixed formulation ******
@@ -201,7 +194,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     auto Vh = Pdhms<Dynamic>( mesh, runtimeOrder );
     auto Wh = Pdhv<Dynamic>( mesh, runtimeOrder );
     auto Ph = Pdh<Dynamic>( mesh, runtimeOrder );
-    auto Phm = Pch<0>( mesh );
+    auto Phm = Pch<Dynamic>( mesh, RuntimeOrder{0} );
     auto face_mesh = createSubmesh( _mesh=mesh, _range=faces(mesh), _update=0 );
     auto Mh = Pdhv<Dynamic>( face_mesh, runtimeOrder );
 
@@ -242,7 +235,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
 
 
     // Building the RHS
-    auto M0h = Pdh<0>( face_mesh );
+    auto M0h = Pdh<Dynamic>( face_mesh, RuntimeOrder{0} );
     auto H     = M0h->element( "H" );
     if ( ioption("hface" ) == 0 )
         H.on( _range=elements(face_mesh), _expr=pow(mesh->hMax(),tau_order) );
@@ -255,11 +248,11 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
 
     bool bc_only_dirichlet = ( nelements(markedfaces(mesh, "Dirichlet")) == nelements(boundaryfaces(mesh)) );
     tic();
-    rhs( 1_c ) += integrate( _range = elements( mesh ), _quad = ioption( "quad" ),
+    rhs( 1_c ) += integrate( _range = elements( mesh ), _quad = quadratureOrder,
                              _expr = trans( rhs_f ) * id( v ) );
-    rhs(3_c) += integrate(_range=markedfaces(mesh, "Neumann"),_quad=ioption("quad"),
+    rhs(3_c) += integrate(_range=markedfaces(mesh, "Neumann"),_quad=quadratureOrder,
                           _expr= (-1)*inner(stressn,id(m)) );
-    rhs(3_c) += integrate(_range=markedfaces(mesh, "Dirichlet"),_quad=ioption("quad"),
+    rhs(3_c) += integrate(_range=markedfaces(mesh, "Dirichlet"),_quad=quadratureOrder,
                           _expr=trans(velocity)*id(m) );
     rhs( 4_c ) += integrate( _range = elements(mesh),
                              _expr = 0 * id( qm ) );
@@ -414,12 +407,12 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
             Ue(3_c).printMatlab("uhate");
         }
 
-        auto l2err_delta = normL2( _range=elements(mesh), _expr=delta_exact - idv(deltap),_quad=ioption("quad") );
-        auto l2err_vel = normL2( _range=elements(mesh), _expr=velocity_exact - idv(up),_quad=ioption("quad") );
-        auto mean_pe = mean( _range = elements( mesh ), _expr = pressure_exact,_quad=ioption("quad") )(0,0);
+        auto l2err_delta = normL2( _range=elements(mesh), _expr=delta_exact - idv(deltap),_quad=quadratureOrder );
+        auto l2err_vel = normL2( _range=elements(mesh), _expr=velocity_exact - idv(up),_quad=quadratureOrder );
+        auto mean_pe = mean( _range = elements( mesh ), _expr = pressure_exact,_quad=quadratureOrder )(0,0);
         auto mean_p = mean( _range = elements( mesh ), _expr = idv(pp) )(0,0);
-        auto l2err_pres = normL2( _range = elements( mesh ), _expr = ( pressure_exact-(bc_only_dirichlet*mean_pe)) - idv( pp ),_quad=ioption("quad") );
-        auto l2vel = normL2( _range = elements( mesh ), _expr = velocity_exact, _quad = ioption( "quad" ) );
+        auto l2err_pres = normL2( _range = elements( mesh ), _expr = ( pressure_exact-(bc_only_dirichlet*mean_pe)) - idv( pp ),_quad=quadratureOrder );
+        auto l2vel = normL2( _range = elements( mesh ), _expr = velocity_exact, _quad = quadratureOrder );
         Feel::cout << fmt::format( "{:<30}: {: .4e}", "L2 Error strain", l2err_delta ) << std::endl;
         Feel::cout << fmt::format( "{:<30}: {: .4e}", "L2 Error velocity", l2err_vel ) << std::endl;
         Feel::cout << fmt::format( "{:<30}: {: .4e}", "L2 velocity", l2vel ) << std::endl;

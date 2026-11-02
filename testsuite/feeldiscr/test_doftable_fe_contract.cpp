@@ -1560,6 +1560,14 @@ BOOST_AUTO_TEST_CASE( phase7a_runtime_sized_fe_instance_contract )
     BOOST_REQUIRE( static_cast<bool>( validateFiniteElementDofLayout( lagrangeFe ) ) );
 
     auto rtDynamic0 = RTh<Dynamic>( mesh, RuntimeOrder{ 0 } );
+    auto rtStatic0 = RTh<0>( mesh );
+    // RT0 has one normal-flux moment per mesh face, rather than the single
+    // globally shared unknown of continuous Lagrange P0, also under MPI.
+    BOOST_CHECK_EQUAL( rtDynamic0->nDof(), mesh->numGlobalFaces() );
+    BOOST_CHECK_EQUAL( rtDynamic0->nDof(), rtStatic0->nDof() );
+    BOOST_CHECK_GT( rtDynamic0->nDof(), 1 );
+    BOOST_CHECK( !rtDynamic0->dof()->infos().is_p0_continuous );
+    BOOST_CHECK( !rtStatic0->dof()->infos().is_p0_continuous );
     auto const& rtFe = *rtDynamic0->basis();
     BOOST_CHECK_EQUAL( rtFe.order(), 0 );
     BOOST_CHECK_EQUAL( rtFe.order(), 0 );
@@ -1663,12 +1671,9 @@ BOOST_AUTO_TEST_CASE( effective_order_metadata_uses_the_fe_instance )
                        dynamicP2->fe()->dofPerEdge() );
     BOOST_CHECK( !dynamicInfos.is_p0_continuous );
 
-    // Parallel continuous P0 numbering is a separate, pre-existing DofTable
-    // limitation. Keep the P0 metadata regression without making this
-    // metadata-only test depend on that unsupported construction path.
-    if ( Environment::worldComm().globalSize() == 1 )
     {
         auto dynamicP0 = Pch<Dynamic>( mesh, RuntimeOrder{ 0 } );
+        BOOST_CHECK_EQUAL( dynamicP0->nDof(), 1 );
         BOOST_REQUIRE_EQUAL( dynamicP0->basisOrder().size(), 1 );
         BOOST_CHECK_EQUAL( dynamicP0->basisOrder().front(), 0 );
         auto const dynamicP0Infos = dynamicP0->dof()->infos();

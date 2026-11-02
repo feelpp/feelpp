@@ -84,37 +84,41 @@ template<typename MeshType, int N>
 void
 ExporterEnsightGold<MeshType,N>::updateElementTypes( uint16_type order ) const
 {
+    // EnSight Gold has no cubic or higher-order cell types. For G>2,
+    // linearize visualization geometry to the cell corners; the simulation
+    // mesh and all exported coordinate/field samples remain unchanged.
+    bool const quadratic = order == 2;
     /* define ensight named constant for the different faces/elements */
     if ( mesh_type::nDim == 1 )
         if ( mesh_type::Shape == SHAPE_LINE )
         {
-            M_element_type = ( order == 1 )?"bar2":"bar3";
+            M_element_type = quadratic ? "bar3" : "bar2";
             M_face_type = "point";
         }
 
     if ( mesh_type::nDim == 2 )
     {
         if ( mesh_type::Shape == SHAPE_TRIANGLE )
-            M_element_type = ( order == 1 )?"tria3":"tria6";
+            M_element_type = quadratic ? "tria6" : "tria3";
 
         else if ( mesh_type::Shape == SHAPE_QUAD )
-            M_element_type = ( order == 1 )?"quad4":"quad8";
+            M_element_type = quadratic ? "quad8" : "quad4";
 
-        M_face_type = ( order == 1 )?"bar2":"bar3";
+        M_face_type = quadratic ? "bar3" : "bar2";
     }
 
     if ( mesh_type::nDim == 3 )
     {
         if ( mesh_type::Shape == SHAPE_TETRA )
         {
-            M_element_type = ( order == 1 )?"tetra4":"tetra10";
-            M_face_type = ( order == 1 )?"tria3":"tria6";
+            M_element_type = quadratic ? "tetra10" : "tetra4";
+            M_face_type = quadratic ? "tria6" : "tria3";
         }
 
         else if ( mesh_type::Shape == SHAPE_HEXA )
         {
-            M_element_type = ( order == 1 )?"hexa8":"hexa20";
-            M_face_type = ( order == 1 )?"quad4":"quad8";
+            M_element_type = quadratic ? "hexa20" : "hexa8";
+            M_face_type = quadratic ? "quad8" : "quad4";
         }
     }
 }
@@ -1368,6 +1372,18 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements( MPI_File fh, mesh_conti
         for ( std::size_t k=0;k<pointsIdsInElt_B.size();++k)
             pointsIdsInElt[k] = localPointId(pointsIdsInElt_B[k]);
     }
+    else if ( mesh->order() > 2 )
+    {
+        // Match the linear element type selected by updateElementTypes().
+        // Keep the numbering of all coordinates and nodal fields intact,
+        // but connect only corners for this visualization approximation.
+        nPointsUsedInElt = mesh_type::element_type::numVertices;
+        pointsIdsInElt.resize( std::size_t( mp.numberOfElement( part, currentPid ) ) * nPointsUsedInElt );
+        for ( std::size_t k = 0; k < mp.numberOfElement( part, currentPid ); ++k )
+            for ( uint16_type p = 0; p < nPointsUsedInElt; ++p )
+                pointsIdsInElt[k*nPointsUsedInElt+p] =
+                    localPointId( pointsIdsInElt_B[k*mp.pointsPerElement()+p] );
+    }
     else
     {
         auto itFindOrdering = M_nodesOrderingInElementToEnsight.find( (boost::format("%1%_%2%d_g%3%") %mesh_type::shape_type::type() %mesh_type::shape_type::nDim %mesh->order() ).str() );
@@ -1378,7 +1394,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements( MPI_File fh, mesh_conti
         for (std::size_t k=0;k<mp.numberOfElement(part,currentPid);++k)
             for (uint16_type p=0;p<nPointsUsedInElt;++p)
                 pointsIdsInElt[k*nPointsUsedInElt+mappingWithThisKindOfElement[p]]=
-                    localPointId(pointsIdsInElt_B[k*mesh_type::element_type::numPoints+p]);
+                    localPointId(pointsIdsInElt_B[k*mp.pointsPerElement()+p]);
     }
     localOffset = MPI_Offset(mp.startElementIds(part,currentPid))*nPointsUsedInElt*sizeOfInt32_t;
     writePayload(fh, posInFile+localOffset, pointsIdsInElt.data(), pointsIdsInElt.size(), MPI_INT32_T, &status );

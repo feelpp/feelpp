@@ -1,21 +1,8 @@
-//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-//!
-//! This file is part of the Feel++ library
-//!
-//! This library is free software; you can redistribute it and/or
-//! modify it under the terms of the GNU Lesser General Public
-//! License as published by the Free Software Foundation; either
-//! version 2.1 of the License, or (at your option) any later version.
-//!
-//! This library is distributed in the hope that it will be useful,
-//! but WITHOUT ANY WARRANTY; without even the implied warranty of
-//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//! Lesser General Public License for more details.
-//!
-//! You should have received a copy of the GNU Lesser General Public
-//! License along with this library; if not, write to the Free Software
-//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+#include "../discretization.hpp"
 #include <iomanip>
 #include <sstream>
 
@@ -41,6 +28,8 @@ makeOptions()
 {
     auto opts = feel_options();
     opts.add_options()
+        ( "order", po::value<int>()->default_value( 1 ), "approximation order" )
+        ( "geometry.order", po::value<int>()->default_value( 1 ), "mesh geometric transformation order" )
         ( "sigma", po::value<double>()->default_value( 58e3 ), "electrical conductivity" )
         ( "current", po::value<double>()->default_value( 800.0 ), "prescribed total outward current through the IBC boundary" )
         ( "potential", po::value<double>()->default_value( 0.03125 ), "Dirichlet electric potential" )
@@ -101,13 +90,14 @@ makeCoordinateMapping()
         return ":x:y:z";
 }
 
-template <int Dim, int Order>
+template <int Dim>
 int
-cg_laplacian_ibc()
+cg_laplacian_ibc( RuntimeOrder runtimeOrder )
 {
-    using mesh_type = Mesh<Simplex<Dim,1>>;
+    using mesh_type = Mesh<Simplex<Dim,Dynamic>>;
 
-    auto mesh = loadMesh( _mesh = new mesh_type );
+    auto mesh = loadMesh( _mesh = new mesh_type( quickstart::geometryOrder() ) );
+    quickstart::checkMeshOrder( mesh );
 
     auto const dirichletMarker = soption( "marker.dirichlet" );
     auto const ibcMarker = soption( "marker.ibc" );
@@ -126,11 +116,11 @@ cg_laplacian_ibc()
         return 1;
     }
 
-    auto Vh = Pch<Order>( mesh );
+    auto Vh = Pch<Dynamic>( mesh, runtimeOrder );
     auto ibcRange = markedfaces( mesh, ibcMarker );
     auto ibcMesh = mesh->trace( ibcRange );
-    auto Jbh = Pch<Order>( ibcMesh );
-    auto Mh = Pch<0>( ibcMesh );
+    auto Jbh = Pch<Dynamic>( ibcMesh, runtimeOrder );
+    auto Mh = Pch<Dynamic>( ibcMesh, RuntimeOrder{0} );
     auto ibcSupport = support( Mh );
     auto Xh = product( Vh, Jbh, Mh );
 
@@ -207,7 +197,7 @@ cg_laplacian_ibc()
     j = U( 1_c );
     lambda = U( 2_c );
 
-    auto Jh = Pdhv<0>( mesh );
+    auto Jh = Pdhv<Dynamic>( mesh, RuntimeOrder{0} );
     auto J = Jh->element( "J" );
     J.on( _range = elements( mesh ),
           _expr = -cst( sigma ) * trans( gradv( u ) ) );
@@ -289,12 +279,12 @@ cg_laplacian_ibc()
     e->add( "current_density_exact", JExact );
     e->save();
 
-    auto JbhExport = Pch<Order>( ibcMesh );
+    auto JbhExport = Pch<Dynamic>( ibcMesh, runtimeOrder );
     auto jExport = JbhExport->element( "current_ibc" );
     jExport = vf::project( _space = JbhExport,
                            _range = elements( ibcMesh ),
                            _expr = idv( j ) );
-    auto MhExport = Pch<0>( ibcMesh );
+    auto MhExport = Pch<Dynamic>( ibcMesh, RuntimeOrder{0} );
     auto lambdaExport = MhExport->element( "lambda" );
     lambdaExport = vf::project( _space = MhExport,
                                 _range = elements( ibcMesh ),
@@ -322,5 +312,5 @@ main( int argc, char** argv )
                      _desc = makeOptions(),
                      _about = makeAbout() );
 
-    return cg_laplacian_ibc<FEELPP_DIM,1>();
+    return cg_laplacian_ibc<FEELPP_DIM>( quickstart::checkedOrder( "order" ) );
 }

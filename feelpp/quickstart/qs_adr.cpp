@@ -1,27 +1,9 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:set fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-
-   This file is part of the Feel++ library
-
-   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   Date     : Tue Feb 25 11:58:30 2014
-
-   Copyright (C) 2014-present Feel++ Consortium
-
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2.1 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-// tag::global[]
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileCopyrightText: 2014-2026 University of Strasbourg
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+#include "discretization.hpp"
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
@@ -37,6 +19,8 @@ int main(int argc, char**argv )
     {
         po::options_description adroptions( "Advection Diffusion Reaction options" );
         adroptions.add_options()
+            ( "order", po::value<int>()->default_value( 2 ), "approximation order" )
+            ( "geometry.order", po::value<int>()->default_value( 1 ), "mesh geometric transformation order" )
             ( "stabilisation", po::value<bool>()->default_value( false ), "enable/disable stabilisation disable=0, enable=1" )
             ( "no-solve", po::value<bool>()->default_value( false ), "No solve" )
             ;
@@ -50,11 +34,12 @@ int main(int argc, char**argv )
 
         // tag::mesh_space[]
         tic();
-        auto mesh = loadMesh(_mesh=new Mesh<Simplex<FEELPP_DIM,1>>);
+        auto mesh = loadMesh(_mesh=new Mesh<Simplex<FEELPP_DIM,Dynamic>>( quickstart::geometryOrder() ));
+        quickstart::checkMeshOrder( mesh );
         toc("loadMesh");
 
         tic();
-        auto Vh = Pch<2>( mesh );
+        auto Vh = Pch<Dynamic>( mesh, quickstart::checkedOrder( "order" ) );
         auto u = Vh->element("u");
         auto gamma = expr(soption(_name="functions.gamma"));
         auto beta = expr<FEELPP_DIM,1>(soption(_name="functions.beta"));

@@ -553,10 +553,26 @@ public:
 
     public:
 
+        bool canReuseTestContext() const
+        {
+            if constexpr ( !std::is_same_v<map_test_fecontext_type, map_trial_fecontext_type> )
+                return false;
+            else if constexpr ( hasDynamicOrder )
+            {
+                // Matching C++ types do not imply matching runtime bases.
+                // Reuse only the same FE instance on the same mesh.
+                return M_form.testSpace()->mesh()->isSameMesh( M_form.trialSpace()->mesh() ) &&
+                       M_form.template testFiniteElement<UseMortarTest>().get() ==
+                           M_form.template trialFiniteElement<UseMortarTrial>().get();
+            }
+            else
+                return M_form.testSpace()->mesh()->isRelatedTo( M_form.trialSpace()->mesh() );
+        }
+
         template<typename Left, typename Right>
         map_trial_fecontext_type getMap( Left  left, Right right, bool same_mesh = true )
         {
-            if ( same_mesh )
+            if ( same_mesh && this->canReuseTestContext() )
                 return getMap( left, right, std::is_same<Left, map_trial_fecontext_type>() );
             return getMap( left, right, std::integral_constant<bool, false>() );
         }
@@ -574,7 +590,7 @@ public:
         template<typename Left, typename Right>
         map_left_trial_fecontext_type getMapL( Left  left, Right right, bool same_mesh = true )
         {
-            if ( same_mesh )
+            if ( same_mesh && this->canReuseTestContext() )
                 return getMapL( left, right, std::is_same<Left, map_left_trial_fecontext_type>() );
             return getMapL( left, right, std::integral_constant<bool, false>() );
         }

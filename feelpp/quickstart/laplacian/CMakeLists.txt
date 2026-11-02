@@ -22,8 +22,8 @@ feelpp_add_testcase( cases PREFIX qs CATEGORY quickstart )
 #
 # Laplacian
 #
-feelpp_add_application( laplacian_2d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 FEELPP_DYNAMIC_ORDER=1 EXEC QS_LAPLACIAN_2D INSTALL TESTS)
-feelpp_add_application( laplacian_2dh SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 FEELPP_HYPERCUBE=1 EXEC QS_LAPLACIAN_2DH INSTALL)
+feelpp_add_application( laplacian_2d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_LAPLACIAN_2D INSTALL TESTS)
+feelpp_add_application( laplacian_2dh SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 FEELPP_HYPERCUBE=1 EXEC QS_LAPLACIAN_2DH INSTALL TESTS)
 feelpp_add_application( laplacian_3d SRCS qs_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_LAPLACIAN_3D INSTALL TESTS)
 feelpp_add_application( laplacian_ibc_2d SRCS qs_laplacian_ibc.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_LAPLACIAN_IBC_2D INSTALL TESTS
   TEST --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/quarter-turn/quarter-turn2D-ibc.cfg )
@@ -31,12 +31,12 @@ feelpp_add_application( laplacian_ibc_3d SRCS qs_laplacian_ibc.cpp INCLUDE_IN_AL
   TEST --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/quarter-turn/quarter-turn3D-ibc.cfg )
 
 # Minimal simplex Laplacian with dynamic polynomial order
-feelpp_add_application( simple_lap_2d SRCS simple_lap.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_SIMPLE_LAP_2D INSTALL )
+feelpp_add_application( simple_lap_2d SRCS simple_lap.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_SIMPLE_LAP_2D INSTALL TESTS )
 feelpp_add_application( periodic_laplacian_2d SRCS qs_periodic_laplacian.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_PERIODIC_LAPLACIAN_2D INSTALL TESTS NO_MPI_TEST )
 
 
 # CG laplacian using model properties
-feelpp_add_application( laplacian_model_2d SRCS qs_laplacian_model.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_MODEL_LAPLACIAN_2D )
+feelpp_add_application( laplacian_model_2d SRCS qs_laplacian_model.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_MODEL_LAPLACIAN_2D TESTS )
 
 #
 # Mixed Darcy/electrostatic formulation
@@ -88,9 +88,33 @@ add_dependencies(qs_laplacian ${QS_HDG_LAPLACIAN_2D} ${QS_HDG_LAPLACIAN_3D}  )
 feelpp_add_application( hdg_laplacian_ibc_2d SRCS qs_hdg_laplacian_ibc.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_HDG_LAPLACIAN_IBC_2D INSTALL TESTS )
 feelpp_add_application( hdg_laplacian_ibc_3d SRCS qs_hdg_laplacian_ibc.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_HDG_LAPLACIAN_IBC_3D INSTALL TESTS )
 # parabolic
-feelpp_add_application( hdg_laplacian_ibc_dt_2d SRCS qs_hdg_laplacian_ibc_dt.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_HDG_LAPLACIAN_DT_IBC_2D INSTALL  )
+feelpp_add_application( hdg_laplacian_ibc_dt_2d SRCS qs_hdg_laplacian_ibc_dt.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=2 EXEC QS_HDG_LAPLACIAN_DT_IBC_2D INSTALL TESTS )
 #feelpp_add_application( hdg_laplacian_ibc_dt_3d SRCS qs_hdg_laplacian_ibc_dt.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 EXEC QS_HDG_LAPLACIAN_DT_IBC_3D INSTALL )
 add_dependencies(qs_laplacian ${QS_HDG_LAPLACIAN_IBC_2D} ${QS_HDG_LAPLACIAN_IBC_3D} ${QS_HDG_LAPLACIAN_DT_IBC_2D} ${QS_HDG_LAPLACIAN_DT_IBC_3D}  )
 
 add_dependencies(check qs_laplacian )
 add_dependencies(quickstart qs_laplacian )
+
+# Invalid runtime options must fail before mesh generation or assembly.
+add_test(NAME feelpp_qs_runtime_invalid_geometry
+  COMMAND $<TARGET_FILE:${QS_LAPLACIAN_2D}> --geometry.order=0)
+add_test(NAME feelpp_qs_runtime_conflicting_orders
+  COMMAND $<TARGET_FILE:${QS_LAPLACIAN_2D}> --order=2 --case.discretization=P3)
+add_test(NAME feelpp_qs_runtime_removed_compile_mode
+  COMMAND $<TARGET_FILE:${QS_SIMPLE_LAP_2D}> --case.mode=compile)
+set_tests_properties(
+  feelpp_qs_runtime_invalid_geometry
+  feelpp_qs_runtime_conflicting_orders
+  feelpp_qs_runtime_removed_compile_mode
+  PROPERTIES WILL_FAIL TRUE LABELS "quickstart;runtime-order")
+
+if ( Python3_EXECUTABLE )
+  add_test(NAME feelpp_qs_hdg_export_readback
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/check_hdg_export.py
+      --executable $<TARGET_FILE:${QS_HDG_LAPLACIAN_2D}>
+      --config ${CMAKE_CURRENT_SOURCE_DIR}/cases/circle/circle-dirichlet.cfg
+      --checker ${CMAKE_CURRENT_SOURCE_DIR}/cases/runtime-order-checker.json
+      --geometry ${CMAKE_CURRENT_SOURCE_DIR}/cases/circle/circle-dirichlet.geo)
+  set_tests_properties(feelpp_qs_hdg_export_readback PROPERTIES
+    SKIP_RETURN_CODE 77 TIMEOUT 240 LABELS "quickstart;exporter;hdg")
+endif()

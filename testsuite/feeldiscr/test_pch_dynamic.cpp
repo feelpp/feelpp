@@ -19,6 +19,7 @@
 #include <feel/feelfilters/unitsquare.hpp>
 #include <feel/feelfilters/unitcube.hpp>
 #include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
 #include <feel/feelfilters/gmshsimplexdomain.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchm.hpp>
@@ -1241,6 +1242,42 @@ BOOST_AUTO_TEST_CASE( dynamic_p0_p1_p2_interpolation_and_dirac_evaluation )
         BOOST_CHECK_SMALL(
             pointEvaluation( 0, 0 ) - expectedValue*points.size(), 1e-11 );
     }
+}
+
+BOOST_AUTO_TEST_CASE( dynamic_continuous_p0_distributed_trace )
+{
+    // A connected surface spread across MPI ranks must carry one global P0
+    // unknown, including on partitions that only have ghost surface elements.
+    auto mesh = createGMSHMesh(
+        _mesh = new Mesh<Simplex<3, Dynamic>>( RuntimeOrder{1} ),
+        _desc = domain( _name = "dynamic_continuous_p0_trace",
+                        _shape = "hypercube", _dim = 3, _order = 1, _h = 0.4 ) );
+    auto trace = mesh->trace( boundaryfaces( mesh ) );
+    auto constantSpace = Pch<Dynamic>( trace, RuntimeOrder{0} );
+    auto staticConstantSpace = Pch<0>( trace );
+    BOOST_REQUIRE_EQUAL( constantSpace->nDof(), 1 );
+    BOOST_CHECK_EQUAL( constantSpace->nDof(), staticConstantSpace->nDof() );
+
+    auto constant = constantSpace->element();
+    constant.on( _range = elements( trace ), _expr = cst( 2.5 ) );
+    BOOST_CHECK_SMALL( normL2( _range = elements( trace ),
+                              _expr = idv( constant ) - cst( 2.5 ) ), 1e-11 );
+
+    // The special sharing rule must not affect positive-order continuous
+    // spaces or the independent cell unknowns of discontinuous P0.
+    auto linearSpace = Pch<Dynamic>( trace, RuntimeOrder{1} );
+    BOOST_CHECK_GT( linearSpace->nDof(), 1 );
+    auto linear = linearSpace->element();
+    linear.on( _range = elements( trace ), _expr = Px() + 2*Py() - Pz() );
+    BOOST_CHECK_SMALL( normL2( _range = elements( trace ),
+                              _expr = idv( linear ) - Px() - 2*Py() + Pz() ), 1e-11 );
+
+    auto discontinuousSpace = Pdh<Dynamic>( trace, RuntimeOrder{0} );
+    auto staticDiscontinuousSpace = Pdh<0>( trace );
+    BOOST_CHECK_EQUAL( discontinuousSpace->nDof(),
+                       nelements( elements( trace ), true ) );
+    BOOST_CHECK_EQUAL( discontinuousSpace->nDof(), staticDiscontinuousSpace->nDof() );
+    BOOST_CHECK_GT( discontinuousSpace->nDof(), 1 );
 }
 
 /**

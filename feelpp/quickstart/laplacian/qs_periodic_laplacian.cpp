@@ -1,5 +1,6 @@
 // -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
 
+#include "../discretization.hpp"
 #include <feel/feel.hpp>
 #include <feel/feelfilters/straightenmesh.hpp>
 #include <feel/feelfilters/straightenmesh_impl.hpp>
@@ -77,13 +78,14 @@ std::string periodicGeo( double h )
 template<int Dim>
 int runPeriodicLaplacian( double h, int order, bool doExport, double assertL2 )
 {
-    using mesh_type = Mesh<Simplex<Dim, 1>>;
+    using mesh_type = Mesh<Simplex<Dim, Dynamic>>;
     RuntimeOrder const runtimeOrder( order );
+    auto const geometryOrder = quickstart::geometryOrder();
 
     auto mesh = [&]() {
         Gmsh gmsh;
         gmsh.setDimension( Dim );
-        gmsh.setOrder( 1 );
+        gmsh.setOrder( geometryOrder.value );
         gmsh.setVersion( FEELPP_GMSH_FORMAT_VERSION, GMSH_FORMAT_ASCII );
         gmsh.setPrefix( Dim == 2 ? "qs-periodic-laplacian-2d" : "qs-periodic-laplacian-3d" );
 
@@ -94,10 +96,12 @@ int runPeriodicLaplacian( double h, int order, bool doExport, double assertL2 )
                                                                         true );
         Feel::detail::ignore_unused_variable_warning( generated_or_modified );
 
-        return loadGMSHMesh( _mesh = new mesh_type,
+        return loadGMSHMesh( _mesh = new mesh_type( geometryOrder ),
                              _filename = filename,
                              _update = MESH_CHECK | MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
     }();
+
+    quickstart::checkMeshOrder( mesh );
 
     CHECK( mesh && mesh->isPeriodic() ) << "Periodic mesh generation/import failed";
 
@@ -163,6 +167,7 @@ int main( int argc, char** argv )
     po::options_description opts( "Periodic Laplacian options" );
     opts.add( feel_options() );
     opts.add_options()
+        ( "geometry.order", po::value<int>()->default_value( 1 ), "mesh geometric transformation order" )
         ( "qs.dim", po::value<int>()->default_value( 2 ), "problem dimension: 2 or 3" )
         ( "qs.order", po::value<int>()->default_value( 1 ), "polynomial order Pk (k>=1)" )
         ( "qs.hsize", po::value<double>()->default_value( 0.15 ), "mesh size" )

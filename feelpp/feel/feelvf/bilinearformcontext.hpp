@@ -356,6 +356,11 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
                                                                                                                       map_geometric_mapping_expr_context_type const& _gmcExpr,
                                                                                                                       mpl::bool_<true> )
 {
+    if ( !this->canReuseTestContext() )
+    {
+        this->update( _gmcTest, _gmcTrial, _gmcExpr, mpl::bool_<false>() );
+        return;
+    }
     fusion::for_each( M_test_fec, vf::detail::FEContextUpdate<0,form_context_type>( _gmcTest, *this ) );
     M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( M_test_fec ) );
     M_eval_expr00->update( _gmcExpr, M_test_fec0, M_test_fec0 );

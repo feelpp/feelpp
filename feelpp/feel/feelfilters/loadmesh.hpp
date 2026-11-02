@@ -247,7 +247,12 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
         {
             if ( worldcomm->isMasterRank() )
             {
-                _mesh_ptrtype _meshSeq = std::make_shared<_mesh_type>( Environment::worldCommSeqPtr() );
+                _mesh_ptrtype _meshSeq = [&]() {
+                    if constexpr ( _mesh_type::is_order_dynamic )
+                        return std::make_shared<_mesh_type>( RuntimeOrder{ m->order() }, "", Environment::worldCommSeqPtr() );
+                    else
+                        return std::make_shared<_mesh_type>( Environment::worldCommSeqPtr() );
+                }();
                 size_type updateSeq = MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES|MESH_GEOMAP_NOT_CACHED;
                 if ( true ) // TODO: only required if partitioning has constraints
                     updateSeq |= MESH_UPDATE_FACES_MINIMAL;
@@ -273,14 +278,17 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
             mpi::broadcast( worldcomm->globalComm(), fnamePartitioned, worldcomm->masterRank() );
             m->loadHDF5( fnamePartitioned, update, scale );
         }
-        if constexpr ( _mesh_type::is_order_dynamic )
+        if ( straighten )
         {
-            if ( m->order() > 1 )
+            if constexpr ( _mesh_type::is_order_dynamic )
+            {
+                if ( m->order() > 1 )
+                    return straightenMesh( m, worldcomm->subWorldCommPtr() );
+            }
+            else if constexpr ( _mesh_type::nOrder > 1 )
+            {
                 return straightenMesh( m, worldcomm->subWorldCommPtr() );
-        }
-        else if constexpr ( _mesh_type::nOrder > 1 )
-        {
-            return straightenMesh( m, worldcomm->subWorldCommPtr() );
+            }
         }
         return m;
     }

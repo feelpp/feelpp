@@ -1,28 +1,10 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-  This file is part of the Feel++ library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-             Daniele Prada <daniele.prada85@gmail.com>
-			 Lorenzo Sala <sala@unistra.fr>
-       Date: 2016-02-10
-
-  Copyright (C) 2016 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Daniele Prada <daniele.prada85@gmail.com>
+ * SPDX-FileContributor: Lorenzo Sala <sala@unistra.fr>
+ * SPDX-FileCopyrightText: 2016 University of Strasbourg
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/checker.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
@@ -39,6 +21,7 @@
 #include <feel/feelvf/eig.hpp>
 #include <feel/feelpython/pyexpr.hpp>
 #include "nullspace-rigidbody.hpp"
+#include "discretization.hpp"
 
 namespace Feel {
 
@@ -68,6 +51,7 @@ makeOptions()
         ( "hdg.tau.constant", po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( "hdg.tau.order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         ( "order", po::value<int>()->default_value( 1 ), "approximation order"  )
+        ( "geometry.order", po::value<int>()->default_value( 1 ), "mesh geometric transformation order" )
         ( "exact", po::value<bool>()->default_value( true ), "displacement is give and provides the exact solution or an approximation"  )
         ( "use-near-null-space", po::value<bool>()->default_value( false ), "use near-null-space for AMG"  )
         ( "use-null-space", po::value<bool>()->default_value( false ), "use null-space for AMG"  )
@@ -184,11 +168,11 @@ fillElasticityPolynomialManufacturedSolution( std::map<std::string,std::string>&
                    << displ << ", dim=" << dim;
 }
 
-template<int Dim, int OrderG=1>
+template<int Dim>
 int hdg_elasticity( std::map<std::string,std::string>& locals )
 {
 
-	typedef Simplex<Dim,OrderG> convex_type;
+	typedef Simplex<Dim,Dynamic> convex_type;
 	//! mesh type
     typedef Mesh<convex_type> mesh_type;
     using Feel::cout;
@@ -198,6 +182,9 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
     int order = ioption( "order" );
     CHECK( order >= 1 ) << "HDG approximation order must be >= 1";
     auto runtimeOrder = RuntimeOrder::checked( order );
+    int geometryOrder = ioption( "geometry.order" );
+    CHECK( geometryOrder >= 1 ) << "Mesh geometry order must be >= 1";
+    auto runtimeGeometryOrder = RuntimeOrder::checked( geometryOrder );
 #if 0
     auto displ_exact = expr<Dim,1>( locals.at("displ") );
     auto grad_displ_exact = expr<Dim,1>( locals.at("grad_displ") );
@@ -217,7 +204,8 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
     auto Pi = M_PI;
 
     tic();
-    auto mesh = loadMesh( _mesh=new Mesh<Simplex<Dim>> );
+    auto mesh = loadMesh( _mesh=new mesh_type( runtimeGeometryOrder ) );
+    quickstart::checkMeshOrder( mesh );
     toc("mesh",true);
 
     // ****** Hybrid-mixed formulation ******
@@ -260,7 +248,7 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
 
 
     // Building the RHS
-    auto M0h = Pdh<0>( face_mesh );
+    auto M0h = Pdh<Dynamic>( face_mesh, RuntimeOrder{0} );
     auto H     = M0h->element( "H" );
     if ( ioption("hface" ) == 0 )
         H.on( _range=elements(face_mesh), _expr=pow(mesh->hMax(),tau_order) );

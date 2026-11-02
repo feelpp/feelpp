@@ -1,27 +1,10 @@
-//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-//!
-//! This file is part of the Feel++ library
-//!
-//! This library is free software; you can redistribute it and/or
-//! modify it under the terms of the GNU Lesser General Public
-//! License as published by the Free Software Foundation; either
-//! version 2.1 of the License, or (at your option) any later version.
-//!
-//! This library is distributed in the hope that it will be useful,
-//! but WITHOUT ANY WARRANTY; without even the implied warranty of
-//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//! Lesser General Public License for more details.
-//!
-//! You should have received a copy of the GNU Lesser General Public
-//! License along with this library; if not, write to the Free Software
-//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-//!
-//! @file
-//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-//! @date 10 Apr 2017
-//! @copyright 2017-2026 University of Strasbourg
-//!
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileCopyrightText: 2013-2026 University of Strasbourg
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 // tag::global[]
+#include "../discretization.hpp"
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/checker.hpp>
 #include <feel/feeldiscr/pch.hpp>
@@ -37,39 +20,35 @@
 
 using namespace Feel;
 
-#if !defined(FEELPP_DYNAMIC_ORDER)
-#define FEELPP_DYNAMIC_ORDER 0
-#endif
-
-template<int Dim, int Order>
-int cg_laplacian_app()
+template<int Dim>
+int cg_laplacian_app( RuntimeOrder runtimeOrder )
 {
     using Feel::cout;
     // tag::mesh_space[]
     tic();
 #if FEELPP_HYPERCUBE == 1
-    using mesh_t = Mesh<Hypercube<FEELPP_DIM, 1>>;
-    auto mesh = loadMesh( _mesh = new mesh_t );
+    using mesh_t = Mesh<Hypercube<FEELPP_DIM, Dynamic>>;
+    auto mesh = loadMesh( _mesh = new mesh_t( quickstart::geometryOrder() ) );
+    quickstart::checkMeshOrder( mesh );
 #else
-    using mesh_t = Mesh<Simplex<Dim, 1>>;
-    auto mesh = loadMesh( _mesh = new mesh_t );
+    using mesh_t = Mesh<Simplex<Dim, Dynamic>>;
+    auto mesh = loadMesh( _mesh = new mesh_t( quickstart::geometryOrder() ) );
+    quickstart::checkMeshOrder( mesh );
 #endif
     toc( "loadMesh" );
 
     tic();
-    static constexpr int SpaceOrder = FEELPP_DYNAMIC_ORDER ? Dynamic : Order;
-    RuntimeOrder runtimeOrder{ static_cast<uint16_type>( Order ) };
-    Pch_ptrtype<mesh_t,SpaceOrder> Vh;
+    Pch_ptrtype<mesh_t,Dynamic> Vh;
     if ( Environment::vm().count("marker.name") )
-        Vh = Pch<SpaceOrder>( mesh, markedelements(mesh, soption("marker.name") ), runtimeOrder );
+        Vh = Pch<Dynamic>( mesh, markedelements(mesh, soption("marker.name") ), runtimeOrder );
     else if ( Environment::vm().count("marker.levelset") )
-        Vh = Pch<SpaceOrder>( mesh, elements(mesh, vf::expr(soption("marker.levelset")) ), runtimeOrder );
+        Vh = Pch<Dynamic>( mesh, elements(mesh, vf::expr(soption("marker.levelset")) ), runtimeOrder );
     else
-        Vh = Pch<SpaceOrder>( mesh, runtimeOrder );
+        Vh = Pch<Dynamic>( mesh, runtimeOrder );
 
-    Feel::cout << fmt::format( "MESH_STATS elements={} points={} dofs={} order={} mpi_ranks={}\n",
+    Feel::cout << fmt::format( "MESH_STATS elements={} points={} dofs={} order={} geometry_order={} mpi_ranks={}\n",
                               mesh->numGlobalElements(), mesh->numGlobalPoints(), Vh->nDof(),
-                              Order, Environment::worldComm().globalSize() );
+                              runtimeOrder.value, mesh->order(), Environment::worldComm().globalSize() );
 
     std::map<std::string,std::string> inputs{{"dim",std::to_string(dimension(mesh))},
                                             {"k",soption("k")},{"r_1",soption("r_1")},{"u",""},{"un",soption("un")},{"f",soption("f")},{"g",soption("g")},{"r_2",soption("r_2")}};
@@ -204,6 +183,8 @@ int main( int argc, char** argv )
         po::options_description laplacianoptions( "Laplacian options" );
 
         laplacianoptions.add_options()
+            ( "order", po::value<int>(), "approximation order (alias for case.discretization=Pk)" )
+            ( "geometry.order", po::value<int>()->default_value( 1 ), "mesh geometric transformation order" )
             ( "no-solve", po::value<bool>()->default_value( false ), "No solve" )
             ( "no-export", po::value<bool>()->default_value( false )->implicit_value( true ), "No export" )
             ( "weakbc", po::value<bool>()->default_value( false ), "Weak Dirichlet conditions" )
@@ -225,12 +206,7 @@ int main( int argc, char** argv )
                                          _email = "feelpp-devel@feelpp.org" ) );
 
         // end::env[]
-        if ( soption( "case.discretization" ) == "P1" )
-            return cg_laplacian_app<FEELPP_DIM,1>();
-        if ( soption( "case.discretization" ) == "P2" )
-            return cg_laplacian_app<FEELPP_DIM,2>();
-        if ( soption( "case.discretization" ) == "P3" )
-            return cg_laplacian_app<FEELPP_DIM,3>();
+        return cg_laplacian_app<FEELPP_DIM>( quickstart::lagrangeOrder() );
     }
     catch(...)
     {

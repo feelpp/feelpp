@@ -379,6 +379,20 @@ public:
         }
     fe_type const& fe() const { return *M_fe; }
 
+    // Dynamic-order continuous P0 has the same globally shared DoF as static P0.
+    // Compatible elements can expose order zero while carrying facet/edge
+    // moments (for example RT0), so they must retain their usual ownership.
+    bool isContinuousP0() const noexcept
+        {
+            if constexpr ( !is_order_dynamic )
+                return isP0Continuous<fe_type>::result;
+            else if constexpr ( is_hdiv_conforming || is_hcurl_conforming )
+                return false;
+            else
+                return std::is_same_v<typename fe_type::continuity_type, Continuous> &&
+                       M_fe->order() == 0;
+        }
+
     size_type nRealLocalDof( bool per_component = false ) const
         {
             const auto localDofPerComponent = this->feLocalDofCount( true );
@@ -415,8 +429,7 @@ public:
             infos.is_product = is_product;
             infos.nRealComponents = nRealComponents;
 
-            infos.is_p0_continuous =
-                infos.nOrder == 0 && is_continuous;
+            infos.is_p0_continuous = this->isContinuousP0();
 
             infos.is_hdiv_conforming = is_hdiv_conforming;
             infos.is_hcurl_conforming = is_hcurl_conforming;
@@ -2804,8 +2817,7 @@ DofTable<MeshType, FEType, MortarType>::build( mesh_type& M )
     // multi process
     if ( this->worldComm().localSize()>1 )
     {
-        bool isP0continuous = isP0Continuous<fe_type>::result;
-        if ( !isP0continuous )
+        if ( !this->isContinuousP0() )
         {
             // add neighbor partition
             this->setNeighborSubdomains(M.neighborSubdomains());
@@ -2979,7 +2991,7 @@ DofTable<MeshType, FEType, MortarType>::buildDofMap( mesh_type& M, size_type sta
 
     // compute the number of dof on current processor
     //Range<MeshType,MESH_ELEMENTS> rangeElements = (this->hasMeshSupport())? elements(this->meshSupport()) : elements(M);
-    entity_process_t ept = isP0Continuous<fe_type>::result? entity_process_t::ALL : entity_process_t::LOCAL_ONLY; // WARNING, special case with P0 continuous
+    entity_process_t ept = this->isContinuousP0() ? entity_process_t::ALL : entity_process_t::LOCAL_ONLY; // WARNING, special case with P0 continuous
     Range<MeshType,MESH_ELEMENTS> rangeElements = (this->hasMeshSupport())? elements(this->meshSupport(),ept) : elements(M,ept);
 
 
@@ -3036,7 +3048,7 @@ DofTable<MeshType, FEType, MortarType>::buildDofMap( mesh_type& M, size_type sta
     toc("DofTable buildDofMap element loop", Environment::logVerbosityLevel()>1);
     // update extended doftable for P0 continuous
 #if 0
-    if ( isP0Continuous<fe_type>::result && this->hasDofTableExtended() )
+    if ( this->isContinuousP0() && this->hasDofTableExtended() )
     {
         for (auto const& ghostEltWrap : elements(M,EntityProcessType::GHOST_ONLY ) )
         {
@@ -3077,7 +3089,7 @@ DofTable<MeshType, FEType, MortarType>::buildDofMap( mesh_type& M, size_type sta
 #endif
 
 
-    if ( isP0Continuous<fe_type>::result /*|| !is_continuous*/ )
+    if ( this->isContinuousP0() )
     {
         tic();
         mpi::all_gather( this->worldComm().localComm(),
@@ -3416,7 +3428,7 @@ DofTable<MeshType, FEType, MortarType>::updateMultiprocessDofForUse()
 
     // ---------------------------------
     // update activeDofSharedOnCluster
-    if constexpr ( isP0Continuous<fe_type>::result )
+    if ( this->isContinuousP0() )
     {
         // in that case, activeDofSharedOnCluster is already built, just apply reordering
         reorderActiveDofSharedOnCluster();
@@ -3582,7 +3594,7 @@ DofTable<MeshType, FEType, MortarType>::generateDofPoints(  mesh_type& M, bool _
                     M_dof_points[thedof] = boost::make_tuple( ctxCurrent->xReal( pointId ), thedof, c1 );
                 }
 #if !defined( NDEBUG )
-                else if ( !isP0Continuous<fe_type>::result && !is_mortar )
+                else if ( !this->isContinuousP0() && !is_mortar )
                 {
                     auto dofpointFromGmc = ctxCurrent->xReal( pointId );
                     auto dofpointStored = M_dof_points[thedof].template get<0>();

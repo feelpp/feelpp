@@ -21,7 +21,7 @@ METRICS = {
     "flux_l2": r"\|\s*\|\|j-j_h\|\|_L2\s*\|\s*([0-9.eE+-]+)",
     "div_l2": r"\|\s*\|\|div\(j_h\)-g\|\|_L2\s*\|\s*([0-9.eE+-]+)",
     "pressure_l2": r"\|\s*\|\|V-V_h\|\|_L2\s*\|\s*([0-9.eE+-]+)",
-    "mass_residual": r"\|\s*\|\|P_Qh\(div\(j_h\)-g\)\|\|_L2\s*\|\s*([0-9.eE+-]+)",
+    "mass_residual": r"\|\s*weak mass residual \(Euclidean norm\)\s*\|\s*([0-9.eE+-]+)",
     "boundary_flux_residual": r"\|\s*\|\|j_h\.n-j_N\|\|_L2\(Neumann\)\s*\|\s*([0-9.eE+-]+)",
 }
 
@@ -53,7 +53,6 @@ def run_case(executable, config, run_id, formulation, family, order, hsize):
         f"--darcy.flux-family={family}",
         f"--darcy.order={order}",
         "--darcy.convergence-case=true",
-        "--checks.tolerance=1e6",
         "--ksp-monitor=false",
         "--no-export",
     ]
@@ -98,10 +97,10 @@ def check_results(rows, rate_slack, comparison_tolerance):
     grouped = {}
     for row in rows:
         grouped.setdefault((row["formulation"], row["family"], row["order"]), []).append(row)
-        if not math.isfinite(row["mass_residual"]):
+        if not math.isfinite(row["mass_residual"]) or row["mass_residual"] > 1e-8:
             failures.append(
                 f"{row['formulation']} {row['family'].upper()}{row['order']} h={row['h']}: "
-                "projected mass residual is not finite"
+                f"weak mass residual must be finite and <= 1e-8; got {row['mass_residual']:.6e}"
             )
 
     for key, values in grouped.items():
@@ -110,11 +109,6 @@ def check_results(rows, rate_slack, comparison_tolerance):
         if len(values) < 3:
             failures.append(f"{key}: at least three refinement levels are required")
             continue
-        if values[-1]["mass_residual"] >= values[0]["mass_residual"]:
-            failures.append(
-                f"{key[0]} {key[1].upper()}{key[2]} projected mass residual did not decrease: "
-                f"{values[0]['mass_residual']:.6e} -> {values[-1]['mass_residual']:.6e}"
-            )
         for metric, expected_rate in expected.items():
             rates = [row[f"{metric}_rate"] for row in values if row[f"{metric}_rate"] != ""]
             usable = [rate for rate in rates[-2:] if math.isfinite(rate)]

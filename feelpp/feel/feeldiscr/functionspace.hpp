@@ -1704,6 +1704,10 @@ public:
 #endif
         Element& operator+=( Element const& _e )
         {
+            if constexpr ( requires { requires basis_type::is_order_dynamic; } )
+                if ( this->functionSpace()->order() != _e.functionSpace()->order() ||
+                     this->nLocalDof() != _e.nLocalDof() )
+                    throw std::invalid_argument( "Element += requires matching runtime orders and coefficient sizes; use on() for cross-space interpolation" );
             for ( int i=0; i < _e.nLocalDof(); ++i )
                 this->operator()( i ) += _e( i );
 
@@ -1748,6 +1752,10 @@ public:
 
         Element& operator-=( Element const& _e )
         {
+            if constexpr ( requires { requires basis_type::is_order_dynamic; } )
+                if ( this->functionSpace()->order() != _e.functionSpace()->order() ||
+                     this->nLocalDof() != _e.nLocalDof() )
+                    throw std::invalid_argument( "Element -= requires matching runtime orders and coefficient sizes; use on() for cross-space interpolation" );
             for ( index_type i=0; i < _e.nLocalDof(); ++i )
                 this->operator()( i ) -= _e( i );
 
@@ -5983,7 +5991,11 @@ FunctionSpace<A0, A1, A2, A3>::buildComponentSpace() const
         // it will use in mixed spaces only numberofSudomains/numberofspace processors
         //
         auto meshSupport = Feel::detail::FunctionSpaceMeshSupport<functionspace_type>( *this ).M_meshSupportVector;
+        auto componentOrder = component_functionspace_type::defaultBasisOrder();
+        if constexpr ( orderIsDynamic<typename component_functionspace_type::basis_type> )
+            componentOrder = RuntimeOrder{ this->order() };
         M_comp_space = component_functionspace_type::New(_mesh=M_mesh,
+                                                         _runtime_order=componentOrder,
                                                          _worldscomm=this->worldsComm(),
                                                          _extended_doftable=this->extendedDofTableComposite(),
                                                          _range=meshSupport );

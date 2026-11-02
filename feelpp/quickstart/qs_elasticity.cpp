@@ -1,5 +1,6 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:set fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4*/
 
+#include "discretization.hpp"
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/checker.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
@@ -24,6 +25,8 @@ int main(int argc, char**argv )
     {
         po::options_description laplacianoptions( "Elasticity options" );
         laplacianoptions.add_options()
+            ( "order", po::value<int>()->default_value( 1 ), "approximation order" )
+            ( "geometry.order", po::value<int>()->default_value( 1 ), "mesh geometric transformation order" )
             ( "E", po::value<double>()->default_value( 1.0e6 ), "Young modulus" )
             ( "nu", po::value<double>()->default_value( 0.3 ), "Poisson ratio" )
             ( "no-solve", po::value<bool>()->default_value( false ), "No solve" )
@@ -47,11 +50,12 @@ int main(int argc, char**argv )
         }
 
         tic();
-        auto mesh = loadMesh(_mesh=new Mesh<Simplex<FEELPP_DIM,1>>);
+        auto mesh = loadMesh(_mesh=new Mesh<Simplex<FEELPP_DIM,Dynamic>>( quickstart::geometryOrder() ));
+        quickstart::checkMeshOrder( mesh );
         toc("loadMesh");
 
         tic();
-        auto Vh = Pchv<1>( mesh );
+        auto Vh = Pchv<Dynamic>( mesh, quickstart::checkedOrder( "order" ) );
         toc("Vh");
 
         auto u = Vh->element("u");

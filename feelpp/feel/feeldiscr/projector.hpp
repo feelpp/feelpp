@@ -1,26 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
-
-  This file is part of the Feel library
-
-  Author(s): Vincent Doyeux <vincent.doyeux@ujf-grenoble.fr>
-       Date: 2011-04-25
-
-  Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+/*
+ * SPDX-FileContributor: Vincent Doyeux <vincent.doyeux@ujf-grenoble.fr>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ * SPDX-FileContributor: Thibaut Metivet <thibaut.metivet@inria.fr>
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileCopyrightText: 2011 Université Joseph Fourier (Grenoble I)
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 /**
    \file projector.cpp
    \author Vincent Doyeux <vincent.doyeux@ujf-grenoble.fr>
@@ -284,7 +269,8 @@ public :
         using namespace vf;
 
         using _integrate_helper_type = Feel::detail::integrate_type<decltype(expr),decltype(range),decltype(quad),decltype(quad1)>;
-        auto the_ims = _integrate_helper_type::_im_type::im( quad,quad1,expr );
+        auto const geometryOrder = _integrate_helper_type::expr_order_t::geometryOrder( range );
+        auto the_ims = _integrate_helper_type::_im_type::im( quad,quad1,expr,geometryOrder );
         auto const& the_im = the_ims.first;
         auto const& the_im1 = the_ims.second;
 

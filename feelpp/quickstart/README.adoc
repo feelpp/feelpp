@@ -1,10 +1,67 @@
+// SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+// SPDX-FileCopyrightText: 2017-2026 University of Strasbourg
+// SPDX-License-Identifier: LGPL-3.0-or-later
 = Quickstarts
-Feel++ Consortium <https://github.com/feelpp[@feelpp]>
-v1.0 
+University of Strasbourg <https://github.com/feelpp[@feelpp]>
+v1.0
+
+== Runtime approximation and geometry orders
+
+The C++ quickstarts use runtime polynomial orders for both meshes and finite-element spaces.
+`--geometry.order=1` is the default for every example; changing it does not change the approximation order.
+Gmsh `.geo` inputs are meshed at the requested geometric order. Existing mesh files must contain compatible geometry nodes.
+
+[source,cpp]
+----
+auto geometryOrder = RuntimeOrder::checked(ioption("geometry.order"));
+auto order = RuntimeOrder::checked(ioption("order"));
+using mesh_type = Mesh<Simplex<2, Dynamic>>;
+auto mesh = loadMesh(_mesh=new mesh_type(geometryOrder));
+auto Xh = Pch<Dynamic>(mesh, order);
+----
+
+Orders must be positive for geometry and continuous approximation spaces.
+Auxiliary constant spaces retain order zero, using `RuntimeOrder{0}`.
+
+[source,shell]
+----
+feelpp_qs_laplacian_2d --order=3 --geometry.order=2
+feelpp_qs_hdg_laplacian_2d --order=2 --geometry.order=2
+feelpp_qs_simple_lap_2d --case.order=3 --geometry.order=2
+feelpp_qs_periodic_laplacian_2d --qs.dim=2 --qs.order=2 --geometry.order=2
+feelpp_qs_darcy_3d --darcy.flux-family=rt --darcy.order=0 --geometry.order=1
+----
+
+The Laplacian and model examples also accept the existing `--case.discretization=Pk` spelling.
+When a configuration explicitly sets this option, an explicit `--order` must agree with it.
+To override such a configuration, use `--case.discretization=P3`, or set both spellings to order 3.
+`simple_lap` accepts only `--case.mode=runtime`; requesting the former compile mode reports an error.
+
+ADR retains its default approximation order 2; elasticity and HDG retain order 1.
+Stokes preserves `--space=P2P1`, `P1P1`, and `P1P0`. Its optional `--order` sets the pressure degree:
+velocity has degree one higher for the first and third pairs, and the same degree for the equal-order pair.
+Darcy uses mathematical RT order `k>=0` and BDM order `k>=1`; BDM's pressure degree is `k-1`.
+High-order hybrid BDM (`k>=3`) still requires `--sc.condense=true`.
+Darcy checks the Euclidean norm of the assembled pressure-test residual vector for conservation.
+`--darcy.quad=0` selects an order-aware quadrature estimate; positive values override it.
+Curved Piola integrands need not be polynomial, so refine quadrature explicitly when assessing accuracy.
+HDG Laplacian's `--rhs_quad=0` integrates the RHS with degree `max(expression degree, 2*k) * geometry order`,
+so representable boundary data use at least the same rule as the HDG mass terms.
+This also applies to manufactured IBC flux integrals and their normalization; energy diagnostics remain expression-based.
+HDG Stokes's `--quad=0` selects automatic expression-based quadrature.
+Positive values retain explicit quadrature control; nonpolynomial data may require a higher rule.
+
+Geometry and FE orders being dynamic does not make all family/cell combinations available:
+compatible RT/BDM examples use simplex meshes, and curved export remains format-dependent.
+
+EnSight Gold supports linear and quadratic geometry directly. For geometry orders above two,
+its visualization cells connect only the original corner vertices: curved geometry is linearized
+for display, while the simulation mesh and all coordinate and field samples remain unchanged.
+This fallback does not subdivide high-order cells, so the displayed boundary can differ from
+the geometry used by the solver.
 
 include::laplacian/README.adoc[]
 
 include::adr/README.adoc[]
 
 include::stokes/README.adoc[]
-

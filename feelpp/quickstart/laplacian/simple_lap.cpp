@@ -1,11 +1,13 @@
 /*
  * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileCopyrightText: 2026 University of Strasbourg
  *
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
 // -*- coding: utf-8; mode: c++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 #include <feel/feel.hpp>
+#include "../discretization.hpp"
 
 #include <cmath>
 #include <functional>
@@ -18,7 +20,6 @@
 struct RunConfig
 {
     int order = 1;
-    std::string mode = "runtime";
     bool convergence = false;
     int nRefine = 1;
     double refineRatio = 2.0;
@@ -166,7 +167,7 @@ RunResult solveSimplexLaplacian( int order,
     auto autoQuadOrder = [&]<typename ExprType>( ExprType const& ex ) {
         using range_type = std::decay_t<decltype( elementRange )>;
         using expr_type = std::decay_t<ExprType>;
-        return static_cast<int>( vf::ExpressionOrder<range_type, expr_type>::value( ex ) );
+        return static_cast<int>( vf::ExpressionOrder<range_type, expr_type>::value( ex, mesh->order() ) );
     };
 
     int const quadOverride = ioption( "case.quad" );
@@ -192,6 +193,9 @@ RunResult solveSimplexLaplacian( int order,
     a.solve( _rhs = l, _solution = u, _rebuild = true );
 
     auto l2 = normL2( _range = elementRange, _expr = l2ErrExpr, _quad = quadL2 );
+    double const assertL2 = doption( "case.assert-l2" );
+    if ( !std::isfinite( l2 ) || ( assertL2 > 0 && l2 > assertL2 ) )
+        throw std::runtime_error( "simple_lap L2 error exceeds case.assert-l2" );
     auto semih1 = normL2( _range = elementRange, _expr = h1ErrExpr, _quad = quadH1 );
     auto h1 = math::sqrt( l2 * l2 + semih1 * semih1 );
     auto l2Display = roundSmallToZero( l2 );
@@ -238,39 +242,15 @@ RunResult solveSimplexLaplacian( int order,
 
 template<int Dim>
     requires ( Dim >= 1 && Dim <= 3 )
-RunResult runSimplexLaplacianOnMesh( std::shared_ptr<Feel::Mesh<Feel::Simplex<Dim>>> const& mesh,
+RunResult runSimplexLaplacianOnMesh( std::shared_ptr<Feel::Mesh<Feel::Simplex<Dim, Feel::Dynamic>>> const& mesh,
                                      RunConfig const& config,
                                      bool printDetails,
                                      bool exportResults )
 {
     using namespace Feel;
 
-    auto runRuntime = [&]() {
-        auto Vh = Pch<Dynamic>( mesh, RuntimeOrder( config.order ) );
-        return solveSimplexLaplacian<Dim>( config.order, "runtime", Vh, printDetails, exportResults );
-    };
-    auto runCompile = [&]<int P>() {
-        auto Vh = Pch<P>( mesh );
-        return solveSimplexLaplacian<Dim>( config.order, "compile", Vh, printDetails, exportResults );
-    };
-
-    //if ( config.mode == "runtime" )
-    return runRuntime();
-    //if ( config.mode == "compile" )
-    //{
-    //    switch ( config.order )
-    //    {
-    //    case 1: return runCompile.template operator()<1>();
-    //    case 2: return runCompile.template operator()<2>();
-    //    case 3: return runCompile.template operator()<3>();
-    //    //case 4: return runCompile.template operator()<4>();
-    //    default:
-    //        CHECK( false ) << "compile mode supports case.order in {1,2,3}, got " << config.order;
-    //    }
-    //}
-    CHECK( false ) << "invalid case.mode=" << config.mode << ", expected runtime or compile";
-
-    return {};
+    auto Vh = Pch<Dynamic>( mesh, RuntimeOrder::checked( config.order ) );
+    return solveSimplexLaplacian<Dim>( config.order, "runtime", Vh, printDetails, exportResults );
 }
 
 template<int Dim>
@@ -281,7 +261,8 @@ int runSimplexLaplacian( RunConfig const& config )
 
     if ( !config.convergence )
     {
-        auto mesh = loadMesh( _mesh = new Mesh<Simplex<Dim>> );
+        auto mesh = loadMesh( _mesh = new Mesh<Simplex<Dim, Dynamic>>( quickstart::geometryOrder() ) );
+        quickstart::checkMeshOrder( mesh );
         runSimplexLaplacianOnMesh<Dim>( mesh, config, true, true );
         return 0;
     }
@@ -296,7 +277,8 @@ int runSimplexLaplacian( RunConfig const& config )
     for ( int level = 0; level < config.nRefine; ++level )
     {
         auto hLevel = h0 / std::pow( config.refineRatio, static_cast<double>( level ) );
-        auto mesh = loadMesh( _mesh = new Mesh<Simplex<Dim>>, _h = hLevel );
+        auto mesh = loadMesh( _mesh = new Mesh<Simplex<Dim, Dynamic>>( quickstart::geometryOrder() ), _h = hLevel );
+        quickstart::checkMeshOrder( mesh );
         auto result = runSimplexLaplacianOnMesh<Dim>( mesh, config, false, false );
         results.push_back( result );
     }
@@ -314,8 +296,10 @@ int main( int argc, char** argv )
         po::options_description desc( "simple_lap (simplex, dynamic order)" );
         desc.add( case_options( FEELPP_DIM, "P1" ) ).add_options()
             ( "case.order", po::value<int>()->default_value( 1 ), "polynomial order (P_k), k>=1" )
+            ( "case.assert-l2", po::value<double>()->default_value( -1 ), "maximum L2 error (negative disables threshold)" )
             ( "case.quad", po::value<int>()->default_value( -1 ), "quadrature order (>0: override, <=0: auto from expression order)" )
-            ( "case.mode", po::value<std::string>()->default_value( "runtime" ), "space mode: runtime or compile" )
+            ( "case.mode", po::value<std::string>()->default_value( "runtime" ), "space mode (only runtime is supported)" )
+            ( "geometry.order", po::value<int>()->default_value( 1 ), "mesh geometric transformation order" )
             ( "case.convergence", po::value<bool>()->default_value( false ), "run convergence mode over mesh refinements" )
             ( "case.nrefine", po::value<int>()->default_value( 1 ), "number of refinement levels in convergence mode" )
             ( "case.refine-ratio", po::value<double>()->default_value( 2.0 ), "mesh refinement ratio (>1) between levels" );
@@ -328,7 +312,8 @@ int main( int argc, char** argv )
 
         RunConfig config;
         config.order = ioption( "case.order" );
-        config.mode = soption( "case.mode" );
+        if ( soption( "case.mode" ) != "runtime" )
+            throw std::invalid_argument( "case.mode only supports runtime; static benchmark mode is no longer available" );
         config.convergence = boption( "case.convergence" );
         config.nRefine = ioption( "case.nrefine" );
         config.refineRatio = doption( "case.refine-ratio" );

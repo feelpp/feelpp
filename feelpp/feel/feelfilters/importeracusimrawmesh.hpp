@@ -1,27 +1,9 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-  This file is part of the Feel library
-
-  Author(s): Vincent Chabannes <vincent.chabannes@feelpp.org>
-             Christophe Prud'homme  <christophe.prudhomme@feelpp.org>
-       Date: 2016-01-15
-
-  Copyright (C) 2009-2016 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+/*
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileCopyrightText: 2009-2016 University of Strasbourg
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 /**
    \file importerAcusimRawMesh.hpp
    \author Vincent Chabannes <vincent.chabannes@feelpp.org>
@@ -295,7 +277,7 @@ void ImporterAcusimRawMesh<MeshType>::readElements( mesh_type* mesh ) const
 
     int eltid = 0;
     rank_type partId = mesh->worldComm().localRank();
-    element_type e;
+    auto e = mesh->makeElement();
     int ptids = 0;
     int markerId = 1;
     //std::vector<int> ptids( element_type::numPoints );
@@ -334,7 +316,7 @@ void ImporterAcusimRawMesh<MeshType>::readElements( mesh_type* mesh ) const
             e.setProcessId( partId );
             e.setMarker( markerId );
 
-            for ( size_type k = 0; k < element_type::numPoints; ++k )
+            for ( size_type k = 0; k < e.nPoints(); ++k )
             {
                 __is >> ptids;
                 e.setPoint( k, mesh->point( ptids ) );
@@ -356,7 +338,7 @@ void ImporterAcusimRawMesh<MeshType>::readFaces( mesh_type* mesh ) const
 
     rank_type partId = mesh->worldComm().localRank();
     int eltidConnected = 0, faceid = 0, faceidTemp = 0, ptids = 0;
-    face_type f;
+    auto f = mesh->makeFace();
 
     // get next markerId as maxPreviousMarkerId + 1
     int markerId = 0;
@@ -399,7 +381,7 @@ void ImporterAcusimRawMesh<MeshType>::readFaces( mesh_type* mesh ) const
             f.setProcessId( partId );
             f.setMarker( markerId );
 
-            for ( size_type k = 0; k < face_type::numPoints; ++k )
+            for ( size_type k = 0; k < f.nPoints(); ++k )
             {
                 __is >> ptids;
                 f.setPoint( k, mesh->point( ptids ) );
@@ -460,7 +442,7 @@ void ImporterAcusimRawMesh<MeshType>::readMeshAcusolveAPI( mesh_type* mesh ) con
     // load mesh elements
     //-------------------------------------------------------------//
     int eltid = 0;
-    element_type e;
+    auto e = mesh->makeElement();
     e.setProcessIdInPartition( partId );
     e.setProcessId( partId );
     int markerId = 1;
@@ -480,7 +462,7 @@ void ImporterAcusimRawMesh<MeshType>::readMeshAcusolveAPI( mesh_type* mesh ) con
         std::cout << "  number of element : " << nElmElems << "\n";
         success = adbGetInt1(adbHd,(char*)"nElmElemNodes",&nElmElemNodes,j);
         std::cout << "  number of point in element : " << nElmElemNodes << "\n";
-        CHECK( nElmElemNodes == element_type::numPoints ) << "number of point in element wrong " << nElmElemNodes <<" vs " << element_type::numPoints;
+        CHECK( nElmElemNodes == e.nPoints() ) << "number of point in element wrong " << nElmElemNodes <<" vs " << e.nPoints();
 
         // add marker
         std::string marker = Feel::detail::markerNameFromAcusimName( std::string(elmName), "tet4" );
@@ -494,9 +476,9 @@ void ImporterAcusimRawMesh<MeshType>::readMeshAcusolveAPI( mesh_type* mesh ) con
         // add elements in mesh
         for( int i=0;i<nElmElems;++i )
         {
-            for ( uint16_type p = 0; p < element_type::numPoints; ++p )
+            for ( uint16_type p = 0; p < e.nPoints(); ++p )
             {
-                int ptid = elmCnn[element_type::numPoints*i+p];
+                int ptid = elmCnn[e.nPoints()*i+p];
                 e.setPoint( p, mesh->point( ptid ) );
             }
             mesh->addElement( e, true );
@@ -509,7 +491,7 @@ void ImporterAcusimRawMesh<MeshType>::readMeshAcusolveAPI( mesh_type* mesh ) con
     //-------------------------------------------------------------//
     // load mesh faces
     //-------------------------------------------------------------//
-    face_type f;
+    auto f = mesh->makeFace();
     f.setProcessIdInPartition( partId );
     f.setProcessId( partId );
 
@@ -531,7 +513,7 @@ void ImporterAcusimRawMesh<MeshType>::readMeshAcusolveAPI( mesh_type* mesh ) con
         std::cout << "  number of face : " << nOsfSrfs << "\n";
         success = adbGetInt1(adbHd,(char*)"nOsfSrfNodes",&nOsfSrfNodes,j);
         std::cout << "  number of point in face : " << nOsfSrfNodes << "\n";
-        CHECK( nOsfSrfNodes == face_type::numPoints ) << "number of point in element wrong " << nOsfSrfNodes <<" vs " << face_type::numPoints;
+        CHECK( nOsfSrfNodes == f.nPoints() ) << "number of point in element wrong " << nOsfSrfNodes <<" vs " << f.nPoints();
 
         std::string marker = Feel::detail::markerNameFromAcusimName( std::string(osfName), "tria3" );
         std::cout << "  marker face : " << marker << "\n";
@@ -548,9 +530,9 @@ void ImporterAcusimRawMesh<MeshType>::readMeshAcusolveAPI( mesh_type* mesh ) con
         for( int i=0;i<nOsfSrfs;++i)
         {
             f.setId( faceid++ );
-            for ( uint16_type p = 0; p < face_type::numPoints; ++p )
+            for ( uint16_type p = 0; p < f.nPoints(); ++p )
             {
-                int ptid = osfSrfCnn[face_type::numPoints*i+p];
+                int ptid = osfSrfCnn[f.nPoints()*i+p];
                 f.setPoint( p, mesh->point( ptid ) );
             }
             mesh->addFace( f );

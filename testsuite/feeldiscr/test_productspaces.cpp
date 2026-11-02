@@ -616,6 +616,41 @@ BOOST_AUTO_TEST_CASE( test_dynamic_orders_rectangular_test_trial_spaces )
     }
 }
 
+BOOST_AUTO_TEST_CASE( test_same_type_runtime_orders_keep_distinct_bilinear_contexts )
+{
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<2>> );
+    auto b = backend( _rebuild=true );
+    double const volume = integrate( _range=elements(mesh), _expr=cst(1.) ).evaluate()(0,0);
+    auto Vh = Pchv<Dynamic>( mesh, RuntimeOrder{2} );
+    auto v = Vh->element( oneX() );
+
+    for ( int trialOrder : { 0, 1, 2 } )
+    {
+        auto Uh = Pchv<Dynamic>( mesh, RuntimeOrder{trialOrder} );
+        auto u = Uh->element( oneX() );
+        for ( auto lowering : { vf::local_form_lowering::disabled, vf::local_form_lowering::automatic } )
+        {
+            auto forward = form2( _test=Vh, _trial=Uh );
+            auto reverse = form2( _test=Uh, _trial=Vh );
+            forward += integrate( _range=elements(mesh), _expr=inner(id(v),idt(u)),
+                                  _local_form_lowering=lowering );
+            reverse += integrate( _range=elements(mesh), _expr=inner(id(u),idt(v)),
+                                  _local_form_lowering=lowering );
+            forward.close();
+            reverse.close();
+
+            BOOST_CHECK_SMALL( forward(v,u)-volume, 1e-10 );
+            BOOST_CHECK_SMALL( reverse(u,v)-volume, 1e-10 );
+
+            auto difference = b->newMatrix( _test=Vh, _trial=Uh );
+            reverse.matrixPtr()->transpose( *difference );
+            difference->addMatrix( -1., forward.matrixPtr() );
+            difference->close();
+            BOOST_CHECK_SMALL( difference->l1Norm(), 1e-10 );
+        }
+    }
+}
+
 BOOST_AUTO_TEST_CASE( test_productspace_dof_counts )
 {
     using namespace Feel;

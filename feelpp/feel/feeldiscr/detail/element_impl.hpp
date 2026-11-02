@@ -2200,7 +2200,9 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::onImpl( std::pair<IteratorType,I
 
 
         //if P0 continuous finish loop here
-        if ( isP0Continuous<fe_type>::result )
+        if ( isP0Continuous<fe_type>::result ||
+             ( is_lagrange_polynomialset_v<fe_type> &&
+               std::is_same_v<typename fe_type::continuity_type, Continuous> && __fe->order() == 0 ) )
         {
             break;
         }
@@ -2507,10 +2509,23 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::onImpl( std::pair<IteratorType,I
 
     range_gm_ptrtype gmRange = eltConnectedToFirstFace.gm();
     if ( !gmRange )
-        gmRange.reset( new range_gm_type );
+    {
+        if constexpr ( range_geoelement_type::is_order_dynamic )
+            gmRange = std::make_shared<range_gm_type>( RuntimeOrder{ eltConnectedToFirstFace.order() } );
+        else
+            gmRange = std::make_shared<range_gm_type>();
+    }
 
     typedef typename element_type::functionspace_type::basis_type::template ChangeDim<range_geoelement_type::nDim>::type fe_range_dim_type;
-    fe_range_dim_type feRangeDim;
+    auto feRangeDim = [&]() {
+        if constexpr ( std::is_constructible_v<fe_range_dim_type, RuntimeOrder> )
+            return fe_range_dim_type( RuntimeOrder{ fe->order() } );
+        else
+            return fe_range_dim_type();
+    }();
+    bool const isP0d = is_lagrange_polynomialset_v<typename element_type::functionspace_type::basis_type> &&
+                       !element_type::functionspace_type::basis_type::continuity_type::is_continuous &&
+                       fe->order() == 0;
 
     std::vector<std::map<range_permutation_type, range_geopc_ptrtype> > geopcRange( range_geoelement_type::numTopologicalFaces );
 
@@ -2520,7 +2535,7 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::onImpl( std::pair<IteratorType,I
               __p < range_permutation_type( range_permutation_type::N_PERMUTATIONS ); ++__p )
         {
             // special case with lagrange P0d : dof point in 2d/3d faces are not connected to 1d/2d element, trick use barycenter of faces
-            if constexpr ( is_lagrange_polynomialset_P0d_v<typename element_type::functionspace_type::basis_type> )
+            if ( isP0d )
             {
                 auto fb = gmRange->referenceConvex().faceBarycenter( __f );
                 matrix_node_type fb_convert( fb.size(), 1 );

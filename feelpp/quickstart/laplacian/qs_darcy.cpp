@@ -48,11 +48,11 @@ makeOptions()
     options.add_options()
         ( "darcy.flux-family", po::value<std::string>()->default_value( "rt" ), "H(div) flux family: rt or bdm" )
         ( "darcy.order", po::value<int>()->default_value( 0 ), "mathematical flux order (RT k >= 0, BDM k >= 1)" )
+        ( "geometry.order", po::value<int>()->default_value( 1 ), "mesh geometric transformation order" )
+        ( "darcy.quad", po::value<int>()->default_value( 0 ), "quadrature order (0: automatic FE/geometry estimate)" )
         ( "darcy.convergence-case", po::value<bool>()->default_value( false )->implicit_value( true ), "use the built-in smooth manufactured convergence case" )
         ( "no-export", po::value<bool>()->default_value( false )->implicit_value( true ), "disable exporter output" )
         ( "rho", po::value<std::string>()->default_value( "1" ), "electric resistivity in rho*j + grad(V) = f" )
-        ( "functions.f", po::value<std::string>()->default_value( "{0,0,0}:x:y:z" ), "right hand side in rho*j + grad(V) = f" )
-        ( "functions.g", po::value<std::string>()->default_value( "0" ), "source term in div(j) = g" )
         ( "functions.jn", po::value<std::string>()->default_value( "0" ), "normal current j.n on Neumann faces" )
         ( "solution.V", po::value<std::string>()->default_value( "5*2/pi*atan2(y,x):x:y:z" ), "potential used on Dirichlet faces and for diagnostics" )
         ( "solution.j", po::value<std::string>()->default_value( "{10/pi*y/(x*x+y*y),-10/pi*x/(x*x+y*y),0}:x:y:z" ), "exact current used for diagnostics" )
@@ -97,7 +97,10 @@ darcyMixed3D( std::shared_ptr<MeshType> const& mesh,
 
     auto rho = expr( soption( "rho" ) );
     bool const useConvergenceCase = boption( "darcy.convergence-case" );
-    std::string const fExpression = useConvergenceCase ? "{0,0,0}:x:y:z" : soption( "functions.f" );
+    // functions.f/g are registered by feel_options(); keep the vector default
+    // here without creating ambiguous duplicate command-line options.
+    std::string const fExpression = useConvergenceCase || Environment::vm().at( "functions.f" ).defaulted()
+                                       ? "{0,0,0}:x:y:z" : soption( "functions.f" );
     std::string const gExpression = useConvergenceCase ? "-30*(x^4+y^4+z^4):x:y:z" : soption( "functions.g" );
     std::string const potentialExpression = useConvergenceCase ? "x^6+y^6+z^6:x:y:z" : soption( "solution.V" );
     std::string const fluxExpression = useConvergenceCase
@@ -116,12 +119,20 @@ darcyMixed3D( std::shared_ptr<MeshType> const& mesh,
     auto w = T( 0_c );
     auto q = T( 1_c );
 
-    // Select quadrature from the user-facing mathematical order. This keeps
-    // integration identical across the bounded dispatch and a future fully
-    // dynamic H(div) factory, where static expression order is unavailable.
-    int const quadratureOrder = useConvergenceCase
-                                    ? std::max( 2*spaceDescriptor.fluxOrder + 4, 12 )
-                                    : 2*spaceDescriptor.fluxOrder + 4;
+    // Runtime H(div) orders require quadrature selected from the user-facing
+    // mathematical order rather than a compile-time expression order.
+    // Curved Piola mass terms are generally nonpolynomial: this estimate
+    // increases integration accuracy with geometry order, without claiming
+    // exactness. darcy.quad permits quadrature-refinement checks.
+    int const automaticQuadratureOrder =
+        2*spaceDescriptor.fluxOrder + 4 + 2*( mesh->order() - 1 );
+    int const requestedQuadratureOrder = ioption( "darcy.quad" );
+    CHECK_GE( requestedQuadratureOrder, 0 ) << "darcy.quad must be non-negative";
+    int const quadratureOrder = requestedQuadratureOrder > 0
+                                    ? requestedQuadratureOrder
+                                    : ( useConvergenceCase
+                                            ? std::max( automaticQuadratureOrder, 12 )
+                                            : automaticQuadratureOrder );
 
     tic();
     backend( _rebuild = true );
@@ -158,13 +169,17 @@ darcyMixed3D( std::shared_ptr<MeshType> const& mesh,
     double const sideFluxResidual = normL2( _range = neumannFaces,
                                             _expr = inner( idv( jh ), N() ) - jn,
                                             _quad = quadratureOrder );
-    auto massResidualField = project( _space = Vh, _range = elements( mesh ),
-                                      _expr = divv( jh ) - g, _quad = quadratureOrder );
-    double const massResidual = normL2( _range = elements( mesh ),
-                                        _expr = idv( massResidualField ), _quad = quadratureOrder );
+    // Test conservation in the pressure space using the assembly quadrature.
+    // On curved cells, Piola divergence need not itself lie in plain Pdh.
+    auto massResidualForm = form1( _test = Vh );
+    massResidualForm = integrate( _range = elements( mesh ),
+                                  _expr = ( divv( jh ) - g ) * id( q ),
+                                  _quad = quadratureOrder );
+    massResidualForm.vectorPtr()->close();
+    double const massResidual = massResidualForm.vectorPtr()->l2Norm();
 
     double const tolerance = doption( "checks.tolerance" );
-    CHECK_LT( massResidual, tolerance ) << "div(j_h) must equal the compatible pressure-space projection of g cellwise";
+    CHECK_LT( massResidual, tolerance ) << "the weak mass residual must vanish for every pressure test function";
     CHECK_LT( sideFluxResidual, tolerance ) << "j_h.n must satisfy the prescribed Neumann data";
 
     Table report;
@@ -187,7 +202,7 @@ darcyMixed3D( std::shared_ptr<MeshType> const& mesh,
     diagnostics.add_row( { "||div(j_h)-g||_L2", formatScientific( errorDivJ ) } );
     diagnostics.add_row( { "||V-V_h||_L2", formatScientific( errorV ) } );
     diagnostics.add_row( { "||rho*j_h+grad(V)-f||_L2", formatScientific( darcyError ) } );
-    diagnostics.add_row( { "||P_Qh(div(j_h)-g)||_L2", formatScientific( massResidual ) } );
+    diagnostics.add_row( { "weak mass residual (Euclidean norm)", formatScientific( massResidual ) } );
     diagnostics.add_row( { "||j_h.n-j_N||_L2(Neumann)", formatScientific( sideFluxResidual ) } );
     Feel::cout << diagnostics << std::endl;
 
@@ -206,34 +221,11 @@ darcyMixed3D( std::shared_ptr<MeshType> const& mesh,
     return 0;
 }
 
-template<int Order>
-int
-darcyMixedRt3D( std::shared_ptr<Mesh<Simplex<3>>> const& mesh,
-                double meshTime )
-{
-    auto Jh = RTh<Order>( mesh );
-    auto Vh = Pdh<Order>( mesh );
-    DarcySpaceDescriptor const descriptor{ "RT", Order, Order, Order, Order };
-    return darcyMixed3D( mesh, Jh, Vh, descriptor, meshTime );
-}
-
-template<int ImplementationOrder>
-int
-darcyMixedBdm3D( std::shared_ptr<Mesh<Simplex<3>>> const& mesh,
-                 double meshTime )
-{
-    constexpr int fluxOrder = ImplementationOrder + 1;
-    auto Jh = BDMh<ImplementationOrder>( mesh );
-    auto Vh = Pdh<ImplementationOrder>( mesh );
-    DarcySpaceDescriptor const descriptor{ "BDM", fluxOrder, ImplementationOrder,
-                                            fluxOrder, ImplementationOrder };
-    return darcyMixed3D( mesh, Jh, Vh, descriptor, meshTime );
-}
-
 int
 darcyMixed3D()
 {
     int const fluxOrder = ioption( "darcy.order" );
+    int const geometryOrder = ioption( "geometry.order" );
     std::string const fluxFamily = soption( "darcy.flux-family" );
 
     CHECK_GE( fluxOrder, 0 ) << "darcy.order must be non-negative";
@@ -241,33 +233,30 @@ darcyMixed3D()
         << "unsupported darcy.flux-family='" << fluxFamily << "'; expected 'rt' or 'bdm'";
     CHECK( fluxFamily != "bdm" || fluxOrder >= 1 )
         << "BDM uses mathematical orders k >= 1; darcy.order=0 is invalid for darcy.flux-family=bdm";
+    CHECK_GE( geometryOrder, 1 ) << "geometry.order must be positive";
+    auto const runtimeFluxOrder = RuntimeOrder::checked( fluxOrder );
+    auto const runtimeGeometryOrder = RuntimeOrder::checked( geometryOrder );
 
     tic();
-    auto mesh = loadMesh( _mesh = new Mesh<Simplex<3>> );
+    auto mesh = loadMesh( _mesh = new Mesh<Simplex<3, Dynamic>>( runtimeGeometryOrder ) );
+    CHECK_EQ( mesh->order(), geometryOrder ) << "loaded mesh order must match geometry.order";
     double const meshTime = toc( "mesh generation/loading" );
 
     if ( fluxFamily == "rt" )
     {
-        switch ( fluxOrder )
-        {
-        case 0: return darcyMixedRt3D<0>( mesh, meshTime );
-        case 1: return darcyMixedRt3D<1>( mesh, meshTime );
-        case 2: return darcyMixedRt3D<2>( mesh, meshTime );
-        case 3: return darcyMixedRt3D<3>( mesh, meshTime );
-        default:
-            CHECK( false ) << "RT runtime dispatch currently supports darcy.order in [0,3]; got " << fluxOrder;
-        }
+        auto Jh = RTh<Dynamic>( mesh, runtimeFluxOrder );
+        auto Vh = Pdh<Dynamic>( mesh, runtimeFluxOrder );
+        DarcySpaceDescriptor const descriptor{ "RT", fluxOrder, fluxOrder, fluxOrder, fluxOrder };
+        return darcyMixed3D( mesh, Jh, Vh, descriptor, meshTime );
     }
 
-    switch ( fluxOrder )
-    {
-    case 1: return darcyMixedBdm3D<0>( mesh, meshTime );
-    case 2: return darcyMixedBdm3D<1>( mesh, meshTime );
-    case 3: return darcyMixedBdm3D<2>( mesh, meshTime );
-    default:
-        CHECK( false ) << "BDM runtime dispatch currently supports darcy.order in [1,3]; got " << fluxOrder;
-    }
-    return 1;
+    // BDM's implementation order and its divergence image are k-1.
+    auto const pressureOrder = RuntimeOrder::checked( fluxOrder - 1 );
+    auto Jh = BDMh<Dynamic>( mesh, pressureOrder );
+    auto Vh = Pdh<Dynamic>( mesh, pressureOrder );
+    DarcySpaceDescriptor const descriptor{ "BDM", fluxOrder, fluxOrder - 1,
+                                            fluxOrder, fluxOrder - 1 };
+    return darcyMixed3D( mesh, Jh, Vh, descriptor, meshTime );
 }
 
 } // namespace Feel

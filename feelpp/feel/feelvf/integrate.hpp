@@ -67,12 +67,13 @@ auto integrate( Ts && ... v )
     using _integrate_helper_type = Feel::detail::integrate_type<decltype(expr),decltype(range),decltype(quad),decltype(quad1)>;
     auto && quadptloc = args.get_else(_quadptloc, typename _integrate_helper_type::_quadptloc_ptrtype{});
 
-    auto the_ims = _integrate_helper_type::_im_type::im( quad,quad1,expr );
+    auto const geometryOrder = _integrate_helper_type::expr_order_t::geometryOrder( range );
+    auto the_ims = _integrate_helper_type::_im_type::im( quad,quad1,expr,geometryOrder );
     auto const& the_im = the_ims.first;
     auto const& the_im1 = the_ims.second;
 
     auto ret = integrate_impl( range, the_im, expr,
-                               Feel::detail::geomapStrategy( range, geomap ),
+                               geometryOrder == 1 ? GeomapStrategyType::GEOMAP_HO : geomap,
                                geometryEvaluation, the_im1,
                                use_harts, quadptloc, localFormLowering );
 

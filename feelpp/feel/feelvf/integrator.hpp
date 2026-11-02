@@ -356,8 +356,9 @@ public:
             //typedef _Q< ExpressionOrder<Elements,e_type>::value > quad_type;
             //typedef _Q< ExpressionOrder<Elements,e_type>::value_1 > quad1_type;
             typedef std::shared_ptr<QuadPtLocalization<Elements,quad_type,expr_type > > quadptloc_ptrtype;
-            quad_type quad( expr_order_t::value(new_expr) );
-            quad1_type quad1( expr_order_t::value_1(new_expr) );
+            auto const geometryOrder = expr_order_t::geometryOrder( M_elts );
+            quad_type quad( expr_order_t::value( new_expr, geometryOrder ) );
+            quad1_type quad1( expr_order_t::value_1( new_expr, geometryOrder ) );
 
 #if 0
             auto the_ims = vf::detail::integrate_im_type<Elements,expr_type>::im( quad,quad1,expr );
@@ -5816,10 +5817,10 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
          requires std::is_integral_v<QuadType> && std::is_integral_v<Quad1Type>
      static
      std::pair<_quad_type,_quad1_type>
-     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr )
+     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr, uint16_type geometryOrder )
          {
-             quad_order_type exprOrder = expr_order_t::value( expr );
-             quad_order_type exprOrder_1 = expr_order_t::value_1( expr );
+             quad_order_type exprOrder = expr_order_t::value( expr, geometryOrder );
+             quad_order_type exprOrder_1 = expr_order_t::value_1( expr, geometryOrder );
              if ( thequad == quad_order_from_expression && thequad1 == quad_order_from_expression )
                  return std::make_pair( Feel::im<_quad_type>( exprOrder ), Feel::im<_quad1_type>( exprOrder_1 ) );
              else if ( thequad == quad_order_from_expression )
@@ -5833,9 +5834,9 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
          requires std::is_integral_v<QuadType> && (!std::is_integral_v<Quad1Type>)
      static
      std::pair<_quad_type,_quad1_type>
-     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr )
+     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr, uint16_type geometryOrder )
          {
-             quad_order_type exprOrder = expr_order_t::value( expr );
+             quad_order_type exprOrder = expr_order_t::value( expr, geometryOrder );
              if ( thequad == quad_order_from_expression )
                  return std::make_pair( Feel::im<_quad_type>( exprOrder ), Feel::im<_quad1_type>( thequad1 ) );
              else
@@ -5845,7 +5846,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
          requires (!std::is_integral_v<QuadType>) && std::is_integral_v<Quad1Type>
      static
      std::pair<_quad_type,_quad1_type>
-     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr )
+     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr, uint16_type /*geometryOrder*/ )
          {
              if ( thequad1 == quad_order_from_expression )
                  return std::make_pair( Feel::im<_quad_type>( thequad ), Feel::im<_quad1_type>( thequad ) );
@@ -5857,7 +5858,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
          requires (!std::is_integral_v<QuadType>) && (!std::is_integral_v<Quad1Type>)
      static
      std::pair<_quad_type,_quad1_type>
-     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr )
+     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr, uint16_type /*geometryOrder*/ )
          {
              return std::make_pair( Feel::im<_quad_type>( thequad ), Feel::im<_quad1_type>( thequad1 ) );
          }
