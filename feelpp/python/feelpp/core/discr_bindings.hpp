@@ -1,26 +1,6 @@
-//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-//!
-//! This file is part of the Feel++ library
-//!
-//! This library is free software; you can redistribute it and/or
-//! modify it under the terms of the GNU Lesser General Public
-//! License as published by the Free Software Foundation; either
-//! version 2.1 of the License, or (at your option) any later version.
-//!
-//! This library is distributed in the hope that it will be useful,
-//! but WITHOUT ANY WARRANTY; without even the implied warranty of
-//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//! Lesser General Public License for more details.
-//!
-//! You should have received a copy of the GNU Lesser General Public
-//! License along with this library; if not, write to the Free Software
-//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-//!
-//! @file
-//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-//! @date 25 Jul 2018
-//! @copyright 2018 Feel++ Consortium
-//!
+// SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+// SPDX-FileCopyrightText: 2018 University of Strasbourg
+// SPDX-License-Identifier: LGPL-3.0-or-later
 #pragma once
 
 #include <fmt/core.h>
@@ -84,8 +64,8 @@ defDiscr( py::module& m, std::string const& family_prefix = "" )
     using size_type = typename mesh_t::size_type;
     using mesh_ptr_t = std::shared_ptr<mesh_t>;
     using element_t = typename space_t::element_type;
-    constexpr int BasisOrder = space_t::basis_0_type::nOrder;
-    std::string order_label = ( SpaceOrder == Dynamic ) ? "Dynamic" : std::to_string( BasisOrder );
+    // Public family order differs from internal polynomial degree for RT_k.
+    std::string order_label = ( SpaceOrder == Dynamic ) ? "Dynamic" : std::to_string( SpaceOrder );
     std::string family = family_prefix;
     if ( family.empty() )
     {
@@ -127,7 +107,7 @@ defDiscr( py::module& m, std::string const& family_prefix = "" )
              py::arg("components")=MESH_RENUMBER | MESH_CHECK,
              py::arg("worldsComm"),
              py::arg("extendedDofTable") = std::vector<DofTableExtendedType>(space_t::nSpaces,DofTableExtendedType::DEFAULT),
-             py::arg("runtimeOrder") = 1
+             py::arg("runtimeOrder") = ( SpaceOrder == Dynamic ? 1 : SpaceOrder )
              )
         .def("nDof",static_cast<size_type(space_t::*)() const>(&space_t::nDof), "get the number of degrees of freedom over the whole domain")
         .def("nLocalDof",static_cast<size_type(space_t::*)() const>(&space_t::nLocalDof), "get the number of degrees of freedom over the current subdomain")

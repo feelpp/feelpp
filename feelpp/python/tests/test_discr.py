@@ -1,3 +1,7 @@
+# SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+# SPDX-FileCopyrightText: 2020-2026 University of Strasbourg
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
 import sys
 import pytest
 import numpy as np
@@ -162,10 +166,26 @@ def test_dynamic_spaces_and_missing_families(init_feelpp):
     assert Xdhv.order() == 1
     assert Xdhv.element().size() == Xdhv.nDof()
 
-    for family in ("Dh", "RTh"):
-        Xh = fppc.functionSpace(mesh=m2d, space=family, order=1)
-        assert Xh.order() == 1
-        assert Xh.element().size() == Xh.nDof()
+    rt_constructors = fppc.available_function_spaces()[("Dh", 2, 1)]["static"]
+    assert set(rt_constructors) == {0, 1, 2, 3}
+    previous_dofs = 0
+    for order in range(4):
+        for family in ("Dh", "RTh"):
+            Xh = fppc.functionSpace(mesh=m2d, space=family, order=order)
+            assert Xh.order() == order
+            assert Xh.element().size() == Xh.nDof()
+            if order == 0:
+                assert Xh.nDof() == m2d.numGlobalFaces()
+        assert Xh.nDof() > previous_dofs
+        previous_dofs = Xh.nDof()
+
+        constructor = rt_constructors[order]
+        direct = constructor(mesh=m2d, worldsComm=fppc.Environment.worldsComm(1))
+        assert direct.order() == order
+        assert direct.nDof() == Xh.nDof()
+        with pytest.raises(ValueError, match="RuntimeOrder disagrees"):
+            constructor(mesh=m2d, worldsComm=fppc.Environment.worldsComm(1),
+                        runtimeOrder=order + 1)
 
     with pytest.raises(RuntimeError, match="FunctionSpace Odh"):
         fppc.functionSpace(mesh=m2d, space="Odh", order=1)
