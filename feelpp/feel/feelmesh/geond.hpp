@@ -518,17 +518,18 @@ class GeoND
     template <int GeoOrder>
     struct GetImMeasure
     {
+        // Embedded entities use their reference dimension for integration.
         static constexpr uint16_type quad_order = ( GeoOrder >= 1 ) ? ( GeoOrder - 1 ) * nDim : 0;
         using type = std::conditional_t<GeoShape::is_hypercube,
-                                        typename IMGeneric<quad_order, Dim, Hypercube, Gauss, value_type>::type,
-                                        typename IMGeneric<quad_order, Dim, Simplex, Gauss, value_type>::type>;
+                                        typename IMGeneric<quad_order, nDim, Hypercube, Gauss, value_type>::type,
+                                        typename IMGeneric<quad_order, nDim, Simplex, Gauss, value_type>::type>;
     };
 
     using runtime_quad_meas_type =
         std::conditional_t<
             GeoShape::is_hypercube,
-            IMGeneral<Dim, value_type, Hypercube>,
-            IMGeneral<Dim, value_type, Simplex>>;
+            IMGeneral<nDim, value_type, Hypercube>,
+            IMGeneral<nDim, value_type, Simplex>>;
     using quad_meas_type =
         std::conditional_t<
             is_order_dynamic,

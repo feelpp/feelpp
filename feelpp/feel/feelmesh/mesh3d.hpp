@@ -2,8 +2,9 @@
  * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
  *
+ * SPDX-FileCopyrightText: 2005-2006 EPFL
  * SPDX-FileCopyrightText: 2007-2010 Université Joseph Fourier (Grenoble I)
- * SPDX-FileCopyrightText: 2011-2017 University of Strasbourg
+ * SPDX-FileCopyrightText: 2011-2026 University of Strasbourg
  *
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
@@ -15,6 +16,7 @@
 #ifndef FEELPP_MESH3D_HPP
 #define FEELPP_MESH3D_HPP 1
 
+#include <array>
 #include <cstdlib>
 #include <fstream>
 #include <iomanip>
@@ -574,13 +576,27 @@ void Mesh3D<GEOSHAPE, T, IndexT>::updateEntitiesCoDimensionTwo()
     rank_type currentPid = this->worldComm().localRank();
 
     //typedef std::unordered_map<std::set<size_type>, edge_type*, Feel::HashTables::HasherContainers<size_type> > pointstoedge_container_type;
-    typedef std::unordered_map<std::vector<size_type>, std::tuple<edge_type*, size_type>, Feel::HashTables::HasherContainers<size_type>> pointstoedge_container_type;
+    using edge_key_type = std::array<size_type, edge_type::numVertices>;
+    /** @brief Hash the two vertex IDs identifying one edge. */
+    struct EdgeKeyHash
+    {
+        /** @brief Combine vertex IDs for the unordered edge lookup. */
+        std::size_t operator()( edge_key_type const& key ) const
+        {
+            return boost::hash_range( key.begin(), key.end() );
+        }
+    };
+    using pointstoedge_container_type = std::unordered_map<edge_key_type, std::tuple<edge_type*, size_type>, EdgeKeyHash>;
     pointstoedge_container_type _edges;
+    // Pre-size the temporary lookup without reserving six entries per tetrahedron.
+    // Cap the hint so large meshes do not allocate an oversized bucket array up front.
+    constexpr std::size_t maxInitialEdgeBuckets = 16'000'000;
+    _edges.reserve( std::min<std::size_t>( std::max( this->numElements(), this->numEdges() ), maxInitialEdgeBuckets ) );
     typename pointstoedge_container_type::iterator _edgeit;
 
     size_type next_edge = 0;
     bool edgeinserted = false;
-    std::vector<size_type> lids( edge_type::numVertices );
+    std::array<size_type, edge_type::numVertices> lids;
 
     size_type vid, i1, i2;
     const bool updateComponentAddElements = this->components().test( MESH_ADD_ELEMENTS_INFO );
@@ -588,6 +604,7 @@ void Mesh3D<GEOSHAPE, T, IndexT>::updateEntitiesCoDimensionTwo()
     // First We check if we have already Edges stored
     if ( !this->edges().empty() )
     {
+        std::unordered_set<size_type> duplicateEdgeIds;
         // dump first the existing edges, to maintain the correct numbering
         // if everything is correct, the numbering structure will reflect
         // the actual edge numbering
@@ -621,7 +638,8 @@ void Mesh3D<GEOSHAPE, T, IndexT>::updateEntitiesCoDimensionTwo()
             }
             else
             {
-                eit = this->eraseEdge( eit );
+                duplicateEdgeIds.insert( edge.id() );
+                ++eit;
             }
 #if 0
             CHECK( edgeinserted )
@@ -631,8 +649,14 @@ void Mesh3D<GEOSHAPE, T, IndexT>::updateEntitiesCoDimensionTwo()
                 << "Edges in EdgeList have inconsistent ids";
 #endif
         }
+        if ( !duplicateEdgeIds.empty() )
+        {
+            this->eraseEdgesIf( [&duplicateEdgeIds]( auto const& candidate )
+                                { return duplicateEdgeIds.find( candidate.id() ) != duplicateEdgeIds.end(); } );
+            LOG( INFO ) << "Removed " << duplicateEdgeIds.size() << " duplicate pre-existing edges using bulk cleanup";
+        }
     }
-    toc( "[Mesh3D::updateEdges] adding edges already registered", Environment::logVerbosityLevel() > 1 );
+    toc( "[Mesh3D::updateEdges] scan and deduplicate registered edges", Environment::logVerbosityLevel() > 0 );
     tic();
 
     if ( true ) //this->edges().empty() )

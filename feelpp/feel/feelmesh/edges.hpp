@@ -1,21 +1,20 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
     SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+    SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
 
     SPDX-FileCopyrightText: 2005-2006 EPFL
-    SPDX-FileCopyrightText: 2026 University of Strasbourg
+    SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
 
     SPDX-License-Identifier: LGPL-3.0-or-later
 */
-/**
-   \file edges.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-09-03
- */
+
 #ifndef FEELPP_MESH_EDGES_HPP
 #define FEELPP_MESH_EDGES_HPP
 
+#include <algorithm>
 #include <unordered_map>
+#include <unordered_set>
 #include <feel/feelcore/commobject.hpp>
 #include <feel/feelmesh/geoelement.hpp>
 
@@ -219,6 +218,12 @@ public:
     edge_const_iterator endEdge() const
     {
         return M_edges.end();
+    }
+
+    /** @brief Return ordered edge references so callers can inspect their size and capacity. */
+    ordered_edges_reference_wrapper_type const& orderedEdges() const noexcept
+    {
+        return M_orderedEdges;
     }
 
     ordered_edge_reference_wrapper_iterator beginOrderedEdge()
@@ -516,11 +521,44 @@ public:
                 {
                     return unwrap_ref( edgeWrap ).id() == erasedId;
                 } );
-            it->second.clearEntityStorage();
-            auto itret = M_edges.erase( it );
+            CHECK( itOrdered != M_orderedEdges.end() ) << "edge " << erasedId << " is missing from ordered edges";
             M_orderedEdges.erase( itOrdered );
-            return itret;
+            it->second.clearEntityStorage();
+            return M_edges.erase( it );
         }
+
+    /**
+     * @brief Erase selected edges in one pass while preserving retained order.
+     * @tparam Predicate Callable accepting an edge and returning true to erase it.
+     * @param predicate Selection function applied to every registered edge.
+     * @return Number of erased edges.
+     */
+    template <typename Predicate>
+    std::size_t eraseEdgesIf( Predicate const& predicate )
+    {
+        std::unordered_set<size_type> erasedIds;
+        for ( auto const& [id, edge] : M_edges )
+        {
+            if ( predicate( edge ) )
+                erasedIds.insert( id );
+        }
+        if ( erasedIds.empty() )
+            return 0;
+
+        auto firstErased = std::remove_if( M_orderedEdges.begin(), M_orderedEdges.end(),
+                                          [&erasedIds]( auto const& edgeWrap )
+                                          {
+                                              return erasedIds.find( unwrap_ref( edgeWrap ).id() ) != erasedIds.end();
+                                          } );
+        M_orderedEdges.erase( firstErased, M_orderedEdges.end() );
+        for ( auto id : erasedIds )
+        {
+            auto it = M_edges.find( id );
+            it->second.clearEntityStorage();
+            M_edges.erase( it );
+        }
+        return erasedIds.size();
+    }
 
 
     void setWorldCommEdges( worldcomm_ptr_t const& _worldComm )

@@ -78,11 +78,66 @@ class WorkflowPlanTests(unittest.TestCase):
         self.assertEqual(outputs["run_full"], "true")
         self.assertEqual(json.loads(outputs["warnings_json"]), [])
 
+    def test_openmpi5_components_only_run_with_opt_in(self) -> None:
+        kwargs = {
+            "config": self.config,
+            "mode": "components",
+            "targets": ["spack:openmpi5"],
+            "enabled_jobs": ["feelpp"],
+        }
+        default_outputs = compute_workflow_plan(**kwargs)
+        self.assertEqual(default_outputs["run_full"], "true")
+        self.assertEqual(default_outputs["run_feelpp"], "false")
+
+        opted_outputs = compute_workflow_plan(**kwargs, spack_components=True)
+        self.assertEqual(json.loads(opted_outputs["component_targets_json"]), ["spack:openmpi5"])
+        self.assertEqual(json.loads(opted_outputs["full_targets_json"]), [])
+        self.assertEqual(opted_outputs["run_feelpp"], "true")
+        self.assertEqual(opted_outputs["run_toolboxes"], "false")
+        self.assertEqual(opted_outputs["run_mor"], "false")
+        self.assertEqual(opted_outputs["run_full"], "false")
+
     def test_ci_profile_allows_spack_targets(self) -> None:
         ci_targets = self.config["profiles"]["ci"]["targets"]
 
         self.assertIn("spack:openmpi", ci_targets)
         self.assertIn("spack:openmpi5", ci_targets)
+        self.assertIn("spack:mpich", ci_targets)
+
+    def test_mpich_component_matrix_contains_only_core(self) -> None:
+        outputs = compute_workflow_plan(
+            config=self.config,
+            mode="components",
+            targets=["spack:mpich"],
+            enabled_jobs=["feelpp", "testsuite", "quickstart", "toolboxes", "mor"],
+            spack_components=True,
+        )
+        matrix = json.loads(outputs["component_matrix_json"])
+        self.assertEqual([row["target"] for row in matrix["include"]], ["spack:mpich"])
+        self.assertEqual(matrix["include"][0]["spack_environment"], "cpu/mpich")
+        self.assertEqual(matrix["include"][0]["oci_dist"], "spack-mpich")
+        self.assertEqual(outputs["run_feelpp"], "true")
+        for job in ("testsuite", "quickstart", "toolboxes", "mor"):
+            self.assertEqual(outputs[f"run_{job}"], "false")
+            self.assertEqual(json.loads(outputs[f"{job}_matrix_json"])["include"], [])
+        self.assertEqual(outputs["run_full"], "false")
+
+    def test_mpich_does_not_enter_other_component_matrices_in_mixed_run(self) -> None:
+        outputs = compute_workflow_plan(
+            config=self.config,
+            mode="components",
+            targets=["ubuntu:noble", "spack:mpich"],
+            enabled_jobs=["feelpp", "toolboxes"],
+            spack_components=True,
+        )
+        self.assertEqual(
+            [row["target"] for row in json.loads(outputs["component_matrix_json"])["include"]],
+            ["ubuntu:noble", "spack:mpich"],
+        )
+        self.assertEqual(
+            [row["target"] for row in json.loads(outputs["toolboxes_matrix_json"])["include"]],
+            ["ubuntu:noble"],
+        )
 
     def test_only_toolboxes_runs_toolboxes_without_feelpp(self) -> None:
         outputs = compute_workflow_plan(

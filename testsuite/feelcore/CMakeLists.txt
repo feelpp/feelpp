@@ -5,7 +5,7 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testcore")
-foreach(TEST json git traits singleton enumerate factory debug context simget env env_configfiles removecomments feelio boostmpi enums mongo hana remotedata repository)
+foreach(TEST json git traits singleton enumerate factory debug context simget env env_configfiles removecomments feelio boostmpi enums mongo hana remotedata repository timertable)
 
   feelpp_add_test( ${TEST} )
 

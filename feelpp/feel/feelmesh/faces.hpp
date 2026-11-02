@@ -723,7 +723,11 @@ public:
                                          } );
         M_orderedFaces.erase( firstErased, M_orderedFaces.end() );
         for ( auto id : erasedIds )
-            M_faces.erase( id );
+        {
+            auto it = M_faces.find( id );
+            it->second.clearEntityStorage();
+            M_faces.erase( it );
+        }
         return erasedIds.size();
     }
 

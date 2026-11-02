@@ -95,7 +95,7 @@ if ( Python3_Interpreter_FOUND )
   )
 endif()
 
-foreach( testdir core python math alg mesh poly filters material models interpolation integration discr ts vf leaks opt ls pde fit fmi event viewfactor)
+foreach( testdir core stats python math alg mesh poly filters material models interpolation integration discr ts vf leaks opt ls pde fit fmi event viewfactor)
   add_custom_target( test${testdir} )
   add_subdirectory( feel${testdir} )
 
