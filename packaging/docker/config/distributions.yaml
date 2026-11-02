@@ -7,6 +7,13 @@ distributions:
         base_image: "ubuntu:24.04"
         platforms: ["linux/amd64", "linux/arm64"]
         experimental: false
+        precice: &precice_release
+          version: "3.4.1"
+          package_architecture: amd64
+          package_url: "https://github.com/precice/precice/releases/download/v3.4.1/libprecice3_3.4.1_noble.deb"
+          package_sha256: "3a36a40254acae06409d067381df1b68c309cc4ffb1b1d15590e1fa5359be888"
+          source_url: "https://github.com/precice/precice/archive/v3.4.1.tar.gz"
+          source_sha256: "ef4713c938a1b2000d0b071175e1b45f9ec55c7aec4bbe7b65c3992edcc74ac7"
         openmpi_packages:
           - libopenmpi-dev
           - openmpi-bin
@@ -15,6 +22,10 @@ distributions:
         base_image: "ubuntu:26.04"
         platforms: ["linux/amd64", "linux/arm64"]
         experimental: true
+        precice:
+          <<: *precice_release
+          package_url: "https://github.com/precice/precice/releases/download/v3.4.1/libprecice3_3.4.1_resolute.deb"
+          package_sha256: "4d1ccfbef262cb70f6ac81275d345b22d0a831c841a428a6648df117d0fde0ee"
         openmpi_packages:
           - libopenmpi-dev
           - openmpi-bin
@@ -35,6 +46,10 @@ distributions:
         base_image: "debian:13"
         platforms: ["linux/amd64", "linux/arm64"]
         experimental: false
+        precice:
+          <<: *precice_release
+          package_url: "https://github.com/precice/precice/releases/download/v3.4.1/libprecice3_3.4.1_trixie.deb"
+          package_sha256: "40c37f239a769ee7b9692c2736c3958ad11b460f2e76fab91a771b181301c308"
         openmpi_packages:
           - libopenmpi-dev
           - openmpi-bin
@@ -54,4 +69,3 @@ distributions:
         openmpi_packages:
           - libopenmpi-dev
           - openmpi-bin
-

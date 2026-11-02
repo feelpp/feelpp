@@ -17,6 +17,9 @@ Environment status:
 - `cpu/openmpi5/`
   - portable OpenMPI 5 validation environment for Gaya and LUMI-C
   - enables UCX and OFI while keeping CXI/site externals out of the manifest
+- `cpu/mpich/`
+  - MPICH 3.4.3 with CH3 for Feel++ core images and LUMI host-MPI binding
+  - details and verified local spec are in `cpu/mpich/README.md`
 - `cpu/openmpi-petsc-322/`
   - supported CPU/OpenMPI validation environment
   - mirrors `cpu/openmpi/` while pinning the PETSc/SLEPc stack to 3.22

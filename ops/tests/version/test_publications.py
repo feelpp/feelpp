@@ -144,6 +144,7 @@ class PublicationsTests(VersionRepoMixin, unittest.TestCase):
                 dists=None,
                 publication_rows=7,
                 publication_since="2026-01-01",
+                spack_targets=(),
             )
 
 
