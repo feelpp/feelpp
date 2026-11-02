@@ -428,14 +428,15 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0> )
             this->updateGrad( thegmc, rank_t<0>{} );
     }
 
-    if constexpr ( vm::has_first_derivative_normal_v<context> )
+    if constexpr ( vm::has_first_derivative_normal_v<context> || vm::has_dynamic_basis_function_v<context> )
     {
-        this->updateFirstDerivativeNormal( thegmc, rank_t<0>{} );
-    }
-    else if constexpr ( vm::has_dynamic_basis_function_v<context> )
-    {
-        if ( hasFIRST_DERIVATIVE_NORMAL( this->dynamicContext() ) )
-            this->updateFirstDerivativeNormal( thegmc, rank_t<0>{} );
+        if ( vm::has_first_derivative_normal_v<context> || hasFIRST_DERIVATIVE_NORMAL( this->dynamicContext() ) )
+        {
+            if constexpr ( requires { thegmc->unitNormal( 0, 0 ); } )
+                this->updateFirstDerivativeNormal( thegmc, rank_t<0>{} );
+            else
+                CHECK( false ) << "normal derivatives require a geometry context with a unique normal";
+        }
     }
 
 
@@ -918,14 +919,15 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
     }
 
 
-    if constexpr ( vm::has_first_derivative_normal_v<context> )
+    if constexpr ( vm::has_first_derivative_normal_v<context> || vm::has_dynamic_basis_function_v<context> )
     {
-        this->updateFirstDerivativeNormal( thegmc, rank_t<1>{} );
-    }
-    else if constexpr ( vm::has_dynamic_basis_function_v<context> )
-    {
-        if ( hasFIRST_DERIVATIVE_NORMAL( this->dynamicContext() ) )
-            this->updateFirstDerivativeNormal( thegmc, rank_t<1>{} );
+        if ( vm::has_first_derivative_normal_v<context> || hasFIRST_DERIVATIVE_NORMAL( this->dynamicContext() ) )
+        {
+            if constexpr ( requires { thegmc->unitNormal( 0, 0 ); } )
+                this->updateFirstDerivativeNormal( thegmc, rank_t<1>{} );
+            else
+                CHECK( false ) << "normal derivatives require a geometry context with a unique normal";
+        }
     }
 
     if constexpr ( vm::has_hessian_v<context> || vm::has_second_derivative_v<context> || vm::has_laplacian_v<context> )

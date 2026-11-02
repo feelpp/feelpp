@@ -20,6 +20,7 @@ set(FEELPP_VF_SIMPLE_TESTS
     productspace_dofs
     expr_evaluate
     symbolic_diff
+    symbolic_subentity
     functionexpr
 )
 
