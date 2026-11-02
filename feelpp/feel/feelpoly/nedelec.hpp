@@ -31,8 +31,6 @@
 #include <boost/assign/std/vector.hpp>
 
 #include <boost/type_traits.hpp>
-#include <map>
-#include <mutex>
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/traits.hpp>
@@ -71,90 +69,26 @@ namespace detail
  * The face test space is `[P_degree]^2`, ordered by tangent, total degree,
  * then exponent.  The returned matrix maps canonical functional values to
  * values in the permuted local tangent/monomial frame.  Construction is a
- * small reference-cell operation and is cached by the caller/FE instance.
+ * small reference-cell operation cached in the core library.
+ *
+ * @param vertexPermutation Local-to-canonical face vertex indices.
+ * @param degree Degree of each scalar tangential test polynomial.
+ * @return Cached immutable matrix acting on canonical face functional values.
+ * @pre `vertexPermutation` is a permutation of `{0,1,2}`.
  */
 [[nodiscard]] std::shared_ptr<DofTransform::MatrixStorage const>
 nedelecTriangularFaceMomentTransform(
     std::array<uint16_type,3> const& vertexPermutation,
-    uint16_type degree )
-{
-    using matrix_type = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>;
-    using vector2_type = Eigen::Vector2d;
+    uint16_type degree );
 
-    using storage_ptrtype = std::shared_ptr<DofTransform::MatrixStorage const>;
-    static std::mutex cacheMutex;
-    static std::map<std::pair<uint16_type,uint16_type>, storage_ptrtype> cache;
-    const uint16_type permutationCode = static_cast<uint16_type>(
-        9*vertexPermutation[0]+3*vertexPermutation[1]+vertexPermutation[2] );
-    auto const cacheKey = std::make_pair( permutationCode, degree );
-    {
-        std::scoped_lock lock( cacheMutex );
-        if ( auto const it = cache.find( cacheKey ); it != cache.end() )
-            return it->second;
-    }
-    auto const& p = vertexPermutation;
-
-    std::array<vector2_type,3> const vertices{{ vector2_type( 0., 0. ),
-                                                vector2_type( 1., 0. ),
-                                                vector2_type( 0., 1. ) }};
-    vector2_type const origin = vertices[p[0]];
-    Eigen::Matrix2d jacobian;
-    jacobian.col( 0 ) = vertices[p[1]] - origin;
-    jacobian.col( 1 ) = vertices[p[2]] - origin;
-    Eigen::Matrix2d const inverse = jacobian.inverse();
-
-    uint16_type const scalarDimension = static_cast<uint16_type>( ( degree + 1 ) * ( degree + 2 ) / 2 );
-    uint16_type const dimension = static_cast<uint16_type>( 2 * scalarDimension );
-    matrix_type canonical = matrix_type::Zero( dimension, dimension );
-    matrix_type permuted = matrix_type::Zero( dimension, dimension );
-
-    std::vector<vector2_type> points;
-    points.reserve( scalarDimension );
-    if ( degree == 0 )
-        points.emplace_back( 1. / 3., 1. / 3. );
-    else
-        for ( uint16_type i = 0; i <= degree; ++i )
-            for ( uint16_type j = 0; j <= degree - i; ++j )
-                points.emplace_back( double( i ) / degree, double( j ) / degree );
-
-    auto monomial = []( vector2_type const& x, uint16_type d, uint16_type b )
-    {
-        return std::pow( x[0], d - b ) * std::pow( x[1], b );
-    };
-    for ( uint16_type q = 0; q < scalarDimension; ++q )
-    {
-        vector2_type const local = inverse * ( points[q] - origin );
-        uint16_type scalarBasis = 0;
-        for ( uint16_type d = 0; d <= degree; ++d )
-            for ( uint16_type b = 0; b <= d; ++b, ++scalarBasis )
-                for ( uint16_type tangent = 0; tangent < 2; ++tangent )
-                {
-                    uint16_type const column = static_cast<uint16_type>( tangent * scalarDimension + scalarBasis );
-                    canonical( 2*q + tangent, column ) = monomial( points[q], d, b );
-                    vector2_type const valueAtPoint = jacobian.col( tangent ) * monomial( local, d, b );
-                    permuted( 2*q, column ) = valueAtPoint[0];
-                    permuted( 2*q + 1, column ) = valueAtPoint[1];
-                }
-    }
-
-    // `facePermutation()` maps local face coordinates to the face-entity
-    // coordinates. Columns express the local test basis in that canonical
-    // basis, hence functionals transform with the transpose action.
-    matrix_type const testBasisTransform = canonical.fullPivLu().solve( permuted );
-    matrix_type const functionalTransform = testBasisTransform.transpose();
-    auto storage = std::make_shared<DofTransform::MatrixStorage>();
-    storage->rows = dimension;
-    storage->cols = dimension;
-    storage->values.resize( static_cast<std::size_t>( dimension ) * dimension );
-    for ( uint16_type row = 0; row < dimension; ++row )
-        for ( uint16_type col = 0; col < dimension; ++col )
-            storage->values[static_cast<std::size_t>( row ) * dimension + col] = functionalTransform( row, col );
-    {
-        std::scoped_lock lock( cacheMutex );
-        return cache.try_emplace( cacheKey, std::move( storage ) ).first->second;
-    }
-}
-
+/**
+ * @brief Build the NED1 face-moment action from a triangular-face permutation.
+ * @tparam FacePermutation Triangular-face permutation type.
+ * @param permutation Local-to-canonical face permutation.
+ * @param degree Degree of each scalar tangential test polynomial.
+ * @return Cached immutable face functional transformation matrix.
+ * @pre `permutation.value()` is in `[IDENTITY,N_PERMUTATIONS)`.
+ */
 template<typename FacePermutation>
 [[nodiscard]] std::shared_ptr<DofTransform::MatrixStorage const>
 nedelecTriangularFaceMomentTransform( FacePermutation permutation, uint16_type degree )
@@ -177,102 +111,29 @@ nedelecTriangularFaceMomentTransform( FacePermutation permutation, uint16_type d
  * The test basis is RT_{k-1} for public NED2 order `k`. Its pullback is the
  * contravariant two-dimensional Piola map, unlike NED1's componentwise
  * polynomial tangent basis.
+ *
+ * @param vertexPermutation Local-to-canonical face vertex indices.
+ * @param publicOrder Public NED2 family order `k`.
+ * @return Cached immutable matrix acting on canonical RT face moments.
+ * @pre `vertexPermutation` is a permutation of `{0,1,2}` and `publicOrder > 0`.
+ * @throws std::length_error If the reference sampling indices exceed local index storage.
  */
 [[nodiscard]] std::shared_ptr<DofTransform::MatrixStorage const>
 nedelecTriangularFaceRTMomentTransform(
     std::array<uint16_type,3> const& vertexPermutation,
-    uint16_type publicOrder )
-{
-    CHECK_GT( publicOrder, 0 );
-    using matrix_type = Eigen::MatrixXd;
-    using vector2_type = Eigen::Vector2d;
-    using storage_ptrtype = std::shared_ptr<DofTransform::MatrixStorage const>;
-    static std::mutex cacheMutex;
-    static std::map<std::pair<uint16_type,uint16_type>, storage_ptrtype> cache;
-    const uint16_type permutationCode = static_cast<uint16_type>(
-        9*vertexPermutation[0]+3*vertexPermutation[1]+vertexPermutation[2] );
-    auto const cacheKey = std::make_pair( permutationCode, publicOrder );
-    {
-        std::scoped_lock lock( cacheMutex );
-        if ( auto const it = cache.find( cacheKey ); it != cache.end() )
-            return it->second;
-    }
-
-    // RaviartThomasDynamicPolynomialSet uses the Feel++ reference triangle,
-    // whose vertices are (-1,-1), (1,-1), and (-1,1).  The face functional
-    // and interpolation kernels convert their unit barycentric coordinates
-    // to this frame before tabulating the same RT basis.
-    std::array<vector2_type,3> const vertices{{ vector2_type( -1., -1. ),
-                                                vector2_type(  1., -1. ),
-                                                vector2_type( -1.,  1. ) }};
-    vector2_type const referenceOrigin = vertices[0];
-    vector2_type const origin = vertices[vertexPermutation[0]];
-    Eigen::Matrix2d jacobian;
-    jacobian.col( 0 ) = ( vertices[vertexPermutation[1]]-origin )/2.;
-    jacobian.col( 1 ) = ( vertices[vertexPermutation[2]]-origin )/2.;
-    const Eigen::Matrix2d inverse = jacobian.inverse();
-    const double determinant = std::abs( jacobian.determinant() );
-
-    RaviartThomasDynamicPolynomialSet<2> moments(
-        RuntimeOrder{ static_cast<uint16_type>( publicOrder-1 ) } );
-    const uint16_type latticeDegree = Feel::detail::checkedLocalIndexValue(
-        static_cast<size_type>( publicOrder ) + 2 );
-    const uint16_type pointCount = Feel::detail::checkedLocalIndexValue(
-        Feel::detail::SimplexCardinality::total( 2, latticeDegree ) );
-    typename decltype( moments )::points_type canonicalPoints( 2, pointCount );
-    typename decltype( moments )::points_type localPoints( 2, pointCount );
-    uint16_type point = 0;
-    for ( uint16_type i = 0; i <= latticeDegree; ++i )
-        for ( uint16_type j = 0; j <= latticeDegree-i; ++j, ++point )
-        {
-            vector2_type const x( -1.+2.*double( i )/latticeDegree,
-                                  -1.+2.*double( j )/latticeDegree );
-            vector2_type const local = referenceOrigin+inverse*( x-origin );
-            canonicalPoints( 0, point ) = x[0];
-            canonicalPoints( 1, point ) = x[1];
-            localPoints( 0, point ) = local[0];
-            localPoints( 1, point ) = local[1];
-        }
-    auto const canonicalValues = moments.evaluate( canonicalPoints );
-    auto const localValues = moments.evaluate( localPoints );
-    const uint16_type dimension = moments.polynomialDimension();
-    matrix_type canonical( 2*pointCount, dimension );
-    matrix_type permuted( 2*pointCount, dimension );
-    for ( uint16_type q = 0; q < pointCount; ++q )
-        for ( uint16_type basis = 0; basis < dimension; ++basis )
-        {
-            vector2_type localValue( localValues( 2*basis, q ),
-                                     localValues( 2*basis+1, q ) );
-            vector2_type mappedValue = jacobian*localValue/determinant;
-            for ( uint16_type component = 0; component < 2; ++component )
-            {
-                canonical( 2*q+component, basis ) =
-                    canonicalValues( 2*basis+component, q );
-                permuted( 2*q+component, basis ) = mappedValue[component];
-            }
-        }
-    matrix_type const testBasisTransform =
-        canonical.colPivHouseholderQr().solve( permuted );
-    matrix_type const functionalTransform = testBasisTransform.transpose();
-    auto storage = std::make_shared<DofTransform::MatrixStorage>();
-    storage->rows = dimension;
-    storage->cols = dimension;
-    storage->values.resize( static_cast<std::size_t>( dimension )*dimension );
-    for ( uint16_type row = 0; row < dimension; ++row )
-        for ( uint16_type column = 0; column < dimension; ++column )
-            storage->values[static_cast<std::size_t>( row )*dimension+column] =
-                functionalTransform( row, column );
-    {
-        std::scoped_lock lock( cacheMutex );
-        return cache.try_emplace( cacheKey, std::move( storage ) ).first->second;
-    }
-}
+    uint16_type publicOrder );
 
 /**
  * @brief Return the explicit local-to-face-entity vertex permutation.
  *
  * Deriving the action from vertex identifiers avoids depending on the
  * historical direction convention of `facePermutation()`.
+ *
+ * @tparam ElementType Mesh element exposing face and point topology.
+ * @param element Element containing the triangular face.
+ * @param localFace Element-local face identifier.
+ * @return Canonical face vertex index for each of its three local vertices.
+ * @pre `localFace` identifies a triangular face of `element`.
  */
 template<typename ElementType>
 [[nodiscard]] std::array<uint16_type,3>
@@ -372,12 +233,24 @@ struct NedelecTraits
 
 namespace detail
 {
+/**
+ * @brief Convert a public NED1 order to its ambient polynomial degree.
+ * @param publicOrder Public NED1 family order `k`.
+ * @return The checked degree `k+1`.
+ * @throws std::length_error If the degree exceeds local index storage.
+ */
 [[nodiscard]] constexpr uint16_type nedelec1InternalOrder( uint16_type publicOrder )
 {
     return checkedLocalIndexValue(
         static_cast<size_type>( publicOrder ) + 1 );
 }
 
+/**
+ * @brief Compute the NED1 local dimension before narrowing to local index storage.
+ * @param dim Simplex dimension, either 2 or 3.
+ * @param publicOrder Public NED1 family order.
+ * @return Number of element-local degrees of freedom as a `size_type`.
+ */
 [[nodiscard]] constexpr size_type
 nedelec1TotalDofSize( uint16_type dim,
                        uint16_type publicOrder ) noexcept
@@ -389,6 +262,12 @@ nedelec1TotalDofSize( uint16_type dim,
                      ( order + 4 ) / 2;
 }
 
+/**
+ * @brief Compute the NED2 local dimension before narrowing to local index storage.
+ * @param dim Simplex dimension, either 2 or 3.
+ * @param publicOrder Public NED2 family order.
+ * @return Dimension of the full vector polynomial space as a `size_type`.
+ */
 [[nodiscard]] constexpr size_type
 nedelec2TotalDofSize( uint16_type dim,
                        uint16_type publicOrder ) noexcept
@@ -400,6 +279,14 @@ nedelec2TotalDofSize( uint16_type dim,
                      ( order + 4 ) / 2;
 }
 
+/**
+ * @brief Check that a runtime Nedelec order and local dimension fit index storage.
+ * @tparam Kind Nedelec family whose dimension formula is checked.
+ * @param dim Simplex dimension, either 2 or 3.
+ * @param publicOrder Requested public family order.
+ * @return The unchanged, validated order.
+ * @throws std::length_error If the ambient degree or local dimension exceeds local index storage.
+ */
 template<NedelecKind Kind>
 [[nodiscard]] constexpr RuntimeOrder
 validatedNedelecSimplexOrder( uint16_type dim,
@@ -416,17 +303,37 @@ validatedNedelecSimplexOrder( uint16_type dim,
     return publicOrder;
 }
 
+/**
+ * @brief Count tangential point evaluations on one NED1 edge.
+ * @param publicOrder Public NED1 family order `k`.
+ * @return The checked count `k+1`.
+ * @throws std::length_error If the count exceeds local index storage.
+ */
 [[nodiscard]] constexpr uint16_type nedelec1EdgeDof( uint16_type publicOrder )
 {
     return nedelec1InternalOrder( publicOrder );
 }
 
+/**
+ * @brief Count NED1 moments in the interior of a triangular entity.
+ * @param dim Simplex dimension; the count is the same for a 2D cell or a 3D face.
+ * @param publicOrder Public NED1 family order `k`.
+ * @return The checked count `k*(k+1)`.
+ * @throws std::length_error If the count exceeds local index storage.
+ */
 [[nodiscard]] constexpr uint16_type nedelec1FaceDof( uint16_type dim, uint16_type publicOrder )
 {
     const size_type order = publicOrder;
     return checkedLocalIndexValue( order * ( order + 1 ) );
 }
 
+/**
+ * @brief Count NED1 moments in the interior of a tetrahedron.
+ * @param dim Simplex dimension, either 2 or 3.
+ * @param publicOrder Public NED1 family order `k`.
+ * @return The checked count `(k+1)*k*(k-1)/2`, or zero for 2D or `k < 2`.
+ * @throws std::length_error If the count exceeds local index storage.
+ */
 [[nodiscard]] constexpr uint16_type nedelec1VolumeDof( uint16_type dim, uint16_type publicOrder )
 {
     const size_type order = publicOrder;
@@ -436,6 +343,13 @@ validatedNedelecSimplexOrder( uint16_type dim,
                : 0;
 }
 
+/**
+ * @brief Return the checked local dimension of a NED1 simplex element.
+ * @param dim Simplex dimension, either 2 or 3.
+ * @param publicOrder Public NED1 family order.
+ * @return Number of element-local degrees of freedom.
+ * @throws std::length_error If the dimension exceeds local index storage.
+ */
 [[nodiscard]] constexpr uint16_type nedelec1TotalDof( uint16_type dim, uint16_type publicOrder )
 {
     return checkedLocalIndexValue(
@@ -489,6 +403,11 @@ struct times_rotx
 {
     typedef typename P::value_type value_type;
     typedef typename P::points_type points_type;
+    /**
+     * @brief Select a component of the two-dimensional rotated-coordinate product.
+     * @param p Scalar polynomial to multiply by `(y,-x)`.
+     * @param c Component index, either 0 or 1.
+     */
     times_rotx ( P const& p, int c  )
         :
         M_p ( p ),
@@ -496,6 +415,11 @@ struct times_rotx
     {
         //VLOG(4) << "component : " << c << std::endl;
     }
+    /**
+     * @brief Evaluate the selected component of `(y,-x)*p`.
+     * @param __pts Reference points stored as columns.
+     * @return One product value per point.
+     */
     typename ublas::vector<value_type> operator() ( points_type const& __pts ) const
     {
 #if 0
@@ -523,9 +447,20 @@ struct times_crossx_component
 {
     using value_type = typename P::value_type;
     using points_type = typename P::points_type;
+    /**
+     * @brief Select a component of the cross product `(e_axis cross x)*p`.
+     * @param p Scalar polynomial multiplying the cross product.
+     * @param axis Cartesian unit-vector index, in `[0,3)`.
+     * @param component Cartesian output component, in `[0,3)`.
+     */
     times_crossx_component( P const& p, int axis, int component )
         : M_p( p ), M_axis( axis ), M_component( component ) {}
 
+    /**
+     * @brief Evaluate the selected cross-product component at reference points.
+     * @param points Three-dimensional reference points stored as columns.
+     * @return One component value per point, or zeros when axis equals component.
+     */
     ublas::vector<value_type> operator()( points_type const& points ) const
     {
         ublas::vector<value_type> result( points.size2(), value_type( 0 ) );
@@ -548,6 +483,16 @@ struct times_crossx_component
  * `AmbientVector` and `AmbientScalar` select only the polynomial container
  * storage policy. The mathematical construction is shared verbatim by the
  * compile-time and runtime finite elements.
+ *
+ * @tparam Dim Simplex dimension, either 2 or 3.
+ * @tparam AmbientVector Ambient vector polynomial storage type.
+ * @tparam AmbientScalar Ambient scalar polynomial storage type.
+ * @tparam VectorPolynomialSet Resulting vector polynomial container type.
+ * @tparam ScalarPolynomialSet Scalar container used to construct the enrichment.
+ * @param ambientVector Vector polynomial basis through degree `publicOrder+1`.
+ * @param ambientScalar Scalar polynomial basis through degree `publicOrder+1`.
+ * @param publicOrder Public NED1 family order.
+ * @return Coefficient matrix of an independent basis in the ambient coordinates.
  */
 template<uint16_type Dim, typename AmbientVector, typename AmbientScalar,
          typename VectorPolynomialSet, typename ScalarPolynomialSet>
@@ -660,6 +605,20 @@ struct Nedelec1SamplingLayout
 
 /**
  * @brief Build the ordered NED1 dual functional set for static or runtime order.
+ * @tparam Space NED1 primal polynomial space type.
+ * @tparam ReferenceConvex Reference simplex type.
+ * @tparam AmbientVector Ambient vector polynomial storage type.
+ * @tparam VectorPolynomialSet Container for the cell moment polynomials.
+ * @tparam EdgePointsProvider Callable returning reference sampling points for an edge.
+ * @param primal Primal space on which the functionals act.
+ * @param referenceConvex Reference simplex providing entity topology and geometry.
+ * @param publicOrder Public NED1 family order.
+ * @param ambientVector Ambient vector basis used for cell moments.
+ * @param[out] elementPoints Complete element expression-sampling table.
+ * @param[out] facetPoints Sampling tables for each facet closure, sized by the caller.
+ * @param[out] samplingLayout Offsets and cardinalities of the sampling blocks.
+ * @param edgePointsProvider Provider of the ordered tangential edge evaluation points.
+ * @return Functionals ordered by edge, triangular face, then cell interior.
  */
 template<typename Space, typename ReferenceConvex, typename AmbientVector,
          typename VectorPolynomialSet, typename EdgePointsProvider>
@@ -772,6 +731,18 @@ buildNedelec1Functionals( Space const& primal,
  * FIAT's convention is followed exactly: `k+2` edge tangential evaluations
  * for Feel++ public order `k`, RT_{k-1} moments on triangular faces and 2D
  * cells, and RT_{k-2} moments in tetrahedral cells.
+ *
+ * @tparam Space NED2 primal polynomial space type.
+ * @tparam ReferenceConvex Reference simplex type.
+ * @tparam EdgePointsProvider Callable returning reference sampling points for an edge.
+ * @param primal Primal space on which the functionals act.
+ * @param referenceConvex Reference simplex providing entity topology and geometry.
+ * @param publicOrder Public NED2 family order `k`.
+ * @param[out] elementPoints Complete element expression-sampling table.
+ * @param[out] facetPoints Sampling tables for each facet closure, sized by the caller.
+ * @param[out] samplingLayout Offsets and cardinalities of the sampling blocks.
+ * @param edgePointsProvider Provider of the ordered tangential edge evaluation points.
+ * @return Functionals ordered by edge, triangular face, then cell interior.
  */
 template<typename Space, typename ReferenceConvex, typename EdgePointsProvider>
 [[nodiscard]] std::vector<Functional<Space>>
@@ -936,6 +907,9 @@ public:
     static inline const uint16_type nOrder = super::nOrder;
     static inline const uint16_type nComponents = super::nComponents;
     static inline const bool is_product = false;
+    /**
+     * @brief Construct the primal basis for the compile-time Nedelec family and order.
+     */
     NedelecPolynomialSet()
         :
         super()
@@ -986,6 +960,9 @@ public:
     static inline const uint16_type nOrder = super::nOrder;
     static inline const uint16_type nComponents = super::nComponents;
     static inline const bool is_product = false;
+    /**
+     * @brief Construct the primal basis for the compile-time Nedelec family and order.
+     */
     NedelecPolynomialSet()
         :
         super()
@@ -1024,8 +1001,16 @@ public:
     static inline const uint16_type nComponents = N;
     static inline const bool is_product = false;
 
+    /**
+     * @brief Construct the lowest-order runtime Nedelec primal space.
+     */
     Nedelec1DynamicPolynomialSet() : Nedelec1DynamicPolynomialSet( RuntimeOrder{ 0 } ) {}
 
+    /**
+     * @brief Construct a runtime Nedelec primal space of the requested order.
+     * @param publicOrder Public Nedelec family order.
+     * @throws std::length_error If the ambient degree or local dimension exceeds local index storage.
+     */
     explicit Nedelec1DynamicPolynomialSet( RuntimeOrder publicOrder )
         : super( RuntimeOrder{
               Feel::detail::nedelec1InternalOrder(
@@ -1035,13 +1020,23 @@ public:
         build( publicOrder.value );
     }
 
+    /**
+     * @return Public NED1 family order.
+     */
     [[nodiscard]] uint16_type publicOrder() const noexcept { return M_publicOrder; }
+    /**
+     * @return Ambient polynomial degree, equal to the public order plus one.
+     */
     [[nodiscard]] uint16_type internalOrder() const noexcept
     {
         return Feel::detail::nedelec1InternalOrder( M_publicOrder );
     }
 
 private:
+    /**
+     * @brief Build the independent NED1 polynomial coefficients in the ambient basis.
+     * @param publicOrder Public NED1 family order.
+     */
     void build( uint16_type publicOrder )
     {
         M_publicOrder = publicOrder;
@@ -1079,10 +1074,18 @@ public:
     static inline const uint16_type nComponents = N;
     static inline const bool is_product = false;
 
+    /**
+     * @brief Construct the lowest-order runtime Nedelec primal space.
+     */
     Nedelec2DynamicPolynomialSet()
         : Nedelec2DynamicPolynomialSet( RuntimeOrder{ 0 } )
     {}
 
+    /**
+     * @brief Construct a runtime Nedelec primal space of the requested order.
+     * @param publicOrder Public Nedelec family order.
+     * @throws std::length_error If the ambient degree or local dimension exceeds local index storage.
+     */
     explicit Nedelec2DynamicPolynomialSet( RuntimeOrder publicOrder )
         : super( RuntimeOrder{ Feel::detail::nedelec2InternalOrder(
               Feel::detail::validatedNedelecSimplexOrder<
@@ -1136,6 +1139,9 @@ public:
     static inline const uint16_type nOrder = super::nOrder;
     static inline const uint16_type nComponents = super::nComponents;
     static inline const bool is_product = false;
+    /**
+     * @brief Construct the primal basis for the compile-time Nedelec family and order.
+     */
     NedelecPolynomialSet()
         :
         super()
@@ -1205,6 +1211,10 @@ public:
         ( nDim == 2 ) ? reference_convex_type::numEdges :
                         reference_convex_type::numGeometricFaces;
 
+    /**
+     * @brief Construct the NED1 dual and its expression-sampling layout.
+     * @param primal Primal space whose dimension must match the compile-time dual cardinality.
+     */
     NedelecDualFirstKind( primal_space_type const& primal )
         :
         super( primal ),
@@ -1269,22 +1279,30 @@ public:
     }
 
     /**
-     * \return the point set
+     * @return Complete element expression-sampling point table.
      */
-    //pointset_type const& pointSet() const { return M_pset; }
-
     points_type const& points() const
     {
         return M_pts;
     }
 
 
+    /**
+     * @brief Evaluate the dual functionals on a primal polynomial basis.
+     * @param pset Polynomial basis to evaluate.
+     * @return Matrix of functional values on the basis.
+     */
     matrix_type operator()( primal_space_type const& pset ) const
     {
         //VLOG(4) << "Nedelec1stKind matrix = " << M_fset( pset ) << std::endl;
         return M_fset( pset );
     }
 
+    /**
+     * @param f Element-local facet identifier.
+     * @return Expression-sampling points in the facet closure.
+     * @pre `f` indexes an existing facet.
+     */
     points_type const& points( uint16_type f ) const
     {
         return M_pts_per_face[f];
@@ -1294,10 +1312,22 @@ public:
     {
         return M_samplingLayout;
     }
+    /**
+     * @param f Element-local facet identifier.
+     * @param __i Column index in the facet sampling table.
+     * @return Immutable view of the selected reference sample.
+     * @pre Both indices are within the facet sampling table bounds.
+     */
     ublas::matrix_column<points_type const> point( uint16_type f, uint32_type __i ) const
     {
         return ublas::column( M_pts_per_face[f], __i );
     }
+    /**
+     * @param f Element-local facet identifier.
+     * @param __i Column index in the facet sampling table.
+     * @return Mutable view of the selected reference sample.
+     * @pre Both indices are within the facet sampling table bounds.
+     */
     ublas::matrix_column<points_type> point( uint16_type f, uint32_type __i )
     {
         return ublas::column( M_pts_per_face[f], __i );
@@ -1305,7 +1335,10 @@ public:
 
 private:
     /**
-     * set the pointset at face \c f using points \c n
+     * @brief Replace a facet expression-sampling table.
+     * @param f Element-local facet identifier.
+     * @param n Reference points stored as columns.
+     * @pre `f` indexes an existing facet.
      */
     void setPoints( uint16_type f, points_type const& n )
     {
@@ -1505,6 +1538,10 @@ public:
     static inline const uint16_type nDofPerVolume = 0;
     static inline const uint16_type nLocalDof = numPoints;
 
+    /**
+     * @brief Construct the NED2 dual matching the runtime primal order.
+     * @param primal Runtime NED2 primal space supplying the public order.
+     */
     explicit Nedelec2DynamicDual( primal_space_type const& primal )
         : super( primal ),
           M_publicOrder( primal.publicOrder() ),
@@ -1528,46 +1565,94 @@ public:
         M_functionals.setFunctionalSet( functionals );
     }
 
+    /**
+     * @return Public NED2 family order.
+     */
     [[nodiscard]] uint16_type publicOrder() const noexcept { return M_publicOrder; }
+    /**
+     * @return Ambient polynomial degree.
+     */
     [[nodiscard]] uint16_type internalOrder() const noexcept { return M_internalOrder; }
+    /**
+     * @return Zero: Nedelec functionals are not attached to vertices.
+     */
     [[nodiscard]] constexpr uint16_type dofPerVertex() const noexcept { return 0; }
+    /**
+     * @return Number of tangential evaluation functionals on one edge.
+     */
     [[nodiscard]] uint16_type dofPerEdge() const noexcept
     {
         return Feel::detail::nedelec2EdgeDof( M_publicOrder );
     }
+    /**
+     * @return Number of triangular interior moments, on the cell in 2D or a face in 3D.
+     */
     [[nodiscard]] uint16_type dofPerFace() const noexcept
     {
         return nDim == 2
             ? Feel::detail::nedelec2CellDof( nDim, M_publicOrder )
             : Feel::detail::nedelec2FaceDof( nDim, M_publicOrder );
     }
+    /**
+     * @return Number of tetrahedral cell-interior moments, or zero in 2D.
+     */
     [[nodiscard]] uint16_type dofPerVolume() const noexcept
     {
         return nDim == 3
             ? Feel::detail::nedelec2CellDof( nDim, M_publicOrder ) : 0;
     }
+    /**
+     * @return Total number of element-local degrees of freedom.
+     */
     [[nodiscard]] uint16_type localDof() const noexcept
     {
         return Feel::detail::nedelec2TotalDof( nDim, M_publicOrder );
     }
+    /**
+     * @return Complete element expression-sampling point table.
+     */
     [[nodiscard]] points_type const& points() const { return M_points; }
+    /**
+     * @param space Primal polynomial basis to evaluate.
+     * @return Matrix of dual functional values on that basis.
+     */
     [[nodiscard]] matrix_type operator()( primal_space_type const& space ) const
     {
         return M_functionals( space );
     }
+    /**
+     * @param face Element-local facet identifier.
+     * @return Expression-sampling points in the facet closure.
+     * @pre `face` indexes an existing facet.
+     */
     [[nodiscard]] points_type const& points( uint16_type face ) const
     {
         return M_facetPoints[face];
     }
+    /**
+     * @return Sampling offsets and cardinalities used by the interpolant.
+     */
     [[nodiscard]] Feel::detail::Nedelec1SamplingLayout const& samplingLayout() const noexcept
     {
         return M_samplingLayout;
     }
+    /**
+     * @param face Element-local facet identifier.
+     * @param pointId Column index in the facet sampling table.
+     * @return Immutable view of the selected reference sample.
+     * @pre Both indices are within the facet sampling table bounds.
+     */
     [[nodiscard]] ublas::matrix_column<points_type const>
     point( uint16_type face, uint32_type pointId ) const
     {
         return ublas::column( M_facetPoints[face], pointId );
     }
+    /**
+     * @param face Element-local facet identifier.
+     * @param pointId Column index in the facet sampling table.
+     * @return Mutable view of the selected reference sample.
+     * @pre Both indices are within the facet sampling table bounds.
+     */
     [[nodiscard]] ublas::matrix_column<points_type>
     point( uint16_type face, uint32_type pointId )
     {
@@ -1628,6 +1713,10 @@ public:
         ? reference_convex_type::numEdges
         : reference_convex_type::numGeometricFaces;
 
+    /**
+     * @brief Construct the NED2 dual for the compile-time primal order.
+     * @param primal Primal space whose dimension must match the compile-time dual cardinality.
+     */
     explicit Nedelec2Dual( primal_space_type const& primal )
         : super( primal ),
           M_referenceConvex(),
@@ -1665,11 +1754,23 @@ public:
     {
         return M_samplingLayout;
     }
+    /**
+     * @param face Element-local facet identifier.
+     * @param pointId Column index in the facet sampling table.
+     * @return Immutable view of the selected reference sample.
+     * @pre Both indices are within the facet sampling table bounds.
+     */
     [[nodiscard]] ublas::matrix_column<points_type const>
     point( uint16_type face, uint32_type pointId ) const
     {
         return ublas::column( M_facetPoints[face], pointId );
     }
+    /**
+     * @param face Element-local facet identifier.
+     * @param pointId Column index in the facet sampling table.
+     * @return Mutable view of the selected reference sample.
+     * @pre Both indices are within the facet sampling table bounds.
+     */
     [[nodiscard]] ublas::matrix_column<points_type>
     point( uint16_type face, uint32_type pointId )
     {
@@ -1809,6 +1910,9 @@ public:
      */
     //@{
 
+    /**
+     * @brief Construct the nodal Nedelec element from its compile-time primal and dual spaces.
+     */
     Nedelec()
         :
         super( dual_space_type( primal_space_type() ) ),
@@ -1828,12 +1932,19 @@ public:
 #endif
     }
 
+    /**
+     * @brief Copy a Nedelec element and initialize its reference simplex.
+     * @param cr Element to copy.
+     */
     Nedelec( Nedelec const & cr )
         :
         super( cr ),
         M_refconvex()
     {}
 
+    /**
+     * @brief Destroy the Nedelec element.
+     */
     ~Nedelec() override
     {}
 
@@ -1851,13 +1962,16 @@ public:
     //@{
 
     /**
-     * \return the reference convex associated with the lagrange polynomials
+     * @return Reference simplex associated with the Nedelec basis.
      */
     reference_convex_type const& referenceConvex() const
     {
         return M_refconvex;
     }
 
+    /**
+     * @return Finite-element family identifier, `nedelec`.
+     */
     std::string familyName() const override
     {
         return "nedelec";
@@ -1875,12 +1989,21 @@ public:
             return localDofId;
         }
 
+    /**
+     * @param localDofId Local functional index; the answer is independent of the index.
+     * @return False: the vector functionals expose no scalar representative point.
+     */
     bool dofHasRepresentativePoint( uint16_type localDofId ) const override
         {
             (void)localDofId;
             return false;
         }
 
+    /**
+     * @brief Classify a local functional by its topological attachment.
+     * @param localDofId Element-local degree-of-freedom index.
+     * @return InteriorMoment for cell DoFs, TangentialMoment for boundary DoFs, or Other for an invalid index.
+     */
     uint16_type dofFunctionalKind( uint16_type localDofId ) const override
         {
             auto const attachment = this->dofAttachment( localDofId );
@@ -1891,6 +2014,11 @@ public:
             return static_cast<uint16_type>( DofFunctionalKind::TangentialMoment );
         }
 
+    /**
+     * @brief Locate the mesh entity carrying a local degree of freedom.
+     * @param localDofId Element-local degree-of-freedom index.
+     * @return Entity dimension, identifier, and ordinal; invalid for an out-of-range index.
+     */
     typename super::DofAttachment dofAttachment( uint16_type localDofId ) const override
         {
             return simplexDofAttachment<typename super::DofAttachment>(
@@ -1902,6 +2030,13 @@ public:
                 this->dofType( localDofId ) );
         }
 
+    /**
+     * @brief Return the canonical-to-local orientation action for a degree of freedom.
+     * @tparam ElementType Mesh element exposing entity permutations and vertex identifiers.
+     * @param element Mesh element carrying the local functional.
+     * @param localDofId Element-local degree-of-freedom index.
+     * @return A triangular-face moment matrix row, or the generic entity orientation action.
+     */
     template<typename ElementType>
     [[nodiscard]] DofTransform dofTransform( ElementType const& element, uint16_type localDofId ) const
     {
@@ -1949,6 +2084,11 @@ public:
      */
     //@{
     typedef Eigen::VectorXd local_interpolant_type;
+    /**
+     * @brief Allocate a zeroed element interpolation vector.
+     * @param n Number of local DoF blocks to allocate.
+     * @return Vector with `n` times the local DoF count entries.
+     */
     local_interpolant_type
     localInterpolant( int n = 1 ) const
         {
@@ -1956,12 +2096,25 @@ public:
         }
 
     typedef Eigen::MatrixXd local_interpolants_type;
+    /**
+     * @brief Allocate a zeroed collection of local interpolation vectors.
+     * @param p Number of columns.
+     * @param n Number of local DoF blocks per column.
+     * @return Matrix with `n` times the local DoF count rows and `p` columns.
+     */
     local_interpolants_type
     localInterpolants( int p, int n = 1 ) const
         {
             return local_interpolants_type::Zero( n*nLocalDof, p );
         }
 
+    /**
+     * @brief Apply the element edge, face, and cell functionals to an expression.
+     * @tparam ExprType Vector expression with a compatible geometric context.
+     * @param expr Expression sampled at the dual sampling points.
+     * @param[out] Ihloc Preallocated local DoF vector, cleared before interpolation.
+     * @pre `Ihloc` has at least `nLocalDof` entries.
+     */
     template<typename ExprType>
     void
     interpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
@@ -2021,11 +2174,22 @@ public:
                 }
             }
         }
+    /**
+     * @brief Allocate a zeroed facet-closure interpolation vector.
+     * @return Vector containing all edge and face-interior DoFs in one facet closure.
+     */
     local_interpolant_type
     faceLocalInterpolant() const
         {
             return local_interpolant_type::Zero( nLocalFaceDof, 1 );
         }
+    /**
+     * @brief Apply edge and face-interior functionals on the current facet closure.
+     * @tparam ExprType Vector expression with a facet geometric context.
+     * @param expr Expression sampled at the current facet sampling points.
+     * @param[out] Ihloc Preallocated facet DoF vector, cleared before interpolation.
+     * @pre `Ihloc` has at least `nLocalFaceDof` entries.
+     */
     template<typename ExprType>
     void
     faceInterpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
@@ -2068,6 +2232,12 @@ public:
 
         }
 
+    /**
+     * @brief Apply all element functionals to each domain basis row.
+     * @tparam ExprType Basis expression with an element geometric context.
+     * @param expr Basis expression sampled at the dual sampling points.
+     * @param[out] Ihloc Preallocated matrix with domain basis rows and `nLocalDof` columns.
+     */
     template<typename ExprType>
         requires ( std::remove_cvref_t<ExprType>::gmc_type::subEntityCoDim == 0 )
     void
@@ -2076,6 +2246,13 @@ public:
         Feel::detail::interpolateBasisFunctionRows( *this, expr, Ihloc );
     }
 
+    /**
+     * @brief Forward basis interpolation through the compatibility mapping overload.
+     * @tparam ExprType Basis expression with a supported geometric context.
+     * @param expr Basis expression passed to the matching context overload.
+     * @param[out] Ihloc Preallocated interpolation matrix.
+     * @param mapExprPointToDofPoint Compatibility argument; currently ignored.
+     */
     template<typename ExprType>
     void
     interpolateBasisFunction( ExprType&& expr, local_interpolants_type & Ihloc, std::vector<uint16_type> const& mapExprPointToDofPoint ) const
@@ -2084,6 +2261,13 @@ public:
             return this->interpolateBasisFunction( std::forward<ExprType>( expr ), Ihloc );
         }
 
+    /**
+     * @brief Interpolate oriented edge traces of basis rows on the current facet.
+     * @tparam ExprType Basis expression with a facet geometric context.
+     * @param expr Basis expression sampled at facet edge points.
+     * @param[out] Ihloc Preallocated matrix indexed by domain basis row and element DoF.
+     * @note This overload fills edge functionals only.
+     */
     template<typename ExprType>
         requires ( std::remove_cvref_t<ExprType>::gmc_type::subEntityCoDim == 1 )
     void
@@ -2176,6 +2360,7 @@ struct NedelecDynamicData<N, NedelecKind::NED2, T, Tag>
  * orientation dispatch.
  *
  * @tparam N reference-simplex dimension
+ * @tparam Kind first- or second-kind family
  * @tparam T scalar type
  * @tparam TheTAG finite-element family tag
  */
@@ -2241,19 +2426,33 @@ public:
     static inline const uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
     static inline const uint16_type nLocalFaceDof = face_type::numEdges*nDofPerEdge;
 
+    /**
+     * @brief Construct the lowest-order runtime Nedelec element.
+     */
     NedelecDynamicSimplex() : NedelecDynamicSimplex( RuntimeOrder{ 0 } ) {}
 
-    /** @brief Construct a runtime Nedelec finite element of public order `order`. */
+    /**
+     * @brief Construct a runtime Nedelec finite element of the requested order.
+     * @param order Public Nedelec family order.
+     * @throws std::length_error If the ambient degree or local dimension exceeds local index storage.
+     */
     explicit NedelecDynamicSimplex( RuntimeOrder order )
         : super( dual_space_type( primal_space_type( order ) ) ),
           M_publicOrder( order.value ),
           M_refconvex()
     {}
 
+    /**
+     * @brief Copy the runtime element and initialize its reference simplex.
+     * @param other Element whose order and finite-element basis are copied.
+     */
     NedelecDynamicSimplex( NedelecDynamicSimplex const& other )
         : super( other ), M_publicOrder( other.M_publicOrder ), M_refconvex()
     {}
 
+    /**
+     * @brief Destroy the runtime Nedelec element.
+     */
     ~NedelecDynamicSimplex() override = default;
 
     template<int subN>
@@ -2334,17 +2533,42 @@ public:
             return static_cast<uint16_type>( face_type::numEdges*dofPerEdge()+dofPerFace() );
     }
 
+    /**
+     * @return Total local dimension: Nedelec uses one vector basis rather than a component product.
+     */
     uint16_type localDofPerComponent() const override { return localDof(); }
+    /**
+     * @param perComponent Compatibility flag; the vector-basis count is independent of it.
+     * @return Total number of local degrees of freedom.
+     */
     uint16_type localDofCount( bool perComponent = false ) const override
     {
         (void)perComponent;
         return localDof();
     }
+    /**
+     * @return Component index zero for every vector functional.
+     */
     uint16_type component( uint16_type /*localDofId*/ ) const override { return 0; }
+    /**
+     * @param localDofId Element-local degree-of-freedom index.
+     * @return The unchanged index, since the vector basis has no component-product parent.
+     */
     uint16_type dofParent( uint16_type localDofId ) const override { return localDofId; }
+    /**
+     * @return False: the vector functionals expose no scalar representative point.
+     */
     bool dofHasRepresentativePoint( uint16_type /*localDofId*/ ) const override { return false; }
+    /**
+     * @return Orientation-sensitive DoF type code, always 1.
+     */
     uint16_type dofType( uint16_type /*localDofId*/ ) const override { return 1; }
 
+    /**
+     * @brief Classify a local functional by its topological attachment.
+     * @param localDofId Element-local degree-of-freedom index.
+     * @return InteriorMoment for cell DoFs, TangentialMoment for boundary DoFs, or Other for an invalid index.
+     */
     uint16_type dofFunctionalKind( uint16_type localDofId ) const override
     {
         auto const attachment = this->dofAttachment( localDofId );
@@ -2355,6 +2579,11 @@ public:
         return static_cast<uint16_type>( DofFunctionalKind::TangentialMoment );
     }
 
+    /**
+     * @brief Locate the mesh entity carrying a local degree of freedom.
+     * @param localDofId Element-local degree-of-freedom index.
+     * @return Entity dimension, identifier, and ordinal; invalid for an out-of-range index.
+     */
     typename super::DofAttachment dofAttachment( uint16_type localDofId ) const override
     {
         return simplexDofAttachment<typename super::DofAttachment>(
@@ -2366,6 +2595,13 @@ public:
             this->dofType( localDofId ) );
     }
 
+    /**
+     * @brief Return the canonical-to-local orientation action for a degree of freedom.
+     * @tparam ElementType Mesh element exposing entity permutations and vertex identifiers.
+     * @param element Mesh element carrying the local functional.
+     * @param localDofId Element-local degree-of-freedom index.
+     * @return A triangular-face moment matrix row, or the generic entity orientation action.
+     */
     template<typename ElementType>
     [[nodiscard]] DofTransform dofTransform( ElementType const& element,
                                              uint16_type localDofId ) const
@@ -2395,14 +2631,29 @@ public:
 
     using local_interpolant_type = Eigen::VectorXd;
     using local_interpolants_type = Eigen::MatrixXd;
+    /**
+     * @brief Allocate a zeroed element interpolation vector.
+     * @param n Number of local DoF blocks to allocate.
+     * @return Vector with `n` times the local DoF count entries.
+     */
     [[nodiscard]] local_interpolant_type localInterpolant( int n = 1 ) const
     {
         return local_interpolant_type::Zero( n*localDof() );
     }
+    /**
+     * @brief Allocate a zeroed collection of local interpolation vectors.
+     * @param p Number of columns.
+     * @param n Number of local DoF blocks per column.
+     * @return Matrix with `n` times the local DoF count rows and `p` columns.
+     */
     [[nodiscard]] local_interpolants_type localInterpolants( int p, int n = 1 ) const
     {
         return local_interpolants_type::Zero( n*localDof(), p );
     }
+    /**
+     * @brief Allocate a zeroed facet-closure interpolation vector.
+     * @return Vector containing all edge and face-interior DoFs in one facet closure.
+     */
     [[nodiscard]] local_interpolant_type faceLocalInterpolant() const
     {
         return local_interpolant_type::Zero( localFacetDof(), 1 );
@@ -2410,6 +2661,10 @@ public:
 
     /**
      * @brief Interpolate an expression with runtime Nedelec edge/face/cell DoFs.
+     * @tparam ExprType Vector expression with a compatible geometric context.
+     * @param expr Expression sampled at the dual sampling points.
+     * @param[out] localValues Preallocated local DoF vector, cleared before interpolation.
+     * @pre `localValues` has at least `localDof()` entries.
      */
     template<typename ExprType>
     void interpolate( ExprType& expr, local_interpolant_type& localValues ) const
@@ -2476,6 +2731,10 @@ public:
      *
      * Matrix assembly and ordinary interpolation share `interpolate()`, so
      * edge, face, and cell moments have one static/runtime implementation.
+     *
+     * @tparam ExprType Basis expression with an element geometric context.
+     * @param expression Basis expression sampled at the dual sampling points.
+     * @param[out] localMatrix Preallocated matrix with domain basis rows and `localDof()` columns.
      */
     template<typename ExprType>
         requires ( std::remove_cvref_t<ExprType>::gmc_type::subEntityCoDim == 0 )
@@ -2486,7 +2745,13 @@ public:
             *this, expression, localMatrix );
     }
 
-    /** @brief Interpolate the edge trace on a reference facet. */
+    /**
+     * @brief Apply edge and face-interior functionals on the current facet closure.
+     * @tparam ExprType Vector expression with a facet geometric context.
+     * @param expr Expression sampled at the current facet sampling points.
+     * @param[out] localValues Preallocated facet DoF vector, cleared before interpolation.
+     * @pre `localValues` has at least `localFacetDof()` entries.
+     */
     template<typename ExprType>
     void faceInterpolate( ExprType& expr, local_interpolant_type& localValues ) const
     {
@@ -2565,6 +2830,9 @@ class NedelecElement : public detail::NedelecBackend<Order, Dim, Kind, T, Tag>::
 
 public:
     using super::super;
+    /**
+     * @brief Construct the selected backend at its default public order.
+     */
     NedelecElement() = default;
 
     /** @return public Nedelec family order, distinct from the ambient polynomial degree. */
