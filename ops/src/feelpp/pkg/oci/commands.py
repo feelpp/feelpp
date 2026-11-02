@@ -171,6 +171,11 @@ def _add_image_generation_arguments(
         default=[],
         help="Override target OCI platforms. Repeat or use a comma-separated value, for example --platform linux/amd64",
     )
+    parser.add_argument(
+        "--cmake-flags",
+        default="",
+        help="Extra CMake flags passed into generated component builds",
+    )
     if backend_filter is None or backend_filter == "apt":
         parser.add_argument(
             "--variant",
@@ -186,11 +191,6 @@ def _add_image_generation_arguments(
             "--cxx",
             default="clang++",
             help="C++ compiler used in generated apt-backed component builds",
-        )
-        parser.add_argument(
-            "--cmake-flags",
-            default="",
-            help="Extra CMake flags passed into generated apt-backed component builds",
         )
     if backend_filter is None or backend_filter == "spack":
         parser.add_argument(

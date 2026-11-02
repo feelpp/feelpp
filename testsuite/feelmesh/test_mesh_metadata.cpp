@@ -148,6 +148,29 @@ BOOST_AUTO_TEST_CASE( mpiUnionCrossesBroadcastChunkBoundary )
     BOOST_CHECK( actual.at( count - 1 ) == marker( {count - 1} ) );
 }
 
+BOOST_AUTO_TEST_CASE( movedPointPreservesMarkerAndDuplicateInput )
+{
+    using MeshType = Mesh<Simplex<2, 1, 3>>;
+    MeshType mesh;
+    MeshType::point_type point( 0 );
+    point( 0 ) = 1.25;
+    point.setMarker( 17 );
+    auto [stored, inserted] = mesh.addPoint( std::move( point ) );
+    BOOST_REQUIRE( inserted );
+    BOOST_CHECK_EQUAL( stored->second( 0 ), 1.25 );
+    BOOST_CHECK_EQUAL( stored->second.marker().value(), 17 );
+
+    MeshType::point_type duplicate( 0 );
+    duplicate( 0 ) = 9.5;
+    duplicate.setMarker( 23 );
+    auto [existing, duplicateInserted] = mesh.addPoint( std::move( duplicate ) );
+    BOOST_CHECK( !duplicateInserted );
+    BOOST_CHECK( &existing->second == &stored->second );
+    BOOST_CHECK_EQUAL( duplicate( 0 ), 9.5 );
+    BOOST_CHECK_EQUAL( duplicate.marker().value(), 23 );
+    BOOST_CHECK_EQUAL( existing->second.marker().value(), 17 );
+}
+
 #if defined( FEELPP_HAS_HDF5 )
 BOOST_AUTO_TEST_CASE( partitionRoundTripPreservesEntityMarkers )
 {
@@ -197,8 +220,19 @@ BOOST_AUTO_TEST_CASE( partitionRoundTripPreservesEntityMarkers )
         BOOST_CHECK_EQUAL( reloaded->numGlobalElements(), mesh->numGlobalElements() );
         BOOST_CHECK( reloaded->markerNames() == mesh->markerNames() );
         BOOST_CHECK( reloaded->meshFragmentationByMarkerByEntity() == mesh->meshFragmentationByMarkerByEntity() );
+        BOOST_REQUIRE_EQUAL( reloaded->points().size(), mesh->points().size() );
         BOOST_REQUIRE_EQUAL( reloaded->elements().size(), mesh->elements().size() );
-        BOOST_CHECK( reloaded->elements().begin()->second.marker() == marker( {1, flag_type( 100 + rank )} ) );
+        auto const& loadedElement = reloaded->elements().begin()->second;
+        BOOST_CHECK( loadedElement.marker() == marker( {1, flag_type( 100 + rank )} ) );
+        for ( int vertex = 0; vertex < 3; ++vertex )
+        {
+            auto const& elementPoint = loadedElement.point( vertex );
+            auto const& storedPoint = reloaded->point( elementPoint.id() );
+            auto const& originalPoint = mesh->point( elementPoint.id() );
+            BOOST_CHECK( &elementPoint == &storedPoint );
+            for ( int coordinate = 0; coordinate < 3; ++coordinate )
+                BOOST_CHECK_EQUAL( storedPoint( coordinate ), originalPoint( coordinate ) );
+        }
     }
 }
 #endif
