@@ -1,6 +1,11 @@
+# SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+# SPDX-FileCopyrightText: 2026 University of Strasbourg
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
 from __future__ import annotations
 
 import argparse
+import hashlib
 from pathlib import Path
 import re
 
@@ -43,6 +48,23 @@ def branch_tag_suffix(branch: str) -> str:
     if not normalized or normalized == "develop":
         return ""
     return f"-{normalized}"
+
+
+def branch_image_tag(oci_dist: str, *, branch: str, suffix: str = "") -> str:
+    """Keep existing tags, shortening only oversized branch names to fit OCI tags."""
+    branch_suffix = branch_tag_suffix(branch)
+    tag = f"{oci_dist}{branch_suffix}{suffix}"
+    if len(tag) <= 128:
+        return tag
+
+    # Retain the distribution and image role, and distinguish branches whose
+    # readable prefixes are identical. Hash the original, unsanitized name.
+    digest = hashlib.sha256(branch.encode("utf-8")).hexdigest()[:12]
+    branch_budget = 128 - len(oci_dist) - len(suffix) - len(digest) - 2
+    if not branch_suffix or branch_budget < 1:
+        raise ValueError("OCI tag distribution and suffix leave no room for a branch name")
+    shortened = branch_suffix[1:][:branch_budget].rstrip("-.")
+    return f"{oci_dist}-{shortened}-{digest}{suffix}"
 
 
 def default_oci_namespace() -> str:

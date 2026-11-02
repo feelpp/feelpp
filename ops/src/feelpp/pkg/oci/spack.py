@@ -9,7 +9,7 @@ import yaml
 from .bake_permissions import fs_read_allow_flags, required_fs_read_paths_from_bake_payload
 from .catalog import ImageTarget, list_image_targets
 from .cmake_presets import resolve_cmake_preset
-from .common import branch_tag_suffix, default_bake_target_name, oci_image_ref
+from .common import branch_image_tag, default_bake_target_name, oci_image_ref
 from .platforms import normalize_platform_overrides
 from ..core.context import WorkspaceContext
 
@@ -168,11 +168,11 @@ def _normalize_requested_component(component: str | None) -> str | None:
 
 
 def _full_builder_tag(target: ImageTarget, *, branch: str) -> str:
-    return f"{target.oci_dist}{branch_tag_suffix(branch)}-full-dev"
+    return branch_image_tag(target.oci_dist, branch=branch, suffix="-full-dev")
 
 
 def _full_runtime_tag(target: ImageTarget, *, branch: str) -> str:
-    return f"{target.oci_dist}{branch_tag_suffix(branch)}-full"
+    return branch_image_tag(target.oci_dist, branch=branch, suffix="-full")
 
 
 def describe_spack_target(repo_root: Path, target: ImageTarget) -> dict[str, object]:
