@@ -15,16 +15,21 @@
 
 #define BOOST_TEST_MODULE test_pointset
 #include <feel/feelcore/testsuite.hpp>
+#include <boost/test/data/test_case.hpp>
+#include <boost/mp11/list.hpp>
 
 #include <feel/feelpoly/concepts.hpp>
 #include <feel/feelpoly/equispaced.hpp>
+#include <feel/feelpoly/electrostatic.hpp>
 #include <feel/feelpoly/fekete.hpp>
 #include <feel/feelpoly/gauss.hpp>
 #include <feel/feelmesh/simplex.hpp>
 #include <feel/feelmesh/hypercube.hpp>
 #include <feel/feelpoly/order.hpp>
 
+#include <array>
 #include <cmath>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 
@@ -880,6 +885,108 @@ BOOST_AUTO_TEST_CASE( test_fekete_static_dynamic_orders_0_to_10 )
         PointSetFekete, 10, Simplex<2, 1, 2>>( 1 );
     checkStaticDynamicPointsetRange<
         PointSetFekete, 10, Hypercube<2, 1, 2>>( 1 );
+}
+
+/** @brief Check a full/interior triangular point set against its cell contract.
+ * @tparam PointSetType Static or runtime-order point policy.
+ * @param pointset Constructed point set whose coordinates are stored by column.
+ * @param degree Effective polynomial degree.
+ * @param interior Whether only cell-interior points are requested.
+ */
+template<typename PointSetType>
+void checkTriangularPointset( PointSetType const& pointset, int degree, bool interior )
+{
+    auto const& points = pointset.points();
+    auto const expected = interior
+        ? Feel::detail::SimplexCardinality::onEntity( 2, 2, degree )
+        : Feel::detail::SimplexCardinality::total( 2, degree );
+    BOOST_REQUIRE_EQUAL( points.size1(), 2 );
+    BOOST_REQUIRE_EQUAL( points.size2(), expected );
+    for ( std::size_t q = 0; q < points.size2(); ++q )
+        BOOST_TEST_CONTEXT( "degree=" << degree << " interior=" << interior << " point=" << q )
+        {
+            BOOST_REQUIRE( std::isfinite( points( 0, q ) ) );
+            BOOST_REQUIRE( std::isfinite( points( 1, q ) ) );
+            BOOST_CHECK_GE( points( 0, q ), -1.0 - 2e-10 );
+            BOOST_CHECK_GE( points( 1, q ), -1.0 - 2e-10 );
+            BOOST_CHECK_LE( points( 0, q ) + points( 1, q ), 2e-10 );
+        }
+}
+
+/** Static triangular orders spanning base nodes and both dispatch/table bounds. */
+using fekete_table_orders = boost::mp11::mp_list_c<int, 0, 2, 3, 15, 16, 19>;
+
+/** @test Existing Fekete coordinates remain finite and retain their cardinality. */
+BOOST_AUTO_TEST_CASE_TEMPLATE( triangular_fekete_tables_cover_static_boundaries, Order, fekete_table_orders )
+{
+    for ( int interior : { 0, 1 } )
+        checkTriangularPointset( PointSetFekete<Simplex<2>, Order::value, double>{ interior },
+                                Order::value, interior != 0 );
+}
+
+/** First two static orders without triangular Fekete interior coordinates. */
+using missing_fekete_orders = boost::mp11::mp_list_c<int, 20, 21>;
+
+/** @test The triangular table limit does not narrow the Gauss–Lobatto backends. */
+BOOST_AUTO_TEST_CASE( fekete_gausslobatto_backends_retain_higher_orders )
+{
+    PointSetFekete<Simplex<1>, 20, double> segment;
+    PointSetFekete<Hypercube<2>, 20, double> quadrilateral;
+    BOOST_CHECK_EQUAL( segment.nPoints(), 21 );
+    BOOST_CHECK_EQUAL( quadrilateral.nPoints(), 441 );
+}
+
+/** @test Missing Fekete tables produce a diagnostic before coordinate indexing. */
+BOOST_AUTO_TEST_CASE_TEMPLATE( triangular_fekete_rejects_missing_tables, Order, missing_fekete_orders )
+{
+    using pointset_type = PointSetFekete<Simplex<2>, Order::value, double>;
+    for ( int interior : { 0, 1 } )
+        BOOST_CHECK_EXCEPTION( ( pointset_type{ interior } ), std::out_of_range,
+            []( std::out_of_range const& error )
+            { return std::string( error.what() ).find( "tables cover orders [3,19]" ) != std::string::npos; } );
+}
+
+/** @test Runtime Fekete keeps its existing inclusive dispatch endpoints. */
+BOOST_DATA_TEST_CASE( runtime_fekete_accepts_dispatch_endpoints,
+    boost::unit_test::data::make( std::array<int, 2>{ 0, 15 } ) *
+    boost::unit_test::data::make( std::array<int, 2>{ 0, 1 } ), degree, interior )
+{
+    checkTriangularPointset( PointSetFekete<Simplex<2>, Dynamic, double>{ RuntimeOrder{ degree }, interior },
+                            degree, interior != 0 );
+}
+
+/** @test The runtime bound remains distinct from static triangular table coverage. */
+BOOST_DATA_TEST_CASE( runtime_fekete_rejects_orders_outside_dispatch,
+    boost::unit_test::data::make( std::array<int, 3>{ 16, 20, 65535 } ), degree )
+{
+    using pointset_type = PointSetFekete<Simplex<2>, Dynamic, double>;
+    BOOST_CHECK_EXCEPTION( ( pointset_type{ RuntimeOrder{ degree } } ), std::out_of_range,
+        []( std::out_of_range const& error )
+        { return std::string( error.what() ).find( "supported range is [0,15]" ) != std::string::npos; } );
+}
+
+/** Low-order base construction and endpoints of the active electrostatic tables. */
+using electrostatic_table_orders = boost::mp11::mp_list_c<int, 2, 3, 7>;
+
+/** @test Active electrostatic tables retain valid full and interior point sets. */
+BOOST_AUTO_TEST_CASE_TEMPLATE( electrostatic_tables_cover_active_boundaries, Order, electrostatic_table_orders )
+{
+    for ( int interior : { 0, 1 } )
+        checkTriangularPointset( PointSetElectrostatic<Simplex<2>, Order::value, double>{ interior },
+                                Order::value, interior != 0 );
+}
+
+/** Disabled, absent and out-of-array-range electrostatic coordinate requests. */
+using missing_electrostatic_orders = boost::mp11::mp_list_c<int, 8, 13, 17>;
+
+/** @test Electrostatic construction rejects absent coordinates before orbit access. */
+BOOST_AUTO_TEST_CASE_TEMPLATE( electrostatic_rejects_missing_coordinate_tables, Order, missing_electrostatic_orders )
+{
+    using pointset_type = PointSetElectrostatic<Simplex<2>, Order::value, double>;
+    for ( int interior : { 0, 1 } )
+        BOOST_CHECK_EXCEPTION( ( pointset_type{ interior } ), std::out_of_range,
+            []( std::out_of_range const& error )
+            { return std::string( error.what() ).find( "tables cover orders [3,7]" ) != std::string::npos; } );
 }
 
 BOOST_AUTO_TEST_SUITE_END()

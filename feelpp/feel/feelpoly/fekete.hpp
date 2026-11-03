@@ -1,15 +1,14 @@
 /*
  * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  * SPDX-FileContributor: Goncalo Pena <goncalo.pena@epfl.ch>
- *
+ * SPDX-FileCopyrightText: 2026 University of Strasbourg
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
 /**
-   \file fekete.hpp
-   \author Goncalo Pena <goncalo.pena@epfl.ch>
-   \date 2006-10-02
-*/
+ * @file fekete.hpp
+ * @brief Fekete-compatible point policies and checked triangular interior tables.
+ */
 #ifndef __Fekete_H
 #define __Fekete_H 1
 
@@ -43,6 +42,11 @@ template< class Convex,
           typename T >
 class PointSetGaussLobatto;
 
+/** @brief Triangular Fekete nodes with warp-and-blend boundary coordinates.
+ * @tparam Convex Triangular reference convex supplying the entity layout.
+ * @tparam Order Static polynomial degree.
+ * @tparam T Coordinate scalar type.
+ */
 template< class Convex,
           int Order,
           typename T = double >
@@ -78,8 +82,13 @@ public :
 
     typedef std::vector<uint16_type> orbits_type;
 
+    /** Reference geometry supplying entity coordinates and orientation. */
     reference_convex_type RefConv;
 
+    /** @brief Construct full or interior-only triangular interpolation nodes.
+     * @param interior Select interior-only nodes when nonzero.
+     * @throws std::out_of_range When the triangular interior table is absent.
+     */
     PointSetFeketeSimplex( int interior = 0 )
     {
         PointSetWarpBlend<Convex, Order, T> G( interior );
@@ -110,10 +119,15 @@ public :
         this->setName( "fekete", Order );
     }
 
+    /** @brief Release point-set storage through the common point interface. */
     ~PointSetFeketeSimplex() override {}
 
 private :
 
+    /** @brief Read the triangular interior coordinates for the selected order.
+     * @return Interior nodes in the existing table order.
+     * @throws std::out_of_range If no interior table exists for this order.
+     */
     points_type innerFeketePoints()
     {
         points_type inner_pts ( Dim, nbPtsPerFace );
@@ -1186,6 +1200,9 @@ private :
 
         default:
         {
+            throw std::out_of_range(
+                "PointSetFekete: no triangular interior table for order " +
+                std::to_string( Order ) + " (tables cover orders [3,19])" );
         }
         }
 
@@ -1199,6 +1216,12 @@ private :
         return inner_pts;
     }
 
+    /** @brief Replace a face's interior columns while preserving boundary columns.
+     * @param final_pts Full point coordinates.
+     * @param pts Ordered replacement interior coordinates.
+     * @param position Half-open column range of the face interior.
+     * @return Updated full point table.
+     */
     points_type putInPointset ( points_type final_pts, points_type pts, std::pair<uint16_type, uint16_type> position )
     {
         ublas::subrange( final_pts, 0, 2, position.first, position.second ) = pts;
@@ -1206,12 +1229,22 @@ private :
         return final_pts;
     }
 
+    /** @brief Compare two nodes along one reference coordinate.
+     * @tparam n Coordinate axis.
+     * @param a First node.
+     * @param b Second node.
+     * @return Whether the first selected coordinate precedes the second.
+     */
     template<int n>
     static bool order( vector_type a, vector_type b )
     {
         return a( n ) < b( n );
     }
 
+    /** @brief Apply the existing triangular face-node ordering to table entries.
+     * @param pts Interior coordinates in source-table order.
+     * @return Coordinates in the canonical interpolation/entity order.
+     */
     points_type orderInteriorFace( points_type pts )
     {
         std::vector<vector_type> aux( pts.size2() );
@@ -1234,15 +1267,23 @@ private :
     }
 };
 
-/**
- * Fekete point set class for simplices and simplex products
+/** @brief Identify cells using the Gauss–Lobatto backend.
+ * @tparam ConvexType Reference cell, including one-dimensional simplices.
  */
 template <typename ConvexType>
 concept FeketeHypercubeLike = ConvexType::is_hypercube || ( ConvexType::nDim == 1 );
 
+/** @brief Identify tetrahedra using the warp-and-blend backend.
+ * @tparam ConvexType Reference cell.
+ */
 template <typename ConvexType>
 concept FeketeWarpBlendLike = !FeketeHypercubeLike<ConvexType> && ( ConvexType::nDim == 3 );
 
+/** @brief Select the existing node-generation backend for one reference cell.
+ * @tparam ConvexType Reference cell.
+ * @tparam Order Static polynomial degree.
+ * @tparam T Coordinate scalar type.
+ */
 template <typename ConvexType, int Order, typename T>
 using pointset_fekete_backend_t =
     std::conditional_t<FeketeHypercubeLike<ConvexType>,
@@ -1251,6 +1292,13 @@ using pointset_fekete_backend_t =
                                           PointSetWarpBlend<ConvexType, Order, T>,
                                           PointSetFeketeSimplex<ConvexType, Order, T>>>;
 
+/** @brief Fekete-compatible interpolation points with a static order policy.
+ * @tparam Convex Reference cell selecting the established backend.
+ * @tparam Order Static polynomial degree.
+ * @tparam T Coordinate scalar type.
+ * @note Static triangles use tables at orders 3–19 and the base construction at
+ * orders 0–2. Runtime dispatch supports orders 0–15 for every backend.
+ */
 template< class Convex,
           int Order,
           typename T = double >
@@ -1262,6 +1310,10 @@ public:
     using order_base_type::order;
     using super::nPoints;
 
+    /** @brief Construct the selected static point-set backend.
+     * @param interior Select interior-only nodes when nonzero.
+     * @throws std::out_of_range When a required triangular table is absent.
+     */
     PointSetFekete( int interior = 0 ) : super( interior ), order_base_type() {}
 };
 
@@ -1270,6 +1322,8 @@ public:
  *
  * Dispatches runtime order to static PointSetFekete<Convex,P,T> instances.
  * For hypercubes (and 1D), PointSetFekete resolves to PointSetGaussLobatto.
+ * @tparam Convex Reference cell selecting the established backend.
+ * @tparam T Coordinate scalar type.
  */
 template< class Convex,
           typename T >
@@ -1286,6 +1340,11 @@ public:
     static inline constexpr bool is_simplex = Convex::is_simplex;
     static inline constexpr bool is_hypercube = Convex::is_hypercube;
 
+    /** @brief Construct a runtime-selected point set through checked dispatch.
+     * @param order Effective polynomial degree, in `[0,15]`.
+     * @param interior Select interior-only nodes when nonzero.
+     * @throws std::out_of_range When the degree is outside the dispatch range.
+     */
     explicit PointSetFekete( RuntimeOrder order, int interior = 0 )
         :
         super( 0, Dim ),
@@ -1305,6 +1364,12 @@ public:
     using order_base_type::order;
     using super::nPoints;
 
+    /** @brief Copy coordinates associated with one reference subentity.
+     * @param top_dim Topological dimension of the requested entity.
+     * @param local_id Entity index in the reference convex.
+     * @param boundary Include lower-dimensional boundary entities when true.
+     * @return Coordinates in the existing interpolation/entity order.
+     */
     points_type pointsBySubEntity( uint16_type top_dim, uint16_type local_id, bool boundary = 0 ) const
     {
         return dispatchByOrder(
@@ -1317,6 +1382,12 @@ public:
     }
 
 private:
+    /** @brief Dispatch the effective degree to an existing static configuration.
+     * @tparam F Callable accepting an integral-constant degree tag.
+     * @param f Operation performed on the selected static configuration.
+     * @return Result of the selected callable invocation.
+     * @throws std::out_of_range When the degree is outside `[0,15]`.
+     */
     template <typename F>
     decltype(auto) dispatchByOrder( F&& f ) const
     {
@@ -1347,6 +1418,7 @@ private:
     }
 
 private:
+    /** Whether construction and later queries use interior-only point storage. */
     int M_interior;
 };
 

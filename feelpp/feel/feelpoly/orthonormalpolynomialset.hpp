@@ -13,6 +13,9 @@
 
 #include <feel/feelpoly/order.hpp>
 #include <feel/feelpoly/concepts.hpp>
+#include <feel/feelpoly/fefamilyshell.hpp>
+
+#include <boost/mp11/utility.hpp>
 
 namespace Feel
 {
@@ -181,12 +184,13 @@ public:
     using  local_interpolant_type = std::monostate;
     using  local_interpolants_type = std::monostate;
 
+    /** @brief Legacy lower-degree approximation space with a constant floor. */
     struct SSpace
     {
+        /** Degree of the lower approximation, never below zero. */
         static constexpr uint16_type TheOrder = (Order > 1)?Order-1:0;
-        typedef typename mpl::if_<mpl::less_equal<mpl::int_<Order>, mpl::int_<1> >,
-                                  mpl::identity<OrthonormalPolynomialSet<Dim, 0, RealDim, PolySetType, T, TheTAG,Simplex> >,
-                                  mpl::identity<OrthonormalPolynomialSet<Dim, TheOrder, RealDim, PolySetType, T, TheTAG,Simplex> > >::type::type type;
+        /** Simplex modal implementation at the lower approximation degree. */
+        using type = OrthonormalPolynomialSet<Dim, TheOrder, RealDim, PolySetType, T, TheTAG, Simplex>;
 
     };
     template<int OtherOrder>
@@ -564,12 +568,13 @@ public:
     using  local_interpolant_type = std::monostate;
     using  local_interpolants_type = std::monostate;
 
+    /** @brief Legacy lower-degree approximation space with a constant floor. */
     struct SSpace
     {
+        /** Degree of the lower approximation, never below zero. */
         static constexpr uint16_type TheOrder = (Order > 1)?Order-1:0;
-        typedef typename mpl::if_<mpl::less_equal<mpl::int_<Order>, mpl::int_<1> >,
-                                  mpl::identity<OrthonormalPolynomialSet<Dim, 0, RealDim, PolySetType, T, TheTAG, Hypercube> >,
-                                  mpl::identity<OrthonormalPolynomialSet<Dim, TheOrder, RealDim, PolySetType, T, TheTAG, Hypercube> > >::type::type type;
+        /** Hypercube modal implementation at the lower approximation degree. */
+        using type = OrthonormalPolynomialSet<Dim, TheOrder, RealDim, PolySetType, T, TheTAG, Hypercube>;
 
     };
     template<int OtherOrder>
@@ -925,37 +930,57 @@ template<uint16_type Dim,
          uint16_type TheTAG>
 const uint16_type OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType,T, TheTAG, Hypercube>::nLocalDof;
 } // detail
-/// \encond
+/// \endcond
 
+/** @brief Public descriptor selecting an orthonormal modal polynomial space.
+ * @tparam Order Static expansion degree or `Dynamic`.
+ * @tparam PolySetType Scalar, vector or tensor value-shape policy.
+ * @tparam TheTAG Compatibility tag distinguishing basis instances.
+ * @note The inherited signed `order_spec` is authoritative for dynamic order;
+ * the inherited `nOrder` retains the common descriptor's legacy static value.
+ */
 template<int Order,
          template<uint16_type Dim> class PolySetType = Scalar,
          uint16_type TheTAG=0 >
-class OrthonormalPolynomialSet
+class OrthonormalPolynomialSet : public FiniteElementFamilyDescriptor<Order, TheTAG>
 {
 public:
+    /** @brief Select the concrete modal space for a reference cell.
+     * @tparam N Reference dimension.
+     * @tparam RealDim Physical-space dimension.
+     * @tparam T Scalar type.
+     * @tparam Convex Simplex or hypercube cell type.
+     */
     template<uint16_type N,
              uint16_type RealDim,
              typename T = double,
              typename Convex = Simplex<N> >
     struct apply
     {
-        typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
-                                  mpl::identity<Feel::detail::OrthonormalPolynomialSet<N,Order,RealDim,PolySetType,T,TheTAG,Simplex> >,
-                                  mpl::identity<Feel::detail::OrthonormalPolynomialSet<N,Order,RealDim,PolySetType,T,TheTAG,Hypercube> > >::type::type result_type;
-    typedef result_type type;
+        /** Concrete implementation preserving the descriptor's order policy. */
+        using result_type = boost::mp11::mp_if_c<Convex::is_simplex,
+            Feel::detail::OrthonormalPolynomialSet<N, Order, RealDim, PolySetType, T, TheTAG, Simplex>,
+            Feel::detail::OrthonormalPolynomialSet<N, Order, RealDim, PolySetType, T, TheTAG, Hypercube>>;
+        /** Compatibility alias for the selected implementation. */
+        typedef result_type type;
     };
 
+    /** @brief Rebind the tag without changing expansion order or value shape.
+     * @tparam TheNewTAG Replacement compatibility tag.
+     */
     template<uint16_type TheNewTAG>
     struct ChangeTag
     {
+        /** Descriptor retaining the existing order policy and the new tag. */
         typedef OrthonormalPolynomialSet<Order,PolySetType,TheNewTAG> type;
     };
 
+    /** Scalar component descriptor preserving order specification and tag. */
     typedef OrthonormalPolynomialSet<Order,Scalar,TheTAG> component_basis_type;
 
-    static const uint16_type nOrder =  Order;
-    static const uint16_type TAG = TheTAG;
+    /** Modal bases do not define a nodal local-interpolant buffer. */
     using  local_interpolant_type = std::monostate;
+    /** Modal bases do not define a collection of nodal interpolant buffers. */
     using  local_interpolants_type = std::monostate;
 };
 

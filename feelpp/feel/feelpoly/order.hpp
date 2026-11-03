@@ -193,6 +193,7 @@ class OrderBase<Dynamic>
 
 /**
  * @brief Detect whether a type exposes an `is_order_dynamic` flag.
+ * @tparam T Order provider, optionally cv/ref-qualified.
  */
 template <typename T>
 inline constexpr bool hasOrderDynamicFlag = requires {
@@ -201,15 +202,22 @@ inline constexpr bool hasOrderDynamicFlag = requires {
 
 /**
  * @brief Query whether a type uses runtime polynomial order.
+ * @tparam T Order provider, optionally cv/ref-qualified.
  *
  * Types not exposing `is_order_dynamic` are considered static by default.
  */
 template <typename T>
-inline constexpr bool orderIsDynamic =
-    hasOrderDynamicFlag<T> && std::remove_cvref_t<T>::is_order_dynamic;
+inline constexpr bool orderIsDynamic = []
+{
+    if constexpr ( hasOrderDynamicFlag<T> )
+        return bool( std::remove_cvref_t<T>::is_order_dynamic );
+    else
+        return false;
+}();
 
 /**
  * @brief Query whether a type uses compile-time polynomial order.
+ * @tparam T Order provider, optionally cv/ref-qualified.
  */
 template <typename T>
 inline constexpr bool orderIsStatic = !orderIsDynamic<T>;

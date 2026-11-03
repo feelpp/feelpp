@@ -1,39 +1,30 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2006-03-03
-
-  Copyright (C) 2006 EPFL
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-/**
-   \file electrostatic.hpp
-   \author Goncalo Pena <goncalo.pena@epfl.ch>
-   \date 2008-05-05
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Goncalo Pena <goncalo.pena@epfl.ch>
+ * SPDX-FileCopyrightText: 2006 EPFL
+ * SPDX-FileCopyrightText: 2026 University of Strasbourg
+ * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
+/**
+ * @file electrostatic.hpp
+ * @brief Electrostatic interpolation points from tabulated triangular coordinates.
+ */
 #ifndef __electrostatic_H
 #define __electrostatic_H 1
 
 #include <feel/feelpoly/warpblend.hpp>
 
+#include <stdexcept>
+#include <string>
+
 namespace Feel
 {
+/** @brief Triangular electrostatic nodes using the active interior orbit tables.
+ * @tparam Convex Reference convex supplying point and entity layout.
+ * @tparam Order Polynomial degree; active interior tables cover orders 3–7.
+ * @tparam T Coordinate scalar type.
+ */
 template< class Convex,
           int Order,
           typename T = double >
@@ -66,51 +57,66 @@ public :
 
     reference_convex_type RefConv;
 
+    /** @brief Construct the electrostatic point set from active coordinate tables.
+     * @param interior Select interior-only nodes when nonzero.
+     * @throws std::out_of_range If the requested interior coordinates are absent.
+     * @note Active triangular interior tables cover orders 3–7; lower orders
+     * retain their existing base construction.
+     */
     PointSetElectrostatic( int interior = 0 )
     {
-        PointSetWarpBlend<Convex, Order, T> G( interior );
-
-        points_type final_pts = G.points();
-
-        //Copies information about WarpBlend points
-        this->setEid( G.getEid() );
-        this->setPtE( G.getPtE() );
-
-        if ( Order > 2 )
+        if constexpr ( Order > 7 )
         {
-            entities = std::make_pair( RefConv.vertices(), equiVertices() );
+            throw std::out_of_range(
+                "PointSetElectrostatic: no interior coordinate table for order " +
+                std::to_string( Order ) + " (tables cover orders [3,7])" );
+        }
+        else
+        {
+            PointSetWarpBlend<Convex, Order, T> G( interior );
 
-            defineOrbits();
+            points_type final_pts = G.points();
 
-            points_type Gt( Dim+1, nbPtsPerFace );
+            //Copies information about WarpBlend points
+            this->setEid( G.getEid() );
+            this->setPtE( G.getPtE() );
 
-            uint16_type p=0;
-
-            for ( uint16_type i = 0; i < getPrimalNumber(); i++ )
+            if ( Order > 2 )
             {
-                points_type orbit = generateOrbit( getOrbitId( i ),
-                                                   ublas::subrange( getPrimalPts(), 0, 3, i, i+1 ) );
+                entities = std::make_pair( RefConv.vertices(), equiVertices() );
 
-                ublas::subrange( Gt, 0, 3, p, p+orbit.size2() ) = orbit;
+                defineOrbits();
 
-                p += orbit.size2();
+                points_type Gt( Dim+1, nbPtsPerFace );
+
+                uint16_type p=0;
+
+                for ( uint16_type i = 0; i < getPrimalNumber(); i++ )
+                {
+                    points_type orbit = generateOrbit( getOrbitId( i ),
+                                                       ublas::subrange( getPrimalPts(), 0, 3, i, i+1 ) );
+
+                    ublas::subrange( Gt, 0, 3, p, p+orbit.size2() ) = orbit;
+
+                    p += orbit.size2();
+                }
+
+                points_type pts = toEquilateral( toCartesian( Gt ) );
+
+                pts = orderInteriorFace( pts );
+
+                if ( interior )
+                    final_pts = pts;
+
+                else
+                    final_pts = putInPointset ( final_pts, pts, G.interiorRangeById( 2, 0 ) );
+
             }
 
-            points_type pts = toEquilateral( toCartesian( Gt ) );
+            this->setPoints( final_pts );
 
-            pts = orderInteriorFace( pts );
-
-            if ( interior )
-                final_pts = pts;
-
-            else
-                final_pts = putInPointset ( final_pts, pts, G.interiorRangeById( 2, 0 ) );
-
+            this->setName( "fekete", Order );
         }
-
-        this->setPoints( final_pts );
-
-        this->setName( "fekete", Order );
     }
 
     ~PointSetElectrostatic() {}

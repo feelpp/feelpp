@@ -33,6 +33,8 @@ constexpr std::array<unsigned, 5> requestedOrders{ 0, 1, 2, 3, 4 };
 constexpr std::array<unsigned, 6> runtimeOrders{ 0, 1, 2, 3, 5, 10 };
 /** Select simplex Dubiner (`false`) or tensor-product Legendre (`true`). */
 constexpr std::array<bool, 2> tensorProducts{ false, true };
+/** Unnormalized and orthonormal conventions for requested-order comparisons. */
+constexpr std::array<bool, 2> normalization{ false, true };
 
 /** @brief Assert matching matrix extents, finite entries and bounded maximum error.
  * @tparam A Actual matrix type.
@@ -116,8 +118,8 @@ BOOST_AUTO_TEST_SUITE( basis_dynamic_suite )
 /** @test Requested degrees preserve the mode ordering of their own basis. */
 BOOST_DATA_TEST_CASE( requested_order_matches_its_own_basis,
     bdata::make( dimensions ) * bdata::make( seedOrders ) *
-    bdata::make( requestedOrders ) * bdata::make( tensorProducts ),
-    dimension, seedOrder, requestedOrder, tensorProduct )
+    bdata::make( requestedOrders ) * bdata::make( tensorProducts ) * bdata::make( normalization ),
+    dimension, seedOrder, requestedOrder, tensorProduct, normalized )
 {
     boost::mp11::mp_with_index<3>( dimension - 1, [&]( auto dimensionTag )
     {
@@ -128,10 +130,14 @@ BOOST_DATA_TEST_CASE( requested_order_matches_its_own_basis,
             boost::mp11::mp_with_index<5>( requestedOrder, [&]( auto orderTag )
             {
                 constexpr unsigned Order = decltype( orderTag )::value;
-                if ( tensorProduct )
-                    checkRequestedOrder<Legendre<Dim, Dim, Seed>, Order>();
-                else
-                    checkRequestedOrder<Dubiner<Dim, Dim, Seed>, Order>();
+                boost::mp11::mp_with_index<2>( normalized, [&]( auto normalizationTag )
+                {
+                    using normalization_type = Normalized<decltype( normalizationTag )::value != 0>;
+                    if ( tensorProduct )
+                        checkRequestedOrder<Legendre<Dim, Dim, Seed, normalization_type>, Order>();
+                    else
+                        checkRequestedOrder<Dubiner<Dim, Dim, Seed, normalization_type>, Order>();
+                } );
             } );
         } );
     } );

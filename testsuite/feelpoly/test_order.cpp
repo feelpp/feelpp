@@ -22,6 +22,7 @@
 #include <feel/feelpoly/concepts.hpp>
 #include <feel/feelpoly/doftopology.hpp>
 
+#include <boost/mp11/list.hpp>
 #include <type_traits>
 
 using namespace Feel;
@@ -30,6 +31,39 @@ FEELPP_ENVIRONMENT_NO_OPTIONS
 
 namespace
 {
+/** @brief Legacy static provider with no static/runtime order flags. */
+struct LegacyStaticOrderProvider
+{
+    /** Compile-time degree exposed by the legacy contract. */
+    static constexpr int nOrder = 2;
+};
+
+/** @brief Check substitution-safe detection and validation for a provider type.
+ * @tparam Provider Legacy or flagged provider, optionally cv/ref-qualified.
+ */
+template<typename Provider>
+void checkOrderProvider()
+{
+    using provider_type = std::remove_cvref_t<Provider>;
+    constexpr bool dynamic = std::is_same_v<provider_type, OrderBase<Dynamic>>;
+    static_assert( hasOrderDynamicFlag<Provider> ==
+                   !std::is_same_v<provider_type, LegacyStaticOrderProvider> );
+    static_assert( orderIsDynamic<Provider> == dynamic );
+    static_assert( orderIsStatic<Provider> == !dynamic );
+    BOOST_CHECK_EQUAL( validatedOrder<Provider>( RuntimeOrder{ 2 } ).value, 2 );
+    if constexpr ( dynamic )
+    {
+        static_assert( defaultOrder<Provider>().value == 0 );
+        BOOST_CHECK_EQUAL( validatedOrder<Provider>( RuntimeOrder{ 3 } ).value, 3 );
+    }
+    else
+    {
+        static_assert( staticOrderValue<Provider>() == 2 );
+        static_assert( defaultOrder<Provider>().value == 2 );
+        BOOST_CHECK_THROW( (void)validatedOrder<Provider>( RuntimeOrder{ 3 } ), std::invalid_argument );
+    }
+}
+
 template<typename StaticShape, typename DynamicShape, typename Cardinality>
 void checkShapeOrderAndCardinalityOwnership()
 {
@@ -88,6 +122,18 @@ void checkTopologyOrderAndCardinalityOwnership()
 } // namespace
 
 BOOST_AUTO_TEST_SUITE( order_suite )
+
+/** Static legacy, flagged static and flagged dynamic metadata providers. */
+using order_providers = boost::mp11::mp_list<LegacyStaticOrderProvider, OrderBase<2>, OrderBase<Dynamic>>;
+
+/** @test Order queries support legacy providers and retain cv/ref-independent flags. */
+BOOST_AUTO_TEST_CASE_TEMPLATE( order_provider_detection_is_substitution_safe, Provider, order_providers )
+{
+    static_assert( !orderIsDynamic<int> );
+    checkOrderProvider<Provider>();
+    checkOrderProvider<Provider const&>();
+    checkOrderProvider<Provider volatile&&>();
+}
 
 //
 // Test order_t basic properties

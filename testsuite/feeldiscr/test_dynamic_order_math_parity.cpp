@@ -18,6 +18,7 @@
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pdhm.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
+#include <feel/feelpoly/orthonormalpolynomialset.hpp>
 #include <feel/feelvf/vf.hpp>
 
 #include <string>
@@ -234,6 +235,22 @@ BOOST_AUTO_TEST_CASE( dynamic_order_affine_simplex_math_parity )
 {
     auto mesh = makeOneElementSimplexMesh( "dynamic_order_affine", false );
     runDynamicOrderChecks<0,1,2,3,4>( mesh );
+}
+
+/** @test FunctionSpace validates modal order through the public descriptor policy. */
+BOOST_AUTO_TEST_CASE( modal_functionspace_validates_descriptor_order )
+{
+    using modal_mesh_type = Mesh<Simplex<2, 1>>;
+    using static_space_type = FunctionSpace<modal_mesh_type, bases<OrthonormalPolynomialSet<2>>>;
+    using dynamic_space_type = FunctionSpace<modal_mesh_type, bases<OrthonormalPolynomialSet<Dynamic>>>;
+    static_assert( static_space_type::defaultBasisOrder().value == 2 );
+    static_assert( dynamic_space_type::defaultBasisOrder().value == 0 );
+    BOOST_CHECK_EQUAL( static_space_type::validatedBasisOrder( RuntimeOrder{ 2 } ).value, 2 );
+    BOOST_CHECK_THROW( (void)static_space_type::validatedBasisOrder( RuntimeOrder{ 3 } ),
+                       std::invalid_argument );
+    for ( int degree : { 0, 1, 2, 3 } )
+        BOOST_TEST_CONTEXT( "modal degree=" << degree )
+            BOOST_CHECK_EQUAL( dynamic_space_type::validatedBasisOrder( RuntimeOrder{ degree } ).value, degree );
 }
 
 BOOST_AUTO_TEST_SUITE_END()

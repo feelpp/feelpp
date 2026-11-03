@@ -1,31 +1,14 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileCopyrightText: 2006 EPFL
+ * SPDX-FileCopyrightText: 2007 Université Joseph Fourier Grenoble 1
+ * SPDX-FileCopyrightText: 2026 University of Strasbourg
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2006-02-20
-
-  Copyright (C) 2006 EPFL
-  Copyright (C) 2007 Université Joseph Fourier Grenoble 1
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
-   \file legendre.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2006-02-20
+ * @file legendre.hpp
+ * @brief Tensor-product Legendre bases and requested-order evaluation.
  */
 #ifndef __Legendre_H
 #define __Legendre_H 1
@@ -137,7 +120,7 @@ struct LegendreTag
  * \brief Legendre polynomial orthonormal basis
  *
  * This class represents the Legendre polynomials up to degree \c
- * Degree on a simplex in dimension \c Dim.
+ * Degree on a hypercube in dimension \c Dim.
  *
  *
  * The legendre polynomials in 1D, the segment \f$[-1;1]\f$ are defined
@@ -355,30 +338,18 @@ public:
     /**
      * @brief Evaluate Legendre polynomials up to given order
      *
-     * For Dynamic order support: when order > nOrder (compile-time),
-     * falls back to runtime evaluation using dyna::JacobiBatchEvaluation.
+     * A different requested order uses the shared runtime kernel. Lower-order
+     * tensor-product modes are not a contiguous prefix of the higher basis.
      *
      * @param __pts Points to evaluate at
-     * @param order Polynomial order (can be > nOrder for dynamic case)
+     * @param order Requested polynomial order, below/equal/above the template order
      * @return Evaluation matrix
      */
     static matrix_type evaluate( points_type const& __pts, uint16_type order )
     {
-        // For Dynamic order support: use runtime evaluation when order > nOrder
-        if ( order > nOrder )
-        {
-            return evaluateRuntime( __pts, order, int_c<nDim>{} );
-        }
-
-        // Static path: evaluate at compile-time order and truncate
-        auto full = evaluate( __pts );
-        const size_type nrows = convex_type::polyDims( order );
-        if ( nrows == full.size1() )
-            return full;
-        matrix_type out( nrows, full.size2() );
-        ublas::project( out, ublas::range( 0, nrows ), ublas::range( 0, full.size2() ) ) =
-            ublas::project( full, ublas::range( 0, nrows ), ublas::range( 0, full.size2() ) );
-        return out;
+        if ( order == nOrder )
+            return evaluate( __pts );
+        return evaluateRuntime( __pts, order, int_c<nDim>{} );
     }
 
     template<typename AE>
@@ -390,35 +361,18 @@ public:
     /**
      * @brief Derivate Legendre polynomials up to given order
      *
-     * For Dynamic order support: when order > nOrder (compile-time),
-     * falls back to runtime derivation using dyna::JacobiBatchDerivation.
+     * Use the requested tensor-product ordering for every derivative direction.
      *
      * @param __pts Points to evaluate at
-     * @param order Polynomial order (can be > nOrder for dynamic case)
+     * @param order Requested polynomial order, below/equal/above the template order
      * @return Vector of derivation matrices (one per spatial dimension)
      */
     template<typename AE>
     static vector_matrix_type derivate( ublas::matrix_expression<AE>  const& __pts, uint16_type order )
     {
-        // For Dynamic order support: use runtime derivation when order > nOrder
-        if ( order > nOrder )
-        {
-            return derivateRuntime( __pts, order, int_c<nDim>{} );
-        }
-
-        // Static path: evaluate at compile-time order and truncate
-        auto full = derivate( __pts );
-        const size_type nrows = convex_type::polyDims( order );
-        if ( full.size() == 0 || nrows == full[0].size1() )
-            return full;
-        vector_matrix_type out( full.size() );
-        for ( size_type i = 0; i < full.size(); ++i )
-        {
-            out[i].resize( nrows, full[i].size2() );
-            ublas::project( out[i], ublas::range( 0, nrows ), ublas::range( 0, full[i].size2() ) ) =
-                ublas::project( full[i], ublas::range( 0, nrows ), ublas::range( 0, full[i].size2() ) );
-        }
-        return out;
+        if ( order == nOrder )
+            return derivate( __pts );
+        return derivateRuntime( __pts, order, int_c<nDim>{} );
     }
 
     /**

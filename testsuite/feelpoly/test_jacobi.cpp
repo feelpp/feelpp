@@ -9,6 +9,7 @@
 #define BOOST_TEST_MODULE test_jacobi
 #include <feel/feelcore/testsuite.hpp>
 #include <boost/test/data/test_case.hpp>
+#include <boost/mp11/list.hpp>
 
 #include <feel/feelpoly/jacobi.hpp>
 #include <feel/feelpoly/dubiner.hpp>
@@ -159,8 +160,7 @@ BOOST_DATA_TEST_CASE( batch_and_runtime_jacobi,
 }
 
 /** Compile-time Jacobi degrees dispatched by Boost.Test template cases. */
-using static_orders = boost::mpl::list<boost::mpl::int_<0>, boost::mpl::int_<1>,
-    boost::mpl::int_<2>, boost::mpl::int_<3>, boost::mpl::int_<5>, boost::mpl::int_<10>>;
+using static_orders = boost::mp11::mp_list_c<int, 0, 1, 2, 3, 5, 10>;
 
 /** @test Static Jacobi instantiations share scalar value/derivative assertions. */
 BOOST_AUTO_TEST_CASE_TEMPLATE( static_jacobi, Order, static_orders )

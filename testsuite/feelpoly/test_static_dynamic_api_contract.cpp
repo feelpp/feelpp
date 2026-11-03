@@ -23,6 +23,7 @@
 #include <feel/feelpoly/orthonormalpolynomialset.hpp>
 #include <feel/feelpoly/raviartthomas.hpp>
 
+#include <boost/mp11/list.hpp>
 #include <optional>
 #include <type_traits>
 #include <utility>
@@ -34,6 +35,44 @@ FEELPP_ENVIRONMENT_NO_OPTIONS
 
 namespace
 {
+/** @brief Check public modal metadata and its applied implementation together.
+ * @tparam Order Static expansion degree or `Dynamic`.
+ * @tparam Cell Simplex or hypercube reference cell.
+ */
+template<int Order, typename Cell>
+void checkModalDescriptor()
+{
+    using descriptor_type = OrthonormalPolynomialSet<Order, Scalar, 7>;
+    using modal_type = typename descriptor_type::template apply<2, 2, double, Cell>::type;
+    using retagged_type = typename descriptor_type::template ChangeTag<9>::type;
+    static_assert( descriptor_type::order_spec == modal_type::nOrder );
+    static_assert( descriptor_type::is_order_dynamic == modal_type::is_order_dynamic );
+    static_assert( descriptor_type::is_order_static == modal_type::is_order_static );
+    static_assert( descriptor_type::TAG == modal_type::TAG );
+    static_assert( descriptor_type::TAG == 7 && retagged_type::TAG == 9 );
+    static_assert( retagged_type::order_spec == Order );
+    static_assert( descriptor_type::component_basis_type::order_spec == Order );
+    static_assert( std::is_base_of_v<FiniteElementFamilyDescriptor<Order, 7>, descriptor_type> );
+    if constexpr ( Order != Dynamic )
+        static_assert( staticOrderValue<descriptor_type>() == Order );
+
+    for ( int degree : { 0, 1, 3 } )
+    {
+        if constexpr ( Order != Dynamic )
+            if ( degree != Order )
+                continue;
+        auto const order = validatedOrder<descriptor_type>( RuntimeOrder{ degree } );
+        auto modal = makeOrderAware<modal_type>( order );
+        BOOST_TEST_CONTEXT( "degree=" << degree << " tensorProduct=" << Cell::is_hypercube )
+        {
+            BOOST_CHECK_EQUAL( modal.order(), degree );
+            BOOST_CHECK_EQUAL( modal.localDof(), Cell::polyDims( degree ) );
+            BOOST_CHECK_EQUAL( modal.coeff().size1(), modal.localDof() );
+            BOOST_CHECK_EQUAL( modal.coeff().size2(), modal.localDof() );
+        }
+    }
+}
+
 template<int Order>
 using lagrange_fe_type =
     typename Lagrange<Order, Scalar>::template apply<
@@ -253,6 +292,16 @@ BOOST_AUTO_TEST_CASE( finite_elements_share_effective_order_and_layout_accessors
     checkCommonFeTopology( staticNedelec, dynamicNedelec );
     checkNamedDofTopology2D( staticNedelec );
     checkNamedDofTopology2D( dynamicNedelec );
+}
+
+/** Static degrees and the runtime-order policy applied to both reference cells. */
+using modal_order_specs = boost::mp11::mp_list_c<int, 0, 1, 3, Dynamic>;
+
+/** @test Public modal descriptors preserve their order policy through apply/rebind. */
+BOOST_AUTO_TEST_CASE_TEMPLATE( modal_descriptors_preserve_order_metadata, Order, modal_order_specs )
+{
+    checkModalDescriptor<Order::value, Simplex<2>>();
+    checkModalDescriptor<Order::value, Hypercube<2>>();
 }
 
 /** @test Modal and broken producers expose the same topology vocabulary. */
