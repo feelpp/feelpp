@@ -1,242 +1,237 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-07-28
-
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2009 Université de Grenoble 1 (Joseph Fourier)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-/**
-   \file test_jacobi.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-07-28
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileCopyrightText: 2005-2006 EPFL
+ * SPDX-FileCopyrightText: 2009 Université de Grenoble 1 (Joseph Fourier)
+ * SPDX-FileCopyrightText: 2026 University of Strasbourg
+ * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
 #define BOOST_TEST_MODULE test_jacobi
 #include <feel/feelcore/testsuite.hpp>
-#include <feel/feelcore/feel.hpp>
-#include <feel/feeltiming/timer.hpp>
+#include <boost/test/data/test_case.hpp>
+
 #include <feel/feelpoly/jacobi.hpp>
-#include <feel/feelpoly/expansions.hpp>
 #include <feel/feelpoly/dubiner.hpp>
-#include <feel/feelpoly/polynomial.hpp>
-#include <feel/feelpoly/geomap.hpp>
-#include <feel/feelpoly/lagrange.hpp>
+#include <feel/feelpoly/orthonormalpolynomialset.hpp>
 
-unsigned int fact( unsigned int   n )
-{
-    if ( n == 0 )
-        return 1;
+#include "polynomial_reference.hpp"
 
-    return n*fact( n-1 );
-}
-template<typename T>
-T f( T const& t )
-{
-    return sin( t );
-}
-template<Feel::uint16_type N, typename T>
-class TestJacobi
-{
-public:
-    typedef T value_type;
-    value_type M_factor_eps;
-    TestJacobi( value_type factor_eps = value_type( 1 ) )
-        :
-        M_factor_eps( factor_eps )
-    {}
-    void operator()() const
-    {
-        using namespace Feel;
+#include <array>
+#include <cmath>
 
-        Feel::Timer __timer;
-
-        for ( int n = 0; n < 10000; ++n )
-        {
-            Jacobi<N, T> p( 0.0, 0.0 );
-            value_type v = value_type( double( fact( N+0 ) )/value_type( double( fact( N )*fact( 0 ) ) ) );
-            BOOST_CHECK( Feel::math::abs( p( 1.0 ) - v ) < M_factor_eps*Feel::type_traits<T>::epsilon() );
-            //BOOST_CHECK( Feel::math::abs( Jacobi<N, T>( 1.0, 0.0, 1.0 ) -
-            //( fact( n-0 )/( fact( n )*fact(0 ) ) ) ) < Feel::type_traits<T>::epsilon() );
-
-            if ( N > 0 )
-            {
-                // check derivation with derivation relation in KS book appendix A p 351
-                Jacobi<N-1, T> dp( 1.0, 1.0 );
-                value_type dp2 = 0.5 * ( 0.0 + 0.0 + value_type( N ) + 1.0 ) * dp( 0.6 );
-                BOOST_CHECK( Feel::math::abs( p.derivate( 0.6 ) - dp2 ) <  M_factor_eps*Feel::type_traits<T>::epsilon() );
-            }
-
-            BOOST_CHECK( Feel::math::abs( Feel::details::integrate<N,T>( f<T> ) - 0.0 ) < M_factor_eps*Feel::type_traits<T>::epsilon() );
-
-        }
-
-        std::cout << "meta::jacobi test done in " << __timer.elapsed()/1000 << "\n";
-        __timer.start();
-
-        for ( int n = 0; n < 10000; ++n )
-        {
-            dyna::Jacobi<T> p( N, 0.0, 0.0 );
-            value_type v = value_type( double( fact( N+0 ) )/value_type( double( fact( N )*fact( 0 ) ) ) );
-            BOOST_CHECK( Feel::math::abs( p( 1.0 ) - v ) < M_factor_eps*Feel::type_traits<T>::epsilon() );
-            //BOOST_CHECK( Feel::math::abs( Jacobi<N, T>( 1.0, 0.0, 1.0 ) -
-            //( fact( n-0 )/( fact( n )*fact(0 ) ) ) ) < Feel::type_traits<T>::epsilon() );
-
-            if ( N > 0 )
-            {
-                // check derivation with derivation relation in KS book appendix A p 351
-                dyna::Jacobi<T> dp( uint16_type( N-1 ), 1.0, 1.0 );
-                value_type dp2 = 0.5 * ( 0.0 + 0.0 + value_type( N ) + 1.0 ) * dp( 0.6 );
-                BOOST_CHECK( Feel::math::abs( p.derivate( 0.6 ) - dp2 ) <  M_factor_eps*Feel::type_traits<T>::epsilon() );
-            }
-
-            BOOST_CHECK( Feel::math::abs( Feel::details::integrate<N,T>( f<T> ) - 0.0 ) < M_factor_eps*Feel::type_traits<T>::epsilon() );
-        }
-
-        std::cout << "dyna::jacobi test done in " << __timer.elapsed()/1000 << "\n";
-
-        {
-            Jacobi<N, T> p( 0.0, 0.0 );
-            ublas::vector<T> pts( 2 );
-            pts[0] = 1.0;
-            pts[1] = 1.0;
-            ublas::matrix<T> P ( JacobiBatchEvaluation<T>( N, 0, 0, pts ) );
-            BOOST_CHECK( P.size1() == N+1 );
-            BOOST_CHECK( P.size2() == 2 );
-            value_type v = value_type( double( fact( N+0 ) )/value_type( double( fact( N )*fact( 0 ) ) ) );
-            BOOST_CHECK( Feel::math::abs( p( 1.0 ) - v ) < M_factor_eps*Feel::type_traits<T>::epsilon() );
-            BOOST_CHECK( Feel::math::abs( P( N, 0 ) - v ) < M_factor_eps*Feel::type_traits<T>::epsilon() );
-
-            if ( pts.size() > 0 )
-                BOOST_CHECK( Feel::math::abs( P( N, 1 ) - v ) < M_factor_eps*Feel::type_traits<T>::epsilon() );
-
-            if ( N > 0 )
-            {
-                // check derivation with derivation relation in KS book appendix A p 351
-                Jacobi<N-1, T> dp( 1.0, 1.0 );
-                value_type dp2 = 0.5 * ( 0.0 + 0.0 + value_type( N ) + 1.0 ) * dp( 0.6 );
-                BOOST_CHECK( Feel::math::abs( p.derivate( 0.6 ) - dp2 ) <  M_factor_eps*Feel::type_traits<T>::epsilon() );
-                ublas::vector<T> pts( 2 );
-                pts[0] = 0.6;
-                pts[1] = 0.6;
-                ublas::matrix<T> dP ( JacobiBatchDerivation<T>( N, 0.0, 0.0, pts ) );
-
-                if ( Feel::math::abs( dP( N, 0 ) - dp2 ) > Feel::type_traits<T>::epsilon() )
-                {
-                    std::cout << "dP( N, 0 ) = " <<  dP( N, 0 ) << "\n"
-                              << "dp2 = " << dp2 << "\n";
-                }
-
-                BOOST_CHECK( Feel::math::abs( dP( N, 0 ) - dp2 ) < M_factor_eps*Feel::type_traits<T>::epsilon() );
-            }
-        }
-    }
-};
-
-template<Feel::uint16_type N, typename T>
-class TestDubiner
-{
-public:
-    typedef T value_type;
-    TestDubiner()
-    {}
-    void operator()() const
-    {
-        using namespace Feel;
-        Dubiner<2,2,N,Normalized<true>,T> dubexp;
-        ublas::matrix<T,ublas::column_major> pts( 2,2  );
-        ublas::column( pts, 0 )  = ublas::scalar_vector<value_type>( pts.size2(), 1.0 );
-        ublas::column( pts, 1 )  = ublas::scalar_vector<value_type>( pts.size2(), 1.0 );
-        std::cout << "[batch] dubexp at pts =  " << dubexp.evaluate( pts ) << "\n";
-        std::cout << "[batch] dubexp derivation at pts =  " << dubexp.derivate( pts ) << "\n";
-        Dubiner<2,2,N> dub;
-    }
-};
-
+using namespace Feel;
+namespace bdata = boost::unit_test::data;
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
 
-BOOST_AUTO_TEST_SUITE( jacobi )
-
-typedef boost::mpl::list<boost::mpl::int_<0>,boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<10> > test_types;
-
-BOOST_AUTO_TEST_CASE_TEMPLATE( test_jacobi_double, T, test_types )
+namespace
 {
-    BOOST_TEST_MESSAGE( "o- TestJacobi<" << T::value << ", double>()" );
-    TestJacobi<T::value, double> a;
+/** Scalar and batch Jacobi degrees, including constants and higher orders. */
+constexpr std::array<unsigned, 6> degrees{ 0, 1, 2, 3, 5, 10 };
+/** First Jacobi parameters, paired elementwise with beta. */
+constexpr std::array<double, 3> alpha{ 0.0, 0.25, 1.0 };
+/** Second Jacobi parameters, paired elementwise with alpha. */
+constexpr std::array<double, 3> beta{ 0.0, 0.75, 2.0 };
+/** Reference coordinates including both endpoints and asymmetric interior points. */
+constexpr std::array<double, 7> samples{ -1.0, -0.7, -0.2, 0.0, 0.3, 0.9, 1.0 };
+/** Empty, single-point and multi-point batch sizes. */
+constexpr std::array<unsigned, 3> batchSizes{ 0, 1, samples.size() };
+/** Reference dimensions used for simplex value and derivative checks. */
+constexpr std::array<unsigned, 3> dimensions{ 1, 2, 3 };
+/** Bounded total-degree matrix for the ordinary Dubiner reference comparisons. */
+constexpr std::array<unsigned, 5> simplexDegrees{ 0, 1, 2, 3, 5 };
+/** Non-normalized and orthonormal modal conventions. */
+constexpr std::array<bool, 2> normalization{ false, true };
+
+/** @brief Require a finite value within a reference-scaled absolute tolerance.
+ * @param actual Value computed by the production polynomial API.
+ * @param expected Independently computed high-precision reference.
+ * @param tolerance Absolute tolerance multiplied by `1 + abs(expected)`.
+ */
+void checkNear( double actual, polynomial_test::precise_type const& expected,
+                double tolerance = 2e-11 )
+{
+    double const reference = expected.convert_to<double>();
+    BOOST_REQUIRE( std::isfinite( actual ) );
+    BOOST_CHECK_SMALL( actual - reference, tolerance * ( 1.0 + std::abs( reference ) ) );
 }
 
-BOOST_AUTO_TEST_CASE_TEMPLATE( test_dubiner_double, T, test_types )
+/** @brief Check a scalar Jacobi polynomial and its first derivative.
+ * @tparam Polynomial Static- or runtime-order scalar polynomial type.
+ * @param polynomial Production polynomial callable.
+ * @param degree Effective polynomial degree.
+ * @param a First Jacobi parameter.
+ * @param b Second Jacobi parameter.
+ * @param x Reference coordinate.
+ */
+template<typename Polynomial>
+void checkScalar( Polynomial const& polynomial, unsigned degree,
+                  double a, double b, double x )
 {
-    BOOST_TEST_MESSAGE( "o- TestDubiner<" << T::value << ", double>()" );
-    TestDubiner<T::value, double> d0;
+    auto const reference = polynomial_test::jacobi( degree, a, b, x );
+    checkNear( polynomial( x ), reference.value );
+    checkNear( polynomial.derivate( x ), reference.gradient[0] );
+}
+
+/** @brief Compare Dubiner values/gradients at vertices and collapsed-limit points.
+ * @tparam Dim Reference dimension, restricted to 1, 2 or 3.
+ * @tparam NormalizedBasis Whether both paths use the orthonormal convention.
+ * @param degree Effective maximum total degree requested from the shared API.
+ */
+template<int Dim, bool NormalizedBasis>
+void checkDubiner( unsigned degree )
+{
+    using basis_type = Dubiner<Dim, Dim, 1, Normalized<NormalizedBasis>>;
+    // Every vertex, the barycenter, and an approach to the collapsed vertex.
+    typename basis_type::points_type points( Dim, Dim + 3 );
+    for ( int q = 0; q < Dim + 3; ++q )
+        for ( int d = 0; d < Dim; ++d )
+            points( d, q ) = -1.0;
+    for ( int d = 0; d < Dim; ++d )
+    {
+        points( d, d + 1 ) = 1.0;
+        points( d, Dim + 1 ) = -1.0 + 2.0 / ( Dim + 1 );
+        points( d, Dim + 2 ) = -1.0 + 1e-8;
+    }
+    points( Dim - 1, Dim + 2 ) = 1.0 - Dim * 1e-8;
+    auto const values = basis_type::evaluate( points, degree );
+    auto const gradients = basis_type::derivate( points, degree );
+    BOOST_REQUIRE_EQUAL( gradients.size(), Dim );
+    BOOST_REQUIRE_EQUAL( values.size2(), points.size2() );
+    for ( int q = 0; q < Dim + 3; ++q )
+    {
+        std::array<double, Dim> point;
+        for ( int d = 0; d < Dim; ++d )
+            point[d] = points( d, q );
+        auto const expected = polynomial_test::dubiner<Dim>( degree, point, NormalizedBasis );
+        BOOST_REQUIRE_EQUAL( values.size1(), expected.size() );
+        BOOST_TEST_CONTEXT( "dimension=" << Dim << " degree=" << degree <<
+                            " normalized=" << NormalizedBasis << " sample=" << q )
+        {
+            for ( std::size_t i = 0; i < expected.size(); ++i )
+            {
+                checkNear( values( i, q ), expected[i].value );
+                for ( int d = 0; d < Dim; ++d )
+                {
+                    BOOST_REQUIRE_EQUAL( gradients[d].size1(), expected.size() );
+                    BOOST_REQUIRE_EQUAL( gradients[d].size2(), points.size2() );
+                    checkNear( gradients[d]( i, q ), expected[i].gradient[d], 2e-8 );
+                }
+            }
+        }
+    }
+}
+} // namespace
+
+BOOST_AUTO_TEST_SUITE( jacobi )
+
+/** @test Scalar/batch Jacobi values and derivatives match the independent oracle. */
+BOOST_DATA_TEST_CASE( batch_and_runtime_jacobi,
+    bdata::make( degrees ) * ( bdata::make( alpha ) ^ bdata::make( beta ) ) * bdata::make( batchSizes ),
+    degree, a, b, batchSize )
+{
+    ublas::vector<double> points( batchSize );
+    for ( unsigned q = 0; q < batchSize; ++q )
+        points[q] = samples[q];
+    auto const values = JacobiBatchEvaluation<double>( degree, a, b, points );
+    auto const gradients = JacobiBatchDerivation<double>( degree, a, b, points );
+    auto const runtimeValues = dyna::JacobiBatchEvaluation( degree, a, b, points );
+    auto const runtimeGradients = dyna::JacobiBatchDerivation( degree, a, b, points );
+    for ( auto const* matrix : { &values, &gradients, &runtimeValues, &runtimeGradients } )
+    {
+        BOOST_REQUIRE_EQUAL( matrix->size1(), degree + 1 );
+        BOOST_REQUIRE_EQUAL( matrix->size2(), batchSize );
+    }
+    for ( unsigned q = 0; q < batchSize; ++q )
+        BOOST_TEST_CONTEXT( "point=" << q << " x=" << points[q] )
+        {
+            checkScalar( dyna::Jacobi<double>{ static_cast<uint16_type>( degree ), a, b },
+                         degree, a, b, points[q] );
+            for ( unsigned i = 0; i <= degree; ++i )
+            {
+                auto const expected = polynomial_test::jacobi( i, a, b, points[q] );
+                checkNear( values( i, q ), expected.value );
+                checkNear( runtimeValues( i, q ), expected.value );
+                checkNear( gradients( i, q ), expected.gradient[0] );
+                checkNear( runtimeGradients( i, q ), expected.gradient[0] );
+            }
+        }
+}
+
+/** Compile-time Jacobi degrees dispatched by Boost.Test template cases. */
+using static_orders = boost::mpl::list<boost::mpl::int_<0>, boost::mpl::int_<1>,
+    boost::mpl::int_<2>, boost::mpl::int_<3>, boost::mpl::int_<5>, boost::mpl::int_<10>>;
+
+/** @test Static Jacobi instantiations share scalar value/derivative assertions. */
+BOOST_AUTO_TEST_CASE_TEMPLATE( static_jacobi, Order, static_orders )
+{
+    for ( std::size_t parameter = 0; parameter < alpha.size(); ++parameter )
+        for ( double x : samples )
+            BOOST_TEST_CONTEXT( "alpha=" << alpha[parameter] << " beta=" << beta[parameter] << " x=" << x )
+                checkScalar( Jacobi<Order::value>{ alpha[parameter], beta[parameter] },
+                             Order::value, alpha[parameter], beta[parameter], x );
+}
+
+/** @test Simplex values/gradients agree for each degree and normalization policy. */
+BOOST_DATA_TEST_CASE( dubiner_against_polynomial_reference,
+    bdata::make( dimensions ) * bdata::make( simplexDegrees ) * bdata::make( normalization ),
+    dimension, degree, normalized )
+{
+    polynomial_test::visitDimension( dimension, [&]<int Dim>()
+    {
+        if ( normalized )
+            checkDubiner<Dim, true>( degree );
+        else
+            checkDubiner<Dim, false>( degree );
+    } );
+}
+
+/** @test Higher-degree triangular modes remain accurate at boundary limits. */
+BOOST_DATA_TEST_CASE( high_degree_triangle_reference,
+    bdata::make( std::array<unsigned, 2>{ 8, 10 } ) * bdata::make( normalization ), degree, normalized )
+{
+    if ( normalized )
+        checkDubiner<2, true>( degree );
+    else
+        checkDubiner<2, false>( degree );
+}
+
+/** @test Low-degree simplex Hessians match product-rule reference derivatives. */
+BOOST_DATA_TEST_CASE( simplex_hessians_against_polynomial_reference,
+    bdata::make( dimensions ) * bdata::make( std::array<unsigned, 4>{ 0, 1, 2, 3 } ),
+    dimension, degree )
+{
+    polynomial_test::visitDimension( dimension, [&]<int Dim>()
+    {
+        using modal_type = Feel::detail::OrthonormalPolynomialSet<
+            Dim, Dynamic, Dim, Scalar, double, 0, Simplex>;
+        modal_type modal{ RuntimeOrder{ static_cast<uint16_type>( degree ) } };
+        typename modal_type::points_type points( Dim, Dim + 2 );
+        for ( int q = 0; q < Dim + 2; ++q )
+            for ( int d = 0; d < Dim; ++d )
+                points( d, q ) = q == Dim + 1 ? -1.0 + 2.0 / ( Dim + 1 ) : -1.0;
+        for ( int d = 0; d < Dim; ++d )
+            points( d, d + 1 ) = 1.0;
+        auto const hessians = modal.derivate2( points );
+        BOOST_REQUIRE_EQUAL( hessians.size1(), Dim );
+        BOOST_REQUIRE_EQUAL( hessians.size2(), Dim );
+        for ( int q = 0; q < Dim + 2; ++q )
+        {
+            std::array<double, Dim> point;
+            for ( int d = 0; d < Dim; ++d )
+                point[d] = points( d, q );
+            auto const expected = polynomial_test::dubiner<Dim>( degree, point, true );
+            for ( int i = 0; i < Dim; ++i )
+                for ( int j = 0; j < Dim; ++j )
+                {
+                    BOOST_REQUIRE_EQUAL( hessians( i, j ).size1(), expected.size() );
+                    BOOST_REQUIRE_EQUAL( hessians( i, j ).size2(), points.size2() );
+                    BOOST_TEST_CONTEXT( "sample=" << q << " Hessian=(" << i << "," << j << ")" )
+                        for ( std::size_t mode = 0; mode < expected.size(); ++mode )
+                            checkNear( hessians( i, j )( mode, q ), expected[mode].hessian[i * Dim + j], 1e-9 );
+                }
+        }
+    } );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-
-#if 0
-#if 1
-//
-// TestJacobi
-//
-TestJacobi<0, double> a;
-TestJacobi<1, double> b;
-TestJacobi<2, double> c;
-TestJacobi<10, double> d;
-//test->add( BOOST_TEST_CASE( ( TestJacobi<15, Feel::real96_type>(50.0) )  ) );
-
-#if defined( FEELPP_HAS_QD_REAL)
-unsigned int old_cw;
-fpu_fix_start( &old_cw );
-
-TestJacobi<0, qd_real> a_qd;
-TestJacobi<1, qd_real> b_qd;
-TestJacobi<2, qd_real> c_qd;
-test->add( BOOST_TEST_CASE( ( TestJacobi<4, qd_real>() )  ) );
-test->add( BOOST_TEST_CASE( ( TestJacobi<10, qd_real>() )  ) );
-//test->add( BOOST_TEST_CASE( ( TestJacobi<15, qd_real>() )  ) );
-#endif /* FEELPP_HAS_QD_REAL */
-
-//
-// TestDubiner
-//
-BOOST_TEST_MESSAGE( "o- TestDubiner<0, double>()" );
-TestDubiner<0, double> d0;
-BOOST_TEST_MESSAGE( "o- TestDubiner<1, double>()" );
-TestDubiner<1, double> d1;
-#else
-//test->add( BOOST_TEST_CASE( ( TestJacobi<1, double>() )  ) );
-//test->add( BOOST_TEST_CASE( ( TestJacobi<10, double>() )  ) );
-
-#if defined( FEELPP_HAS_QD_REAL)
-unsigned int old_cw;
-fpu_fix_start( &old_cw );
-
-test->add( BOOST_TEST_CASE( ( TestJacobi<0, qd_real>() )  ) );
-//test->add( BOOST_TEST_CASE( ( TestJacobi<1, qd_real>() )  ) );
-//test->add( BOOST_TEST_CASE( ( TestJacobi<2, qd_real>() )  ) );
-//test->add( BOOST_TEST_CASE( ( TestJacobi<4, qd_real>() )  ) );
-test->add( BOOST_TEST_CASE( ( TestJacobi<10, qd_real>() )  ) );
-//test->add( BOOST_TEST_CASE( ( TestJacobi<15, qd_real>() )  ) );
-#endif /* FEELPP_HAS_QD_REAL */
-
-#endif
-//    return test;
-}
-#endif

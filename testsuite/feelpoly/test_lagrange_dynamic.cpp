@@ -15,6 +15,7 @@
 
 #define BOOST_TEST_MODULE test_lagrange_dynamic
 #include <feel/feelcore/testsuite.hpp>
+#include <boost/test/data/test_case.hpp>
 
 #include <feel/feelpoly/concepts.hpp>
 #include <feel/feelpoly/lagrange.hpp>
@@ -22,6 +23,7 @@
 #include <feel/feelmesh/simplex.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cmath>
 #include <memory>
@@ -763,6 +765,45 @@ BOOST_AUTO_TEST_CASE( test_lagrange_static_vs_runtime_default_pointset_hypercube
 {
     checkStaticRuntimeLagrangeAgreementDefaultPointSet<2, 4, Hypercube<2>>( 1e-12, "default(hypercube/GaussLobatto)" );
     checkStaticRuntimeLagrangeAgreementDefaultPointSet<2, 10, Hypercube<2>>( 1e-10, "default(hypercube/GaussLobatto)" );
+}
+
+/** @test Runtime polynomial extraction and derivative operators preserve degree. */
+BOOST_DATA_TEST_CASE( runtime_polynomial_metadata_and_operator_extent,
+    boost::unit_test::data::make( std::array<int, 3>{ 1, 2, 3 } ) *
+    boost::unit_test::data::make( std::array<bool, 2>{ false, true } ),
+    order, tensorProduct )
+{
+    auto check = [&]<typename Cell>()
+    {
+        using fe_type = typename Lagrange<Dynamic, Scalar, Continuous, PointSetEquiSpaced>::
+            template apply<2, 2, double, Cell>::type;
+        fe_type fe{ RuntimeOrder{ order } };
+        auto const polynomial = fe.polynomial( 0 );
+        BOOST_CHECK( decltype( polynomial )::is_order_dynamic );
+        BOOST_CHECK_EQUAL( polynomial.order(), fe.order() );
+        BOOST_CHECK_EQUAL( polynomial.coeff().size2(), fe.coeff().size2() );
+        for ( unsigned direction = 0; direction < 2; ++direction )
+        {
+            auto const& derivative = fe.d( direction );
+            BOOST_CHECK_EQUAL( derivative.size1(), fe.coeff().size2() );
+            BOOST_CHECK_EQUAL( derivative.size2(), fe.coeff().size2() );
+        }
+        BOOST_CHECK_EQUAL( fe.isLinear(), Cell::is_simplex && order == 1 );
+        // An incorrect expansion order makes polynomial evaluation dimensionally
+        // invalid. Report its metadata before entering an unsafe matrix product.
+        if ( polynomial.order() == fe.order() )
+        {
+            auto const values = fe.evaluate( fe.points() );
+            auto const extracted = polynomial.evaluate( fe.points() );
+            BOOST_REQUIRE_EQUAL( extracted.size2(), values.size2() );
+            for ( std::size_t q = 0; q < values.size2(); ++q )
+                BOOST_CHECK_SMALL( extracted( 0, q ) - values( 0, q ), 1e-11 );
+        }
+    };
+    if ( tensorProduct )
+        check.template operator()<Hypercube<2>>();
+    else
+        check.template operator()<Simplex<2>>();
 }
 
 BOOST_AUTO_TEST_SUITE_END()
