@@ -28,6 +28,7 @@ endforeach()
 
 set(PYFILES
   ${CMAKE_CURRENT_BINARY_DIR}/__init__.py
+  discr.py
   integrate.py
   measure.py
   quality.py
