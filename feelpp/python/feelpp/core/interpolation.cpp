@@ -44,7 +44,7 @@ void defInterpolate( py::module& m )
     using mesh_t = typename SpaceT::mesh_type;
     using mesh_ptr_t = std::shared_ptr<mesh_t>;
     constexpr int Dim = mesh_t::nDim;
-    constexpr int Order = space_t::basis_type::nOrder;
+    constexpr int Order = space_t::basis_type::nOrder_v;
     constexpr int RealDim = mesh_t::nRealDim;
     using size_type = uint32_type;
     
