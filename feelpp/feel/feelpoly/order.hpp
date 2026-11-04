@@ -205,8 +205,12 @@ inline constexpr bool hasOrderDynamicFlag = requires {
  * Types not exposing `is_order_dynamic` are considered static by default.
  */
 template <typename T>
-inline constexpr bool orderIsDynamic =
-    hasOrderDynamicFlag<T> && std::remove_cvref_t<T>::is_order_dynamic;
+inline constexpr bool orderIsDynamic = [] {
+    if constexpr ( hasOrderDynamicFlag<T> )
+        return std::remove_cvref_t<T>::is_order_dynamic;
+    else
+        return false;
+}();
 
 /**
  * @brief Query whether a type uses compile-time polynomial order.

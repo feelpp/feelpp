@@ -30,6 +30,11 @@ FEELPP_ENVIRONMENT_NO_OPTIONS
 
 namespace
 {
+struct LegacyStaticOrder
+{
+    static constexpr uint16_type nOrder = 3;
+};
+
 template<typename StaticShape, typename DynamicShape, typename Cardinality>
 void checkShapeOrderAndCardinalityOwnership()
 {
@@ -88,6 +93,26 @@ void checkTopologyOrderAndCardinalityOwnership()
 } // namespace
 
 BOOST_AUTO_TEST_SUITE( order_suite )
+
+BOOST_AUTO_TEST_CASE( test_order_traits_without_dynamic_flag )
+{
+    static_assert( !hasOrderDynamicFlag<LegacyStaticOrder> );
+    static_assert( !orderIsDynamic<LegacyStaticOrder> );
+    static_assert( orderIsStatic<LegacyStaticOrder const&> );
+    static_assert( orderIsStatic<int> );
+    static_assert( orderIsStatic<void> );
+    static_assert( staticOrderValue<LegacyStaticOrder>() == 3 );
+    static_assert( defaultOrder<LegacyStaticOrder>().value == 3 );
+
+    static_assert( hasOrderDynamicFlag<OrderBase<2>> );
+    static_assert( orderIsStatic<OrderBase<2> const&> );
+    static_assert( hasOrderDynamicFlag<OrderBase<Dynamic>> );
+    static_assert( orderIsDynamic<OrderBase<Dynamic> const&> );
+
+    BOOST_CHECK_EQUAL( validatedOrder<LegacyStaticOrder>( RuntimeOrder{ 3 } ).value, 3 );
+    BOOST_CHECK_THROW( (void)validatedOrder<LegacyStaticOrder>( RuntimeOrder{ 4 } ),
+                       std::invalid_argument );
+}
 
 //
 // Test order_t basic properties
