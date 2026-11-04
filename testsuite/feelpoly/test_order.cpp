@@ -136,37 +136,38 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( order_provider_detection_is_substitution_safe, Pr
 }
 
 //
-// Test order_t basic properties
+// Test OrderTag basic properties
 //
 BOOST_AUTO_TEST_CASE( test_order_t_static )
 {
-    static_assert( order_t<0>::order_spec == 0 );
-    static_assert( order_t<5>::order_spec == 5 );
+    static_assert( std::is_same_v<OrderTag<2>, order_t<2>> );
+    static_assert( OrderTag<0>::order_spec == 0 );
+    static_assert( OrderTag<5>::order_spec == 5 );
     // Static order values
-    static_assert( order_t<0>::value == 0, "order_t<0>::value should be 0" );
-    static_assert( order_t<1>::value == 1, "order_t<1>::value should be 1" );
-    static_assert( order_t<5>::value == 5, "order_t<5>::value should be 5" );
-    static_assert( order_t<10>::value == 10, "order_t<10>::value should be 10" );
+    static_assert( OrderTag<0>::value == 0, "OrderTag<0>::value should be 0" );
+    static_assert( OrderTag<1>::value == 1, "OrderTag<1>::value should be 1" );
+    static_assert( OrderTag<5>::value == 5, "OrderTag<5>::value should be 5" );
+    static_assert( OrderTag<10>::value == 10, "OrderTag<10>::value should be 10" );
 
     // Static/dynamic flags for static orders
-    static_assert( order_t<0>::is_static, "order_t<0> should be static" );
-    static_assert( order_t<3>::is_static, "order_t<3> should be static" );
-    static_assert( !order_t<0>::is_dynamic, "order_t<0> should not be dynamic" );
-    static_assert( !order_t<3>::is_dynamic, "order_t<3> should not be dynamic" );
+    static_assert( OrderTag<0>::is_static, "OrderTag<0> should be static" );
+    static_assert( OrderTag<3>::is_static, "OrderTag<3> should be static" );
+    static_assert( !OrderTag<0>::is_dynamic, "OrderTag<0> should not be dynamic" );
+    static_assert( !OrderTag<3>::is_dynamic, "OrderTag<3> should not be dynamic" );
 
     BOOST_CHECK( true );
 }
 
 BOOST_AUTO_TEST_CASE( test_order_t_dynamic )
 {
-    static_assert( order_t<Dynamic>::order_spec == Dynamic );
+    static_assert( OrderTag<Dynamic>::order_spec == Dynamic );
     // Dynamic order
-    static_assert( order_t<Dynamic>::value == Dynamic, "order_t<Dynamic>::value should be Dynamic" );
-    static_assert( order_t<Dynamic>::value == -1, "order_t<Dynamic>::value should be -1" );
+    static_assert( OrderTag<Dynamic>::value == Dynamic, "OrderTag<Dynamic>::value should be Dynamic" );
+    static_assert( OrderTag<Dynamic>::value == -1, "OrderTag<Dynamic>::value should be -1" );
 
     // Static/dynamic flags for dynamic order
-    static_assert( order_t<Dynamic>::is_dynamic, "order_t<Dynamic> should be dynamic" );
-    static_assert( !order_t<Dynamic>::is_static, "order_t<Dynamic> should not be static" );
+    static_assert( OrderTag<Dynamic>::is_dynamic, "OrderTag<Dynamic> should be dynamic" );
+    static_assert( !OrderTag<Dynamic>::is_static, "OrderTag<Dynamic> should not be static" );
 
     BOOST_CHECK( true );
 }
@@ -435,17 +436,17 @@ BOOST_AUTO_TEST_CASE( test_hypercube_dof_dynamic )
 BOOST_AUTO_TEST_CASE( test_dof_calculator_static )
 {
     // 2D simplex, order 3
-    using calc_2d_3 = DofCalculator<2, order_t<3>>;
+    using calc_2d_3 = DofCalculator<2, OrderTag<3>>;
     static_assert( calc_2d_3::simplex() == 10, "2D P3 simplex: 10 DOFs" );
     static_assert( calc_2d_3::hypercube() == 16, "2D Q3 hypercube: 16 DOFs" );
 
     // 3D simplex, order 2
-    using calc_3d_2 = DofCalculator<3, order_t<2>>;
+    using calc_3d_2 = DofCalculator<3, OrderTag<2>>;
     static_assert( calc_3d_2::simplex() == 10, "3D P2 simplex: 10 DOFs" );
     static_assert( calc_3d_2::hypercube() == 27, "3D Q2 hypercube: 27 DOFs" );
 
     // 1D, order 5
-    using calc_1d_5 = DofCalculator<1, order_t<5>>;
+    using calc_1d_5 = DofCalculator<1, OrderTag<5>>;
     static_assert( calc_1d_5::simplex() == 6, "1D P5: 6 DOFs" );
     static_assert( calc_1d_5::hypercube() == 6, "1D Q5: 6 DOFs" );
 
@@ -457,8 +458,8 @@ BOOST_AUTO_TEST_CASE( test_dof_calculator_static )
 //
 BOOST_AUTO_TEST_CASE( test_dof_calculator_dynamic )
 {
-    using calc_2d_dyn = DofCalculator<2, order_t<Dynamic>>;
-    using calc_3d_dyn = DofCalculator<3, order_t<Dynamic>>;
+    using calc_2d_dyn = DofCalculator<2, OrderTag<Dynamic>>;
+    using calc_3d_dyn = DofCalculator<3, OrderTag<Dynamic>>;
 
     // 2D tests
     BOOST_CHECK_EQUAL( calc_2d_dyn::simplex( 0 ), 1 );
@@ -489,21 +490,21 @@ BOOST_AUTO_TEST_CASE( test_dof_calculator_dynamic )
 BOOST_AUTO_TEST_CASE( test_order_concepts_satisfaction )
 {
     // Static orders should satisfy StaticOrder concept
-    static_assert( StaticOrder<order_t<0>>, "order_t<0> should satisfy StaticOrder" );
-    static_assert( StaticOrder<order_t<1>>, "order_t<1> should satisfy StaticOrder" );
-    static_assert( StaticOrder<order_t<5>>, "order_t<5> should satisfy StaticOrder" );
+    static_assert( StaticOrder<OrderTag<0>>, "OrderTag<0> should satisfy StaticOrder" );
+    static_assert( StaticOrder<OrderTag<1>>, "OrderTag<1> should satisfy StaticOrder" );
+    static_assert( StaticOrder<OrderTag<5>>, "OrderTag<5> should satisfy StaticOrder" );
 
     // Dynamic order should satisfy DynamicOrder concept
-    static_assert( DynamicOrder<order_t<Dynamic>>, "order_t<Dynamic> should satisfy DynamicOrder" );
+    static_assert( DynamicOrder<OrderTag<Dynamic>>, "OrderTag<Dynamic> should satisfy DynamicOrder" );
 
     // Cross-checks
-    static_assert( !DynamicOrder<order_t<0>>, "order_t<0> should NOT satisfy DynamicOrder" );
-    static_assert( !StaticOrder<order_t<Dynamic>>, "order_t<Dynamic> should NOT satisfy StaticOrder" );
+    static_assert( !DynamicOrder<OrderTag<0>>, "OrderTag<0> should NOT satisfy DynamicOrder" );
+    static_assert( !StaticOrder<OrderTag<Dynamic>>, "OrderTag<Dynamic> should NOT satisfy StaticOrder" );
 
     // All should satisfy HasOrder
-    static_assert( HasOrder<order_t<0>>, "order_t<0> should satisfy HasOrder" );
-    static_assert( HasOrder<order_t<5>>, "order_t<5> should satisfy HasOrder" );
-    static_assert( HasOrder<order_t<Dynamic>>, "order_t<Dynamic> should satisfy HasOrder" );
+    static_assert( HasOrder<OrderTag<0>>, "OrderTag<0> should satisfy HasOrder" );
+    static_assert( HasOrder<OrderTag<5>>, "OrderTag<5> should satisfy HasOrder" );
+    static_assert( HasOrder<OrderTag<Dynamic>>, "OrderTag<Dynamic> should satisfy HasOrder" );
 
     BOOST_CHECK( true );
 }

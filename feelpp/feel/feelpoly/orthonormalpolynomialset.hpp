@@ -17,6 +17,8 @@
 
 #include <boost/mp11/utility.hpp>
 
+#include <feel/feelpoly/referencedoflayout.hpp>
+
 namespace Feel
 {
 /// \cond DETAIL
@@ -48,15 +50,18 @@ template<uint16_type Dim,
          uint16_type TheTAG>
 class OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType, T, TheTAG, Simplex>
     :
-public PolynomialSet<Dubiner<Dim, RealDim, (Order >= 0 ? Order : 1), Normalized<true>, T, StorageUBlas>, PolySetType >
+public PolynomialSet<Dubiner<Dim, RealDim, (Order >= 0 ? Order : 1), Normalized<true>, T, StorageUBlas>, PolySetType, Order >,
+public ::Feel::detail::ReferenceDofLayout<OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType, T, TheTAG, Simplex>, true>
 {
     // For Dynamic order, use Order=1 as compile-time placeholder; actual order is runtime
     static constexpr int CompileTimeOrder = (Order >= 0 ? Order : 1);
-    typedef PolynomialSet<Dubiner<Dim, RealDim, CompileTimeOrder, Normalized<true>, T, StorageUBlas>, PolySetType > super;
+    typedef PolynomialSet<Dubiner<Dim, RealDim, CompileTimeOrder, Normalized<true>, T, StorageUBlas>, PolySetType, Order > super;
 public:
 
     static const uint16_type TAG = TheTAG;
     static const uint16_type nDim = Dim;
+    /** Authoritative signed order specification. */
+    static constexpr int order_spec = Order;
     static const int nOrder = Order;
     static const uint16_type nRealDim = RealDim;
     static inline const bool isTransformationEquivalent = true;
@@ -67,7 +72,8 @@ public:
     static constexpr bool is_order_static = !is_order_dynamic;
 
     typedef OrthonormalPolynomialSet<Dim, Order,RealDim, PolySetType, T, TheTAG, Simplex> self_type;
-    typedef self_type component_basis_type;
+    /** Scalar component family retaining the same order policy. */
+    using component_basis_type = OrthonormalPolynomialSet<Dim, Order, RealDim, Scalar, T, TheTAG, Simplex>;
 
     typedef typename super::polyset_type polyset_type;
     static inline const bool is_tensor2 = polyset_type::is_tensor2;
@@ -88,24 +94,27 @@ public:
     typedef T value_type;
     typedef Dubiner<Dim, RealDim, CompileTimeOrder, Normalized<true>, T, StorageUBlas> basis_type;
     typedef Simplex<Dim, CompileTimeOrder, /*RealDim*/Dim> convex_type;
+    /** @brief Rebind the reference simplex degree. */
     template<int O>
-    struct convex
+    struct Convex
     {
         typedef Simplex<Dim, O, /*RealDim*/Dim> type;
     };
+    /** Compatibility alias for the reference-cell rebind protocol. */
+    template<int O> using convex = Convex<O>;
     typedef Reference<convex_type, nDim, CompileTimeOrder, nDim/*nRealDim*/, value_type> reference_convex_type;
 
     typedef typename super::polynomial_type polynomial_type;
 
     //!< Number of degrees of freedom per vertex (compile-time, use dofPerVertex() for dynamic)
-    static const uint16_type nDofPerVertex = convex_type::nbPtsPerVertex;
+    static const uint16_type nDofPerVertex = nDim == 0 ? convex_type::numPoints : 0;
     //!< Number of degrees  of freedom per edge (compile-time, use dofPerEdge() for dynamic)
-    static const uint16_type nDofPerEdge = convex_type::nbPtsPerEdge;
+    static const uint16_type nDofPerEdge = nDim == 1 ? convex_type::numPoints : 0;
     //!< Number of degrees  of freedom per face (compile-time, use dofPerFace() for dynamic)
-    static const uint16_type nDofPerFace = convex_type::nbPtsPerFace;
+    static const uint16_type nDofPerFace = nDim == 2 ? convex_type::numPoints : 0;
 
     //!< Number of degrees  of freedom per volume (compile-time, use dofPerVolume() for dynamic)
-    static const uint16_type nDofPerVolume = convex_type::nbPtsPerVolume;
+    static const uint16_type nDofPerVolume = nDim == 3 ? convex_type::numPoints : 0;
 
     //!< Compile-time local DOF count (for static order) - use localDof() for dynamic
     static const uint16_type nLocalDof = convex_type::numPoints;
@@ -118,8 +127,8 @@ public:
     /**
      * @brief Get polynomial order (semantic runtime accessor)
      *
-     * Returns the runtime semantic order, including when this type is used as
-     * a low-order compile-time placeholder in dynamic FE producer code paths.
+     * The signed order policy selects static or runtime behavior independently
+     * of the degree used to instantiate the legacy modal kernel.
      */
     [[nodiscard]] uint16_type order() const noexcept
     {
@@ -135,46 +144,6 @@ public:
             ::Feel::detail::simplexTotal( nDim, this->order() ) );
     }
 
-    /**
-     * @brief Get DOF per vertex (semantic runtime accessor)
-     */
-    [[nodiscard]] uint16_type dofPerVertex() const noexcept
-    {
-        return ::Feel::detail::simplexPerVertex( nDim, this->order() );
-    }
-
-    /**
-     * @brief Get DOF per edge (semantic runtime accessor)
-     */
-    [[nodiscard]] uint16_type dofPerEdge() const noexcept
-    {
-        return ::Feel::detail::simplexPerEdge( nDim, this->order() );
-    }
-
-    /**
-     * @brief Get DOF per face (semantic runtime accessor)
-     */
-    [[nodiscard]] uint16_type dofPerFace() const noexcept
-    {
-        return ::Feel::detail::simplexPerFace( nDim, this->order() );
-    }
-
-    /**
-     * @brief Get DOF per volume (semantic runtime accessor)
-     */
-    [[nodiscard]] uint16_type dofPerVolume() const noexcept
-    {
-        return ::Feel::detail::simplexPerVolume( nDim, this->order() );
-    }
-
-    /** @brief Get the DOF count on an entity of dimension `entityDim`. */
-    [[nodiscard]] uint16_type dofPerEntity( uint16_type entityDim,
-                                             uint16_type entityIndex = 0 ) const noexcept
-    {
-        (void)entityIndex;
-        return ::Feel::detail::SimplexCardinality::onEntity(
-            nDim, entityDim, this->order() );
-    }
 
     typedef typename matrix_node<value_type>::type points_type;
 
@@ -188,7 +157,7 @@ public:
     struct SSpace
     {
         /** Degree of the lower approximation, never below zero. */
-        static constexpr uint16_type TheOrder = (Order > 1)?Order-1:0;
+        static constexpr int TheOrder = Order == Dynamic ? Dynamic : (Order > 1 ? Order-1 : 0);
         /** Simplex modal implementation at the lower approximation degree. */
         using type = OrthonormalPolynomialSet<Dim, TheOrder, RealDim, PolySetType, T, TheTAG, Simplex>;
 
@@ -243,8 +212,8 @@ public:
         super( basis_type() )
     {
         ro = validateOrderAndCardinality( ro );
-        // Set runtime order in base PolynomialSet class for isUsingDynamicOrder() check
-        this->set_order_value( ro.value );
+        // Validate static degree or store the effective runtime degree.
+        this->setOrderValue( ro.value );
 
         const uint16_type n = ::Feel::detail::checkedLocalIndexValue(
             static_cast<size_type>( nComponents ) * this->localDof() );
@@ -292,138 +261,9 @@ private:
     }
 
 public:
-
-    /**
-     * @brief Evaluate the underlying basis at given points (Simplex specialization)
-     *
-     * For static order types, uses compile-time evaluation. For dynamic order
-     * scenarios (when semantic runtime order differs from compile-time order), uses
-     * runtime evaluation.
-     *
-     * @param __pts Points to evaluate at (nDim x nPoints matrix)
-     * @return Basis evaluation matrix (nBasis x nPoints)
-     */
-    template<typename AE>
-    typename super::matrix_type basisEvaluate( ublas::matrix_expression<AE> const& __pts ) const
-    {
-        const auto runtime_order = this->order();
-        // Check if runtime order differs from compile-time order
-        if ( runtime_order != CompileTimeOrder )
-        {
-            // Explicit low-order runtime dispatch to preserve fast kernels for P0/P1/P2.
-            return basisEvaluateRuntimeLowOrderDispatch( __pts, runtime_order );
-        }
-        else
-        {
-            // Use static path for matching order
-            return this->basis()( __pts );
-        }
-    }
-
-    /**
-     * @brief Evaluate the polynomial set at given points
-     *
-     * For dynamic order, uses the runtime order for basis evaluation.
-     *
-     * @param __pts Points to evaluate at (nDim x nPoints matrix)
-     * @return Evaluation matrix (nLocalDof x nPoints)
-     */
-    template<typename AE>
-    typename super::matrix_type evaluate( ublas::matrix_expression<AE> const& __pts ) const
-    {
-        const auto runtime_order = this->order();
-        if ( runtime_order != CompileTimeOrder )
-        {
-            // Use runtime order when it differs from compile-time order.
-            typename super::matrix_type m( basisEvaluateRuntimeLowOrderDispatch( __pts, runtime_order ) );
-            return ublas::prod( this->coeff(), m );
-        }
-        else
-        {
-            // Compile-time/static path.
-            return super::evaluate( __pts );
-        }
-    }
-
-    /**
-     * @brief Derivate the polynomial set at given points
-     *
-     * For dynamic order, uses the runtime order for basis derivation.
-     *
-     * @param __pts Points to evaluate at (nDim x nPoints matrix)
-     * @return Vector of derivation matrices (one per dimension)
-     */
-    template<typename AE>
-    ublas::vector<typename super::matrix_type> derivate( ublas::matrix_expression<AE> const& __pts ) const
-    {
-        const auto runtime_order = this->order();
-        if ( runtime_order != CompileTimeOrder )
-        {
-            // Use runtime order when it differs from compile-time order.
-            ublas::vector<typename super::matrix_type> der(
-                basisDerivateRuntimeLowOrderDispatch( __pts, runtime_order ) );
-            ublas::vector<typename super::matrix_type> res( nDim );
-
-            for ( uint16_type i = 0; i < nDim; ++i )
-            {
-                res[i].resize( this->coeff().size1(), __pts().size2() );
-                ublas::axpy_prod( this->coeff(), der[i], res[i] );
-            }
-
-            return res;
-        }
-        else
-        {
-            // Compile-time/static path.
-            return super::derivate( __pts );
-        }
-    }
-
-private:
-    template<typename AE>
-    static typename super::matrix_type
-    basisEvaluateRuntimeLowOrderDispatch( ublas::matrix_expression<AE> const& __pts, uint16_type runtimeOrder )
-    {
-        using basis_o0_type = Dubiner<Dim, RealDim, 0, Normalized<true>, T, StorageUBlas>;
-        using basis_o1_type = Dubiner<Dim, RealDim, 1, Normalized<true>, T, StorageUBlas>;
-        using basis_o2_type = Dubiner<Dim, RealDim, 2, Normalized<true>, T, StorageUBlas>;
-        switch ( runtimeOrder )
-        {
-        case 0:
-            return basis_o0_type::evaluate( __pts );
-        case 1:
-            return basis_o1_type::evaluate( __pts );
-        case 2:
-            return basis_o2_type::evaluate( __pts );
-        default:
-            return basis_type::evaluate( __pts, runtimeOrder );
-        }
-    }
-
-    template<typename AE>
-    static ublas::vector<typename super::matrix_type>
-    basisDerivateRuntimeLowOrderDispatch( ublas::matrix_expression<AE> const& __pts, uint16_type runtimeOrder )
-    {
-        using basis_o0_type = Dubiner<Dim, RealDim, 0, Normalized<true>, T, StorageUBlas>;
-        using basis_o1_type = Dubiner<Dim, RealDim, 1, Normalized<true>, T, StorageUBlas>;
-        using basis_o2_type = Dubiner<Dim, RealDim, 2, Normalized<true>, T, StorageUBlas>;
-        switch ( runtimeOrder )
-        {
-        case 0:
-            return basis_o0_type::derivate( __pts );
-        case 1:
-            return basis_o1_type::derivate( __pts );
-        case 2:
-            return basis_o2_type::derivate( __pts );
-        default:
-            return basis_type::derivate( __pts, runtimeOrder );
-        }
-    }
-
-public:
     OrthonormalPolynomialSet<Dim, Order, RealDim, Scalar,T, TheTAG, Simplex > toScalar() const
     {
-        return OrthonormalPolynomialSet<Dim, Order, RealDim, Scalar,T, TheTAG, Simplex >();
+        return makeOrderAware<OrthonormalPolynomialSet<Dim, Order, RealDim, Scalar,T, TheTAG, Simplex >>(RuntimeOrder{this->order()});
     }
 
     /**
@@ -434,29 +274,8 @@ public:
         return "dubiner";
     }
 
-    //! \return the component of a local dof
-    uint16_type component( uint16_type localDofId ) const
-        {
-            uint16_type comp = localDofId/nLocalDof;
-            DCHECK( comp < nComponents ) << "invalid localDofId " << localDofId;
-            return comp;
-        }
-
-    //! \return a parent local dof id for each component (for example, the first component)
-    uint16_type dofParent( uint16_type localDofId ) const
-        {
-            uint16_type ldofParent = localDofId % nLocalDof;
-            return ldofParent;
-        }
-
-    //! \return the type of a local dof
-    uint16_type dofType( uint16_type localDofId ) const
-        {
-            return 1;
-        }
-
     //! give an unsymmetric dof index i, provide the symmetric one
-    uint16_type unsymmToSymm( uint16_type i ) const
+    uint16_type unsymmToSymm( uint16_type i ) const override
         {
             if ( !is_tensor2symm )
                 return i;
@@ -494,15 +313,18 @@ template<uint16_type Dim,
          uint16_type TheTAG>
 class OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType, T, TheTAG, Hypercube>
     :
-public PolynomialSet<Legendre<Dim, RealDim, (Order >= 0 ? Order : 1), Normalized<true>, T>, PolySetType >
+public PolynomialSet<Legendre<Dim, RealDim, (Order >= 0 ? Order : 1), Normalized<true>, T>, PolySetType, Order >,
+public ::Feel::detail::ReferenceDofLayout<OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType, T, TheTAG, Hypercube>, true>
 {
     // For Dynamic order, use Order=1 as compile-time placeholder; actual order is runtime
     static constexpr int CompileTimeOrder = (Order >= 0 ? Order : 1);
-    typedef PolynomialSet<Legendre<Dim, RealDim, CompileTimeOrder, Normalized<true>, T>, PolySetType > super;
+    typedef PolynomialSet<Legendre<Dim, RealDim, CompileTimeOrder, Normalized<true>, T>, PolySetType, Order > super;
 public:
 
     static const uint16_type TAG = TheTAG;
     static const uint16_type nDim = Dim;
+    /** Authoritative signed order specification. */
+    static constexpr int order_spec = Order;
     static const int nOrder = Order;
     static const uint16_type nRealDim = RealDim;
     static inline const bool isTransformationEquivalent = true;
@@ -513,7 +335,8 @@ public:
     static constexpr bool is_order_static = !is_order_dynamic;
 
     typedef OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType, T, TheTAG, Hypercube> self_type;
-    typedef self_type component_basis_type;
+    /** Scalar component family retaining the same order policy. */
+    using component_basis_type = OrthonormalPolynomialSet<Dim, Order, RealDim, Scalar, T, TheTAG, Hypercube>;
 
     typedef typename super::polyset_type polyset_type;
     static inline const bool is_tensor2 = polyset_type::is_tensor2;
@@ -533,24 +356,27 @@ public:
     typedef T value_type;
     typedef Legendre<Dim, RealDim, CompileTimeOrder, Normalized<true>, T> basis_type;
     typedef Hypercube<Dim, CompileTimeOrder, /*RealDim*/Dim> convex_type;
+    /** @brief Rebind the reference hypercube degree. */
     template<int O>
-    struct convex
+    struct Convex
     {
         typedef Hypercube<Dim, O, nDim/*RealDim*/> type;
     };
+    /** Compatibility alias for the reference-cell rebind protocol. */
+    template<int O> using convex = Convex<O>;
     typedef Reference<convex_type, nDim, CompileTimeOrder, nDim/*nRealDim*/, value_type> reference_convex_type;
 
     typedef typename super::polynomial_type polynomial_type;
 
     //!< Number of degrees of freedom per vertex (compile-time, use dofPerVertex() for dynamic)
-    static const uint16_type nDofPerVertex = convex_type::nbPtsPerVertex;
+    static const uint16_type nDofPerVertex = nDim == 0 ? convex_type::numPoints : 0;
     //!< Number of degrees  of freedom per edge (compile-time, use dofPerEdge() for dynamic)
-    static const uint16_type nDofPerEdge = convex_type::nbPtsPerEdge;
+    static const uint16_type nDofPerEdge = nDim == 1 ? convex_type::numPoints : 0;
     //!< Number of degrees  of freedom per face (compile-time, use dofPerFace() for dynamic)
-    static const uint16_type nDofPerFace = convex_type::nbPtsPerFace;
+    static const uint16_type nDofPerFace = nDim == 2 ? convex_type::numPoints : 0;
 
     //!< Number of degrees  of freedom per volume (compile-time, use dofPerVolume() for dynamic)
-    static const uint16_type nDofPerVolume = convex_type::nbPtsPerVolume;
+    static const uint16_type nDofPerVolume = nDim == 3 ? convex_type::numPoints : 0;
 
     //!< Compile-time local DOF count (for static order) - use localDof() for dynamic
     static const uint16_type nLocalDof = convex_type::numPoints;
@@ -572,7 +398,7 @@ public:
     struct SSpace
     {
         /** Degree of the lower approximation, never below zero. */
-        static constexpr uint16_type TheOrder = (Order > 1)?Order-1:0;
+        static constexpr int TheOrder = Order == Dynamic ? Dynamic : (Order > 1 ? Order-1 : 0);
         /** Hypercube modal implementation at the lower approximation degree. */
         using type = OrthonormalPolynomialSet<Dim, TheOrder, RealDim, PolySetType, T, TheTAG, Hypercube>;
 
@@ -586,8 +412,8 @@ public:
     /**
      * @brief Get polynomial order (semantic runtime accessor)
      *
-     * Returns the runtime semantic order, including when this type is used as
-     * a low-order compile-time placeholder in dynamic FE producer code paths.
+     * The signed order policy selects static or runtime behavior independently
+     * of the degree used to instantiate the legacy modal kernel.
      */
     [[nodiscard]] uint16_type order() const noexcept
     {
@@ -603,46 +429,6 @@ public:
             ::Feel::detail::hypercubeTotal( nDim, this->order() ) );
     }
 
-    /**
-     * @brief Get DOF per vertex (semantic runtime accessor)
-     */
-    [[nodiscard]] uint16_type dofPerVertex() const noexcept
-    {
-        return ::Feel::detail::hypercubePerVertex( nDim, this->order() );
-    }
-
-    /**
-     * @brief Get DOF per edge (semantic runtime accessor)
-     */
-    [[nodiscard]] uint16_type dofPerEdge() const noexcept
-    {
-        return ::Feel::detail::hypercubePerEdge( nDim, this->order() );
-    }
-
-    /**
-     * @brief Get DOF per face (semantic runtime accessor)
-     */
-    [[nodiscard]] uint16_type dofPerFace() const noexcept
-    {
-        return ::Feel::detail::hypercubePerFace( nDim, this->order() );
-    }
-
-    /**
-     * @brief Get DOF per volume (semantic runtime accessor)
-     */
-    [[nodiscard]] uint16_type dofPerVolume() const noexcept
-    {
-        return ::Feel::detail::hypercubePerVolume( nDim, this->order() );
-    }
-
-    /** @brief Get the DOF count on an entity of dimension `entityDim`. */
-    [[nodiscard]] uint16_type dofPerEntity( uint16_type entityDim,
-                                             uint16_type entityIndex = 0 ) const noexcept
-    {
-        (void)entityIndex;
-        return ::Feel::detail::HypercubeCardinality::onEntity(
-            nDim, entityDim, this->order() );
-    }
 
     /**
      * @brief Default constructor for static order
@@ -688,8 +474,8 @@ public:
         super( basis_type() )
     {
         ro = validateOrderAndCardinality( ro );
-        // Set runtime order in base PolynomialSet class for isUsingDynamicOrder() check
-        this->set_order_value( ro.value );
+        // Validate static degree or store the effective runtime degree.
+        this->setOrderValue( ro.value );
 
         const uint16_type n = ::Feel::detail::checkedLocalIndexValue(
             static_cast<size_type>( nComponents ) * this->localDof() );
@@ -737,138 +523,9 @@ private:
     }
 
 public:
-
-    /**
-     * @brief Evaluate the underlying basis at given points (Hypercube specialization)
-     *
-     * For static order types, uses compile-time evaluation. For dynamic order
-     * scenarios (when semantic runtime order differs from compile-time order), uses
-     * runtime evaluation.
-     *
-     * @param __pts Points to evaluate at (nDim x nPoints matrix)
-     * @return Basis evaluation matrix (nBasis x nPoints)
-     */
-    template<typename AE>
-    typename super::matrix_type basisEvaluate( ublas::matrix_expression<AE> const& __pts ) const
-    {
-        const auto runtime_order = this->order();
-        // Check if runtime order differs from compile-time order
-        if ( runtime_order != CompileTimeOrder )
-        {
-            // Explicit low-order runtime dispatch to preserve fast kernels for Q0/Q1/Q2.
-            return basisEvaluateRuntimeLowOrderDispatch( __pts, runtime_order );
-        }
-        else
-        {
-            // Use static path for matching order
-            return this->basis()( __pts );
-        }
-    }
-
-    /**
-     * @brief Evaluate the polynomial set at given points
-     *
-     * For dynamic order, uses the runtime order for basis evaluation.
-     *
-     * @param __pts Points to evaluate at (nDim x nPoints matrix)
-     * @return Evaluation matrix (nLocalDof x nPoints)
-     */
-    template<typename AE>
-    typename super::matrix_type evaluate( ublas::matrix_expression<AE> const& __pts ) const
-    {
-        const auto runtime_order = this->order();
-        if ( runtime_order != CompileTimeOrder )
-        {
-            // Use runtime order when it differs from compile-time order.
-            typename super::matrix_type m( basisEvaluateRuntimeLowOrderDispatch( __pts, runtime_order ) );
-            return ublas::prod( this->coeff(), m );
-        }
-        else
-        {
-            // Compile-time/static path.
-            return super::evaluate( __pts );
-        }
-    }
-
-    /**
-     * @brief Derivate the polynomial set at given points
-     *
-     * For dynamic order, uses the runtime order for basis derivation.
-     *
-     * @param __pts Points to evaluate at (nDim x nPoints matrix)
-     * @return Vector of derivation matrices (one per dimension)
-     */
-    template<typename AE>
-    ublas::vector<typename super::matrix_type> derivate( ublas::matrix_expression<AE> const& __pts ) const
-    {
-        const auto runtime_order = this->order();
-        if ( runtime_order != CompileTimeOrder )
-        {
-            // Use runtime order when it differs from compile-time order.
-            ublas::vector<typename super::matrix_type> der(
-                basisDerivateRuntimeLowOrderDispatch( __pts, runtime_order ) );
-            ublas::vector<typename super::matrix_type> res( nDim );
-
-            for ( uint16_type i = 0; i < nDim; ++i )
-            {
-                res[i].resize( this->coeff().size1(), __pts().size2() );
-                ublas::axpy_prod( this->coeff(), der[i], res[i] );
-            }
-
-            return res;
-        }
-        else
-        {
-            // Compile-time/static path.
-            return super::derivate( __pts );
-        }
-    }
-
-private:
-    template<typename AE>
-    static typename super::matrix_type
-    basisEvaluateRuntimeLowOrderDispatch( ublas::matrix_expression<AE> const& __pts, uint16_type runtimeOrder )
-    {
-        using basis_o0_type = Legendre<Dim, RealDim, 0, Normalized<true>, T>;
-        using basis_o1_type = Legendre<Dim, RealDim, 1, Normalized<true>, T>;
-        using basis_o2_type = Legendre<Dim, RealDim, 2, Normalized<true>, T>;
-        switch ( runtimeOrder )
-        {
-        case 0:
-            return basis_o0_type::evaluate( __pts );
-        case 1:
-            return basis_o1_type::evaluate( __pts );
-        case 2:
-            return basis_o2_type::evaluate( __pts );
-        default:
-            return basis_type::evaluate( __pts, runtimeOrder );
-        }
-    }
-
-    template<typename AE>
-    static ublas::vector<typename super::matrix_type>
-    basisDerivateRuntimeLowOrderDispatch( ublas::matrix_expression<AE> const& __pts, uint16_type runtimeOrder )
-    {
-        using basis_o0_type = Legendre<Dim, RealDim, 0, Normalized<true>, T>;
-        using basis_o1_type = Legendre<Dim, RealDim, 1, Normalized<true>, T>;
-        using basis_o2_type = Legendre<Dim, RealDim, 2, Normalized<true>, T>;
-        switch ( runtimeOrder )
-        {
-        case 0:
-            return basis_o0_type::derivate( __pts );
-        case 1:
-            return basis_o1_type::derivate( __pts );
-        case 2:
-            return basis_o2_type::derivate( __pts );
-        default:
-            return basis_type::derivate( __pts, runtimeOrder );
-        }
-    }
-
-public:
     OrthonormalPolynomialSet<Dim, Order, RealDim, Scalar, T, TheTAG, Hypercube > toScalar() const
     {
-        return OrthonormalPolynomialSet<Dim, Order, RealDim, Scalar, T, TheTAG, Hypercube >();
+        return makeOrderAware<OrthonormalPolynomialSet<Dim, Order, RealDim, Scalar, T, TheTAG, Hypercube >>(RuntimeOrder{this->order()});
     }
 
     /**
@@ -879,29 +536,8 @@ public:
         return "legendre";
     }
 
-    //! \return the component of a local dof
-    uint16_type component( uint16_type localDofId ) const
-        {
-            uint16_type comp = localDofId/nLocalDof;
-            DCHECK( comp < nComponents ) << "invalid localDofId " << localDofId;
-            return comp;
-        }
-
-    //! \return a parent local dof id for each component (for example, the first component)
-    uint16_type dofParent( uint16_type localDofId ) const
-        {
-            uint16_type ldofParent = localDofId % nLocalDof;
-            return ldofParent;
-        }
-
-    //! \return the type of a local dof
-    uint16_type dofType( uint16_type localDofId ) const
-        {
-            return 1;
-        }
-
     //! give an unsymmetric dof index i, provide the symmetric one
-    uint16_type unsymmToSymm( uint16_type i ) const
+    uint16_type unsymmToSymm( uint16_type i ) const override
         {
             if ( !is_tensor2symm )
                 return i;
@@ -955,7 +591,7 @@ public:
              uint16_type RealDim,
              typename T = double,
              typename Convex = Simplex<N> >
-    struct apply
+    struct Apply
     {
         /** Concrete implementation preserving the descriptor's order policy. */
         using result_type = boost::mp11::mp_if_c<Convex::is_simplex,
@@ -964,6 +600,10 @@ public:
         /** Compatibility alias for the selected implementation. */
         typedef result_type type;
     };
+
+    /** Concrete-element application retained for the established descriptor protocol. */
+    template<uint16_type N, uint16_type RealDim, typename T = double, typename Convex = Simplex<N>>
+    using apply = Apply<N, RealDim, T, Convex>;
 
     /** @brief Rebind the tag without changing expansion order or value shape.
      * @tparam TheNewTAG Replacement compatibility tag.

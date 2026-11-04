@@ -50,6 +50,7 @@ namespace fem
 /// \cond detail
 namespace details
 {
+/** @brief Point-set families that accept a runtime degree and expose entity coordinates. */
 template<template<class, int, class> class PointSetT, typename ConvexType, typename ValueType>
 concept RuntimePointSet = requires( RuntimeOrder ro,
                                     PointSetT<ConvexType, Dynamic, ValueType> dyn_pset )
@@ -61,6 +62,11 @@ concept RuntimePointSet = requires( RuntimeOrder ro,
     dyn_pset.pointsBySubEntity( uint16_type{}, uint16_type{}, uint16_type{} );
 };
 
+/**
+ * @brief Nodal dual owning interpolation points with the primal order policy.
+ * @tparam Basis Primal polynomial space supplying the effective expansion degree.
+ * @tparam PointSetType Interpolation-node family used to construct the functionals.
+ */
 template<typename Basis, template<class, int, class> class PointSetType>
 class LagrangeDual
     :
@@ -80,11 +86,15 @@ public:
     typedef typename primal_space_type::reference_convex_type reference_convex_type;
     typedef typename reference_convex_type::node_type node_type;
 
-    // point set type associated with the functionals
-    typedef PointSetType<convex_type, nOrder, value_type> pointset_type;
+    /** Requested interpolation-node policy with the primal order specification. */
+    using requested_pointset_type=PointSetType<convex_type,super::order_spec,value_type>;
+    /** Owned point set, retaining the established equispaced fallback when necessary. */
+    using pointset_type=mp::mp_if_c<super::is_order_dynamic &&
+        !RuntimePointSet<PointSetType,convex_type,value_type>,
+        PointSetEquiSpaced<convex_type,Dynamic,value_type>,requested_pointset_type>;
 
     template< template<class, int, class> class TestPointSetType >
-    static constexpr bool is_pointset_v = std::is_base_of_v<TestPointSetType<convex_type, nOrder, value_type>,pointset_type >;
+    static constexpr bool is_pointset_v = std::is_base_of_v<TestPointSetType<convex_type, super::order_spec, value_type>,pointset_type >;
     inline static const uint16_type numPoints = reference_convex_type::numPoints;
     inline static const uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;
     inline static const uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
@@ -116,6 +126,7 @@ public:
     static constexpr uint16_type nFacesInConvex =
         ( nDim == 1 ) ? nVertices : ( nDim == 2 ) ? nEdges : nFaces;
 
+    /** @brief Copy the owned primal, interpolation nodes and functional representations. */
     LagrangeDual( LagrangeDual const& d )
         :
         super( d ),
@@ -124,108 +135,23 @@ public:
         M_pts( d.M_pts ),
         M_points_face( d.M_points_face ),
         M_points_by_subentity( d.M_points_by_subentity ),
-        M_fset( d.M_fset )
+        M_fset( d.M_fset ),
+        M_pset( d.M_pset )
         {}
 
+    /** @brief Move the complete dual while retaining point-set/order consistency. */
     LagrangeDual( LagrangeDual && d ) = default;
 
-    /**
-     * @brief Constructor for dynamic order support
-     *
-     * Uses PointSetEquiSpaced with runtime order to create proper interpolation points.
-     * This constructor enables dynamic polynomial order selection at runtime.
-     *
-     * @param primal The primal space (OrthonormalPolynomialSet with matching runtime order)
-     * @param order Runtime order specification
-     */
+    /** @brief Construct the owned point set at the validated effective degree. */
     LagrangeDual( primal_space_type const& primal, RuntimeOrder order )
-        :
-        super( primal ),
-        M_convex_ref(),
-        M_eid( M_convex_ref.topologicalDimension()+1 ),
-        M_pts(),  // Will be set from dynamic pointset
-        M_points_face( nFacesInConvex ),
-        M_fset( primal )
-    {
-        DVLOG(2) << "Lagrange finite element (dynamic order): \n";
-        DVLOG(2) << " o- dim   = " << nDim << "\n";
-        DVLOG(2) << " o- order = " << order.value << " (runtime)\n";
+        : LagrangeDual(primal,makePointSet(primal,order)) {}
 
-        auto initFromPointSet = [&]( auto const& dyn_pset )
-        {
-            const uint32_type pointCount = dyn_pset.nPoints();
-            DVLOG(2) << " o- numPoints = " << pointCount << "\n";
-
-            M_pts.resize( nDim, pointCount );
-            M_pts = dyn_pset.points();
-            cacheSubEntityPoints( dyn_pset );
-
-            if ( order.value > 0 )
-            {
-                for ( uint16_type e = M_convex_ref.entityRange( nDim-1 ).begin();
-                        e < M_convex_ref.entityRange( nDim-1 ).end();
-                        ++e )
-                {
-                    M_points_face[e] = M_points_by_subentity[nDim-1][e];
-                    DVLOG(2) << "face " << e << " pts " <<  M_points_face[e] << "\n";
-                }
-            }
-        };
-
-        using dynamic_pointset_type = PointSetType<convex_type, Dynamic, value_type>;
-        constexpr bool has_runtime_pointset =
-            RuntimePointSet<PointSetType, convex_type, value_type>;
-
-        if constexpr ( has_runtime_pointset )
-        {
-            dynamic_pointset_type dyn_pset( order );
-            initFromPointSet( dyn_pset );
-        }
-        else
-        {
-            PointSetEquiSpaced<convex_type, Dynamic, value_type> dyn_pset( order );
-            initFromPointSet( dyn_pset );
-        }
-
-        M_fset.setFunctionalSet( functional::makePointEvaluationFunctionals( primal, M_pts ) );
-    }
-
+    /** @brief Construct the dual using the primal's effective expansion degree. */
     LagrangeDual( primal_space_type const& primal )
-        :
-        super( primal ),
-        M_convex_ref(),
-        M_eid( M_convex_ref.topologicalDimension()+1 ),
-        M_pts( nDim, numPoints ),
-        M_points_face( nFacesInConvex ),
-        M_fset( primal )
-    {
-        DVLOG(2) << "Lagrange finite element: \n";
-        DVLOG(2) << " o- dim   = " << nDim << "\n";
-        DVLOG(2) << " o- order = " << nOrder << "\n";
-        DVLOG(2) << " o- numPoints      = " << numPoints << "\n";
-        DVLOG(2) << " o- nbPtsPerVertex = " << nbPtsPerVertex << "\n";
-        DVLOG(2) << " o- nbPtsPerEdge   = " << nbPtsPerEdge << "\n";
-        DVLOG(2) << " o- nbPtsPerFace   = " << nbPtsPerFace << "\n";
-        DVLOG(2) << " o- nbPtsPerVolume = " << nbPtsPerVolume << "\n";
+        : LagrangeDual(primal,RuntimeOrder{primal.order()}) {}
 
-        M_pts = M_pset.points();
-        cacheSubEntityPoints( M_pset );
-
-        if constexpr ( nOrder > 0 )
-        {
-            for ( uint16_type e = M_convex_ref.entityRange( nDim-1 ).begin();
-                    e < M_convex_ref.entityRange( nDim-1 ).end();
-                    ++e )
-            {
-                M_points_face[e] = M_points_by_subentity[nDim-1][e];
-                DVLOG(2) << "face " << e << " pts " <<  M_points_face[e] << "\n";
-            }
-        }
-
-        M_fset.setFunctionalSet( functional::makePointEvaluationFunctionals( primal, M_pts ) );
-    }
-
-    LagrangeDual( primal_space_type const& primal, pointset_type const& pts )
+    /** @brief Own interpolation nodes and build the Ciarlet functionals once. */
+    LagrangeDual( primal_space_type const& primal, pointset_type pts )
         :
         super( primal ),
         M_convex_ref(),
@@ -233,20 +159,13 @@ public:
         M_pts( pts.points() ),
         M_points_face( nFacesInConvex ),
         M_fset( primal ),
-        M_pset( pts )
+        M_pset( std::move(pts) )
     {
-        DVLOG(2) << "Lagrange finite element: \n";
-        DVLOG(2) << " o- dim   = " << nDim << "\n";
-        DVLOG(2) << " o- order = " << nOrder << "\n";
-        DVLOG(2) << " o- numPoints      = " << numPoints << "\n";
-        DVLOG(2) << " o- nbPtsPerVertex = " << nbPtsPerVertex << "\n";
-        DVLOG(2) << " o- nbPtsPerEdge   = " << nbPtsPerEdge << "\n";
-        DVLOG(2) << " o- nbPtsPerFace   = " << nbPtsPerFace << "\n";
-        DVLOG(2) << " o- nbPtsPerVolume = " << nbPtsPerVolume << "\n";
-
+        if(M_pts.size2()!=primal.localDof())
+            throw std::invalid_argument("interpolation point count disagrees with the primal degree");
         cacheSubEntityPoints( M_pset );
 
-        if constexpr ( nOrder > 0 )
+        if ( primal.order() > 0 )
         {
             for ( uint16_type e = M_convex_ref.entityRange( nDim-1 ).begin();
                     e < M_convex_ref.entityRange( nDim-1 ).end();
@@ -262,6 +181,9 @@ public:
 
     ~LagrangeDual() = default;
     LagrangeDual& operator=( LagrangeDual const& ) = default;
+
+    /** @brief Interpolation point set owned by this dual, including its runtime order. */
+    pointset_type const& pointSet() const noexcept { return M_pset; }
 
     points_type const& points() const
     {
@@ -379,6 +301,16 @@ private:
         }
     }
 
+    /** @brief Validate primal/tag agreement and select static or runtime construction. */
+    static pointset_type makePointSet(primal_space_type const& primal,RuntimeOrder order)
+    {
+        (void)validatedOrder<primal_space_type>(order);
+        if(primal.order()!=order.value)
+            throw std::invalid_argument("point-set order disagrees with the primal degree");
+        if constexpr(super::is_order_dynamic) return pointset_type{order};
+        else return pointset_type{};
+    }
+
     template<typename PointSetT>
     void cacheSubEntityPoints( PointSetT const& pset )
     {
@@ -405,6 +337,7 @@ private:
     std::vector<points_type> M_points_face;
     std::vector<std::vector<points_type> > M_points_by_subentity;
     FunctionalSet<primal_space_type> M_fset;
+    /** Interpolation nodes with the same static/runtime policy as the primal. */
     pointset_type M_pset;
 
 };
@@ -442,11 +375,12 @@ template<uint16_type N,
 class Lagrange
     :
     public LagrangePolynomialSet,
-    public FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, (O >= 0 ? O : 1), RealDim, PolySetType, T, TheTAG, Convex>, details::LagrangeDual, Pts >
+    public FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, O, RealDim, PolySetType, T, TheTAG, Convex>, details::LagrangeDual, Pts >
 {
     //! Effective order for base class (use placeholder 1 for dynamic)
-    static constexpr int EffectiveOrder = (O >= 0) ? O : 1;
-    typedef FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, EffectiveOrder, RealDim, PolySetType, T, TheTAG, Convex>, details::LagrangeDual, Pts > super;
+    /** Authoritative signed polynomial order. */
+    static constexpr int order_spec = O;
+    typedef FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, O, RealDim, PolySetType, T, TheTAG, Convex>, details::LagrangeDual, Pts > super;
 public:
 
     BOOST_STATIC_ASSERT( ( boost::is_same<PolySetType<N>, Scalar<N> >::value ||
@@ -692,7 +626,7 @@ public:
      */
     Lagrange()
         :
-        super( dual_space_type( primal_space_type() ) ),
+        super( buildDualSpace( RuntimeOrder{O == Dynamic ? 1 : O} ) ),
         M_refconvex()
     {
         initSymmetricMapping();
@@ -809,19 +743,10 @@ public:
         return "lagrange";
     }
 
+    /** @brief Return the effective cardinality of one field component. */
     uint16_type localDofPerComponent() const override
     {
         return localDof();
-    }
-
-    uint16_type localDofId( uint16_type parentLocalDofId, uint16_type component = 0 ) const override
-    {
-        FEELPP_ASSERT( component < nComponents )
-            ( component )( parentLocalDofId )( nComponents ).error( "invalid component index" );
-        const uint16_type localDofPerComp = localDof();
-        FEELPP_ASSERT( parentLocalDofId < localDofPerComp )
-            ( parentLocalDofId )( localDofPerComp ).error( "invalid parent local dof index" );
-        return static_cast<uint16_type>( localDofPerComp * component + parentLocalDofId );
     }
 
     typename super::DofAttachment dofAttachment( uint16_type localDofId ) const override
@@ -1278,7 +1203,7 @@ public:
              uint16_type RealDim,
              typename T = double,
              typename Convex = Simplex<N>>
-    struct apply
+    struct Apply
     {
         // Preserve the Order template parameter (including Dynamic = -1)
         // For dynamic order, the actual polynomial degree is set at construction via RuntimeOrder
@@ -1287,6 +1212,10 @@ public:
                                  fem::Lagrange<N, RealDim, Order, PolySetType, ContinuityType, T, Hypercube, Pts, TheTAG>>;
         typedef result_type type;
     };
+
+    /** Concrete-element application retained for the established descriptor protocol. */
+    template<uint16_type N, uint16_type RealDim, typename T = double, typename Convex = Simplex<N>>
+    using apply = Apply<N, RealDim, T, Convex>;
 
     template<uint16_type TheNewTAG>
     struct ChangeTag

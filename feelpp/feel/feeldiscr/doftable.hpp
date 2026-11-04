@@ -841,6 +841,9 @@ public:
      * gathered without allocating a full local vector, which keeps basis
      * evaluation and Dirac assembly on the common transform implementation
      * without adding work to their inner loops.
+     * @param ElId Element whose canonical coefficients are read.
+     * @param localDof Flattened local functional index, including its component.
+     * @param coefficient Callback reading a global-process coefficient.
      */
     template<typename CanonicalCoefficient>
     [[nodiscard]] auto localDofCoefficientFromCanonical(
@@ -849,6 +852,12 @@ public:
     {
         using coefficient_type = std::remove_cvref_t<decltype(
             coefficient( std::declval<size_type>() ) )>;
+        auto globalIndex = [this, ElId]( uint16_type flatLocalDof )
+        {
+            auto const layout = M_fe->localDofLayout( flatLocalDof );
+            return this->localToGlobal( ElId, layout.parentLocalDofId,
+                                       layout.component ).index();
+        };
         if constexpr ( is_hdiv_conforming || is_hcurl_conforming )
         {
             auto const& transform = this->localToGlobalTransform(
@@ -862,21 +871,20 @@ public:
                 coefficient_type result = 0;
                 for ( uint16_type column = 0; column < row.size(); ++column )
                 {
-                    auto const index = this->localToGlobal(
-                        ElId, first + column ).index();
+                    auto const index = globalIndex( first + column );
                     result += static_cast<coefficient_type>( row[column] ) *
                               coefficient( index );
                 }
                 return result;
             }
-            auto const index = this->localToGlobal( ElId, localDof ).index();
+            auto const index = globalIndex( localDof );
             return coefficient( index ) *
                    static_cast<coefficient_type>(
                        dofTransformSignProjection( transform ) );
         }
         else
         {
-            auto const index = this->localToGlobal( ElId, localDof ).index();
+            auto const index = globalIndex( localDof );
             return coefficient( index );
         }
     }
@@ -1364,7 +1372,8 @@ public:
             this->initializeLegacyLocalIndexPermutation( nFlatLocalDof );
         }
 
-    [[nodiscard]] uint16_type finiteElementLocalDofId( uint16_type localNode, uint16_type c = 0 ) const noexcept
+    /** @brief Validate and flatten a parent functional index and field component. */
+    [[nodiscard]] uint16_type finiteElementLocalDofId( uint16_type localNode, uint16_type c = 0 ) const
         {
             CHECK( M_fe ) << "DofTable local indexing requires its finite-element instance";
             return M_fe->localDofId( localNode, c );

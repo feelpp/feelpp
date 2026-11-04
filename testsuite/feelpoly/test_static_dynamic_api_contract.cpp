@@ -360,8 +360,13 @@ BOOST_AUTO_TEST_CASE( order_storage_layout_contract )
     static_assert( sizeof( static_entity ) == sizeof( dynamic_entity ) );
     static_assert(
         sizeof( static_hypercube_entity ) == sizeof( dynamic_hypercube_entity ) );
-    static_assert(
-        sizeof( lagrange_fe_type<2> ) <= sizeof( lagrange_fe_type<Dynamic> ) );
+    using basis_type = typename lagrange_fe_type<2>::basis_type;
+    static_assert( std::is_empty_v<Feel::detail::PolynomialBasisState<basis_type,2>> );
+    static_assert( !std::is_empty_v<Feel::detail::PolynomialBasisState<basis_type,Dynamic>> );
+    static_assert( orderIsStatic<typename lagrange_fe_type<2>::pointset_type> );
+    static_assert( orderIsDynamic<typename lagrange_fe_type<Dynamic>::pointset_type> );
+    // Whole FE size includes the point backend's reference geometry. It does
+    // not measure order-policy overhead or total heap allocation footprint.
 
     BOOST_TEST_MESSAGE(
         "Static/dynamic API layout: OrderBase<2>=" << sizeof( OrderBase<2> )

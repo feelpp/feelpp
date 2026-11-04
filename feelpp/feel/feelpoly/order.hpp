@@ -40,7 +40,7 @@ inline constexpr int Dynamic = -1;
  * @tparam N compile-time polynomial order, or `Dynamic` for runtime order
  */
 template <int N>
-struct order_t
+struct OrderTag
 {
     /** Unmodified compile-time order specification. */
     static constexpr int order_spec = N;
@@ -51,6 +51,10 @@ struct order_t
     /** Whether this tag denotes compile-time order. */
     static constexpr bool is_static = !is_dynamic;
 };
+
+/** @brief Compatibility spelling of OrderTag for existing clients. */
+template<int N>
+using order_t = OrderTag<N>;
 
 /**
  * @brief Type-safe wrapper for runtime order specification.
@@ -247,6 +251,14 @@ staticOrderValue()
                        "static order provider exposes no order metadata" );
         return type::nOrder;
     }
+}
+
+/** @brief Return the signed specification without erasing runtime identity. */
+template<class T>
+[[nodiscard]] consteval int orderSpecification()
+{
+    if constexpr ( orderIsDynamic<T> ) return Dynamic;
+    else return staticOrderValue<T>();
 }
 
 /** @brief Return the default construction order for a static/dynamic type. */
