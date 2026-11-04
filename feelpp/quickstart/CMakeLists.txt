@@ -52,6 +52,7 @@ endif()
 
 add_subdirectory( python )
 add_subdirectory( laplacian )
+add_subdirectory( maxwell )
 
 feelpp_get_compile_definition(Feelpp::feelpp FEELPP_HAS_PETSC_TAO)
 if ( FEELPP_HAS_PETSC_TAO )

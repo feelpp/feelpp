@@ -64,4 +64,6 @@ include::laplacian/README.adoc[]
 
 include::adr/README.adoc[]
 
+include::maxwell/README.adoc[]
+
 include::stokes/README.adoc[]

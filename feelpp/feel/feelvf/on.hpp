@@ -720,6 +720,18 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onFaces( std::shared_ptr
             //use interpolant
             __fe->faceInterpolate( expr_evaluator, IhLoc );
 
+            // Mapped moment elements store orientation separately from the
+            // legacy FaceDof sign. Reuse Element::assign()'s canonical map,
+            // including the coupled tangential face-moment transformations.
+            auto const canonicalIh = [&]()
+            {
+                if constexpr ( is_hdiv_conforming_v<fe_type> || is_hcurl_conforming_v<fe_type> )
+                    return M_u.canonicalFaceLocalInterpolant(
+                        theface, theface.element( faceConnectionId ).id(), IhLoc );
+                else
+                    return IhLoc;
+            }();
+
             for( auto const& ldof : M_u.functionSpace()->dof()->faceLocalDof( theface.id() ) )
                 {
                     index_type thedof = (is_comp_space)? compDofShift+Elem1::nComponents*ldof.index() : ldof.index();
@@ -733,7 +745,11 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onFaces( std::shared_ptr
                         << "Invalid local dof index in face for face interpolant: "
                         << ldof.localDofInFace() << " >= " << IhLoc.size()
                         << " (face-id=" << theface.id() << ")";
-                    double __value = ldof.sign()*IhLoc( ldof.localDofInFace() );
+                    double __value;
+                    if constexpr ( is_hdiv_conforming_v<fe_type> || is_hcurl_conforming_v<fe_type> )
+                        __value = canonicalIh( ldof.localDof() );
+                    else
+                        __value = ldof.sign()*IhLoc( ldof.localDofInFace() );
                     DVLOG(3) << " on " << theface.id() << " thedof "<< thedof << " = " << __value
                              << " start=" << M_u.start() << " ldof=" << ldof.index() << "\n";
                     if ( std::find( dofs.begin(),

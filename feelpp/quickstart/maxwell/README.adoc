@@ -1,0 +1,75 @@
+== Maxwell examples and benchmarks
+
+This directory groups the H(curl) PDE examples and their benchmark checks.
+The initial example is the definite Maxwell source problem below.
+Future cavity eigenvalue, singular-domain, and TEAM cases belong here alongside it.
+
+=== Curl-curl with Nedelec elements
+
+`feelpp_qs_curlcurl_2d` and `feelpp_qs_curlcurl_3d` solve
+`curl curl E + mass E = f`, with `mass > 0` (default 1),
+and prescribe the exact tangential trace on the whole boundary.
+The positive mass term removes the gradient kernel of the pure curl-curl operator.
+Without a mesh file, the domain is the unit square or cube, meshed with simplices.
+
+Choose `--family=ned1` (first kind, default) or `--family=ned2` (second kind),
+and the runtime family index `--order=k`, starting at zero for both families.
+NED1 uses the trimmed space of ambient degree `k+1`; NED2 uses the full vector space `[P_{k+1}]^d`.
+At `k=0` the local dimensions are respectively 3/6 on triangles and 6/12 on tetrahedra.
+Both static and runtime families have focused tests through `k=3`;
+runtime construction above that range does not imply equivalent PDE validation.
+The 3D compile-time factories explicitly reject k>3; the runtime factories accept k=4.
+Tensor-product H(curl) elements are unavailable.
+
+[source,shell]
+----
+cmake --build build/default -j2 --target qs_maxwell
+ctest --test-dir build/default -L maxwell --output-on-failure
+build/default/feelpp/quickstart/maxwell/feelpp_qs_curlcurl_2d --family=ned1 --order=1 --gmsh.hsize=0.2
+build/default/feelpp/quickstart/maxwell/feelpp_qs_curlcurl_3d --family=ned2 --order=1 --gmsh.hsize=0.3
+----
+
+The default `--solution=sin` uses the smooth sine manufactured solution:
+`E=(sin(pi*y),sin(pi*x))` in 2D and
+`E=(sin(pi*y),sin(pi*z),sin(pi*x))` in 3D, with `f=(pi^2+mass)E`.
+It has nonzero tangential boundary data.
+`--solution=polynomial` selects `E=(-y,x)` or `E=(-y,x,0)`, with constant nonzero curl and `f=mass E`.
+This field belongs to both lowest-order families and provides a patch test for assembly,
+orientation, tangential boundary constraints, and the linear solve.
+
+Each run prints the number of DoFs, actual maximum element diameter,
+L2 error, curl error, H(curl) error, assembly time, and solve time.
+`--error-max=tolerance` makes an excessive H(curl) error fail the run;
+CTest exercises polynomial reproduction at orders zero through four for both families and dimensions.
+Use `--no-export` for timing runs, and `--quad=N` for quadrature refinement.
+Runtime tetrahedral quadrature orders 10--21 use positive collapsed-cube Gauss-Jacobi rules.
+`--geometry.order=G` changes the geometric order independently.
+An elevated geometry order on a square/cube still describes a straight boundary;
+curved Piola tests live in `testsuite/feeldiscr/test_curved_piola_*.cpp`.
+
+For a convergence benchmark, run both families at `k=0,1,2,3,4` and
+`--gmsh.hsize=0.4,0.2,0.1`, keeping the mesh, quadrature, solver tolerance,
+and MPI size fixed between family comparisons.
+Report both errors against DoFs and against wall time: equal family indices do not imply equal cost.
+Cross-code comparisons must also align polynomial spaces rather than order labels;
+MFEM example 3 uses its ND collection and is a first-family reference.
+
+=== Further published benchmarks
+
+* https://mfem.org/examples/#example-3-definite-maxwell-problem[MFEM example 3]:
+  the same definite Maxwell source problem and sine fields, for cross-code comparison.
+* https://mfem.org/examples/#example-13-maxwell-eigenproblem[MFEM example 13]:
+  Maxwell cavity eigenmodes, useful for checking nonzero eigenvalues and spurious modes.
+  This requires an eigensolver and treatment of the gradient kernel.
+* https://dauge.pages.math.cnrs.fr/benchmax.html[Dauge's Maxwell benchmark suite]:
+  reference eigenvalues for the L-shape, cracked square, curved sectors,
+  thick L-shape, and dielectric checkerboard. These test singular fields,
+  curved geometry, and material interfaces. The listed Fichera-corner case
+  has no reference values on that page.
+* https://www.compumag.org/wp/wp-content/uploads/2018/06/problem7.pdf[TEAM problem 7]:
+  an asymmetric conductor with a hole, for eddy-current validation against measurements.
+* https://www.compumag.org/wp/wp-content/uploads/2018/06/problem13.pdf[TEAM problem 13]:
+  nonlinear 3D magnetostatics, with steel B-H data and reference flux measurements.
+
+The TEAM cases require additional material, excitation, and formulation work;
+the manufactured definite Maxwell problem is the starting point for this quickstart.
