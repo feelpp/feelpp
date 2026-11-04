@@ -15,9 +15,11 @@
 
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/gmshsimplexdomain.hpp>
+#include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pdhm.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
+#include <feel/feelpoly/orthonormalpolynomialset.hpp>
 #include <feel/feelvf/vf.hpp>
 
 #include <string>
@@ -220,20 +222,84 @@ runDynamicOrderChecks( mesh_ptrtype const& mesh )
                       checkTensorParity<order>( mesh, tolTensor );
                   } );
 }
+/** @brief Check real modal space construction, DG cardinality and a constant field. */
+template<int Degree,class Cell>
+void checkModalConstantField(std::shared_ptr<Mesh<Cell>> const& mesh)
+{
+        using static_space = FunctionSpace<Mesh<Cell>,bases<OrthonormalPolynomialSet<Degree>>>;
+        using dynamic_space = FunctionSpace<Mesh<Cell>,bases<OrthonormalPolynomialSet<Dynamic>>>;
+        auto fixed = static_space::New(_mesh=mesh);
+        auto runtime = dynamic_space::New(_mesh=mesh,_runtime_order=RuntimeOrder{Degree});
+        BOOST_REQUIRE_EQUAL(fixed->nDof(),runtime->nDof());
+        BOOST_CHECK_EQUAL(runtime->order(),Degree);
+        constexpr auto count=Cell::is_hypercube ? (Degree+1)*(Degree+1) : (Degree+1)*(Degree+2)/2;
+        BOOST_CHECK_EQUAL(runtime->fe()->localDof(),count);
+        BOOST_CHECK_EQUAL(runtime->nDof(),mesh->numGlobalElements()*count);
+        auto makeConstant = [&mesh](auto const& space)
+        {
+            auto field=space->element();
+            field.zero();
+            // A normalized constant mode has value 1/sqrt(reference measure).
+            for(auto const& entry : elements(mesh))
+            {
+                auto const& element=unwrap_ref(entry);
+                auto index=space->dof()->localToGlobal(element.id(),0,0).index();
+                field(index)=std::sqrt(Cell::is_hypercube ? 4.0 : 2.0);
+            }
+            field.close();
+            return field;
+        };
+        auto fixedConstant=makeConstant(fixed);
+        auto runtimeConstant=makeConstant(runtime);
+        BOOST_CHECK_SMALL(normL2(_range=elements(mesh),_expr=idv(fixedConstant)-cst(1.0)),2e-11);
+        BOOST_CHECK_SMALL(normL2(_range=elements(mesh),_expr=idv(runtimeConstant)-cst(1.0)),2e-11);
+        BOOST_CHECK_SMALL(normL2(_range=elements(mesh),_expr=idv(fixedConstant)-idv(runtimeConstant)),2e-11);
+}
 } // namespace
 
 BOOST_AUTO_TEST_SUITE( dynamic_order_math_parity_suite )
 
-BOOST_AUTO_TEST_CASE( dynamic_order_reference_simplex_math_parity )
+BOOST_AUTO_TEST_CASE( dynamicOrderReferenceSimplexMathParity )
 {
     auto mesh = makeOneElementSimplexMesh( "dynamic_order_reference", true );
     runDynamicOrderChecks<0,1,2,3,4>( mesh );
 }
 
-BOOST_AUTO_TEST_CASE( dynamic_order_affine_simplex_math_parity )
+BOOST_AUTO_TEST_CASE( dynamicOrderAffineSimplexMathParity )
 {
     auto mesh = makeOneElementSimplexMesh( "dynamic_order_affine", false );
     runDynamicOrderChecks<0,1,2,3,4>( mesh );
+}
+
+/** @test FunctionSpace validates modal order through the public descriptor policy. */
+BOOST_AUTO_TEST_CASE( modalFunctionSpaceValidatesDescriptorOrder )
+{
+    using modal_mesh_type = Mesh<Simplex<2, 1>>;
+    using static_space_type = FunctionSpace<modal_mesh_type, bases<OrthonormalPolynomialSet<2>>>;
+    using dynamic_space_type = FunctionSpace<modal_mesh_type, bases<OrthonormalPolynomialSet<Dynamic>>>;
+    static_assert( static_space_type::defaultBasisOrder().value == 2 );
+    static_assert( dynamic_space_type::defaultBasisOrder().value == 0 );
+    BOOST_CHECK_EQUAL( static_space_type::validatedBasisOrder( RuntimeOrder{ 2 } ).value, 2 );
+    BOOST_CHECK_THROW( (void)static_space_type::validatedBasisOrder( RuntimeOrder{ 3 } ),
+                       std::invalid_argument );
+    for ( int degree : { 0, 1, 2, 3 } )
+        BOOST_TEST_CONTEXT( "modal degree=" << degree )
+            BOOST_CHECK_EQUAL( dynamic_space_type::validatedBasisOrder( RuntimeOrder{ degree } ).value, degree );
+}
+
+/** @test Modal FunctionSpaces own cell DOFs on simplices and hypercubes. */
+BOOST_AUTO_TEST_CASE( modalFunctionSpaceConstructionAndConstantField )
+{
+    auto triangle=makeOneElementSimplexMesh("modal_constant_field",false);
+    auto description=std::make_shared<GmshHypercubeDomain>(2,1,2,true);
+    description->setPrefix("modal_tensor_product_constant_field");
+    description->setCharacteristicLength(1.0);
+    auto quadrilateral=createGMSHMesh(_mesh=new Mesh<Hypercube<2>>,_desc=description,_h=1.0);
+    forEachOrder(std::integer_sequence<int,0,1,2,3>{},[&](auto order)
+    {
+        checkModalConstantField<decltype(order)::value>(triangle);
+        checkModalConstantField<decltype(order)::value>(quadrilateral);
+    });
 }
 
 BOOST_AUTO_TEST_SUITE_END()

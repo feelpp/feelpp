@@ -37,7 +37,7 @@
 #include <feel/feelpoly/hcurlpolynomialset.hpp>
 #include <feel/feelpoly/piolatransform.hpp>
 #include <feel/feelpoly/meta.hpp>
-#include <feel/feelpoly/order.hpp>
+#include <feel/feelpoly/polynomialbasis.hpp>
 #include <feel/feelpoly/traits.hpp>
 #include <feel/feelpoly/concepts.hpp>
 
@@ -73,7 +73,7 @@ using matricial_t = rank_t<2>;
  *  @author Christophe Prud'homme
  *  @see
  */
-template<typename Poly, template<uint16_type> class PolySetType = Scalar, int OrderSpec = Poly::nOrder>
+template<typename Poly, template<uint16_type> class PolySetType = Scalar, int OrderSpec = orderSpecification<Poly>()>
 class PolynomialSet
     :
         public std::enable_shared_from_this<PolynomialSet<Poly, PolySetType, OrderSpec > >,
@@ -90,6 +90,8 @@ public:
 
     static constexpr uint16_type nDim = Poly::nDim;
     static constexpr uint16_type nRealDim = Poly::nRealDim;
+    /** Authoritative signed order specification. */
+    static constexpr int order_spec = OrderSpec;
     static constexpr bool is_order_static = ( OrderSpec != Dynamic );
     static constexpr bool is_order_dynamic = !is_order_static;
     //! Static order value (or placeholder 1 when dynamic for template instantiation)
@@ -132,8 +134,8 @@ public:
                                                   PolynomialSet<Poly, Tensor2, OrderSpec>,
                                                   PolynomialSet<Poly, Tensor3, OrderSpec>>>;
 
-    static_assert( boost::is_same<typename matrix_type::value_type, value_type>::value );
-    static_assert( boost::is_same<typename matrix_type::value_type, typename points_type::value_type>::value );
+    static_assert( std::is_same_v<typename matrix_type::value_type, value_type> );
+    static_assert( std::is_same_v<typename matrix_type::value_type, typename points_type::value_type> );
 
     //@}
 
@@ -141,15 +143,17 @@ public:
      */
     //@{
 
+    /** @brief Construct an empty set at the default expansion degree. */
     PolynomialSet()
         :
         M_basis(),
         M_coeff(),
         M_fname( "pset" )
     {
-        set_order_value( nOrder );
+        setOrderValue( nOrder );
         //std::cout << "[PolynomialSet::default] dim = " << nDim << " order = " << nOrder << "\n";
     }
+    /** @brief Construct an empty runtime set at the supplied degree. */
     PolynomialSet( uint16_type order )
         requires( is_order_dynamic )
         :
@@ -157,43 +161,29 @@ public:
         M_coeff(),
         M_fname( "pset" )
     {
-        set_order_value( order );
+        setOrderValue( order );
     }
-    PolynomialSet( Poly const& p )
+    /** @brief Copy expansion, coefficients, family and effective degree from a source. */
+    template<class Source>
+        requires requires( Source const& p ) { p.basis(); p.coeff(); }
+    PolynomialSet( Source const& p )
         :
         M_basis( p.basis() ),
         M_coeff( p.coeff() ),
         M_fname( p.familyName() )
     {
-        // Preserve an object's effective order even when this PolynomialSet's
-        // template metadata is static.
-        if constexpr ( requires { p.order(); } )
-        {
-            set_order_value( p.order() );
-        }
-        else
-        {
-            set_order_value( nOrder );
-        }
+        setOrderValue( ::Feel::detail::polynomialOrder( p ) );
     }
-    /**
-     */
-    //template<typename AE>
-    //PolynomialSet( Poly const& p, ublas::matrix_expression<AE> const& c )
-    PolynomialSet( Poly const& p, matrix_type const& c, bool __as_is = false )
+    /** @brief Construct from source-relative coefficients, or modal coefficients when as-is. */
+    template<class Source>
+        requires requires( Source const& p ) { p.basis(); p.coeff(); }
+    PolynomialSet( Source const& p, matrix_type const& c, bool __as_is = false )
         :
         M_basis( p.basis() ),
         M_coeff( p.coeff() ),
         M_fname( p.familyName() )
     {
-        if constexpr ( requires { p.order(); } )
-        {
-            set_order_value( p.order() );
-        }
-        else
-        {
-            set_order_value( nOrder );
-        }
+        setOrderValue( ::Feel::detail::polynomialOrder( p ) );
         setCoefficient( c, __as_is );
         //std::cout << "[PolynomialSet] dim = " << nDim << " order = " << nOrder << "\n";
         //std::cout << "[PolynomialSet] c = " << c << "\n";
@@ -201,17 +191,14 @@ public:
         //std::cout << "[PolynomialSet] coeff = " << M_coeff << "\n";
     }
 
-    /**
-     */
-    //template<typename AE>
-    //PolynomialSet( Poly const& p, ublas::matrix_expression<AE> const& c )
+    /** @brief Construct from coefficients in the default modal expansion. */
     PolynomialSet( matrix_type const& c, bool __as_is = false )
         :
         M_basis(),
         M_coeff( c ),
         M_fname( "pset" )
     {
-        set_order_value( nOrder );
+        setOrderValue( nOrder );
         setCoefficient( c, __as_is );
         //std::cout << "[PolynomialSet] dim = " << nDim << " order = " << nOrder << "\n";
         //std::cout << "[PolynomialSet] c = " << c << "\n";
@@ -220,6 +207,7 @@ public:
     }
 
 
+    /** @brief Copy all value state, sharing immutable runtime derivative operators. */
     PolynomialSet( PolynomialSet const & p )
         :
         M_order( p.M_order ),
@@ -232,8 +220,15 @@ public:
         //std::cout << "[PolynomialSet::copy] coeff = " << M_coeff << "\n";
     }
 
+    /** @brief Destroy a polynomial set through its public interface. */
     virtual ~PolynomialSet()
     {}
+
+    /** @brief Move the basis, coefficients, family and order policy together. */
+    PolynomialSet( PolynomialSet&& ) = default;
+
+    /** @brief Move-assign all polynomial-set value state. */
+    self_type& operator=( PolynomialSet&& ) = default;
 
     //@}
 
@@ -248,6 +243,7 @@ public:
             M_order = pset.M_order;
             M_basis = pset.M_basis;
             M_coeff = pset.M_coeff;
+            M_fname = pset.M_fname;
         }
 
         return *this;
@@ -268,18 +264,21 @@ public:
                 "PolynomialSet component index is outside the component range" );
         const int nrows = M_coeff.size1()/nComponents;
         const int ncols = M_coeff.size2();
-        return component_type( Poly(), ublas::project( M_coeff,
-                               ublas::slice( nrows*i+i, nComponents, nrows/nComponents ),
+        return component_type( *this, ublas::project( M_coeff,
+                               ublas::slice( i, nComponents, nrows ),
                                ublas::slice( 0, 1, ncols ) ), true );
     }
 
+    /** @brief Extract one tensor entry for every function, preserving the expansion. */
     component_type operator()( uint16_type i, uint16_type j ) const
         {
             static_assert( is_tensor2, "PolynomialSet::operator() requires a tensor2 polynomial set" );
+            if ( i >= nComponents1 || j >= nComponents2 )
+                throw std::out_of_range("tensor component index is outside the component range");
             const int nrows = M_coeff.size1()/nComponents;
             const int ncols = M_coeff.size2();
-            return component_type( Poly(), ublas::project( M_coeff,
-                                                           ublas::slice( nrows*i+j, nComponents, nrows/nComponents ),
+            return component_type( *this, ublas::project( M_coeff,
+                                                           ublas::slice( nComponents2*i+j, nComponents, nrows ),
                                                            ublas::slice( 0, 1, ncols ) ), true );
         }
 
@@ -292,31 +291,31 @@ public:
     /**
      * \return the semantic degree of the polynomials in the set
      *
-     * Always returns the runtime semantic order storage (initialized to
-     * compile-time order for static sets).
+     * Static types use their compile-time degree without runtime storage.
      */
     [[nodiscard]] uint16_type degree() const
     {
-        return M_order;
+        return M_order.order();
     }
 
     /**
      * \return the semantic polynomial order
      *
-     * Always returns the runtime semantic order storage (initialized to
-     * compile-time order for static sets).
+     * Static types use their compile-time degree without runtime storage.
      */
     [[nodiscard]] uint16_type order() const
     {
-        return M_order;
+        return M_order.order();
     }
 
+    /** @brief Change runtime expansion degree; coefficients must match the new extent. */
     void setOrder( uint16_type order )
         requires is_dynamic_order<OrderSpec>
     {
-        set_order_value( order );
+        setOrderValue( order );
     }
 
+    /** @brief Preserve expansion and coefficients while adopting a runtime order policy. */
     [[nodiscard]] PolynomialSet<Poly, PolySetType, Dynamic> toDynamic() const
         requires is_static_order<OrderSpec>
     {
@@ -328,6 +327,7 @@ public:
         return dynamic_set;
     }
 
+    /** @brief Convert to static degree N when the effective degree agrees. */
     template<int N>
     [[nodiscard]] boost::optional<PolynomialSet<Poly, PolySetType, N>> toStatic() const
         requires is_dynamic_order<OrderSpec>
@@ -429,7 +429,7 @@ public:
     std::string name( std::string sep = "." ) const
     {
         std::ostringstream os;
-        os << this->familyName() << sep << nDim << sep << order_value();
+        os << this->familyName() << sep << nDim << sep << orderValue();
         return os.str();
     }
 
@@ -487,10 +487,12 @@ public:
         int j = 0;
         for( int i: list_p )
         {
+            if ( i < 0 || static_cast<size_type>(i) >= dim_p / nComponents )
+                throw std::out_of_range("polynomial block index is outside the set");
             for ( int c = 0; c < nComponents; ++c )
             {
                 ublas::project( coeff,
-                                ublas::range( c*new_dim_p+nComponents*j, c*dim_p+nComponents*j+nComponents ),
+                                ublas::range( c*new_dim_p+nComponents*j, c*new_dim_p+nComponents*j+nComponents ),
                                 ublas::range( 0, M_coeff.size2() ) ) =
                                     ublas::project( M_coeff,
                                                     ublas::range( c*dim_p+nComponents*i, c*dim_p+nComponents*i+nComponents ),
@@ -499,7 +501,7 @@ public:
 
             ++j;
         }
-        return self_type( Poly(), coeff, true );
+        return self_type( *this, coeff, true );
     }
 
     /**
@@ -510,6 +512,8 @@ public:
      */
     self_type polynomialsUpToDimension( int dim_p  ) const
     {
+        if ( dim_p < 0 || static_cast<size_type>(dim_p) > polynomialDimension() / nComponents )
+            throw std::out_of_range("polynomial block dimension is outside the set");
         matrix_type coeff( nComponents*nComponents*dim_p, M_coeff.size2() );
 
         for ( int c = 0; c < nComponents; ++c )
@@ -523,7 +527,7 @@ public:
                                                 ublas::range( 0, M_coeff.size2() ) );
         }
 
-        return self_type( Poly(), coeff, true );
+        return self_type( *this, coeff, true );
     }
 
     /**
@@ -536,6 +540,8 @@ public:
     self_type
     polynomialsRange( uint16_type dim_bot, uint16_type dim_top  ) const
     {
+        if ( dim_bot > dim_top || dim_top > polynomialDimension() / nComponents )
+            throw std::out_of_range("polynomial block range is outside the set");
         uint16_type dim_p = dim_top-dim_bot;
         matrix_type coeff( nComponents*nComponents*dim_p,
                            M_coeff.size2() );
@@ -544,14 +550,14 @@ public:
         {
             size_type nc = c*this->polynomialDimension();
             ublas::project( coeff,
-                            ublas::range( c*nComponents*dim_bot, ( c+1 )*nComponents*dim_top ),
+                            ublas::range( c*nComponents*dim_p, ( c+1 )*nComponents*dim_p ),
                             ublas::range( 0, M_coeff.size2() ) ) =
                                 ublas::project( M_coeff,
-                                                ublas::range( nc+dim_bot, nc+nComponents*dim_top ),
+                                                ublas::range( nc+nComponents*dim_bot, nc+nComponents*dim_top ),
                                                 ublas::range( 0, M_coeff.size2() ) );
         }
 
-        return self_type( Poly(), coeff, true );
+        return self_type( *this, coeff, true );
     }
 
     /**
@@ -562,7 +568,8 @@ public:
      */
     polynomial_type polynomial( uint16_type i  ) const
     {
-        size_type dim_p = this->polynomialDimension();
+        if ( i >= this->polynomialDimension() )
+            throw std::out_of_range("polynomial index is outside the set");
         matrix_type coeff( nComponents, M_coeff.size2() );
         //for ( int c = 0; c < nComponents; ++c )
         {
@@ -574,9 +581,9 @@ public:
                                                 ublas::range( nComponents*i, nComponents*( i+1 ) ),
                                                 ublas::range( 0, M_coeff.size2() ) );
         }
-        polynomial_type result( Poly(), coeff, true );
+        polynomial_type result( *this, coeff, true );
         if constexpr ( polynomial_type::is_order_dynamic )
-            result.setOrder( order_value() );
+            result.setOrder( orderValue() );
         return result;
     }
 
@@ -590,7 +597,8 @@ public:
     template<typename AE>
     ublas::vector<value_type> evaluate( uint16_type i, ublas::vector_expression<AE> const& __pt ) const
     {
-        return ublas::row( ublas::prod( M_coeff, M_basis( __pt ) ),  i );
+        matrix_type values = polynomial(i).evaluate( __pt );
+        return ublas::column( values, 0 );
     }
 
     /**
@@ -600,7 +608,9 @@ public:
     template<typename AE>
     ublas::matrix<value_type> evaluate( ublas::vector_expression<AE> const& __pt ) const
     {
-        return ublas::prod( M_coeff, M_basis( __pt ) );
+        points_type points( __pt().size(), 1 );
+        ublas::column( points, 0 ) = __pt;
+        return evaluate( points );
     }
 
 
@@ -649,12 +659,13 @@ public:
      */
     matrix_type const& d( uint16_type i ) const
     {
-        return M_basis.d( i );
+        return basisD( i );
     }
 
+    /** @brief Return the mixed second differentiation operator at the effective degree. */
     matrix_type d( uint16_type i, uint16_type j ) const
     {
-        return ublas::prod( M_basis.d( i ), M_basis.d( j ) );
+        return ublas::prod( basisD( i ), basisD( j ) );
     }
 
     /**
@@ -667,13 +678,15 @@ public:
         matrix_type coeff;
         coeff = ublas::prod( M_coeff, basisD( l ) );
 
-        // Differentiation changes the coefficients within the same expansion
-        // basis. Preserve its effective order, including runtime orders carried
-        // by a statically typed base of a dynamic finite element.
+        // Differentiation changes coefficients within the same expansion space;
+        // the copied policy retains the effective degree and owned operators.
         self_type deriv( *this );
         deriv.setCoefficient( coeff, true );
         return deriv;
     }
+
+    /** @brief Mathematical derivative in a reference coordinate direction. */
+    self_type derivative( uint16_type direction ) const { return derivate( direction ); }
 
     template<typename AE>
     ublas::vector<matrix_type> derivate( ublas::matrix_expression<AE> const& pts ) const
@@ -743,56 +756,29 @@ public:
     gradient_polynomialset_type
     gradient( rank_t<0> ) const
     {
-        const int n1 = M_coeff.size1();
-        const int n2 = M_coeff.size2();
-        ublas::matrix<value_type> c ( nDim*nDim*n1, n2 );
-        c.clear();
-
-        for ( int i = 0; i <nDim; ++i )
-        {
-            ublas::project( c,
-                            ublas::slice( nDim*n1*i+i, nDim, n1 ),
-                            ublas::slice( 0, 1, n2 ) )  = ublas::prod( M_coeff, M_basis.d( i ) );
-        }
-
-        return gradient_polynomialset_type( c, true );
+        return gradientCoefficients();
     }
 
-    gradient_polynomialset_type
-    gradient( rank_t<1> ) const
+    /** @brief Form the Jacobian of each vector polynomial. */
+    gradient_polynomialset_type gradient( rank_t<1> ) const
     {
-        // we deal with a VECTORIAL polynomial set: nComponents = nDim*nDim
-        // number of basis functions times the numb er of components(was vertorial function)
-        const int n1 = M_coeff.size1();
-        const int n2 = M_coeff.size2();
-        ublas::matrix<value_type> c ( nComponents*nComponents*n1, n2 );
-        c.clear();
-#if 0
-        std::cout << "M_coeff = " << M_coeff << "\n"
-                  << "c = " << c << "\n";
-#endif
-
-        for ( int i = 0; i <nDim; ++i )
-        {
-#if 0
-            std::cout << "i=" << i << "\n"
-                      << " prod = "
-                      << ublas::prod( M_coeff, M_basis.d( i ) ) << "\n"
-                      << " slice = "
-                      << ublas::project( c,
-                                         ublas::slice( nDim*n1*i+i, nDim, n1 ),
-                                         ublas::slice( 0, 1, n2 ) ) << "\n";
-            // c[i][c1][c2][q]
-#endif
-            ublas::project( c,
-                            ublas::slice( nDim*n1*i+i, nDim, n1 ),
-                            ublas::slice( 0, 1, n2 ) )  = ublas::prod( M_coeff, M_basis.d( i ) );
-        }
-
-        //std::cout << "coeff = " << c << "\n";
-        return gradient_polynomialset_type( c, true );
+        return gradientCoefficients();
     }
 
+private:
+    /** @brief Assemble gradients in function/component/direction order. */
+    gradient_polynomialset_type gradientCoefficients() const
+    {
+        static_assert( nDim == nRealDim, "reference gradient requires equal topological and real dimensions" );
+        matrix_type coefficients( M_coeff.size1() * nDim, M_coeff.size2() );
+        for ( uint16_type direction = 0; direction < nDim; ++direction )
+            ublas::project( coefficients,
+                            ublas::slice( direction, nDim, M_coeff.size1() ),
+                            ublas::slice( 0, 1, M_coeff.size2() ) ) =
+                ublas::prod( M_coeff, basisD( direction ) );
+        return gradient_polynomialset_type( *this, coefficients, true );
+    }
+public:
 
 
 
@@ -860,7 +846,7 @@ public:
             pMap.setZero();
             // we want to retrieve the constant polynomial value, we do not care
             // about the point at which we evaluate the basis
-            auto b = M_basis( p );
+            auto b = basisEvaluate( p );
             // the first column is the mean value when rescaled by the value of
             // the first polynomial (constant) in the primal basis
             ublas::column(_m,0)=ublas::column( M_coeff, 0 )/b(0,0);
@@ -2239,6 +2225,8 @@ public:
          *
          * \param q index of the points to evaluate the divergence
          * \param i index containing current function and component indices
+         * \param c1 first component index
+         * \param c2 second component index
          * \return divergence of the basis function at the q-th point
          */
 
@@ -2927,60 +2915,47 @@ public:
 
     }
 
-protected:
+public:
+    /** @brief Evaluate modal values through the common order policy. */
     template<typename AE>
     matrix_type basisEvaluate( ublas::matrix_expression<AE> const& pts ) const
     {
-        if ( isUsingDynamicOrder() )
-        {
-            if constexpr ( requires( basis_type const& b, decltype( pts ) p, uint16_type order ) { b.evaluate( p, order ); } )
-                return M_basis.evaluate( pts, this->order() );
-        }
-        return M_basis.evaluate( pts );
+        return M_order.evaluate( M_basis, pts );
     }
 
+protected:
+    /** @brief Evaluate modal derivatives at the effective order. */
     template<typename AE>
     ublas::vector<matrix_type> basisDerivate( ublas::matrix_expression<AE> const& pts ) const
     {
-        if ( isUsingDynamicOrder() )
-        {
-            if constexpr ( requires( basis_type const& b, decltype( pts ) p, uint16_type order ) { b.derivate( p, order ); } )
-                return M_basis.derivate( pts, this->order() );
-        }
-        return M_basis.derivate( pts );
+        return M_order.derivate( M_basis, pts );
     }
 
-    matrix_type basisD( uint16_type i ) const
+    /** @brief Return a stable differentiation operator. */
+    matrix_type const& basisD( uint16_type i ) const
     {
-        if ( isUsingDynamicOrder() )
-        {
-            if constexpr ( requires( basis_type const& b, uint16_type j, uint16_type order ) { b.d( j, order ); } )
-                return M_basis.d( i, this->order() );
-        }
-        return M_basis.d( i );
+        return M_order.d( M_basis, i );
     }
 
-    //! Always store runtime order to support dynamic order from derived classes
-    using order_storage_type = uint16_type;
+    /** Shared evaluation policy; matching static bases need no state. */
+    using order_storage_type = ::Feel::detail::PolynomialBasisState<basis_type, OrderSpec>;
 
-    [[nodiscard]] uint16_type order_value() const
+    /** @brief Effective expansion degree from the shared order policy. */
+    [[nodiscard]] uint16_type orderValue() const
     {
-        return M_order;
+        return M_order.order();
     }
 
-    void set_order_value( uint16_type order )
+    /** @brief Set runtime degree or validate a static degree. */
+    void setOrderValue( uint16_type order )
     {
-        M_order = order;
+        M_order.setOrder( order );
     }
 
-    //! Check if runtime order differs from compile-time nOrder (indicates dynamic order usage)
-    [[nodiscard]] bool isUsingDynamicOrder() const
-    {
-        return M_order != nOrder;
-    }
 
 private:
-    order_storage_type M_order{};
+    /** Order policy and owned differentiation operators. */
+    [[no_unique_address]] order_storage_type M_order{};
     basis_type M_basis;
     matrix_type M_coeff;
     std::string M_fname;

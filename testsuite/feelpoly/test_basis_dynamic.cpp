@@ -1,119 +1,161 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2026-01-06
-
-  Copyright (C) 2026 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-/**
-   \file test_basis_dynamic.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2026-01-06
-   \brief Tests for dynamic evaluation in basis classes
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileCopyrightText: 2026 University of Strasbourg
+ * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
 #define BOOST_TEST_MODULE test_basis_dynamic
 #include <feel/feelcore/testsuite.hpp>
+#include <boost/test/data/test_case.hpp>
+#include <boost/mp11/algorithm.hpp>
 
 #include <feel/feelpoly/dubiner.hpp>
 #include <feel/feelpoly/legendre.hpp>
 
-#include <cstddef>
+#include <algorithm>
+#include <array>
+#include <cmath>
 
 using namespace Feel;
+namespace bdata = boost::unit_test::data;
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
 
-BOOST_AUTO_TEST_SUITE( basis_dynamic_suite )
-
-BOOST_AUTO_TEST_CASE( test_dubiner_dynamic_eval )
+namespace
 {
-    using basis_t = Dubiner<2, 2, 10>;
-    using points_t = typename basis_t::points_type;
+/** Reference dimensions covered by the basis datasets. */
+constexpr std::array<unsigned, 3> dimensions{ 1, 2, 3 };
+/** Template degrees from which lower/equal/higher-order values are requested. */
+constexpr std::array<unsigned, 2> seedOrders{ 2, 3 };
+/** Requested degrees used for numerical comparisons against their own bases. */
+constexpr std::array<unsigned, 5> requestedOrders{ 0, 1, 2, 3, 4 };
+/** Effective degrees used to check runtime table dimensions. */
+constexpr std::array<unsigned, 6> runtimeOrders{ 0, 1, 2, 3, 5, 10 };
+/** Select simplex Dubiner (`false`) or tensor-product Legendre (`true`). */
+constexpr std::array<bool, 2> tensorProducts{ false, true };
+/** Unnormalized and orthonormal conventions for requested-order comparisons. */
+constexpr std::array<bool, 2> normalization{ false, true };
 
-    points_t pts( basis_t::nDim, 3 );
-    pts( 0, 0 ) = 0.0;
-    pts( 1, 0 ) = 0.0;
-    pts( 0, 1 ) = 0.5;
-    pts( 1, 1 ) = 0.0;
-    pts( 0, 2 ) = 0.0;
-    pts( 1, 2 ) = 0.5;
-
-    auto full = basis_t::evaluate( pts );
-
-    BOOST_CHECK_EQUAL( full.size1(), basis_t::convex_type::polyDims( basis_t::nOrder ) );
-    BOOST_CHECK_EQUAL( full.size2(), pts.size2() );
-
-    auto full_d = basis_t::derivate( pts );
-    BOOST_CHECK_EQUAL( full_d.size(), basis_t::nDim );
-
-    for ( uint16_type order : { uint16_type( 2 ), uint16_type( 5 ), uint16_type( 10 ) } )
-    {
-        auto reduced = basis_t::evaluate( pts, order );
-        BOOST_CHECK_EQUAL( reduced.size1(), basis_t::convex_type::polyDims( order ) );
-        BOOST_CHECK_EQUAL( reduced.size2(), pts.size2() );
-
-        auto reduced_d = basis_t::derivate( pts, order );
-        BOOST_CHECK_EQUAL( reduced_d.size(), basis_t::nDim );
-        for ( std::size_t i = 0; i < reduced_d.size(); ++i )
+/** @brief Assert matching matrix extents, finite entries and bounded maximum error.
+ * @tparam A Actual matrix type.
+ * @tparam B Reference matrix type.
+ * @param actual Table computed through the requested-order overload.
+ * @param expected Table computed by the independently instantiated degree.
+ */
+template<typename A, typename B>
+void checkMatrices( A const& actual, B const& expected )
+{
+    BOOST_REQUIRE_EQUAL( actual.size1(), expected.size1() );
+    BOOST_REQUIRE_EQUAL( actual.size2(), expected.size2() );
+    double error = 0;
+    for ( std::size_t i = 0; i < actual.size1(); ++i )
+        for ( std::size_t j = 0; j < actual.size2(); ++j )
         {
-            BOOST_CHECK_EQUAL( reduced_d[i].size1(), basis_t::convex_type::polyDims( order ) );
-            BOOST_CHECK_EQUAL( reduced_d[i].size2(), pts.size2() );
+            BOOST_REQUIRE( std::isfinite( actual( i, j ) ) );
+            error = std::max( error, std::abs( actual( i, j ) - expected( i, j ) ) );
         }
-    }
+    BOOST_CHECK_SMALL( error, 1e-11 );
 }
 
-BOOST_AUTO_TEST_CASE( test_legendre_dynamic_eval )
+/** @brief Build three asymmetric interior points for the basis's reference cell.
+ * @tparam Basis Basis providing the reference dimension and cell family.
+ * @return Matrix with spatial rows and sample columns.
+ */
+template<typename Basis>
+auto samplePoints()
 {
-    using basis_t = Legendre<1, 1, 10>;
-    using points_t = typename basis_t::points_type;
+    typename Basis::points_type points( Basis::nDim, 3 );
+    for ( unsigned d = 0; d < Basis::nDim; ++d )
+        for ( unsigned q = 0; q < 3; ++q )
+            points( d, q ) = Basis::convex_type::is_simplex
+                ? -0.9 + 0.1 * q + 0.025 * d
+                : 0.2 + 0.05 * q + 0.1 * d;
+    return points;
+}
 
-    constexpr uint16_type n_dim = 1;
-    constexpr uint16_type n_order = 10;
-    points_t pts( n_dim, 4 );
-    pts( 0, 0 ) = -0.5;
-    pts( 0, 1 ) = 0.0;
-    pts( 0, 2 ) = 0.5;
-    pts( 0, 3 ) = 0.75;
+/** @brief Compare requested-order values and every reference derivative direction.
+ * @tparam Basis Seed basis whose template degree may differ from the request.
+ * @tparam Order Requested degree, instantiated separately for the reference path.
+ */
+template<typename Basis, unsigned Order>
+void checkRequestedOrder()
+{
+    using requested_type = typename Basis::traits_type::template ChangeOrder<Order>::type;
+    auto const points = samplePoints<Basis>();
+    checkMatrices( Basis::evaluate( points, Order ), requested_type::evaluate( points ) );
+    auto const actual = Basis::derivate( points, Order );
+    auto const expected = requested_type::derivate( points );
+    BOOST_REQUIRE_EQUAL( actual.size(), static_cast<unsigned>( Basis::nDim ) );
+    BOOST_REQUIRE_EQUAL( expected.size(), static_cast<unsigned>( Basis::nDim ) );
+    for ( unsigned direction = 0; direction < Basis::nDim; ++direction )
+        BOOST_TEST_CONTEXT( "derivative direction=" << direction )
+            checkMatrices( actual[direction], expected[direction] );
+}
 
-    auto full = basis_t::evaluate( pts );
-
-    BOOST_CHECK_EQUAL( full.size1(), basis_t::convex_type::polyDims( n_order ) );
-    BOOST_CHECK_EQUAL( full.size2(), pts.size2() );
-
-    auto full_d = basis_t::derivate( pts );
-    BOOST_CHECK_EQUAL( full_d.size(), n_dim );
-
-    for ( uint16_type order : { uint16_type( 2 ), uint16_type( 5 ), uint16_type( 10 ) } )
+/** @brief Check value/gradient cardinality and point axes at a runtime degree.
+ * @tparam Basis Seed basis exposing runtime evaluation overloads.
+ * @param order Effective degree whose cardinality determines the basis rows.
+ */
+template<typename Basis>
+void checkShapes( unsigned order )
+{
+    auto const points = samplePoints<Basis>();
+    auto const values = Basis::evaluate( points, order );
+    auto const derivatives = Basis::derivate( points, order );
+    BOOST_REQUIRE_EQUAL( values.size1(), Basis::convex_type::polyDims( order ) );
+    BOOST_REQUIRE_EQUAL( values.size2(), points.size2() );
+    BOOST_REQUIRE_EQUAL( derivatives.size(), static_cast<unsigned>( Basis::nDim ) );
+    for ( unsigned direction = 0; direction < Basis::nDim; ++direction )
     {
-        auto reduced = basis_t::evaluate( pts, order );
-        BOOST_CHECK_EQUAL( reduced.size1(), basis_t::convex_type::polyDims( order ) );
-        BOOST_CHECK_EQUAL( reduced.size2(), pts.size2() );
-
-        auto reduced_d = basis_t::derivate( pts, order );
-        BOOST_CHECK_EQUAL( reduced_d.size(), n_dim );
-        for ( std::size_t i = 0; i < reduced_d.size(); ++i )
-        {
-            BOOST_CHECK_EQUAL( reduced_d[i].size1(), basis_t::convex_type::polyDims( order ) );
-            BOOST_CHECK_EQUAL( reduced_d[i].size2(), pts.size2() );
-        }
+        BOOST_CHECK_EQUAL( derivatives[direction].size1(), values.size1() );
+        BOOST_CHECK_EQUAL( derivatives[direction].size2(), values.size2() );
     }
+}
+} // namespace
+
+BOOST_AUTO_TEST_SUITE( basis_dynamic_suite )
+
+/** @test Requested degrees preserve the mode ordering of their own basis. */
+BOOST_DATA_TEST_CASE( requested_order_matches_its_own_basis,
+    bdata::make( dimensions ) * bdata::make( seedOrders ) *
+    bdata::make( requestedOrders ) * bdata::make( tensorProducts ) * bdata::make( normalization ),
+    dimension, seedOrder, requestedOrder, tensorProduct, normalized )
+{
+    boost::mp11::mp_with_index<3>( dimension - 1, [&]( auto dimensionTag )
+    {
+        constexpr unsigned Dim = decltype( dimensionTag )::value + 1;
+        boost::mp11::mp_with_index<2>( seedOrder - 2, [&]( auto seedTag )
+        {
+            constexpr unsigned Seed = decltype( seedTag )::value + 2;
+            boost::mp11::mp_with_index<5>( requestedOrder, [&]( auto orderTag )
+            {
+                constexpr unsigned Order = decltype( orderTag )::value;
+                boost::mp11::mp_with_index<2>( normalized, [&]( auto normalizationTag )
+                {
+                    using normalization_type = Normalized<decltype( normalizationTag )::value != 0>;
+                    if ( tensorProduct )
+                        checkRequestedOrder<Legendre<Dim, Dim, Seed, normalization_type>, Order>();
+                    else
+                        checkRequestedOrder<Dubiner<Dim, Dim, Seed, normalization_type>, Order>();
+                } );
+            } );
+        } );
+    } );
+}
+
+/** @test Runtime value and gradient tables retain their mathematical axes. */
+BOOST_DATA_TEST_CASE( runtime_basis_shapes,
+    bdata::make( dimensions ) * bdata::make( runtimeOrders ) * bdata::make( tensorProducts ),
+    dimension, order, tensorProduct )
+{
+    boost::mp11::mp_with_index<3>( dimension - 1, [&]( auto dimensionTag )
+    {
+        constexpr unsigned Dim = decltype( dimensionTag )::value + 1;
+        if ( tensorProduct )
+            checkShapes<Legendre<Dim, Dim, 3>>( order );
+        else
+            checkShapes<Dubiner<Dim, Dim, 3>>( order );
+    } );
 }
 
 BOOST_AUTO_TEST_SUITE_END()

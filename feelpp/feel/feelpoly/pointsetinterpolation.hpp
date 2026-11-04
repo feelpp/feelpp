@@ -1,5 +1,6 @@
 /*
  * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileCopyrightText: 2026 University of Strasbourg
  *
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
@@ -13,6 +14,8 @@
 #define __PointSetInterpolation_H 1
 
 #include <feel/feelmesh/pointset.hpp>
+#include <boost/mp11/utility.hpp>
+#include <stdexcept>
 
 // clang-format off
 #include <feel/feelcore/warnoff.hpp>
@@ -60,9 +63,11 @@ public:
     static const uint32_type convexOrder = convex_type::nOrder;
     static const uint32_type topological_dimension = convex_type::topological_dimension;
 
-    typedef mpl::if_< mpl::bool_< is_simplex >,
-            Simplex<Dim, Order, Dim> ,
-            Hypercube<Dim, Order, Dim> > conv_order_type;
+    /** Reference-cell geometry selected without MPL metafunction machinery. */
+    using ConvexOrder = boost::mp11::mp_if_c<is_simplex,
+        Simplex<Dim,Order,Dim>,Hypercube<Dim,Order,Dim>>;
+    /** Compatibility metafunction wrapper for the selected geometry. */
+    using conv_order_type = boost::mp11::mp_identity<ConvexOrder>;
 
     typedef Reference<convex_type, Dim, convexOrder, Dim, value_type> RefElem;
 
@@ -73,6 +78,7 @@ public:
     static const uint32_type nbPtsPerFace = conv_order_type::type::nbPtsPerFace;
     static const uint32_type nbPtsPerVolume = conv_order_type::type::nbPtsPerVolume;
 
+    /** Canonical reference geometry associated with the interpolation nodes. */
     RefElem RefConv;
 
     typedef std::pair<uint16_type, uint16_type> range_type;
@@ -85,6 +91,7 @@ public:
      */
     //@{
 
+    /** @brief Construct node-to-entity bookkeeping at the static degree. */
     PointSetInterpolation()
         :
         super()
@@ -92,6 +99,7 @@ public:
         M_eid.resize( topological_dimension + 1 );
         M_pt_to_entity.resize( numPoints );
     }
+    /** @brief Construct bookkeeping with storage for np interpolation nodes. */
     PointSetInterpolation( size_type np )
         :
         super( np )
@@ -99,19 +107,24 @@ public:
         M_eid.resize( topological_dimension + 1 );
         M_pt_to_entity.resize( numPoints );
     }
-    PointSetInterpolation( PointSetInterpolation & psi )
-        :
-        super( psi ),
-        M_eid( psi.getEid() ),
-        M_pt_to_entity( psi.getPtE() )
+    /** @brief Copy coordinates, reference geometry and entity bookkeeping from a const source. */
+    PointSetInterpolation( PointSetInterpolation const& ) = default;
 
-    {}
+    /** @brief Move coordinates and entity bookkeeping together. */
+    PointSetInterpolation( PointSetInterpolation&& ) = default;
+
+    /** @brief Copy-assign the complete interpolation point-set state. */
+    PointSetInterpolation& operator=( PointSetInterpolation const& ) = default;
+
+    /** @brief Move-assign the complete interpolation point-set state. */
+    PointSetInterpolation& operator=( PointSetInterpolation&& ) = default;
 
     ~PointSetInterpolation() override {}
 
     ublas::matrix_range<nodes_type const> pointsByEntity( uint16_type e ) const
     {
-        FEELPP_ASSERT( M_eid[e].size() )( e ).error( "no points defined on this entity" );
+        if(e>=M_eid.size() || M_eid[e].empty())
+            throw std::out_of_range("no interpolation points are defined on this entity");
 
         return ublas::project( this->points(),
                                ublas::range( 0,Dim ),
@@ -317,7 +330,9 @@ public:
 
 private:
 
+    /** Coordinate indices grouped by reference-entity dimension. */
     index_map_type M_eid;
+    /** Reference entity and local ordinal associated with each coordinate. */
     std::vector<range_type> M_pt_to_entity;
 
 };

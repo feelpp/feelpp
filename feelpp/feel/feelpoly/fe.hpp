@@ -13,6 +13,7 @@
 #include <limits>
 
 #include <feel/feelpoly/policy.hpp>
+#include <feel/feelpoly/referencedoflayout.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
 
 namespace Feel
@@ -29,6 +30,17 @@ template<uint16_type Dim,
          template<int,int,int> class Convex>
 class OrthonormalPolynomialSet;
 }
+namespace detail
+{
+/** @brief Select field rank while retaining the primal order policy. */
+template<class P>
+using FiniteElementPolynomialSet = mp::mp_if_c<P::is_scalar,
+    PolynomialSet<P, Scalar, orderSpecification<P>()>,
+    mp::mp_if_c<P::is_vectorial, PolynomialSet<P, Vectorial, orderSpecification<P>()>,
+    mp::mp_if_c<P::is_tensor2 && is_symm_v<typename P::polyset_type>,
+               PolynomialSet<P, Tensor2Symm, orderSpecification<P>()>,
+               PolynomialSet<P, Tensor2, orderSpecification<P>()>>>>;
+}
 /**
  * \class FiniteElement
  * \brief Finite element following Ciarlet framework
@@ -40,28 +52,11 @@ class OrthonormalPolynomialSet;
 template<typename P,
          template<class Pr,  template<class,int,class> class Pt> class PDual,
          template<class,int,class> class Pts>
-class FiniteElement :
-    public mpl::if_<mpl::bool_<P::is_scalar>,
-                    mpl::identity<PolynomialSet<P, Scalar, P::nOrder> >,
-                    typename mpl::if_<mpl::bool_<P::is_vectorial>,
-                                      mpl::identity<PolynomialSet<P, Vectorial, P::nOrder> >,
-                                      typename mpl::if_<mpl::bool_<P::is_tensor2 && is_symm_v<typename P::polyset_type>>,
-                                                        mpl::identity<PolynomialSet<P, Tensor2Symm, P::nOrder>> ,
-                                                        mpl::identity<PolynomialSet<P, Tensor2, P::nOrder>>
-                                                        >::type
-                                      >::type
-                    >::type::type
+class FiniteElement : public ::Feel::detail::FiniteElementPolynomialSet<P>,
+                      public ::Feel::detail::ReferenceDofLayout<FiniteElement<P, PDual, Pts>>
 {
-    using super = typename mpl::if_<mpl::bool_<P::is_scalar>,
-                                    mpl::identity<PolynomialSet<P, Scalar, P::nOrder> >,
-                                    typename mpl::if_<mpl::bool_<P::is_vectorial>,
-                                                      mpl::identity<PolynomialSet<P, Vectorial, P::nOrder> >,
-                                                      typename mpl::if_<mpl::bool_<P::is_tensor2 && is_symm_v<typename P::polyset_type>>,
-                                                                        mpl::identity<PolynomialSet<P, Tensor2Symm, P::nOrder>>,
-                                                                        mpl::identity<PolynomialSet<P, Tensor2, P::nOrder>>
-                                                                        >::type
-                                                      >::type
-                                    >::type::type;
+    /** Polynomial-set selection shared by all field ranks. */
+    using super = ::Feel::detail::FiniteElementPolynomialSet<P>;
 
 public:
 
@@ -108,8 +103,8 @@ public:
     static constexpr uint16_type nNodes = nDof;
     static constexpr uint16_type nDofGrad = super::nDim*nDof;
     static constexpr uint16_type nDofHess = super::nDim*super::nDim*nDof;
-    static constexpr bool islinear_simplex = P::convex_type::is_simplex && (super::nOrder == 1);
-    static constexpr bool islinear_hypercube = P::convex_type::is_hypercube && (super::nDim==1)  && (super::nOrder == 1);
+    static constexpr bool islinear_simplex = super::is_order_static && P::convex_type::is_simplex && (super::nOrder == 1);
+    static constexpr bool islinear_hypercube = super::is_order_static && P::convex_type::is_hypercube && (super::nDim==1)  && (super::nOrder == 1);
     static constexpr bool islinear  = islinear_hypercube || islinear_simplex;
     static constexpr fem::transformation_type trans = islinear?fem::LINEAR:fem::NONLINEAR;
     //@}
@@ -118,6 +113,7 @@ public:
      */
     //@{
 
+    /** @brief Construct the Ciarlet basis by inverting the owned dual-on-primal matrix. */
     FiniteElement( dual_space_type const& pdual )
         :
         super( pdual.primalSpace() ),
@@ -126,12 +122,14 @@ public:
         DVLOG(2) << "============================================================\n";
         DVLOG(2) << "New FE \n";
         ublas::matrix<value_type> A( M_dual( M_dual.primalSpace() ) );
-        CHECK_EQ( A.size1(), A.size2() )
-            << "invalid Ciarlet triple: dual-on-primal matrix must be square";
+        if ( A.size1() != A.size2() )
+            throw std::invalid_argument("invalid Ciarlet triple: dual-on-primal matrix must be square");
         //std::cout << "[FiniteElement] A = " << A << "\n";
 
         ublas::matrix<value_type> D = ublas::identity_matrix<value_type>( A.size1(), A.size2() );
         LU<ublas::matrix<value_type> > lu( A );
+        if ( !lu.isNonsingular() )
+            throw std::runtime_error("finite-element Vandermonde matrix is singular");
         ublas::matrix<value_type> C = lu.solve( D );
         //std::cout << "[FiniteElement] D = " << D << "\n";
         //std::cout << "[FiniteElement] C = " << C << "\n";
@@ -147,7 +145,6 @@ public:
         }
 
 #endif
-        FEELPP_ASSERT( lu.isNonsingular() )( A )( D )( C ).error( "vandermonde matrix is singular" );
 
         this->setCoefficient( ublas::trans( C ) );
 
@@ -171,10 +168,13 @@ public:
     self_type& operator=( self_type const& ) = default;
     self_type& operator=( self_type&& ) = default;
 
+    /** @brief Evaluate one basis function as a scalar or a vector of components. */
     template<typename AE>
-    value_type operator()( uint16_type i, ublas::vector_expression<AE> const& pt ) const
+    auto operator()( uint16_type i, ublas::vector_expression<AE> const& pt ) const
     {
-        return this->evaluate( i, pt );
+        auto value = this->evaluate( i, pt );
+        if constexpr ( super::is_scalar ) return value(0);
+        else return value;
     }
 
     template<typename AE>
@@ -227,7 +227,13 @@ public:
     }
 
     //! return true if finite element is linear, false otherwise
-    static constexpr bool isLinear() { return islinear; }
+    static constexpr bool isLinear() requires( super::is_order_static ) { return islinear; }
+
+    /** @brief Test linearity using the effective expansion degree. */
+    [[nodiscard]] bool isLinear() const requires( super::is_order_dynamic )
+    {
+        return polynomialDegree() == 1 && (P::convex_type::is_simplex || super::nDim == 1);
+    }
     
     /**
      * \return the domain shape of the finite element
@@ -301,282 +307,10 @@ public:
      */
     std::string familyName() const override = 0;
 
-    struct DofAttachment
-    {
-        static constexpr uint16_type invalid_id = std::numeric_limits<uint16_type>::max();
-        int8_t entityDim = -1;
-        uint16_type entityId = invalid_id;
-        uint16_type ordinal = invalid_id;
-        uint16_type kind = 0;
-
-        [[nodiscard]] bool isValid() const noexcept { return entityDim >= 0; }
-    };
-
-    struct LocalDofLayout
-    {
-        uint16_type localDofId = 0;
-        uint16_type parentLocalDofId = 0;
-        uint16_type component = 0;
-        DofAttachment attachment;
-    };
-
-    /**
-     * \return number of local dofs per component.
-     *
-     * This is FE-owned so consumers do not assume local dof layout.
-     */
-    virtual uint16_type localDofPerComponent() const
-    {
-        return nLocalDof;
-    }
-
-    /**
-     * \return number of local dofs owned by the FE layout.
-     *
-     * When \p perComponent is false this is the flattened local cardinality
-     * exposed to local-to-global tables. When it is true this is the parent
-     * local cardinality for one component.
-     */
-    virtual uint16_type localDofCount( bool perComponent = false ) const
-    {
-        const uint16_type localDofPerComp = this->localDofPerComponent();
-        if ( perComponent )
-            return localDofPerComp;
-
-        if constexpr ( P::is_product )
-            return ::Feel::detail::checkedLocalIndexValue(
-                static_cast<size_type>( super::nComponents ) * localDofPerComp );
-        else
-            return localDofPerComp;
-    }
-
-    /** \return parent local cardinality for one field component. */
-    [[nodiscard]] uint16_type localDof() const
-    {
-        return this->localDofCount( true );
-    }
-
-    /** \return per-component cardinality on one reference vertex. */
-    [[nodiscard]] constexpr uint16_type dofPerVertex() const noexcept
-    {
-        return nDofPerVertex;
-    }
-
-    /** \return per-component cardinality on one reference edge. */
-    [[nodiscard]] constexpr uint16_type dofPerEdge() const noexcept
-    {
-        return nDofPerEdge;
-    }
-
-    /** \return per-component cardinality on one reference face. */
-    [[nodiscard]] constexpr uint16_type dofPerFace() const noexcept
-    {
-        return nDofPerFace;
-    }
-
-    /** \return per-component cardinality on one reference volume. */
-    [[nodiscard]] constexpr uint16_type dofPerVolume() const noexcept
-    {
-        return nDofPerVolume;
-    }
-
-    /** \return per-component cardinality on one reference entity. */
-    [[nodiscard]] uint16_type dofPerEntity( uint16_type topologicalDim,
-                                            uint16_type localEntity = 0 ) const
-    {
-        return this->localDofCountOnEntity( topologicalDim, localEntity, true );
-    }
-
-    /**
-     * \return local dof id from (parent local dof id, component)
-     *
-     * Layout ownership stays in FE implementation.
-     */
-    virtual uint16_type localDofId( uint16_type parentLocalDofId, uint16_type component = 0 ) const
-    {
-        if constexpr ( P::is_product )
-        {
-            const uint16_type localDofPerComp = this->localDofPerComponent();
-            FEELPP_ASSERT( parentLocalDofId < localDofPerComp )
-                ( component )( parentLocalDofId )( localDofPerComp ).error( "invalid parent local dof index" );
-            const auto localDof = static_cast<uint16_type>( component * localDofPerComp + parentLocalDofId );
-            FEELPP_ASSERT( this->dofParent( localDof ) == parentLocalDofId )
-                ( component )( parentLocalDofId )( localDof ).error( "invalid component/local dof layout" );
-            return localDof;
-        }
-        else
-        {
-            FEELPP_ASSERT( component == 0 )
-                ( component )( parentLocalDofId ).error( "non-product FE supports component 0 only" );
-            return parentLocalDofId;
-        }
-    }
-
-    /**
-     * \return entity attachment metadata for a local dof.
-     *
-     * Default implementation returns unknown entity attachment and keeps
-     * dof type as functional kind.
-     */
-    virtual DofAttachment dofAttachment( uint16_type localDofId ) const
-    {
-        return DofAttachment{ .entityDim = -1,
-                              .entityId = DofAttachment::invalid_id,
-                              .ordinal = DofAttachment::invalid_id,
-                              .kind = this->dofType( localDofId ) };
-    }
-
-    /**
-     * \return full FE-owned layout descriptor for a local dof.
-     */
-    LocalDofLayout localDofLayout( uint16_type localDofId ) const
-    {
-        return LocalDofLayout{ .localDofId = localDofId,
-                               .parentLocalDofId = this->dofParent( localDofId ),
-                               .component = this->component( localDofId ),
-                               .attachment = this->dofAttachment( localDofId ) };
-    }
-
-    /**
-     * \return number of local dofs attached to a reference entity.
-     *
-     * The default implementation derives the count from FE-owned local dof
-     * layouts. FE families may override when a cheaper/runtime-aware path is
-     * available.
-     */
-    virtual uint16_type localDofCountOnEntity( uint16_type topologicalDim,
-                                               uint16_type localEntity,
-                                               bool perComponent = false ) const
-    {
-        uint16_type count = 0;
-        const uint16_type nLocalDof = this->localDofCount();
-        for ( uint16_type localDof = 0; localDof < nLocalDof; ++localDof )
-        {
-            auto const layout = this->localDofLayout( localDof );
-            auto const& attachment = layout.attachment;
-            if ( !attachment.isValid() )
-                continue;
-            if ( perComponent && layout.component != 0 )
-                continue;
-            if ( attachment.entityDim == static_cast<int8_t>( topologicalDim ) &&
-                 attachment.entityId == localEntity )
-                ++count;
-        }
-        return count;
-    }
-
-    /**
-     * \return number of local dofs attached to a reference codim-1 facet.
-     */
-    virtual uint16_type localDofCountOnFacet( uint16_type localFacet = 0,
-                                              bool perComponent = false ) const
-    {
-        if constexpr ( super::nDim == 1 )
-            return this->localDofCountOnEntity( 0, localFacet, perComponent );
-        else
-        {
-            using convex_type = typename super::convex_type;
-            using face_type = typename convex_type::topological_face_type;
-
-            auto isInFacetClosure = [localFacet]( DofAttachment const& attachment ) -> bool
-            {
-                if ( !attachment.isValid() )
-                    return false;
-
-                if ( attachment.entityDim == 0 )
-                {
-                    for ( uint16_type localVertex = 0; localVertex < face_type::numVertices; ++localVertex )
-                        if ( static_cast<uint16_type>( convex_type::f2p( localFacet, localVertex ) ) == attachment.entityId )
-                            return true;
-                    return false;
-                }
-
-                if ( attachment.entityDim == 1 )
-                {
-                    if constexpr ( super::nDim == 2 )
-                        return attachment.entityId == localFacet;
-                    else
-                    {
-                        for ( uint16_type localEdge = 0; localEdge < face_type::numEdges; ++localEdge )
-                            if ( static_cast<uint16_type>( convex_type::f2e( localFacet, localEdge ) ) == attachment.entityId )
-                                return true;
-                        return false;
-                    }
-                }
-
-                if ( attachment.entityDim == 2 )
-                {
-                    if constexpr ( super::nDim == 3 )
-                        return attachment.entityId == localFacet;
-                    else
-                        return false;
-                }
-
-                return false;
-            };
-
-            uint16_type count = 0;
-            const uint16_type nLocalDof = this->localDofCount();
-            for ( uint16_type localDof = 0; localDof < nLocalDof; ++localDof )
-            {
-                auto const layout = this->localDofLayout( localDof );
-                if ( perComponent && layout.component != 0 )
-                    continue;
-                if ( isInFacetClosure( layout.attachment ) )
-                    ++count;
-            }
-            return count;
-        }
-    }
-
-    /**
-     * \return true when a local dof has a representative interpolation point.
-     *
-     * Point-evaluation finite elements keep the historical behavior: the
-     * representative point is the FE point indexed by dofParent(localDofId).
-     * Moment/modal finite elements should override this method when no such
-     * geometric representative exists.
-     */
-    virtual bool dofHasRepresentativePoint( uint16_type localDofId ) const
-    {
-        (void)localDofId;
-        return true;
-    }
-
-    /**
-     * \return point index in points() used to represent localDofId.
-     *
-     * This method is only meaningful when dofHasRepresentativePoint(localDofId)
-     * returns true.
-     */
-    virtual uint16_type dofRepresentativePointIndex( uint16_type localDofId ) const
-    {
-        return this->dofParent( localDofId );
-    }
-
-    /**
-     * \return finite-element owned functional kind for a local dof.
-     *
-     * The default preserves legacy DofAttachment::kind values. FE families with
-     * moment functionals can override this without changing their public
-     * DofAttachment compatibility value.
-     */
-    virtual uint16_type dofFunctionalKind( uint16_type localDofId ) const
-    {
-        return this->dofType( localDofId );
-    }
-
-    //! \return the component of a local dof
-    virtual uint16_type component( uint16_type localDofId ) const = 0;
-
-    //! \return a parent local dof id for each component (for example, the first component)
-    virtual uint16_type dofParent( uint16_type localDofId ) const = 0;
-
-    //! \return the type of a local dof
-    virtual uint16_type dofType( uint16_type localDofId ) const = 0;
-
-    //! give an unsymmetric dof index i, provide the symmetric one
-    virtual uint16_type unsymmToSymm( uint16_type i ) const { return i; }
+    /** Shared entity descriptor retained for source compatibility. */
+    using DofAttachment = typename ::Feel::detail::ReferenceDofLayout<self_type>::DofAttachment;
+    /** Shared flattened local-layout descriptor. */
+    using LocalDofLayout = typename ::Feel::detail::ReferenceDofLayout<self_type>::LocalDofLayout;
 
     //@}
 
