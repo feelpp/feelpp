@@ -452,7 +452,7 @@ int hdg_stokes( std::map<std::string,std::string>& locals )
     e->addRegions();
     e->add( deltaName, deltap, "nodal" );
     e->add( uName, up, "nodal" );
-    e->add( uName, pp, "nodal" );
+    e->add( "pressure", pp, "nodal" );
     std::set<std::string> reps({ "nodal", "element" });
     e->add( "vonmises", vonmises(idv(deltap)), reps );
     e->add( "principal_stress", eig(idv(deltap)), reps );

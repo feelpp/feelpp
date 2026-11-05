@@ -16,6 +16,7 @@ from urllib.request import Request, urlopen
 from feelpp.pkg.config import detect_channel, detect_flavor
 from feelpp.pkg.graph import load_manifest
 from feelpp.pkg.image import normalize_package_version_tag
+from feelpp.pkg.oci.common import branch_tag_suffix
 from feelpp.pkg.shell import run_capture, run_checked
 
 from .publications import HalPublicationService
@@ -48,6 +49,7 @@ class ReleaseService:
         *,
         dry_run: bool = False,
         dists: tuple[str, ...] | None = None,
+        spack_targets: tuple[str, ...] = (),
         publication_rows: int | None = None,
         publication_since: str | None = None,
     ) -> ReleasePlan:
@@ -111,7 +113,8 @@ class ReleaseService:
         for check in package_checks:
             self._ensure_package_available(check)
 
-        container_checks = self._container_checks(dist_versions)
+        spack_checks = self._spack_container_checks(spack_targets, branch=branch)
+        container_checks = self._container_checks(dist_versions) + spack_checks
         for check in container_checks:
             self._ensure_container_available(check)
 
@@ -121,6 +124,7 @@ class ReleaseService:
             package_checks=package_checks,
             channel=channel,
             omitted_dists=omitted_dists,
+            spack_checks=spack_checks,
         )
         publication_notes = self._publication_notes(
             rows=publication_rows,
@@ -158,6 +162,7 @@ class ReleaseService:
         *,
         dry_run: bool = False,
         dists: tuple[str, ...] | None = None,
+        spack_targets: tuple[str, ...] = (),
         publication_rows: int | None = None,
         publication_since: str | None = None,
     ) -> ReleasePlan:
@@ -165,6 +170,7 @@ class ReleaseService:
             requested_version,
             dry_run=dry_run,
             dists=dists,
+            spack_targets=spack_targets,
             publication_rows=publication_rows,
             publication_since=publication_since,
         )
@@ -565,6 +571,42 @@ class ReleaseService:
             )
         return checks
 
+    def _spack_container_checks(
+        self, targets: tuple[str, ...], *, branch: str
+    ) -> list[ContainerAvailabilityCheck]:
+        if not targets:
+            return []
+
+        config_path = self.repo_root / ".github" / "plan-ci.json"
+        try:
+            payload = json.loads(config_path.read_text(encoding="utf-8"))
+        except (FileNotFoundError, json.JSONDecodeError) as error:
+            raise ValueError(f"Unable to read Spack targets from {config_path}") from error
+
+        catalog = payload.get("profiles", {}).get("images", {}).get("catalog", {})
+        checks: list[ContainerAvailabilityCheck] = []
+        for requested in dict.fromkeys(targets):
+            target = requested if requested.startswith("spack:") else f"spack:{requested}"
+            row = catalog.get(target)
+            if (
+                not isinstance(row, dict)
+                or row.get("image_backend") != "spack"
+                or row.get("ci_full") != "true"
+            ):
+                raise ValueError(f"Unknown Spack full-image target: {requested}")
+            oci_dist = str(row.get("oci_dist") or "").strip()
+            if not oci_dist:
+                raise ValueError(f"Spack target {target} has no OCI tag in {config_path}")
+            image_ref = f"{OCI_REGISTRY}/{OCI_REPOSITORY}:{oci_dist}{branch_tag_suffix(branch)}-full"
+            checks.append(
+                ContainerAvailabilityCheck(
+                    dist=target,
+                    artifact_type="docker",
+                    candidate_refs=(image_ref,),
+                )
+            )
+        return checks
+
     def _packaging_target_metadata(self) -> dict[str, dict[str, str]]:
         config_path = self.repo_root / ".github" / "plan-ci.json"
         try:
@@ -611,6 +653,7 @@ class ReleaseService:
         package_checks: list[PackageAvailabilityCheck],
         channel: str,
         omitted_dists: list[str],
+        spack_checks: list[ContainerAvailabilityCheck],
     ) -> str:
         package_names_by_dist: dict[str, list[str]] = {}
         for check in package_checks:
@@ -682,6 +725,24 @@ class ReleaseService:
                     "```",
                 ]
             )
+        if spack_checks:
+            lines.extend(["", "## Spack containers"])
+            for check in spack_checks:
+                image_ref = check.candidate_refs[0]
+                lines.extend(
+                    [
+                        "",
+                        f"### {check.dist}",
+                        "",
+                        "Docker image (full Feel++ build):",
+                        "",
+                        "```bash",
+                        f"docker pull {image_ref}",
+                        "```",
+                        "",
+                        "This is a rolling image tag for the selected branch.",
+                    ]
+                )
         return "\n".join(lines)
 
     def _publication_notes(

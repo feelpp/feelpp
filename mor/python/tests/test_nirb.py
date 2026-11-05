@@ -70,6 +70,12 @@ def run_online(model_path, rect):
     assert errorNirb < 0.08, "higher nirb error value"
     assert errorInterp < 0.05, "higher interp error value"
 
+    # Parameter results are distinct static snapshots, not a synthetic time step.
+    nirb_on.initExporter("nirb_online", toolbox="fine")
+    nirb_on.exportField(uHh, "nirb")
+    nirb_on.exportField(uH, "interpolated")
+    nirb_on.saveExporter()
+
 @pytest.mark.parametrize("dir,cfg,json,rect,greedy", cases_params_nirb, ids=cases_ids_nirb)
 def test_nirb(dir, cfg, json, rect, greedy, init_feelpp):
     e = init_feelpp

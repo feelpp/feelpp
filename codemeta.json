@@ -41,7 +41,7 @@
     "https://spdx.org/licenses/LGPL-3.0-only.html",
     "https://spdx.org/licenses/GPL-3.0-only.html"
   ],
-  "version": "v0.111.0-preview.13",
+  "version": "v0.111.1",
   "programmingLanguage": [
     {
       "@type": "ComputerLanguage",
@@ -67,13 +67,46 @@
   "contributor": [
     {
       "@type": "Person",
+      "givenName": "Ali",
+      "familyName": "Elarif"
+    },
+    {
+      "@type": "Person",
       "givenName": "Thomas",
       "familyName": "Saigre"
     },
     {
       "@type": "Person",
+      "givenName": "Luca",
+      "familyName": "Berti"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Lucas",
+      "familyName": "Palazzolo"
+    },
+    {
+      "@type": "Person",
+      "name": "jermuzet"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Thibaut",
+      "familyName": "Metivet"
+    },
+    {
+      "@type": "Person",
+      "name": "luzpaz"
+    },
+    {
+      "@type": "Person",
       "givenName": "Philippe",
       "familyName": "Pincon"
+    },
+    {
+      "@type": "Person",
+      "givenName": "Céline Van",
+      "familyName": "Landeghem"
     }
   ],
   "copyrightHolder": [
@@ -99,12 +132,12 @@
     {
       "@type": "Role",
       "roleName": "numpex-catalog:discussion",
-      "url": "https://github.com/feelpp/discussions"
+      "url": "https://github.com/orgs/feelpp/discussions"
     },
     {
       "@type": "Role",
       "roleName": "numpex-catalog:spack_package",
-      "url": "https://github.com/numpex/spack.numpex/blob/main/packages/feelpp/package.py"
+      "url": "https://github.com/numpex/spack.numpex/blob/main/spack_repo/numpex/packages/feelpp/package.py"
     },
     {
       "@type": "Role",
