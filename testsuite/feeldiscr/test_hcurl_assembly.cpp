@@ -185,10 +185,16 @@ TestHCurl::twoElementsMesh()
     auto Xh = Ned1h<0>( mesh );
     auto u = Xh->element();
     auto phi = Xh->element();
-    for( auto const& dof : Xh->dof()->localDof() )
+    auto const dofTable = Xh->dof();
+    auto const& fe = *Xh->basis();
+    for( auto const& dof : dofTable->localDof() )
         {
+            auto const localDof = dof.first.localDof();
             LOG(INFO) << "test local dof element " << dof.first.elementId() << " id:" << dof.first.localDof()
-                      << " global dof : " << dof.second.index() << " pts: " << Xh->dof()->dofPoint( dof.second.index() ).get<0>() << std::endl;
+                      << " global dof : " << dof.second.index()
+                      << " has representative point: " << fe.dofHasRepresentativePoint( localDof )
+                      << " functional kind: " << fe.dofFunctionalKind( localDof ) << std::endl;
+            BOOST_CHECK( !dofTable->hasDofPoint( dof.second.index() ) );
         }
 
     // assembly curl(curl(u)) + u
@@ -317,10 +323,16 @@ TestHCurl::eightElementsMesh()
     auto Xh = Ned1h<0>( mesh );
     auto u = Xh->element();
     auto phi = Xh->element();
-    for( auto const& dof : Xh->dof()->localDof() )
+    auto const dofTable = Xh->dof();
+    auto const& fe = *Xh->basis();
+    for( auto const& dof : dofTable->localDof() )
         {
+            auto const localDof = dof.first.localDof();
             LOG(INFO) << "test local dof element " << dof.first.elementId() << " id:" << dof.first.localDof()
-                      << " global dof : " << dof.second.index() << " pts: " << Xh->dof()->dofPoint( dof.second.index() ).get<0>() << std::endl;
+                      << " global dof : " << dof.second.index()
+                      << " has representative point: " << fe.dofHasRepresentativePoint( localDof )
+                      << " functional kind: " << fe.dofFunctionalKind( localDof ) << std::endl;
+            BOOST_CHECK( !dofTable->hasDofPoint( dof.second.index() ) );
         }
 
     auto u_cst = Xh->element();

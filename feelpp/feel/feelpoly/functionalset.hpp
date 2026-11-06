@@ -37,6 +37,7 @@
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/numeric/ublas/lu.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#include <Eigen/Core>
 #include <feel/feelcore/warnon.hpp>
 // clang-format on
 
@@ -73,6 +74,9 @@ public:
 
 
     typedef typename space_type::matrix_type matrix_type;
+    using eigen_matrix_type = Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+    using eigen_matrix_map_type = Eigen::Map<eigen_matrix_type>;
+    using eigen_const_matrix_map_type = Eigen::Map<eigen_matrix_type const>;
 
     typedef std::vector<functional_type> fset_type;
 
@@ -100,7 +104,7 @@ public:
         :
         M_space( s ),
         M_fset( fset ),
-        M_mat( space_type::nComponents*fset.size(), fset[0].coeff().size2() )
+        M_mat()
     {
         //std::cout << "FunctionalSet: " << fset[0].coeff() <<  "\n";
         this->setFunctionalSet( fset );
@@ -123,7 +127,7 @@ public:
 
     self_type& operator=( self_type const& fset )
     {
-        if ( this != fset )
+        if ( this != &fset )
         {
             M_space = fset.M_space;
             M_fset = fset.M_fset;
@@ -177,6 +181,25 @@ public:
         return M_mat;
     }
 
+    /** \return basis-dependent matrix representation of the ordered dual set. */
+    matrix_type const& dualMatrix() const noexcept
+    {
+        return M_mat;
+    }
+
+    /** \return zero-copy Eigen view of dualMatrix(). */
+    [[nodiscard]] eigen_const_matrix_map_type eigenDualMatrix() const noexcept
+    {
+        return eigen_const_matrix_map_type( M_mat.data().begin(),
+                                            M_mat.size1(), M_mat.size2() );
+    }
+
+    /** \return number of mathematical functionals in the ordered set. */
+    [[nodiscard]] std::size_t size() const noexcept
+    {
+        return M_fset.size();
+    }
+
 
     //@}
 
@@ -198,40 +221,27 @@ public:
     void setFunctionalSet( std::vector<functional_type> const& fset )
     {
         M_fset = fset;
-
-
-        if ( space_type::is_scalar )
+        if ( fset.empty() )
         {
-            // update matrix associated with functionals applied to the
-            // basis of the function space
-            M_mat = ublas::zero_matrix<value_type>( fset.size(), fset[0].coeff().size2() );
-
-            //std::cout << "mat size" << M_mat << "\n";
-            for ( uint16_type i = 0; i < fset.size(); ++i )
-            {
-                //std::cout << "Functional " << i << "=" << fset[i].coeff() << "\n";
-                ublas::row( M_mat, i ) = ublas::row( fset[i].coeff(), 0 );
-            }
-
-            //std::cout << "mat size" << M_mat << "\n";
-
+            M_mat.resize( 0, 0, false );
+            return;
         }
 
-        else
-        {
-            // update matrix associated with functionals applied to the
-            // basis of the function space
-            M_mat = ublas::zero_matrix<value_type>( space_type::nComponents*fset.size(), fset[0].coeff().size2() );
+        const std::size_t rowsPerFunctional = space_type::is_scalar ? 1 : space_type::nComponents;
+        const std::size_t columns = fset.front().coeff().size2();
+        M_mat.resize( rowsPerFunctional*fset.size(), columns, false );
+        eigen_matrix_map_type dualMap( M_mat.data().begin(), M_mat.size1(), M_mat.size2() );
+        dualMap.setZero();
 
-            for ( uint16_type i = 0; i < fset.size(); ++i )
-            {
-                ublas::project( M_mat,
-                                ublas::range( i*space_type::nComponents, ( i+1 )*space_type::nComponents ),
-                                ublas::range( 0, M_mat.size2() ) ) = ublas::scalar_matrix<value_type>( space_type::nComponents, M_mat.size2(), -1 );
-                ublas::project( M_mat,
-                                ublas::range( i*space_type::nComponents, ( i+1 )*space_type::nComponents ),
-                                ublas::range( 0, M_mat.size2() ) ) = fset[i].coeff();
-            }
+        for ( std::size_t i = 0; i < fset.size(); ++i )
+        {
+            auto const functionalMap = fset[i].rieszRepresentation();
+            CHECK_EQ( static_cast<std::size_t>( functionalMap.rows() ), rowsPerFunctional )
+                << "invalid functional value shape in ordered dual set";
+            CHECK_EQ( static_cast<std::size_t>( functionalMap.cols() ), columns )
+                << "inconsistent functional representation width in ordered dual set";
+            dualMap.middleRows( static_cast<Eigen::Index>( i*rowsPerFunctional ),
+                                static_cast<Eigen::Index>( rowsPerFunctional ) ) = functionalMap;
         }
     }
 

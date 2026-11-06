@@ -61,4 +61,8 @@ PYBIND11_MODULE(_meshmover, m )
         defMeshmover<Mesh<Simplex<3>>,typename Pch_type< Mesh<Simplex<3>>,_order>::element_type >( m );
         defMeshmover<Mesh<Simplex<3>>,typename Pchv_type< Mesh<Simplex<3>>,_order>::element_type >( m );
     });
+    defMeshmover<Mesh<Simplex<2>>,typename Pch_type<Mesh<Simplex<2>>, Dynamic>::element_type>( m );
+    defMeshmover<Mesh<Simplex<2>>,typename Pchv_type<Mesh<Simplex<2>>, Dynamic>::element_type>( m );
+    defMeshmover<Mesh<Simplex<3>>,typename Pch_type<Mesh<Simplex<3>>, Dynamic>::element_type>( m );
+    defMeshmover<Mesh<Simplex<3>>,typename Pchv_type<Mesh<Simplex<3>>, Dynamic>::element_type>( m );
 }

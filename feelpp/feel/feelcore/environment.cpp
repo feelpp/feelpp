@@ -1,14 +1,13 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-    SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
-    SPDX-FileContributor: Alexandre Ancel <alexandre.ancel@cemosis.fr>
-
-    SPDX-FileCopyrightText: 2007-2011 Joseph Fourier University
-    SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
-
-    SPDX-License-Identifier: LGPL-3.0-or-later
-*/
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Alexandre Ancel <alexandre.ancel@cemosis.fr>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2010-2011 Université Joseph Fourier (Grenoble I)
+ * SPDX-FileCopyrightText: 2010-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
 #include <cstdlib>
 #include <cmath>
@@ -696,12 +695,6 @@ Environment::Environment( int argc, char** argv,
 #endif
     }
 
-#if defined( FEELPP_HAS_TBB )
-    int n = tbb::task_scheduler_init::default_num_threads();
-    //int n = 2;
-    //VLOG(2) << "[Feel++] TBB running with " << n << " threads\n";
-    //tbb::task_scheduler_init init(2);
-#endif
 
     // Note: verbosity is now handled in Environment::startLogging() for spdlog
     // or by glog directly when FEELPP_HAS_SPDLOG is not defined

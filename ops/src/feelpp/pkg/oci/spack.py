@@ -10,7 +10,7 @@ from .bake_permissions import fs_read_allow_flags, required_fs_read_paths_from_b
 from .apt import COMPONENT_TEMPLATE_SPECS
 from .catalog import ImageTarget, list_image_targets
 from .cmake_presets import resolve_cmake_preset
-from .common import branch_tag_suffix, default_bake_target_name, oci_image_ref
+from .common import branch_image_tag, default_bake_target_name, oci_image_ref
 from .platforms import normalize_platform_overrides
 from ..core.context import WorkspaceContext
 
@@ -181,11 +181,11 @@ def _normalize_requested_component(component: str | None) -> str | None:
 
 
 def _full_builder_tag(target: ImageTarget, *, branch: str) -> str:
-    return f"{target.oci_dist}{branch_tag_suffix(branch)}-full-dev"
+    return branch_image_tag(target.oci_dist, branch=branch, suffix="-full-dev")
 
 
 def _full_runtime_tag(target: ImageTarget, *, branch: str) -> str:
-    return f"{target.oci_dist}{branch_tag_suffix(branch)}-full"
+    return branch_image_tag(target.oci_dist, branch=branch, suffix="-full")
 
 
 def describe_spack_target(repo_root: Path, target: ImageTarget) -> dict[str, object]:
@@ -405,16 +405,17 @@ def generate_spack_bake(
         template = workspace.repo_root / DOCKER_TEMPLATE_DIR / component_spec.template_name
         dockerfile_path.write_text(template.read_text(encoding="utf-8"), encoding="utf-8")
 
-        tag_suffix = branch_tag_suffix(workspace.branch)
+        builder_tag = branch_image_tag(target.oci_dist, branch=workspace.branch, suffix="-dev")
+        runtime_tag = branch_image_tag(target.oci_dist, branch=workspace.branch)
         builder_ref = oci_image_ref(
             component_spec.image_name,
-            f"{target.oci_dist}{tag_suffix}-dev",
+            builder_tag,
             registry=registry,
             namespace=namespace,
         )
         runtime_ref = oci_image_ref(
             component_spec.image_name,
-            f"{target.oci_dist}{tag_suffix}",
+            runtime_tag,
             registry=registry,
             namespace=namespace,
         )
@@ -422,8 +423,8 @@ def generate_spack_bake(
         image_refs[requested_component] = runtime_ref
         default_from_image = {
             "feelpp": env_image_ref,
-            "toolboxes": oci_image_ref("feelpp", f"{target.oci_dist}{tag_suffix}", registry=registry, namespace=namespace),
-            "mor": oci_image_ref("feelpp-toolboxes", f"{target.oci_dist}{tag_suffix}", registry=registry, namespace=namespace),
+            "toolboxes": oci_image_ref("feelpp", runtime_tag, registry=registry, namespace=namespace),
+            "mor": oci_image_ref("feelpp-toolboxes", runtime_tag, registry=registry, namespace=namespace),
         }[requested_component]
         builder_args = {
             "FROM_IMAGE": from_image or default_from_image,

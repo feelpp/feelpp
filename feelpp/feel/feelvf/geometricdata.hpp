@@ -1,27 +1,12 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-  This file is part of the Feel library
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2006-03-14
+    SPDX-FileCopyrightText: 2006 EPFL
+    SPDX-FileCopyrightText: 2007-2010 Université Joseph Fourier (Grenoble I)
+    SPDX-FileCopyrightText: 2010-2014 University of Strasbourg
 
-  Copyright (C) 2006 EPFL
-  Copyright (C) 2007-2010 Université Joseph Fourier (Grenoble I)
-  Copyright (C) 2010-2014 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    SPDX-License-Identifier: LGPL-3.0-or-later
 */
 /**
    \file geometricdata.hpp
@@ -43,6 +28,9 @@
 # include <boost/preprocessor/facilities/empty.hpp>
 # include <boost/preprocessor/punctuation/comma.hpp>
 # include <boost/preprocessor/facilities/identity.hpp>
+# include <boost/preprocessor/stringize.hpp>
+
+#include <stdexcept>
 
 
 #include <feel/feelvf/expr.hpp>
@@ -86,7 +74,7 @@ const size_type mctx = vm::MEASURE;
        ( Nz      , GDNz      , 2, jkbn, Scalar   , M_gmc->unitNormal( q )[ 2 ]  , 0), \
        ( Nref    , GDNref    , 0, 0, Vectorial, M_gmc->refNormal( q )[ c1 ] , 0), \
        ( normalNorm, GDnormalNorm, 0, 0, Scalar, M_gmc->normalNorm( q ) , 0), \
-       ( pT      , GDpT      , 0, jt, Tensor2, M_gmc->projectorTangent( c1, c2, q), 0), \
+       ( pT      , GDpT      , 0, jt, Tensor2, M_gmc->tangentProjector( c1, c2, q), 0), \
        ( T       , GDT       , 0, jt, Vectorial, M_gmc->unitTangent( q )[ c1 ], 0), \
        ( Tx      , GDTx      , 0, jt, Scalar   , M_gmc->unitTangent( q )[ 0 ] , 0), \
        ( Ty      , GDTy      , 1, jt, Scalar   , M_gmc->unitTangent( q )[ 1 ] , 0), \
@@ -374,7 +362,13 @@ const size_type mctx = vm::MEASURE;
                 Feel::detail::ignore_unused_variable_warning(q);        \
                 Feel::detail::ignore_unused_variable_warning(c1);       \
                 Feel::detail::ignore_unused_variable_warning(c2);       \
-                return VF_GD_VALUE( O );                                \
+                if constexpr ( requires { VF_GD_VALUE( O ); } )         \
+                    return VF_GD_VALUE( O );                            \
+                else                                                    \
+                    throw std::logic_error(                             \
+                        "geometric expression "                        \
+                        BOOST_PP_STRINGIZE( VF_GD_SYMBOL( O ) )         \
+                        " is unavailable in this geometric context" ); \
             }                                                           \
             gmc_ptrtype M_gmc;                                         \
         };                                                              \

@@ -1,26 +1,12 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2009 Université de Grenoble 1
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2009-04-03
-
-  Copyright (C) 2009 Université de Grenoble 1
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file parameter.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -133,6 +119,7 @@ using h = NA::named_argument_t<struct h_tag>;
 using scale = NA::named_argument_t<struct scale_tag>;
 using dim = NA::named_argument_t<struct dim_tag>;
 using order = NA::named_argument_t<struct order_tag>;
+using runtime_order = NA::named_argument_t<struct runtime_order_tag>;
 using geo_parameters = NA::named_argument_t<struct geo_parameters_tag>;
 using in_memory = NA::named_argument_t<struct in_memory_tag>;
 using addmidpoint = NA::named_argument_t<struct addmidpoint_tag>;
@@ -196,6 +183,8 @@ using convex = NA::named_argument_t<struct convex_tag>;
 using sum = NA::named_argument_t<struct sum_tag>;
 using accumulate = NA::named_argument_t<struct accumulate_tag>;
 using geomap = NA::named_argument_t<struct geomap_tag>;
+using geometry_evaluation = NA::named_argument_t<struct geometry_evaluation_tag>;
+using local_form_lowering = NA::named_argument_t<struct local_form_lowering_tag>;
 using straighten = NA::named_argument_t<struct straighten_tag>;
 using expr = NA::named_argument_t<struct expr_tag>;
 using grad_expr = NA::named_argument_t<struct grad_expr_tag>;
@@ -303,9 +292,7 @@ using initial_theta = NA::named_argument_t<struct initial_theta_tag>;
 using min_theta = NA::named_argument_t<struct min_theta_tag>;
 using forceRelaxation = NA::named_argument_t<struct forceRelaxation_tag>;
 
-using use_tbb = NA::named_argument_t<struct use_tbb_tag>;
 using use_harts = NA::named_argument_t<struct use_harts_tag>;
-using grainsize = NA::named_argument_t<struct grainsize_tag>;
 using partitioner = NA::named_argument_t<struct partitioner_tag>;
 
 using save = NA::named_argument_t<struct save_tag>;
@@ -460,6 +447,7 @@ inline constexpr auto& _h = NA::identifier<na::h>;
 inline constexpr auto& _scale = NA::identifier<na::scale>;
 inline constexpr auto& _dim = NA::identifier<na::dim>;
 inline constexpr auto& _order = NA::identifier<na::order>;
+inline constexpr auto& _runtime_order = NA::identifier<na::runtime_order>;
 inline constexpr auto& _geo_parameters = NA::identifier<na::geo_parameters>;
 inline constexpr auto& _in_memory = NA::identifier<na::in_memory>;
 inline constexpr auto& _addmidpoint = NA::identifier<na::addmidpoint>;
@@ -522,6 +510,8 @@ inline constexpr auto& _convex = NA::identifier<na::convex>;
 inline constexpr auto& _sum = NA::identifier<na::sum>;
 inline constexpr auto& _accumulate = NA::identifier<na::accumulate>;
 inline constexpr auto& _geomap = NA::identifier<na::geomap>;
+inline constexpr auto& _geometry_evaluation = NA::identifier<na::geometry_evaluation>;
+inline constexpr auto& _local_form_lowering = NA::identifier<na::local_form_lowering>;
 inline constexpr auto& _straighten = NA::identifier<na::straighten>;
 inline constexpr auto& _expr = NA::identifier<na::expr>;
 inline constexpr auto& _grad_expr = NA::identifier<na::grad_expr>;
@@ -622,9 +612,7 @@ inline constexpr auto& _initial_theta = NA::identifier<na::initial_theta>;
 inline constexpr auto& _min_theta = NA::identifier<na::min_theta>;
 inline constexpr auto& _forceRelaxation = NA::identifier<na::forceRelaxation>;
 
-inline constexpr auto& _use_tbb = NA::identifier<na::use_tbb>;
 inline constexpr auto& _use_harts = NA::identifier<na::use_harts>;
-inline constexpr auto& _grainsize = NA::identifier<na::grainsize>;
 inline constexpr auto& _partitioner = NA::identifier<na::partitioner>;
 
 inline constexpr auto& _save = NA::identifier<na::save>;

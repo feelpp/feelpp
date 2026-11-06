@@ -366,7 +366,7 @@ struct test_integration_circle
 
 
         double t = 0.0;
-        AUTO( mycst, cst_ref( t ) );
+        auto mycst = cst_ref( t );
         typename imesh<value_type,2,Order>::ptrtype mesh( createCircle<value_type,Order>( meshSize ) );
 
         t = 1.0;

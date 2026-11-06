@@ -100,6 +100,12 @@ def test_initializer(dir, cfg, json, init_feelpp):
     nirb_config['doRectification'] = True
     tbModel = ToolboxModel(**nirb_config)
     tbModel.initModel()
+    assert tbModel.Xh == tbModel.getFieldSpace(), "fine space must be the toolbox field space"
+    assert type(tbModel.Xh.element()) is type(tbModel.getField(tbModel.tbFine))
+
+    tbModel.initCoarseToolbox()
+    assert tbModel.XH == tbModel.getFieldSpace(coarse=True), "coarse space must be the toolbox field space"
+    assert type(tbModel.XH.element()) is type(tbModel.getField(tbModel.tbCoarse))
 
     nirb_off = nirbOffline(**nirb_config, initCoarse=True)
     nirb_off.setModel(tbModel)

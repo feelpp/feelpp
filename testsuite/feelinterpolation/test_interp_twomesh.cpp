@@ -186,10 +186,8 @@ test_interp_boundary( boost::tuple<
 {
     auto mesh1 = boost::get<0>( __mesh );
     auto mesh2 = boost::get<1>( __mesh );
-    auto Xh1 = Pch<OrderChamp>( mesh1 );
-    auto Xh2 = Pch<OrderChamp>( mesh2 );
-    auto Yh1 = Pchv<OrderChamp>( mesh1 );
-    auto Yh2 = Pchv<OrderChamp>( mesh2 );
+    auto runWithSpaces = [&]( auto const& Xh1, auto const& Xh2, auto const& Yh1, auto const& Yh2 )
+    {
     //-----------------------------------------------------------------------------------//
 
     //AUTO (e ,exp(Px()*Py())*sin(2*M_PI*Px()));
@@ -210,7 +208,9 @@ test_interp_boundary( boost::tuple<
     //-----------------------------------------------------------------------------------//
     //-----------------------------------------------------------------------------------//
     //-----------------------------------------------------------------------------------//
-    bool useConformalIntegration=boost::get<2>( __mesh );//true;//false;
+    bool useConformalIntegration = boost::get<2>( __mesh );
+    if constexpr ( OrderGeo > 1 )
+        useConformalIntegration = true;
     double  __errId = normL2( _range=markedfaces( mesh1, "Interface" ),
                               _expr=idv( u1 )-idv( u2, useConformalIntegration ) );
 #if USE_BOOST_TEST
@@ -245,8 +245,15 @@ test_interp_boundary( boost::tuple<
     //                                         print((divv(v1))   ,"div=") ).evaluate()(0,0)) << "\n";
     //-----------------------------------------------------------------------------------//
     //-----------------------------------------------------------------------------------//
-    double  __errDx = normL2( _range=markedfaces( mesh1, "Interface" ),
-                              _expr=dxv( u1 )-dxv( u2, useConformalIntegration ) );
+    double __errDx = [&]()
+    {
+        if constexpr ( OrderGeo == 1 )
+            return normL2( _range=markedfaces( mesh1, "Interface" ),
+                           _expr=dxv( u1 )-dxv( u2, useConformalIntegration ) );
+        else
+            return normL2( _range=markedfaces( mesh1, "Interface" ),
+                           _expr=gradv( u1 )( 0,0 )-gradv( u2, useConformalIntegration )( 0,0 ) );
+    }();
 #if USE_BOOST_TEST
     BOOST_MESSAGE( "[testBoundary] dxv(u1) error : " << __errDx );
     BOOST_CHECK_SMALL( __errDx,1e-12 );
@@ -255,8 +262,15 @@ test_interp_boundary( boost::tuple<
     std::cout << "[testBoundary] dxv(u1) error : " << __errDx << "\n";
 #endif
     //-----------------------------------------------------------------------------------//
-    double  __errDy = normL2( _range=markedfaces( mesh1, "Interface" ),
-                              _expr=dyv( u1 )-dyv( u2, useConformalIntegration ) );
+    double __errDy = [&]()
+    {
+        if constexpr ( OrderGeo == 1 )
+            return normL2( _range=markedfaces( mesh1, "Interface" ),
+                           _expr=dyv( u1 )-dyv( u2, useConformalIntegration ) );
+        else
+            return normL2( _range=markedfaces( mesh1, "Interface" ),
+                           _expr=gradv( u1 )( 0,1 )-gradv( u2, useConformalIntegration )( 0,1 ) );
+    }();
 #if USE_BOOST_TEST
     BOOST_MESSAGE( "[testBoundary] dyv(u1) error : " << __errDy );
     BOOST_CHECK_SMALL( __errDy,1e-12 );
@@ -265,7 +279,7 @@ test_interp_boundary( boost::tuple<
     std::cout << "[testBoundary] dyv(u1) error : " << __errDy << "\n";
 #endif
     //-----------------------------------------------------------------------------------//
-    if ( OrderGeo==1 )
+    if constexpr ( OrderGeo == 1 )
       {
         double __errHess = normL2( _range=markedfaces( mesh1, "Interface" ),
                             _expr= hessv( u1 )-hessv( u2, useConformalIntegration ) );
@@ -297,8 +311,16 @@ test_interp_boundary( boost::tuple<
     std::cout << "[testBoundary] gradv vectorial error : " << __errGradVec <<"\n";
 #endif
     //-----------------------------------------------------------------------------------//
-    double  __errDiv = normL2( _range=markedfaces( mesh1, "Interface" ),
-                               _expr=divv( v1 )-divv( v2 , useConformalIntegration) );
+    double __errDiv = [&]()
+    {
+        if constexpr ( OrderGeo == 1 )
+            return normL2( _range=markedfaces( mesh1, "Interface" ),
+                           _expr=divv( v1 )-divv( v2 , useConformalIntegration) );
+        else
+            return normL2( _range=markedfaces( mesh1, "Interface" ),
+                           _expr=( gradv( v1 )( 0,0 ) + gradv( v1 )( 1,1 ) ) -
+                                 ( gradv( v2, useConformalIntegration )( 0,0 ) + gradv( v2, useConformalIntegration )( 1,1 ) ) );
+    }();
 #if USE_BOOST_TEST
     BOOST_MESSAGE( "[testBoundary] divv(u1) error : " << __errDiv );
     BOOST_CHECK_SMALL( __errDiv,1e-12 );
@@ -307,8 +329,16 @@ test_interp_boundary( boost::tuple<
     std::cout << "[testBoundary] divv(u1) error : " << __errDiv << "\n";
 #endif
     //-----------------------------------------------------------------------------------//
-    double  __errDivx = normL2( _range=markedfaces( mesh1, "Interface" ),
-                                _expr=dxv( v1 )+dyv( v1 )-dxv( v2, useConformalIntegration )-dyv( v2, useConformalIntegration ) );
+    double __errDivx = [&]()
+    {
+        if constexpr ( OrderGeo == 1 )
+            return normL2( _range=markedfaces( mesh1, "Interface" ),
+                           _expr=dxv( v1 )+dyv( v1 )-dxv( v2, useConformalIntegration )-dyv( v2, useConformalIntegration ) );
+        else
+            return normL2( _range=markedfaces( mesh1, "Interface" ),
+                           _expr=( gradv( v1 )( 0,0 ) + gradv( v1 )( 1,1 ) ) -
+                                 ( gradv( v2, useConformalIntegration )( 0,0 ) + gradv( v2, useConformalIntegration )( 1,1 ) ) );
+    }();
 #if USE_BOOST_TEST
     BOOST_MESSAGE( "[testBoundary] dxv+dyv(v1) error : " << __errDivx );
     BOOST_CHECK_SMALL( __errDivx,1e-12 );
@@ -318,8 +348,16 @@ test_interp_boundary( boost::tuple<
 #endif
 
     //-----------------------------------------------------------------------------------//
-    double  __errCurl = normL2( _range=markedfaces( mesh1, "Interface" ),
-                                _expr=curlv( v1 )-curlv( v2, useConformalIntegration ) );
+    double __errCurl = [&]()
+    {
+        if constexpr ( OrderGeo == 1 )
+            return normL2( _range=markedfaces( mesh1, "Interface" ),
+                           _expr=curlv( v1 )-curlv( v2, useConformalIntegration ) );
+        else
+            return normL2( _range=markedfaces( mesh1, "Interface" ),
+                           _expr=( gradv( v1 )( 1,0 ) - gradv( v1 )( 0,1 ) ) -
+                                 ( gradv( v2, useConformalIntegration )( 1,0 ) - gradv( v2, useConformalIntegration )( 0,1 ) ) );
+    }();
 #if USE_BOOST_TEST
     BOOST_MESSAGE( "[testBoundary] curlv(v1) error : " << __errCurl );
     BOOST_CHECK_SMALL( __errCurl,1e-12 );
@@ -328,8 +366,16 @@ test_interp_boundary( boost::tuple<
     std::cout << "[testBoundary] curlv(u1) error : " << __errCurl << "\n";
 #endif
     //-----------------------------------------------------------------------------------//
-    double  __errCurlx = normL2( _range=markedfaces( mesh1, "Interface" ),
-                                 _expr=curlxv( v1 )-curlxv( v2, useConformalIntegration ) );
+    double __errCurlx = [&]()
+    {
+        if constexpr ( OrderGeo == 1 )
+            return normL2( _range=markedfaces( mesh1, "Interface" ),
+                           _expr=curlxv( v1 )-curlxv( v2, useConformalIntegration ) );
+        else
+            return normL2( _range=markedfaces( mesh1, "Interface" ),
+                           _expr=( gradv( v1 )( 1,0 ) - gradv( v1 )( 0,1 ) ) -
+                                 ( gradv( v2, useConformalIntegration )( 1,0 ) - gradv( v2, useConformalIntegration )( 0,1 ) ) );
+    }();
 #if USE_BOOST_TEST
     BOOST_MESSAGE( "[testBoundary] curlxv(v1) error : " << __errCurlx );
     BOOST_CHECK_SMALL( __errCurlx,1e-12 );
@@ -338,8 +384,16 @@ test_interp_boundary( boost::tuple<
     std::cout << "[testBoundary] curlxv(u1) error : " << __errCurlx << "\n";
 #endif
     //-----------------------------------------------------------------------------------//
-    double  __errCurly = normL2( _range=markedfaces( mesh1, "Interface" ),
-                                 _expr=curlyv( v1 )-curlyv( v2, useConformalIntegration ) );
+    double __errCurly = [&]()
+    {
+        if constexpr ( OrderGeo == 1 )
+            return normL2( _range=markedfaces( mesh1, "Interface" ),
+                           _expr=curlyv( v1 )-curlyv( v2, useConformalIntegration ) );
+        else
+            return normL2( _range=markedfaces( mesh1, "Interface" ),
+                           _expr=( gradv( v1 )( 1,0 ) - gradv( v1 )( 0,1 ) ) -
+                                 ( gradv( v2, useConformalIntegration )( 1,0 ) - gradv( v2, useConformalIntegration )( 0,1 ) ) );
+    }();
 #if USE_BOOST_TEST
     BOOST_MESSAGE( "[testBoundary] curlyv(v1) error : " << __errCurly );
     BOOST_CHECK_SMALL( __errCurly,1e-12 );
@@ -347,7 +401,25 @@ test_interp_boundary( boost::tuple<
     LOG(INFO) << "[testBoundary] curlyv(u1) error : " << __errCurly << "\n";
     std::cout << "[testBoundary] curlyv(u1) error : " << __errCurly << "\n";
 #endif
+    };
 
+    if constexpr ( OrderGeo == 1 || OrderChamp <= 1 )
+    {
+        auto Xh1 = Pch<OrderChamp>( mesh1 );
+        auto Xh2 = Pch<OrderChamp>( mesh2 );
+        auto Yh1 = Pchv<OrderChamp>( mesh1 );
+        auto Yh2 = Pchv<OrderChamp>( mesh2 );
+        runWithSpaces( Xh1, Xh2, Yh1, Yh2 );
+    }
+    else
+    {
+        auto const runtimeOrder = RuntimeOrder{ static_cast<int>( OrderChamp ) };
+        auto Xh1 = Pch<Dynamic>( mesh1, runtimeOrder );
+        auto Xh2 = Pch<Dynamic>( mesh2, runtimeOrder );
+        auto Yh1 = Pchv<Dynamic>( mesh1, runtimeOrder );
+        auto Yh2 = Pchv<Dynamic>( mesh2, runtimeOrder );
+        runWithSpaces( Xh1, Xh2, Yh1, Yh2 );
+    }
 }
 
 /*_________________________________________________*

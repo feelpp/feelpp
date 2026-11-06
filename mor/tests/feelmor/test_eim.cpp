@@ -164,6 +164,8 @@ public:
                           _parameter=mu,
                           _expr=sin(cst_ref(mu(0))*idv(u)*idv(u)),
                           _sampling=Pset,
+                          _directory=this->eimDbDirectory(),
+                          _filename="q1.eim.crbdb",
                           _name="q1" );
             BOOST_TEST_MESSAGE( "create e done" );
             BOOST_CHECK( e );
@@ -176,6 +178,8 @@ public:
                            _parameter=mu,
                            _expr=cst_ref(mu(0)),
                            _sampling=Pset,
+                           _directory=this->eimDbDirectory(),
+                           _filename="mu0.eim.crbdb",
                            _name="mu0" );
             BOOST_TEST_MESSAGE( "create e1 done" );
             M_funs.push_back( e1 );
@@ -189,6 +193,8 @@ public:
                            _parameter=mu,
                            _expr=cst_ref(mu(0))*Px(),
                            _sampling=Pset,
+                           _directory=this->eimDbDirectory(),
+                           _filename="mu0x.eim.crbdb",
                            _name="mu0x" );
             BOOST_TEST_MESSAGE( "create e2 done" );
             M_funs.push_back( e2 );
@@ -199,6 +205,8 @@ public:
                            _parameter=mu,
                            _expr=sin(2*constants::pi<double>()*cst_ref(mu(0))*Px()),
                            _sampling=Pset,
+                           _directory=this->eimDbDirectory(),
+                           _filename="sin2pimu0x.eim.crbdb",
                            _name="sin2pimu0x" );
             BOOST_TEST_MESSAGE( "create e3 done" );
             M_funs.push_back( e3 );
@@ -209,6 +217,8 @@ public:
                            _parameter=mu,
                            _expr=exp(-((Px()-0.5)*(Px()-0.5)+(Py()-0.5)*(Py()-0.5))/(2*cst_ref(mu(0))*cst_ref(mu(0)))),
                            _sampling=Pset,
+                           _directory=this->eimDbDirectory(),
+                           _filename="q2.eim.crbdb",
                            _name="q2" );
             BOOST_TEST_MESSAGE( "create e5 done" );
             M_funs.push_back( e5 );
@@ -224,6 +234,10 @@ public:
     std::string modelName() const { return std::string("test_eim_model1" );}
     std::string prefix() const { return ""; }
     uuids::uuid uuid() const { return boost::uuids::nil_uuid(); }
+    std::string eimDbDirectory() const
+    {
+        return ( fs::path( Environment::appRepository() ) / "eim" / this->modelName() ).string();
+    }
 
     space_ptrtype const& functionSpace() const { return Xh; }
 
@@ -394,6 +408,8 @@ public:
                           _parameter=mu,
                           _expr= cst_ref(mu(0)) *( Px() - cst_ref(mu(2)) )*( Px() - cst_ref(mu(2)) )+cst_ref(mu(1)) *( Py() - cst_ref(mu(3)) )*( Py() - cst_ref(mu(3)) ),
                           _sampling=Pset,
+                          _directory=this->eimDbDirectory(),
+                          _filename="q_1.eim.crbdb",
                           _name="q_1");
             BOOST_TEST_MESSAGE( "create eim" );
             BOOST_CHECK( e );
@@ -405,6 +421,10 @@ public:
     std::string modelName() const { return std::string("test_eim_model2" );}
     std::string prefix() const { return ""; }
     uuids::uuid uuid() const { return boost::uuids::nil_uuid(); }
+    std::string eimDbDirectory() const
+    {
+        return ( fs::path( Environment::appRepository() ) / "eim" / this->modelName() ).string();
+    }
 
     //! return the parameter space
     parameterspace_ptrtype const& parameterSpace() const

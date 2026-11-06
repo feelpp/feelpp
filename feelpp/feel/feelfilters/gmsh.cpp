@@ -28,9 +28,8 @@
 #include <fstream>
 #include <sstream>
 #include <iterator>
+#include <array>
 
-#include  <boost/preprocessor/punctuation/paren.hpp>
-#include  <boost/preprocessor/punctuation/comma.hpp>
 #include <boost/regex.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
@@ -48,6 +47,9 @@
 #include <feel/feelfilters/gmshellipsoiddomain.hpp>
 
 #include <feel/feelcore/fmemopen.h>
+
+#define FEELPP_STRINGIZE_IMPL(x) #x
+#define FEELPP_STRINGIZE(x) FEELPP_STRINGIZE_IMPL(x)
 
 #if defined(FEELPP_HAS_GPERFTOOLS)
 #include <gperftools/heap-checker.h>
@@ -642,11 +644,11 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric, 
 
     //__str << "gmsh -algo tri -" << dim << " " << "-order " << this->order() << " " << __geoname;
     if ( parametric )
-        __str << BOOST_PP_STRINGIZE( GMSH_EXECUTABLE )
+        __str << FEELPP_STRINGIZE( GMSH_EXECUTABLE )
               << " -parametric -" << dim << " " << __geoname;
 
     else
-        __str << BOOST_PP_STRINGIZE( GMSH_EXECUTABLE )
+        __str << FEELPP_STRINGIZE( GMSH_EXECUTABLE )
               << " -" << dim << " -part " << M_partitions  << " " << __geoname;
 
 
@@ -1086,44 +1088,65 @@ struct EllipsoidDomain
 
 
 
-# define DIMS BOOST_PP_TUPLE_TO_LIST(3,(1,2,3))
-# define ORDERS BOOST_PP_TUPLE_TO_LIST(5,(1,2,3,4,5))
-# define SHAPES1 BOOST_PP_TUPLE_TO_LIST(3, ((2,(simplex, GmshSimplex)) ,    \
-                                            (2,(ellipsoid, GmshEllipsoid)) , \
-                                            (2,(hypercube, GmshHypercube)) ))
-# define SHAPES2 BOOST_PP_TUPLE_TO_LIST(2, ((3,(hypercube, GmshHypercube, Simplex)), \
-                                            (3,(hypercube, GmshHypercube, Hypercube)) ) )
+namespace detail
+{
+template <typename Creator>
+bool registerFactoryProduct( std::string key, Creator&& creator )
+{
+    std::string normalizedKey = boost::to_lower_copy( boost::algorithm::erase_all_copy( key, " " ) );
+    return Gmsh::Factory::type::instance().registerProduct( normalizedKey, std::forward<Creator>( creator ) );
+}
 
+std::string makeShapeKey( std::string const& shape, int dim, int order )
+{
+    std::ostringstream os;
+    os << shape << "(" << dim << "," << order << ")";
+    return os.str();
+}
 
-#define FACTORY1NAME( LDIM, LORDER, LSHAPE )                            \
-    BOOST_PP_STRINGIZE(BOOST_PP_ARRAY_ELEM(0,LSHAPE) BOOST_PP_LPAREN() LDIM BOOST_PP_COMMA() LORDER BOOST_PP_RPAREN())
+std::string makeShapeKey( std::string const& shape, int dim, int order, std::string const& ct )
+{
+    std::ostringstream os;
+    os << shape << "(" << dim << "," << order << "," << ct << ")";
+    return os.str();
+}
 
-# define FACTORY1(LDIM,LORDER,LSHAPE )                                  \
-    const bool BOOST_PP_CAT( BOOST_PP_CAT( BOOST_PP_CAT( mesh, LDIM ), LORDER), BOOST_PP_ARRAY_ELEM(1,LSHAPE))  = \
-                Gmsh::Factory::type::instance().registerProduct( boost::to_lower_copy(boost::algorithm::erase_all_copy( std::string( FACTORY1NAME(LDIM, LORDER, LSHAPE ) ), " " ) ), \
-                                                                     []() { return std::make_unique<BOOST_PP_CAT(BOOST_PP_ARRAY_ELEM(1,LSHAPE),Domain)>(LDIM,LORDER); } );
+bool registerBuiltInGmshDomains()
+{
+    bool allRegistered = true;
+    constexpr std::array<int, 3> dims = { 1, 2, 3 };
+    constexpr std::array<int, 5> orders = { 1, 2, 3, 4, 5 };
 
-# define FACTORY1_OP(_, GDO) FACTORY1 GDO
+    for ( int dim : dims )
+    {
+        for ( int order : orders )
+        {
+            allRegistered = registerFactoryProduct( makeShapeKey( "simplex", dim, order ),
+                                                    [dim, order]() { return std::make_unique<GmshSimplexDomain>( dim, order ); } ) && allRegistered;
+            allRegistered = registerFactoryProduct( makeShapeKey( "ellipsoid", dim, order ),
+                                                    [dim, order]() { return std::make_unique<GmshEllipsoidDomain>( dim, order ); } ) && allRegistered;
+            allRegistered = registerFactoryProduct( makeShapeKey( "hypercube", dim, order ),
+                                                    [dim, order]() { return std::make_unique<GmshHypercubeDomain>( dim, order ); } ) && allRegistered;
+            allRegistered = registerFactoryProduct( makeShapeKey( "hypercube", dim, order, "simplex" ),
+                                                    [dim, order]() { return std::make_unique<GmshHypercubeDomain>( dim, order, dim, false ); } ) && allRegistered;
+            allRegistered = registerFactoryProduct( makeShapeKey( "hypercube", dim, order, "hypercube" ),
+                                                    [dim, order]() { return std::make_unique<GmshHypercubeDomain>( dim, order, dim, true ); } ) && allRegistered;
+        }
+    }
 
+    allRegistered = registerFactoryProduct( "hypercube(2,1,3,simplex)",
+                                            []() { return std::make_unique<GmshHypercubeDomain>( 2, 1, 3, false ); } ) && allRegistered;
+    allRegistered = registerFactoryProduct( "hypercube(2,1,3,hypercube)",
+                                            []() { return std::make_unique<GmshHypercubeDomain>( 2, 1, 3, true ); } ) && allRegistered;
+    allRegistered = registerFactoryProduct( "hypercube(1,1,2,simplex)",
+                                            []() { return std::make_unique<GmshHypercubeDomain>( 1, 1, 2, false ); } ) && allRegistered;
+    allRegistered = registerFactoryProduct( "hypercube(1,1,2,yypercube)",
+                                            []() { return std::make_unique<GmshHypercubeDomain>( 1, 1, 2, true ); } ) && allRegistered;
+    return allRegistered;
+}
+} // namespace detail
 
-#define FACTORY2NAME( LDIM, LORDER, LSHAPE )                            \
-    BOOST_PP_STRINGIZE(BOOST_PP_ARRAY_ELEM(0,LSHAPE) BOOST_PP_LPAREN() LDIM BOOST_PP_COMMA() LORDER BOOST_PP_COMMA() BOOST_PP_ARRAY_ELEM(2,LSHAPE) BOOST_PP_RPAREN())
-
-# define FACTORY2(LDIM,LORDER,LSHAPE )                                  \
-    const bool BOOST_PP_CAT( BOOST_PP_CAT( BOOST_PP_CAT( BOOST_PP_CAT( mesh, LDIM ), LORDER), BOOST_PP_ARRAY_ELEM(1,LSHAPE)), BOOST_PP_ARRAY_ELEM(2,LSHAPE))   = \
-        Gmsh::Factory::type::instance().registerProduct( boost::to_lower_copy( boost::algorithm::erase_all_copy( std::string( FACTORY2NAME(LDIM, LORDER, LSHAPE ) ), " " ) ), \
-                                                             []() { return std::make_unique<BOOST_PP_CAT(BOOST_PP_ARRAY_ELEM(1,LSHAPE),Domain)>(LDIM,LORDER,LDIM,boost::to_lower_copy(std::string(BOOST_PP_STRINGIZE(BOOST_PP_ARRAY_ELEM(2,LSHAPE))))=="hypercube" );});
-
-# define FACTORY2_OP(_, GDO) FACTORY2 GDO
-
-// only up to 4 for mesh data structure not supported for higher order in Gmsh
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY1_OP, 3, ( DIMS, ORDERS, SHAPES1 ) )
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY2_OP, 3, ( DIMS, ORDERS, SHAPES2 ) )
-
-const bool meshs213s = Gmsh::Factory::type::instance().registerProduct( "hypercube(2,1,3,simplex)", []( ) { return std::make_unique<GmshHypercubeDomain>( 2, 1, 3, "simplex" ); } );
-const bool meshs213ts = Gmsh::Factory::type::instance().registerProduct( "hypercube(2,1,3,hypercube)", []( ) { return std::make_unique<GmshHypercubeDomain>( 2, 1, 3, "hypercube" ); } );
-const bool meshs112s = Gmsh::Factory::type::instance().registerProduct( "hypercube(1,1,2,simplex)", []( ) { return std::make_unique<GmshHypercubeDomain>( 1, 1, 2, "simplex" ); } );
-const bool meshs112ts = Gmsh::Factory::type::instance().registerProduct( "hypercube(1,1,2,yypercube)", []( ) { return std::make_unique<GmshHypercubeDomain>( 1, 1, 2, "hypercube" ); } );
+const bool gmshDomainFactoryRegistration = detail::registerBuiltInGmshDomains();
 
 /// \endcond detail
 

@@ -1,26 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
-
- This file is part of the Feel++ library
-
- Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- Date: 19 Apr 2015
-
- Copyright (C) 2015 Feel++ Consortium
-
- This library is free software; you can redistribute it and/or
- modify it under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation; either
- version 2.1 of the License, or (at your option) any later version.
-
- This library is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
-
- You should have received a copy of the GNU Lesser General Public
- License along with this library; if not, write to the Free Software
- Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2015 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
  */
+
 #ifndef FEELPP_DISCRTRAITS_HPP
 #define FEELPP_DISCRTRAITS_HPP 1
 
@@ -268,7 +253,7 @@ struct faces_mesh
 {
     using index_t = typename MeshType::index_type;
     using value_type = typename MeshType::value_type;
-    static constexpr int nOrder = MeshType::nOrder;
+    static constexpr int nOrder = MeshType::nOrder_v;
     using type = mp11::mp_if_c<
         is_simplex_mesh_v<MeshType>,
         Mesh<Simplex<2, nOrder, MeshType::nRealDim>, value_type, TheTag, index_t, EnableSharedFromThis>,
@@ -316,7 +301,7 @@ struct facets_mesh
 {
     using index_t = typename MeshType::index_type;
     using value_type = typename MeshType::value_type;
-    static constexpr int nOrder = MeshType::nOrder;
+    static constexpr int nOrder = MeshType::nOrder_v;
     static constexpr int d = MeshType::nDim-1;
     using type = mp11::mp_if_c<
         is_simplex_mesh_v<MeshType>,
@@ -364,7 +349,7 @@ struct edges_mesh
 {
     using index_t = typename MeshType::index_type;
     using value_type = typename MeshType::value_type;
-    static constexpr int nOrder = MeshType::nOrder;
+    static constexpr int nOrder = MeshType::nOrder_v;
     using type = mp11::mp_if_c<
         is_simplex_mesh_v<MeshType>,
         Mesh<Simplex<1, nOrder, MeshType::nRealDim>, value_type, TheTag, index_t, EnableSharedFromThis>,
@@ -412,7 +397,7 @@ struct parent_mesh
 {
     using index_t = typename MeshType::index_type;
     using value_type = typename MeshType::value_type;
-    static constexpr int nOrder = MeshType::nOrder;
+    static constexpr int nOrder = MeshType::nOrder_v;
     static constexpr int d = (MeshType::nDim == MeshType::nRealDim - 1) ? MeshType::nDim + 1 : MeshType::nDim;
     using type = mp11::mp_if_c<
         is_simplex_mesh_v<MeshType>,
@@ -460,7 +445,7 @@ struct trace_mesh
 {
     using index_t = typename MeshType::index_type;
     using value_type = typename MeshType::value_type;
-    static constexpr int nOrder = MeshType::nOrder;
+    static constexpr int nOrder = MeshType::nOrder_v;
     static constexpr int d = (MeshType::nDim == 0) ? 0 : MeshType::nDim - 1;
     using type = mp11::mp_if_c<
         is_simplex_mesh_v<MeshType>,
@@ -508,7 +493,7 @@ struct trace_trace_mesh
 {
     using index_t = typename MeshType::index_type;
     using value_type = typename MeshType::value_type;
-    static constexpr int nOrder = MeshType::nOrder;
+    static constexpr int nOrder = MeshType::nOrder_v;
     static inline constexpr uint16_type nDim = (MeshType::nDim == 1) ? MeshType::nDim - 1 : MeshType::nDim - 2;
     using type = mp11::mp_if_c<
         is_simplex_mesh_v<MeshType>,

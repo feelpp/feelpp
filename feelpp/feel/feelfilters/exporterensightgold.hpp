@@ -1,31 +1,19 @@
 /*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Alexandre Ancel <alexandre.ancel@cemosis.fr>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2007-2012 Universite Joseph Fourier (Grenoble I)
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2004-11-09
-
-  Copyright (C) 2004,2005 EPFL
-  Copyright (C) 2007-2012 Universite Joseph Fourier (Grenoble I)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-//! \file ExporterEnsightGold.hpp
-//! \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-//! \author Alexandre Ancel <alexandre.ancel@cemosis.fr>
-//! \date 2006-11-26
+/**
+   \file ExporterEnsightGold.hpp
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+   \author Alexandre Ancel <alexandre.ancel@cemosis.fr>
+   \date 2006-11-26
+ */
 #ifndef FEELPP_FILTERS_EXPORTERENSIGHTGOLD_HPP
 #define FEELPP_FILTERS_EXPORTERENSIGHTGOLD_HPP 1
 
@@ -354,6 +342,9 @@ template <typename MeshType, int N> class ExporterEnsightGold : public Exporter<
     //! init the ensight exporter
     FEELPP_NO_EXPORT void init();
 
+    //! select format element names from the effective mesh order
+    FEELPP_NO_EXPORT void updateElementTypes( uint16_type order ) const;
+
     //! write the '' file for ensight
     FEELPP_NO_EXPORT void writeSoSFile() const;
 
@@ -402,8 +393,8 @@ template <typename MeshType, int N> class ExporterEnsightGold : public Exporter<
     //! Bounded master-only staging storage, independent of global mesh size/rank count.
     mutable std::vector<char> M_payloadBuffer;
     mutable std::string M_filename;
-    std::string M_element_type;
-    std::string M_face_type;
+    mutable std::string M_element_type;
+    mutable std::string M_face_type;
     bool M_mergeTimeSteps;
     int M_packTimeSteps;
 

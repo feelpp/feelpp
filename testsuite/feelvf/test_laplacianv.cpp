@@ -37,6 +37,7 @@
 #include <feel/feelvf/operators.hpp>
 #include <feel/feelvf/operations.hpp>
 #include <feel/feelvf/ginac.hpp>
+#include <feel/feelvf/norml2.hpp>
 #include <feel/feelvf/norm2.hpp>
 #include <feel/feelvf/on.hpp>
 #include <feel/feelvf/matvec.hpp>
@@ -74,7 +75,7 @@ makeAbout()
 
 }
 
-template<int Dim, int O = 1, template<uint16_type,uint16_type,uint16_type> class C = Simplex>
+template<int Dim, int O = 1, template<int,int,int> class C = Simplex>
 class Test:
     public Simget
 {
@@ -108,7 +109,7 @@ public :
 };
 
 
-template<int Dim, int O = 1, template<uint16_type,uint16_type,uint16_type> class C = Simplex>
+template<int Dim, int O = 1, template<int,int,int> class C = Simplex>
 class TestV:
     public Simget
 {

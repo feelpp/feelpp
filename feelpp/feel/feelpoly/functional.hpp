@@ -30,6 +30,7 @@
 #define __Functional_H 1
 
 #include <boost/operators.hpp>
+#include <Eigen/Core>
 
 // clang-format off
 #include <feel/feelcore/warnoff.hpp>
@@ -81,6 +82,8 @@ public:
 
     // representation type for the functionals
     typedef ublas::matrix<value_type> rep_type;
+    using eigen_representation_type = Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+    using eigen_representation_map_type = Eigen::Map<eigen_representation_type const>;
 
     //@}
 
@@ -128,8 +131,7 @@ public:
         //( M_coeff.size1() )( M_coeff.size2() )( M_p.polynomialDimensionPerComponent() ).error( "invalid coefficient size" );
     }
 
-    virtual ~Functional()
-    {}
+    ~Functional() = default;
 
     //@}
 
@@ -165,7 +167,7 @@ public:
      * \param p polynomial
      * \return matrix resulting from the application of the functional to the polynomial
      */
-    virtual matrix_type operator()( polynomial_type const& p ) const
+    matrix_type operator()( polynomial_type const& p ) const
     {
         FEELPP_ASSERT( p.coeff().size2()  == M_coeff.size2() )
         ( p.coeff() )( M_coeff ).error( "invalid polynomial" );
@@ -194,6 +196,19 @@ public:
     rep_type const& coeff() const
     {
         return M_coeff;
+    }
+
+    /**
+     * \return zero-copy Eigen view of this functional's Riesz representation
+     * in the current primal basis.
+     *
+     * The mathematical object remains `Functional`; this view is only a dense
+     * representation used by assembly/factorization kernels.
+     */
+    [[nodiscard]] eigen_representation_map_type rieszRepresentation() const noexcept
+    {
+        return eigen_representation_map_type( M_coeff.data().begin(),
+                                              M_coeff.size1(), M_coeff.size2() );
     }
 
     //@}

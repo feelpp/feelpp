@@ -1,36 +1,24 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-  This file is part of the Feel library
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-09-03
+    SPDX-FileCopyrightText: 2005-2006 EPFL
+    SPDX-FileCopyrightText: 2007-2010 Université Joseph Fourier
+    SPDX-FileCopyrightText: 2011-2016, 2026 University of Strasbourg
 
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2007,2008,2009,2010 Université Joseph Fourier (Grenoble I)
-  Copyright (C) 2011-2016 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+    SPDX-License-Identifier: LGPL-3.0-or-later
 */
 /**
-   \file elements.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-09-03
+   @file elements.hpp
+   @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+   @date 2005-09-03
+   @brief Elements container class (C++20/23 modernized)
  */
 #ifndef FEELPP_MESH_ELEMENTS_HPP
 #define FEELPP_MESH_ELEMENTS_HPP
 
+#include <concepts>
+#include <type_traits>
 #include <unordered_map>
 
 #include <feel/feelcore/commobject.hpp>
@@ -80,23 +68,26 @@ public:
             >
         >;
     using element_ptrtype = std::shared_ptr<element_type>;
+    /** Mesh-owned sparse metadata storage for elements. */
+    using sparse_metadata_storage_type =
+        typename element_type::sparse_metadata_storage_type;
 
-    typedef std::unordered_map<size_type,element_type> elements_type;
+    using elements_type = std::unordered_map<size_type, element_type>;
 
-    typedef typename elements_type::iterator element_iterator;
-    typedef typename elements_type::const_iterator element_const_iterator;
+    using element_iterator = typename elements_type::iterator;
+    using element_const_iterator = typename elements_type::const_iterator;
 
-    typedef std::vector<boost::reference_wrapper<element_type const> > elements_reference_wrapper_type;
-    typedef std::shared_ptr<elements_reference_wrapper_type> elements_reference_wrapper_ptrtype;
-    typedef typename elements_reference_wrapper_type::iterator element_reference_wrapper_iterator;
-    typedef typename elements_reference_wrapper_type::const_iterator element_reference_wrapper_const_iterator;
+    using elements_reference_wrapper_type = std::vector<boost::reference_wrapper<element_type const>>;
+    using elements_reference_wrapper_ptrtype = std::shared_ptr<elements_reference_wrapper_type>;
+    using element_reference_wrapper_iterator = typename elements_reference_wrapper_type::iterator;
+    using element_reference_wrapper_const_iterator = typename elements_reference_wrapper_type::const_iterator;
 
-    typedef std::vector<boost::reference_wrapper<element_type> > ordered_elements_reference_wrapper_type;
-    typedef typename ordered_elements_reference_wrapper_type::iterator ordered_element_reference_wrapper_iterator;
-    typedef typename ordered_elements_reference_wrapper_type::const_iterator ordered_element_reference_wrapper_const_iterator;
+    using ordered_elements_reference_wrapper_type = std::vector<boost::reference_wrapper<element_type>>;
+    using ordered_element_reference_wrapper_iterator = typename ordered_elements_reference_wrapper_type::iterator;
+    using ordered_element_reference_wrapper_const_iterator = typename ordered_elements_reference_wrapper_type::const_iterator;
 
-    typedef std::map<int, size_type> parts_map_type;
-    typedef typename parts_map_type::const_iterator parts_const_iterator_type;
+    using parts_map_type = std::map<int, size_type>;
+    using parts_const_iterator_type = typename parts_map_type::const_iterator;
 
     /// \cond disabled
     struct update_element_neighbor_type
@@ -177,6 +168,7 @@ public:
         :
         M_worldComm( worldComm ),
         M_elements(),
+        M_sparseMetadata(),
         M_needToOrderElements( false )
     {}
 
@@ -184,8 +176,10 @@ public:
         :
         M_worldComm( f.M_worldComm ),
         M_elements( f.M_elements ),
+        M_sparseMetadata(),
         M_needToOrderElements( false )
     {
+        this->bindSparseMetadata();
         this->buildOrderedElements();
     }
 
@@ -196,6 +190,7 @@ public:
             DVLOG(1) << "deleting elements...\n";
             M_orderedElements.clear();
             M_elements.clear();
+            M_sparseMetadata.clear();
             M_needToOrderElements = false;
         }
     //@}
@@ -212,7 +207,9 @@ public:
         if ( this != &e )
         {
             M_worldComm = e.M_worldComm;
+            M_sparseMetadata.clear();
             M_elements = e.M_elements;
+            this->bindSparseMetadata();
             this->buildOrderedElements();
         }
 
@@ -231,6 +228,22 @@ public:
     elements_type const& elements() const
     {
         return M_elements;
+    }
+
+    /**
+     * @brief Return populated element sparse-sidecar counts.
+     */
+    [[nodiscard]] GeoEntitySparseMetadataStatistics
+    elementSparseMetadataStatistics() const noexcept
+    {
+        return M_sparseMetadata.statistics();
+    }
+
+    /** @brief Return compact cell-point connectivity occupancy counters. */
+    [[nodiscard]] GeoEntityConnectivityStatistics
+    elementConnectivityStatistics() const noexcept
+    {
+        return M_sparseMetadata.connectivityStatistics();
     }
 
     /**
@@ -800,6 +813,8 @@ public:
         if ( ret.second )
         {
             auto & newElement = ret.first->second;
+            newElement.attachSparseMetadataStorage( M_sparseMetadata );
+            newElement.synchronizePointConnectivity();
             if ( !M_needToOrderElements && !M_orderedElements.empty() && unwrap_ref( M_orderedElements.back() ).id() > newElement.id() )
                 M_needToOrderElements = true;
             M_orderedElements.push_back( boost::ref( newElement ) );
@@ -813,11 +828,14 @@ public:
     //!
     std::pair<element_iterator,bool> addElement( element_type&& f )
         {
-            auto ret = M_elements.emplace( std::make_pair( f.id(), f ) );
+            auto ret = M_elements.emplace(
+                std::make_pair( f.id(), std::move( f ) ) );
 
             if ( ret.second )
             {
                 auto & newElement = ret.first->second;
+                newElement.attachSparseMetadataStorage( M_sparseMetadata );
+                newElement.synchronizePointConnectivity();
                 if ( !M_needToOrderElements && !M_orderedElements.empty() && unwrap_ref( M_orderedElements.back() ).id() > newElement.id() )
                     M_needToOrderElements = true;
                 M_orderedElements.push_back( boost::ref( newElement ) );
@@ -829,9 +847,14 @@ public:
     element_iterator eraseElementOnly( element_iterator it )
         {
             size_type erasedId = it->first;
+            auto itOrdered = std::find_if(
+                M_orderedElements.begin(), M_orderedElements.end(),
+                [&erasedId]( auto& elementWrap )
+                {
+                    return unwrap_ref( elementWrap ).id() == erasedId;
+                } );
+            it->second.clearEntityStorage();
             auto itret = M_elements.erase( it );
-            auto itOrdered = std::find_if( M_orderedElements.begin(), M_orderedElements.end(),
-                                           [&erasedId]( auto & eltWrap ) { return unwrap_ref( eltWrap ).id() == erasedId; } );
             M_orderedElements.erase( itOrdered );
             return itret;
         }
@@ -941,6 +964,15 @@ public:
 
 private:
 
+    void bindSparseMetadata()
+    {
+        for ( auto& [id, element] : M_elements )
+        {
+            (void)id;
+            element.attachSparseMetadataStorage( M_sparseMetadata );
+        }
+    }
+
     void buildOrderedElements()
         {
             M_orderedElements.clear();
@@ -955,36 +987,38 @@ private:
 
     friend class boost::serialization::access;
     template<class Archive>
-    void serialize( Archive & ar, const unsigned int version )
+    void serialize( Archive& ar, const unsigned int version )
+    {
+        if constexpr ( Archive::is_loading::value )
         {
-            if ( Archive::is_loading::value )
+            M_elements.clear();
+            M_sparseMetadata.clear();
+            M_orderedElements.clear();
+            M_needToOrderElements = false;
+            size_type nElements = 0;
+            ar& BOOST_SERIALIZATION_NVP( nElements );
+            element_type newElt;
+            for ( size_type k = 0; k < nElements; ++k )
             {
-                M_elements.clear();
-                M_orderedElements.clear();
-                M_needToOrderElements =  false;
-                size_type nElements = 0;
-                ar & BOOST_SERIALIZATION_NVP( nElements );
-                element_type newElt;
-                for ( size_type k=0 ; k<nElements ; ++k )
-                {
-                    ar & boost::serialization::make_nvp( "element", newElt );
-                    this->addElement( std::move( newElt ) );
-                }
-            }
-            else
-            {
-                auto it = beginOrderedElement(), en = endOrderedElement();
-                size_type nElements = std::distance( it, en );
-                ar & BOOST_SERIALIZATION_NVP( nElements );
-                for ( ; it != en ; ++it )
-                    ar & boost::serialization::make_nvp( "element", unwrap_ref( *it ) );
+                ar& boost::serialization::make_nvp( "element", newElt );
+                this->addElement( std::move( newElt ) );
             }
         }
+        else
+        {
+            auto it = beginOrderedElement(), en = endOrderedElement();
+            size_type nElements = std::distance( it, en );
+            ar& BOOST_SERIALIZATION_NVP( nElements );
+            for ( ; it != en; ++it )
+                ar& boost::serialization::make_nvp( "element", unwrap_ref( *it ) );
+        }
+    }
 
 
 private:
     worldcomm_ptr_t M_worldComm;
     elements_type M_elements;
+    sparse_metadata_storage_type M_sparseMetadata;
     ordered_elements_reference_wrapper_type M_orderedElements;
     bool M_needToOrderElements;
 };

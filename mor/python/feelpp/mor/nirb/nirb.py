@@ -103,7 +103,9 @@ class ToolboxModel():
         else:
             self.model = fppc.readJson(self.model_path)
         self.tbFine = self.setToolbox(self.h)
-        self.Xh = fppc.functionSpace(mesh=self.tbFine.mesh(), order=self.order)
+        # Keep snapshots and reconstructed fields in the toolbox's actual space,
+        # including its scalar/vector family and static/dynamic order policy.
+        self.Xh = self.getFieldSpace()
         self.Dmu = loadParameterSpace(self.model_path)
         self.Ndofs = self.getFieldSpace().nDof()
 
@@ -161,7 +163,7 @@ class ToolboxModel():
         else:
             self.model = fppc.readJson(self.model_path)
         self.tbCoarse = self.setToolbox(self.H, mesh_path=self.coarsemesh_path)
-        self.XH = fppc.functionSpace(mesh=self.tbCoarse.mesh(), order=self.order)
+        self.XH = self.getFieldSpace(coarse=True)
         if self.worldcomm.isMasterRank():
             print(f"[NIRB] Number of nodes on the coarse mesh : {self.tbCoarse.mesh().numGlobalPoints()}")
 

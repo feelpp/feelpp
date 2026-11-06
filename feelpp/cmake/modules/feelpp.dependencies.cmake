@@ -1,3 +1,8 @@
+# SPDX-FileContributor: Alexandre Ancel <alexandre.ancel@cemosis.fr>
+# SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+#
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
 # - Find Feel
 # This module looks for Feel (Library for the Finite Element Method) support
 # it will define the following values
@@ -121,7 +126,6 @@ OPTION(FEELPP_ENABLE_MPI_MODE "Instantiation mode" ON )
 OPTION(FEELPP_ENABLE_SCHED_SLURM "Enable Feel++ slurm submission scripts generation" OFF)
 OPTION(FEELPP_ENABLE_SCHED_CCC "Enable Feel++ tgcc/ccc submission scripts generation" OFF)
 OPTION(FEELPP_ENABLE_SCHED_LOADLEVELER "Enable Feel++ ibm(supermuc) submission scripts generation" OFF)
-OPTION(FEELPP_ENABLE_TBB "enable feel++ TBB support" OFF)
 OPTION(FEELPP_ENABLE_TRILINOS "enable feel++ Trilinos support" OFF)
 OPTION(FEELPP_ENABLE_EXODUS "enable feel++ Exodus support" OFF)
 #if ( APPLE )
@@ -263,14 +267,6 @@ else()
   SET(FEELPP_LIBRARIES ${FEELPP_LIBRARIES} pthread)
 endif()
 
-if ( FEELPP_ENABLE_TBB )
-  FIND_PACKAGE(TBB)
-  IF ( TBB_FOUND )
-    INCLUDE_DIRECTORIES( ${TBB_INCLUDE_DIR} )
-    SET(FEELPP_LIBRARIES ${TBB_LIBRARIES} ${FEELPP_LIBRARIES})
-    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Tbb" )
-  ENDIF (TBB_FOUND )
-endif()
 
 # only activate OpenMP for gcc
 # (clang support should be ok by 3.5)

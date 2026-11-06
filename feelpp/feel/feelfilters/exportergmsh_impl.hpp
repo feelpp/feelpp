@@ -1,11 +1,13 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ * SPDX-FileContributor: Alexandre Ancel <alexandre.ancel@cemosis.fr>
+ *
+ * SPDX-FileCopyrightText: 2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-
-    SPDX-FileCopyrightText: 2026 University of Strasbourg
-
-    SPDX-License-Identifier: LGPL-3.0-or-later
-*/
 /**
    \file exportergmsh.cpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -580,6 +582,8 @@ template<typename MeshType, int N>
 void
 ExporterGmsh<MeshType,N>::gmshSaveNodes( std::ostream& out, mesh_ptrtype mesh, bool parametric ) const
 {
+    auto const nodalCoordinates =
+        mesh->nodalGeometryCoordinates();
     auto rangePoints = mesh->pointsWithProcessId();
     auto pt_it = std::get<0>( rangePoints );
     auto const pt_en = std::get<1>( rangePoints );
@@ -606,15 +610,18 @@ ExporterGmsh<MeshType,N>::gmshSaveNodes( std::ostream& out, mesh_ptrtype mesh, b
         // otherwise we put all the nodes in each file (to have a complete nodeset)
 
         // warning add 1 to the id in order to be sure that all gmsh id >0
-        out << pt.id()+1 << " " << pt.node()[0];
+        auto const localPoint =
+            mesh->pointLocalIndex( pt.id() );
+        out << pt.id()+1 << " " <<
+            nodalCoordinates( 0, localPoint );
 
         if ( mesh_type::nRealDim >= 2 )
-            out << " " << pt.node()[1];
+            out << " " << nodalCoordinates( 1, localPoint );
         else
             out << " 0";
 
         if ( mesh_type::nRealDim >= 3 )
-            out << " " << pt.node()[2];
+            out << " " << nodalCoordinates( 2, localPoint );
         else
             out << " 0";
 
@@ -704,10 +711,12 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
     auto elem_number=indexEltStart+1;
 
     typedef typename MeshType::element_type element_type;
-    GmshOrdering<element_type> ordering;
+    auto const ordering = makeGmshOrdering<element_type>(
+        RuntimeOrder{ mesh->order() } );
 
     typedef typename MeshType::face_type face_type;
-    GmshOrdering<face_type> ordering_face;
+    auto const ordering_face = makeGmshOrdering<face_type>(
+        RuntimeOrder{ mesh->order() } );
     // save the faces
 
     // count the number of faces
@@ -767,7 +776,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
         }
 
         // node-number-list
-        for ( uint16_type p=0; p<face_type::numPoints; ++p )
+        for ( int p = 0; p < ordering_face.size(); ++p )
         {
             //DCHECK( mapPointsId.find(face.point( ordering_face.fromGmshId( p ) ).id()) != mapPointsId.end() ) << "invalid point id\n";
             //out << " " << mapPointsId.find(face.point( ordering_face.fromGmshId( p ) ).id())->second;
@@ -838,7 +847,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
             }
         }
 
-        for ( uint16_type p=0; p<element_type::numPoints; ++p )
+        for ( int p = 0; p < ordering.size(); ++p )
         {
             //DCHECK ( mapPointsId.find(elt.point( ordering.fromGmshId( p ) ).id()) != mapPointsId.end() ) << "invalid point id\n";
             //std::cout << "index " << p << " -> " << ordering.fromGmshId(p) << " -> " << elt.point( ordering.fromGmshId(p) ).id()+1 << " : " << elt.point( ordering.fromGmshId(p) ).node() << "\n";
@@ -1040,7 +1049,8 @@ ExporterGmsh<MeshType,N>::computeMinMax(step_ptrtype __step, std::map<std::strin
     uint16_type nLocalDof;
     size_type globaldof;
     typedef typename MeshType::element_type element_type;
-    GmshOrdering<element_type> ordering;
+    auto const ordering = makeGmshOrdering<element_type>(
+        RuntimeOrder{ mesh->order() } );
 
     /* relinearize elemnent ids in the case when we want to output all the data in one file */
     auto allmarkedfaces = boundaryfaces( mesh );
@@ -1206,7 +1216,8 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
     uint16_type nLocalDof;
     size_type globaldof;
     typedef typename MeshType::element_type element_type;
-    GmshOrdering<element_type> ordering;
+    auto const ordering = makeGmshOrdering<element_type>(
+        RuntimeOrder{ mesh->order() } );
 
     /* relinearize elemnent ids in the case when we want to output all the data in one file */
     auto allmarkedfaces = boundaryfaces( mesh );
@@ -1496,7 +1507,8 @@ ExporterGmsh<MeshType,N>::gmshSaveOneElementAsMesh( std::string const& filename,
     }
 
     typedef typename MeshType::element_type element_type;
-    GmshOrdering<element_type> ordering;
+    auto const ordering = makeGmshOrdering<element_type>(
+        RuntimeOrder{ elt.order() } );
     out << nPointInPtSet+1 << " "; // id element
     out << ordering.type();
 
@@ -1517,7 +1529,7 @@ ExporterGmsh<MeshType,N>::gmshSaveOneElementAsMesh( std::string const& filename,
             out << " " << -( elt.neighborPartitionIds()[i]+1 );
     }
 
-    for ( uint16_type p=0; p<element_type::numPoints; ++p )
+    for ( int p = 0; p < ordering.size(); ++p )
     {
         out << " " << nPointInPtSet +ordering.fromGmshId( p ) + 1;
     }
@@ -1604,25 +1616,5 @@ ExporterGmsh<MeshType,N>::gmshSaveOneElementAsMesh( std::string const& filename,
 
 
 
-#if 0
-#if defined( FEELPP_INSTANTIATION_MODE )
-
-
-//
-// explicit instances
-//
-
-# define DIMS BOOST_PP_TUPLE_TO_LIST(3,(1,2,3))
-# define ORDERS BOOST_PP_TUPLE_TO_LIST(5,(1,2,3,4,5))
-# define ORDERS_FUN_GMSH BOOST_PP_TUPLE_TO_LIST(5,(1,2,3,4,5))
-
-// exporter gmsh
-# define FACTORY(LDIM,LORDER,ORDERFUN) template class ExporterGmsh<Mesh<Simplex<LDIM,LORDER,LDIM> >, ORDERFUN >;
-# define FACTORY_OP(_, GDO) FACTORY GDO
-
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_OP, 3, ( DIMS, ORDERS, ORDERS_FUN_GMSH ) )
-
-#endif // FEELPP_INSTANTIATION_MODE
-#endif
 }
 #endif // __EXPORTERGMSH_CPP

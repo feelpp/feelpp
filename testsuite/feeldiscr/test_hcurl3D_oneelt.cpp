@@ -46,6 +46,8 @@
 #include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feeldiscr/projector.hpp>
 #include <feel/feelvf/print.hpp>
+#include <feel/feelvf/vf_dsl.hpp>
+#include <feel/feelvf/vf_eval.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelpoly/nedelec.hpp>
@@ -58,6 +60,7 @@
  * \return the list of options
  */
 using namespace Feel;
+using namespace Feel::vf;
 
 inline
 po::options_description

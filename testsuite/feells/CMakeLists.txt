@@ -31,3 +31,4 @@ set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testls")
 # endforeach()
 
 feelpp_add_test( distancetorange )
+feelpp_add_test( disttocurve_header NO_MPI_TEST )

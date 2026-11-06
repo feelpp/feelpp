@@ -31,8 +31,7 @@
 #define FEELPP_DISCR_FSFUNCTIONALLINEARCOMPOSITE_H 1
 
 #include <feel/feelalg/backend.hpp>
-#include <feel/feeldiscr/fsfunctional.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feeldiscr/fsfunctionallinear.hpp>
 
 namespace Feel
 {

@@ -1,12 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-    SPDX-FileContributor: Hanna Chetouane
-
-    SPDX-FileCopyrightText: 2026 University of Strasbourg
-
-    SPDX-License-Identifier: LGPL-3.0-or-later
-*/
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Hanna Chetouane <h.chetouane@unistra.fr>
+ *
+ * SPDX-FileCopyrightText: 2026-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
 /**
  * \file test_sb9stabilization.cpp
@@ -106,10 +105,16 @@ checkSb9StabilizationRigidMode( SpaceType const& Uh,
  *
  * \param mesh Shell mesh used to build the Q1 vector displacement space.
  */
+template <bool DynamicOrder = false>
 void
 checkSb9StabilizationRigidModesOnPatch( mesh_ptrtype const& mesh )
 {
-    auto Uh = Pchv<1>( mesh );
+    auto Uh = [&]() {
+        if constexpr ( DynamicOrder )
+            return Pchv<Dynamic>( mesh, RuntimeOrder{1} );
+        else
+            return Pchv<1>( mesh );
+    }();
     auto u = trial( Uh, "u" );
     auto v = test( Uh, "v" );
 
@@ -136,6 +141,12 @@ BOOST_AUTO_TEST_CASE( sb9_stabilization_preserves_rigid_modes_on_flat_patch )
 BOOST_AUTO_TEST_CASE( sb9_stabilization_preserves_rigid_modes_on_rotated_patch )
 {
     checkSb9StabilizationRigidModesOnPatch( createRotatedShellPatch( "sb9_stabilization_rotated_patch" ) );
+}
+
+BOOST_AUTO_TEST_CASE( sb9_stabilization_preserves_rigid_modes_with_dynamic_q1 )
+{
+    checkSb9StabilizationRigidModesOnPatch<true>( createFlatShellPatch( "sb9_stabilization_dynamic_flat_patch" ) );
+    checkSb9StabilizationRigidModesOnPatch<true>( createRotatedShellPatch( "sb9_stabilization_dynamic_rotated_patch" ) );
 }
 
 BOOST_AUTO_TEST_SUITE_END()

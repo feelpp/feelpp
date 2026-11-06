@@ -48,6 +48,9 @@ RUN cmake --preset ${CMAKE_PRESET} \
     && cmake --build --preset ${CMAKE_PRESET} -j ${BUILD_JOBS} \
     && cmake --build --preset ${CMAKE_PRESET} -t install -j ${BUILD_JOBS} \
     && ldconfig \
+    && if grep -q '^FEELPP_ENABLE_FEELPP_PYTHON:BOOL=ON$' build/${CMAKE_PRESET}/CMakeCache.txt; then \
+         PYTHONPATH= PYTHONNOUSERSITE=1 python3 -c "import feelpp.core; import feelpp.core.discr"; \
+       fi \
     && ctest --preset ${CMAKE_PRESET} \
     && rm -rf build/${CMAKE_PRESET} /root/feelppdb /root/.cache /feel
 

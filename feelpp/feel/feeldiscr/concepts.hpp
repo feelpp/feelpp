@@ -1,26 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
- This file is part of the Feel library
-
- Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- Date: 2026-01-02
-
- Copyright (C) 2026 Feel++ Consortium
-
- This library is free software; you can redistribute it and/or
- modify it under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation; either
- version 2.1 of the License, or (at your option) any later version.
-
- This library is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
-
- You should have received a copy of the GNU Lesser General Public
- License along with this library; if not, write to the Free Software
- Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
  */
+
 /**
  * @file concepts.hpp
  * @brief C++20 concepts for Feel++ discretization (function spaces, elements, DOFs)
@@ -28,7 +13,7 @@
  * @date 2026-01-02
  *
  * This header provides C++20 concepts specific to discretization, replacing
- * SFINAE patterns in feeldiscr/*.hpp files.
+ * SFINAE patterns in feeldiscr headers.
  *
  * Related concept files:
  * - feelcore/concepts.hpp: Base concepts (Iterable, SharedPtr, ScalarConcept, etc.)
@@ -45,7 +30,10 @@
 
 #include <concepts>
 #include <memory>
+#include <type_traits>
 #include <feel/feelcore/concepts.hpp>
+#include <feel/feeldiscr/doflayout.hpp>
+#include <feel/feelpoly/concepts.hpp>
 
 namespace Feel
 {
@@ -77,7 +65,7 @@ namespace Feel
  * @endcode
  */
 template <typename T>
-concept FunctionSpace = requires(T t) {
+concept FunctionSpaceConcept = requires(T t) {
     typename T::value_type;
     typename T::mesh_type;
     typename T::element_type;
@@ -88,42 +76,66 @@ concept FunctionSpace = requires(T t) {
  * @brief A pointer (shared_ptr or raw) to a function space
  */
 template <typename T>
-concept FunctionSpacePtr = requires {
-    requires (std::is_pointer_v<T> && FunctionSpace<std::remove_pointer_t<T>>)
-          || (SharedPtr<T> && FunctionSpace<typename T::element_type>);
+concept FunctionSpacePtrConcept = requires {
+    requires (std::is_pointer_v<T> && FunctionSpaceConcept<std::remove_pointer_t<T>>)
+          || (SharedPtr<T> && FunctionSpaceConcept<typename T::element_type>);
 };
 
 /**
  * @brief A function space element (finite element function)
- * 
+ *
  * @details Elements represent functions in the discretized space.
  * They have values at DOFs and can be evaluated at points.
  */
 template <typename T>
-concept FunctionSpaceElement = requires(T t) {
+concept FunctionSpaceElementConcept = requires(T t) {
     typename T::functionspace_type;
     typename T::value_type;
-    requires FunctionSpace<typename T::functionspace_type>;
+    requires FunctionSpaceConcept<typename T::functionspace_type>;
 };
 
 /**
  * @brief A product of function spaces (for mixed formulations)
- * 
+ *
  * @details Product spaces combine multiple function spaces, used in
  * mixed finite element methods (e.g., Stokes: velocity × pressure).
  */
 template <typename T>
-concept ProductSpace = requires(T t) {
-    typename T::spaces_tuple_type;
+concept ProductSpaceConcept = requires(T t) {
+    typename std::remove_cvref_t<T>::functionspace_type;
+    typename std::remove_cvref_t<T>::value_type;
+    typename std::remove_cvref_t<T>::element_type;
     { t.numberOfSpaces() } -> std::convertible_to<int>;
+    { t.nDof() } -> std::convertible_to<std::size_t>;
+    { t.nLocalDof() } -> std::convertible_to<std::size_t>;
+    { t.nDofStart(0) } -> std::convertible_to<std::size_t>;
+    { t.nLocalDofStart(0) } -> std::convertible_to<std::size_t>;
+    { t.blockDofStart(0) } -> std::convertible_to<std::size_t>;
+    { t.blockLocalDofStart(0) } -> std::convertible_to<std::size_t>;
+    t.blockMapPtr(0);
+    { t.element() } -> std::same_as<typename std::remove_cvref_t<T>::element_type>;
 };
 
 /**
  * @brief Multiple product spaces (product of product spaces)
  */
 template <typename T>
-concept ProductSpaces = ProductSpace<T> && requires {
-    typename T::spaces_array_type;
+concept ProductSpacesConcept = ProductSpaceConcept<T> && requires {
+    typename std::remove_cvref_t<T>::tuple_spaces_type;
+} && requires(T t) {
+    t.tupleSpaces();
+    t.template space<0>();
+};
+
+/**
+ * @brief An element owned by a product-space object.
+ */
+template <typename T>
+concept BlockElementConcept = requires(T t) {
+    typename std::remove_cvref_t<T>::functionspace_type;
+    typename std::remove_cvref_t<T>::value_type;
+    requires ProductSpaceConcept<typename std::remove_cvref_t<T>::functionspace_type>;
+    t.functionSpace();
 };
 
 //
@@ -132,11 +144,11 @@ concept ProductSpaces = ProductSpace<T> && requires {
 
 /**
  * @brief A Feel++ mesh
- * 
+ *
  * @details Meshes represent the geometric domain discretization.
  */
 template <typename T>
-concept Mesh = requires(T t) {
+concept MeshConcept = requires(T t) {
     typename T::shape_type;
     typename T::element_type;
     typename T::face_type;
@@ -147,9 +159,9 @@ concept Mesh = requires(T t) {
  * @brief A pointer to a mesh
  */
 template <typename T>
-concept MeshPtr = requires {
-    requires (std::is_pointer_v<T> && Mesh<std::remove_pointer_t<T>>)
-          || (SharedPtr<T> && Mesh<typename T::element_type>);
+concept MeshPtrConcept = requires {
+    requires (std::is_pointer_v<T> && MeshConcept<std::remove_pointer_t<T>>)
+          || (SharedPtr<T> && MeshConcept<typename T::element_type>);
 };
 
 //
@@ -158,11 +170,11 @@ concept MeshPtr = requires {
 
 /**
  * @brief A degree of freedom (DOF) identifier
- * 
+ *
  * @details DOFs represent discrete unknowns in the finite element system.
  */
 template <typename T>
-concept DofType = requires(T t) {
+concept DofTypeConcept = requires(T t) {
     { t.index() } -> std::convertible_to<size_t>;
     { t.sign() } -> std::convertible_to<int>;
 };
@@ -171,9 +183,9 @@ concept DofType = requires(T t) {
  * @brief A DOF table mapping elements to DOFs
  */
 template <typename T>
-concept DofTable = requires(T t) {
+concept DofTableConcept = requires(T t) {
     typename T::dof_type;
-    requires DofType<typename T::dof_type>;
+    requires DofTypeConcept<typename T::dof_type>;
 };
 
 //
@@ -184,20 +196,13 @@ concept DofTable = requires(T t) {
  * @brief A geometric mapping from reference to physical element
  */
 template <typename T>
-concept GeometricMapping = requires {
-    typename T::gm_type;
-    { T::nDim } -> std::convertible_to<int>;
-    { T::nRealDim } -> std::convertible_to<int>;
-};
+concept GeoMapConcept = GeometricMappingConcept<T>;
 
 /**
  * @brief A geometric mapping context (evaluation at quadrature points)
  */
 template <typename T>
-concept GeometricMappingContext = requires(T t) {
-    typename T::gm_type;
-    requires GeometricMapping<typename T::gm_type>;
-};
+concept GeoMapContextConcept = GeometricMappingContextConcept<T>;
 
 //
 // Basis Function Concepts
@@ -207,19 +212,20 @@ concept GeometricMappingContext = requires(T t) {
  * @brief A finite element basis (shape functions)
  */
 template <typename T>
-concept Basis = requires {
+concept FEBasisConcept = HasOrderSupport<T> && requires( T const& basis ) {
     typename T::value_type;
     { T::nDof } -> std::convertible_to<int>;
-    { T::nLocalDof } -> std::convertible_to<int>;
+    { basis.order() } -> std::convertible_to<uint16_type>;
+    { basis.localDof() } -> std::convertible_to<uint16_type>;
 };
 
 /**
  * @brief A basis context (evaluation at points)
  */
 template <typename T>
-concept BasisContext = requires(T t) {
+concept FEBasisContextConcept = requires(T t) {
     typename T::basis_type;
-    requires Basis<typename T::basis_type>;
+    requires FEBasisConcept<typename T::basis_type>;
 };
 
 //
@@ -230,8 +236,8 @@ concept BasisContext = requires(T t) {
  * @brief A type that can be interpolated (projected) onto a function space
  */
 template <typename T, typename SpaceT>
-concept Interpolable = requires(T t, SpaceT space) {
-    requires FunctionSpace<SpaceT>;
+concept InterpolableConcept = requires(T t, SpaceT space) {
+    requires FunctionSpaceConcept<SpaceT>;
     // Can be evaluated to produce values
 };
 
@@ -243,18 +249,19 @@ concept Interpolable = requires(T t, SpaceT space) {
  * @brief A linear operator between function spaces
  */
 template <typename T>
-concept LinearOperator = requires(T t) {
+concept LinearOperatorConcept = requires(T t) {
     typename T::domain_space_type;
     typename T::dual_image_space_type;
-    requires FunctionSpace<typename T::domain_space_type>;
-    requires FunctionSpace<typename T::dual_image_space_type>;
+    requires FunctionSpaceConcept<typename T::domain_space_type>;
+    requires FunctionSpaceConcept<typename T::dual_image_space_type>;
 };
 
 /**
  * @brief A preconditioner for linear systems
+ * @note See feelvf/concepts.hpp for PreconditionerConcept with backend_type
  */
 template <typename T>
-concept Preconditioner = requires(T t) {
+concept DiscrPreconditionerConcept = requires(T t) {
     typename T::operator_type;
     { t.setOperator(std::declval<typename T::operator_type>()) };
 };
@@ -369,10 +376,42 @@ concept Shape3D = ShapeWithDim<T, 3>;
  * std::enable_if_t<TT::is_composite>
  */
 template <typename T>
-concept CompositeSpace = FunctionSpace<T> && requires {
+concept CompositeSpaceConcept = FunctionSpaceConcept<T> && requires {
     { T::is_composite } -> std::convertible_to<bool>;
     requires (T::is_composite == true);
 };
+
+/**
+ * @brief A legacy composite implemented by multi-basis FunctionSpace internals.
+ *
+ * New mixed-space code should avoid this concept and use product-backed
+ * composition instead.
+ */
+template <typename T>
+concept LegacyCompositeFunctionSpaceConcept =
+    CompositeSpaceConcept<std::remove_cvref_t<T>> && requires {
+        { std::remove_cvref_t<T>::uses_internal_composite } -> std::convertible_to<bool>;
+        { std::remove_cvref_t<T>::is_legacy_composite } -> std::convertible_to<bool>;
+        requires (std::remove_cvref_t<T>::uses_internal_composite == true);
+        requires (std::remove_cvref_t<T>::is_legacy_composite == true);
+    };
+
+/**
+ * @brief A composite facade backed by product.hpp/ProductFunctionSpaces.
+ *
+ * This is the preferred compatibility shape for mixed spaces that still need
+ * FunctionSpace-like accessors while storing composition outside FunctionSpace.
+ */
+template <typename T>
+concept ProductBackedCompositeSpaceConcept =
+    CompositeSpaceConcept<std::remove_cvref_t<T>> &&
+    ProductSpaceConcept<std::remove_cvref_t<T>> &&
+    requires {
+        { std::remove_cvref_t<T>::uses_internal_composite } -> std::convertible_to<bool>;
+        { std::remove_cvref_t<T>::is_product_backed_composite } -> std::convertible_to<bool>;
+        requires (std::remove_cvref_t<T>::uses_internal_composite == false);
+        requires (std::remove_cvref_t<T>::is_product_backed_composite == true);
+    };
 
 /**
  * @brief A non-composite (simple) function space
@@ -382,9 +421,26 @@ concept CompositeSpace = FunctionSpace<T> && requires {
  * std::enable_if_t<!TT::is_composite>
  */
 template <typename T>
-concept NonCompositeSpace = FunctionSpace<T> && requires {
+concept NonCompositeSpaceConcept = FunctionSpaceConcept<T> && requires {
     { T::is_composite } -> std::convertible_to<bool>;
     requires (T::is_composite == false);
+};
+
+/**
+ * @brief An explicit mortar function space.
+ *
+ * @details Mortar spaces are non-composite spaces with a mortar construction
+ * policy.  New code should depend on this concept instead of detecting raw
+ * FunctionSpace<..., mortars<Mortar>> instantiations.
+ */
+template <typename T>
+concept MortarFunctionSpaceConcept = NonCompositeSpaceConcept<T> && requires {
+    typename std::remove_cvref_t<T>::mortar_policy_type;
+    typename std::remove_cvref_t<T>::mortar_0_type;
+    { std::remove_cvref_t<T>::is_mortar } -> std::convertible_to<bool>;
+    { std::remove_cvref_t<T>::is_explicit_mortar_space } -> std::convertible_to<bool>;
+    requires (std::remove_cvref_t<T>::is_mortar == true);
+    requires (std::remove_cvref_t<T>::is_explicit_mortar_space == true);
 };
 
 /**
@@ -395,7 +451,7 @@ concept NonCompositeSpace = FunctionSpace<T> && requires {
  * std::enable_if_t<B::is_modal>
  */
 template <typename T>
-concept ModalBasisSpace = requires {
+concept ModalBasisSpaceConcept = requires {
     { T::is_modal } -> std::convertible_to<bool>;
     requires (T::is_modal == true);
 };
@@ -408,7 +464,7 @@ concept ModalBasisSpace = requires {
  * std::enable_if_t<!B::is_modal>
  */
 template <typename T>
-concept NodalBasisSpace = requires {
+concept NodalBasisSpaceConcept = requires {
     { T::is_modal } -> std::convertible_to<bool>;
     requires (T::is_modal == false);
 };
@@ -417,11 +473,11 @@ concept NodalBasisSpace = requires {
 // Field Type Concepts
 //
 
-// Forward declarations for base types (defined in feelpoly/traits.hpp)
-struct ScalarBase;
-struct VectorialBase;
-struct Tensor2Base;
-struct Tensor2SymmBase;
+// Forward declarations for base types (defined in feelpoly/traits.hpp and policy.hpp)
+class ScalarBase;
+class VectorialBase;
+class Tensor2Base;
+struct Tensor2SymmBase; // struct in policy.hpp
 
 /**
  * @brief A scalar field element
@@ -430,15 +486,17 @@ struct Tensor2SymmBase;
  * Replaces SFINAE patterns like:
  * std::enable_if_t<is_scalar_field_v<T>>
  *
+ * @note See feelpoly/concepts.hpp for ScalarFieldConcept
+ *
  * @example
  * @code
  * template <typename T>
- *     requires ScalarField<T>
+ *     requires DiscrScalarFieldConcept<T>
  * void processScalarField(T const& field);
  * @endcode
  */
 template <typename T>
-concept ScalarField = std::is_base_of_v<ScalarBase, std::decay_t<T>>;
+concept DiscrScalarFieldConcept = std::is_base_of_v<ScalarBase, std::decay_t<T>>;
 
 /**
  * @brief A vectorial field element
@@ -448,7 +506,7 @@ concept ScalarField = std::is_base_of_v<ScalarBase, std::decay_t<T>>;
  * std::enable_if_t<is_vector_field_v<T>>
  */
 template <typename T>
-concept VectorialField = std::is_base_of_v<VectorialBase, std::decay_t<T>>;
+concept VectorialFieldConcept = std::is_base_of_v<VectorialBase, std::decay_t<T>>;
 
 /**
  * @brief A tensor2 (matrix) field element
@@ -456,9 +514,11 @@ concept VectorialField = std::is_base_of_v<VectorialBase, std::decay_t<T>>;
  * @details Tensor2 fields represent rank-2 tensors (e.g., stress tensor).
  * Replaces SFINAE patterns like:
  * std::enable_if_t<is_tensor2_field_v<T>>
+ *
+ * @note See feelpoly/concepts.hpp for Tensor2FieldConcept
  */
 template <typename T>
-concept Tensor2Field = std::is_base_of_v<Tensor2Base, std::decay_t<T>>;
+concept DiscrTensor2FieldConcept = std::is_base_of_v<Tensor2Base, std::decay_t<T>>;
 
 /**
  * @brief A symmetric tensor2 field element
@@ -468,7 +528,7 @@ concept Tensor2Field = std::is_base_of_v<Tensor2Base, std::decay_t<T>>;
  * std::enable_if_t<is_tensor2symm_field_v<T>>
  */
 template <typename T>
-concept Tensor2SymmField = std::is_base_of_v<Tensor2SymmBase, std::decay_t<T>>;
+concept Tensor2SymmFieldConcept = std::is_base_of_v<Tensor2SymmBase, std::decay_t<T>>;
 
 /**
  * @brief Any matrix-type field (tensor2 or symmetric tensor2)
@@ -478,7 +538,7 @@ concept Tensor2SymmField = std::is_base_of_v<Tensor2SymmBase, std::decay_t<T>>;
  * std::enable_if_t<is_tensor2_field_v<T> || is_tensor2symm_field_v<T>>
  */
 template <typename T>
-concept MatrixField = Tensor2Field<T> || Tensor2SymmField<T>;
+concept MatrixFieldConcept = DiscrTensor2FieldConcept<T> || Tensor2SymmFieldConcept<T>;
 
 //
 // Range Entity Concepts
@@ -546,8 +606,7 @@ concept RangeOnPoints = requires {
 // Interpolation Entity Concepts
 //
 
-// Forward declaration for ElementsType enum
-enum class ElementsType;
+// Note: ElementsType enum is defined in feelmesh/enums.hpp (unscoped enum)
 
 /**
  * @brief Interpolation type that operates on mesh elements
@@ -558,8 +617,8 @@ enum class ElementsType;
  */
 template <typename T>
 concept InterpolationOnElements = requires {
-    { T::onEntity() };
-    // Note: Compile-time check depends on ElementsType enum definition
+    { std::remove_cvref_t<T>::onEntity() } -> std::same_as<ElementsType>;
+    requires (std::remove_cvref_t<T>::onEntity() == ElementsType::MESH_ELEMENTS);
 };
 
 /**
@@ -571,7 +630,8 @@ concept InterpolationOnElements = requires {
  */
 template <typename T>
 concept InterpolationOnFaces = requires {
-    { T::onEntity() };
+    { std::remove_cvref_t<T>::onEntity() } -> std::same_as<ElementsType>;
+    requires (std::remove_cvref_t<T>::onEntity() == ElementsType::MESH_FACES);
 };
 
 /**
@@ -579,7 +639,8 @@ concept InterpolationOnFaces = requires {
  */
 template <typename T>
 concept InterpolationOnEdges = requires {
-    { T::onEntity() };
+    { std::remove_cvref_t<T>::onEntity() } -> std::same_as<ElementsType>;
+    requires (std::remove_cvref_t<T>::onEntity() == ElementsType::MESH_EDGES);
 };
 
 //
@@ -599,10 +660,12 @@ concept InterpolationOnEdges = requires {
  * @endcode
  */
 template <typename T>
-concept HdivConforming = requires {
-    { T::is_hdiv_conforming } -> std::convertible_to<bool>;
-    requires (T::is_hdiv_conforming == true);
-};
+concept HdivConforming =
+    HDivFiniteElement<T> ||
+    requires {
+        { T::is_hdiv_conforming } -> std::convertible_to<bool>;
+        requires (T::is_hdiv_conforming == true);
+    };
 
 /**
  * @brief H(curl) conforming basis (e.g., Nedelec)
@@ -611,10 +674,12 @@ concept HdivConforming = requires {
  * Replaces SFINAE patterns checking is_hcurl_conforming.
  */
 template <typename T>
-concept HcurlConforming = requires {
-    { T::is_hcurl_conforming } -> std::convertible_to<bool>;
-    requires (T::is_hcurl_conforming == true);
-};
+concept HcurlConforming =
+    HCurlFiniteElement<T> ||
+    requires {
+        { T::is_hcurl_conforming } -> std::convertible_to<bool>;
+        requires (T::is_hcurl_conforming == true);
+    };
 
 /**
  * @brief H1 conforming (continuous) basis
@@ -622,33 +687,37 @@ concept HcurlConforming = requires {
  * @details H1 conforming spaces ensure full continuity across element boundaries.
  */
 template <typename T>
-concept H1Conforming = requires {
-    { T::is_continuous } -> std::convertible_to<bool>;
-    requires (T::is_continuous == true);
-};
+concept H1Conforming =
+    H1FiniteElement<T> ||
+    requires {
+        { T::is_continuous } -> std::convertible_to<bool>;
+        requires (T::is_continuous == true);
+    };
 
 //
 // Expression Concepts
 //
 
-// Forward declaration for ExprBase (defined in feelvf)
-struct ExprBase;
+// Forward declaration for ExprBase (defined in feelvf/exprbase.hpp)
+class ExprBase;
 
 /**
- * @brief A variational formulation expression
+ * @brief A variational formulation expression (simplified version)
  *
  * @details VF expressions are used in bilinear/linear forms.
  * Replaces SFINAE patterns like:
  * std::enable_if_t<std::is_base_of_v<ExprBase, T>>
  *
+ * @note See feelvf/concepts.hpp for VfExprConcept (primary definition)
+ *
  * @example
  * @code
- * template <VfExpr ExprT>
+ * template <DiscrVfExprConcept ExprT>
  * void addExpression(ExprT&& expr);
  * @endcode
  */
 template <typename T>
-concept VfExpr = std::is_base_of_v<ExprBase, std::decay_t<T>>;
+concept DiscrVfExprConcept = std::is_base_of_v<ExprBase, std::decay_t<T>>;
 
 //
 // Backward Compatibility Bridges
@@ -658,26 +727,26 @@ concept VfExpr = std::is_base_of_v<ExprBase, std::decay_t<T>>;
 
 // Bridge old is_functionspace trait to new concept
 template <typename T>
-constexpr bool is_functionspace_v = FunctionSpace<T>;
+constexpr bool is_functionspace_v = FunctionSpaceConcept<T>;
 
 template <typename T>
-constexpr bool is_functionspace_element_v = FunctionSpaceElement<T>;
+constexpr bool is_functionspace_element_v = FunctionSpaceElementConcept<T>;
 
 template <typename T>
-constexpr bool is_product_space_v = ProductSpace<T>;
+constexpr bool is_product_space_v = ProductSpaceConcept<T>;
 
 // Field type concept bridges
 template <typename T>
-constexpr bool is_scalar_field_concept_v = ScalarField<T>;
+constexpr bool is_scalar_field_concept_v = DiscrScalarFieldConcept<T>;
 
 template <typename T>
-constexpr bool is_vector_field_concept_v = VectorialField<T>;
+constexpr bool is_vector_field_concept_v = VectorialFieldConcept<T>;
 
 template <typename T>
-constexpr bool is_tensor2_field_concept_v = Tensor2Field<T>;
+constexpr bool is_tensor2_field_concept_v = DiscrTensor2FieldConcept<T>;
 
 template <typename T>
-constexpr bool is_matrix_field_concept_v = MatrixField<T>;
+constexpr bool is_matrix_field_concept_v = MatrixFieldConcept<T>;
 
 // Mesh entity concept bridges
 template <typename T, typename M>
@@ -704,13 +773,16 @@ constexpr bool is_shape_3d_v = Shape3D<T>;
 
 // Function space property bridges
 template <typename T>
-constexpr bool is_composite_space_v = CompositeSpace<T>;
+constexpr bool is_composite_space_v = CompositeSpaceConcept<T>;
 
 template <typename T>
-constexpr bool is_modal_basis_v = ModalBasisSpace<T>;
+constexpr bool is_mortar_space_v = MortarFunctionSpaceConcept<T>;
 
 template <typename T>
-constexpr bool is_nodal_basis_v = NodalBasisSpace<T>;
+constexpr bool is_modal_basis_v = ModalBasisSpaceConcept<T>;
+
+template <typename T>
+constexpr bool is_nodal_basis_v = NodalBasisSpaceConcept<T>;
 
 // Conformity concept bridges
 template <typename T>
@@ -724,7 +796,7 @@ constexpr bool is_h1_conforming_concept_v = H1Conforming<T>;
 
 // VfExpr concept bridge
 template <typename T>
-constexpr bool is_vf_expr_concept_v = VfExpr<T>;
+constexpr bool is_vf_expr_concept_v = DiscrVfExprConcept<T>;
 
 #endif // FEELPP_ENABLE_CONCEPT_COMPATIBILITY
 

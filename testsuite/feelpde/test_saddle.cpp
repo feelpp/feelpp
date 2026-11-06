@@ -40,16 +40,16 @@ BOOST_AUTO_TEST_CASE( test_0 )
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     //! Hcurl space
     typedef Nedelec<0,NedelecKind::NED1 > curl_basis_type;
-    typedef FunctionSpace<mesh_type, Feel::detail::bases<curl_basis_type>, value_type,Feel::Periodicity<Feel::NoPeriodicity>, Feel::mortars<Feel::NoMortar>> curl_space_type;
+    typedef FunctionSpace<mesh_type, Feel::detail::bases<curl_basis_type>, value_type, Feel::mortars<Feel::NoMortar>> curl_space_type;
     typedef std::shared_ptr<curl_space_type> curl_space_ptrtype;
     typedef typename curl_space_type::element_type curl_element_type;
     //! Pch space
     typedef Lagrange<1, Scalar> lag_basis_type; 
-    typedef FunctionSpace<mesh_type, Feel::detail::bases<lag_basis_type>, value_type,Feel::Periodicity<Feel::NoPeriodicity>, Feel::mortars<Feel::NoMortar>> lag_space_type;
+    typedef FunctionSpace<mesh_type, Feel::detail::bases<lag_basis_type>, value_type, Feel::mortars<Feel::NoMortar>> lag_space_type;
     typedef std::shared_ptr<lag_space_type> lag_space_ptrtype;
     typedef typename lag_space_type::element_type lag_element_type;
     //! Comp space 
-    typedef FunctionSpace<mesh_type, Feel::detail::bases<curl_basis_type,lag_basis_type>, value_type,Feel::Periodicity<Feel::NoPeriodicity>, Feel::mortars<Feel::NoMortar>> comp_space_type;
+    typedef FunctionSpace<mesh_type, Feel::detail::bases<curl_basis_type,lag_basis_type>, value_type, Feel::mortars<Feel::NoMortar>> comp_space_type;
     typedef std::shared_ptr<comp_space_type> comp_space_ptrtype;
     typedef typename comp_space_type::element_type comp_element_type;
 

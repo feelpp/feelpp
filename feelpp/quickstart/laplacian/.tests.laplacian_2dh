@@ -1,0 +1,4 @@
+# SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+# SPDX-FileCopyrightText: 2026 University of Strasbourg
+# SPDX-License-Identifier: LGPL-3.0-or-later
+runtime-q2-g2 --gmsh.filename=${CMAKE_CURRENT_SOURCE_DIR}/cases/square/quadrilateral.geo --geometry.order=2 --order=2 --checker.check=true --checker.solution=x+y --pyexpr.filename=${CMAKE_CURRENT_SOURCE_DIR}/python/laplacian.py --checker.tolerance.exact=1e-10 --no-export --checker.filename=${CMAKE_CURRENT_SOURCE_DIR}/cases/runtime-order-checker.json --checker.script=${CMAKE_CURRENT_SOURCE_DIR}/python/laplacian.py --directory=qs_laplacian/runtime-q2-g2

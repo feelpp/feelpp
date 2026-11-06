@@ -20,6 +20,11 @@ are shared with the standard elasticity applications in the parent directory.
 
 The existing static executable and CTest names are preserved.
 
+The drivers use `Dynamic` finite-element and geometry types with explicit
+`RuntimeOrder` values. The SB9 formulation retains Q1 displacement and Q0
+internal modes on a first-order hexahedral geometry. The Q1 restriction is
+checked using the actual runtime number of local basis functions.
+
 == Build and run
 
 From the repository root:
@@ -51,12 +56,16 @@ and dynamic drivers. Build `feelpp_qs_sb9_minimal` explicitly when needed.
 * `dynamic/` contains the experimental tank and plate configurations and
   measured load histories.
 
-The experimental dynamic cases require external mesh files, which are not
-included in the repository:
+The dynamic configurations are `dynamic/tank/tank.cfg`,
+`dynamic/unperforated-plate/unperforated_plate.cfg`, and
+`dynamic/perforated-plate/perforated_plate.cfg`.
 
-* `dynamic/cuve/mesh_cuve_feelpp_ok.msh`
-* `dynamic/plaque_pas_percee/plaque_pas_percee.msh`
-* `dynamic/plaque_percee/plaque_percee_dx1mm_force_apply.msh`
+The experimental dynamic cases require external mesh files, which are not
+included in the repository. Their original filenames are preserved:
+
+* `dynamic/tank/mesh_cuve_feelpp_ok.msh`
+* `dynamic/unperforated-plate/plaque_pas_percee.msh`
+* `dynamic/perforated-plate/plaque_percee_dx1mm_force_apply.msh`
 
 Place the appropriate mesh beside its configuration or override
 `--gmsh.filename`. The dynamic driver currently applies the measured force at

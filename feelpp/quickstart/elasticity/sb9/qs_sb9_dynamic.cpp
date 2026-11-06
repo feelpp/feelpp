@@ -1,3 +1,11 @@
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2026-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
 #include <feel/feelcore/environment.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
@@ -33,7 +41,7 @@ using namespace Feel;
 namespace
 {
 
-using sb9_mesh_type = Mesh<Hypercube<3>>;
+using sb9_mesh_type = Mesh<Hypercube<3,Dynamic>>;
 
 po::options_description
 makeOptions()
@@ -160,7 +168,7 @@ std::shared_ptr<sb9_mesh_type>
 createUnitShellMesh()
 {
   Environment::changeRepository( _directory=boost::format( "quickstart/%1%/" ) % Environment::about().appName() );
-  return createGMSHMesh( _mesh=new sb9_mesh_type,
+  return createGMSHMesh( _mesh=new sb9_mesh_type( RuntimeOrder{1} ),
                            _desc=geo( _filename="sb9_unit_shell.geo",
                                       _desc=unitShellGeo(),
                                       _dim=3,
@@ -186,7 +194,7 @@ main( int argc, char** argv )
           if ( !mesh_file_opt.empty() )
           {
             auto mesh_file = Environment::expand( mesh_file_opt );
-            mesh = loadMesh( _mesh = new sb9_mesh_type(), _filename = mesh_file );
+            mesh = loadMesh( _mesh = new sb9_mesh_type( RuntimeOrder{1} ), _filename = mesh_file );
           }
         }
         if ( !mesh )
@@ -228,8 +236,8 @@ main( int argc, char** argv )
                       << ", time step = " << dt << "\n";
         }
 
-        auto Uh = Pchv<1>( mesh );
-        auto Ah = Pdh<0>( mesh );
+        auto Uh = Pchv<Dynamic>( mesh, RuntimeOrder{1} );
+        auto Ah = Pdh<Dynamic>( mesh, RuntimeOrder{0} );
         auto Xh = productPtr( Uh, Ah );
         auto algebraBackend = backend( _rebuild=true, _worldcomm=Uh->worldCommPtr() );
 
@@ -386,7 +394,7 @@ main( int argc, char** argv )
             l( 0_c ).zero();
             l( 0_c ) += integrate( _range = elements( mesh ), _expr = rho * inner( idv( newmark_scheme->polyDeriv() ), id(v) ) );
             
-            // plate (plaque_percee or plaque_pas_percee)
+            // plate (perforated or unperforated)
             l( 0_c ) += integrate( _range = markedpoints( mesh, "force_apply" ),   
                                    _expr = inner( vec( cst(0.0), cst(0.0), - fit( expr( time ), csv_file, "Temps", "Marteau", "P1") ), id(v) ) );
             // tank (cuve)

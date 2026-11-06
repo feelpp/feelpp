@@ -62,7 +62,8 @@ void defOperator( py::module& m )
         suffix = std::string("Pdh");
     if ( !space_t::is_continuous && space_t::is_vectorial )
         suffix = std::string("Pdhv");
-    std::string pyclass_name = fmt::format( "Mass_{}_{}D_P{}", suffix, Dim, Order );
+    std::string order_label = ( Order == Dynamic ) ? "Dynamic" : std::to_string( Order );
+    std::string pyclass_name = fmt::format( "Mass_{}_{}D_P{}", suffix, Dim, order_label );
     VLOG(2) << fmt::format("[pyfeelpp] class name: {}", pyclass_name ) << std::endl;
     using elements_iterator_range_t = Range<mesh_ptr_t,MESH_ELEMENTS>;
     using faces_iterator_range_t = Range<mesh_ptr_t,MESH_FACES>;

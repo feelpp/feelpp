@@ -36,6 +36,7 @@
 #include <feel/feelfilters/filters.hpp>
 #include <feel/feelmesh/concatenate.hpp>
 #include <feel/feelmesh/intersect.hpp>
+#include <feel/feelvf/vf_dsl.hpp>
 #include <feel/feelvf/measure.hpp>
 
 
@@ -113,4 +114,3 @@ BOOST_AUTO_TEST_CASE( test_range_from_levelset )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-

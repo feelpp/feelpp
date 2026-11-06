@@ -291,7 +291,7 @@ T OpReduxProd( T init, int c2, int q,  Fun f )
  * \brief compute the sum of element array expression \p ExprT
  * \return the sum of the elements of expression v along the first array dimension whose size does not equal 1.
  */
-template <VfExpr ExprT, typename T = typename  ExprT::value_type>
+template <VfExprConcept ExprT, typename T = typename  ExprT::value_type>
 inline auto
 sum( ExprT v, T init = 0. )
 {
@@ -303,7 +303,7 @@ sum( ExprT v, T init = 0. )
  * \brief compute the mean of element array expression \p ExprT
  * \return the mean of the elements of expression v along the first array dimension whose size does not equal 1.
  */
-template <VfExpr ExprT, typename T = typename  ExprT::value_type>
+template <VfExprConcept ExprT, typename T = typename  ExprT::value_type>
 inline auto
 mean( ExprT v, T init = 0. )
 {
@@ -315,7 +315,7 @@ mean( ExprT v, T init = 0. )
  * \brief compute the productpf  element array expression \p ExprT
  * \return the product of the elements of expression v along the first array dimension whose size does not equal 1.
  */
-template <VfExpr ExprT, typename T = typename  ExprT::value_type>
+template <VfExprConcept ExprT, typename T = typename  ExprT::value_type>
 inline auto
 prod( ExprT v, T init = 1. )
 {

@@ -142,9 +142,9 @@ class PublicationsTests(VersionRepoMixin, unittest.TestCase):
                 "0.111.0-preview.13",
                 dry_run=False,
                 dists=None,
+                spack_targets=(),
                 publication_rows=7,
                 publication_since="2026-01-01",
-                spack_targets=(),
             )
 
 

@@ -1,5 +1,12 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:set fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4*/
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2017-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
+#include "../discretization.hpp"
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
@@ -16,6 +23,8 @@ int main(int argc, char**argv )
     {
         po::options_description laplacianoptions( "Elasticity options" );
         laplacianoptions.add_options()
+            ( "order", po::value<int>()->default_value( 1 ), "approximation order" )
+            ( "geometry.order", po::value<int>()->default_value( 1 ), "mesh geometric transformation order" )
             ( "domain", po::value<std::string>()->default_value( "" ), "name of the subdomain where rigid body are applied, if empty then it is the full domain" )
             ( "E", po::value<double>()->default_value( 1.0e6 ), "Young modulus" )
             ( "nu", po::value<double>()->default_value( 0.3 ), "Poisson ratio" )
@@ -32,16 +41,17 @@ int main(int argc, char**argv )
                                     _email="feelpp-devel@feelpp.org"));
 
         tic();
-        auto mesh = loadMesh(_mesh=new Mesh<Simplex<FEELPP_DIM,1>>);
+        auto mesh = loadMesh(_mesh=new Mesh<Simplex<FEELPP_DIM,Dynamic>>( quickstart::geometryOrder() ));
+        quickstart::checkMeshOrder( mesh );
         toc("loadMesh");
 
         tic();
-        auto Vh = Pchv<1>( mesh );
-        auto V0hv = Pchv<0>( mesh );
+        auto Vh = Pchv<Dynamic>( mesh, quickstart::checkedOrder( "order" ) );
+        auto V0hv = Pchv<Dynamic>( mesh, RuntimeOrder{0} );
     #if FEELPP_DIM == 2
-        auto V0h = Pch<0>( mesh );
+        auto V0h = Pch<Dynamic>( mesh, RuntimeOrder{0} );
     #else
-        auto V0h = Pchv<0>( mesh );
+        auto V0h = Pchv<Dynamic>( mesh, RuntimeOrder{0} );
     #endif
         auto Xh = product( Vh, V0hv, V0h );
         toc("Vh");

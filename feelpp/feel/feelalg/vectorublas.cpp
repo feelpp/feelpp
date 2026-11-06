@@ -1,27 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-  This file is part of the Feel library
-
-  Author(s): Thibaut Metivet <thibaut.metivet@inria.fr>
-       Date: 2021-10-29
-
-  Copyright (C) 2021 Feel++ Consortium
-  Copyright (C) 2021 INRIA
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+/*
+ * SPDX-FileContributor: Thibaut Metivet <thibaut.metivet@inria.fr>
+ *
+ * SPDX-FileCopyrightText: 2021 University of Strasbourg
+ * SPDX-FileCopyrightText: 2021 INRIA
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
 #include <feel/feelalg/vectorublas.hpp>
 #include <feel/feelcore/hdf5.hpp>
@@ -385,28 +369,6 @@ typename VectorUblasBase<T>::value_type VectorUblasBase<T>::dot( const Vector<T>
     return globalRes;
 }
 
-namespace helpers {
-#if defined(FEELPP_HAS_TBB)
-template<typename VectorType>
-struct Sqrt
-{
-    VectorType M_in;
-    VectorType& M_out;
-    Sqrt( VectorType const& _in, VectorType& _out )
-        :
-        M_in( _in ), M_out( _out )
-    { }
-    void operator() ( const tbb::blocked_range<size_t>& r ) const
-    {
-        for ( size_t i = r.begin(); i != r.end(); ++i )
-        {
-            M_out[i] = math::sqrt( M_in[i] );
-        }
-    }
-};
-#endif // FEELPP_HAS_TBB
-}
-
 template< typename T >
 std::unique_ptr<VectorUblasBase<T>>
 VectorUblasBase<T>::sqrt() const
@@ -414,13 +376,8 @@ VectorUblasBase<T>::sqrt() const
     std::unique_ptr<VectorUblasBase<T>> sqrtV( this->emptyPtr() );
     sqrtV->init( this->mapPtr() );
 
-#if defined( FEELPP_HAS_TBB )
-    tbb::parallel_for( tbb::blocked_range<size_t>( 0, this->localSize() ),
-                       helpers::Sqrt<this_type>( *this, *sqrtV ) );
-#else
     for ( size_type i = 0; i < this->localSize(); ++i )
         sqrtV->operator()(i) = math::sqrt( this->operator()( i ) );
-#endif // FEELPP_HAS_TBB
 
     return sqrtV;
 }

@@ -153,23 +153,23 @@ BOOST_AUTO_TEST_CASE( test_id )
     eInterface->addRegions();
 
     auto spacePch1 = Pch<1>(mesh);
-    auto spacePch2 = Pch<2>(mesh);
+    auto spacePch2 = Pch<Dynamic>(mesh, RuntimeOrder{2});
     auto spacePchv1 = Pchv<1>(mesh);
-    auto spacePchv2 = Pchv<2>(mesh);
+    auto spacePchv2 = Pchv<Dynamic>(mesh, RuntimeOrder{2});
     auto spaceNed1h = Ned1h<0>(mesh);
 
     auto spacePchv1_omega2_submesh = Pchv<1>(submeshOmega2);
     auto spaceNed1h_omega2_submesh = Ned1h<0>(submeshOmega2);
 
     auto spacePch1_interface_submesh = Pch<1>(submeshInterface);
-    auto spacePch2_interface_submesh = Pch<2>(submeshInterface);
+    auto spacePch2_interface_submesh = Pch<Dynamic>(submeshInterface, RuntimeOrder{2});
     auto spacePchv1_interface_submesh = Pchv<1>(submeshInterface);
 
 
     auto spacePch1_omega1_range = Pch<1>(mesh,rangeEltOmega1);
-    auto spacePch2_omega1_range = Pch<2>(mesh,rangeEltOmega1);
+    auto spacePch2_omega1_range = Pch<Dynamic>(mesh,rangeEltOmega1,RuntimeOrder{2});
     auto spacePchv1_omega1_range = Pchv<1>(mesh,rangeEltOmega1);
-    auto spacePchv2_omega1_range = Pchv<2>(mesh,rangeEltOmega1);
+    auto spacePchv2_omega1_range = Pchv<Dynamic>(mesh,rangeEltOmega1,RuntimeOrder{2});
     auto spacePchv1_omega2_range = Pchv<1>(mesh,rangeEltOmega2);
     auto spaceNed1h_omega2_range = Ned1h<0>(mesh,rangeEltOmega2);
 
@@ -254,7 +254,7 @@ BOOST_AUTO_TEST_CASE( test_grad )
     eInterface->addRegions();
 
     auto spacePch1 = Pch<1>(mesh);
-    auto spacePch2 = Pch<2>(mesh);
+    auto spacePch2 = Pch<Dynamic>(mesh, RuntimeOrder{2});
     auto spacePchv1 = Pchv<1>(mesh);
     auto spaceNed1h = Ned1h<0>(mesh);
 
@@ -262,12 +262,12 @@ BOOST_AUTO_TEST_CASE( test_grad )
     auto spaceNed1h_omega2_submesh = Ned1h<0>(submeshOmega2);
 
     auto spacePch1_interface_submesh = Pch<1>(submeshInterface);
-    auto spacePch2_interface_submesh = Pch<2>(submeshInterface);
+    auto spacePch2_interface_submesh = Pch<Dynamic>(submeshInterface, RuntimeOrder{2});
     auto spacePchv1_interface_submesh = Pchv<1>(submeshInterface);
 
 
     auto spacePch1_omega1_range = Pch<1>(mesh,rangeEltOmega1);
-    auto spacePch2_omega1_range = Pch<2>(mesh,rangeEltOmega1);
+    auto spacePch2_omega1_range = Pch<Dynamic>(mesh,rangeEltOmega1,RuntimeOrder{2});
     auto spacePchv1_omega2_range = Pchv<1>(mesh,rangeEltOmega2);
     auto spaceNed1h_omega2_range = Ned1h<0>(mesh,rangeEltOmega2);
 

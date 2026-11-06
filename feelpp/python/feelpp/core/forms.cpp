@@ -446,6 +446,8 @@ PYBIND11_MODULE(_forms, m )
     using namespace Feel;
     bind_forms<Pch_type<Mesh<Simplex<2,1>>,1>>(m,"Pch_2DP1");
     bind_forms<Pch_type<Mesh<Simplex<2,1>>,2>>(m,"Pch_2DP2");
+    bind_forms<Pch_type<Mesh<Simplex<2,1>>,Dynamic>>(m,"Pch_2DPDynamic");
     bind_forms<Pch_type<Mesh<Simplex<3,1>>,1>>(m,"Pch_3DP1");
     bind_forms<Pch_type<Mesh<Simplex<3,1>>,2>>(m,"Pch_3DP2");
+    bind_forms<Pch_type<Mesh<Simplex<3,1>>,Dynamic>>(m,"Pch_3DPDynamic");
 }

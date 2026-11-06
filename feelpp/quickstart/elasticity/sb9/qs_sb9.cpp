@@ -1,11 +1,10 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-
-    SPDX-FileCopyrightText: 2026 University of Strasbourg
-
-    SPDX-License-Identifier: LGPL-3.0-or-later
-*/
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2026-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feeldiscr/pch.hpp>
@@ -47,7 +46,7 @@ namespace qsec = Feel::Quickstart::ElasticityChecks;
 namespace qsecase = Feel::Quickstart::ElasticityCase;
 namespace qssb9 = Feel::Quickstart::SB9;
 
-using mesh_type = Mesh<Hypercube<3>>;
+using mesh_type = Mesh<Hypercube<3,Dynamic>>;
 using PointConstraintConfig = qsecase::PointConstraintConfig;
 
 po::options_description
@@ -173,7 +172,7 @@ std::shared_ptr<mesh_type>
 createUnitShellMesh()
 {
     Environment::changeRepository( _directory=boost::format( "quickstart/%1%/" ) % Environment::about().appName() );
-    return createGMSHMesh( _mesh=new mesh_type,
+    return createGMSHMesh( _mesh=new mesh_type( RuntimeOrder{1} ),
                            _desc=geo( _filename="qs_sb9_unit_shell.geo",
                                       _desc=unitShellGeo(),
                                       _dim=3,
@@ -187,7 +186,7 @@ createMesh( qsecase::Config const& cfg )
 {
     if ( cfg.meshFilename.empty() )
         return createUnitShellMesh();
-    return loadMesh( _mesh=new mesh_type, _filename=cfg.meshFilename );
+    return loadMesh( _mesh=new mesh_type( RuntimeOrder{1} ), _filename=cfg.meshFilename );
 }
 
 bool
@@ -260,8 +259,8 @@ printUnknownSpaceInfo( UhType const& Uh, AhType const& Ah, XhType const& Xh )
     if ( !Environment::isMasterRank() )
         return;
 
-    std::cout << "spaces: Uh=Pchv<1> ndof=" << Uh->nDof()
-              << ", Ah=Pdh<0> ndof=" << Ah->nDof()
+    std::cout << "spaces: Uh=Q1 ndof=" << Uh->nDof()
+              << ", Ah=Q0 (discontinuous) ndof=" << Ah->nDof()
               << ", Xh=Uh x Ah ndof=" << Xh->nDof() << "\n";
 }
 
@@ -274,9 +273,9 @@ printPostprocessSpaceInfo( ScalarSpaceType const& scalarSpace,
     if ( !Environment::isMasterRank() )
         return;
 
-    std::cout << "postprocess spaces: Pch<1> ndof=" << scalarSpace->nDof()
-              << ", Pdh<0> ndof=" << cellSpace->nDof()
-              << ", Pdhms<1> ndof=" << tensorSpace->nDof() << "\n";
+    std::cout << "postprocess spaces: Q1 ndof=" << scalarSpace->nDof()
+              << ", Q0 (discontinuous) ndof=" << cellSpace->nDof()
+              << ", Q1 symmetric tensor ndof=" << tensorSpace->nDof() << "\n";
 }
 } // namespace
 
@@ -335,8 +334,8 @@ main( int argc, char** argv )
         };
 
         ticIf();
-        auto Uh = Pchv<1>( mesh );
-        auto Ah = Pdh<0>( mesh );
+        auto Uh = Pchv<Dynamic>( mesh, RuntimeOrder{1} );
+        auto Ah = Pdh<Dynamic>( mesh, RuntimeOrder{0} );
         auto Xh = productPtr( Uh, Ah );
         auto algebraBackend = backend( _rebuild=true, _worldcomm=Uh->worldCommPtr() );
         printUnknownSpaceInfo( Uh, Ah, Xh );
@@ -591,9 +590,9 @@ main( int argc, char** argv )
         auto alphah = X( 1_c );
 
         ticIf();
-        auto scalarSpace = Pch<1>( mesh );
-        auto cellSpace = Pdh<0>( mesh );
-        auto tensorSpace = Pdhms<1>( mesh );
+        auto scalarSpace = Pch<Dynamic>( mesh, RuntimeOrder{1} );
+        auto cellSpace = Pdh<Dynamic>( mesh, RuntimeOrder{0} );
+        auto tensorSpace = Pdhms<Dynamic>( mesh, RuntimeOrder{1} );
         printPostprocessSpaceInfo( scalarSpace, cellSpace, tensorSpace );
         auto thickness = vf::project( _space=cellSpace, _range=elements( mesh ), _expr=shellThickness() );
         auto area0 = vf::project( _space=cellSpace, _range=elements( mesh ), _expr=shellArea0() );

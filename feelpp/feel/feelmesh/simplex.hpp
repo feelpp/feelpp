@@ -1,12 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2006-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-
-    SPDX-FileCopyrightText: 2006 EPFL
-    SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
-
-    SPDX-License-Identifier: LGPL-3.0-or-later
-*/
 /**
    \file simplex.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -19,47 +18,46 @@
 #include <feel/feelmesh/entities.hpp>
 #include <feel/feelmesh/convex.hpp>
 #include <feel/feelmesh/simplexordering.hpp>
-
+#include <feel/feelpoly/order.hpp>
 
 namespace Feel
 {
-namespace details
-{
-template<int Order>
-struct points
-{
-    typedef mpl::vector_c<size_type, 1, Order+1, ( Order+1 )*( Order+2 )/2, ( Order+1 )*( Order+2 )*( Order+3 )/6 > type;
-    typedef mpl::vector_c<size_type, 0, Order+1-2, ( Order+1-2 )*( Order+2-2 )/2, ( Order+1-2 )*( Order+2-2 )*( Order+3-2 )/6 > interior_type;
-    typedef mpl::vector_c<size_type, 0, Order+1-2,                 Order+1-2,                             Order+1-2 > edge_type;
-    typedef mpl::vector_c<size_type, 0,         0, ( Order-1 )*( Order-2 )/2,             ( Order-1 )*( Order-2 )/2 > face_type;
-    typedef mpl::vector_c<size_type, 0,         0,                         0, ( Order-1 )*( Order-2 )*( Order-3 )/6 > volume_type;
-};
-template<>
-struct points<0>
-{
-    typedef mpl::vector_c<size_type, 1, 1, 1, 1> type;
-    typedef mpl::vector_c<size_type, 0, 1, 1, 1> interior_type;
-    typedef mpl::vector_c<size_type, 0, 1, 0, 0> edge_type;
-    typedef mpl::vector_c<size_type, 0, 0, 1, 0> face_type;
-    typedef mpl::vector_c<size_type, 0, 0, 0, 1> volume_type;
-};
-
-
-}
 class SimplexBase {};
 
 /**
  * @class Simplex
  *  @brief simplex of dimension \c Dim
  *
+ * Supports both static order (default, backward compatible) and dynamic order.
+ * For dynamic order, use Simplex<Dim, Dynamic, RDim> and construct with Order(n).
+ *
  *  @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  */
-template<uint16_type Dim,
-         uint16_type Order = 1,
-         uint16_type RDim = Dim>
-class Simplex : public Convex<Dim,Order,RDim>, SimplexBase
+template<int Dim,
+         int Order = 1,
+         int RDim = Dim>
+class Simplex : public Convex<
+                    Dim,
+                    ( OrderBase<Order>::order_spec >= 0
+                          ? OrderBase<Order>::order_spec
+                          : 1 ),
+                    RDim>,
+                public OrderBase<Order>, SimplexBase
 {
+public:
+    using order_base_type = OrderBase<Order>;
+    using order_base_type::order;
+
+    //! @name Order type detection
+    //! @{
+    static constexpr bool is_order_static = order_base_type::is_order_static;
+    static constexpr bool is_order_dynamic = order_base_type::is_order_dynamic;
+    //! @}
+
 private:
+    //! Placeholder order used for internal type computations when Order is Dynamic
+    static constexpr int OrderPlaceholder =
+        is_order_static ? order_base_type::order_spec : 1;
     /**
      * for Dim >= 3 : n edges = n(vertices) + n(faces) - 2
      * thanks to Euler formula
@@ -70,20 +68,14 @@ private:
     typedef mpl::vector_c<uint16_type, 0, 0, 0, 1> volumes_t;
     typedef mpl::vector_c<uint16_type, 0, 2, 3, 4> normals_t;
 
-    typedef typename Feel::details::points<Order>::type points_t;
-    typedef typename Feel::details::points<Order>::interior_type points_interior_t;
-    typedef typename Feel::details::points<Order>::edge_type points_edge_t;
-    typedef typename Feel::details::points<Order>::face_type points_face_t;
-    typedef typename Feel::details::points<Order>::volume_type points_volume_t;
-
     typedef mpl::vector_c<size_type, SHAPE_POINT, SHAPE_LINE, SHAPE_TRIANGLE, SHAPE_TETRA> shapes_t;
     typedef mpl::vector_c<size_type, GEOMETRY_POINT, GEOMETRY_LINE, GEOMETRY_SURFACE, GEOMETRY_VOLUME> geometries_t;
 
-    static constexpr int computeOrderTriangle() 
+    static constexpr int computeOrderTriangle()
         {
-            if constexpr ( Order > 5 ) return 5;
-            if constexpr ( Order < 1 ) return 1;
-            return Order;
+            if constexpr ( OrderPlaceholder > 5 ) return 5;
+            if constexpr ( OrderPlaceholder < 1 ) return 1;
+            return OrderPlaceholder;
         }
     inline static constexpr int orderTriangle = computeOrderTriangle();
 
@@ -100,7 +92,7 @@ private:
                             Simplex<2, Order, rdim> > type;
     };
 
-    typedef mpl::vector<Simplex<0, Order,0>, Simplex<1, Order,1>, Simplex<1, Order, 2>, Simplex<1, Order, 3>, boost::none_t > v_edges_t;
+    typedef mpl::vector<Simplex<0, Order, 0>, Simplex<1, Order, 1>, Simplex<1, Order, 2>, Simplex<1, Order, 3>, boost::none_t > v_edges_t;
     typedef mpl::vector<Simplex<1, Order>, Simplex<2, Order>, Simplex<3, Order>, boost::none_t > elements_t;
 
 public:
@@ -108,8 +100,13 @@ public:
     static inline const bool is_simplex = true;
     static inline const bool is_hypercube = false;
 
+    static constexpr int order_spec = order_base_type::order_spec;
     static inline const uint16_type nDim = Dim;
-    static inline const uint16_type nOrder = Order;
+    //! Static order value (backward compatibility only).
+    //! WARNING: for dynamic order types, this is a placeholder (0). Use order().
+    static inline const uint16_type nOrder = is_order_static ? static_cast<uint16_type>( order_spec ) : 0;
+    //! Template order parameter value (may be Dynamic = -1)
+    static constexpr int nOrder_v = order_spec;
     static inline const uint16_type nRealDim = RDim;
 
     static inline const uint16_type topological_dimension = nDim;
@@ -184,14 +181,26 @@ public:
 
     static inline const uint16_type numNormals = mpl::at<normals_t, mpl::int_<nDim> >::type::value;
 
-    static inline const uint16_type nbPtsPerVertex = ( nOrder==0 )?0:1;
-    static inline const uint16_type nbPtsPerEdge = mpl::at<points_edge_t, mpl::int_<nDim> >::type::value;
-    static inline const uint16_type nbPtsPerFace = mpl::at<points_face_t, mpl::int_<nDim> >::type::value;
-    static inline const uint16_type nbPtsPerVolume = mpl::at<points_volume_t, mpl::int_<nDim> >::type::value;
-    static inline const uint16_type numPoints = ( numVertices * nbPtsPerVertex +
-                                           numEdges * nbPtsPerEdge +
-                                           numFaces * nbPtsPerFace +
-                                           numVolumes * nbPtsPerVolume );
+    //! Static point counts derived from the shared cardinality kernel.
+    static constexpr uint16_type nbPtsPerVertex_static =
+        detail::SimplexCardinality::perVertex( nDim, OrderPlaceholder );
+    static constexpr uint16_type nbPtsPerEdge_static =
+        detail::SimplexCardinality::perEdge( nDim, OrderPlaceholder );
+    static constexpr uint16_type nbPtsPerFace_static =
+        detail::SimplexCardinality::perFace( nDim, OrderPlaceholder );
+    static constexpr uint16_type nbPtsPerVolume_static =
+        detail::SimplexCardinality::perVolume( nDim, OrderPlaceholder );
+    static constexpr uint16_type numPoints_static = static_cast<uint16_type>(
+        detail::SimplexCardinality::total( nDim, OrderPlaceholder ) );
+
+    //! Backward compatible static constants.
+    //! WARNING: for dynamic order types, these are placeholder P1-layout values.
+    //! Use nPointsOn*()/nPointsTotal() for runtime-correct values.
+    static inline const uint16_type nbPtsPerVertex = nbPtsPerVertex_static;
+    static inline const uint16_type nbPtsPerEdge = nbPtsPerEdge_static;
+    static inline const uint16_type nbPtsPerFace = nbPtsPerFace_static;
+    static inline const uint16_type nbPtsPerVolume = nbPtsPerVolume_static;
+    static inline const uint16_type numPoints = numPoints_static;
 
     typedef typename mpl::at<map_entity_to_point_t, mpl::int_<nDim> >::type edge_to_point_t;
     typedef typename mpl::at<map_entity_to_point_t, mpl::int_<nDim> >::type face_to_point_t;
@@ -225,16 +234,52 @@ public:
     using PermutationSubEntity = typename mpl::at_c<permutation_by_subentity_type,N-1>::type;
 
 
-    Simplex() = default;
+    //! @name Constructors
+    //! @{
+
+    //! Default constructor (only for static order)
+    Simplex() requires( is_order_static ) = default;
+
+    //! Constructor with runtime order (only for dynamic order)
+    explicit Simplex( Feel::RuntimeOrder o ) requires( is_order_dynamic )
+        : order_base_type(
+              Feel::detail::validatedNodalOrder<
+                  Feel::detail::SimplexCardinality>( Dim, o ) )
+    {
+    }
+
     Simplex( Simplex const& ) = default;
-    Simplex( Simplex && ) = default;
+    Simplex( Simplex&& ) = default;
     Simplex& operator=( Simplex const& ) = default;
-    Simplex& operator=( Simplex && ) = default;
+    Simplex& operator=( Simplex&& ) = default;
+
+    //! @}
+
+    //! @name Order accessors
+    //! @{
+
+    /**
+     * @brief Clear the construction-only order after mesh attachment.
+     */
+    void clearDetachedOrder() noexcept
+        requires( is_order_dynamic )
+    {
+        this->setOrder( RuntimeOrder{ 0 } );
+    }
+
+    //! Static-only order accessor (deleted for dynamic types)
+    static constexpr uint16_type staticOrder() requires( is_order_static )
+    {
+        return order_base_type::staticOrder();
+    }
+    static constexpr uint16_type staticOrder() requires( is_order_dynamic ) = delete;
+
+    //! @}
 
     /**
      * \return the topological dimension of the simplex
      */
-    uint16_type topologicalDimension() const
+    [[nodiscard]] uint16_type topologicalDimension() const noexcept
     {
         return topological_dimension;
     }
@@ -242,42 +287,68 @@ public:
     /**
      * \return the dimension of the space where the simplex resides
      */
-    uint16_type dimension() const
+    [[nodiscard]] uint16_type dimension() const noexcept
     {
         return real_dimension;
     }
 
+    //! @name Point count accessors (work for both static and dynamic order)
+    //! @{
+
     /**
      * Returns the number of points per vertex
      */
-    static uint16_type nPointsOnVertex()
+    [[nodiscard]] constexpr uint16_type nPointsOnVertex() const noexcept
     {
-        return nbPtsPerVertex;
+        return detail::SimplexCardinality::perVertex( nDim, order() );
     }
 
     /**
      * Returns the number of points per edge
      */
-    static uint16_type nPointsOnEdge()
+    [[nodiscard]] constexpr uint16_type nPointsOnEdge() const noexcept
     {
-        return nbPtsPerEdge;
+        return detail::SimplexCardinality::perEdge( nDim, order() );
     }
 
     /**
      * Returns the number of points per face
      */
-    static uint16_type nPointsOnFace()
+    [[nodiscard]] constexpr uint16_type nPointsOnFace() const noexcept
     {
-        return nbPtsPerFace;
+        return detail::SimplexCardinality::perFace( nDim, order() );
     }
 
     /**
      * Returns the number of points per volume
      */
-    static uint16_type nPointsOnVolume()
+    [[nodiscard]] constexpr uint16_type nPointsOnVolume() const noexcept
     {
-        return nbPtsPerVolume;
+        return detail::SimplexCardinality::perVolume( nDim, order() );
     }
+
+    /**
+     * Returns the total number of points (works for both static and dynamic order)
+     */
+    [[nodiscard]] constexpr uint16_type nPointsTotal() const noexcept
+    {
+        return static_cast<uint16_type>(
+            detail::SimplexCardinality::total( nDim, order() ) );
+    }
+
+    //! Static-only point-count accessors (deleted for dynamic types)
+    static constexpr uint16_type staticPointsPerVertex() requires( is_order_static ) { return nbPtsPerVertex_static; }
+    static constexpr uint16_type staticPointsPerVertex() requires( is_order_dynamic ) = delete;
+    static constexpr uint16_type staticPointsPerEdge() requires( is_order_static ) { return nbPtsPerEdge_static; }
+    static constexpr uint16_type staticPointsPerEdge() requires( is_order_dynamic ) = delete;
+    static constexpr uint16_type staticPointsPerFace() requires( is_order_static ) { return nbPtsPerFace_static; }
+    static constexpr uint16_type staticPointsPerFace() requires( is_order_dynamic ) = delete;
+    static constexpr uint16_type staticPointsPerVolume() requires( is_order_static ) { return nbPtsPerVolume_static; }
+    static constexpr uint16_type staticPointsPerVolume() requires( is_order_dynamic ) = delete;
+    static constexpr uint16_type staticNumPoints() requires( is_order_static ) { return numPoints_static; }
+    static constexpr uint16_type staticNumPoints() requires( is_order_dynamic ) = delete;
+
+    //! @}
 
     /**
      * \return the number of polynomials of total degree \c n on the
@@ -300,8 +371,7 @@ public:
 
         else if constexpr ( nDim == 3 )
             return std::max( 0, ( n+1 )*( n+2 )*( n+3 )/6 );
-        
-        BOOST_STATIC_ASSERT( nDim == 0 || nDim == 1 || nDim == 2 || nDim == 3 );
+
         return -1;
     }
 
@@ -346,9 +416,10 @@ public:
     }
 
     /**
-     * \return the name of the simplex
+     * \return the name of the simplex (static version for backward compat)
      */
     static std::string name()
+        requires( is_order_static )
     {
         std::ostringstream ostr;
         ostr << "Simplex"
@@ -360,6 +431,24 @@ public:
              << nRealDim;
         return ostr.str();
     }
+
+    /**
+     * \return the name of the simplex (instance method for dynamic order)
+     */
+    [[nodiscard]] std::string name() const
+        requires( is_order_dynamic )
+    {
+        std::ostringstream ostr;
+        ostr << "Simplex"
+             << "_"
+             << nDim
+             << "_"
+             << order()
+             << "_"
+             << nRealDim;
+        return ostr.str();
+    }
+
     static std::string type()
     {
         return "simplex";

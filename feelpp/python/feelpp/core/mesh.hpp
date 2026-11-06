@@ -125,7 +125,7 @@ void defMesh(py::module &m)
     pyclass_name += suffix;
     py::class_<mesh_t,std::shared_ptr<mesh_t>>(m,pyclass_name.c_str())
         .def(py::init<worldcomm_ptr_t const&>(),py::arg("worldComm"),"Construct a new mesh")
-        .def_static("create",&mesh_t::New,"Construct a new shared_ptr mesh")
+        .def_static("create",py::overload_cast<worldcomm_ptr_t const&>(&mesh_t::New),"Construct a new shared_ptr mesh")
         .def("dimension",&mesh_t::dimension,"get topological dimension")
         .def("order",[]( mesh_ptr_t const& m ) { return mesh_t::nOrder; } ,"get the order of the mesh(order of the element-wise egeometric transformation)")
         .def("realDimension",&mesh_t::realDimension,"get real dimension")

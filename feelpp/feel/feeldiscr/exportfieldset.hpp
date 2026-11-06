@@ -1,26 +1,8 @@
 /*
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-01-12
-
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2006-2012 Universite Joseph Fourier
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileCopyrightText: 2006-2012 Universite Joseph Fourier
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 //! \file exportfieldset.hpp
 //! \brief Time-neutral export fields shared by exporters and temporal steps.
 //!
@@ -63,7 +45,8 @@
 
 #include <feel/feeldiscr/elementdiv.hpp>
 #include <feel/feelmesh/filters.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/fieldops.hpp>
+#include <feel/feelvf/projectors.hpp>
 
 namespace Feel
 {
@@ -83,7 +66,14 @@ template <typename MeshType, int N = 1> class ExportFieldSet
     using size_type = typename mesh_type::size_type;
 
     using scalar_p0_space_type = Pdh_type<MeshType, 0>;
-    using scalar_p1_space_type = Pch_type<MeshType, N /*1*/>;
+    // Exporters address nodal values by geometric point index. Geometry uses
+    // equispaced nodes, whereas the default Fekete nodes differ above G2.
+    // Retain the existing static G1/G2 types, whose nodes coincide, so their
+    // managed conversion spaces can still be shared with application spaces.
+    using scalar_p1_space_type = std::conditional_t<
+        ( N == Dynamic || N > 2 ),
+        Pch_type<MeshType, N, double, PointSetEquiSpaced>,
+        Pch_type<MeshType, N>>;
     using scalar_p0_space_ptrtype = std::shared_ptr<scalar_p0_space_type>;
     using scalar_p1_space_ptrtype = std::shared_ptr<scalar_p1_space_type>;
 
@@ -843,6 +833,15 @@ template <typename MeshType, int N = 1> class ExportFieldSet
     scalarFunctionSpace( FunctionType const &func = std::nullopt,
                          typename std::enable_if<isNodal>::type * = nullptr )
     {
+        auto makeSpace = [&]() {
+            if constexpr ( N == Dynamic )
+                return Pch<N, double, PointSetEquiSpaced>(
+                    M_mesh.value(), RuntimeOrder{ M_mesh.value()->order() } );
+            else if constexpr ( N > 2 )
+                return Pch<N, double, PointSetEquiSpaced>( M_mesh.value() );
+            else
+                return Pch<N>( M_mesh.value() );
+        };
         auto &sharedSpace = M_spaceCache->M_p1;
         if ( !sharedSpace )
         {
@@ -850,16 +849,17 @@ template <typename MeshType, int N = 1> class ExportFieldSet
                 if constexpr ( std::is_same_v<scalar_p1_space_type,
                                               typename FunctionType::functionspace_type> )
                     if ( func.mesh() == M_mesh &&
+                         ( N != Dynamic || func.functionSpace()->order() == M_mesh.value()->order() ) &&
                          !func.functionSpace()->dof()->hasDofTableExtended() &&
                          support( func.functionSpace() )->isFullSupport() )
                         sharedSpace = func.functionSpace();
             if ( !sharedSpace )
-                sharedSpace = Pch<N>( M_mesh.value() );
+                sharedSpace = makeSpace();
         }
         if ( M_mesh.value() == sharedSpace->mesh() )
             M_scalarP1 = sharedSpace;
         else if ( !M_scalarP1 || M_mesh.value() != M_scalarP1->mesh() )
-            M_scalarP1 = Pch<N>( M_mesh.value() );
+            M_scalarP1 = makeSpace();
         return M_scalarP1;
     }
 

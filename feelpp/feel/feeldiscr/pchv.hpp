@@ -32,6 +32,7 @@
 #include <boost/mp11/utility.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/functionspacemanager.hpp>
+#include <feel/feelpoly/order.hpp>
 
 namespace Feel
 {
@@ -40,8 +41,8 @@ namespace meta
 {
 
 template<typename MeshType,
-         int Order,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         int Order = Dynamic,
+         template<class, int, class> class Pts = PointSetFekete,
          typename T = double,
          int Tag = 0>
 struct Pchv
@@ -53,22 +54,22 @@ struct Pchv
 } // meta
 
 template<typename MeshType,
-         int Order,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         int Order = Dynamic,
+         template<class, int, class> class Pts = PointSetFekete,
          typename T = double,
          int Tag = 0>
 using Pchv_type = typename meta::Pchv<MeshType,Order,Pts,T,Tag>::type;
 template<typename MeshType,
-         int Order,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         int Order = Dynamic,
+         template<class, int, class> class Pts = PointSetFekete,
          typename T = double,
          int Tag = 0>
 using Pchv_ptrtype = typename meta::Pchv<MeshType,Order,Pts,T,Tag>::ptrtype;
 
-template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetFekete,typename T = double,int Tag = 0>
+template<typename MeshType,int Order = Dynamic,template<class, int, class> class Pts = PointSetFekete,typename T = double,int Tag = 0>
 using Pchv_element_t=typename Pchv_type<MeshType,Order,Pts,T,Tag>::element_type;
 
-template<typename MeshType,int Order,template<class, uint16_type, class> class Pts = PointSetFekete,typename T = double,int Tag = 0>
+template<typename MeshType,int Order = Dynamic,template<class, int, class> class Pts = PointSetFekete,typename T = double,int Tag = 0>
 using Pchv_element_type=Pchv_element_t<MeshType,Order,Pts,T,Tag>;
 
 
@@ -88,44 +89,94 @@ using Pchv_element_type=Pchv_element_t<MeshType,Order,Pts,T,Tag>;
  * @param dte extended DOF-table mode
  * @return continuous vector function space
  */
-template<int Order,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+template<int Order = Dynamic,
+         template<class, int, class> class Pts = PointSetFekete,
          typename MeshType,
          typename T = double,
          int Tag = 0>
 inline
 Pchv_ptrtype<MeshType,Order,Pts,T,Tag>
-Pchv( std::shared_ptr<MeshType> const& mesh, DofTableExtendedType dte = DofTableExtendedType::DEFAULT  )
+Pchv( std::shared_ptr<MeshType> const& mesh,
+      RuntimeOrder order,
+      DofTableExtendedType dte = DofTableExtendedType::DEFAULT  )
 {
     using space_type = Pchv_type<MeshType,Order,Pts,T,Tag>;
+    order = validatedOrder<typename space_type::reference_element_type>( order );
     return getOrCreateWholeMeshFunctionSpace<space_type>(
-        mesh, dte,
-        FunctionSpaceReusePolicy::automatic,
+        mesh, dte, FunctionSpaceReusePolicy::automatic,
         [&]()
         {
             return space_type::New( _mesh=mesh,
-                                    _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
-                                    _extended_doftable=dte );
-        } );
+                                   _worldscomm=makeWorldsComm( 1, mesh->worldComm() ),
+                                   _extended_doftable=dte,
+                                   _runtime_order=order );
+        }, Order == Dynamic ? static_cast<int>( order.value ) : -1 );
+}
+
+template<int Order,
+         template<class, int, class> class Pts = PointSetFekete,
+         typename MeshType,
+         typename T=double,
+         int Tag = 0>
+    requires ( Order >= 0 )
+inline
+Pchv_ptrtype<MeshType,Order,Pts,T,Tag>
+Pchv( std::shared_ptr<MeshType> const& mesh,
+      DofTableExtendedType dte = DofTableExtendedType::DEFAULT  )
+{
+    return Pchv<Order,Pts,MeshType,T,Tag>( mesh,
+                                           RuntimeOrder{ static_cast<uint16_type>( Order ) },
+                                           dte );
 }
 
 /**
- * @brief Build a whole-mesh continuous vector Lagrange space using named arguments.
- *
- * Supported arguments are the required @c _mesh and the optional
- * @c _extended_doftable and @c _fspace_reuse_policy keywords. The reuse policy
- * defaults to @ref FunctionSpaceReusePolicy::automatic.
- *
- * @tparam Order polynomial order
- * @tparam Pts interpolation point-set family
- * @tparam T coefficient value type
- * @tparam Tag basis tag used to distinguish otherwise identical spaces
- * @tparam Ts named-argument types
- * @param v named arguments controlling mesh, DOF table, and reuse policy
- * @return continuous vector function space
+ Given a \p mesh, build a function space of vectorial continuous function
+ which are piecewise polynomial of degree (total or in each variable) less
+ than k using Lagrange basis functions
  */
+template<int Order = Dynamic,
+         template<class, int, class> class Pts = PointSetFekete,
+         typename MeshType,typename RangeType,
+         typename T=double,
+         int Tag = 0>
+inline
+Pchv_ptrtype<MeshType,Order,Pts,T,Tag>
+Pchv( std::shared_ptr<MeshType> const& mesh,
+      RangeType&& rangeElt,
+      RuntimeOrder order,
+      DofTableExtendedType dte = DofTableExtendedType::DEFAULT  )
+{
+    return Pchv_type<MeshType,Order,Pts,T,Tag>::New( _mesh=mesh,
+                                                     _range=std::forward<RangeType>(rangeElt),
+                                                     _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
+                                                     _extended_doftable=dte,
+                                                     _runtime_order=order );
+}
+
 template<int Order,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
+         typename MeshType,typename RangeType,
+         typename T=double,
+         int Tag = 0>
+    requires ( Order >= 0 )
+inline
+Pchv_ptrtype<MeshType,Order,Pts,T,Tag>
+Pchv( std::shared_ptr<MeshType> const& mesh,
+      RangeType&& rangeElt,
+      DofTableExtendedType dte = DofTableExtendedType::DEFAULT  )
+{
+    return Pchv_type<MeshType,Order,Pts,T,Tag>::New( _mesh=mesh,
+                                                     _range=std::forward<RangeType>(rangeElt),
+                                                     _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
+                                                     _extended_doftable=dte,
+                                                     _runtime_order=RuntimeOrder{ static_cast<uint16_type>( Order ) } );
+}
+
+
+
+/** @brief Managed whole-mesh factory; dynamic orders require `_runtime_order`. */
+template<int Order,
+         template<class, int, class> class Pts = PointSetFekete,
          typename T = double,
          int Tag = 0,
          typename... Ts>
@@ -140,37 +191,25 @@ Pchv( Ts&&... v )
                                  FunctionSpaceReusePolicy::automatic );
     using mesh_type = typename std::decay_t<decltype( mesh )>::element_type;
     using space_type = Pchv_type<mesh_type,Order,Pts,T,Tag>;
+    auto order = [&]()
+    {
+        if constexpr ( Order == Dynamic )
+            return args.get( _runtime_order );
+        else
+            return args.get_else( _runtime_order, RuntimeOrder{ Order } );
+    }();
+    order = validatedOrder<typename space_type::reference_element_type>( order );
     return getOrCreateWholeMeshFunctionSpace<space_type>(
         mesh, dte,
         policy,
         [&]()
         {
             return space_type::New( _mesh=mesh,
-                                    _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
-                                    _extended_doftable=dte );
-        } );
+                                   _worldscomm=makeWorldsComm( 1, mesh->worldComm() ),
+                                   _extended_doftable=dte,
+                                   _runtime_order=order );
+        }, Order == Dynamic ? static_cast<int>( order.value ) : -1 );
 }
-
-/**
- Given a \p mesh, build a function space of vectorial continuous function
- which are piecewise polynomial of degree (total or in each variable) less
- than k using Lagrange basis functions
- */
-template<int Order,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
-         typename MeshType,typename RangeType,
-         typename T=double,
-         int Tag = 0>
-inline
-Pchv_ptrtype<MeshType,Order,Pts,T,Tag>
-Pchv( std::shared_ptr<MeshType> const& mesh, RangeType && rangeElt, DofTableExtendedType dte = DofTableExtendedType::DEFAULT  )
-{
-    return Pchv_type<MeshType,Order,Pts,T,Tag>::New( _mesh=mesh,
-                                                   _range=std::forward<RangeType>(rangeElt),
-                                                   _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
-                                                   _extended_doftable=dte );
-}
-
 
 }
 

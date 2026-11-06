@@ -1,19 +1,29 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-  SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-  SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+    SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
 
-  SPDX-FileCopyrightText: 2005-2006 EPFL
-  SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
-  SPDX-License-Identifier: LGPL-3.0-or-later
+    SPDX-FileCopyrightText: 2005-2006 EPFL
+    SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
+
+    SPDX-License-Identifier: LGPL-3.0-or-later
 */
-
+/**
+   @file points.hpp
+   @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+   @date 2005-09-03
+   @brief Points container class (C++20/23 modernized)
+ */
 #ifndef FEELPP_MESH_POINTS_HPP
 #define FEELPP_MESH_POINTS_HPP
 
+#include <concepts>
+#include <functional>
+#include <type_traits>
 #include <unordered_map>
 
 #include <feel/feelcore/commobject.hpp>
+#include <feel/feelmesh/geocoordinatestorage.hpp>
 #include <feel/feelmesh/geoelement.hpp>
 
 namespace Feel
@@ -35,23 +45,35 @@ class Points
     //@{
     using index_type = IndexT;
     using size_type = index_type;
-    typedef GeoElement0D<nDim, SubFace, T, IndexT> point_type;
+    using point_type = GeoElement0D<nDim, SubFace, T, IndexT>;
+    /** Mesh-owned sparse metadata storage for points. */
+    using sparse_metadata_storage_type =
+        typename point_type::sparse_metadata_storage_type;
+    /** Aligned mesh-owned coordinate storage. */
+    using coordinate_storage_type =
+        GeoCoordinateStorage<nDim, T, index_type>;
+    /** Read-only zero-copy Eigen coordinate map. */
+    using coordinate_const_map_type =
+        typename coordinate_storage_type::const_map_type;
+    /** Mutable zero-copy Eigen coordinate map. */
+    using coordinate_map_type =
+        typename coordinate_storage_type::map_type;
 
-    typedef std::unordered_map<size_type, point_type> points_type;
+    using points_type = std::unordered_map<size_type, point_type>;
 
-    typedef typename points_type::iterator point_iterator;
-    typedef typename points_type::const_iterator point_const_iterator;
+    using point_iterator = typename points_type::iterator;
+    using point_const_iterator = typename points_type::const_iterator;
 
-    typedef std::vector<boost::reference_wrapper<point_type const>> points_reference_wrapper_type;
-    typedef std::shared_ptr<points_reference_wrapper_type> points_reference_wrapper_ptrtype;
-    typedef typename points_reference_wrapper_type::iterator point_reference_wrapper_iterator;
-    typedef typename points_reference_wrapper_type::const_iterator point_reference_wrapper_const_iterator;
+    using points_reference_wrapper_type = std::vector<boost::reference_wrapper<point_type const>>;
+    using points_reference_wrapper_ptrtype = std::shared_ptr<points_reference_wrapper_type>;
+    using point_reference_wrapper_iterator = typename points_reference_wrapper_type::iterator;
+    using point_reference_wrapper_const_iterator = typename points_reference_wrapper_type::const_iterator;
 
-    typedef std::vector<boost::reference_wrapper<point_type>> ordered_points_reference_wrapper_type;
-    typedef typename ordered_points_reference_wrapper_type::iterator ordered_point_reference_wrapper_iterator;
-    typedef typename ordered_points_reference_wrapper_type::const_iterator ordered_point_reference_wrapper_const_iterator;
+    using ordered_points_reference_wrapper_type = std::vector<boost::reference_wrapper<point_type>>;
+    using ordered_point_reference_wrapper_iterator = typename ordered_points_reference_wrapper_type::iterator;
+    using ordered_point_reference_wrapper_const_iterator = typename ordered_points_reference_wrapper_type::const_iterator;
 
-    using point_interprocess_map_type = std::unordered_map<index_type,std::set<rank_type>>;
+    using point_interprocess_map_type = std::unordered_map<index_type, std::set<rank_type>>;
 
     //@}
 
@@ -62,6 +84,8 @@ class Points
     explicit Points( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
         : M_worldComm( worldComm ),
           M_points(),
+          M_sparseMetadata(),
+          M_coordinateStorage(),
           M_needToOrderPoints( false )
     {
     }
@@ -69,9 +93,13 @@ class Points
     Points( Points const& f )
         : M_worldComm( f.M_worldComm ),
           M_points( f.M_points ),
+          M_sparseMetadata(),
+          M_coordinateStorage(),
           M_needToOrderPoints( false )
     {
+        this->bindSparseMetadata();
         this->buildOrderedPoints();
+        this->synchronizePointCoordinates();
     }
 
     virtual ~Points() {}
@@ -81,6 +109,8 @@ class Points
         DVLOG( 1 ) << "deleting points...\n";
         M_orderedPoints.clear();
         M_points.clear();
+        M_sparseMetadata.clear();
+        M_coordinateStorage.clear();
         M_needToOrderPoints = false;
     }
 
@@ -95,8 +125,11 @@ class Points
         if ( this != &e )
         {
             M_worldComm = e.M_worldComm;
+            M_sparseMetadata.clear();
             M_points = e.M_points;
+            this->bindSparseMetadata();
             this->buildOrderedPoints();
+            this->synchronizePointCoordinates();
         }
 
         return *this;
@@ -109,7 +142,13 @@ class Points
     //@{
 
     /**
-     * \return the points container
+     * @brief Return the mutable compatibility point container.
+     *
+     * Direct coordinate edits require `synchronizePointCoordinates()` before
+     * compact-coordinate consumers run. Prefer `editPointCoordinates()` for
+     * transactional zero-copy coordinate updates.
+     *
+     * @return mutable point container
      */
     points_type& points()
     {
@@ -122,6 +161,134 @@ class Points
     points_type const& points() const
     {
         return M_points;
+    }
+
+    /**
+     * @brief Return populated point sparse-sidecar counts.
+     */
+    [[nodiscard]] GeoEntitySparseMetadataStatistics
+    pointSparseMetadataStatistics() const noexcept
+    {
+        return M_sparseMetadata.statistics();
+    }
+
+    /** @brief Return compact point-connectivity occupancy counters. */
+    [[nodiscard]] GeoEntityConnectivityStatistics
+    pointConnectivityStatistics() const noexcept
+    {
+        return M_sparseMetadata.connectivityStatistics();
+    }
+
+    /**
+     * @brief Return an immutable zero-copy Eigen map of point coordinates.
+     *
+     * The map is invalidated by insertion, erase, clear, or explicit
+     * coordinate synchronization.
+     */
+    [[nodiscard]] coordinate_const_map_type
+    pointCoordinates() const noexcept
+    {
+        return M_coordinateStorage.coordinates();
+    }
+
+    /**
+     * @brief Return a mutable zero-copy Eigen map of point coordinates.
+     *
+     * Mutating this map updates the compact coordinate storage only. Prefer
+     * `editPointCoordinates()` when compatibility point objects must observe
+     * the edit immediately, or call `synchronizeLegacyPointCoordinates()`.
+     */
+    [[nodiscard]] coordinate_map_type
+    pointCoordinates() noexcept
+    {
+        return M_coordinateStorage.coordinates();
+    }
+
+    /**
+     * @brief Return the dense local index of an external point identifier.
+     * @param id external point identifier
+     */
+    [[nodiscard]] uint32_type pointLocalIndex( index_type id ) const
+    {
+        return M_coordinateStorage.localIndex( id );
+    }
+
+    /** @brief Return coordinate-storage occupancy and lookup counters. */
+    [[nodiscard]] GeoCoordinateStorageStatistics
+    pointCoordinateStorageStatistics() const noexcept
+    {
+        return M_coordinateStorage.statistics();
+    }
+
+    /**
+     * @brief Rebuild aligned coordinates from the legacy point facade.
+     *
+     * This compatibility boundary is required after code mutates legacy
+     * point nodes directly. It can be removed once points are non-owning
+     * views of the compact coordinate storage.
+     */
+    void synchronizePointCoordinates()
+    {
+        M_coordinateStorage.clear();
+        M_coordinateStorage.reserve( M_orderedPoints.size() );
+        for ( auto const& pointReference : M_orderedPoints )
+        {
+            auto const& point = unwrap_ref( pointReference );
+            auto const& node = point.node();
+            (void)M_coordinateStorage.append(
+                point.id(),
+                std::span<T const>(
+                    node.data().begin(), node.size() ) );
+        }
+    }
+
+    /**
+     * @brief Copy compact coordinate edits back to legacy point objects.
+     *
+     * This compatibility operation is temporary while point objects still
+     * own coordinate values independently of the compact storage.
+     */
+    void synchronizeLegacyPointCoordinates()
+    {
+        auto coordinates = M_coordinateStorage.coordinates();
+        for ( uint32_type localIndex = 0;
+              localIndex < M_coordinateStorage.size();
+              ++localIndex )
+        {
+            auto& point = this->point(
+                M_coordinateStorage.externalId( localIndex ) );
+            for ( uint16_type component = 0;
+                  component < nDim; ++component )
+                point( component ) =
+                    coordinates( component, localIndex );
+        }
+    }
+
+    /**
+     * @brief Apply an edit to compact coordinates and update legacy points.
+     *
+     * The editor receives a mutable zero-copy Eigen map. Synchronization is
+     * performed on normal return and during exception unwinding.
+     *
+     * @tparam Editor callable accepting `coordinate_map_type&`
+     * @param editor coordinate edit operation
+     */
+    template <typename Editor>
+        requires std::invocable<Editor&, coordinate_map_type&>
+    void editPointCoordinates( Editor&& editor )
+    {
+        auto coordinates = M_coordinateStorage.coordinates();
+        try
+        {
+            std::invoke(
+                std::forward<Editor>( editor ), coordinates );
+        }
+        catch ( ... )
+        {
+            this->synchronizeLegacyPointCoordinates();
+            throw;
+        }
+        this->synchronizeLegacyPointCoordinates();
     }
 
     virtual bool isEmpty() const
@@ -525,6 +692,12 @@ class Points
         auto& newPoint = ret.first->second;
         if ( ret.second )
         {
+            newPoint.attachSparseMetadataStorage( M_sparseMetadata );
+            auto const& node = newPoint.node();
+            (void)M_coordinateStorage.append(
+                newPoint.id(),
+                std::span<T const>(
+                    node.data().begin(), node.size() ) );
             if ( !M_needToOrderPoints && !M_orderedPoints.empty() && unwrap_ref( M_orderedPoints.back() ).id() > newPoint.id() )
                 M_needToOrderPoints = true;
             M_orderedPoints.push_back( boost::ref( newPoint ) );
@@ -544,6 +717,12 @@ class Points
         auto& newPoint = ret.first->second;
         if ( ret.second )
         {
+            newPoint.attachSparseMetadataStorage( M_sparseMetadata );
+            auto const& node = newPoint.node();
+            (void)M_coordinateStorage.append(
+                newPoint.id(),
+                std::span<T const>(
+                    node.data().begin(), node.size() ) );
             if ( !M_needToOrderPoints && !M_orderedPoints.empty() && unwrap_ref( M_orderedPoints.back() ).id() > newPoint.id() )
                 M_needToOrderPoints = true;
             M_orderedPoints.push_back( boost::ref( newPoint ) );
@@ -563,10 +742,16 @@ class Points
     point_iterator erasePoint( point_iterator it )
     {
         size_type erasedId = it->first;
+        auto itOrdered = std::find_if(
+            M_orderedPoints.begin(), M_orderedPoints.end(),
+            [&erasedId]( auto& pointWrap )
+            {
+                return unwrap_ref( pointWrap ).id() == erasedId;
+            } );
+        it->second.clearEntityStorage();
         auto itret = M_points.erase( it );
-        auto itOrdered = std::find_if( M_orderedPoints.begin(), M_orderedPoints.end(),
-                                       [&erasedId]( auto& pointWrap ) { return unwrap_ref( pointWrap ).id() == erasedId; } );
         M_orderedPoints.erase( itOrdered );
+        this->synchronizePointCoordinates();
         return itret;
     }
 
@@ -621,6 +806,15 @@ protected:
         }
 
   private:
+    void bindSparseMetadata()
+    {
+        for ( auto& [id, point] : M_points )
+        {
+            (void)id;
+            point.attachSparseMetadataStorage( M_sparseMetadata );
+        }
+    }
+
     void buildOrderedPoints()
     {
         M_orderedPoints.clear();
@@ -637,9 +831,11 @@ protected:
     template <class Archive>
     void serialize( Archive& ar, const unsigned int version )
     {
-        if ( Archive::is_loading::value )
+        if constexpr ( Archive::is_loading::value )
         {
             M_points.clear();
+            M_sparseMetadata.clear();
+            M_coordinateStorage.clear();
             M_orderedPoints.clear();
             M_needToOrderPoints = false;
             size_type nPoints = 0;
@@ -665,6 +861,8 @@ protected:
     worldcomm_ptr_t M_worldComm;
 
     points_type M_points;
+    sparse_metadata_storage_type M_sparseMetadata;
+    coordinate_storage_type M_coordinateStorage;
     ordered_points_reference_wrapper_type M_orderedPoints;
     bool M_needToOrderPoints;
     point_interprocess_map_type M_interprocessPoints;

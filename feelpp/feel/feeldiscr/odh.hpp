@@ -44,7 +44,6 @@ struct Odh
     typedef FunctionSpace<MeshType,
                           bases<OrthonormalPolynomialSet<Order,Scalar>>,
                           T,
-                          Periodicity <NoPeriodicity>,
                           mortars<NoMortar>> type;
     typedef std::shared_ptr<type> ptrtype;
 };

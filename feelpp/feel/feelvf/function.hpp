@@ -1,26 +1,12 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2007-2012 Universite Joseph Fourier (Grenoble I)
+ * SPDX-FileCopyrightText: 2007-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2007-07-20
-
-  Copyright (C) 2007-2012 Universite Joseph Fourier (Grenoble I)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file function.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -198,30 +184,49 @@ public:
         value_type
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return M_fun( c1, c2, M_gmc->xReal( q ), M_gmc->unitNormal( q ) );
+            return this->evaluate( c1, c2, q );
         }
         template<int PatternContext>
         value_type
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
         {
-            return M_fun( c1, c2, M_gmc->xReal( q ), M_gmc->unitNormal( q ) );
+            return this->evaluate( c1, c2, q );
         }
 
 
 
         value_type
-        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
+        evaliq( uint16_type /*i*/, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return M_fun( c1, c2, M_gmc->xReal( q ), M_gmc->unitNormal( q ) );
+            return this->evaluate( c1, c2, q );
         }
 
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return M_fun( c1, c2, M_gmc->xReal( q ), M_gmc->unitNormal( q ) );
+            return this->evaluate( c1, c2, q );
         }
 
+    private:
+        value_type
+        evaluate( uint16_type c1, uint16_type c2, uint16_type q ) const
+        {
+            if constexpr ( expression_type::context & vm::NORMAL )
+                return M_fun( c1, c2, M_gmc->xReal( q ),
+                              M_gmc->unitNormal( q ) );
+            else
+            {
+                // The legacy functor signature always accepts a normal, even
+                // when its context declares that the argument is unused.
+                using normal_type =
+                    eigen_vector_type<gmc_type::nDim, value_type>;
+                static const normal_type unusedNormal = normal_type::Zero();
+                return M_fun( c1, c2, M_gmc->xReal( q ), unusedNormal );
+            }
+        }
+
+    public:
         Func M_fun;
         gmc_ptrtype M_gmc;
     };

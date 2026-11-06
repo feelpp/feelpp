@@ -1,26 +1,10 @@
-//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-//!
-//! This file is part of the Feel++ library
-//!
-//! This library is free software; you can redistribute it and/or
-//! modify it under the terms of the GNU Lesser General Public
-//! License as published by the Free Software Foundation; either
-//! version 2.1 of the License, or (at your option) any later version.
-//!
-//! This library is distributed in the hope that it will be useful,
-//! but WITHOUT ANY WARRANTY; without even the implied warranty of
-//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//! Lesser General Public License for more details.
-//!
-//! You should have received a copy of the GNU Lesser General Public
-//! License along with this library; if not, write to the Free Software
-//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-//!
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileCopyrightText: 2017-2026 University of Strasbourg
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 //! @file
-//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 //! @date 26 Aug 2017
-//! @copyright 2017 Feel++ Consortium
-//!
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/checker.hpp>
 #include <feel/feeldiscr/pch.hpp>
@@ -31,7 +15,7 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelpython/pyexpr.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/vf_eval.hpp>
 #include <feel/feelvf/print.hpp>
 
 #include <feel/feelalg/vectorblock.hpp>
@@ -41,6 +25,9 @@
 #include <feel/feelpython/pyexpr.hpp>
 
 #include <feel/feelpde/cg_laplacian.hpp>
+#include "../discretization.hpp"
+#include "../local_mean.hpp"
+#include <algorithm>
 
 namespace Feel {
 
@@ -66,7 +53,8 @@ makeOptions()
         ( "hdg.tau.order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         ( "solvecg", po::value<bool>()->default_value( false ), "solve corresponding problem with CG"  )
         ( "order", po::value<int>()->default_value( 1 ), "approximation order"  )
-        ( "rhs_quad", po::value<int>()->default_value( 4 ), "quadrature order"  )
+        ( "geometry.order", po::value<int>()->default_value( 1 ), "mesh geometric transformation order" )
+        ( "rhs_quad", po::value<int>()->default_value( 0 ), "RHS quadrature order (0: expression order with a 2*k floor, scaled by geometry order); increase explicitly for nonpolynomial data" )
         ( "mass.quad", po::value<bool>()->default_value( true ), "use quadrature for mass matrix assembly"  )
         ( "sc.transpose", po::value<bool>()->default_value( false ), "transpose block in SC assembly"  )
         ;
@@ -88,13 +76,24 @@ makeAbout()
 
 }
 
-template<int Dim, int OrderP>
+template<int Dim>
 int hdg_laplacian()
 {
     using Feel::cout;
 
     auto tau_constant =  cst(doption("hdg.tau.constant"));
     int tau_order =  ioption("hdg.tau.order");
+    int quadratureOrder = ioption( "rhs_quad" );
+    CHECK_GE( quadratureOrder, 0 ) << "rhs_quad must be non-negative";
+    if ( quadratureOrder == 0 )
+        quadratureOrder = quad_order_from_expression;
+    int order = ioption( "order" );
+    CHECK( order >= 1 ) << "HDG approximation order must be >= 1";
+    auto runtimeOrder = RuntimeOrder::checked( order );
+    auto runtimePostOrder = RuntimeOrder::checked( order + 1 );
+    int geometryOrder = ioption( "geometry.order" );
+    CHECK( geometryOrder >= 1 ) << "Mesh geometry order must be >= 1";
+    auto runtimeGeometryOrder = RuntimeOrder::checked( geometryOrder );
 
     int proc_rank = Environment::worldComm().globalRank();
     auto Pi = M_PI;
@@ -102,7 +101,11 @@ int hdg_laplacian()
 
 #if defined(FEELPP_HAS_SYMPY)
 
-    std::map<std::string,std::string> inputs{{"dim",std::to_string(Dim)},{"k",soption("k")},{"p",soption("checker.solution")},{"grad_p",""}, {"u",""}, {"un",""}, {"f",""}, {"g",""}, {"r_1",soption("r_1")}, {"r_2",soption("r_2")}};
+    std::string sympyPotential = soption( "solution.sympy.p" );
+    if ( sympyPotential == "1" && soption( "solution.p" ) != "1" )
+        sympyPotential = soption( "checker.solution" );
+
+    std::map<std::string,std::string> inputs{{"dim",std::to_string(Dim)},{"k",soption("k")},{"p",sympyPotential},{"grad_p",""}, {"u",""}, {"un",""}, {"f",""}, {"g",""}, {"r_1",soption("r_1")}, {"r_2",soption("r_2")}};
     // if we do not check the results with a manufactured solution,
     // the right hand side is given by functions.f otherwise it is computed by the python script
     auto thechecker = checker( _name= "L2/H1 convergence",
@@ -118,11 +121,11 @@ int hdg_laplacian()
     auto u_exact = expr<FEELPP_DIM,1>( u_exact_str );
     auto k = expr( locals.at("k") );
     auto lambda = cst(1.)/k;
-    auto un = expr( locals.at("un") );
+    auto un = trans(u_exact)*N();
     auto f = expr( locals.at("f") );
     auto g = expr( locals.at("g") );
     auto r_1 = expr( locals.at("r_1") );
-    auto r_2 = expr( locals.at("r_2") );
+    auto r_2 = un - r_1*p_exact;
 #else
     std::string p_exact_str = soption("solution.p");
     std::string u_exact_str = soption("solution.u");
@@ -137,21 +140,33 @@ int hdg_laplacian()
     auto r_2 = un;
 #endif
     tic();
-    auto mesh = loadMesh( _mesh=new Mesh<Simplex<Dim>> );
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<Dim,Dynamic>>( runtimeGeometryOrder ) );
+    quickstart::checkMeshOrder( mesh );
     toc("mesh",true);
+
+    // Match at least the degree of the HDG mass terms. On curved faces,
+    // using a lower rule for representable boundary data can spoil exactness.
+    // This is a polynomial estimate; nonpolynomial data may need rhs_quad.
+    auto integrateRhs = [&]( auto const& range, auto const& expression )
+    {
+        int const q = quadratureOrder == quad_order_from_expression
+                          ? std::max( static_cast<int>( expression.polynomialOrder() ), 2*order ) * mesh->order()
+                          : quadratureOrder;
+        return integrate( _range=range, _expr=expression, _quad=q );
+    };
 
     // ****** Hybrid-mixed formulation ******
     // We treat Vh, Wh, and Mh separately
     tic();
 
-    auto Vh = Pdhv<OrderP>( mesh );
-    auto Wh = Pdh<OrderP>( mesh );
+    auto Vh = Pdhv<Dynamic>( mesh, runtimeOrder );
+    auto Wh = Pdh<Dynamic>( mesh, runtimeOrder );
     auto face_mesh = createSubmesh( _mesh=mesh, _range=faces(mesh ), _update=0 );
-    auto Mh = Pdh<OrderP>( face_mesh );
+    auto Mh = Pdh<Dynamic>( face_mesh, runtimeOrder );
 
     toc("spaces",true);
-    auto P0dh = Pdh<0>(mesh);
-    auto Xh = Pdh<0>(face_mesh);
+    auto P0dh = Pdh<Dynamic>( mesh, RuntimeOrder{0} );
+    auto Xh = Pdh<Dynamic>( face_mesh, RuntimeOrder{0} );
     auto uf = Xh->element(cst(1.));
 
     cout << "Exact potential if applicable: " << p_exact_str << "\n"
@@ -160,18 +175,18 @@ int hdg_laplacian()
     cout << "#elts: " << mesh->numGlobalElements() << std::endl
          << "#faces: " << mesh->numGlobalFaces() << std::endl
          << "#facesMh: " << face_mesh->numGlobalElements() << std::endl
-         << "Vh<" << OrderP << "> : " << Vh->nDof() << std::endl
-         << "Wh<" << OrderP << "> : " << Wh->nDof() << std::endl
-         << "Mh<" << OrderP << "> : " << Mh->nDof() << std::endl;
+         << "Vh<" << order << "> : " << Vh->nDof() << std::endl
+         << "Wh<" << order << "> : " << Wh->nDof() << std::endl
+         << "Mh<" << order << "> : " << Mh->nDof() << std::endl;
     cout << mesh->numGlobalElements()  << " " << mesh->numGlobalFaces() << " "
          << Vh->nDof() << " " << Wh->nDof() << " " << Mh->nDof() << std::endl;
 
     int status_cg = 0;
     if ( boption( "solvecg" ) == true )
     {
-        Feel::cout << "-- CG<" << OrderP+1 << "> starts ----------------------------------------------------------\n";
-        auto cgXh = Pch<OrderP+1>(mesh);
-        Feel::cout << "cgXh<" << OrderP+1 << "> : " << cgXh->nDof() << std::endl;
+        Feel::cout << "-- CG<" << order+1 << "> starts ----------------------------------------------------------\n";
+        auto cgXh = Pch<Dynamic>( mesh, runtimePostOrder );
+        Feel::cout << "cgXh<" << order+1 << "> : " << cgXh->nDof() << std::endl;
         auto u = cgLaplacian( _space=cgXh, _data=std::tuple{k,f,p_exact,un,r_1,r_2} );
 #if defined(FEELPP_HAS_SYMPY)
         if ( u )
@@ -181,7 +196,7 @@ int hdg_laplacian()
                                         _inputs=locals
                                        ), *u );
 #endif
-        Feel::cout << "-- CG<" << OrderP+1 << "> done ----------------------------------------------------------\n";
+        Feel::cout << "-- CG<" << order+1 << "> done ----------------------------------------------------------\n";
     }
     auto u = Vh->element( "u" );
     auto v = Vh->element( "v" );
@@ -209,15 +224,11 @@ int hdg_laplacian()
     // This is only a part of the RHS - how to build the whole RHS? Is it right to
     // imagine we moved it to the left? SKIPPING boundary conditions for the moment.
     // How to identify Dirichlet/Neumann boundaries?
-    rhs(1_c) += integrate(_range=elements(mesh),
-                          _expr=f*id(w), _quad=ioption("rhs_quad") );
+    rhs(1_c) += integrateRhs( elements(mesh), f*id(w) );
 
-    rhs(2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
-                          _expr=id(l)*un, _quad=ioption("rhs_quad")  );
-    rhs(2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
-                          _expr=id(l)*p_exact, _quad=ioption("rhs_quad") );
-    rhs(2_c) += integrate( _range=markedfaces(mesh, "Robin"),
-                           _expr=id(l)*r_2);
+    rhs(2_c) += integrateRhs( markedfaces(mesh,"Neumann"), id(l)*un  );
+    rhs(2_c) += integrateRhs( markedfaces(mesh,"Dirichlet"), id(l)*p_exact );
+    rhs(2_c) += integrateRhs( markedfaces(mesh, "Robin"), id(l)*r_2);
 
     toc("rhs",true);
     tic();
@@ -331,7 +342,7 @@ int hdg_laplacian()
 
     tic();
     tic();
-    auto Whp = Pdh<OrderP+1>( mesh );
+    auto Whp = Pdh<Dynamic>( mesh, runtimePostOrder );
     auto pps = product( Whp );
     auto PP = pps.element();
     auto ppp = PP(0_c);
@@ -353,12 +364,7 @@ int hdg_laplacian()
     toc("postprocessing.solve.local",Environment::logVerbosityLevel()>0);
     ppp=PP(0_c);
     tic();
-    tic();
-    ppp -= ppp.ewiseMean(P0dh);
-    toc("postprocessing.solve.correction.ppp",Environment::logVerbosityLevel()>0);
-    tic();
-    ppp += pp.ewiseMean(P0dh);
-    toc("postprocessing.solve.correction.pp",Environment::logVerbosityLevel()>0);
+    quickstart::matchCellMean( ppp, pp, P0dh );
     toc("postprocessing.solve.correction",Environment::logVerbosityLevel()>0);
     toc("postprocessing.solve");
     toc("postprocessing");
@@ -374,7 +380,7 @@ int hdg_laplacian()
     e->setMesh( mesh );
     e->add( "flux", U(0_c) );
     e->add( "potential", U(1_c) );
-    e->add( "potentialpp", PP(0_c) );
+    e->add( "potentialpp", ppp );
     e->add( "flux.exact", v );
     e->add( "potential.exact", q );
     e->save();
@@ -423,18 +429,7 @@ int main( int argc, char** argv )
                                       _author="Feel++ Consortium",
                                       _email="feelpp-devel@feelpp.org"));
         // end::env[]
-        if ( ioption( "order" ) == 1 )
-            return hdg_laplacian<FEELPP_DIM,1>();
-        if ( ioption( "order" ) == 2 )
-            return hdg_laplacian<FEELPP_DIM,2>();
-
- #if 0
-        if ( ioption( "order" ) == 3 )
-            return hdg_laplacian<FEELPP_DIM,3>();
-
-        if ( ioption( "order" ) == 4 )
-            return hdg_laplacian<FEELPP_DIM,4>();
-#endif
+        return hdg_laplacian<FEELPP_DIM>();
     }
     catch( ... )
     {

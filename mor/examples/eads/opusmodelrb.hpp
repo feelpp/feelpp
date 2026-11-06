@@ -91,9 +91,9 @@ public:
     typedef bases<Lagrange<OrderT, Scalar> > basis_type;
 
 #if defined( OPUS_WITH_THERMAL_DISCONTINUITY )
-    typedef FunctionSpace<mesh_type, temp_basis_type, discontinuity_type,  Periodicity<Periodic<> > > temp_functionspace_type;
+    typedef FunctionSpace<mesh_type, temp_basis_type, value_type> temp_functionspace_type;
 #else
-    typedef FunctionSpace<mesh_type, temp_basis_type, Periodicity<Periodic<> > > temp_functionspace_type;
+    typedef FunctionSpace<mesh_type, temp_basis_type, value_type> temp_functionspace_type;
 #endif
     typedef FunctionSpace<mesh_type, basis_type > functionspace_type;
 

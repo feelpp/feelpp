@@ -1,11 +1,10 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-
-    SPDX-FileCopyrightText: 2026 University of Strasbourg
-
-    SPDX-License-Identifier: LGPL-3.0-or-later
-*/
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2026-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
 /**
  * @file sb9_quadrature.hpp
@@ -70,7 +69,7 @@ public:
     SB9ThroughThicknessLobatto5()
         : super()
     {
-        this->M_order = 5;
+        this->setOrder( 5 );
         this->M_name = "sb9-through-thickness-lobatto5";
         this->M_w.resize( Npoints );
         this->M_prod.resize( Npoints );
@@ -196,7 +195,7 @@ public:
     SB9LumpedMassLobatto()
         : super()
     {
-        this->M_order = 1;
+        this->setOrder( 1 );
         this->M_name = "sb9-lumped-mass-lobatto";
         this->M_w.resize( Npoints );
         this->M_prod.resize( Npoints );

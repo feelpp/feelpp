@@ -43,7 +43,7 @@
 #include <feel/feelpoly/dualbasis.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
 #include <feel/feelpoly/functionalset.hpp>
-#include <feel/feelpoly/functionals.hpp>
+#include <feel/feelpoly/h2functionals.hpp>
 #include <feel/feelpoly/fe.hpp>
 namespace Feel
 {
@@ -54,7 +54,7 @@ namespace fem
 /// \cond detail
 namespace details
 {
-template<typename Basis, template<class, uint16_type, class> class PointSetType>
+template<typename Basis, template<class, int, class> class PointSetType>
 class HermiteDual
     :
 public DualBasis<Basis>
@@ -216,40 +216,23 @@ private:
 
     void setFset( primal_space_type const& primal, points_type const& __pts, mpl::bool_<true> )
     {
-        int nfs = 1+nDim+( ( nDim==2 )?1:0 );
-        std::vector<std::vector<Functional<primal_space_type> > > pd( nfs );
         points_type pts1 = ublas::project( __pts,
                                            ublas::range( 0,nDim ),
                                            ublas::range( 0, nDim+1 ) );
-        pd[0] = functional::PointsEvaluation<primal_space_type>( primal, pts1 );
-
-        //std::cout << "pd[" << 0 << "].size()=" << pd[0].size() << "\n";
-        for ( int d = 0; d < nDim; ++d )
-        {
-            pd[d+1] = functional::PointsDerivative<primal_space_type>( primal, d, pts1 );
-            //std::cout << "pd[" << d+1 << "].size()=" << pd[d+1].size() << "\n";
-        }
+        auto functionals = functional::makeValueGradientPointFunctionals( primal, pts1 );
 
         if ( nDim == 2 )
         {
             points_type pts3 = ublas::project( __pts,
                                                ublas::range( 0,nDim ),
                                                ublas::range( ( nDim+1 )*( nDim+1 ), numPoints ) );
-            //std::cout << "pts3 = " << pts3 << "\n";
-            pd[3] = functional::PointsEvaluation<primal_space_type>( primal, pts3 );
-            //std::cout << "pd[2]=" << pd[3][0].coeff() << "\n";
+            auto interiorValues = functional::PointsEvaluation<primal_space_type>( primal, pts3 );
+            functionals.insert( functionals.end(), interiorValues.begin(), interiorValues.end() );
         }
 
-        std::vector<Functional<primal_space_type> > fs( nLocalDof );
-        typename std::vector<Functional<primal_space_type> >::iterator it = fs.begin();
-
-        for ( int i = 0; i < nfs; ++i )
-        {
-            //std::cout << "pd[" << i << "].size()=" << pd[i].size() << "\n";
-            it = std::copy( pd[i].begin(), pd[i].end(), it );
-        }
-
-        M_fset.setFunctionalSet( fs );
+        CHECK_EQ( functionals.size(), nLocalDof )
+            << "invalid Hermite value/gradient dual cardinality";
+        M_fset.setFunctionalSet( functionals );
     }
 
     void setFset( primal_space_type const& primal, points_type const& __pts, mpl::bool_<false> )
@@ -298,8 +281,8 @@ template<uint16_type N,
          uint16_type O,
          template<uint16_type Dim> class PolySetType,
          typename T = double,
-         template<uint16_type, uint16_type, uint16_type> class Convex = Simplex,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced >
+         template<int, int, int> class Convex = Simplex,
+         template<class, int, class> class Pts = PointSetEquiSpaced >
 class Hermite
     :
 public FiniteElement<detail::OrthonormalPolynomialSet<N, N, O, PolySetType, T, Convex>, details::HermiteDual, Pts >
@@ -487,31 +470,31 @@ template<uint16_type N,
          uint16_type O,
          template<uint16_type Dim> class PolySetType,
          typename T,
-         template<uint16_type, uint16_type, uint16_type> class Convex,
-         template<class, uint16_type, class> class Pts >
+         template<int, int, int> class Convex,
+         template<class, int, class> class Pts >
 const uint16_type Hermite<N,O,PolySetType,T,Convex,Pts>::nDim;
 
 template<uint16_type N,
          uint16_type O,
          template<uint16_type Dim> class PolySetType,
          typename T,
-         template<uint16_type, uint16_type, uint16_type> class Convex,
-         template<class, uint16_type, class> class Pts >
+         template<int, int, int> class Convex,
+         template<class, int, class> class Pts >
 const uint16_type Hermite<N,O,PolySetType,T,Convex,Pts>::nOrder;
 
 template<uint16_type N,
          uint16_type O,
          template<uint16_type Dim> class PolySetType,
          typename T,
-         template<uint16_type, uint16_type, uint16_type> class Convex,
-         template<class, uint16_type, class> class Pts >
+         template<int, int, int> class Convex,
+         template<class, int, class> class Pts >
 const uint16_type Hermite<N,O,PolySetType,T,Convex,Pts>::numPoints;
 
 } // namespace fem
 
-template<uint16_type Order,
+template<int Order,
          template<uint16_type Dim> class PolySetType = Scalar,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced>
+         template<class, int, class> class Pts = PointSetEquiSpaced>
 class Hermite
 {
 public:

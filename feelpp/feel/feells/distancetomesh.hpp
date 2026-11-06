@@ -295,13 +295,11 @@ DistanceToMesh< MeshType, FunctionSpaceType >::updateIntersectingElements()
         //matrix_node_type ptReal( nRealDim, 1 );
         //ublas::column( ptReal, 0 ) = ublas::column( surfElt.vertices(), 0 );
         // Localise
-        auto resLocalisation = locTool->searchElement( ptReal );
-        //auto resLocalisation = locTool->run_analysis( ptReal, invalid_size_type_value );
-
-        if( resLocalisation.template get<0>() )
+        auto resLocalisation = locTool->locateElement( ptReal );
+        if( resLocalisation.found )
             //if( resLocalisation.template get<0>()[0] )
         {
-            size_type localisedEltId = resLocalisation.template get<1>();
+            size_type localisedEltId = resLocalisation.elementId;
             M_intersectingElements.insert( localisedEltId );
             eltsToVisit[surfEltId].insert( localisedEltId );
             M_eltsIntersectedBySurfaceElt[surfEltId].insert( localisedEltId );

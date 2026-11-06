@@ -3,12 +3,12 @@
 
 #include <feel/feelmodels/modelcore/modelmeshes.hpp>
 
-#include <boost/preprocessor/comparison/greater_equal.hpp>
 #include <boost/preprocessor/array/to_list.hpp>
 #include <boost/preprocessor/list/append.hpp>
 
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelvf/analysis.hpp>
 #include <feel/feells/distancetorange.hpp>
 
 
@@ -481,7 +481,7 @@ ModelMesh<IndexType>::setupRestart( ModelMeshes<IndexType> const& mMeshes )
 template <typename IndexType>
 template <typename MeshType>
 void
-ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
+ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes, RuntimeOrder runtimeGeometryOrder )
 {
     using mesh_type = MeshType;
 
@@ -790,7 +790,7 @@ ModelMesh<IndexType>::updateDistanceToRange()
                 // mean normalization :  u_normalized = (u-average(u))/(max(u)-min(u))
                 if ( normalizationType == "mean" )
                 {
-                    double average = mean(_range=elements(support(u->functionSpace())),_expr=idv(u))(0,0);
+                    double average = Feel::mean(_range=elements(support(u->functionSpace())),_expr=idv(u))(0,0);
                     auto uNormalizedMean = Vh->elementPtr();
                     *uNormalizedMean = *u;
                     //*uNormalizedMean -= average;
@@ -1055,38 +1055,13 @@ template class ModelMeshes<uint32_type>;
           ( Hypercube,3,1,3)  ) )                                       \
     /**/
 
-#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 2 )
 #define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER2_LIST \
     BOOST_PP_TUPLE_TO_LIST(                                             \
         ( ( Simplex,2,2,2),                                             \
           ( Simplex,3,2,3),                                             \
           ( Simplex,1,2,2),                                             \
-          ( Simplex,1,2,3) ) )                                          \
+          ( Simplex,1,2,3)  ) )                                         \
     /**/
-#else
-#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER2_LIST BOOST_PP_NIL
-#endif
-
-#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 3 )
-#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER3_LIST \
-    BOOST_PP_TUPLE_TO_LIST(                                             \
-        ( ( Simplex,2,3,2),                                             \
-          ( Simplex,3,3,3) ) )                                          \
-    /**/
-#else
-#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER3_LIST BOOST_PP_NIL
-#endif
-
-#if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 4 )
-#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER4_LIST \
-    BOOST_PP_TUPLE_TO_LIST(                                             \
-        ( ( Simplex,2,4,2),                                             \
-          ( Simplex,3,4,3) ) )                                          \
-    /**/
-#else
-#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER4_LIST BOOST_PP_NIL
-#endif
-
 
 #define FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_CLASS_NAME(T)   BOOST_PP_TUPLE_ELEM(4, 0, T)
 #define FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_DIM(T)   BOOST_PP_TUPLE_ELEM(4, 1, T)
@@ -1101,10 +1076,7 @@ template class ModelMeshes<uint32_type>;
     /**/
 
 #define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_LIST     \
-    BOOST_PP_LIST_APPEND( FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER1_LIST, \
-                          BOOST_PP_LIST_APPEND( FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER2_LIST, \
-                                                BOOST_PP_LIST_APPEND( FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER3_LIST, \
-                                                                      FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER4_LIST ) ) ) \
+    FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER1_LIST \
     /**/
 
 #define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_INDEXTYPE_LIST    \
@@ -1117,12 +1089,24 @@ template class ModelMeshes<uint32_type>;
     FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_METHODS_OP_CODE IS    \
    /**/
 #define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_METHODS_OP_CODE(PP_I,PP_GS) \
-    template void ModelMesh<PP_I>::updateForUse<Mesh<FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_CLASS(PP_GS)>>( ModelMeshes<PP_I> const& ); \
+    template void ModelMesh<PP_I>::updateForUse<Mesh<FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_CLASS(PP_GS)>>( ModelMeshes<PP_I> const&, RuntimeOrder ); \
     template void ModelMesh<PP_I>::applyRemesh<Mesh<FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_CLASS(PP_GS)>>( std::shared_ptr<Mesh<FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_CLASS(PP_GS)>> const& );
     /**/
 
 BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_METHODS_OP, 2, (FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_INDEXTYPE_LIST,FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_LIST) )
 /**/
+
+#if FEELPP_MESH_MAX_ORDER >= 2
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_UPDATEFORUSE_METHOD_OP(_, IS) \
+    FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_UPDATEFORUSE_METHOD_OP_CODE IS \
+   /**/
+#define FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_UPDATEFORUSE_METHOD_OP_CODE(PP_I,PP_GS) \
+    template void ModelMesh<PP_I>::updateForUse<Mesh<FEELPP_TOOLBOXES_PP_MODELMESHES_GEOSHAPE_CLASS(PP_GS)>>( ModelMeshes<PP_I> const&, RuntimeOrder );
+    /**/
+
+BOOST_PP_LIST_FOR_EACH_PRODUCT( FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_UPDATEFORUSE_METHOD_OP, 2, (FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_INDEXTYPE_LIST,FEELPP_TOOLBOXES_PP_MODELMESHES_INSTANTIATION_GEOSHAPE_ORDER2_LIST) )
+/**/
+#endif
 
 } // namespace FeelModels
 } // namespace Feel

@@ -1,4 +1,6 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
 #ifndef FEELPP_FILTERS_IMPORTERSAMCEFMESH_HPP
@@ -118,7 +120,7 @@ ImporterSamcefMesh<MeshType>::visit( mesh_type* mesh )
     __is >> currentKeyword;
     using element_wrapper_type = boost::reference_wrapper<element_type>;
     std::unordered_map<index_type,element_wrapper_type> mapSamcefEltIdToFeelElt;
-    element_type e;
+    auto e = mesh->makeElement();
     e.setProcessIdInPartition( partId );
     e.setProcessId( partId );
     while ( true )
@@ -140,7 +142,7 @@ ImporterSamcefMesh<MeshType>::visit( mesh_type* mesh )
             if ( currentKeyword == "N" )
             {
                 std::vector<index_type> nodeIdsInElt;
-                nodeIdsInElt.reserve( element_type::numPoints );
+                nodeIdsInElt.reserve( e.nPoints() );
                 for ( auto const& idStr : readedStr )
                 {
                     tmpIndex = std::stoi( idStr );
@@ -148,7 +150,8 @@ ImporterSamcefMesh<MeshType>::visit( mesh_type* mesh )
                         continue;
                     nodeIdsInElt.push_back( tmpIndex );
                 }
-                for ( size_type k = 0; k < element_type::numPoints; ++k )
+                CHECK_EQ( nodeIdsInElt.size(), e.nPoints() ) << "Samcef element node count does not match mesh geometry order";
+                for ( size_type k = 0; k < e.nPoints(); ++k )
                     e.setPoint( k, mesh->point( nodeIdsInElt[k] ) );
             }
 
@@ -243,13 +246,13 @@ ImporterSamcefMesh<MeshType>::visit( mesh_type* mesh )
                  }
                  else
                  {
-                     face_type f;
+                     auto f = mesh->makeFace();
                      f.setId( mesh->numFaces() );
                      f.setProcessIdInPartition( partId );
                      f.setProcessId( partId );
-                     for (int k=0;k<face_type::numVertices;++k )
+                     for (int k=0;k<f.nPoints();++k )
                      {
-                         point_type & pt = elt.point( facePtIdsInInElt[k] );
+                         point_type & pt = elt.point( elt.f2p( samcefFaceIdInEltToFeelFaceIdInElt[faceId-1], k ) );
                          f.setPoint( k, pt );
                      }
                      f.addMarker( _mId );

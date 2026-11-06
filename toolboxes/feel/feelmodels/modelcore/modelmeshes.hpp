@@ -7,6 +7,7 @@
 #include <feel/feeldiscr/geometricspace.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelpoly/nedelec.hpp>
+#include <feel/feelpoly/order.hpp>
 #include <feel/feelfilters/databymeshentity.hpp>
 #include <feel/feelmodels/modelcore/modelbase.hpp>
 #include <feel/feelmodels/modelpostprocess.hpp>
@@ -562,7 +563,7 @@ public :
     partitioning_setup_type const& partitioningSetup() const { return M_mmeshCommon->partitioningSetup(); }
 
     template <typename MeshType>
-    void updateForUse( ModelMeshes<IndexType> const& mMeshes );
+    void updateForUse( ModelMeshes<IndexType> const& mMeshes, RuntimeOrder runtimeGeometryOrder = RuntimeOrder{1} );
 
     template <typename MeshType>
     void initMeasurePointsEvaluationTool()
@@ -604,7 +605,8 @@ public :
      *
      * The function template is specialized for different types of meshes, depending on their dimension and the number of real dimensions. 
      * For example, for a 1D mesh with 1 real dimension, the function returns a tuple of tuples containing the names and types of the Lagrange basis fields with 1, 2, 0, and 1 DoFs. 
-     * For a 2D mesh with 2 real dimensions, the function returns a tuple of tuples containing the names and types of the Lagrange basis fields (continuous order 1,2 and discontinuous 0,1 and vectorial continuous order 1,2 as well as Nedelec basis field 1st family of order 1)
+     * For a 2D mesh with 2 real dimensions, the function returns a tuple of tuples containing the names and types of the Lagrange basis fields (continuous order 1,2 and discontinuous 0,1 and vectorial continuous order 1,2).
+     * Simplex meshes also expose the Nedelec basis field 1st family of order 1.
      *
      * \tparam MeshType The type of the mesh.
      * \return A tuple of tuples containing the names and types of the basis fields supported by the mesh.
@@ -629,7 +631,7 @@ public :
                                         hana::make_tuple( "Pchv2", hana::type_c<Lagrange<2,Vectorial,Continuous,PointSetFekete>> )
                                         );
         }
-        else
+        else if constexpr ( MeshType::element_type::is_simplex )
             return hana::make_tuple( hana::make_tuple( "Pch1", hana::type_c<Lagrange<1,Scalar,Continuous,PointSetFekete>> ),
                                         hana::make_tuple( "Pch2", hana::type_c<Lagrange<2,Scalar,Continuous,PointSetFekete>> ),
                                         hana::make_tuple( "Pdh0", hana::type_c<Lagrange<0,Scalar,Discontinuous,PointSetFekete>> ),
@@ -637,6 +639,14 @@ public :
                                         hana::make_tuple( "Pchv1", hana::type_c<Lagrange<1,Vectorial,Continuous,PointSetFekete>> ),
                                         hana::make_tuple( "Pchv2", hana::type_c<Lagrange<2,Vectorial,Continuous,PointSetFekete>> ),
                                         hana::make_tuple( "Ned1h0", hana::type_c<Nedelec<0,NedelecKind::NED1>> )
+                                        );
+        else
+            return hana::make_tuple( hana::make_tuple( "Pch1", hana::type_c<Lagrange<1,Scalar,Continuous,PointSetFekete>> ),
+                                        hana::make_tuple( "Pch2", hana::type_c<Lagrange<2,Scalar,Continuous,PointSetFekete>> ),
+                                        hana::make_tuple( "Pdh0", hana::type_c<Lagrange<0,Scalar,Discontinuous,PointSetFekete>> ),
+                                        hana::make_tuple( "Pdh1", hana::type_c<Lagrange<1,Scalar,Discontinuous,PointSetFekete>> ),
+                                        hana::make_tuple( "Pchv1", hana::type_c<Lagrange<1,Vectorial,Continuous,PointSetFekete>> ),
+                                        hana::make_tuple( "Pchv2", hana::type_c<Lagrange<2,Vectorial,Continuous,PointSetFekete>> )
                                         );
     }
     /**
@@ -1004,10 +1014,10 @@ public:
     void setModelMeshAsShared( ModelMesh<IndexType> const& m ) { this->setModelMeshAsShared( this->keyword(), m ); }
 
     template <typename MeshType>
-    void updateForUse( std::string const& meshName )
+    void updateForUse( std::string const& meshName, RuntimeOrder runtimeGeometryOrder = RuntimeOrder{1} )
     {
         if ( this->hasModelMesh( meshName ) )
-            this->modelMesh( meshName ).template updateForUse<MeshType>( *this );
+            this->modelMesh( meshName ).template updateForUse<MeshType>( *this, runtimeGeometryOrder );
     }
 
     template <typename MeshType>

@@ -1,7 +1,7 @@
 # Supported shared Feel++ CPU/OpenMPI environment.
 #
 # This manifest is the baseline package derived from the legacy
-# `openmpi4/` bootstrap environment. It focuses on the 
+# `openmpi4/` bootstrap environment. It focuses on the
 # PETSc/HPDDM-enabled workflow and intentionally avoids embedding site-local
 # compiler externals, local mirrors, or unrelated optional packages.
 spack:

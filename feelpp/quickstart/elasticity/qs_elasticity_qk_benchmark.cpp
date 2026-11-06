@@ -1,4 +1,10 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:set fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2026-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feeldiscr/pdhm.hpp>
@@ -342,7 +348,7 @@ runBenchmarkCase( qsb::BenchmarkConfig const& cfg, FormulationKind formulation )
 
     auto meshData = buildMesh( cfg, Order, formulation );
     auto mesh = meshData.mesh;
-    auto Uh = Pchv<Order>( mesh );
+    auto Uh = Pchv<Dynamic>( mesh, RuntimeOrder{Order} );
 
     auto u = trial( Uh, "u" );
     auto v = test( Uh, "v" );
@@ -587,7 +593,7 @@ runBenchmarkCase( qsb::BenchmarkConfig const& cfg, FormulationKind formulation )
         }
     }
 
-    auto Sh = Pdhms<Order-1>( mesh );
+    auto Sh = Pdhms<Dynamic>( mesh, RuntimeOrder{Order-1} );
     auto epsilonTensor = cst( 0.5 ) * ( gradv( uh ) + trans( gradv( uh ) ) );
     auto sigmaTensor = cst( lambda )*trace( epsilonTensor )*eye<3, 3>() + cst( 2.0*mu )*epsilonTensor;
     auto epsilonh = vf::project( _space=Sh, _range=elements( mesh ), _expr=epsilonTensor );

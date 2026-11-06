@@ -39,16 +39,16 @@ namespace Feel
  *
  */
 template<uint16_type Dim,
-         uint16_type Order,
+         int Order,
          template<uint16_type> class PolySetType = Scalar,
          typename T = double,
-         template<uint16_type,uint16_type,uint16_type> class Convex = Simplex>
+         template<int,int,int> class Convex = Simplex>
 class OrthogonalPolynomialSet
 {};
 
 
 template<uint16_type Dim,
-         uint16_type Order,
+         int Order,
          template<uint16_type> class PolySetType,
          typename T>
 class OrthogonalPolynomialSet<Dim, Order, PolySetType, T, Simplex>
@@ -120,13 +120,13 @@ public:
     }
 };
 template<uint16_type Dim,
-         uint16_type Order,
+         int Order,
          template<uint16_type> class PolySetType,
          typename T>
 const uint16_type OrthogonalPolynomialSet<Dim, Order,PolySetType,T, Simplex>::nLocalDof;
 
 template<uint16_type Dim,
-         uint16_type Order,
+         int Order,
          template<uint16_type> class PolySetType,
          typename T>
 class OrthogonalPolynomialSet<Dim, Order, PolySetType, T, Hypercube>
@@ -199,7 +199,7 @@ public:
 };
 
 template<uint16_type Dim,
-         uint16_type Order,
+         int Order,
          template<uint16_type> class PolySetType,
          typename T>
 const uint16_type OrthogonalPolynomialSet<Dim, Order,PolySetType,T, Hypercube>::nLocalDof;
