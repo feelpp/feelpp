@@ -46,10 +46,24 @@ jobs:
           head_sha = os.environ["HEAD_SHA"]
           output_path = Path(os.environ["GITHUB_OUTPUT"])
 
-          changed_files = subprocess.check_output(
-              ["git", "diff", "--name-only", base_sha, head_sha],
-              text=True,
-          ).splitlines()
+          base_available = subprocess.run(
+              ["git", "cat-file", "-e", f"{base_sha}^{{commit}}"],
+              stdout=subprocess.DEVNULL,
+              stderr=subprocess.DEVNULL,
+          ).returncode == 0
+          if base_available:
+              changed_files = subprocess.check_output(
+                  ["git", "diff", "--name-only", base_sha, head_sha],
+                  text=True,
+              ).splitlines()
+          else:
+              # A force-push or a new branch may leave no base to compare.
+              # Validate the current tree rather than skipping relevant checks.
+              print("Base commit unavailable; validating all ops and packaging files.")
+              changed_files = subprocess.check_output(
+                  ["git", "ls-tree", "-r", "--name-only", head_sha],
+                  text=True,
+              ).splitlines()
 
           relevant_prefixes = (
               "packaging/",
