@@ -1,0 +1,10 @@
+digraph "Graphical Class Hierarchy"
+{
+ // INTERACTIVE_SVG=YES
+ // LATEX_PDF_SIZE
+  bgcolor="transparent";
+  edge [fontname=Helvetica,fontsize=10,labelfontname=Helvetica,labelfontsize=10];
+  node [fontname=Helvetica,fontsize=10,shape=box,height=0.2,width=0.4];
+  rankdir="LR";
+  Node0 [id="Node000000",label="Feel::detailOpLagP1\l::SpaceToLagrangeP1Space\l\< SpaceType \>::SelectConvex\l\< PsetType \>",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$structFeel_1_1detailOpLagP1_1_1SpaceToLagrangeP1Space_1_1SelectConvex.html",tooltip=" "];
+}

@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['examples_0',['Examples',['../md_examples.html',1,'']]]
+  ['api_20by_20doxygen_0',['Feel++ API by Doxygen',['../index.html',1,'']]]
 ];

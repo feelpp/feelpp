@@ -7,5 +7,5 @@ var searchData=
   ['mesh_5fconnector_5ftype_4',['mesh_connector_type',['../classFeel_1_1FunctionSpaceManager.html#a8b858a601b893c272b4796fd659e9a13',1,'Feel::FunctionSpaceManager']]],
   ['mesh_5fptrtype_5',['mesh_ptrtype',['../classFeel_1_1MeshAdaptation.html#a46d54a222cc92f6b6e5f8f9709b79bd5',1,'Feel::MeshAdaptation']]],
   ['mesh_5ft_6',['mesh_t',['../group__Traits.html#ga1336b81ca93b68694c128534dcd8eca0',1,'Feel']]],
-  ['mesh_5ftype_7',['mesh_type',['../classFeel_1_1MeshAdaptation.html#af221984d4946424aa778d0c5b9e0c3b4',1,'Feel::MeshAdaptation::mesh_type()'],['../classFeel_1_1DofTable.html#a7ef534143c67b387d25792d1bfa00be1',1,'Feel::DofTable::mesh_type()']]]
+  ['mesh_5ftype_7',['mesh_type',['../classFeel_1_1MeshAdaptation.html#af221984d4946424aa778d0c5b9e0c3b4',1,'Feel::MeshAdaptation::mesh_type'],['../classFeel_1_1DofTable.html#a7ef534143c67b387d25792d1bfa00be1',1,'Feel::DofTable::mesh_type']]]
 ];

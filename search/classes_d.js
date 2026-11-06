@@ -14,6 +14,6 @@ var searchData=
   ['nonesuch_11',['nonesuch',['../structnlohmann_1_1detail_1_1nonesuch.html',1,'nlohmann::detail']]],
   ['noperiodicity_12',['NoPeriodicity',['../classFeel_1_1NoPeriodicity.html',1,'Feel']]],
   ['normalization_13',['Normalization',['../structFeel_1_1FeelModels_1_1ModelMesh_1_1DistanceToRangeSetup_1_1Normalization.html',1,'Feel::FeelModels::ModelMesh::DistanceToRangeSetup']]],
-  ['normalstress_14',['NormalStress',['../classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions_1_1NormalStress.html',1,'Feel::FeelModels::FluidMechanicsBoundaryConditions&lt; Dim &gt;::NormalStress'],['../classFeel_1_1FeelModels_1_1SolidMechanicsBoundaryConditions_1_1NormalStress.html',1,'Feel::FeelModels::SolidMechanicsBoundaryConditions&lt; Dim &gt;::NormalStress']]],
+  ['normalstress_14',['normalstress',['../classFeel_1_1FeelModels_1_1SolidMechanicsBoundaryConditions_1_1NormalStress.html',1,'Feel::FeelModels::SolidMechanicsBoundaryConditions&lt; Dim &gt;::NormalStress'],['../classFeel_1_1FeelModels_1_1FluidMechanicsBoundaryConditions_1_1NormalStress.html',1,'Feel::FeelModels::FluidMechanicsBoundaryConditions&lt; Dim &gt;::NormalStress']]],
   ['normlinfdata_15',['normLinfData',['../structFeel_1_1vf_1_1normLinfData.html',1,'Feel::vf']]]
 ];

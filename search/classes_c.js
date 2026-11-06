@@ -31,7 +31,7 @@ var searchData=
   ['mesh3d_28',['Mesh3D',['../classFeel_1_1Mesh3D.html',1,'Feel']]],
   ['mesh_3c_20geoshape_2c_20t_2c_200_2c_20indext_2c_20enablesharedfromthis_20_3e_29',['Mesh&lt; GeoShape, T, 0, IndexT, EnableSharedFromThis &gt;',['../classFeel_1_1Mesh.html',1,'Feel']]],
   ['mesh_5ftype_30',['mesh_type',['../structFeel_1_1mesh__type.html',1,'Feel']]],
-  ['meshadaptation_31',['MeshAdaptation',['../structFeel_1_1FeelModels_1_1ModelMesh_1_1MeshAdaptation.html',1,'Feel::FeelModels::ModelMesh&lt; IndexType &gt;::MeshAdaptation'],['../classFeel_1_1MeshAdaptation.html',1,'Feel::MeshAdaptation&lt; Dim, Order, OrderGeo &gt;']]],
+  ['meshadaptation_31',['meshadaptation',['../classFeel_1_1MeshAdaptation.html',1,'Feel::MeshAdaptation&lt; Dim, Order, OrderGeo &gt;'],['../structFeel_1_1FeelModels_1_1ModelMesh_1_1MeshAdaptation.html',1,'Feel::FeelModels::ModelMesh&lt; IndexType &gt;::MeshAdaptation']]],
   ['meshbase_32',['MeshBase',['../classFeel_1_1MeshBase.html',1,'Feel']]],
   ['meshbase_3c_20index_5ft_20_3e_33',['MeshBase&lt; index_t &gt;',['../classFeel_1_1MeshBase.html',1,'Feel']]],
   ['meshbase_3c_20index_5ftype_20_3e_34',['MeshBase&lt; index_type &gt;',['../classFeel_1_1MeshBase.html',1,'Feel']]],

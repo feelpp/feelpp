@@ -5,9 +5,7 @@ var dir_f953484fe51916b7b30cc3393ae061de =
     [ "application.cpp", "application_8cpp.html", "application_8cpp" ],
     [ "application.hpp", "application_8hpp.html", null ],
     [ "applicationxml.cpp", "applicationxml_8cpp.html", null ],
-    [ "applicationxml.hpp", "applicationxml_8hpp.html", [
-      [ "Feel::ApplicationXML", "classFeel_1_1ApplicationXML.html", "classFeel_1_1ApplicationXML" ]
-    ] ],
+    [ "applicationxml.hpp", "applicationxml_8hpp.html", "applicationxml_8hpp" ],
     [ "checker.cpp", "checker_8cpp.html", null ],
     [ "checker.hpp", "checker_8hpp.html", "checker_8hpp" ],
     [ "commobject.hpp", "commobject_8hpp.html", "commobject_8hpp" ],
@@ -35,10 +33,7 @@ var dir_f953484fe51916b7b30cc3393ae061de =
     [ "modernization_examples.hpp", "modernization__examples_8hpp.html", "modernization__examples_8hpp" ],
     [ "mpicompat.hpp", "mpicompat_8hpp.html", null ],
     [ "parameter.hpp", "feelcore_2parameter_8hpp.html", "feelcore_2parameter_8hpp" ],
-    [ "policy.hpp", "policy_8hpp.html", [
-      [ "Feel::PolicyCreationUsingNew< T >", "structFeel_1_1PolicyCreationUsingNew.html", null ],
-      [ "Feel::PolicyFeelTimeDefault< T >", "structFeel_1_1PolicyFeelTimeDefault.html", null ]
-    ] ],
+    [ "policy.hpp", "policy_8hpp.html", "policy_8hpp" ],
     [ "range.hpp", "range_8hpp.html", "range_8hpp" ],
     [ "reenablewarnings.hpp", "reenablewarnings_8hpp.html", null ],
     [ "remotedatackan.cpp", "remotedatackan_8cpp.html", null ],
@@ -48,22 +43,11 @@ var dir_f953484fe51916b7b30cc3393ae061de =
     [ "simget.hpp", "simget_8hpp.html", "simget_8hpp" ],
     [ "singleton.hpp", "singleton_8hpp.html", null ],
     [ "testsuite.hpp", "testsuite_8hpp.html", null ],
-    [ "timermap.hpp", "timermap_8hpp.html", [
-      [ "Feel::TimerMap", "classFeel_1_1TimerMap.html", null ],
-      [ "Feel::TimerPair", "structFeel_1_1TimerPair.html", null ]
-    ] ],
+    [ "timermap.hpp", "timermap_8hpp.html", "timermap_8hpp" ],
     [ "traits.hpp", "feelpp_2feel_2feelcore_2traits_8hpp.html", "feelpp_2feel_2feelcore_2traits_8hpp" ],
     [ "tuple_utils.hpp", "tuple__utils_8hpp.html", "tuple__utils_8hpp" ],
     [ "typetraits.hpp", "typetraits_8hpp.html", "typetraits_8hpp" ],
-    [ "visitor.hpp", "visitor_8hpp.html", [
-      [ "Feel::VisitableBase< R, CatchAll >", "classFeel_1_1VisitableBase.html", "classFeel_1_1VisitableBase" ],
-      [ "Feel::VisitableCatchAllDefault< R, Visited >", "structFeel_1_1VisitableCatchAllDefault.html", null ],
-      [ "Feel::Visitor< T, R >", "classFeel_1_1Visitor.html", "classFeel_1_1Visitor" ],
-      [ "Feel::VisitorBaseImpl< mpl::list< Head >, R >", "classFeel_1_1VisitorBaseImpl_3_01mpl_1_1list_3_01Head_01_4_00_01R_01_4.html", null ],
-      [ "Feel::VisitorBaseImpl< mpl::list< Head, Tail >, R >", "classFeel_1_1VisitorBaseImpl_3_01mpl_1_1list_3_01Head_00_01Tail_01_4_00_01R_01_4.html", null ],
-      [ "Feel::VisitorCyclic< R, TList >", "classFeel_1_1VisitorCyclic.html", null ],
-      [ "Feel::VisitorList< TList, R >", "classFeel_1_1VisitorList.html", null ]
-    ] ],
+    [ "visitor.hpp", "visitor_8hpp.html", "visitor_8hpp" ],
     [ "warnon.hpp", "warnon_8hpp.html", null ],
     [ "worldcomm.cpp", "worldcomm_8cpp.html", null ],
     [ "worldcomm.hpp", "worldcomm_8hpp.html", "worldcomm_8hpp" ],

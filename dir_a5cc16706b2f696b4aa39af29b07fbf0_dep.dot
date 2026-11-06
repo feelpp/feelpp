@@ -1,0 +1,19 @@
+digraph "/scratch/github-runners/feelpp-actions-runner-0/_work/feelpp/feelpp/feelpp/feel/feelmesh"
+{
+ // INTERACTIVE_SVG=YES
+ // LATEX_PDF_SIZE
+  bgcolor="transparent";
+  edge [fontname=Helvetica,fontsize=10,labelfontname=Helvetica,labelfontsize=10];
+  node [fontname=Helvetica,fontsize=10,shape=box,height=0.2,width=0.4];
+  compound=true
+  subgraph clusterdir_a4c121e06ebcc119b041a36581d5d48a {
+    graph [ bgcolor="#f4f7ed", pencolor="grey50", label="feel", fontname=Helvetica,fontsize=10 style="filled,dashed", URL="dir_a4c121e06ebcc119b041a36581d5d48a.html",tooltip=""]
+  dir_f953484fe51916b7b30cc3393ae061de [label="feelcore", fillcolor="#c9d6a2", color="grey25", style="filled", URL="dir_f953484fe51916b7b30cc3393ae061de.html",tooltip=""];
+  subgraph clusterdir_a5cc16706b2f696b4aa39af29b07fbf0 {
+    graph [ bgcolor="#f4f7ed", pencolor="grey25", label="", fontname=Helvetica,fontsize=10 style="filled,bold", URL="dir_a5cc16706b2f696b4aa39af29b07fbf0.html",tooltip=""]
+    dir_a5cc16706b2f696b4aa39af29b07fbf0 [shape=plaintext, label="feelmesh"];
+  dir_95ff000cf1450fd862876eb858a0a6ab [label="detail", fillcolor="#c9d6a2", color="grey25", style="filled", URL="dir_95ff000cf1450fd862876eb858a0a6ab.html",tooltip=""];
+  }
+  }
+  dir_a5cc16706b2f696b4aa39af29b07fbf0->dir_f953484fe51916b7b30cc3393ae061de [headlabel="4", labeldistance=1.5 headhref="dir_000014_000011.html" href="dir_000014_000011.html" color="steelblue1" fontcolor="steelblue1"];
+}

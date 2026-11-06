@@ -1,0 +1,48 @@
+digraph "Graphical Class Hierarchy"
+{
+ // INTERACTIVE_SVG=YES
+ // LATEX_PDF_SIZE
+  bgcolor="transparent";
+  edge [fontname=Helvetica,fontsize=10,labelfontname=Helvetica,labelfontsize=10];
+  node [fontname=Helvetica,fontsize=10,shape=box,height=0.2,width=0.4];
+  rankdir="LR";
+  Node0 [id="Node000000",label="basis_0_type::polyset_type",height=0.2,width=0.4,color="grey60", fillcolor="#E0E0E0", style="filled",tooltip=" "];
+  Node0 -> Node1 [id="edge7_Node000000_Node000001",dir="back",color="firebrick4",style="solid",tooltip=" "];
+  Node1 [id="Node000001",label="Feel::FunctionSpace\l\< MeshTypes, BasisTypes,\l T, PeriodicityType, MortarType\l \>::Element\< TT, Cont \>",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$classFeel_1_1FunctionSpace_1_1Element.html",tooltip=" "];
+  Node14 [id="Node000014",label="BlocksBaseVector",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$classBlocksBaseVector.html",tooltip=" "];
+  Node14 -> Node13 [id="edge8_Node000014_Node000013",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node13 [id="Node000013",label="Feel::ProductSpace\l::Element",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$classFeel_1_1ProductSpace_1_1Element.html",tooltip=" "];
+  Node14 -> Node15 [id="edge9_Node000014_Node000015",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node15 [id="Node000015",label="Feel::ProductSpaces2\l\< T, SpaceList \>::Element",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$classFeel_1_1ProductSpaces2_1_1Element.html",tooltip=" "];
+  Node14 -> Node16 [id="edge10_Node000014_Node000016",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node16 [id="Node000016",label="Feel::ProductSpaces\l::Element",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$classFeel_1_1ProductSpaces_1_1Element.html",tooltip=" "];
+  Node2 [id="Node000002",label="boost::addable",height=0.2,width=0.4,color="grey60", fillcolor="#E0E0E0", style="filled",tooltip=" "];
+  Node2 -> Node3 [id="edge11_Node000002_Node000003",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node3 [id="Node000003",label="Feel::Mesh\< GeoShape,\l T, 0, IndexT, EnableShared\lFromThis \>",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$classFeel_1_1Mesh.html",tooltip=" "];
+  Node3 -> Node4 [id="edge12_Node000003_Node000004",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node4 [id="Node000004",label="Feel::MeshStructured\l\< GeoShape, T, IndexT \>",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$classFeel_1_1MeshStructured.html",tooltip=" "];
+  Node2 -> Node1 [id="edge13_Node000002_Node000001",dir="back",color="firebrick4",style="solid",tooltip=" "];
+  Node2 -> Node7 [id="edge14_Node000002_Node000007",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node7 [id="Node000007",label="Feel::Mesh\< GeoShape,\l T, Tag, IndexT, _EnableShared\lFromThis \>",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$classFeel_1_1Mesh.html",tooltip="unifying mesh class"];
+  Node6 [id="Node000006",label="boost::mp11::mp_if_c",height=0.2,width=0.4,color="grey60", fillcolor="#E0E0E0", style="filled",tooltip=" "];
+  Node6 -> Node3 [id="edge15_Node000006_Node000003",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node6 -> Node7 [id="edge16_Node000006_Node000007",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node6 -> Node9 [id="edge17_Node000006_Node000009",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node9 [id="Node000009",label="Feel::MeshInverse\<\l MeshType \>",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$classFeel_1_1MeshInverse.html",tooltip=" "];
+  Node6 -> Node10 [id="edge18_Node000006_Node000010",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node10 [id="Node000010",label="Feel::is_filter\< T \>",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$structFeel_1_1is__filter.html",tooltip="Filters."];
+  Node11 [id="Node000011",label="boost::subtractable",height=0.2,width=0.4,color="grey60", fillcolor="#E0E0E0", style="filled",tooltip=" "];
+  Node11 -> Node1 [id="edge19_Node000011_Node000001",dir="back",color="firebrick4",style="solid",tooltip=" "];
+  Node12 [id="Node000012",label="Feel::FunctionSpaceBase\l::ElementBase",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$classFeel_1_1FunctionSpaceBase_1_1ElementBase.html",tooltip=" "];
+  Node12 -> Node1 [id="edge20_Node000012_Node000001",dir="back",color="firebrick4",style="solid",tooltip=" "];
+  Node12 -> Node13 [id="edge21_Node000012_Node000013",dir="back",color="firebrick4",style="solid",tooltip=" "];
+  Node12 -> Node15 [id="edge22_Node000012_Node000015",dir="back",color="firebrick4",style="solid",tooltip=" "];
+  Node12 -> Node16 [id="edge23_Node000012_Node000016",dir="back",color="firebrick4",style="solid",tooltip=" "];
+  Node5 [id="Node000005",label="Feel::MeshStructuredBase",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$structFeel_1_1MeshStructuredBase.html",tooltip="Structured mesh class."];
+  Node5 -> Node4 [id="edge24_Node000005_Node000004",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node8 [id="Node000008",label="std::conditional_t",height=0.2,width=0.4,color="grey60", fillcolor="#E0E0E0", style="filled",tooltip=" "];
+  Node8 -> Node3 [id="edge25_Node000008_Node000003",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node8 -> Node7 [id="edge26_Node000008_Node000007",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node17 [id="Node000017",label="VectorUblas",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$classVectorUblas.html",tooltip=" "];
+  Node17 -> Node1 [id="edge27_Node000017_Node000001",dir="back",color="steelblue1",style="solid",tooltip=" "];
+}

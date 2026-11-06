@@ -1,5 +1,0 @@
-<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structFeel_1_1vf_1_1detail_1_1ShellCellGeometryTensorBase.html" title=" " alt="" coords="5,75,189,131"/>
-<area shape="rect" id="node2" href="$structFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator_1_1tensor.html" title="Tensor evaluator for an SB9 stabilization contribution." alt="" coords="237,5,447,91"/>
-<area shape="rect" id="node3" href="$structFeel_1_1vf_1_1detail_1_1SB9VectorOperator_1_1tensor.html" title="Tensor evaluator for an SB9 vector contribution." alt="" coords="243,115,441,200"/>
-</map>

@@ -18,10 +18,9 @@ var searchData=
   ['is_5fmatrix_5ffield_5fv_15',['is_matrix_field_v',['../group__Traits.html#ga90536bec69f2b3d99bbb96f64ca1eb7f',1,'Feel']]],
   ['is_5fmesh_5fstructured_5fv_16',['is_mesh_structured_v',['../namespaceFeel.html#a18dabe26594b7b6f02584f0dc508ed5d',1,'Feel']]],
   ['is_5fmesh_5fv_17',['is_mesh_v',['../group__Traits.html#gaaed46165ccfb4bc35eb78bfe25f89459',1,'Feel']]],
-  ['is_5freference_5fconvex_5fv_18',['is_reference_convex_v',['../namespaceFeel.html#aafa2bb863d80dabf2b91ec03146deda5',1,'Feel']]],
-  ['is_5fscalar_5ffield_5fv_19',['is_scalar_field_v',['../group__Traits.html#gaa9ff86cd1f9759d28a737936036e5fb6',1,'Feel']]],
-  ['is_5ftensor2_5ffield_5fv_20',['is_tensor2_field_v',['../group__Traits.html#gab7be68dfa9321c6050614248a0ebe556',1,'Feel']]],
-  ['is_5ftensor2symm_5ffield_5fv_21',['is_tensor2symm_field_v',['../group__Traits.html#ga469004fabfb04cc82b16409cbe1874f6',1,'Feel']]],
-  ['is_5fterminal_22',['is_terminal',['../classFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator.html#a3be8a161d9887e5d1d78872bd7ce9dfc',1,'Feel::vf::detail::SB9StabilizationOperator::is_terminal()'],['../classFeel_1_1vf_1_1detail_1_1SB9VectorOperator.html#a0b4d630839750f2706b0fc209d25601f',1,'Feel::vf::detail::SB9VectorOperator::is_terminal()']]],
-  ['is_5fvector_5ffield_5fv_23',['is_vector_field_v',['../group__Traits.html#ga3c450360de7016792661f7b22d1c8805',1,'Feel']]]
+  ['is_5fscalar_5ffield_5fv_18',['is_scalar_field_v',['../group__Traits.html#gaa9ff86cd1f9759d28a737936036e5fb6',1,'Feel']]],
+  ['is_5ftensor2_5ffield_5fv_19',['is_tensor2_field_v',['../group__Traits.html#gab7be68dfa9321c6050614248a0ebe556',1,'Feel']]],
+  ['is_5ftensor2symm_5ffield_5fv_20',['is_tensor2symm_field_v',['../group__Traits.html#ga469004fabfb04cc82b16409cbe1874f6',1,'Feel']]],
+  ['is_5fterminal_21',['is_terminal',['../classFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator.html#a3be8a161d9887e5d1d78872bd7ce9dfc',1,'Feel::vf::detail::SB9StabilizationOperator::is_terminal'],['../classFeel_1_1vf_1_1detail_1_1SB9VectorOperator.html#a0b4d630839750f2706b0fc209d25601f',1,'Feel::vf::detail::SB9VectorOperator::is_terminal']]],
+  ['is_5fvector_5ffield_5fv_22',['is_vector_field_v',['../group__Traits.html#ga3c450360de7016792661f7b22d1c8805',1,'Feel']]]
 ];

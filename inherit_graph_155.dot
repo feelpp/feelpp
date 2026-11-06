@@ -1,0 +1,10 @@
+digraph "Graphical Class Hierarchy"
+{
+ // INTERACTIVE_SVG=YES
+ // LATEX_PDF_SIZE
+  bgcolor="transparent";
+  edge [fontname=Helvetica,fontsize=10,labelfontname=Helvetica,labelfontsize=10];
+  node [fontname=Helvetica,fontsize=10,shape=box,height=0.2,width=0.4];
+  rankdir="LR";
+  Node0 [id="Node000000",label="Feel::element_type\l_helper\< SpaceType,\l std::enable_if_t\< is\l_functionspace_v\< SpaceType \> \> \>",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$structFeel_1_1element__type__helper_3_01SpaceType_00_01std_1_1enable__if__t_3_01is__functionspac5bf0096d00d33686055da1a6c6998111.html",tooltip="Specialization for FunctionSpaces."];
+}

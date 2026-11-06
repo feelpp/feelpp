@@ -1,0 +1,14 @@
+digraph "Graphical Class Hierarchy"
+{
+ // INTERACTIVE_SVG=YES
+ // LATEX_PDF_SIZE
+  bgcolor="transparent";
+  edge [fontname=Helvetica,fontsize=10,labelfontname=Helvetica,labelfontsize=10];
+  node [fontname=Helvetica,fontsize=10,shape=box,height=0.2,width=0.4];
+  rankdir="LR";
+  Node0 [id="Node000000",label="Feel::detail::bases_base",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$classFeel_1_1detail_1_1bases__base.html",tooltip=" "];
+  Node0 -> Node1 [id="edge283_Node000000_Node000001",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node1 [id="Node000001",label="Feel::bases\< A0, A1,\l A2, A3, A4 \>",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$structFeel_1_1bases.html",tooltip=" "];
+  Node2 [id="Node000002",label="mpl::if_::type",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$classmpl_1_1if___3_01boost_1_1is__same_3_01void__basis_00_01void__basis_01_4_00_01boost_1_1fusio0a31df2c50b0fddf482ad5b064d09145.html",tooltip=" "];
+  Node2 -> Node1 [id="edge284_Node000002_Node000001",dir="back",color="steelblue1",style="solid",tooltip=" "];
+}

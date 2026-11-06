@@ -1,0 +1,10 @@
+digraph "Graphical Class Hierarchy"
+{
+ // INTERACTIVE_SVG=YES
+ // LATEX_PDF_SIZE
+  bgcolor="transparent";
+  edge [fontname=Helvetica,fontsize=10,labelfontname=Helvetica,labelfontsize=10];
+  node [fontname=Helvetica,fontsize=10,shape=box,height=0.2,width=0.4];
+  rankdir="LR";
+  Node0 [id="Node000000",label="fmt::formatter\< Feel\l::Range\< MeshType, MESH\l_ENTITIES \>, std::enable\l_if_t\< std::is_base_of_v\l\< Feel::MeshBase\<\>, MeshType\l \>, char \> \>",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$structfmt_1_1formatter_3_01Feel_1_1Range_3_01MeshType_00_01MESH__ENTITIES_01_4_00_01std_1_1enabl0c215f812488180e0902d8841c7d4f7e.html",tooltip="Formatter specialization for Feel::Range."];
+}

@@ -1,11 +1,7 @@
 var classFeel_1_1FeelModels_1_1CoefficientFormPDEs =
 [
-    [ "FilterBasisUnknown", "structFeel_1_1FeelModels_1_1CoefficientFormPDEs_1_1FilterBasisUnknown.html", [
-      [ "apply", "structFeel_1_1FeelModels_1_1CoefficientFormPDEs_1_1FilterBasisUnknown_1_1apply.html", null ]
-    ] ],
-    [ "FilterBasisUnknownAll", "structFeel_1_1FeelModels_1_1CoefficientFormPDEs_1_1FilterBasisUnknownAll.html", [
-      [ "apply", "structFeel_1_1FeelModels_1_1CoefficientFormPDEs_1_1FilterBasisUnknownAll_1_1apply.html", null ]
-    ] ],
+    [ "FilterBasisUnknown", "structFeel_1_1FeelModels_1_1CoefficientFormPDEs_1_1FilterBasisUnknown.html", "structFeel_1_1FeelModels_1_1CoefficientFormPDEs_1_1FilterBasisUnknown" ],
+    [ "FilterBasisUnknownAll", "structFeel_1_1FeelModels_1_1CoefficientFormPDEs_1_1FilterBasisUnknownAll.html", "structFeel_1_1FeelModels_1_1CoefficientFormPDEs_1_1FilterBasisUnknownAll" ],
     [ "traits", "structFeel_1_1FeelModels_1_1CoefficientFormPDEs_1_1traits.html", null ],
     [ "apply", "classFeel_1_1FeelModels_1_1CoefficientFormPDEs.html#a8d15ec2841bcbb43b96184ba376efd04", null ],
     [ "coefficientFormPDE", "classFeel_1_1FeelModels_1_1CoefficientFormPDEs.html#ac0830d19b1d193ad40d91503cf809b30", null ],

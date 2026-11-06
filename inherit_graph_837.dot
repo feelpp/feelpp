@@ -1,0 +1,12 @@
+digraph "Graphical Class Hierarchy"
+{
+ // INTERACTIVE_SVG=YES
+ // LATEX_PDF_SIZE
+  bgcolor="transparent";
+  edge [fontname=Helvetica,fontsize=10,labelfontname=Helvetica,labelfontsize=10];
+  node [fontname=Helvetica,fontsize=10,shape=box,height=0.2,width=0.4];
+  rankdir="LR";
+  Node0 [id="Node000000",label="spirit::lex::lexer",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$classspirit_1_1lex_1_1lexer.html",tooltip=" "];
+  Node0 -> Node1 [id="edge476_Node000000_Node000001",dir="back",color="steelblue1",style="solid",tooltip=" "];
+  Node1 [id="Node000001",label="Feel::strip_comments\l_tokens\< Lexer \>",height=0.2,width=0.4,color="grey40", fillcolor="white", style="filled",URL="$structFeel_1_1strip__comments__tokens.html",tooltip=" "];
+}

@@ -1,11 +1,6 @@
 var classFeel_1_1vf_1_1GinacMatrix =
 [
-    [ "FunctorsVariadicExpr", "structFeel_1_1vf_1_1GinacMatrix_1_1FunctorsVariadicExpr.html", [
-      [ "HasTestBasis", "structFeel_1_1vf_1_1GinacMatrix_1_1FunctorsVariadicExpr_1_1HasTestBasis.html", null ],
-      [ "HasTestFunction", "structFeel_1_1vf_1_1GinacMatrix_1_1FunctorsVariadicExpr_1_1HasTestFunction.html", null ],
-      [ "HasTrialBasis", "structFeel_1_1vf_1_1GinacMatrix_1_1FunctorsVariadicExpr_1_1HasTrialBasis.html", null ],
-      [ "HasTrialFunction", "structFeel_1_1vf_1_1GinacMatrix_1_1FunctorsVariadicExpr_1_1HasTrialFunction.html", null ]
-    ] ],
+    [ "FunctorsVariadicExpr", "structFeel_1_1vf_1_1GinacMatrix_1_1FunctorsVariadicExpr.html", "structFeel_1_1vf_1_1GinacMatrix_1_1FunctorsVariadicExpr" ],
     [ "HasTestFunction", "structFeel_1_1vf_1_1GinacMatrix_1_1HasTestFunction.html", null ],
     [ "HasTrialFunction", "structFeel_1_1vf_1_1GinacMatrix_1_1HasTrialFunction.html", null ],
     [ "Lambda", "structFeel_1_1vf_1_1GinacMatrix_1_1Lambda.html", null ],

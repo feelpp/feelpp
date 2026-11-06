@@ -1,9 +1,7 @@
 var classFeel_1_1FeelModels_1_1FluidMechanics =
 [
     [ "FieldTag", "structFeel_1_1FeelModels_1_1FluidMechanics_1_1FieldTag.html", null ],
-    [ "FilterBasisUnknownTurbulenceModel", "structFeel_1_1FeelModels_1_1FluidMechanics_1_1FilterBasisUnknownTurbulenceModel.html", [
-      [ "apply", "structFeel_1_1FeelModels_1_1FluidMechanics_1_1FilterBasisUnknownTurbulenceModel_1_1apply.html", null ]
-    ] ],
+    [ "FilterBasisUnknownTurbulenceModel", "structFeel_1_1FeelModels_1_1FluidMechanics_1_1FilterBasisUnknownTurbulenceModel.html", "structFeel_1_1FeelModels_1_1FluidMechanics_1_1FilterBasisUnknownTurbulenceModel" ],
     [ "NBodyArticulated", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated.html", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1NBodyArticulated" ],
     [ "TurbulenceModelBoundaryConditions", "structFeel_1_1FeelModels_1_1FluidMechanics_1_1TurbulenceModelBoundaryConditions.html", "structFeel_1_1FeelModels_1_1FluidMechanics_1_1TurbulenceModelBoundaryConditions" ],
     [ "bodySetBC", "classFeel_1_1FeelModels_1_1FluidMechanics.html#abd2ecb65243a63824b9d86f7ae92183b", null ],
