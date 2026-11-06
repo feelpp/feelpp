@@ -227,15 +227,15 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_2, T, dim_types )
     //e->add( "wTensor2", wTensor2 );
     e->add( "wTensor2Symm", wTensor2Symm );
 
-    e->add( "expr1Scalar", inner(P()), markedelements(mesh,"Omega1") );
-    e->add( "expr1Scalar", inner(P()), markedelements(mesh,"Omega2") );
-    e->add( "expr1Scalar", inner(P()), markedelements(mesh,"Omega3") );
-
-    e->add( "expr2Scalar", cst(1.), markedelements(mesh,"Omega1"), "element" );
-    e->add( "expr2Scalar", cst(2.), markedelements(mesh,"Omega2"), "element" );
-    e->add( "expr2Scalar", cst(3.), markedelements(mesh,"Omega3"), "element" );
-
-    e->add( "expr3Vectorial", P(), std::set<std::string>{"nodal","element"} );
+    // Interpolate each expression directly into one immutable export snapshot.
+    e->add( "expr1Scalar", inner( P() ), markedelements( mesh, { "Omega1", "Omega2", "Omega3" } ) );
+    e->add( "expr2Scalar",
+            cst( 1. ) * ( emarker() == mesh->markerName( "Omega1" ) ) +
+                cst( 2. ) * ( emarker() == mesh->markerName( "Omega2" ) ) +
+                cst( 3. ) * ( emarker() == mesh->markerName( "Omega3" ) ),
+            "element" );
+    e->add( "expr3Vectorial", P(), std::set<std::string>{ "nodal", "element" } );
+    BOOST_CHECK_EQUAL( e->defaultTimeSet()->numberOfSteps(), 0 );
     e->save();
 
 

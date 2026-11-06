@@ -2,8 +2,42 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+import re
 
 import yaml
+
+
+@dataclass(frozen=True)
+class PreciceRelease:
+    """Verified binary and source inputs for one distribution's preCICE release."""
+
+    version: str
+    package_url: str
+    package_sha256: str
+    package_architecture: str
+    source_url: str
+    source_sha256: str
+
+
+def _precice_release(payload: object) -> PreciceRelease | None:
+    if payload is None:
+        return None
+    if not isinstance(payload, dict):
+        raise ValueError("preCICE metadata must be a mapping")
+    fields = ("version", "package_url", "package_sha256", "package_architecture",
+              "source_url", "source_sha256")
+    values = {name: str(payload.get(name, "")).strip() for name in fields}
+    if not re.fullmatch(r"\d+\.\d+\.\d+", values["version"]):
+        raise ValueError("preCICE metadata requires an exact release version")
+    for name in ("package_sha256", "source_sha256"):
+        if not re.fullmatch(r"[0-9a-f]{64}", values[name]):
+            raise ValueError(f"Invalid preCICE {name}")
+    for name in ("package_url", "source_url"):
+        if not re.fullmatch(r"https://github\.com/precice/precice/[A-Za-z0-9_./-]+", values[name]):
+            raise ValueError(f"preCICE {name} must use the official HTTPS release source")
+    if values["package_architecture"] != "amd64":
+        raise ValueError("preCICE binary release packages support only amd64; arm64 uses source")
+    return PreciceRelease(**values)
 
 
 @dataclass(frozen=True)
@@ -16,6 +50,7 @@ class DockerDistributionVersion:
     platforms: tuple[str, ...]
     experimental: bool
     openmpi_packages: tuple[str, ...]
+    precice: PreciceRelease | None = None
 
 
 @dataclass(frozen=True)
@@ -75,6 +110,7 @@ def load_docker_metadata(repo_root: Path) -> DockerMetadata:
                 openmpi_packages=tuple(
                     str(item) for item in version_payload.get("openmpi_packages", []) or []
                 ),
+                precice=_precice_release(version_payload.get("precice")),
             )
 
     package_groups = {
@@ -155,4 +191,3 @@ def packages_for_variant(metadata: DockerMetadata, *, variant_name: str) -> list
         seen.add(package)
         ordered.append(package)
     return ordered
-

@@ -95,7 +95,7 @@ template <typename IndexT>
 void
 MeshBase<IndexT>::clear()
 {
-    M_is_updated = false;
+    this->setUpdatedForUse( false );
 
     M_n_vertices = 0;
 

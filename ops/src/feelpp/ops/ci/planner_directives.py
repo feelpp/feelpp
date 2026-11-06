@@ -7,11 +7,15 @@ import re
 import sys
 import uuid
 
-SPACK_TARGET = "spack:openmpi"
+DEFAULT_SPACK_TARGET = "spack:openmpi"
 SPACK_TARGET_ALIASES = {
-    "spack": SPACK_TARGET,
-    "openmpi": SPACK_TARGET,
-    "spack-openmpi": SPACK_TARGET,
+    "spack": DEFAULT_SPACK_TARGET,
+    "openmpi": DEFAULT_SPACK_TARGET,
+    "spack-openmpi": DEFAULT_SPACK_TARGET,
+    "openmpi5": "spack:openmpi5",
+    "spack-openmpi5": "spack:openmpi5",
+    "mpich": "spack:mpich",
+    "spack-mpich": "spack:mpich",
 }
 VALID_SPACK_ONLY_JOBS = {"feelpp-full"}
 INLINE_DIRECTIVE_KEYS = ("targets", "only", "skip", "mode")
@@ -44,6 +48,10 @@ def _normalize_token_list(raw: str, *, aliases: dict[str, str] | None = None) ->
 
 def normalize_targets(raw_targets: str) -> list[str]:
     return _normalize_token_list(raw_targets, aliases=SPACK_TARGET_ALIASES)
+
+
+def _is_spack_target(target: str) -> bool:
+    return target.startswith("spack:")
 
 
 def normalize_list_value(raw: str) -> str:
@@ -89,6 +97,7 @@ def build_planner_message(
     only: str = "",
     skip: str = "",
     mode: str = "",
+    spack_components: bool = False,
 ) -> str:
     lines: list[str] = []
     targets, embedded_directives = _extract_embedded_directives(targets)
@@ -97,13 +106,31 @@ def build_planner_message(
     normalized_skip = normalize_list_value(" ".join([skip, *embedded_directives["skip"]]))
     raw_mode = mode.strip() or " ".join(embedded_directives["mode"]).strip()
     normalized_mode = raw_mode.lower()
-    contains_spack = SPACK_TARGET in normalized_targets
-    spack_only = bool(normalized_targets) and all(target == SPACK_TARGET for target in normalized_targets)
+    restricted_spack_targets = [
+        target for target in normalized_targets
+        if _is_spack_target(target) and not (spack_components and target in {"spack:openmpi5", "spack:mpich"})
+    ]
+    spack_only = bool(normalized_targets) and all(
+        _is_spack_target(target) for target in normalized_targets
+    )
+
+    if "spack:mpich" in normalized_targets:
+        if not spack_components:
+            raise PlannerDirectiveError("spack:mpich requires spack_components=true")
+        if normalized_mode == "full":
+            raise PlannerDirectiveError("spack:mpich supports only mode=components")
+        if normalized_only and not {"feelpp"}.issuperset(_split_tokens(normalized_only)):
+            raise PlannerDirectiveError("spack:mpich supports only the feelpp component")
+        if any(
+            _is_spack_target(target) and target not in {"spack:mpich", "spack:openmpi5"}
+            for target in normalized_targets
+        ):
+            raise PlannerDirectiveError("spack:mpich cannot be combined with full-only Spack targets")
 
     if normalized_targets:
         lines.append(f"targets={','.join(normalized_targets)}")
 
-    if contains_spack:
+    if restricted_spack_targets:
         invalid_only = [
             token
             for token in _split_tokens(normalized_only)
@@ -112,19 +139,24 @@ def build_planner_message(
         if invalid_only:
             invalid_values = ", ".join(invalid_only)
             raise PlannerDirectiveError(
-                f"{SPACK_TARGET} only supports the feelpp-full job; invalid only= value(s): {invalid_values}"
+                "Spack targets only support the feelpp-full job; "
+                f"invalid only= value(s): {invalid_values}"
             )
 
         if normalized_skip:
             raise PlannerDirectiveError(
-                f"{SPACK_TARGET} does not support skip= filters; use mode=full without component job filters"
+                "Spack targets do not support skip= filters; "
+                "use mode=full without component job filters"
             )
 
         if spack_only and normalized_mode and normalized_mode != "full":
-            raise PlannerDirectiveError(f"{SPACK_TARGET} is only supported with mode=full")
+            raise PlannerDirectiveError("Spack targets are only supported with mode=full")
 
         if spack_only and not normalized_mode:
             normalized_mode = "full"
+
+    if spack_components and {"spack:openmpi5", "spack:mpich"}.intersection(normalized_targets) and not normalized_mode:
+        normalized_mode = "components"
 
     if normalized_only:
         lines.append(f"only={normalized_only}")
@@ -153,6 +185,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--only", default=None, help="Raw workflow_dispatch only input")
     parser.add_argument("--skip", default=None, help="Raw workflow_dispatch skip input")
     parser.add_argument("--mode", default=None, help="Raw workflow_dispatch mode input")
+    parser.add_argument("--spack-components", action="store_true", help="Allow OpenMPI 5 and MPICH core component jobs")
     parser.add_argument(
         "--github-output",
         default=None,
@@ -182,6 +215,7 @@ def main(argv: list[str] | None = None) -> int:
             only=_resolve_input(args.only, "RAW_ONLY"),
             skip=_resolve_input(args.skip, "RAW_SKIP"),
             mode=_resolve_input(args.mode, "RAW_MODE"),
+            spack_components=args.spack_components or os.environ.get("RAW_SPACK_COMPONENTS", "").lower() == "true",
         )
     except PlannerDirectiveError as exc:
         print(str(exc), file=sys.stderr)
