@@ -90,3 +90,12 @@ Notes:
   repository-owned overlay until it is either upstreamed or no longer needed
 - site-local compiler or mirror preferences should be expressed through local
   Spack configuration or example files under `packaging/spack/includes/site/`
+
+After activating this environment, use the dedicated preset so its CMake cache
+can coexist with other Spack environments:
+
+```console
+cmake --preset release-clang-spack-cpu-openmpi
+cmake --build --preset release-clang-spack-cpu-openmpi
+ctest --preset release-clang-spack-cpu-openmpi
+```

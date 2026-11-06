@@ -178,6 +178,7 @@ def describe_apt_target(
         "platforms": list(distribution.platforms),
         "template": distribution.template,
         "packages_count": len(packages),
+        "precice_version": distribution.precice.version if distribution.precice else None,
         "supported": True,
     }
 
@@ -206,6 +207,7 @@ def _render_environment_dockerfile(
         variant_name=variant.description or variant.name,
         packages=packages,
         openmpi_packages=openmpi_packages,
+        precice=distribution.precice,
     )
 
 
@@ -304,6 +306,8 @@ def generate_apt_bake(
         encoding="utf-8",
     )
     _copy_shared_assets(metadata, env_dir)
+    if distribution.precice:
+        shutil.copyfile(metadata.root / "assets" / "install-precice.sh", env_dir / "install-precice.sh")
 
     _copy_template(
         _component_template_path(metadata, "feelpp.Dockerfile.multistage"),

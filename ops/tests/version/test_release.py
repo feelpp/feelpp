@@ -97,6 +97,55 @@ class ReleaseTests(VersionRepoMixin, unittest.TestCase):
             self.assertEqual(str(synced.canonical_upstream_version()), "0.111.0-preview.13")
             self.assertIn('"version": "v0.111.0-preview.13"', (repo_root / "codemeta.json").read_text(encoding="utf-8"))
 
+    def test_release_can_include_published_spack_full_image(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo_root = self.make_repo(tmpdir)
+            manifest_path = repo_root / "packaging" / "manifest" / "components.toml"
+            manifest_path.write_text(
+                manifest_path.read_text(encoding="utf-8")
+                .replace('package_revision = "4"', 'package_revision = "2"')
+                .replace('package_revision = "5"', 'package_revision = "2"'),
+                encoding="utf-8",
+            )
+            service = ReleaseService(repo_root)
+            git_outputs = {
+                ("branch", "--show-current"): "develop\n",
+                ("rev-parse", "HEAD"): "abc123\n",
+                ("status", "--short"): "",
+                ("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"): "origin/develop\n",
+                ("rev-parse", "origin/develop"): "abc123\n",
+                ("tag", "--list", "v0.111.0-preview.13"): "",
+                ("tag", "--merged", "HEAD", "--list", "v*"): "v0.110.0\n",
+                ("remote", "get-url", "origin"): "https://github.com/feelpp/feelpp.git\n",
+            }
+
+            def fake_git_capture(args: list[str], *, check: bool = True) -> str:
+                return git_outputs[tuple(args)]
+
+            with mock.patch.object(service, "_git_capture", side_effect=fake_git_capture):
+                with mock.patch.object(service, "_ensure_github_checks_green"):
+                    with mock.patch.object(service, "_ensure_package_available"):
+                        with mock.patch.object(service, "_ensure_container_available") as container_check:
+                            with mock.patch.object(service, "_publication_notes", return_value=""):
+                                with mock.patch.object(service, "_generated_notes_preview", return_value=""):
+                                    plan = service.execute_release(
+                                        "0.111.0-preview.13", dry_run=True,
+                                        dists=("noble",), spack_targets=("openmpi5",),
+                                    )
+
+            spack_ref = "ghcr.io/feelpp/feelpp:spack-openmpi5-full"
+            self.assertIn(f"docker pull {spack_ref}", plan.package_notes)
+            self.assertIn("This is a rolling image tag", plan.package_notes)
+            self.assertEqual(
+                [check.dist for check in plan.container_checks],
+                ["noble", "noble", "spack:openmpi5"],
+            )
+            self.assertEqual(container_check.call_count, 3)
+            self.assertEqual(plan.container_checks[-1].candidate_refs, (spack_ref,))
+
+            with self.assertRaisesRegex(ValueError, "Unknown Spack full-image target"):
+                service._spack_container_checks(("unknown",), branch="develop")
+
     def test_release_dry_run_can_scope_distros_and_note_omissions(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             repo_root = self.make_repo(tmpdir)

@@ -1,6 +1,7 @@
 name: Deploy Doxygen 
 
 on: 
+  workflow_dispatch:
   push:
     branches:
       - develop 
@@ -18,12 +19,14 @@ jobs:
 #        MESSAGE: ":github: Triggered from a GitHub Action by Holo3 Project"
   build:
     runs-on: self-ubuntu-24.04
-    if: "!contains(github.event.head_commit.message, 'doc skip')"
+    if: "github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, 'doc skip')"
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v7
       with:
-        submodules: 'recursive'
+        submodules: false
         lfs: 'true'
+    - name: Initialize submodules
+      run: git submodule update --init --recursive
 #    - name: Update Dependencies
 #      run: |
 #        sudo apt install -y gpg
@@ -34,9 +37,9 @@ jobs:
 #        sudo apt update
 #        sudo apt --reinstall install -y libfeelpp1 libfeelpp-dev feelpp-tools doxygen graphviz
     - name: Configure Doxygen Preset
-      run: cmake --preset doxygen -DDOXYGEN_EXECUTABLE=/nvme0/prudhomm/local/doxygen/bin/doxygen
+      run: cmake --preset doxygen -DDOXYGEN=/nvme0/prudhomm/local/doxygen/bin/doxygen -DDOXYGEN_EXECUTABLE=/nvme0/prudhomm/local/doxygen/bin/doxygen
     - name: Build Doxygen
-      run: cmake --build --preset doxygen
+      run: cmake --build --preset doxygen --target doxygen
     - name: Deploy
       uses: JamesIves/github-pages-deploy-action@v4
       with:

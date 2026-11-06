@@ -1,0 +1,79 @@
+# Shared Feel++ CPU/OpenMPI 5 validation environment.
+#
+# This manifest mirrors the supported `cpu/openmpi` baseline while selecting
+# OpenMPI 5 and enabling OFI alongside UCX. Site-specific fabric providers,
+# compiler externals, and mirrors belong in local Spack configuration.
+spack:
+  config:
+    installer: new
+    build_jobs: 15
+    concurrent_packages: 3
+  packages:
+    mpi:
+      require:
+      - openmpi@5~internal-pmix fabrics=cma,ofi,ucx schedulers=slurm
+    mesa:
+      require:
+      - ~llvm
+
+  specs:
+  - "openmpi@5~internal-pmix fabrics=cma,ofi,ucx schedulers=slurm ^ucx~rocm+cma+thread_multiple+verbs+rc+ud+rdmacm+mlx5_dv"
+  # An explicit namespace root ensures reuse cannot select the unpatched
+  # builtin PRRTE. Namespaces in packages:require are unreliable in Spack 1.0.
+  - "feelpp.prrte@4.1.0 schedulers=slurm"
+  - "cmake"
+  - "ninja"
+  - "bison"
+  - "flex"
+  - "rsync"
+  - "boost+regex+date_time+filesystem+iostreams+log+mpi+multithreaded+program_options+serialization+shared+system+test+thread"
+  - "precice@3.4.1 +mpi+petsc+shared~python build_type=Release"
+  - "fmt+shared cxxstd=20"
+  - "curl"
+  - "libzip"
+  - "pugixml"
+  - "hwloc"
+  - "cln"
+  - "ginac"
+  - "eigen"
+  # Keep optional Feel++ libraries inside the Spack view so CMake does not
+  # fall back to host /usr candidates for enabled features.
+  - "ann"
+  - "arpack-ng+mpi+shared"
+  - "fftw+mpi precision=float,double,long_double"
+  - "gl2ps"
+  - "glpk+gmp"
+  - "gsl"
+  # Feel++ needs the Gmsh library and CLI, not the FLTK GUI. Keep the
+  # environment headless to avoid the extra GUI/OpenGL stack in Docker/CI.
+  # Pin 4.13.1 for now: the bundled Spack v1.0.0 builtin package selects
+  # newer 4.15.x, which is not yet validated in this shared environment. The
+  # repository-owned Gmsh overlay declares the GLU/X11 runtime libraries that
+  # gmsh@4.13.1~fltk still links.
+  - "gmsh@4.13.1 +opencascade+mmg~fltk"
+  - "py-gmsh@4.13.1"
+  - "py-pybind11"
+  - "py-mpi4py"
+  - "py-petsc4py@3.25.6"
+  - "py-slepc4py@3.25.2"
+  - "py-sympy"
+  - "py-pytest"
+  - "petsc@3.25.6+hpddm+mumps+hwloc+ptscotch+suite-sparse+hdf5+hypre"
+  - "slepc@3.25.2+hpddm"
+
+  # Keep this view separate from the OpenMPI 4 baseline so the two dependency
+  # DAGs can be activated and validated independently.
+  view: $user_cache_path/views/feelpp/cpu-openmpi5
+
+  concretizer:
+    unify: when_possible
+
+  repos:
+    # Repository-owned local overrides to unblock shared environment installs.
+    feelpp: ${FEELPP_REPO_ROOT}/packaging/spack/repo/spack_repo/feelpp
+    # Spack v1.0.0's default 2025 catalog lacks the required PETSc 3.25 recipes.
+    # Use a separate checkout so this pin cannot switch another user's repository.
+    builtin:
+      git: https://github.com/spack/spack-packages.git
+      commit: 093bed090925a0c327ba4fd927f1f1d5e36f2b3e
+      destination: $user_cache_path/package_repos/feelpp-builtin-093bed09

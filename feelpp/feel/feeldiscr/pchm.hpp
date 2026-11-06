@@ -31,6 +31,7 @@
 
 #include <boost/mp11/utility.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/functionspacemanager.hpp>
 
 namespace Feel {
 
@@ -106,9 +107,43 @@ inline
 Pchm_ptrtype<MeshType,Order,T,Pts,Tag>
 Pchm( std::shared_ptr<MeshType> mesh, DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
 {
-    return Pchm_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
-                                                    _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
-                                                    _extended_doftable=dte );
+    using space_type = Pchm_type<MeshType,Order,T,Pts,Tag>;
+    return getOrCreateWholeMeshFunctionSpace<space_type>(
+        mesh, dte,
+        FunctionSpaceReusePolicy::automatic,
+        [&]()
+        {
+            return space_type::New( _mesh=mesh,
+                                    _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
+                                    _extended_doftable=dte );
+        } );
+}
+
+template<int Order,
+         typename T = double,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
+         int Tag = 0,
+         typename... Ts>
+    requires ( sizeof...( Ts ) != 0 ) && ( NA::is_named_argument_v<Ts> && ... )
+inline auto
+Pchm( Ts&&... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>( v )... );
+    auto mesh = args.get( _mesh );
+    auto dte = args.get_else( _extended_doftable, DofTableExtendedType::DEFAULT );
+    auto policy = args.get_else( _fspace_reuse_policy,
+                                 FunctionSpaceReusePolicy::automatic );
+    using mesh_type = typename std::decay_t<decltype( mesh )>::element_type;
+    using space_type = Pchm_type<mesh_type,Order,T,Pts,Tag>;
+    return getOrCreateWholeMeshFunctionSpace<space_type>(
+        mesh, dte,
+        policy,
+        [&]()
+        {
+            return space_type::New( _mesh=mesh,
+                                    _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
+                                    _extended_doftable=dte );
+        } );
 }
 
 /**
@@ -124,9 +159,43 @@ inline
 Pchms_ptrtype<MeshType,Order,T,Pts,Tag>
 Pchms( std::shared_ptr<MeshType> const& mesh, DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
 {
-    return Pchms_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
-                                                      _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
-                                                      _extended_doftable=dte );
+    using space_type = Pchms_type<MeshType,Order,T,Pts,Tag>;
+    return getOrCreateWholeMeshFunctionSpace<space_type>(
+        mesh, dte,
+        FunctionSpaceReusePolicy::automatic,
+        [&]()
+        {
+            return space_type::New( _mesh=mesh,
+                                    _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
+                                    _extended_doftable=dte );
+        } );
+}
+
+template<int Order,
+         typename T = double,
+         template<class, uint16_type, class> class Pts = PointSetFekete,
+         int Tag = 0,
+         typename... Ts>
+    requires ( sizeof...( Ts ) != 0 ) && ( NA::is_named_argument_v<Ts> && ... )
+inline auto
+Pchms( Ts&&... v )
+{
+    auto args = NA::make_arguments( std::forward<Ts>( v )... );
+    auto mesh = args.get( _mesh );
+    auto dte = args.get_else( _extended_doftable, DofTableExtendedType::DEFAULT );
+    auto policy = args.get_else( _fspace_reuse_policy,
+                                 FunctionSpaceReusePolicy::automatic );
+    using mesh_type = typename std::decay_t<decltype( mesh )>::element_type;
+    using space_type = Pchms_type<mesh_type,Order,T,Pts,Tag>;
+    return getOrCreateWholeMeshFunctionSpace<space_type>(
+        mesh, dte,
+        policy,
+        [&]()
+        {
+            return space_type::New( _mesh=mesh,
+                                    _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
+                                    _extended_doftable=dte );
+        } );
 }
 
 

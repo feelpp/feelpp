@@ -269,6 +269,7 @@ public:
 
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> > map_dense_matrix_type;
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> > map_dense_vector_type;
+    typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> const > map_dense_const_vector_type;
 
     typedef boost::tuple< std::vector<vectorN_type> , std::vector<vectorN_type> , std::vector<vectorN_type>, std::vector<vectorN_type> > solutions_tuple;
     typedef boost::tuple< std::vector<double>,double,double , std::vector< std::vector< double > > , std::vector< std::vector< double > > > upper_bounds_tuple;
@@ -973,7 +974,7 @@ public:
      * \param mu : current parameter
      * \param N : dimension of the reduced basis
      */
-    virtual void updateJacobian( const map_dense_vector_type& map_X, map_dense_matrix_type& map_J , const parameter_type& mu, int N) const ;
+    virtual void updateJacobian( const map_dense_const_vector_type& map_X, map_dense_matrix_type& map_J , const parameter_type& mu, int N) const ;
 
     /*
      * update the residual ( offline step )
@@ -990,7 +991,7 @@ public:
      * \param mu : current parameter
      * \param N : dimension of the reduced basis
      */
-    virtual void updateResidual( const map_dense_vector_type& map_X, map_dense_vector_type& map_R , const parameter_type& mu, int N ) const ;
+    virtual void updateResidual( const map_dense_const_vector_type& map_X, map_dense_vector_type& map_R , const parameter_type& mu, int N ) const ;
 
     /*
      * compute the projection of the initial guess
@@ -4353,7 +4354,7 @@ CRB<TruthModelType>::computeProjectionInitialGuess( const parameter_type & mu, i
 
 template<typename TruthModelType>
 void
-CRB<TruthModelType>::updateJacobian( const map_dense_vector_type& map_X, map_dense_matrix_type& map_J , const parameter_type& mu , int N) const
+CRB<TruthModelType>::updateJacobian( const map_dense_const_vector_type& map_X, map_dense_matrix_type& map_J , const parameter_type& mu , int N) const
 {
     //map_J.setZero( N , N );
     map_J.setZero( );
@@ -4398,7 +4399,7 @@ CRB<TruthModelType>::updateJacobian( const map_dense_vector_type& map_X, map_den
 
 template<typename TruthModelType>
 void
-CRB<TruthModelType>::updateResidual( const map_dense_vector_type& map_X, map_dense_vector_type& map_R , const parameter_type& mu, int N ) const
+CRB<TruthModelType>::updateResidual( const map_dense_const_vector_type& map_X, map_dense_vector_type& map_R , const parameter_type& mu, int N ) const
 {
     map_R.setZero( );
     std::vector<beta_vector_type> betaRqm;

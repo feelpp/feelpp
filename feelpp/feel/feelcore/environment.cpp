@@ -2,14 +2,20 @@
 
     SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
     SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+    SPDX-FileContributor: Alexandre Ancel <alexandre.ancel@cemosis.fr>
 
     SPDX-FileCopyrightText: 2007-2011 Joseph Fourier University
-    SPDX-FileCopyrightText: 2011-2026 University of Strasbourg
+    SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
 
     SPDX-License-Identifier: LGPL-3.0-or-later
 */
 
 #include <cstdlib>
+#include <cmath>
+#include <limits>
+#include <numeric>
+#include <set>
+#include <stdexcept>
 #include <pwd.h>
 #include <utility>
 #ifdef __cplusplus
@@ -39,6 +45,7 @@ extern "C"
 #include <boost/date_time/c_local_time_adjustor.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include <boost/mpi/collectives/all_gather.hpp>
 
 #include <range/v3/view/take_exactly.hpp>
 
@@ -238,8 +245,7 @@ AboutData makeAboutDefault( std::string name )
                      name,
                      "0.1",
                      name,
-                     AboutData::License_GPL,
-                     "Copyright (c) 2012-2020 Feel++ Consortium" );
+                     AboutData::License_GPL );
 
     about.addAuthor( "Feel++ Consortium",
                      "",
@@ -577,6 +583,7 @@ Environment::Environment( int argc, char** argv,
     S_informationObject = std::make_unique<JournalWatcher>( std::bind( &Environment::updateInformationObject, this, std::placeholders::_1 ), "Environment", "", false );
 
     S_timers = std::make_unique<TimerTable>();
+    S_timerProfileReports.clear();
 
     auto today = std::chrono::system_clock::now();
     tic();
@@ -2958,6 +2965,163 @@ Environment::addTimer( std::string const& msg,
     S_timers->add( msg, t, uiname );
 }
 
+std::vector<TimerProfileReport> const&
+Environment::gatherTimerProfileStatistics( std::vector<std::string> const& labels,
+                                           mpi::communicator const& comm,
+                                           std::vector<int> selectedRanks )
+{
+    auto makeStatistics = []( TimerProfileSnapshot const& snapshot )
+    {
+        TimerProfileStatistics result;
+        result.count = snapshot.statistics.count();
+        if ( result.count == 0 )
+            return result;
+        result.total = snapshot.statistics.total();
+        result.minimum = snapshot.statistics.min();
+        result.maximum = snapshot.statistics.max();
+        result.mean = snapshot.statistics.mean();
+        result.stdDev = snapshot.statistics.stdDev();
+        result.p10 = snapshot.quantiles.quantile( 0.10 );
+        result.p25 = snapshot.quantiles.quantile( 0.25 );
+        result.median = snapshot.quantiles.quantile( 0.50 );
+        result.p75 = snapshot.quantiles.quantile( 0.75 );
+        result.p90 = snapshot.quantiles.quantile( 0.90 );
+        result.p99 = snapshot.quantiles.quantile( 0.99 );
+        return result;
+    };
+
+    if ( selectedRanks.empty() )
+    {
+        selectedRanks.resize( comm.size() );
+        std::iota( selectedRanks.begin(), selectedRanks.end(), 0 );
+    }
+    std::sort( selectedRanks.begin(), selectedRanks.end() );
+    selectedRanks.erase( std::unique( selectedRanks.begin(), selectedRanks.end() ), selectedRanks.end() );
+    if ( selectedRanks.front() < 0 || selectedRanks.back() >= comm.size() )
+        throw std::out_of_range( "timer profile rank outside communicator" );
+
+    std::vector<bool> selected( comm.size(), false );
+    for ( int rank : selectedRanks )
+        selected[rank] = true;
+
+    S_timerProfileReports.clear();
+    S_timerProfileReports.reserve( labels.size() );
+    for ( auto const& label : labels )
+    {
+        auto local = selected[comm.rank()] ? S_timers->profileSnapshot( label ) : TimerProfileSnapshot{};
+        std::vector<TimerProfileSnapshot> byRank;
+        mpi::all_gather( comm, local, byRank );
+
+        TimerProfileReport report;
+        report.label = label;
+        TimerProfileSnapshot pooled;
+        for ( int rank : selectedRanks )
+        {
+            auto const& snapshot = byRank[rank];
+            report.ranks.emplace( rank, makeStatistics( snapshot ) );
+            if ( snapshot.statistics.empty() )
+                continue;
+            pooled.statistics.merge( snapshot.statistics );
+            pooled.quantiles.merge( snapshot.quantiles );
+        }
+        report.pooled = makeStatistics( pooled );
+        S_timerProfileReports.push_back( std::move( report ) );
+    }
+    return S_timerProfileReports;
+}
+
+std::vector<TimerProfileReport> const&
+Environment::gatherTimerProfileStatistics( mpi::communicator const& comm,
+                                           std::vector<int> selectedRanks )
+{
+    if ( selectedRanks.empty() )
+    {
+        selectedRanks.resize( comm.size() );
+        std::iota( selectedRanks.begin(), selectedRanks.end(), 0 );
+    }
+    std::sort( selectedRanks.begin(), selectedRanks.end() );
+    selectedRanks.erase( std::unique( selectedRanks.begin(), selectedRanks.end() ), selectedRanks.end() );
+    if ( selectedRanks.front() < 0 || selectedRanks.back() >= comm.size() )
+        throw std::out_of_range( "timer profile rank outside communicator" );
+
+    std::vector<std::vector<std::string>> byRank;
+    mpi::all_gather( comm, S_timers->labels(), byRank );
+    std::set<std::string> labels;
+    for ( int rank : selectedRanks )
+        labels.insert( byRank[rank].begin(), byRank[rank].end() );
+    return gatherTimerProfileStatistics( std::vector<std::string>{ labels.begin(), labels.end() },
+                                         comm, std::move( selectedRanks ) );
+}
+
+std::vector<TimerProfileReport> const&
+Environment::timerProfileReports()
+{
+    return S_timerProfileReports;
+}
+
+nl::json Environment::timerProfileReportsJson()
+{
+    auto toJson = []( TimerProfileStatistics const& statistics )
+    {
+        nl::json result = {
+            {"count", statistics.count}, {"total", statistics.total},
+            {"min", statistics.minimum}, {"max", statistics.maximum},
+            {"mean", statistics.mean}, {"std_dev", statistics.stdDev},
+            {"p10", statistics.p10}, {"p25", statistics.p25},
+            {"median", statistics.median}, {"p75", statistics.p75},
+            {"p90", statistics.p90}, {"p99", statistics.p99}
+        };
+        return result;
+    };
+
+    nl::json reports = nl::json::array();
+    for ( auto const& report : S_timerProfileReports )
+    {
+        nl::json value;
+        value["label"] = report.label;
+        value["pooled"] = toJson( report.pooled );
+        value["ranks"] = nl::json::array();
+        for ( auto const& [rank, statistics] : report.ranks )
+        {
+            auto rankValue = toJson( statistics );
+            rankValue["rank"] = rank;
+            value["ranks"].push_back( std::move( rankValue ) );
+        }
+        reports.push_back( std::move( value ) );
+    }
+    return reports;
+}
+
+void Environment::printTimerProfileReports( std::ostream& output, bool showRanks )
+{
+    auto printStatistics = [&output]( TimerProfileStatistics const& statistics )
+    {
+        output << " count=" << statistics.count;
+        if ( statistics.count )
+            output << " total=" << statistics.total << " min=" << statistics.minimum
+                   << " p10=" << statistics.p10 << " p25=" << statistics.p25
+                   << " median=" << statistics.median << " mean=" << statistics.mean
+                   << " p75=" << statistics.p75 << " p90=" << statistics.p90
+                   << " p99=" << statistics.p99 << " max=" << statistics.maximum
+                   << " std_dev=" << statistics.stdDev << " s";
+        output << '\n';
+    };
+
+    for ( auto const& report : S_timerProfileReports )
+    {
+        output << "[timer pooled] " << report.label;
+        printStatistics( report.pooled );
+        if ( showRanks )
+        {
+            for ( auto const& [rank, statistics] : report.ranks )
+            {
+                output << "[timer rank " << rank << "] " << report.label;
+                printStatistics( statistics );
+            }
+        }
+    }
+}
+
 void
 Environment::saveTimers( bool display )
 {
@@ -3009,6 +3173,7 @@ hwloc_topology_t Environment::S_hwlocTopology = NULL;
 #endif
 
 std::unique_ptr<TimerTable> Environment::S_timers;
+std::vector<TimerProfileReport> Environment::S_timerProfileReports;
 std::unique_ptr<Sys::HwSysBase> Environment::S_hwSysInstance;
 
 std::unique_ptr<JournalWatcher> Environment::S_informationObject;

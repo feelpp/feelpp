@@ -305,8 +305,8 @@ set(FEELPP_MPI_TEST_LAUNCHER "auto" CACHE STRING
 set_property(CACHE FEELPP_MPI_TEST_LAUNCHER PROPERTY STRINGS auto srun mpiexec)
 set(FEELPP_MPI_TEST_SRUN_ADDITIONAL_FLAGS "" CACHE STRING
     "Additional space-separated srun flags for MPI tests (for example --partition=public --exclude=node2)")
-set(FEELPP_MPI_TEST_OPENMPI_PML "auto" CACHE STRING
-    "Open MPI PML for tests: auto (UCX with native Slurm when available), default, or ucx")
+set(FEELPP_MPI_TEST_OPENMPI_PML "default" CACHE STRING
+    "Open MPI PML for tests: default/auto (let Open MPI choose), or ucx (force UCX)")
 set_property(CACHE FEELPP_MPI_TEST_OPENMPI_PML PROPERTY STRINGS auto default ucx)
 
 function(_feelpp_check_launcher_version result executable)
@@ -486,19 +486,17 @@ if(MPI_FOUND)
   if(DEFINED ENV{OMPI_MCA_pml} AND NOT "$ENV{OMPI_MCA_pml}" STREQUAL "")
     message(STATUS
       "[feelpp] MPI tests: preserving OMPI_MCA_pml='$ENV{OMPI_MCA_pml}' from the environment")
-  elseif(_feelpp_openmpi_pml_policy STREQUAL "ucx" OR
-         (_feelpp_openmpi_pml_policy STREQUAL "auto" AND _feelpp_use_srun))
+  elseif(_feelpp_openmpi_pml_policy STREQUAL "ucx")
     _feelpp_check_openmpi_pml(_feelpp_has_openmpi_ucx_pml ucx)
     if(_feelpp_has_openmpi_ucx_pml)
       list(APPEND _feelpp_mpi_test_environment "OMPI_MCA_pml=ucx")
       message(STATUS "[feelpp] MPI tests: Open MPI UCX PML detected; setting OMPI_MCA_pml=ucx")
-    elseif(_feelpp_openmpi_pml_policy STREQUAL "ucx")
+    else()
       message(FATAL_ERROR
         "FEELPP_MPI_TEST_OPENMPI_PML=ucx, but FindMPI's Open MPI does not provide the UCX PML")
-    else()
-      message(STATUS
-        "[feelpp] MPI tests: Open MPI UCX PML not detected; keeping the MPI default")
     endif()
+  else()
+    message(STATUS "[feelpp] MPI tests: leaving Open MPI PML selection to the runtime")
   endif()
   set(FEELPP_MPI_TEST_ENVIRONMENT "${_feelpp_mpi_test_environment}" CACHE INTERNAL
       "Environment entries automatically added to Feel++ MPI tests" FORCE)
@@ -1843,6 +1841,24 @@ if ( FEELPP_ENABLE_LIBCURL )
     set( FEELPP_HAS_LIBCURL 1 )
     set( FEELPP_LIBRARIES ${CURL_LIBRARIES} ${FEELPP_LIBRARIES} )
     set( FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} libcurl/${CURL_VERSION_STRING}" )
+  endif()
+endif()
+
+
+option( FEELPP_ENABLE_PRECICE "Enable preCICE coupling support in Feel++ when available" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+message(STATUS "[feelpp] FEELPP_ENABLE_PRECICE=${FEELPP_ENABLE_PRECICE}" )
+set( FEELPP_HAS_PRECICE 0 )
+if ( FEELPP_ENABLE_PRECICE )
+  find_package( precice CONFIG QUIET )
+  if ( precice_FOUND )
+    set( FEELPP_HAS_PRECICE 1 )
+    message(STATUS "[feelpp] preCICE: ${precice_VERSION}" )
+    message(STATUS "[feelpp] preCICE CMake package: ${precice_DIR}" )
+    get_target_property( _feelpp_precice_library precice::precice LOCATION )
+    message(STATUS "[feelpp] preCICE library: ${_feelpp_precice_library}" )
+    set( FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} preCICE/${precice_VERSION}" )
+  else()
+    message(STATUS "[feelpp] preCICE not found: coupling support disabled" )
   endif()
 endif()
 
