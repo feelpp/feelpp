@@ -1,26 +1,12 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
-
- This file is part of the Feel++ library
-
- Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- Date: 16 Feb 2020
-
- Copyright (C) 2020 Feel++ Consortium
-
- This library is free software; you can redistribute it and/or
- modify it under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation; either
- version 2.1 of the License, or (at your option) any later version.
-
- This library is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
-
- You should have received a copy of the GNU Lesser General Public
- License along with this library; if not, write to the Free Software
- Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2020-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
  */
+
 #pragma once
 //#include <boost/container_hash/hash.hpp>
 #include <fmt/color.h>
@@ -159,7 +145,16 @@ class Remesh
     /**
      * set scalar metric
      */
-    void setMetric( scalar_metric_t const& );
+    void setMetric( scalar_metric_t const& metric ) { this->setMetricImpl(metric); }
+
+    template <typename MetricFieldType>
+    void setMetric( MetricFieldType const& metric ) { this->setMetricImpl(metric); }
+
+  private:
+    template <typename MetricFieldType>
+    void setMetricImpl( MetricFieldType const& metric );
+
+  public:
 
     /**
      * execute remesh task
@@ -327,6 +322,8 @@ Remesh<MeshType>::Remesh( std::shared_ptr<MeshType> const& mesh,
       M_required_facet_markers( required_facet_markers ),
       M_smd( new smd_type( M_parent_mesh ? M_parent_mesh : M_mesh ) )
 {
+    if ( mesh->order() != 1 )
+        throw std::invalid_argument("MMG remeshing requires geometry order 1");
     if ( params.contains("remesh") )
     {
         if ( params["remesh"].contains("required" ) )
@@ -395,8 +392,11 @@ Remesh<MeshType>::Remesh( std::shared_ptr<MeshType> const& mesh,
 }
 
 template <typename MeshType>
-void Remesh<MeshType>::setMetric( scalar_metric_t const& m )
+template <typename MetricFieldType>
+void Remesh<MeshType>::setMetricImpl( MetricFieldType const& m )
 {
+    if ( m.functionSpace()->order() != 1 )
+        throw std::invalid_argument("MMG remeshing requires a metric of order 1");
     if ( std::holds_alternative<MMG5_pMesh>( M_mmg_mesh ) )
     {
         if constexpr ( dimension_v<MeshType> == 3 )
@@ -933,7 +933,12 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
     int nTriangles = 0;
     int nEdges = 0;
 
-    std::shared_ptr<MeshType> out = std::make_shared<MeshType>(M_mesh->worldCommPtr());
+    std::shared_ptr<MeshType> out = [&]() {
+        if constexpr ( MeshType::is_order_dynamic )
+            return std::make_shared<MeshType>(RuntimeOrder{1}, "", M_mesh->worldCommPtr());
+        else
+            return std::make_shared<MeshType>(M_mesh->worldCommPtr());
+    }();
 
     if ( std::holds_alternative<MMG5_pMesh>( mesh ) )
     {
@@ -1007,7 +1012,7 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                 int& id_elt = k;//required ? next_free_req : next_free_nreq;
                 using element_type = typename mesh_t::element_type;
                 int mmgFragmentId = ( keep_relation_required_ &&  required ) ? M_id2tag[lab].first : lab;
-                element_type newElem;
+                auto newElem = makeOrderAware<element_type>(RuntimeOrder{1});
                 newElem.setId( id_elt );
                 if ( mmgFragmentId >= 0 )
                 {
@@ -1055,7 +1060,7 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                 }
 
                 using face_type = typename mesh_t::face_type;
-                face_type newElem;
+                auto newElem = makeOrderAware<face_type>(RuntimeOrder{1});
                 int& id_elt = k;//required ? f_next_free_req : f_next_free_nreq;
                 int mmgFragmentId = ( keep_relation_required_ && required ) ? M_id2tag_face[lab].first : lab;
                 newElem.setId( id_elt );
@@ -1082,7 +1087,7 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                     ier = MMG5_STRONGFAILURE;
                 }
                 using element_type = typename mesh_t::element_type;
-                element_type newElem;
+                auto newElem = makeOrderAware<element_type>(RuntimeOrder{1});
                 int mmgFragmentId = ( keep_relation_required_ && required ) ? M_id2tag[lab].first : lab;
                 newElem.setId( k );
                 if ( mmgFragmentId >= 0 )
@@ -1122,7 +1127,7 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                 }
                 using face_type = typename mesh_t::face_type;
                 int mmgFragmentId = ( keep_relation_required_ && required ) ? M_id2tag_face[lab].first : lab;
-                face_type newElem;
+                auto newElem = makeOrderAware<face_type>(RuntimeOrder{1});
                 newElem.setId( k );
                 if ( mmgFragmentId >= 0 )
                 {
@@ -1190,7 +1195,7 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                 }
 
                 using element_type = typename mesh_t::element_type;
-                element_type newElem;
+                auto newElem = makeOrderAware<element_type>(RuntimeOrder{1});
                 newElem.setId( k );
                 newElem.setMarker( lab );
                 newElem.setProcessIdInPartition( out->worldComm().localRank() );
@@ -1214,7 +1219,7 @@ Remesh<MeshType>::mmg2Mesh( mmg_mesh_t const& mesh )
                     ier = MMG5_STRONGFAILURE;
                 }
                 using face_type = typename mesh_t::face_type;
-                face_type newElem;
+                auto newElem = makeOrderAware<face_type>(RuntimeOrder{1});
                 newElem.setId( k );
 
                 if ( auto fit = face_to_interface.find( k ); fit != face_to_interface.end() )
