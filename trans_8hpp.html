@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-preview.14</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.112.0-preview.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -143,7 +143,7 @@ Namespaces</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:a73f66163b62c17b26257ea3a4184cde8"><td class="memTemplParams" colspan="2">template&lt;typename ExprT &gt; </td></tr>
-<tr class="memitem:a73f66163b62c17b26257ea3a4184cde8"><td class="memTemplItemLeft" align="right" valign="top">Expr&lt; Trans&lt; ExprT &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="trans_8hpp.html#a73f66163b62c17b26257ea3a4184cde8">Feel::vf::trans</a> (ExprT v)</td></tr>
+<tr class="memitem:a73f66163b62c17b26257ea3a4184cde8"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classExpr.html">Expr</a>&lt; Trans&lt; ExprT &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="trans_8hpp.html#a73f66163b62c17b26257ea3a4184cde8">Feel::vf::trans</a> (ExprT v)</td></tr>
 <tr class="memdesc:a73f66163b62c17b26257ea3a4184cde8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transpose an expression <code>v</code>.  <a href="trans_8hpp.html#a73f66163b62c17b26257ea3a4184cde8">More...</a><br /></td></tr>
 <tr class="separator:a73f66163b62c17b26257ea3a4184cde8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -160,7 +160,7 @@ Functions</h2></td></tr>
 template&lt;typename ExprT &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">Expr&lt; Trans&lt; ExprT &gt; &gt; Feel::vf::trans </td>
+          <td class="memname"><a class="el" href="classExpr.html">Expr</a>&lt; Trans&lt; ExprT &gt; &gt; Feel::vf::trans </td>
           <td>(</td>
           <td class="paramtype">ExprT&#160;</td>
           <td class="paramname"><em>v</em></td><td>)</td>
@@ -172,16 +172,11 @@ template&lt;typename ExprT &gt; </div>
 <p>Transpose an expression <code>v</code>. </p>
 <p >The expression can be scalar (no-op), vectorial or matricial.</p>
 <div class="fragment"><div class="line"><span class="comment">// define a column vector of two element</span></div>
-<div class="line"><span class="keyword">auto</span> e = <a class="code hl_function" href="matvec_8hpp.html#a1a2f800e8848f86b9c810daa29083e7e">vec</a>(Px(),Py());</div>
+<div class="line"><span class="keyword">auto</span> e = <a class="code hl_function" href="matvec_8hpp.html#a2655d0d84b4e4d1d6ad0e2662f2357ce">vec</a>(Px(),Py());</div>
 <div class="line"><span class="comment">// transpose it and get a row vector expression of two elements</span></div>
-<div class="line"><span class="keyword">auto</span> eT = <a class="code hl_function" href="trans_8hpp.html#a73f66163b62c17b26257ea3a4184cde8">trans</a>(e);</div>
-<div class="ttc" id="amatvec_8hpp_html_a1a2f800e8848f86b9c810daa29083e7e"><div class="ttname"><a href="matvec_8hpp.html#a1a2f800e8848f86b9c810daa29083e7e">Feel::vf::vec</a></div><div class="ttdeci">auto vec(Expr1 const &amp;expr1, const ExprT &amp;... expr2)</div><div class="ttdoc">vector definition</div><div class="ttdef"><b>Definition:</b> matvec.hpp:515</div></div>
-<div class="ttc" id="atrans_8hpp_html_a73f66163b62c17b26257ea3a4184cde8"><div class="ttname"><a href="trans_8hpp.html#a73f66163b62c17b26257ea3a4184cde8">Feel::vf::trans</a></div><div class="ttdeci">Expr&lt; Trans&lt; ExprT &gt; &gt; trans(ExprT v)</div><div class="ttdoc">Transpose an expression v.</div><div class="ttdef"><b>Definition:</b> trans.hpp:310</div></div>
+<div class="line"><span class="keyword">auto</span> eT = trans(e);</div>
+<div class="ttc" id="amatvec_8hpp_html_a2655d0d84b4e4d1d6ad0e2662f2357ce"><div class="ttname"><a href="matvec_8hpp.html#a2655d0d84b4e4d1d6ad0e2662f2357ce">Feel::vf::vec</a></div><div class="ttdeci">auto vec(Expr1 &amp;&amp;expr1, ExprT &amp;&amp;... expr2)</div><div class="ttdoc">vector definition</div><div class="ttdef"><b>Definition:</b> matvec.hpp:1256</div></div>
 </div><!-- fragment --><dl class="section return"><dt>Returns</dt><dd>the transposed expression </dd></dl>
-
-<p class="reference">References <a class="el" href="trans_8hpp.html#a73f66163b62c17b26257ea3a4184cde8">Feel::vf::trans()</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="norm_8hpp.html#a7b82db4dab41a3e14d2709e7e24838bc">Feel::vf::ddot()</a>, <a class="el" href="norm_8hpp.html#adac3137af39ab2aab154b6b3981c1850">Feel::vf::outer_prod()</a>, and <a class="el" href="trans_8hpp.html#a73f66163b62c17b26257ea3a4184cde8">Feel::vf::trans()</a>.</p>
 
 </div>
 </div>

@@ -1,14 +1,15 @@
 var searchData=
 [
-  ['tabulate_5finformations_5ft_0',['tabulate_informations_t',['../namespaceFeel.html#a0c0cb9d439901c645259639155f4e94f',1,'Feel']]],
-  ['tabulate_5finformations_5ftable_5ft_1',['tabulate_informations_table_t',['../namespaceFeel.html#a1f560ee540d8ad7c33c379d5ec3c8a3a',1,'Feel']]],
-  ['tensor_5fevaluation_5ftype_2',['tensor_evaluation_type',['../classFeel_1_1FunctionSpace_1_1Element.html#a6748c62ccdf415502f4eb1649a56740a',1,'Feel::FunctionSpace::Element']]],
-  ['thch_5fptrtype_3',['THch_ptrtype',['../namespaceFeel.html#a08e28aace81f55cee225160957aa4738',1,'Feel']]],
-  ['thch_5ftype_4',['THch_type',['../namespaceFeel.html#a08aed25042987b8f7577bfd02c4badcb',1,'Feel']]],
-  ['trace_5fmesh_5fcptr_5ft_5',['trace_mesh_cptr_t',['../group__Traits.html#ga0812eacb03bc8a42ce4f7f964deade4d',1,'Feel']]],
-  ['trace_5fmesh_5fptr_5ft_6',['trace_mesh_ptr_t',['../group__Traits.html#gabf0ffdf9c3eab4b027e547dd8a977c96',1,'Feel']]],
-  ['trace_5fmesh_5ft_7',['trace_mesh_t',['../group__Traits.html#gad14d305c1d454b6c9c8dd36fc5f616f8',1,'Feel']]],
-  ['trace_5ftrace_5fmesh_5fcptr_5ft_8',['trace_trace_mesh_cptr_t',['../group__Traits.html#ga742c017d83cc1d1ef89ffa39fc114725',1,'Feel']]],
-  ['trace_5ftrace_5fmesh_5fptr_5ft_9',['trace_trace_mesh_ptr_t',['../group__Traits.html#gad2f7f221ce2c20fa1ce97d333ac67e14',1,'Feel']]],
-  ['trace_5ftrace_5fmesh_5ft_10',['trace_trace_mesh_t',['../group__Traits.html#ga2767e934aa4c0405e916c224557d0311',1,'Feel']]]
+  ['self_5fptrtype_0',['self_ptrtype',['../classFeel_1_1WorldComm.html#a17b8bdedce7012a7f111b2b7b0d33953',1,'Feel::WorldComm']]],
+  ['self_5ftype_1',['self_type',['../classFeel_1_1WorldComm.html#adb513020a43d11dfca57d8bcb4883956',1,'Feel::WorldComm']]],
+  ['shape_2',['shape',['../structFeel_1_1vf_1_1detail_1_1SB9VectorOperator_1_1tensor.html#a613e23487135d10c7a92e51aa9bd4904',1,'Feel::vf::detail::SB9VectorOperator::tensor::shape()'],['../structFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator_1_1tensor.html#aecaed91677ffe1816f1fc2ba79f2a0f5',1,'Feel::vf::detail::SB9StabilizationOperator::tensor::shape()']]],
+  ['shear_5faux_5ftype_3',['shear_aux_type',['../classFeel_1_1vf_1_1detail_1_1SB9ShearKernelCache.html#a951dd0dea35e485a1d86ba587a021aa7',1,'Feel::vf::detail::SB9ShearKernelCache']]],
+  ['simget_5fiterator_4',['simget_iterator',['../classFeel_1_1Application.html#abf27535f4318a03d55a2607626981418',1,'Feel::Application']]],
+  ['simgetfactory_5',['SimgetFactory',['../namespaceFeel.html#ac9648381161062499cc054fa4b0de17e',1,'Feel']]],
+  ['simgets_5ftype_6',['simgets_type',['../classFeel_1_1Application.html#af693db51ca874953a72fee81cd13ed4e',1,'Feel::Application']]],
+  ['size_5ftype_7',['size_type',['../classnlohmann_1_1basic__json.html#a3ada29bca70b4965f6fd37ec1c8f85f7',1,'nlohmann::basic_json::size_type()'],['../namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58',1,'Feel::size_type()']]],
+  ['sparse_5fmatrix_5fptrtype_8',['sparse_matrix_ptrtype',['../classFeel_1_1MeshAdaptation.html#af2a212949ffeab1f76431385050d08bb',1,'Feel::MeshAdaptation']]],
+  ['sparse_5fmatrix_5ftype_9',['sparse_matrix_type',['../classFeel_1_1MeshAdaptation.html#a0dd9c24c5d660266d5cac544be0c846c',1,'Feel::MeshAdaptation']]],
+  ['string_5ft_10',['string_t',['../classnlohmann_1_1basic__json.html#a33593865ffb1860323dcbd52425b90c8',1,'nlohmann::basic_json']]],
+  ['super_11',['super',['../classFeel_1_1vf_1_1SB9ThroughThicknessLobatto5.html#a5539378c515303a1c7b9d7d66717fd1e',1,'Feel::vf::SB9ThroughThicknessLobatto5::super()'],['../classFeel_1_1vf_1_1SB9LumpedMassLobatto.html#a6b5d97be7c214f12d1cd0b7604fcd2d9',1,'Feel::vf::SB9LumpedMassLobatto::super()']]]
 ];

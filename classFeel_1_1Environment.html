@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-preview.14</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.112.0-preview.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -148,6 +148,12 @@ static void&#160;</td><td class="memItemRight" valign="bottom"><b>clearSomeMemor
 <tr class="memitem:a4fc75efe7320d69c331e814fa35321cf"><td class="memItemLeft" align="right" valign="top">static std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#a4fc75efe7320d69c331e814fa35321cf">findFileRemotely</a> (std::string const &amp;fname, std::string const &amp;subdir=&quot;&quot;)</td></tr>
 <tr class="memdesc:a4fc75efe7320d69c331e814fa35321cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">try find remotely the file <code>fname</code>  <a href="classFeel_1_1Environment.html#a4fc75efe7320d69c331e814fa35321cf">More...</a><br /></td></tr>
 <tr class="separator:a4fc75efe7320d69c331e814fa35321cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab50252c2800889bf8bb2e58b7fa49c11"><td class="memItemLeft" align="right" valign="top">static std::vector&lt; <a class="el" href="structFeel_1_1TimerProfileReport.html">TimerProfileReport</a> &gt; const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#ab50252c2800889bf8bb2e58b7fa49c11">gatherTimerProfileStatistics</a> (<a class="el" href="classboost_1_1mpi_1_1communicator.html">mpi::communicator</a> const &amp;comm, std::vector&lt; <a class="el" href="classint.html">int</a> &gt; selectedRanks={ 0 })</td></tr>
+<tr class="memdesc:ab50252c2800889bf8bb2e58b7fa49c11"><td class="mdescLeft">&#160;</td><td class="mdescRight">Discover every label on the selected ranks, then gather its call profile.  <a href="classFeel_1_1Environment.html#ab50252c2800889bf8bb2e58b7fa49c11">More...</a><br /></td></tr>
+<tr class="separator:ab50252c2800889bf8bb2e58b7fa49c11"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1ac16285fc20aa946876bb86134896b5"><td class="memItemLeft" align="right" valign="top">static std::vector&lt; <a class="el" href="structFeel_1_1TimerProfileReport.html">TimerProfileReport</a> &gt; const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#a1ac16285fc20aa946876bb86134896b5">gatherTimerProfileStatistics</a> (std::vector&lt; std::string &gt; const &amp;labels, <a class="el" href="classboost_1_1mpi_1_1communicator.html">mpi::communicator</a> const &amp;comm, std::vector&lt; <a class="el" href="classint.html">int</a> &gt; selectedRanks={ 0 })</td></tr>
+<tr class="memdesc:a1ac16285fc20aa946876bb86134896b5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gather call distributions for selected communicator ranks.  <a href="classFeel_1_1Environment.html#a1ac16285fc20aa946876bb86134896b5">More...</a><br /></td></tr>
+<tr class="separator:a1ac16285fc20aa946876bb86134896b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a43c7e409ca67d5c89864bb5a91468fdf"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="structFeel_1_1MemoryUsage.html">MemoryUsage</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#a43c7e409ca67d5c89864bb5a91468fdf">logMemoryUsage</a> (std::string const &amp;message)</td></tr>
 <tr class="memdesc:a43c7e409ca67d5c89864bb5a91468fdf"><td class="mdescLeft">&#160;</td><td class="mdescRight">print resident memory usage as well as PETSc malloc usage in log file  <a href="classFeel_1_1Environment.html#a43c7e409ca67d5c89864bb5a91468fdf">More...</a><br /></td></tr>
 <tr class="separator:a43c7e409ca67d5c89864bb5a91468fdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -158,6 +164,10 @@ static void&#160;</td><td class="memItemRight" valign="bottom"><b>clearSomeMemor
 template&lt;typename ... Ts&gt; </td></tr>
 <tr class="memitem:a01c76631f21c183a6ae7e80917bc639c"><td class="memTemplItemLeft" align="right" valign="top">static std::pair&lt; std::string, po::variable_value &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>option</b> (Ts &amp;&amp;... v)</td></tr>
 <tr class="separator:a01c76631f21c183a6ae7e80917bc639c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3d7d6588b9cfdc5ad1ca1d4197c2b173"><td class="memItemLeft" align="right" valign="top"><a id="a3d7d6588b9cfdc5ad1ca1d4197c2b173" name="a3d7d6588b9cfdc5ad1ca1d4197c2b173"></a>
+static void&#160;</td><td class="memItemRight" valign="bottom"><b>printTimerProfileReports</b> (std::ostream &amp;output, <a class="el" href="classbool.html">bool</a> showRanks=false)</td></tr>
+<tr class="memdesc:a3d7d6588b9cfdc5ad1ca1d4197c2b173"><td class="mdescLeft">&#160;</td><td class="mdescRight">Print pooled profiles, optionally followed by each rank's profile. <br /></td></tr>
+<tr class="separator:a3d7d6588b9cfdc5ad1ca1d4197c2b173"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a29b2eeaca395bba470dc395348692677"><td class="memItemLeft" align="right" valign="top"><a id="a29b2eeaca395bba470dc395348692677" name="a29b2eeaca395bba470dc395348692677"></a>
 static void&#160;</td><td class="memItemRight" valign="bottom"><b>saveTimers</b> (<a class="el" href="classbool.html">bool</a> save)</td></tr>
 <tr class="memdesc:a29b2eeaca395bba470dc395348692677"><td class="mdescLeft">&#160;</td><td class="mdescRight">display and save timers <br /></td></tr>
@@ -180,6 +190,14 @@ static void&#160;</td><td class="memItemRight" valign="bottom"><b>setLogVerbosit
 <tr class="memitem:a7dab59a5c06a5085826c3d83127e473d"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#a7dab59a5c06a5085826c3d83127e473d">stopLogging</a> (<a class="el" href="classbool.html">bool</a> remove=false)</td></tr>
 <tr class="memdesc:a7dab59a5c06a5085826c3d83127e473d"><td class="mdescLeft">&#160;</td><td class="mdescRight">stop logging in Feel++.  <a href="classFeel_1_1Environment.html#a7dab59a5c06a5085826c3d83127e473d">More...</a><br /></td></tr>
 <tr class="separator:a7dab59a5c06a5085826c3d83127e473d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a726ab9990ab518d00e90e5d702b6f040"><td class="memItemLeft" align="right" valign="top"><a id="a726ab9990ab518d00e90e5d702b6f040" name="a726ab9990ab518d00e90e5d702b6f040"></a>
+static std::vector&lt; <a class="el" href="structFeel_1_1TimerProfileReport.html">TimerProfileReport</a> &gt; const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>timerProfileReports</b> ()</td></tr>
+<tr class="memdesc:a726ab9990ab518d00e90e5d702b6f040"><td class="mdescLeft">&#160;</td><td class="mdescRight">Access the latest per-rank and pooled profiles without communication. <br /></td></tr>
+<tr class="separator:a726ab9990ab518d00e90e5d702b6f040"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6e9aec9cb267f42a6e1b64f084bcc1ec"><td class="memItemLeft" align="right" valign="top"><a id="a6e9aec9cb267f42a6e1b64f084bcc1ec" name="a6e9aec9cb267f42a6e1b64f084bcc1ec"></a>
+static <a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a>&#160;</td><td class="memItemRight" valign="bottom"><b>timerProfileReportsJson</b> ()</td></tr>
+<tr class="memdesc:a6e9aec9cb267f42a6e1b64f084bcc1ec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the latest selected-rank and pooled profiles as JSON. <br /></td></tr>
+<tr class="separator:a6e9aec9cb267f42a6e1b64f084bcc1ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aefa39799fcc994f5d7f089f2ac7df1cd"><td class="memTemplParams" colspan="2"><a id="aefa39799fcc994f5d7f089f2ac7df1cd" name="aefa39799fcc994f5d7f089f2ac7df1cd"></a>
 template&lt;typename ... Ts&gt; </td></tr>
 <tr class="memitem:aefa39799fcc994f5d7f089f2ac7df1cd"><td class="memTemplItemLeft" align="right" valign="top">static po::variable_value&#160;</td><td class="memTemplItemRight" valign="bottom"><b>vm</b> (Ts &amp;&amp;... v)</td></tr>
@@ -488,7 +506,7 @@ virtual&#160;</td><td class="memItemRight" valign="bottom"><b>~JournalManager</b
 <div class="line">   <span class="keyword">using namespace </span><a class="code hl_namespace" href="namespaceFeel.html">Feel</a>;</div>
 <div class="line">   <a class="code hl_function" href="classFeel_1_1Environment.html#a2f72ceaafeecd718e9089c5d16322cfd">Environment</a> env(argc, argv);</div>
 <div class="line">}</div>
-<div class="ttc" id="aclassFeel_1_1Environment_html_a2f72ceaafeecd718e9089c5d16322cfd"><div class="ttname"><a href="classFeel_1_1Environment.html#a2f72ceaafeecd718e9089c5d16322cfd">Feel::Environment::Environment</a></div><div class="ttdeci">Environment()</div><div class="ttdoc">Initialize the Feel environment.</div><div class="ttdef"><b>Definition:</b> environment.cpp:298</div></div>
+<div class="ttc" id="aclassFeel_1_1Environment_html_a2f72ceaafeecd718e9089c5d16322cfd"><div class="ttname"><a href="classFeel_1_1Environment.html#a2f72ceaafeecd718e9089c5d16322cfd">Feel::Environment::Environment</a></div><div class="ttdeci">Environment()</div><div class="ttdoc">Initialize the Feel environment.</div><div class="ttdef"><b>Definition:</b> environment.cpp:304</div></div>
 <div class="ttc" id="anamespaceFeel_html"><div class="ttname"><a href="namespaceFeel.html">Feel</a></div><div class="ttdoc">-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...</div><div class="ttdef"><b>Definition:</b> about.cpp:37</div></div>
 </div><!-- fragment --><p> or more commonly </p><div class="fragment"><div class="line"><span class="keywordtype">int</span> main(<span class="keywordtype">int</span> argc, <span class="keywordtype">char</span>* argv[])</div>
 <div class="line">{</div>
@@ -847,7 +865,7 @@ virtual&#160;</td><td class="memItemRight" valign="bottom"><b>~JournalManager</b
 <li>exprdbdir : top level directory of ginac expression ($repository/exprDB)</li>
 <li>home : $HOME directory The paths can be used in filename string and expanded using this function by prefixing them by $ <div class="fragment"><div class="line">std::string topsrcdir = <a class="code hl_function" href="classFeel_1_1Environment.html#a26e4f2505f0ba9e0a0266390447f68f7">Environment::expand</a>( <span class="stringliteral">&quot;$top_srcdir&quot;</span>);</div>
 <div class="line">std::string topbuilddir = <a class="code hl_function" href="classFeel_1_1Environment.html#a26e4f2505f0ba9e0a0266390447f68f7">Environment::expand</a>( <span class="stringliteral">&quot;$top_builddir&quot;</span>);</div>
-<div class="ttc" id="aclassFeel_1_1Environment_html_a26e4f2505f0ba9e0a0266390447f68f7"><div class="ttname"><a href="classFeel_1_1Environment.html#a26e4f2505f0ba9e0a0266390447f68f7">Feel::Environment::expand</a></div><div class="ttdeci">static std::string expand(std::string const &amp;expr)</div><div class="ttdoc">expand feel++ pathes in a string</div><div class="ttdef"><b>Definition:</b> environment.cpp:2856</div></div>
+<div class="ttc" id="aclassFeel_1_1Environment_html_a26e4f2505f0ba9e0a0266390447f68f7"><div class="ttname"><a href="classFeel_1_1Environment.html#a26e4f2505f0ba9e0a0266390447f68f7">Feel::Environment::expand</a></div><div class="ttdeci">static std::string expand(std::string const &amp;expr)</div><div class="ttdoc">expand feel++ pathes in a string</div><div class="ttdef"><b>Definition:</b> environment.cpp:2863</div></div>
 </div><!-- fragment --> They can be used in config files or in the command line <div class="fragment"><div class="line">feelpp_qs_laplacian --gmsh.filename=\$home/mesh.geo</div>
 </div><!-- fragment --></li>
 </ul>
@@ -981,6 +999,111 @@ virtual&#160;</td><td class="memItemRight" valign="bottom"><b>~JournalManager</b
 
 </div>
 </div>
+<a id="ab50252c2800889bf8bb2e58b7fa49c11" name="ab50252c2800889bf8bb2e58b7fa49c11"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab50252c2800889bf8bb2e58b7fa49c11">&#9670;&nbsp;</a></span>gatherTimerProfileStatistics() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; <a class="el" href="structFeel_1_1TimerProfileReport.html">TimerProfileReport</a> &gt; const  &amp; Feel::Environment::gatherTimerProfileStatistics </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classboost_1_1mpi_1_1communicator.html">mpi::communicator</a> const &amp;&#160;</td>
+          <td class="paramname"><em>comm</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="classint.html">int</a> &gt;&#160;</td>
+          <td class="paramname"><em>selectedRanks</em> = <code>{&#160;0&#160;}</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Discover every label on the selected ranks, then gather its call profile. </p>
+<p >This is collective on <code>comm</code>. With no rank argument, labels from communicator rank 0 are selected. An explicitly empty <code>selectedRanks</code> includes all ranks and the union of their labels. The union is sorted lexically. <a class="el" href="classA.html">A</a> label absent on a selected rank has a zero-count profile.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">comm</td><td>Communicator whose members participate in the gather. </td></tr>
+    <tr><td class="paramname">selectedRanks</td><td>Rank IDs to include; defaults to {0}, while {} includes all ranks. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Cached profile reports on every rank in <code>comm</code>. </dd></dl>
+
+<p class="reference">References <a class="el" href="namespaceFeel.html#a708ee35ee612b4a0ac660ea44a8638d4">Feel::rank()</a>.</p>
+
+</div>
+</div>
+<a id="a1ac16285fc20aa946876bb86134896b5" name="a1ac16285fc20aa946876bb86134896b5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1ac16285fc20aa946876bb86134896b5">&#9670;&nbsp;</a></span>gatherTimerProfileStatistics() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; <a class="el" href="structFeel_1_1TimerProfileReport.html">TimerProfileReport</a> &gt; const  &amp; Feel::Environment::gatherTimerProfileStatistics </td>
+          <td>(</td>
+          <td class="paramtype">std::vector&lt; std::string &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>labels</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classboost_1_1mpi_1_1communicator.html">mpi::communicator</a> const &amp;&#160;</td>
+          <td class="paramname"><em>comm</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="classint.html">int</a> &gt;&#160;</td>
+          <td class="paramname"><em>selectedRanks</em> = <code>{&#160;0&#160;}</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Gather call distributions for selected communicator ranks. </p>
+<p >Every rank in <code>comm</code> must call this with identical labels and selected ranks. The default selects communicator rank 0. An explicitly empty <code>selectedRanks</code> selects all ranks. Rank numbers are local to <code>comm</code>. Duplicate ranks are ignored and an out-of-range rank throws. Only selected ranks contribute to the pooled statistics, including their entire history of toc() calls. The result is cached and available on every rank until the next gather.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">labels</td><td>Timer labels to gather in the same order on every rank. </td></tr>
+    <tr><td class="paramname">comm</td><td>Communicator containing the sampled ranks. </td></tr>
+    <tr><td class="paramname">selectedRanks</td><td>Rank IDs to include; defaults to {0}, while {} includes all ranks. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Cached profile reports on every rank in <code>comm</code>. </dd></dl>
+
+<p class="reference">References <a class="el" href="structFeel_1_1TimerProfileStatistics.html#a5c6b95fe9868c1a0b12f486bb48e02a2">Feel::TimerProfileStatistics::count</a>, <a class="el" href="structFeel_1_1TimerProfileStatistics.html#a41867305f3eae2384fdf681ae662e246">Feel::TimerProfileStatistics::maximum</a>, <a class="el" href="structFeel_1_1TimerProfileStatistics.html#af3984c96dc4e5335f047ae126aacaf15">Feel::TimerProfileStatistics::mean</a>, <a class="el" href="structFeel_1_1TimerProfileStatistics.html#a28cad15969f4d5ab8346d692bd6e315f">Feel::TimerProfileStatistics::median</a>, <a class="el" href="structFeel_1_1TimerProfileStatistics.html#a99a0318c8adea061ecdc22cdd4461f5f">Feel::TimerProfileStatistics::minimum</a>, <a class="el" href="structFeel_1_1TimerProfileStatistics.html#a08ff9521fb30112b3bd36e3af1885d63">Feel::TimerProfileStatistics::p10</a>, <a class="el" href="structFeel_1_1TimerProfileStatistics.html#a84c2f0800ffcaa8b72dc2232461d3d10">Feel::TimerProfileStatistics::p25</a>, <a class="el" href="structFeel_1_1TimerProfileStatistics.html#a28e976403a82b1ae50274ca3d13b7381">Feel::TimerProfileStatistics::p75</a>, <a class="el" href="structFeel_1_1TimerProfileStatistics.html#a4582a5dea0c7626ceca7efb4fe1707ff">Feel::TimerProfileStatistics::p90</a>, <a class="el" href="structFeel_1_1TimerProfileStatistics.html#a8c9b3c2326e41260a42fd0059318c433">Feel::TimerProfileStatistics::p99</a>, <a class="el" href="namespaceFeel.html#a708ee35ee612b4a0ac660ea44a8638d4">Feel::rank()</a>, <a class="el" href="structFeel_1_1TimerProfileStatistics.html#aed6b59334a1fbba3316e40f483639a33">Feel::TimerProfileStatistics::stdDev</a>, and <a class="el" href="structFeel_1_1TimerProfileStatistics.html#a1d0935ae86a28cf52fd5e72d7fae9148">Feel::TimerProfileStatistics::total</a>.</p>
+
+</div>
+</div>
 <a id="a05eef6714a1a0ba76493c988d90c9083" name="a05eef6714a1a0ba76493c988d90c9083"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a05eef6714a1a0ba76493c988d90c9083">&#9670;&nbsp;</a></span>geoPathList()</h2>
 
@@ -1089,6 +1212,8 @@ virtual&#160;</td><td class="memItemRight" valign="bottom"><b>~JournalManager</b
 
 <p>rank 0 process is considered the master process </p>
 <p >the master process can then for example print information in the console or in some files </p>
+
+<p class="reference">Referenced by <a class="el" href="classFeel_1_1TimerTable.html#a5f446247895cf1677a0380aad7882fb3">Feel::TimerTable::save()</a>.</p>
 
 </div>
 </div>
@@ -1534,8 +1659,8 @@ virtual&#160;</td><td class="memItemRight" valign="bottom"><b>~JournalManager</b
 <div class="fragment"><div class="line"><a class="code hl_function" href="classFeel_1_1Environment.html#af0fa80df613e602f56dc46f72d0a456c">Environment::startLogging</a>();</div>
 <div class="line">LOG(INFO) &lt;&lt; <span class="stringliteral">&quot;Feel++ uses logging&quot;</span>;</div>
 <div class="line"><a class="code hl_function" href="classFeel_1_1Environment.html#a7dab59a5c06a5085826c3d83127e473d">Environment::stopLogging</a>();</div>
-<div class="ttc" id="aclassFeel_1_1Environment_html_a7dab59a5c06a5085826c3d83127e473d"><div class="ttname"><a href="classFeel_1_1Environment.html#a7dab59a5c06a5085826c3d83127e473d">Feel::Environment::stopLogging</a></div><div class="ttdeci">static void stopLogging(bool remove=false)</div><div class="ttdoc">stop logging in Feel++.</div><div class="ttdef"><b>Definition:</b> environment.cpp:2451</div></div>
-<div class="ttc" id="aclassFeel_1_1Environment_html_af0fa80df613e602f56dc46f72d0a456c"><div class="ttname"><a href="classFeel_1_1Environment.html#af0fa80df613e602f56dc46f72d0a456c">Feel::Environment::startLogging</a></div><div class="ttdeci">static void startLogging(std::string decorate)</div><div class="ttdoc">start logging.</div><div class="ttdef"><b>Definition:</b> environment.cpp:2302</div></div>
+<div class="ttc" id="aclassFeel_1_1Environment_html_a7dab59a5c06a5085826c3d83127e473d"><div class="ttname"><a href="classFeel_1_1Environment.html#a7dab59a5c06a5085826c3d83127e473d">Feel::Environment::stopLogging</a></div><div class="ttdeci">static void stopLogging(bool remove=false)</div><div class="ttdoc">stop logging in Feel++.</div><div class="ttdef"><b>Definition:</b> environment.cpp:2458</div></div>
+<div class="ttc" id="aclassFeel_1_1Environment_html_af0fa80df613e602f56dc46f72d0a456c"><div class="ttname"><a href="classFeel_1_1Environment.html#af0fa80df613e602f56dc46f72d0a456c">Feel::Environment::startLogging</a></div><div class="ttdeci">static void startLogging(std::string decorate)</div><div class="ttdoc">start logging.</div><div class="ttdef"><b>Definition:</b> environment.cpp:2309</div></div>
 </div><!-- fragment --> 
 <p class="reference">References <a class="el" href="namespaceFeel.html#a708ee35ee612b4a0ac660ea44a8638d4">Feel::rank()</a>.</p>
 

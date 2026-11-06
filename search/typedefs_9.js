@@ -1,6 +1,4 @@
 var searchData=
 [
-  ['local_5fdof_5ftype_0',['local_dof_type',['../classFeel_1_1DofTable.html#a14d2f30c443e6cc3d9ca65c349d81219',1,'Feel::DofTable']]],
-  ['local_5finterpolant_5ftype_1',['local_interpolant_type',['../classFeel_1_1FunctionSpace.html#aa74b1f32e5c5f4364c46066a58da9089',1,'Feel::FunctionSpace']]],
-  ['localdof_5ftype_2',['localdof_type',['../classFeel_1_1DofTable.html#a1b5a5523e7f7976431e219e2e3b41d4d',1,'Feel::DofTable']]]
+  ['kernel_5fcache_5ftype_0',['kernel_cache_type',['../structFeel_1_1vf_1_1detail_1_1SB9VectorOperator_1_1tensor.html#ab8b6b161deda4081e6f583020f4591b3',1,'Feel::vf::detail::SB9VectorOperator::tensor::kernel_cache_type()'],['../structFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator_1_1tensor.html#aa38f6302478893ccb4b85d3e68a3dcb6',1,'Feel::vf::detail::SB9StabilizationOperator::tensor::kernel_cache_type()']]]
 ];

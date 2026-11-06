@@ -1,0 +1,6 @@
+var classFeel_1_1vf_1_1StaticComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr_01_4_01_4_00_01C1_00_01C2_01_4 =
+[
+    [ "HasTestFunction", "structFeel_1_1vf_1_1StaticComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr61ce6659cc3d26f1b134f9168cbb239c.html", null ],
+    [ "HasTrialFunction", "structFeel_1_1vf_1_1StaticComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr385cb99b2735f677ad2c5226c0dd5430.html", null ],
+    [ "tensor", "structFeel_1_1vf_1_1StaticComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr8a452c4d93151bb61e94cdce4a209f2d.html", "structFeel_1_1vf_1_1StaticComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr8a452c4d93151bb61e94cdce4a209f2d" ]
+];

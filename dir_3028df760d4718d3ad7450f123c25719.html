@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-preview.14</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.112.0-preview.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -122,6 +122,8 @@ Files</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="arithmetic_8hpp.html">arithmetic.hpp</a></td></tr>
 <tr class="memdesc:arithmetic_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="basis_8hpp.html">basis.hpp</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="bilinearform_8hpp.html">bilinearform.hpp</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="bilinearformbase_8cpp.html">bilinearformbase.cpp</a></td></tr>
@@ -138,6 +140,8 @@ Files</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="feelvf_2concepts_8hpp.html">concepts.hpp</a></td></tr>
 <tr class="memdesc:feelvf_2concepts_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">C++20 concepts for Feel++ variational formulation expressions. <br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="contractions_8hpp.html">contractions.hpp</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cst_8hpp.html">cst.hpp</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -226,9 +230,41 @@ Files</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="rand_8hpp.html">rand.hpp</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="sb9_8hpp.html">sb9.hpp</a></td></tr>
+<tr class="memdesc:sb9_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">SB9 shell kinematic operators. <br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="sb9__bending_8hpp.html">sb9_bending.hpp</a></td></tr>
+<tr class="memdesc:sb9__bending_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">SB9 membrane and bending shell kinematic operators. <br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="sb9__common_8hpp.html">sb9_common.hpp</a></td></tr>
+<tr class="memdesc:sb9__common_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Shared SB9 shell operator infrastructure. <br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="sb9__pinching_8hpp.html">sb9_pinching.hpp</a></td></tr>
+<tr class="memdesc:sb9__pinching_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">SB9 pinching shell kinematic operators. <br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="sb9__quadrature_8hpp.html">sb9_quadrature.hpp</a></td></tr>
+<tr class="memdesc:sb9__quadrature_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">SB9-specific quadrature rules used by the shell element formulation. <br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="sb9__shear_8hpp.html">sb9_shear.hpp</a></td></tr>
+<tr class="memdesc:sb9__shear_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">SB9 shear shell kinematic operators. <br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="sb9__shearing_8hpp.html">sb9_shearing.hpp</a></td></tr>
+<tr class="memdesc:sb9__shearing_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">SB9 transverse-shearing shell kinematic operators. <br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="sb9__stabilization_8hpp.html">sb9_stabilization.hpp</a></td></tr>
+<tr class="memdesc:sb9__stabilization_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">SB9 mode stabilization shell operators. <br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="sb9__strain_8hpp.html">sb9_strain.hpp</a></td></tr>
+<tr class="memdesc:sb9__strain_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">SB9 shell strain composition helpers. <br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="shape_8hpp.html">shape.hpp</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="shellgeometric_8hpp.html">shellgeometric.hpp</a></td></tr>
+<tr class="memdesc:shellgeometric_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Geometric DSL operators for shell-oriented formulations on hexahedra. <br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="symbolicdiagnostics_8hpp.html">symbolicdiagnostics.hpp</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="tensorbasis_8hpp.html">tensorbasis.hpp</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="time_8hpp.html">time.hpp</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -247,6 +283,8 @@ Files</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="val_8hpp.html">val.hpp</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="vf_8hpp.html">vf.hpp</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="voigt_8hpp.html">voigt.hpp</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->

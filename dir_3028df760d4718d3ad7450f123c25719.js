@@ -2,6 +2,7 @@ var dir_3028df760d4718d3ad7450f123c25719 =
 [
     [ "detail", "dir_8e1007eda518a56815ea54c5ff0df4a3.html", "dir_8e1007eda518a56815ea54c5ff0df4a3" ],
     [ "arithmetic.hpp", "arithmetic_8hpp.html", null ],
+    [ "basis.hpp", "basis_8hpp.html", "basis_8hpp" ],
     [ "bilinearform.hpp", "bilinearform_8hpp.html", null ],
     [ "bilinearformbase.cpp", "bilinearformbase_8cpp.html", null ],
     [ "bilinearformbase.hpp", "bilinearformbase_8hpp.html", [
@@ -16,6 +17,7 @@ var dir_3028df760d4718d3ad7450f123c25719 =
       [ "Feel::vf::BlocksBase< T >", "structFeel_1_1vf_1_1BlocksBase.html", "structFeel_1_1vf_1_1BlocksBase" ]
     ] ],
     [ "concepts.hpp", "feelvf_2concepts_8hpp.html", null ],
+    [ "contractions.hpp", "contractions_8hpp.html", "contractions_8hpp" ],
     [ "cst.hpp", "cst_8hpp.html", "cst_8hpp" ],
     [ "det.hpp", "det_8hpp.html", "det_8hpp" ],
     [ "dummy.cpp", "feelvf_2dummy_8cpp.html", null ],
@@ -61,8 +63,33 @@ var dir_3028df760d4718d3ad7450f123c25719 =
     [ "print.hpp", "print_8hpp.html", "print_8hpp" ],
     [ "projectors.hpp", "projectors_8hpp.html", "projectors_8hpp" ],
     [ "rand.hpp", "rand_8hpp.html", "rand_8hpp" ],
+    [ "sb9.hpp", "sb9_8hpp.html", null ],
+    [ "sb9_bending.hpp", "sb9__bending_8hpp.html", "sb9__bending_8hpp" ],
+    [ "sb9_common.hpp", "sb9__common_8hpp.html", [
+      [ "Feel::vf::detail::SB9KernelBase< GeometryDataType >", "classFeel_1_1vf_1_1detail_1_1SB9KernelBase.html", "classFeel_1_1vf_1_1detail_1_1SB9KernelBase" ],
+      [ "Feel::vf::detail::SB9StabilizationOperator< ElementType, Role, KernelCacheTemplate, Kind, Rows >", "classFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator.html", "classFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator" ],
+      [ "Feel::vf::detail::SB9StabilizationOperator< ElementType, Role, KernelCacheTemplate, Kind, Rows >::HasTestFunction< Func >", "structFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator_1_1HasTestFunction.html", "structFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator_1_1HasTestFunction" ],
+      [ "Feel::vf::detail::SB9StabilizationOperator< ElementType, Role, KernelCacheTemplate, Kind, Rows >::HasTrialFunction< Func >", "structFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator_1_1HasTrialFunction.html", "structFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator_1_1HasTrialFunction" ],
+      [ "Feel::vf::detail::SB9StabilizationOperator< ElementType, Role, KernelCacheTemplate, Kind, Rows >::Lambda< TheExpr >", "structFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator_1_1Lambda.html", "structFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator_1_1Lambda" ],
+      [ "Feel::vf::detail::SB9StabilizationOperator< ElementType, Role, KernelCacheTemplate, Kind, Rows >::tensor< Geo_t, Basis_i_t, Basis_j_t >", "structFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator_1_1tensor.html", "structFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator_1_1tensor" ],
+      [ "Feel::vf::detail::SB9StabilizationOperator< ElementType, Role, KernelCacheTemplate, Kind, Rows >::tensor< Geo_t, Basis_i_t, Basis_j_t >::is_zero", "structFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator_1_1tensor_1_1is__zero.html", "structFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator_1_1tensor_1_1is__zero" ],
+      [ "Feel::vf::detail::SB9VectorOperator< ElementType, Role, KernelCacheTemplate, Kind >", "classFeel_1_1vf_1_1detail_1_1SB9VectorOperator.html", "classFeel_1_1vf_1_1detail_1_1SB9VectorOperator" ],
+      [ "Feel::vf::detail::SB9VectorOperator< ElementType, Role, KernelCacheTemplate, Kind >::HasTestFunction< Func >", "structFeel_1_1vf_1_1detail_1_1SB9VectorOperator_1_1HasTestFunction.html", "structFeel_1_1vf_1_1detail_1_1SB9VectorOperator_1_1HasTestFunction" ],
+      [ "Feel::vf::detail::SB9VectorOperator< ElementType, Role, KernelCacheTemplate, Kind >::HasTrialFunction< Func >", "structFeel_1_1vf_1_1detail_1_1SB9VectorOperator_1_1HasTrialFunction.html", "structFeel_1_1vf_1_1detail_1_1SB9VectorOperator_1_1HasTrialFunction" ],
+      [ "Feel::vf::detail::SB9VectorOperator< ElementType, Role, KernelCacheTemplate, Kind >::Lambda< TheExpr >", "structFeel_1_1vf_1_1detail_1_1SB9VectorOperator_1_1Lambda.html", "structFeel_1_1vf_1_1detail_1_1SB9VectorOperator_1_1Lambda" ],
+      [ "Feel::vf::detail::SB9VectorOperator< ElementType, Role, KernelCacheTemplate, Kind >::tensor< Geo_t, Basis_i_t, Basis_j_t >", "structFeel_1_1vf_1_1detail_1_1SB9VectorOperator_1_1tensor.html", "structFeel_1_1vf_1_1detail_1_1SB9VectorOperator_1_1tensor" ],
+      [ "Feel::vf::detail::SB9VectorOperator< ElementType, Role, KernelCacheTemplate, Kind >::tensor< Geo_t, Basis_i_t, Basis_j_t >::is_zero", "structFeel_1_1vf_1_1detail_1_1SB9VectorOperator_1_1tensor_1_1is__zero.html", "structFeel_1_1vf_1_1detail_1_1SB9VectorOperator_1_1tensor_1_1is__zero" ]
+    ] ],
+    [ "sb9_pinching.hpp", "sb9__pinching_8hpp.html", "sb9__pinching_8hpp" ],
+    [ "sb9_quadrature.hpp", "sb9__quadrature_8hpp.html", "sb9__quadrature_8hpp" ],
+    [ "sb9_shear.hpp", "sb9__shear_8hpp.html", "sb9__shear_8hpp" ],
+    [ "sb9_shearing.hpp", "sb9__shearing_8hpp.html", "sb9__shearing_8hpp" ],
+    [ "sb9_stabilization.hpp", "sb9__stabilization_8hpp.html", "sb9__stabilization_8hpp" ],
+    [ "sb9_strain.hpp", "sb9__strain_8hpp.html", "sb9__strain_8hpp" ],
     [ "shape.hpp", "shape_8hpp.html", null ],
+    [ "shellgeometric.hpp", "shellgeometric_8hpp.html", "shellgeometric_8hpp" ],
     [ "symbolicdiagnostics.hpp", "symbolicdiagnostics_8hpp.html", "symbolicdiagnostics_8hpp" ],
+    [ "tensorbasis.hpp", "tensorbasis_8hpp.html", "tensorbasis_8hpp" ],
     [ "time.hpp", "time_8hpp.html", "time_8hpp" ],
     [ "trace.hpp", "trace_8hpp.html", "trace_8hpp" ],
     [ "trans.hpp", "trans_8hpp.html", "trans_8hpp" ],
@@ -71,5 +98,6 @@ var dir_3028df760d4718d3ad7450f123c25719 =
     [ "unaryfunctor.cpp", "unaryfunctor_8cpp.html", null ],
     [ "unaryfunctor.hpp", "unaryfunctor_8hpp.html", null ],
     [ "val.hpp", "val_8hpp.html", "val_8hpp" ],
-    [ "vf.hpp", "vf_8hpp.html", null ]
+    [ "vf.hpp", "vf_8hpp.html", null ],
+    [ "voigt.hpp", "voigt_8hpp.html", null ]
 ];

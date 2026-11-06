@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['face_5fprocessor_5ftype_0',['face_processor_type',['../classFeel_1_1MeshBase.html#a91247ada5746df1ef0edd9af84f014a0',1,'Feel::MeshBase::face_processor_type()'],['../classFeel_1_1Mesh.html#a7021768c67dc45c9634979a1b3b9f221',1,'Feel::Mesh::face_processor_type()']]],
+  ['face_5fprocessor_5ftype_0',['face_processor_type',['../classFeel_1_1Mesh.html#a7021768c67dc45c9634979a1b3b9f221',1,'Feel::Mesh::face_processor_type()'],['../classFeel_1_1MeshBase.html#a91247ada5746df1ef0edd9af84f014a0',1,'Feel::MeshBase::face_processor_type()']]],
   ['face_5fsign_5finfo_5ftype_1',['face_sign_info_type',['../classFeel_1_1DofTable.html#ae91cf4610eff93e238e2412129542fd2',1,'Feel::DofTable']]],
   ['faces_5fmesh_5fcptr_5ft_2',['faces_mesh_cptr_t',['../group__Traits.html#ga4d5cd527e9876c8c9302e4387db27fac',1,'Feel']]],
   ['faces_5fmesh_5fptr_5ft_3',['faces_mesh_ptr_t',['../group__Traits.html#ga09e54df1a8d433091ccbf2970f693cd0',1,'Feel']]],
@@ -8,10 +8,12 @@ var searchData=
   ['facets_5fmesh_5fcptr_5ft_5',['facets_mesh_cptr_t',['../group__Traits.html#gaf115d145eefe283bae8ff4c8048b4952',1,'Feel']]],
   ['facets_5fmesh_5fptr_5ft_6',['facets_mesh_ptr_t',['../group__Traits.html#ga13730817f7c1bde4d8f99e9d4b49ddc0',1,'Feel']]],
   ['facets_5fmesh_5ft_7',['facets_mesh_t',['../group__Traits.html#gac3b369b18723a2938b6f316cbf691cc3',1,'Feel']]],
-  ['form1_5fspace_5ft_8',['form1_space_t',['../namespaceFeel.html#a6e6d5b52fe05c721d3fc64af64bc818c',1,'Feel']]],
-  ['form1_5ft_9',['form1_t',['../namespaceFeel.html#ad4a59195d00415d9e309cfe6bd139267',1,'Feel']]],
-  ['form1_5ftype_10',['form1_type',['../namespaceFeel.html#ad37d9e382554de2b0edff9411b3c0b51',1,'Feel']]],
-  ['fspace_5freuse_5fpolicy_11',['fspace_reuse_policy',['../feelcore_2parameter_8hpp.html#a3eca829effe82f573aba700c7ed6be36',1,'Feel::na']]],
-  ['functionspace_5felement_5ftype_12',['functionspace_element_type',['../group__Traits.html#ga309eaea5e6ae8eed34e171c103915dac',1,'Feel']]],
-  ['functionspace_5ftype_13',['functionspace_type',['../group__Traits.html#gaa0890ffe8d4236f488e086c81562c49d',1,'Feel']]]
+  ['fe_5ftype_8',['fe_type',['../classFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator.html#a07618176199b707bccde36b30ffe9d55',1,'Feel::vf::detail::SB9StabilizationOperator::fe_type()'],['../classFeel_1_1vf_1_1detail_1_1SB9VectorOperator.html#a0abcaa78d1e4848606087c40b9786658',1,'Feel::vf::detail::SB9VectorOperator::fe_type()']]],
+  ['form1_5fspace_5ft_9',['form1_space_t',['../namespaceFeel.html#a6e6d5b52fe05c721d3fc64af64bc818c',1,'Feel']]],
+  ['form1_5ft_10',['form1_t',['../namespaceFeel.html#ad4a59195d00415d9e309cfe6bd139267',1,'Feel']]],
+  ['form1_5ftype_11',['form1_type',['../namespaceFeel.html#ad37d9e382554de2b0edff9411b3c0b51',1,'Feel']]],
+  ['frame_5faxes_5ftype_12',['frame_axes_type',['../classFeel_1_1vf_1_1detail_1_1SB9KernelBase.html#a867f362c8f276a5e70faada3a5e9cb46',1,'Feel::vf::detail::SB9KernelBase']]],
+  ['fspace_5freuse_5fpolicy_13',['fspace_reuse_policy',['../feelcore_2parameter_8hpp.html#a3eca829effe82f573aba700c7ed6be36',1,'Feel::na']]],
+  ['functionspace_5felement_5ftype_14',['functionspace_element_type',['../group__Traits.html#ga309eaea5e6ae8eed34e171c103915dac',1,'Feel']]],
+  ['functionspace_5ftype_15',['functionspace_type',['../classFeel_1_1vf_1_1detail_1_1SB9VectorOperator.html#a206670ecdb0d748f95f13497b97a62cf',1,'Feel::vf::detail::SB9VectorOperator::functionspace_type()'],['../classFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator.html#a17e13b24cc409ed1207a2a737b1c02b2',1,'Feel::vf::detail::SB9StabilizationOperator::functionspace_type()'],['../group__Traits.html#gaa0890ffe8d4236f488e086c81562c49d',1,'Feel::functionspace_type()']]]
 ];

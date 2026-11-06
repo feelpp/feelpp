@@ -287,22 +287,23 @@ var sectionId = 'dynsection-1';
 <!-- Node12 -->
 <g id="node12" class="node">
 <title>Node12</title>
-<g id="a_node12"><a xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="514,-469.5 514,-526.5 604,-526.5 604,-469.5 514,-469.5"/>
-<text text-anchor="middle" x="559" y="-514.5" font-family="Helvetica,sans-Serif" font-size="10.00">vector&lt; double &gt;</text>
-<polyline fill="none" stroke="#bfbfbf" points="514,-507.5 604,-507.5 "/>
-<text text-anchor="middle" x="559" y="-495.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="514,-488.5 604,-488.5 "/>
-<text text-anchor="middle" x="559" y="-476.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<g id="a_node12"><a xlink:href="classboost_1_1numeric_1_1ublas_1_1vector.html" target="_top" xlink:title=" ">
+<polygon fill="white" stroke="#bfbfbf" points="514,-464 514,-532 624,-532 624,-464 514,-464"/>
+<text text-anchor="start" x="522" y="-520" font-family="Helvetica,sans-Serif" font-size="10.00">boost::numeric::ublas</text>
+<text text-anchor="middle" x="569" y="-509" font-family="Helvetica,sans-Serif" font-size="10.00">::vector&lt; double &gt;</text>
+<polyline fill="none" stroke="#bfbfbf" points="514,-502 624,-502 "/>
+<text text-anchor="middle" x="569" y="-490" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="514,-483 624,-483 "/>
+<text text-anchor="middle" x="569" y="-471" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 </a>
 </g>
 </g>
 <!-- Node12&#45;&gt;Node3 -->
 <g id="edge11" class="edge">
 <title>Node12&#45;&gt;Node3</title>
-<path fill="none" stroke="#404040" d="M538.88,-469.38C529.35,-457.83 517.17,-445.03 504,-436 474.18,-415.56 462.43,-418.02 428,-407 401.12,-398.39 389.78,-402.28 361.74,-389.75"/>
+<path fill="none" stroke="#404040" d="M538.67,-463.9C528.37,-453.99 516.33,-443.72 504,-436 473.35,-416.82 462.43,-418.02 428,-407 401.12,-398.39 389.78,-402.28 361.74,-389.75"/>
 <polygon fill="none" stroke="#404040" points="361.39,-389.58 354.24,-390.56 350.59,-384.34 357.74,-383.36 361.39,-389.58"/>
-<text text-anchor="middle" x="496" y="-410" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_weights</text>
+<text text-anchor="middle" x="493" y="-410" font-family="Helvetica,sans-Serif" font-size="10.00"> #M_weights</text>
 </g>
 <!-- Node13 -->
 <g id="node13" class="node">

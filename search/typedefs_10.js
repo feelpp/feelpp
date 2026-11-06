@@ -1,12 +1,12 @@
 var searchData=
 [
-  ['self_5fptrtype_0',['self_ptrtype',['../classFeel_1_1WorldComm.html#a17b8bdedce7012a7f111b2b7b0d33953',1,'Feel::WorldComm']]],
-  ['self_5ftype_1',['self_type',['../classFeel_1_1WorldComm.html#adb513020a43d11dfca57d8bcb4883956',1,'Feel::WorldComm']]],
-  ['simget_5fiterator_2',['simget_iterator',['../classFeel_1_1Application.html#abf27535f4318a03d55a2607626981418',1,'Feel::Application']]],
-  ['simgetfactory_3',['SimgetFactory',['../namespaceFeel.html#ac9648381161062499cc054fa4b0de17e',1,'Feel']]],
-  ['simgets_5ftype_4',['simgets_type',['../classFeel_1_1Application.html#af693db51ca874953a72fee81cd13ed4e',1,'Feel::Application']]],
-  ['size_5ftype_5',['size_type',['../classnlohmann_1_1basic__json.html#a3ada29bca70b4965f6fd37ec1c8f85f7',1,'nlohmann::basic_json::size_type()'],['../namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58',1,'Feel::size_type()']]],
-  ['sparse_5fmatrix_5fptrtype_6',['sparse_matrix_ptrtype',['../classFeel_1_1MeshAdaptation.html#af2a212949ffeab1f76431385050d08bb',1,'Feel::MeshAdaptation']]],
-  ['sparse_5fmatrix_5ftype_7',['sparse_matrix_type',['../classFeel_1_1MeshAdaptation.html#a0dd9c24c5d660266d5cac544be0c846c',1,'Feel::MeshAdaptation']]],
-  ['string_5ft_8',['string_t',['../classnlohmann_1_1basic__json.html#a33593865ffb1860323dcbd52425b90c8',1,'nlohmann::basic_json']]]
+  ['range_5ft_0',['range_t',['../namespaceFeel.html#a2512946a9caa632d22ac8d531b15a1a2',1,'Feel']]],
+  ['rank_5ftype_1',['rank_type',['../namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6',1,'Feel']]],
+  ['ref_5fconvex_5ftype_2',['ref_convex_type',['../classFeel_1_1Localization.html#a1642b7fbdbc8b01c701a6d4b510d3d58',1,'Feel::Localization']]],
+  ['reference_3',['reference',['../classnlohmann_1_1detail_1_1iter__impl.html#a5be8001be099c6b82310f4d387b953ce',1,'nlohmann::detail::iter_impl::reference()'],['../classnlohmann_1_1detail_1_1json__reverse__iterator.html#a42f51a69bac7b2aebb613b2164e457f1',1,'nlohmann::detail::json_reverse_iterator::reference()'],['../classnlohmann_1_1basic__json.html#a220ae98554a76205fb7f8822d36b2d5a',1,'nlohmann::basic_json::reference()']]],
+  ['region_5ftree_5fptrtype_4',['region_tree_ptrtype',['../namespaceFeel.html#a77ae9830c105b0634078036b6ce9dde8',1,'Feel']]],
+  ['region_5ftree_5ftype_5',['region_tree_type',['../namespaceFeel.html#a86a23775a5947ae5e22485981d4915c7',1,'Feel']]],
+  ['return_5ftype_6',['return_type',['../classFeel_1_1vf_1_1SB9ThroughThicknessLobatto5.html#a2da5d1af3aaba2228d8d9cb3c2dd31bc',1,'Feel::vf::SB9ThroughThicknessLobatto5::return_type()'],['../classFeel_1_1vf_1_1SB9LumpedMassLobatto.html#a4dcac60ce913373d1c9b6ab3deef3c8b',1,'Feel::vf::SB9LumpedMassLobatto::return_type()']]],
+  ['reverse_5fiterator_7',['reverse_iterator',['../classnlohmann_1_1basic__json.html#a5b8c0ebedd920b507f4f7ff4e19bf3c6',1,'nlohmann::basic_json']]],
+  ['row_5ftype_8',['row_type',['../classFeel_1_1vf_1_1detail_1_1SB9KernelBase.html#a2e8b75176011be03d13973e0628c4122',1,'Feel::vf::detail::SB9KernelBase::row_type()'],['../classFeel_1_1vf_1_1detail_1_1SB9ShearKernelCache.html#aa407b6ebd6e295c79a9b844e34065a1c',1,'Feel::vf::detail::SB9ShearKernelCache::row_type()']]]
 ];

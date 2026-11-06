@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-preview.14</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.112.0-preview.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -237,11 +237,11 @@ template&lt;typename MeshType &gt; </td></tr>
 <tr class="memitem:a6587f31cc2c0acedbb42c83409af1d1f"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateDistanceToRange</b> ()</td></tr>
 <tr class="separator:a6587f31cc2c0acedbb42c83409af1d1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1595ba1be71c63084085577ed9b0ec77"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , typename ExprTypr , typename RangeType , std::enable_if_t&lt; is_filter_v&lt; std::decay_t&lt; RangeType &gt; &gt;, <a class="el" href="classbool.html">bool</a> &gt;  = true&gt; </td></tr>
-<tr class="memitem:a1595ba1be71c63084085577ed9b0ec77"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelMesh.html#a1595ba1be71c63084085577ed9b0ec77">updateField</a> (std::string const &amp;name, Expr&lt; ExprTypr &gt; const &amp;<a class="el" href="namespaceFeel.html#ae2f6db1ab4c336cc4f4a008bc86f401a">expr</a>, RangeType const &amp;<a class="el" href="group__Core.html#ga9ac2567d303c357e7c0de44280697997">range</a>, std::string const &amp;basis=&quot;&quot;, <a class="el" href="classbool.html">bool</a> initZero=false)</td></tr>
+<tr class="memitem:a1595ba1be71c63084085577ed9b0ec77"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelMesh.html#a1595ba1be71c63084085577ed9b0ec77">updateField</a> (std::string const &amp;name, <a class="el" href="classExpr.html">Expr</a>&lt; ExprTypr &gt; const &amp;<a class="el" href="namespaceFeel.html#ae2f6db1ab4c336cc4f4a008bc86f401a">expr</a>, RangeType const &amp;<a class="el" href="group__Core.html#ga9ac2567d303c357e7c0de44280697997">range</a>, std::string const &amp;basis=&quot;&quot;, <a class="el" href="classbool.html">bool</a> initZero=false)</td></tr>
 <tr class="memdesc:a1595ba1be71c63084085577ed9b0ec77"><td class="mdescLeft">&#160;</td><td class="mdescRight">Updates a field in a model mesh based on an expression and a range of elements.  <a href="classFeel_1_1FeelModels_1_1ModelMesh.html#a1595ba1be71c63084085577ed9b0ec77">More...</a><br /></td></tr>
 <tr class="separator:a1595ba1be71c63084085577ed9b0ec77"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac13418379d03d501e13df441e122395d"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , typename ExprTypr &gt; </td></tr>
-<tr class="memitem:ac13418379d03d501e13df441e122395d"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelMesh.html#ac13418379d03d501e13df441e122395d">updateField</a> (std::string const &amp;name, Expr&lt; ExprTypr &gt; const &amp;<a class="el" href="namespaceFeel.html#ae2f6db1ab4c336cc4f4a008bc86f401a">expr</a>, std::string const &amp;basis=&quot;&quot;)</td></tr>
+<tr class="memitem:ac13418379d03d501e13df441e122395d"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelMesh.html#ac13418379d03d501e13df441e122395d">updateField</a> (std::string const &amp;name, <a class="el" href="classExpr.html">Expr</a>&lt; ExprTypr &gt; const &amp;<a class="el" href="namespaceFeel.html#ae2f6db1ab4c336cc4f4a008bc86f401a">expr</a>, std::string const &amp;basis=&quot;&quot;)</td></tr>
 <tr class="memdesc:ac13418379d03d501e13df441e122395d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Updates a field with a given name and expression on all mesh elements.  <a href="classFeel_1_1FeelModels_1_1ModelMesh.html#ac13418379d03d501e13df441e122395d">More...</a><br /></td></tr>
 <tr class="separator:ac13418379d03d501e13df441e122395d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a563a8a7d2f898df7cd06ddd3aa7ede5b"><td class="memTemplParams" colspan="2">template&lt;typename MeshType , typename FieldType , std::enable_if_t&lt; <a class="el" href="group__Traits.html#ga4d50181c65d94cfa6520d07dc40206df">is_functionspace_element_v</a>&lt; std::decay_t&lt; FieldType &gt; &gt;, <a class="el" href="classbool.html">bool</a> &gt;  = true&gt; </td></tr>
@@ -426,7 +426,7 @@ template&lt;typename MeshType , typename ExprTypr , typename RangeType , std::en
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">Expr&lt; ExprTypr &gt; const &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classExpr.html">Expr</a>&lt; ExprTypr &gt; const &amp;&#160;</td>
           <td class="paramname"><em>expr</em>, </td>
         </tr>
         <tr>
@@ -494,7 +494,7 @@ template&lt;typename MeshType , typename ExprTypr &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">Expr&lt; ExprTypr &gt; const &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classExpr.html">Expr</a>&lt; ExprTypr &gt; const &amp;&#160;</td>
           <td class="paramname"><em>expr</em>, </td>
         </tr>
         <tr>

@@ -402,7 +402,7 @@
 <!-- Node44 -->
 <g id="node58" class="node">
 <title>Node44</title>
-<g id="a_node58"><a xlink:href="classFeel_1_1TimerTable.html" target="_top" xlink:title="TimerTable is a map of timer.">
+<g id="a_node58"><a xlink:href="classFeel_1_1TimerTable.html" target="_top" xlink:title="Local timer statistics and their text, Markdown, and journal reports.">
 <polygon fill="white" stroke="black" points="599,-896 599,-915 688,-915 688,-896 599,-896"/>
 <text text-anchor="middle" x="643.5" y="-903" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::TimerTable</text>
 </a>

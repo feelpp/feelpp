@@ -1,0 +1,27 @@
+var classFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator =
+[
+    [ "HasTestFunction", "structFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator_1_1HasTestFunction.html", "structFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator_1_1HasTestFunction" ],
+    [ "HasTrialFunction", "structFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator_1_1HasTrialFunction.html", "structFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator_1_1HasTrialFunction" ],
+    [ "Lambda", "structFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator_1_1Lambda.html", "structFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator_1_1Lambda" ],
+    [ "tensor", "structFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator_1_1tensor.html", "structFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator_1_1tensor" ],
+    [ "element_type", "classFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator.html#a1f45b9dd781e187f9af82c7993945b43", null ],
+    [ "evaluate_type", "classFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator.html#a391d99e23161564c42ffdce7a8db548d", null ],
+    [ "expression_type", "classFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator.html#a45f17c3922ad3498d5957d07b3917aa3", null ],
+    [ "fe_type", "classFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator.html#a07618176199b707bccde36b30ffe9d55", null ],
+    [ "functionspace_type", "classFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator.html#a17e13b24cc409ed1207a2a737b1c02b2", null ],
+    [ "test_basis", "classFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator.html#acc6d0ded28633ab29280aa7ca7077e78", null ],
+    [ "this_type", "classFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator.html#a56075ac7e5718b1cee1753588979dfdb", null ],
+    [ "trial_basis", "classFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator.html#a600675f35b32c3cd8ffe1bceb9d9ed13", null ],
+    [ "value_type", "classFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator.html#a2b920fae5c4816201d7fa17889278135", null ],
+    [ "SB9StabilizationOperator", "classFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator.html#a3471dd458dacb61bdf33f14e24eddb4f", null ],
+    [ "applySymbolsExpr", "classFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator.html#a677af11b5030ff9a166e13306da1cadf", null ],
+    [ "diff", "classFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator.html#a0bc4e2886dfbd6017007826df718f963", null ],
+    [ "element", "classFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator.html#aaa0b94ea2e0ea2bc1e01c61edc7665dc", null ],
+    [ "isPolynomial", "classFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator.html#a164022fee83353c860ea1fe06d38b972", null ],
+    [ "operator()", "classFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator.html#a00d5b60a24b847ccf544f72540eff7c8", null ],
+    [ "polynomialOrder", "classFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator.html#a795648c503c2d88f5989b6758df54db1", null ],
+    [ "context", "classFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator.html#a7c6a07aee14ede2c8dcc0846fdee5180", null ],
+    [ "has_test_basis", "classFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator.html#a3ca05fcb9a015d76e07ec96f7f53fc8a", null ],
+    [ "has_trial_basis", "classFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator.html#aa4c2f670b0505e7097bfa7cb05a2521c", null ],
+    [ "is_terminal", "classFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator.html#a3be8a161d9887e5d1d78872bd7ce9dfc", null ]
+];

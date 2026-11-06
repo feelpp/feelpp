@@ -261,6 +261,9 @@ var hierarchy =
         [ "Object2", "classObject2.html", null ]
       ] ]
     ] ],
+    [ "Expr", "classExpr.html", [
+      [ "Feel::vf::detail::BasisProxy< ElementType, Role >", "classFeel_1_1vf_1_1detail_1_1BasisProxy.html", null ]
+    ] ],
     [ "Feel::ExpressionEvaluatorBase< EltT >", "classFeel_1_1ExpressionEvaluatorBase.html", [
       [ "Feel::ExpressionEvaluator< EltT, ExprT >", "classFeel_1_1ExpressionEvaluator.html", [
         [ "Feel::ExpressionEvaluatorParam< EltT, ExprT >", "classFeel_1_1ExpressionEvaluatorParam.html", [
@@ -897,6 +900,10 @@ var hierarchy =
     [ "Feel::TabulateInformations::ExporterAscii", "structFeel_1_1TabulateInformations_1_1ExporterAscii.html", null ],
     [ "Feel::TabulateInformations::ExporterAsciiDoc", "structFeel_1_1TabulateInformations_1_1ExporterAsciiDoc.html", null ],
     [ "Feel::TerminalProperties", "classFeel_1_1TerminalProperties.html", null ],
+    [ "Feel::TimerData", "classFeel_1_1TimerData.html", null ],
+    [ "Feel::TimerProfileReport", "structFeel_1_1TimerProfileReport.html", null ],
+    [ "Feel::TimerProfileSnapshot", "structFeel_1_1TimerProfileSnapshot.html", null ],
+    [ "Feel::TimerProfileStatistics", "structFeel_1_1TimerProfileStatistics.html", null ],
     [ "Feel::TimerToolBase", "classFeel_1_1TimerToolBase.html", [
       [ "Feel::TimerTool", "classFeel_1_1TimerTool.html", null ],
       [ "Feel::TimerToolNull", "classFeel_1_1TimerToolNull.html", null ]
@@ -930,6 +937,12 @@ var hierarchy =
     [ "Feel::vf::CastBase", "classFeel_1_1vf_1_1CastBase.html", [
       [ "Feel::vf::Cast< T, ExprT >", "classFeel_1_1vf_1_1Cast.html", null ]
     ] ],
+    [ "Feel::vf::ComponentsExpr< Expr< detail::Mat< M, N, MatrixExpr > > >", "classFeel_1_1vf_1_1ComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr_01_4_01_4_01_4.html", null ],
+    [ "Feel::vf::ComponentsExpr< Expr< detail::Mat< M, N, MatrixExpr > > >::HasTestFunction< Func >", "structFeel_1_1vf_1_1ComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr_01_4_01_4_01_4_1_1HasTestFunction.html", null ],
+    [ "Feel::vf::ComponentsExpr< Expr< detail::Mat< M, N, MatrixExpr > > >::HasTrialFunction< Func >", "structFeel_1_1vf_1_1ComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr_01_4_01_4_01_4_1_1HasTrialFunction.html", null ],
+    [ "Feel::vf::ComponentsExpr< Expr< detail::Mat< M, N, MatrixExpr > > >::tensor< Geo_t, Basis_i_t, Basis_j_t >", "structFeel_1_1vf_1_1ComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr_01_4_01_4_01_4_1_1tensor.html", null ],
+    [ "Feel::vf::ComponentsExpr< Expr< detail::Mat< M, N, MatrixExpr > > >::tensor< Geo_t, Basis_i_t, Basis_j_t >::is_zero", "structFeel_1_1vf_1_1ComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr_01_4_01_4_01_4_1_1tensor_1_1is__zero.html", null ],
+    [ "Feel::vf::ComponentsExpr< Expr< detail::Mat< M, N, MatrixExpr > > >::tensor< Geo_t, Basis_i_t, Basis_j_t >::sig< Args >", "structFeel_1_1vf_1_1ComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr_01_4_01_4_01_4_1_1tensor_1_1sig.html", null ],
     [ "Feel::vf::Cst< T >::HasTestFunction< Func >", "structFeel_1_1vf_1_1Cst_1_1HasTestFunction.html", null ],
     [ "Feel::vf::Cst< T >::HasTrialFunction< Func >", "structFeel_1_1vf_1_1Cst_1_1HasTrialFunction.html", null ],
     [ "Feel::vf::Cst< T >::Lambda< TheExpr >", "structFeel_1_1vf_1_1Cst_1_1Lambda.html", null ],
@@ -945,6 +958,82 @@ var hierarchy =
     [ "Feel::vf::DeferredDirichletSet< T >", "classFeel_1_1vf_1_1DeferredDirichletSet.html", null ],
     [ "Feel::vf::DeferredDirichletSet< T >::CompatibilityKey", "structFeel_1_1vf_1_1DeferredDirichletSet_1_1CompatibilityKey.html", null ],
     [ "Feel::vf::DeferredDirichletSet< T >::Entry", "structFeel_1_1vf_1_1DeferredDirichletSet_1_1Entry.html", null ],
+    [ "Feel::vf::detail::BasisStorage< ElementType >", "classFeel_1_1vf_1_1detail_1_1BasisStorage.html", [
+      [ "Feel::vf::detail::BasisProxy< ElementType, Role >", "classFeel_1_1vf_1_1detail_1_1BasisProxy.html", null ]
+    ] ],
+    [ "Feel::vf::detail::IsotropicStiffness< Dim, Notation, LambdaExprT, MuExprT >", "classFeel_1_1vf_1_1detail_1_1IsotropicStiffness.html", null ],
+    [ "Feel::vf::detail::IsotropicStiffness< Dim, Notation, LambdaExprT, MuExprT >::HasTestFunction< Func >", "structFeel_1_1vf_1_1detail_1_1IsotropicStiffness_1_1HasTestFunction.html", null ],
+    [ "Feel::vf::detail::IsotropicStiffness< Dim, Notation, LambdaExprT, MuExprT >::HasTrialFunction< Func >", "structFeel_1_1vf_1_1detail_1_1IsotropicStiffness_1_1HasTrialFunction.html", null ],
+    [ "Feel::vf::detail::IsotropicStiffness< Dim, Notation, LambdaExprT, MuExprT >::tensor< Geo_t, Basis_i_t, Basis_j_t >", "structFeel_1_1vf_1_1detail_1_1IsotropicStiffness_1_1tensor.html", null ],
+    [ "Feel::vf::detail::IsotropicStiffness< Dim, Notation, LambdaExprT, MuExprT >::tensor< Geo_t, Basis_i_t, Basis_j_t >::is_zero", "structFeel_1_1vf_1_1detail_1_1IsotropicStiffness_1_1tensor_1_1is__zero.html", null ],
+    [ "Feel::vf::detail::IsotropicStiffness< Dim, Notation, LambdaExprT, MuExprT >::tensor< Geo_t, Basis_i_t, Basis_j_t >::sig< Args >", "structFeel_1_1vf_1_1detail_1_1IsotropicStiffness_1_1tensor_1_1sig.html", null ],
+    [ "Feel::vf::detail::LeftMultiplyByDelta< ExprT, Dim, I, K >::HasTestFunction< Func >", "structFeel_1_1vf_1_1detail_1_1LeftMultiplyByDelta_1_1HasTestFunction.html", null ],
+    [ "Feel::vf::detail::LeftMultiplyByDelta< ExprT, Dim, I, K >::HasTrialFunction< Func >", "structFeel_1_1vf_1_1detail_1_1LeftMultiplyByDelta_1_1HasTrialFunction.html", null ],
+    [ "Feel::vf::detail::LeftMultiplyByDelta< ExprT, Dim, I, K >::Lambda< TheExpr >", "structFeel_1_1vf_1_1detail_1_1LeftMultiplyByDelta_1_1Lambda.html", null ],
+    [ "Feel::vf::detail::LeftMultiplyByDelta< ExprT, Dim, I, K >::tensor< Geo_t, Basis_i_t, Basis_j_t >", "structFeel_1_1vf_1_1detail_1_1LeftMultiplyByDelta_1_1tensor.html", null ],
+    [ "Feel::vf::detail::LeftMultiplyByDelta< ExprT, Dim, I, K >::tensor< Geo_t, Basis_i_t, Basis_j_t >::is_zero", "structFeel_1_1vf_1_1detail_1_1LeftMultiplyByDelta_1_1tensor_1_1is__zero.html", null ],
+    [ "Feel::vf::detail::LeftMultiplyByDelta< ExprT, Dim, I, K >::tensor< Geo_t, Basis_i_t, Basis_j_t >::sig< Args >", "structFeel_1_1vf_1_1detail_1_1LeftMultiplyByDelta_1_1tensor_1_1sig.html", null ],
+    [ "Feel::vf::detail::RightMultiplyByDelta< ExprT, Dim, I, K >::HasTestFunction< Func >", "structFeel_1_1vf_1_1detail_1_1RightMultiplyByDelta_1_1HasTestFunction.html", null ],
+    [ "Feel::vf::detail::RightMultiplyByDelta< ExprT, Dim, I, K >::HasTrialFunction< Func >", "structFeel_1_1vf_1_1detail_1_1RightMultiplyByDelta_1_1HasTrialFunction.html", null ],
+    [ "Feel::vf::detail::RightMultiplyByDelta< ExprT, Dim, I, K >::Lambda< TheExpr >", "structFeel_1_1vf_1_1detail_1_1RightMultiplyByDelta_1_1Lambda.html", null ],
+    [ "Feel::vf::detail::RightMultiplyByDelta< ExprT, Dim, I, K >::tensor< Geo_t, Basis_i_t, Basis_j_t >", "structFeel_1_1vf_1_1detail_1_1RightMultiplyByDelta_1_1tensor.html", null ],
+    [ "Feel::vf::detail::RightMultiplyByDelta< ExprT, Dim, I, K >::tensor< Geo_t, Basis_i_t, Basis_j_t >::is_zero", "structFeel_1_1vf_1_1detail_1_1RightMultiplyByDelta_1_1tensor_1_1is__zero.html", null ],
+    [ "Feel::vf::detail::RightMultiplyByDelta< ExprT, Dim, I, K >::tensor< Geo_t, Basis_i_t, Basis_j_t >::sig< Args >", "structFeel_1_1vf_1_1detail_1_1RightMultiplyByDelta_1_1tensor_1_1sig.html", null ],
+    [ "Feel::vf::detail::SB9KernelBase< GeometryDataType >", "classFeel_1_1vf_1_1detail_1_1SB9KernelBase.html", [
+      [ "Feel::vf::detail::SB9BendingKernelCache< GeometryDataType >", "classFeel_1_1vf_1_1detail_1_1SB9BendingKernelCache.html", null ],
+      [ "Feel::vf::detail::SB9PinchingKernelCache< GeometryDataType >", "classFeel_1_1vf_1_1detail_1_1SB9PinchingKernelCache.html", null ],
+      [ "Feel::vf::detail::SB9ShearKernelCache< GeometryDataType >", "classFeel_1_1vf_1_1detail_1_1SB9ShearKernelCache.html", null ],
+      [ "Feel::vf::detail::SB9ShearingKernelCache< GeometryDataType >", "classFeel_1_1vf_1_1detail_1_1SB9ShearingKernelCache.html", null ],
+      [ "Feel::vf::detail::SB9StabilizationKernelCache< GeometryDataType >", "classFeel_1_1vf_1_1detail_1_1SB9StabilizationKernelCache.html", null ],
+      [ "Feel::vf::detail::SB9StabilizationKernelCache< GeometryDataType >", "classFeel_1_1vf_1_1detail_1_1SB9StabilizationKernelCache.html", null ]
+    ] ],
+    [ "Feel::vf::detail::SB9StabilizationOperator< ElementType, Role, KernelCacheTemplate, Kind, Rows >", "classFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator.html", null ],
+    [ "Feel::vf::detail::SB9StabilizationOperator< ElementType, Role, KernelCacheTemplate, Kind, Rows >::HasTestFunction< Func >", "structFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator_1_1HasTestFunction.html", null ],
+    [ "Feel::vf::detail::SB9StabilizationOperator< ElementType, Role, KernelCacheTemplate, Kind, Rows >::HasTrialFunction< Func >", "structFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator_1_1HasTrialFunction.html", null ],
+    [ "Feel::vf::detail::SB9StabilizationOperator< ElementType, Role, KernelCacheTemplate, Kind, Rows >::Lambda< TheExpr >", "structFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator_1_1Lambda.html", null ],
+    [ "Feel::vf::detail::SB9StabilizationOperator< ElementType, Role, KernelCacheTemplate, Kind, Rows >::tensor< Geo_t, Basis_i_t, Basis_j_t >::is_zero", "structFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator_1_1tensor_1_1is__zero.html", null ],
+    [ "Feel::vf::detail::SB9VectorOperator< ElementType, Role, KernelCacheTemplate, Kind >", "classFeel_1_1vf_1_1detail_1_1SB9VectorOperator.html", null ],
+    [ "Feel::vf::detail::SB9VectorOperator< ElementType, Role, KernelCacheTemplate, Kind >::HasTestFunction< Func >", "structFeel_1_1vf_1_1detail_1_1SB9VectorOperator_1_1HasTestFunction.html", null ],
+    [ "Feel::vf::detail::SB9VectorOperator< ElementType, Role, KernelCacheTemplate, Kind >::HasTrialFunction< Func >", "structFeel_1_1vf_1_1detail_1_1SB9VectorOperator_1_1HasTrialFunction.html", null ],
+    [ "Feel::vf::detail::SB9VectorOperator< ElementType, Role, KernelCacheTemplate, Kind >::Lambda< TheExpr >", "structFeel_1_1vf_1_1detail_1_1SB9VectorOperator_1_1Lambda.html", null ],
+    [ "Feel::vf::detail::SB9VectorOperator< ElementType, Role, KernelCacheTemplate, Kind >::tensor< Geo_t, Basis_i_t, Basis_j_t >::is_zero", "structFeel_1_1vf_1_1detail_1_1SB9VectorOperator_1_1tensor_1_1is__zero.html", null ],
+    [ "Feel::vf::detail::ShellArea0Accessor< TensorType >", "structFeel_1_1vf_1_1detail_1_1ShellArea0Accessor.html", null ],
+    [ "Feel::vf::detail::ShellCellGeometryData< GMCType >", "structFeel_1_1vf_1_1detail_1_1ShellCellGeometryData.html", null ],
+    [ "Feel::vf::detail::ShellCellGeometryTensorBase< Geo_t, Basis_i_t, Basis_j_t >", "structFeel_1_1vf_1_1detail_1_1ShellCellGeometryTensorBase.html", null ],
+    [ "Feel::vf::detail::ShellCellMatrixTensor< Geo_t, Basis_i_t, Basis_j_t, Derived, AccessorT >::is_zero", "structFeel_1_1vf_1_1detail_1_1ShellCellMatrixTensor_1_1is__zero.html", null ],
+    [ "Feel::vf::detail::ShellCellScalarTensor< Geo_t, Basis_i_t, Basis_j_t, Derived, AccessorT >::is_zero", "structFeel_1_1vf_1_1detail_1_1ShellCellScalarTensor_1_1is__zero.html", null ],
+    [ "Feel::vf::detail::ShellCellTerminalBase< Derived >", "classFeel_1_1vf_1_1detail_1_1ShellCellTerminalBase.html", [
+      [ "Feel::vf::detail::ShellCellMatrixTerminal< Derived, AccessorT >", "classFeel_1_1vf_1_1detail_1_1ShellCellMatrixTerminal.html", null ],
+      [ "Feel::vf::detail::ShellCellScalarTerminal< Derived, AccessorT >", "classFeel_1_1vf_1_1detail_1_1ShellCellScalarTerminal.html", null ],
+      [ "Feel::vf::detail::ShellCellVectorTerminal< Derived, AccessorT >", "classFeel_1_1vf_1_1detail_1_1ShellCellVectorTerminal.html", null ]
+    ] ],
+    [ "Feel::vf::detail::ShellCellTerminalBase< Derived >::HasTestFunction< Func >", "structFeel_1_1vf_1_1detail_1_1ShellCellTerminalBase_1_1HasTestFunction.html", null ],
+    [ "Feel::vf::detail::ShellCellTerminalBase< Derived >::HasTrialFunction< Func >", "structFeel_1_1vf_1_1detail_1_1ShellCellTerminalBase_1_1HasTrialFunction.html", null ],
+    [ "Feel::vf::detail::ShellCellTerminalBase< Derived >::Lambda< TheExpr >", "structFeel_1_1vf_1_1detail_1_1ShellCellTerminalBase_1_1Lambda.html", null ],
+    [ "Feel::vf::detail::ShellCellVectorTensor< Geo_t, Basis_i_t, Basis_j_t, Derived, AccessorT >::is_zero", "structFeel_1_1vf_1_1detail_1_1ShellCellVectorTensor_1_1is__zero.html", null ],
+    [ "Feel::vf::detail::ShellContravariantBasis0Accessor< TensorType >", "structFeel_1_1vf_1_1detail_1_1ShellContravariantBasis0Accessor.html", null ],
+    [ "Feel::vf::detail::ShellCovariantBasis0Accessor< TensorType >", "structFeel_1_1vf_1_1detail_1_1ShellCovariantBasis0Accessor.html", null ],
+    [ "Feel::vf::detail::ShellFrameAccessor< TensorType >", "structFeel_1_1vf_1_1detail_1_1ShellFrameAccessor.html", null ],
+    [ "Feel::vf::detail::ShellInvJ0_00Accessor< TensorType >", "structFeel_1_1vf_1_1detail_1_1ShellInvJ0__00Accessor.html", null ],
+    [ "Feel::vf::detail::ShellInvJ0_01Accessor< TensorType >", "structFeel_1_1vf_1_1detail_1_1ShellInvJ0__01Accessor.html", null ],
+    [ "Feel::vf::detail::ShellInvJ0_02Accessor< TensorType >", "structFeel_1_1vf_1_1detail_1_1ShellInvJ0__02Accessor.html", null ],
+    [ "Feel::vf::detail::ShellInvJ0_10Accessor< TensorType >", "structFeel_1_1vf_1_1detail_1_1ShellInvJ0__10Accessor.html", null ],
+    [ "Feel::vf::detail::ShellInvJ0_11Accessor< TensorType >", "structFeel_1_1vf_1_1detail_1_1ShellInvJ0__11Accessor.html", null ],
+    [ "Feel::vf::detail::ShellInvJ0_12Accessor< TensorType >", "structFeel_1_1vf_1_1detail_1_1ShellInvJ0__12Accessor.html", null ],
+    [ "Feel::vf::detail::ShellInvJ0_20Accessor< TensorType >", "structFeel_1_1vf_1_1detail_1_1ShellInvJ0__20Accessor.html", null ],
+    [ "Feel::vf::detail::ShellInvJ0_21Accessor< TensorType >", "structFeel_1_1vf_1_1detail_1_1ShellInvJ0__21Accessor.html", null ],
+    [ "Feel::vf::detail::ShellInvJ0_22Accessor< TensorType >", "structFeel_1_1vf_1_1detail_1_1ShellInvJ0__22Accessor.html", null ],
+    [ "Feel::vf::detail::ShellJacobian0Accessor< TensorType >", "structFeel_1_1vf_1_1detail_1_1ShellJacobian0Accessor.html", null ],
+    [ "Feel::vf::detail::ShellMetric0Accessor< TensorType >", "structFeel_1_1vf_1_1detail_1_1ShellMetric0Accessor.html", null ],
+    [ "Feel::vf::detail::ShellNormalAccessor< TensorType >", "structFeel_1_1vf_1_1detail_1_1ShellNormalAccessor.html", null ],
+    [ "Feel::vf::detail::ShellThicknessAccessor< TensorType >", "structFeel_1_1vf_1_1detail_1_1ShellThicknessAccessor.html", null ],
+    [ "Feel::vf::detail::TensorBasis< Dim, I, K, Kind >", "classFeel_1_1vf_1_1detail_1_1TensorBasis.html", null ],
+    [ "Feel::vf::detail::TensorBasis< Dim, I, K, Kind >::HasTestFunction< Func >", "structFeel_1_1vf_1_1detail_1_1TensorBasis_1_1HasTestFunction.html", null ],
+    [ "Feel::vf::detail::TensorBasis< Dim, I, K, Kind >::HasTrialFunction< Func >", "structFeel_1_1vf_1_1detail_1_1TensorBasis_1_1HasTrialFunction.html", null ],
+    [ "Feel::vf::detail::TensorBasis< Dim, I, K, Kind >::Lambda< TheExpr >", "structFeel_1_1vf_1_1detail_1_1TensorBasis_1_1Lambda.html", null ],
+    [ "Feel::vf::detail::TensorBasis< Dim, I, K, Kind >::tensor< Geo_t, Basis_i_t, Basis_j_t >", "structFeel_1_1vf_1_1detail_1_1TensorBasis_1_1tensor.html", null ],
+    [ "Feel::vf::detail::TensorBasis< Dim, I, K, Kind >::tensor< Geo_t, Basis_i_t, Basis_j_t >::is_zero", "structFeel_1_1vf_1_1detail_1_1TensorBasis_1_1tensor_1_1is__zero.html", null ],
+    [ "Feel::vf::detail::TensorBasis< Dim, I, K, Kind >::tensor< Geo_t, Basis_i_t, Basis_j_t >::sig< Args >", "structFeel_1_1vf_1_1detail_1_1TensorBasis_1_1tensor_1_1sig.html", null ],
     [ "Feel::vf::details::Projector< iDim, FunctionSpaceType, IteratorRange, ExprT >", "classFeel_1_1vf_1_1details_1_1Projector.html", null ],
     [ "Feel::vf::EvaluateDataByMeshEntity< DataByMeshEntityType >", "classFeel_1_1vf_1_1EvaluateDataByMeshEntity.html", null ],
     [ "Feel::vf::EvaluateDataByMeshEntity< DataByMeshEntityType >::HasTestFunction< Func >", "structFeel_1_1vf_1_1EvaluateDataByMeshEntity_1_1HasTestFunction.html", null ],
@@ -959,7 +1048,9 @@ var hierarchy =
       [ "Feel::vf::PrintExpr< PrintExprT >", "classFeel_1_1vf_1_1PrintExpr.html", null ],
       [ "Feel::vf::Trans< ExprT >", "classFeel_1_1vf_1_1Trans.html", null ],
       [ "Feel::vf::UnaryMinus< ExprT >", "classFeel_1_1vf_1_1UnaryMinus.html", null ],
-      [ "Feel::vf::UnaryPlus< ExprT >", "classFeel_1_1vf_1_1UnaryPlus.html", null ]
+      [ "Feel::vf::UnaryPlus< ExprT >", "classFeel_1_1vf_1_1UnaryPlus.html", null ],
+      [ "Feel::vf::detail::LeftMultiplyByDelta< ExprT, Dim, I, K >", "classFeel_1_1vf_1_1detail_1_1LeftMultiplyByDelta.html", null ],
+      [ "Feel::vf::detail::RightMultiplyByDelta< ExprT, Dim, I, K >", "classFeel_1_1vf_1_1detail_1_1RightMultiplyByDelta.html", null ]
     ] ],
     [ "Feel::vf::ExprOptionalConcat< TupleExprType >::FunctorsVariadicExpr::HasTestBasis< Funct >", "structFeel_1_1vf_1_1ExprOptionalConcat_1_1FunctorsVariadicExpr_1_1HasTestBasis.html", null ],
     [ "Feel::vf::ExprOptionalConcat< TupleExprType >::FunctorsVariadicExpr::HasTestFunction< Funct >", "structFeel_1_1vf_1_1ExprOptionalConcat_1_1FunctorsVariadicExpr_1_1HasTestFunction.html", null ],
@@ -1032,6 +1123,18 @@ var hierarchy =
     [ "Feel::vf::RandBase", "classFeel_1_1vf_1_1RandBase.html", [
       [ "Feel::vf::Rand< T >", "classFeel_1_1vf_1_1Rand.html", null ]
     ] ],
+    [ "Feel::vf::ReferenceCoordinate< Component >", "classFeel_1_1vf_1_1ReferenceCoordinate.html", null ],
+    [ "Feel::vf::ReferenceCoordinate< Component >::HasTestFunction< Func >", "structFeel_1_1vf_1_1ReferenceCoordinate_1_1HasTestFunction.html", null ],
+    [ "Feel::vf::ReferenceCoordinate< Component >::HasTrialFunction< Func >", "structFeel_1_1vf_1_1ReferenceCoordinate_1_1HasTrialFunction.html", null ],
+    [ "Feel::vf::ReferenceCoordinate< Component >::Lambda< TheExpr >", "structFeel_1_1vf_1_1ReferenceCoordinate_1_1Lambda.html", null ],
+    [ "Feel::vf::ReferenceCoordinate< Component >::tensor< Geo_t, Basis_i_t, Basis_j_t >", "structFeel_1_1vf_1_1ReferenceCoordinate_1_1tensor.html", null ],
+    [ "Feel::vf::ReferenceCoordinate< Component >::tensor< Geo_t, Basis_i_t, Basis_j_t >::is_zero", "structFeel_1_1vf_1_1ReferenceCoordinate_1_1tensor_1_1is__zero.html", null ],
+    [ "Feel::vf::StaticComponentsExpr< Expr< detail::Mat< M, N, MatrixExpr > >, C1, C2 >", "classFeel_1_1vf_1_1StaticComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr_01_4_01_4_00_01C1_00_01C2_01_4.html", null ],
+    [ "Feel::vf::StaticComponentsExpr< Expr< detail::Mat< M, N, MatrixExpr > >, C1, C2 >::HasTestFunction< Func >", "structFeel_1_1vf_1_1StaticComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr61ce6659cc3d26f1b134f9168cbb239c.html", null ],
+    [ "Feel::vf::StaticComponentsExpr< Expr< detail::Mat< M, N, MatrixExpr > >, C1, C2 >::HasTrialFunction< Func >", "structFeel_1_1vf_1_1StaticComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr385cb99b2735f677ad2c5226c0dd5430.html", null ],
+    [ "Feel::vf::StaticComponentsExpr< Expr< detail::Mat< M, N, MatrixExpr > >, C1, C2 >::tensor< Geo_t, Basis_i_t, Basis_j_t >", "structFeel_1_1vf_1_1StaticComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr8a452c4d93151bb61e94cdce4a209f2d.html", null ],
+    [ "Feel::vf::StaticComponentsExpr< Expr< detail::Mat< M, N, MatrixExpr > >, C1, C2 >::tensor< Geo_t, Basis_i_t, Basis_j_t >::is_zero", "structFeel_1_1vf_1_1StaticComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpraa7001ba3c25762a763da48bf981386d.html", null ],
+    [ "Feel::vf::StaticComponentsExpr< Expr< detail::Mat< M, N, MatrixExpr > >, C1, C2 >::tensor< Geo_t, Basis_i_t, Basis_j_t >::sig< Args >", "structFeel_1_1vf_1_1StaticComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr0d25bf4ceed3efbc962b8a1ff7c42983.html", null ],
     [ "Feel::vf::SymbolExpr1< ExprT >", "structFeel_1_1vf_1_1SymbolExpr1.html", null ],
     [ "Feel::vf::SymbolExpr< ExprT >::Lambda< TheExpr >", "structFeel_1_1vf_1_1SymbolExpr_1_1Lambda.html", null ],
     [ "Feel::vf::SymbolExprTag", "structFeel_1_1vf_1_1SymbolExprTag.html", null ],
@@ -1119,6 +1222,10 @@ var hierarchy =
     [ "Feel::GeoNDCommon< typename face_type::super >", "classFeel_1_1GeoNDCommon.html", null ],
     [ "GEOSHAPE", null, [
       [ "Feel::GeoEntity< GEOSHAPE, double >", "classFeel_1_1GeoEntity.html", null ]
+    ] ],
+    [ "IMGeneral", "classIMGeneral.html", [
+      [ "Feel::vf::SB9LumpedMassLobatto< T >", "classFeel_1_1vf_1_1SB9LumpedMassLobatto.html", null ],
+      [ "Feel::vf::SB9ThroughThicknessLobatto5< T >", "classFeel_1_1vf_1_1SB9ThroughThicknessLobatto5.html", null ]
     ] ],
     [ "nlohmann::detail::internal_iterator< typename std::remove_const< BasicJsonType >::type >", "structnlohmann_1_1detail_1_1internal__iterator.html", null ],
     [ "Feel::InterpolationTypeBaseBase< is_conforming< C >, interpolation_operand_type::EXPR >", "classFeel_1_1InterpolationTypeBaseBase.html", [
@@ -1333,6 +1440,101 @@ var hierarchy =
     [ "Feel::Reference< Simplex< 3, 1, 3 >, 3, 1, 3, T >", "classFeel_1_1Reference.html", [
       [ "Feel::Entity< SHAPE_TETRA, T >", "classFeel_1_1Entity_3_01SHAPE__TETRA_00_01T_01_4.html", null ]
     ] ],
+    [ "Feel::vf::detail::ShellCellGeometryData< gmc_type >", "structFeel_1_1vf_1_1detail_1_1ShellCellGeometryData.html", null ],
+    [ "Feel::vf::detail::ShellCellGeometryTensorBase< Geo_t, Basis_i_t, Basis_i_t >", "structFeel_1_1vf_1_1detail_1_1ShellCellGeometryTensorBase.html", [
+      [ "Feel::vf::detail::SB9StabilizationOperator< ElementType, Role, KernelCacheTemplate, Kind, Rows >::tensor< Geo_t, Basis_i_t, Basis_j_t >", "structFeel_1_1vf_1_1detail_1_1SB9StabilizationOperator_1_1tensor.html", null ],
+      [ "Feel::vf::detail::SB9VectorOperator< ElementType, Role, KernelCacheTemplate, Kind >::tensor< Geo_t, Basis_i_t, Basis_j_t >", "structFeel_1_1vf_1_1detail_1_1SB9VectorOperator_1_1tensor.html", null ]
+    ] ],
+    [ "Feel::vf::detail::ShellCellGeometryTensorBase< Geo_t, Basis_i_t, Basis_j_t >", "structFeel_1_1vf_1_1detail_1_1ShellCellGeometryTensorBase.html", [
+      [ "Feel::vf::detail::ShellCellMatrixTensor< Geo_t, Basis_i_t, Basis_j_t, Derived, AccessorT >", "structFeel_1_1vf_1_1detail_1_1ShellCellMatrixTensor.html", null ],
+      [ "Feel::vf::detail::ShellCellScalarTensor< Geo_t, Basis_i_t, Basis_j_t, Derived, AccessorT >", "structFeel_1_1vf_1_1detail_1_1ShellCellScalarTensor.html", null ],
+      [ "Feel::vf::detail::ShellCellVectorTensor< Geo_t, Basis_i_t, Basis_j_t, Derived, AccessorT >", "structFeel_1_1vf_1_1detail_1_1ShellCellVectorTensor.html", null ]
+    ] ],
+    [ "Feel::vf::detail::ShellCellTerminalBase< ShellArea0 >", "classFeel_1_1vf_1_1detail_1_1ShellCellTerminalBase.html", [
+      [ "Feel::vf::detail::ShellCellScalarTerminal< ShellArea0, detail::ShellArea0Accessor >", "classFeel_1_1vf_1_1detail_1_1ShellCellScalarTerminal.html", [
+        [ "Feel::vf::ShellArea0", "classFeel_1_1vf_1_1ShellArea0.html", null ]
+      ] ]
+    ] ],
+    [ "Feel::vf::detail::ShellCellTerminalBase< ShellContravariantBasis0 >", "classFeel_1_1vf_1_1detail_1_1ShellCellTerminalBase.html", [
+      [ "Feel::vf::detail::ShellCellMatrixTerminal< ShellContravariantBasis0, detail::ShellContravariantBasis0Accessor >", "classFeel_1_1vf_1_1detail_1_1ShellCellMatrixTerminal.html", [
+        [ "Feel::vf::ShellContravariantBasis0", "classFeel_1_1vf_1_1ShellContravariantBasis0.html", null ]
+      ] ]
+    ] ],
+    [ "Feel::vf::detail::ShellCellTerminalBase< ShellCovariantBasis0 >", "classFeel_1_1vf_1_1detail_1_1ShellCellTerminalBase.html", [
+      [ "Feel::vf::detail::ShellCellMatrixTerminal< ShellCovariantBasis0, detail::ShellCovariantBasis0Accessor >", "classFeel_1_1vf_1_1detail_1_1ShellCellMatrixTerminal.html", [
+        [ "Feel::vf::ShellCovariantBasis0", "classFeel_1_1vf_1_1ShellCovariantBasis0.html", null ]
+      ] ]
+    ] ],
+    [ "Feel::vf::detail::ShellCellTerminalBase< ShellFrame >", "classFeel_1_1vf_1_1detail_1_1ShellCellTerminalBase.html", [
+      [ "Feel::vf::detail::ShellCellMatrixTerminal< ShellFrame, detail::ShellFrameAccessor >", "classFeel_1_1vf_1_1detail_1_1ShellCellMatrixTerminal.html", [
+        [ "Feel::vf::ShellFrame", "classFeel_1_1vf_1_1ShellFrame.html", null ]
+      ] ]
+    ] ],
+    [ "Feel::vf::detail::ShellCellTerminalBase< ShellInvJ0_00 >", "classFeel_1_1vf_1_1detail_1_1ShellCellTerminalBase.html", [
+      [ "Feel::vf::detail::ShellCellScalarTerminal< ShellInvJ0_00, detail::ShellInvJ0_00Accessor >", "classFeel_1_1vf_1_1detail_1_1ShellCellScalarTerminal.html", [
+        [ "Feel::vf::ShellInvJ0_00", "classFeel_1_1vf_1_1ShellInvJ0__00.html", null ]
+      ] ]
+    ] ],
+    [ "Feel::vf::detail::ShellCellTerminalBase< ShellInvJ0_01 >", "classFeel_1_1vf_1_1detail_1_1ShellCellTerminalBase.html", [
+      [ "Feel::vf::detail::ShellCellScalarTerminal< ShellInvJ0_01, detail::ShellInvJ0_01Accessor >", "classFeel_1_1vf_1_1detail_1_1ShellCellScalarTerminal.html", [
+        [ "Feel::vf::ShellInvJ0_01", "classFeel_1_1vf_1_1ShellInvJ0__01.html", null ]
+      ] ]
+    ] ],
+    [ "Feel::vf::detail::ShellCellTerminalBase< ShellInvJ0_02 >", "classFeel_1_1vf_1_1detail_1_1ShellCellTerminalBase.html", [
+      [ "Feel::vf::detail::ShellCellScalarTerminal< ShellInvJ0_02, detail::ShellInvJ0_02Accessor >", "classFeel_1_1vf_1_1detail_1_1ShellCellScalarTerminal.html", [
+        [ "Feel::vf::ShellInvJ0_02", "classFeel_1_1vf_1_1ShellInvJ0__02.html", null ]
+      ] ]
+    ] ],
+    [ "Feel::vf::detail::ShellCellTerminalBase< ShellInvJ0_10 >", "classFeel_1_1vf_1_1detail_1_1ShellCellTerminalBase.html", [
+      [ "Feel::vf::detail::ShellCellScalarTerminal< ShellInvJ0_10, detail::ShellInvJ0_10Accessor >", "classFeel_1_1vf_1_1detail_1_1ShellCellScalarTerminal.html", [
+        [ "Feel::vf::ShellInvJ0_10", "classFeel_1_1vf_1_1ShellInvJ0__10.html", null ]
+      ] ]
+    ] ],
+    [ "Feel::vf::detail::ShellCellTerminalBase< ShellInvJ0_11 >", "classFeel_1_1vf_1_1detail_1_1ShellCellTerminalBase.html", [
+      [ "Feel::vf::detail::ShellCellScalarTerminal< ShellInvJ0_11, detail::ShellInvJ0_11Accessor >", "classFeel_1_1vf_1_1detail_1_1ShellCellScalarTerminal.html", [
+        [ "Feel::vf::ShellInvJ0_11", "classFeel_1_1vf_1_1ShellInvJ0__11.html", null ]
+      ] ]
+    ] ],
+    [ "Feel::vf::detail::ShellCellTerminalBase< ShellInvJ0_12 >", "classFeel_1_1vf_1_1detail_1_1ShellCellTerminalBase.html", [
+      [ "Feel::vf::detail::ShellCellScalarTerminal< ShellInvJ0_12, detail::ShellInvJ0_12Accessor >", "classFeel_1_1vf_1_1detail_1_1ShellCellScalarTerminal.html", [
+        [ "Feel::vf::ShellInvJ0_12", "classFeel_1_1vf_1_1ShellInvJ0__12.html", null ]
+      ] ]
+    ] ],
+    [ "Feel::vf::detail::ShellCellTerminalBase< ShellInvJ0_20 >", "classFeel_1_1vf_1_1detail_1_1ShellCellTerminalBase.html", [
+      [ "Feel::vf::detail::ShellCellScalarTerminal< ShellInvJ0_20, detail::ShellInvJ0_20Accessor >", "classFeel_1_1vf_1_1detail_1_1ShellCellScalarTerminal.html", [
+        [ "Feel::vf::ShellInvJ0_20", "classFeel_1_1vf_1_1ShellInvJ0__20.html", null ]
+      ] ]
+    ] ],
+    [ "Feel::vf::detail::ShellCellTerminalBase< ShellInvJ0_21 >", "classFeel_1_1vf_1_1detail_1_1ShellCellTerminalBase.html", [
+      [ "Feel::vf::detail::ShellCellScalarTerminal< ShellInvJ0_21, detail::ShellInvJ0_21Accessor >", "classFeel_1_1vf_1_1detail_1_1ShellCellScalarTerminal.html", [
+        [ "Feel::vf::ShellInvJ0_21", "classFeel_1_1vf_1_1ShellInvJ0__21.html", null ]
+      ] ]
+    ] ],
+    [ "Feel::vf::detail::ShellCellTerminalBase< ShellInvJ0_22 >", "classFeel_1_1vf_1_1detail_1_1ShellCellTerminalBase.html", [
+      [ "Feel::vf::detail::ShellCellScalarTerminal< ShellInvJ0_22, detail::ShellInvJ0_22Accessor >", "classFeel_1_1vf_1_1detail_1_1ShellCellScalarTerminal.html", [
+        [ "Feel::vf::ShellInvJ0_22", "classFeel_1_1vf_1_1ShellInvJ0__22.html", null ]
+      ] ]
+    ] ],
+    [ "Feel::vf::detail::ShellCellTerminalBase< ShellJacobian0 >", "classFeel_1_1vf_1_1detail_1_1ShellCellTerminalBase.html", [
+      [ "Feel::vf::detail::ShellCellMatrixTerminal< ShellJacobian0, detail::ShellJacobian0Accessor >", "classFeel_1_1vf_1_1detail_1_1ShellCellMatrixTerminal.html", [
+        [ "Feel::vf::ShellJacobian0", "classFeel_1_1vf_1_1ShellJacobian0.html", null ]
+      ] ]
+    ] ],
+    [ "Feel::vf::detail::ShellCellTerminalBase< ShellMetric0 >", "classFeel_1_1vf_1_1detail_1_1ShellCellTerminalBase.html", [
+      [ "Feel::vf::detail::ShellCellMatrixTerminal< ShellMetric0, detail::ShellMetric0Accessor >", "classFeel_1_1vf_1_1detail_1_1ShellCellMatrixTerminal.html", [
+        [ "Feel::vf::ShellMetric0", "classFeel_1_1vf_1_1ShellMetric0.html", null ]
+      ] ]
+    ] ],
+    [ "Feel::vf::detail::ShellCellTerminalBase< ShellNormal >", "classFeel_1_1vf_1_1detail_1_1ShellCellTerminalBase.html", [
+      [ "Feel::vf::detail::ShellCellVectorTerminal< ShellNormal, detail::ShellNormalAccessor >", "classFeel_1_1vf_1_1detail_1_1ShellCellVectorTerminal.html", [
+        [ "Feel::vf::ShellNormal", "classFeel_1_1vf_1_1ShellNormal.html", null ]
+      ] ]
+    ] ],
+    [ "Feel::vf::detail::ShellCellTerminalBase< ShellThickness >", "classFeel_1_1vf_1_1detail_1_1ShellCellTerminalBase.html", [
+      [ "Feel::vf::detail::ShellCellScalarTerminal< ShellThickness, detail::ShellThicknessAccessor >", "classFeel_1_1vf_1_1detail_1_1ShellCellScalarTerminal.html", [
+        [ "Feel::vf::ShellThickness", "classFeel_1_1vf_1_1ShellThickness.html", null ]
+      ] ]
+    ] ],
     [ "spirit::lex::lexer", "classspirit_1_1lex_1_1lexer.html", [
       [ "Feel::strip_comments_tokens< Lexer >", "structFeel_1_1strip__comments__tokens.html", null ]
     ] ],
@@ -1393,6 +1595,8 @@ var hierarchy =
       [ "Feel::is_reference_convex< T >", "structFeel_1_1is__reference__convex.html", null ],
       [ "Feel::is_shared_ptr< T >", "structFeel_1_1is__shared__ptr.html", null ],
       [ "Feel::is_tuple< typename >", "structFeel_1_1is__tuple.html", null ],
+      [ "Feel::vf::detail::is_isotropic_stiffness_expr< T >", "structFeel_1_1vf_1_1detail_1_1is__isotropic__stiffness__expr.html", null ],
+      [ "Feel::vf::detail::is_tensor_basis_expression< T >", "structFeel_1_1vf_1_1detail_1_1is__tensor__basis__expression.html", null ],
       [ "fmt::detail::is_container_adaptor_like< boost::numeric::ublas::matrix< T, L, A > >", "structfmt_1_1detail_1_1is__container__adaptor__like_3_01boost_1_1numeric_1_1ublas_1_1matrix_3_01T_00_01L_00_01A_01_4_01_4.html", null ],
       [ "fmt::detail::is_container_adaptor_like< boost::numeric::ublas::vector< T, A > >", "structfmt_1_1detail_1_1is__container__adaptor__like_3_01boost_1_1numeric_1_1ublas_1_1vector_3_01T_00_01A_01_4_01_4.html", null ],
       [ "fmt::is_range< boost::numeric::ublas::matrix< T, L, A >, char >", "structfmt_1_1is__range_3_01boost_1_1numeric_1_1ublas_1_1matrix_3_01T_00_01L_00_01A_01_4_00_01char_01_4.html", null ],
@@ -1517,6 +1721,8 @@ var hierarchy =
       [ "Feel::is_reference_convex< Reference< Simplex< Dim, Order, RDim >, Dim, Order, RDim, T > >", "structFeel_1_1is__reference__convex_3_01Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_7942c028eecb11bc3174ad89f8815f2b.html", null ],
       [ "Feel::is_shared_ptr< std::shared_ptr< T > >", "structFeel_1_1is__shared__ptr_3_01std_1_1shared__ptr_3_01T_01_4_01_4.html", null ],
       [ "Feel::is_tuple< std::tuple< T... > >", "structFeel_1_1is__tuple_3_01std_1_1tuple_3_01T_8_8_8_01_4_01_4.html", null ],
+      [ "Feel::vf::detail::is_isotropic_stiffness_expr< Expr< IsotropicStiffness< Dim, Notation, LambdaExprT, MuExprT > > >", "structFeel_1_1vf_1_1detail_1_1is__isotropic__stiffness__expr_3_01Expr_3_01IsotropicStiffness_3_0b6f310b334891add6e105691a8790e61.html", null ],
+      [ "Feel::vf::detail::is_tensor_basis_expression< tensor_basis_expr_t< Dim, I, K, Kind > >", "structFeel_1_1vf_1_1detail_1_1is__tensor__basis__expression_3_01tensor__basis__expr__t_3_01Dim_072b561328a385c271173f0dd1a15d860.html", null ],
       [ "nlohmann::detail::conjunction<... >", "structnlohmann_1_1detail_1_1conjunction.html", null ],
       [ "nlohmann::detail::is_basic_json< basic_json< ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType > >", "structnlohmann_1_1detail_1_1is__basic__json_3_01basic__json_3_01ObjectType_00_01ArrayType_00_01S22724cadd4c00141f83926df5e541441.html", null ],
       [ "nlohmann::detail::is_complete_type< T, decltype(void(sizeof(T)))>", "structnlohmann_1_1detail_1_1is__complete__type_3_01T_00_01decltype_07void_07sizeof_07T_08_08_08_4.html", null ],
@@ -1550,7 +1756,6 @@ var hierarchy =
         [ "Feel::CNAB2< FieldType >", "classFeel_1_1CNAB2.html", null ],
         [ "Feel::CNAB2x2< Element1, Element2 >", "classFeel_1_1CNAB2x2.html", null ]
       ] ],
-      [ "Feel::TimerData", "classFeel_1_1TimerData.html", null ],
       [ "Feel::WorldsComm", "classFeel_1_1WorldsComm.html", null ],
       [ "Feel::vf::SymbolExpr< ExprT >", "structFeel_1_1vf_1_1SymbolExpr.html", null ],
       [ "Feel::vf::SymbolExprComponentSuffix", "structFeel_1_1vf_1_1SymbolExprComponentSuffix.html", null ]
@@ -1578,6 +1783,7 @@ var hierarchy =
       [ "std::tuple_size< Feel::Dof< SizeT > >", "structstd_1_1tuple__size_3_01Feel_1_1Dof_3_01SizeT_01_4_01_4.html", null ]
     ] ],
     [ "utility::centre< T >", "structutility_1_1centre.html", null ],
+    [ "boost::numeric::ublas::vector< double >", "classboost_1_1numeric_1_1ublas_1_1vector.html", null ],
     [ "Feel::Vector< double >", "classFeel_1_1Vector.html", null ],
     [ "VectorUblas", "classVectorUblas.html", [
       [ "Feel::FunctionSpace< MeshTypes, BasisTypes, T, PeriodicityType, MortarType >::Element< TT, Cont >", "classFeel_1_1FunctionSpace_1_1Element.html", null ]

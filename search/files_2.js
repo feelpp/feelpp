@@ -7,6 +7,7 @@ var searchData=
   ['concepts_2ehpp_4',['concepts.hpp',['../feelcore_2concepts_8hpp.html',1,'(Global Namespace)'],['../feeldiscr_2concepts_8hpp.html',1,'(Global Namespace)'],['../feelmesh_2concepts_8hpp.html',1,'(Global Namespace)'],['../feelvf_2concepts_8hpp.html',1,'(Global Namespace)']]],
   ['constants_2ehpp_5',['constants.hpp',['../constants_8hpp.html',1,'']]],
   ['context_2ehpp_6',['context.hpp',['../feelcore_2context_8hpp.html',1,'(Global Namespace)'],['../feeldiscr_2context_8hpp.html',1,'(Global Namespace)']]],
-  ['createsubmesh_2ehpp_7',['createsubmesh.hpp',['../createsubmesh_8hpp.html',1,'']]],
-  ['cst_2ehpp_8',['cst.hpp',['../cst_8hpp.html',1,'']]]
+  ['contractions_2ehpp_7',['contractions.hpp',['../contractions_8hpp.html',1,'']]],
+  ['createsubmesh_2ehpp_8',['createsubmesh.hpp',['../createsubmesh_8hpp.html',1,'']]],
+  ['cst_2ehpp_9',['cst.hpp',['../cst_8hpp.html',1,'']]]
 ];

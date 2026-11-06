@@ -1,5 +1,17 @@
 var matvec_8hpp =
 [
-    [ "mat", "matvec_8hpp.html#ab60428250499bc8dc1ad803325c3f604", null ],
-    [ "vec", "matvec_8hpp.html#a1a2f800e8848f86b9c810daa29083e7e", null ]
+    [ "Feel::vf::ComponentsExpr< Expr< detail::Mat< M, N, MatrixExpr > > >", "classFeel_1_1vf_1_1ComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr_01_4_01_4_01_4.html", "classFeel_1_1vf_1_1ComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr_01_4_01_4_01_4" ],
+    [ "Feel::vf::ComponentsExpr< Expr< detail::Mat< M, N, MatrixExpr > > >::HasTestFunction< Func >", "structFeel_1_1vf_1_1ComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr_01_4_01_4_01_4_1_1HasTestFunction.html", null ],
+    [ "Feel::vf::ComponentsExpr< Expr< detail::Mat< M, N, MatrixExpr > > >::HasTrialFunction< Func >", "structFeel_1_1vf_1_1ComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr_01_4_01_4_01_4_1_1HasTrialFunction.html", null ],
+    [ "Feel::vf::ComponentsExpr< Expr< detail::Mat< M, N, MatrixExpr > > >::tensor< Geo_t, Basis_i_t, Basis_j_t >", "structFeel_1_1vf_1_1ComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr_01_4_01_4_01_4_1_1tensor.html", "structFeel_1_1vf_1_1ComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr_01_4_01_4_01_4_1_1tensor" ],
+    [ "Feel::vf::ComponentsExpr< Expr< detail::Mat< M, N, MatrixExpr > > >::tensor< Geo_t, Basis_i_t, Basis_j_t >::is_zero", "structFeel_1_1vf_1_1ComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr_01_4_01_4_01_4_1_1tensor_1_1is__zero.html", null ],
+    [ "Feel::vf::ComponentsExpr< Expr< detail::Mat< M, N, MatrixExpr > > >::tensor< Geo_t, Basis_i_t, Basis_j_t >::sig< Args >", "structFeel_1_1vf_1_1ComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr_01_4_01_4_01_4_1_1tensor_1_1sig.html", null ],
+    [ "Feel::vf::StaticComponentsExpr< Expr< detail::Mat< M, N, MatrixExpr > >, C1, C2 >", "classFeel_1_1vf_1_1StaticComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr_01_4_01_4_00_01C1_00_01C2_01_4.html", "classFeel_1_1vf_1_1StaticComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr_01_4_01_4_00_01C1_00_01C2_01_4" ],
+    [ "Feel::vf::StaticComponentsExpr< Expr< detail::Mat< M, N, MatrixExpr > >, C1, C2 >::HasTestFunction< Func >", "structFeel_1_1vf_1_1StaticComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr61ce6659cc3d26f1b134f9168cbb239c.html", null ],
+    [ "Feel::vf::StaticComponentsExpr< Expr< detail::Mat< M, N, MatrixExpr > >, C1, C2 >::HasTrialFunction< Func >", "structFeel_1_1vf_1_1StaticComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr385cb99b2735f677ad2c5226c0dd5430.html", null ],
+    [ "Feel::vf::StaticComponentsExpr< Expr< detail::Mat< M, N, MatrixExpr > >, C1, C2 >::tensor< Geo_t, Basis_i_t, Basis_j_t >", "structFeel_1_1vf_1_1StaticComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr8a452c4d93151bb61e94cdce4a209f2d.html", "structFeel_1_1vf_1_1StaticComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr8a452c4d93151bb61e94cdce4a209f2d" ],
+    [ "Feel::vf::StaticComponentsExpr< Expr< detail::Mat< M, N, MatrixExpr > >, C1, C2 >::tensor< Geo_t, Basis_i_t, Basis_j_t >::is_zero", "structFeel_1_1vf_1_1StaticComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpraa7001ba3c25762a763da48bf981386d.html", null ],
+    [ "Feel::vf::StaticComponentsExpr< Expr< detail::Mat< M, N, MatrixExpr > >, C1, C2 >::tensor< Geo_t, Basis_i_t, Basis_j_t >::sig< Args >", "structFeel_1_1vf_1_1StaticComponentsExpr_3_01Expr_3_01detail_1_1Mat_3_01M_00_01N_00_01MatrixExpr0d25bf4ceed3efbc962b8a1ff7c42983.html", null ],
+    [ "mat", "matvec_8hpp.html#a6386534d71c91ab603eb5fe86169f3d1", null ],
+    [ "vec", "matvec_8hpp.html#a2655d0d84b4e4d1d6ad0e2662f2357ce", null ]
 ];

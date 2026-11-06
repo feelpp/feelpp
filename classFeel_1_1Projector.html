@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-preview.14</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.112.0-preview.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -177,8 +177,8 @@ typedef <a class="el" href="classFeel_1_1Range.html">Range</a>&lt; typename dual
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">Methods</h2></td></tr>
 <tr class="memitem:a3c349075f926629cda4cf057bf4a7c51"><td class="memTemplParams" colspan="2"><a id="a3c349075f926629cda4cf057bf4a7c51" name="a3c349075f926629cda4cf057bf4a7c51"></a>
-template&lt;typename <a class="el" href="classFeel_1_1Range.html">Range</a> , typename Expr , typename Elem &gt; </td></tr>
-<tr class="memitem:a3c349075f926629cda4cf057bf4a7c51"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>applyOn</b> (<a class="el" href="classFeel_1_1Range.html">Range</a> <a class="el" href="group__Core.html#ga9ac2567d303c357e7c0de44280697997">range</a>, Expr const &amp;<a class="el" href="namespaceFeel.html#ae2f6db1ab4c336cc4f4a008bc86f401a">expr</a>, Elem const &amp;de)</td></tr>
+template&lt;typename <a class="el" href="classFeel_1_1Range.html">Range</a> , typename <a class="el" href="classExpr.html">Expr</a> , typename Elem &gt; </td></tr>
+<tr class="memitem:a3c349075f926629cda4cf057bf4a7c51"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>applyOn</b> (<a class="el" href="classFeel_1_1Range.html">Range</a> <a class="el" href="group__Core.html#ga9ac2567d303c357e7c0de44280697997">range</a>, <a class="el" href="classExpr.html">Expr</a> const &amp;<a class="el" href="namespaceFeel.html#ae2f6db1ab4c336cc4f4a008bc86f401a">expr</a>, Elem const &amp;de)</td></tr>
 <tr class="separator:a3c349075f926629cda4cf057bf4a7c51"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7cb13c2cb783a2f52642e7547d237d94"><td class="memTemplParams" colspan="2"><a id="a7cb13c2cb783a2f52642e7547d237d94" name="a7cb13c2cb783a2f52642e7547d237d94"></a>
 template&lt;typename RangeT , typename ExprT &gt; </td></tr>
@@ -203,8 +203,8 @@ dual_image_element_type&#160;</td><td class="memItemRight" valign="bottom"><b>op
 void&#160;</td><td class="memItemRight" valign="bottom"><b>operator()</b> (domain_element_type const &amp;de, dual_image_element_type &amp;ie)</td></tr>
 <tr class="separator:ab28e9d761c89e9a910f82546960df49e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa6b2e7faedd29d6480262f673a995256"><td class="memTemplParams" colspan="2"><a id="aa6b2e7faedd29d6480262f673a995256" name="aa6b2e7faedd29d6480262f673a995256"></a>
-template&lt;typename <a class="el" href="classFeel_1_1Range.html">Range</a> , typename Expr &gt; </td></tr>
-<tr class="memitem:aa6b2e7faedd29d6480262f673a995256"><td class="memTemplItemLeft" align="right" valign="top">dual_image_element_type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>operator()</b> (<a class="el" href="classFeel_1_1Range.html">Range</a> const &amp;<a class="el" href="group__Core.html#ga9ac2567d303c357e7c0de44280697997">range</a>, Expr const &amp;<a class="el" href="namespaceFeel.html#ae2f6db1ab4c336cc4f4a008bc86f401a">expr</a>)</td></tr>
+template&lt;typename <a class="el" href="classFeel_1_1Range.html">Range</a> , typename <a class="el" href="classExpr.html">Expr</a> &gt; </td></tr>
+<tr class="memitem:aa6b2e7faedd29d6480262f673a995256"><td class="memTemplItemLeft" align="right" valign="top">dual_image_element_type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>operator()</b> (<a class="el" href="classFeel_1_1Range.html">Range</a> const &amp;<a class="el" href="group__Core.html#ga9ac2567d303c357e7c0de44280697997">range</a>, <a class="el" href="classExpr.html">Expr</a> const &amp;<a class="el" href="namespaceFeel.html#ae2f6db1ab4c336cc4f4a008bc86f401a">expr</a>)</td></tr>
 <tr class="separator:aa6b2e7faedd29d6480262f673a995256"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1454ee1e59b92094791134196942bf83"><td class="memItemLeft" align="right" valign="top"><a id="a1454ee1e59b92094791134196942bf83" name="a1454ee1e59b92094791134196942bf83"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>apply</b> (domain_element_type const &amp;de, dual_image_element_type &amp;ie) override</td></tr>
@@ -214,8 +214,8 @@ template&lt;typename RhsExpr &gt; </td></tr>
 <tr class="memitem:aca685e543d4612c1183bee13307085e3"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>apply</b> (RhsExpr const &amp;rhs_expr, dual_image_element_type &amp;ie)</td></tr>
 <tr class="separator:aca685e543d4612c1183bee13307085e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab974761ac32b6bb0831cf04eb25cea8c"><td class="memTemplParams" colspan="2"><a id="ab974761ac32b6bb0831cf04eb25cea8c" name="ab974761ac32b6bb0831cf04eb25cea8c"></a>
-template&lt;typename Expr &gt; </td></tr>
-<tr class="memitem:ab974761ac32b6bb0831cf04eb25cea8c"><td class="memTemplItemLeft" align="right" valign="top">dual_image_element_type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>derivate</b> (Expr const &amp;<a class="el" href="namespaceFeel.html#ae2f6db1ab4c336cc4f4a008bc86f401a">expr</a>)</td></tr>
+template&lt;typename <a class="el" href="classExpr.html">Expr</a> &gt; </td></tr>
+<tr class="memitem:ab974761ac32b6bb0831cf04eb25cea8c"><td class="memTemplItemLeft" align="right" valign="top">dual_image_element_type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>derivate</b> (<a class="el" href="classExpr.html">Expr</a> const &amp;<a class="el" href="namespaceFeel.html#ae2f6db1ab4c336cc4f4a008bc86f401a">expr</a>)</td></tr>
 <tr class="separator:ab974761ac32b6bb0831cf04eb25cea8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad34610cace829d07206e36dcc6dc72e9"><td class="memItemLeft" align="right" valign="top"><a id="ad34610cace829d07206e36dcc6dc72e9" name="ad34610cace829d07206e36dcc6dc72e9"></a>
 double&#160;</td><td class="memItemRight" valign="bottom"><b>epsilon</b> () const</td></tr>

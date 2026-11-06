@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-preview.14</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.112.0-preview.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -130,7 +130,7 @@ $(document).ready(function(){initNavTree('structFeel_1_1vf_1_1map__vector__field
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
 <tr class="memitem:a307772180c5938668290e7fd21f3ff62"><td class="memItemLeft" align="right" valign="top"><a id="a307772180c5938668290e7fd21f3ff62" name="a307772180c5938668290e7fd21f3ff62"></a>
-typedef std::map&lt; std::string, std::pair&lt; Expr&lt; <a class="el" href="classFeel_1_1vf_1_1GinacMatrix.html">GinacMatrix</a>&lt; M, N, <a class="el" href="structFeel_1_1Order.html">Order</a> &gt; &gt;, std::set&lt; std::string &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>super</b></td></tr>
+typedef std::map&lt; std::string, std::pair&lt; <a class="el" href="classExpr.html">Expr</a>&lt; <a class="el" href="classFeel_1_1vf_1_1GinacMatrix.html">GinacMatrix</a>&lt; M, N, <a class="el" href="structFeel_1_1Order.html">Order</a> &gt; &gt;, std::set&lt; std::string &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>super</b></td></tr>
 <tr class="separator:a307772180c5938668290e7fd21f3ff62"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0235d525d4b1599e3adf6044709458b1"><td class="memItemLeft" align="right" valign="top"><a id="a0235d525d4b1599e3adf6044709458b1" name="a0235d525d4b1599e3adf6044709458b1"></a>
 typedef super&#160;</td><td class="memItemRight" valign="bottom"><b>type</b></td></tr>
@@ -163,7 +163,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setParameterValues</b
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;<a class="el" href="classint.html">int</a> M, <a class="el" href="classint.html">int</a> N = 1, <a class="el" href="classint.html">int</a> Order = 2&gt;<br />
 struct Feel::vf::map_vector_field&lt; M, N, Order &gt;</div><p >defines a dictionary of vector fields </p>
-<p >this data structure creates a dictionary of fields, it associates a string to a Ginac Expr of rank 1 and a set of vector. In the case of vector fields the size of the vector field must be given</p>
+<p >this data structure creates a dictionary of fields, it associates a string to a Ginac <a class="el" href="classExpr.html">Expr</a> of rank 1 and a set of vector. In the case of vector fields the size of the vector field must be given</p>
 <div class="fragment"><div class="line"><span class="keyword">auto</span> e = <a class="code hl_function" href="namespaceFeel.html#ae2f6db1ab4c336cc4f4a008bc86f401a">expr</a>(<span class="stringliteral">&quot;{x,y}:x:y&quot;</span>);</div>
 <div class="line"><span class="keyword">auto</span> z = <a class="code hl_function" href="namespaceFeel.html#ae2f6db1ab4c336cc4f4a008bc86f401a">expr</a>(<span class="stringliteral">&quot;{0,0}:x:y&quot;</span>);</div>
 <div class="line">map_vector_field&lt;2&gt; m { { <span class="stringliteral">&quot;inlet&quot;</span>, e }, { <span class="stringliteral">&quot;wall&quot;</span>, z } };</div>

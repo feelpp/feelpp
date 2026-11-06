@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-preview.14</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.112.0-preview.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -108,51 +108,98 @@ $(document).ready(function(){initNavTree('classFeel_1_1TimerData.html',''); init
 </div><!--header-->
 <div class="contents">
 
-<p><a class="el" href="classFeel_1_1TimerData.html" title="TimerData is the value for the TimerTable map.">TimerData</a> is the value for the <a class="el" href="classFeel_1_1TimerTable.html" title="TimerTable is a map of timer.">TimerTable</a> map.  
+<p>Streaming local statistics for one tic()/toc() label.  
  <a href="classFeel_1_1TimerData.html#details">More...</a></p>
 <div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
-  <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for Feel::TimerData:</div>
+  <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Collaboration diagram for Feel::TimerData:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classFeel_1_1TimerData__inherit__graph.svg" width="134" height="287"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
-</div>
-</div>
-<div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
-  <img id="dynsection-1-trigger" src="closed.png" alt="+"/> Collaboration diagram for Feel::TimerData:</div>
-<div id="dynsection-1-summary" class="dynsummary" style="display:block;">
-</div>
-<div id="dynsection-1-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classFeel_1_1TimerData__coll__graph.svg" width="324" height="442"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classFeel_1_1TimerData__coll__graph.svg" width="226" height="458"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:adbeadd9d773dc313c0437a482e3b0b10"><td class="memItemLeft" align="right" valign="top"><a id="adbeadd9d773dc313c0437a482e3b0b10" name="adbeadd9d773dc313c0437a482e3b0b10"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>add</b> (std::pair&lt; double, <a class="el" href="classint.html">int</a> &gt; const &amp;t)</td></tr>
-<tr class="separator:adbeadd9d773dc313c0437a482e3b0b10"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac21f99799ea16391d5383aa522fb05c8"><td class="memItemLeft" align="right" valign="top"><a id="ac21f99799ea16391d5383aa522fb05c8" name="ac21f99799ea16391d5383aa522fb05c8"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>TimerData</b> (std::string const &amp;m, std::string const &amp;p=timerDefaultInstanceName())</td></tr>
-<tr class="separator:ac21f99799ea16391d5383aa522fb05c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8e7fe18aff3285af5f16863c43f4ea3c"><td class="memItemLeft" align="right" valign="top"><a id="a8e7fe18aff3285af5f16863c43f4ea3c" name="a8e7fe18aff3285af5f16863c43f4ea3c"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>add</b> (std::pair&lt; double, <a class="el" href="classint.html">int</a> &gt; const &amp;sample)</td></tr>
+<tr class="memdesc:a8e7fe18aff3285af5f16863c43f4ea3c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Accumulate a finite, nonnegative duration; ignore invalid samples. <br /></td></tr>
+<tr class="separator:a8e7fe18aff3285af5f16863c43f4ea3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2a1ec02501df2f5e72b774aecc48d061"><td class="memItemLeft" align="right" valign="top"><a id="a2a1ec02501df2f5e72b774aecc48d061" name="a2a1ec02501df2f5e72b774aecc48d061"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>back</b> () const</td></tr>
+<tr class="memdesc:a2a1ec02501df2f5e72b774aecc48d061"><td class="mdescLeft">&#160;</td><td class="mdescRight">Latest elapsed duration; valid when the record is nonempty. <br /></td></tr>
+<tr class="separator:a2a1ec02501df2f5e72b774aecc48d061"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2a7cba2062871ec22aedec456e838f08"><td class="memItemLeft" align="right" valign="top"><a id="a2a7cba2062871ec22aedec456e838f08" name="a2a7cba2062871ec22aedec456e838f08"></a>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>empty</b> () const</td></tr>
+<tr class="memdesc:a2a7cba2062871ec22aedec456e838f08"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether any sample has been accumulated. <br /></td></tr>
+<tr class="separator:a2a7cba2062871ec22aedec456e838f08"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af46860a6bd335a96d8d2f20fef1d3295"><td class="memItemLeft" align="right" valign="top"><a id="af46860a6bd335a96d8d2f20fef1d3295" name="af46860a6bd335a96d8d2f20fef1d3295"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>m2</b> () const</td></tr>
+<tr class="memdesc:af46860a6bd335a96d8d2f20fef1d3295"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sum of squared deviations, for merging rank statistics. <br /></td></tr>
+<tr class="separator:af46860a6bd335a96d8d2f20fef1d3295"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9fd441c14333f95d4b6dddb6b6323bc2"><td class="memItemLeft" align="right" valign="top"><a id="a9fd441c14333f95d4b6dddb6b6323bc2" name="a9fd441c14333f95d4b6dddb6b6323bc2"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>max</b> () const</td></tr>
+<tr class="memdesc:a9fd441c14333f95d4b6dddb6b6323bc2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Largest elapsed duration in seconds. <br /></td></tr>
+<tr class="separator:a9fd441c14333f95d4b6dddb6b6323bc2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab00f6b529b8b0f761021008e32e22112"><td class="memItemLeft" align="right" valign="top"><a id="ab00f6b529b8b0f761021008e32e22112" name="ab00f6b529b8b0f761021008e32e22112"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>mean</b> () const</td></tr>
+<tr class="memdesc:ab00f6b529b8b0f761021008e32e22112"><td class="mdescLeft">&#160;</td><td class="mdescRight">Arithmetic mean elapsed duration in seconds. <br /></td></tr>
+<tr class="separator:ab00f6b529b8b0f761021008e32e22112"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0dccd269c8fa0fe1844a7f3b5a9750cf"><td class="memItemLeft" align="right" valign="top"><a id="a0dccd269c8fa0fe1844a7f3b5a9750cf" name="a0dccd269c8fa0fe1844a7f3b5a9750cf"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>min</b> () const</td></tr>
+<tr class="memdesc:a0dccd269c8fa0fe1844a7f3b5a9750cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Smallest elapsed duration in seconds. <br /></td></tr>
+<tr class="separator:a0dccd269c8fa0fe1844a7f3b5a9750cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7dccd2218e579797342213a7b41677dd"><td class="memItemLeft" align="right" valign="top"><a id="a7dccd2218e579797342213a7b41677dd" name="a7dccd2218e579797342213a7b41677dd"></a>
+<a class="el" href="structFeel_1_1TimerProfileSnapshot.html">TimerProfileSnapshot</a>&#160;</td><td class="memItemRight" valign="bottom"><b>profileSnapshot</b> () const</td></tr>
+<tr class="memdesc:a7dccd2218e579797342213a7b41677dd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy the local statistics needed for collective profiling. <br /></td></tr>
+<tr class="separator:a7dccd2218e579797342213a7b41677dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af9d51eb8dd863467730262b242e03117"><td class="memItemLeft" align="right" valign="top"><a id="af9d51eb8dd863467730262b242e03117" name="af9d51eb8dd863467730262b242e03117"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>quantile</b> (double probability) const</td></tr>
+<tr class="memdesc:af9d51eb8dd863467730262b242e03117"><td class="mdescLeft">&#160;</td><td class="mdescRight">Approximate quantile of all samples for this label. <br /></td></tr>
+<tr class="separator:af9d51eb8dd863467730262b242e03117"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a62c5adc7bf264bb6a10bd2ea4ec5d21c"><td class="memItemLeft" align="right" valign="top"><a id="a62c5adc7bf264bb6a10bd2ea4ec5d21c" name="a62c5adc7bf264bb6a10bd2ea4ec5d21c"></a>
+std::size_t&#160;</td><td class="memItemRight" valign="bottom"><b>size</b> () const</td></tr>
+<tr class="memdesc:a62c5adc7bf264bb6a10bd2ea4ec5d21c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of accumulated samples. <br /></td></tr>
+<tr class="separator:a62c5adc7bf264bb6a10bd2ea4ec5d21c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6a385f33f59fdda5e8c7cf3f6d22271a"><td class="memItemLeft" align="right" valign="top"><a id="a6a385f33f59fdda5e8c7cf3f6d22271a" name="a6a385f33f59fdda5e8c7cf3f6d22271a"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>stdDev</b> () const</td></tr>
+<tr class="memdesc:a6a385f33f59fdda5e8c7cf3f6d22271a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Population standard deviation in seconds. <br /></td></tr>
+<tr class="separator:a6a385f33f59fdda5e8c7cf3f6d22271a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adab52bafd0b2dfe5ce654d273afab7af"><td class="memItemLeft" align="right" valign="top"><a id="adab52bafd0b2dfe5ce654d273afab7af" name="adab52bafd0b2dfe5ce654d273afab7af"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>TimerData</b> ()=default</td></tr>
+<tr class="memdesc:adab52bafd0b2dfe5ce654d273afab7af"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create an empty timer record. <br /></td></tr>
+<tr class="separator:adab52bafd0b2dfe5ce654d273afab7af"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a12a5a8752c0ccdacbcaba92d7b311fc4"><td class="memItemLeft" align="right" valign="top"><a id="a12a5a8752c0ccdacbcaba92d7b311fc4" name="a12a5a8752c0ccdacbcaba92d7b311fc4"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>TimerData</b> (std::string const &amp;message, std::string const &amp;instanceName={})</td></tr>
+<tr class="memdesc:a12a5a8752c0ccdacbcaba92d7b311fc4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a labeled timer record with an optional journal instance name. <br /></td></tr>
+<tr class="separator:a12a5a8752c0ccdacbcaba92d7b311fc4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2a7707ae51436921b84fa769b1dee165"><td class="memItemLeft" align="right" valign="top"><a id="a2a7707ae51436921b84fa769b1dee165" name="a2a7707ae51436921b84fa769b1dee165"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>TimerData</b> (<a class="el" href="classFeel_1_1TimerData.html">TimerData</a> const &amp;)=default</td></tr>
+<tr class="memdesc:a2a7707ae51436921b84fa769b1dee165"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy the timer label, journal name, and accumulated statistics. <br /></td></tr>
 <tr class="separator:a2a7707ae51436921b84fa769b1dee165"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a17487a810df383c874e28c03d3273caf"><td class="memItemLeft" align="right" valign="top"><a id="a17487a810df383c874e28c03d3273caf" name="a17487a810df383c874e28c03d3273caf"></a>
+double&#160;</td><td class="memItemRight" valign="bottom"><b>total</b> () const</td></tr>
+<tr class="memdesc:a17487a810df383c874e28c03d3273caf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sum of elapsed durations in seconds. <br /></td></tr>
+<tr class="separator:a17487a810df383c874e28c03d3273caf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:af0b57b018e9b5299303942f12a822d7a"><td class="memItemLeft" align="right" valign="top"><a id="af0b57b018e9b5299303942f12a822d7a" name="af0b57b018e9b5299303942f12a822d7a"></a>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><b>instance_name</b></td></tr>
+<tr class="memdesc:af0b57b018e9b5299303942f12a822d7a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Name of this timer record in the environment journal. <br /></td></tr>
 <tr class="separator:af0b57b018e9b5299303942f12a822d7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aedccd7313435dcd95ee0da712f0c5fed"><td class="memItemLeft" align="right" valign="top"><a id="aedccd7313435dcd95ee0da712f0c5fed" name="aedccd7313435dcd95ee0da712f0c5fed"></a>
-<a class="el" href="classint.html">int</a>&#160;</td><td class="memItemRight" valign="bottom"><b>level</b></td></tr>
+<a class="el" href="classint.html">int</a>&#160;</td><td class="memItemRight" valign="bottom"><b>level</b> = 0</td></tr>
+<tr class="memdesc:aedccd7313435dcd95ee0da712f0c5fed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Nesting level of the most recent sample. <br /></td></tr>
 <tr class="separator:aedccd7313435dcd95ee0da712f0c5fed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a12afe3e9920ddc70eaea01f067e60aed"><td class="memItemLeft" align="right" valign="top"><a id="a12afe3e9920ddc70eaea01f067e60aed" name="a12afe3e9920ddc70eaea01f067e60aed"></a>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><b>msg</b></td></tr>
+<tr class="memdesc:a12afe3e9920ddc70eaea01f067e60aed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Human-readable timer label. <br /></td></tr>
 <tr class="separator:a12afe3e9920ddc70eaea01f067e60aed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p ><a class="el" href="classFeel_1_1TimerData.html" title="TimerData is the value for the TimerTable map.">TimerData</a> is the value for the <a class="el" href="classFeel_1_1TimerTable.html" title="TimerTable is a map of timer.">TimerTable</a> map. </p>
+<div class="textblock"><p >Streaming local statistics for one tic()/toc() label. </p>
+<p ><a class="el" href="classFeel_1_1TimerTable.html" title="Local timer statistics and their text, Markdown, and journal reports.">TimerTable</a> owns these records. Summary statistics are updated on each sample. Moments use constant storage; the equal-capacity quantile sketch retains O(k log N) values for N calls and capacity k per level. Raw samples are not retained. Recording is intended for a single thread per process. </p>
 </div></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->

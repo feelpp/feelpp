@@ -1,7 +1,6 @@
 var dir_a5cc16706b2f696b4aa39af29b07fbf0 =
 [
     [ "concepts.hpp", "feelmesh_2concepts_8hpp.html", null ],
-    [ "edges.hpp", "edges_8hpp.html", null ],
     [ "elements.hpp", "elements_8hpp.html", null ],
     [ "entities.cpp", "entities_8cpp.html", null ],
     [ "enums.hpp", "feelmesh_2enums_8hpp.html", "feelmesh_2enums_8hpp" ],
@@ -31,14 +30,12 @@ var dir_a5cc16706b2f696b4aa39af29b07fbf0 =
     ] ],
     [ "mesh1d.hpp", "mesh1d_8hpp.html", null ],
     [ "mesh2d.hpp", "mesh2d_8hpp.html", null ],
-    [ "mesh3d.hpp", "mesh3d_8hpp.html", null ],
     [ "meshadaptation.hpp", "meshadaptation_8hpp.html", [
       [ "Feel::MeshAdaptation< Dim, Order, OrderGeo >", "classFeel_1_1MeshAdaptation.html", "classFeel_1_1MeshAdaptation" ]
     ] ],
     [ "meshbase.cpp", "meshbase_8cpp.html", null ],
     [ "meshbase.hpp", "meshbase_8hpp.html", "meshbase_8hpp" ],
     [ "meshmover.cpp", "meshmover_8cpp.html", null ],
-    [ "points.hpp", "points_8hpp.html", null ],
     [ "pointset.hpp", "pointset_8hpp.html", [
       [ "Feel::PointSet< Convex, T >", "classFeel_1_1PointSet.html", "classFeel_1_1PointSet" ],
       [ "Feel::PointSetBase", "classFeel_1_1PointSetBase.html", null ]

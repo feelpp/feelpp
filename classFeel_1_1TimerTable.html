@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-preview.14</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.112.0-preview.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -107,7 +107,7 @@ $(document).ready(function(){initNavTree('classFeel_1_1TimerTable.html',''); ini
 </div><!--header-->
 <div class="contents">
 
-<p><a class="el" href="classFeel_1_1TimerTable.html" title="TimerTable is a map of timer.">TimerTable</a> is a map of timer.  
+<p>Local timer statistics and their text, Markdown, and journal reports.  
  <a href="classFeel_1_1TimerTable.html#details">More...</a></p>
 <div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for Feel::TimerTable:</div>
@@ -128,9 +128,36 @@ $(document).ready(function(){initNavTree('classFeel_1_1TimerTable.html',''); ini
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a7bb282a0ab552aab3582f5fe53343bfe"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1TimerTable.html#a7bb282a0ab552aab3582f5fe53343bfe">add</a> (std::string const &amp;message, std::pair&lt; double, <a class="el" href="classint.html">int</a> &gt; const &amp;sample, std::string const &amp;instanceName={})</td></tr>
+<tr class="memdesc:a7bb282a0ab552aab3582f5fe53343bfe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Store a valid duration.  <a href="classFeel_1_1TimerTable.html#a7bb282a0ab552aab3582f5fe53343bfe">More...</a><br /></td></tr>
+<tr class="separator:a7bb282a0ab552aab3582f5fe53343bfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:affa16444a395a5c6fbd74e978842c4b0"><td class="memItemLeft" align="right" valign="top"><a id="affa16444a395a5c6fbd74e978842c4b0" name="affa16444a395a5c6fbd74e978842c4b0"></a>
+std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>labels</b> () const</td></tr>
+<tr class="memdesc:affa16444a395a5c6fbd74e978842c4b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return all recorded local labels in lexical order. <br /></td></tr>
+<tr class="separator:affa16444a395a5c6fbd74e978842c4b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a24ee9fb67c0da60f4cd406ef3fd4393a"><td class="memItemLeft" align="right" valign="top"><a id="a24ee9fb67c0da60f4cd406ef3fd4393a" name="a24ee9fb67c0da60f4cd406ef3fd4393a"></a>
+<a class="el" href="structFeel_1_1TimerProfileSnapshot.html">TimerProfileSnapshot</a>&#160;</td><td class="memItemRight" valign="bottom"><b>profileSnapshot</b> (std::string const &amp;message) const</td></tr>
+<tr class="memdesc:a24ee9fb67c0da60f4cd406ef3fd4393a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return a local profile, or an empty profile for an absent label. <br /></td></tr>
+<tr class="separator:a24ee9fb67c0da60f4cd406ef3fd4393a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5f446247895cf1677a0380aad7882fb3"><td class="memItemLeft" align="right" valign="top"><a id="a5f446247895cf1677a0380aad7882fb3" name="a5f446247895cf1677a0380aad7882fb3"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>save</b> (<a class="el" href="classbool.html">bool</a> display)</td></tr>
+<tr class="memdesc:a5f446247895cf1677a0380aad7882fb3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Print local timer statistics on the master rank when display is true. <br /></td></tr>
+<tr class="separator:a5f446247895cf1677a0380aad7882fb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2bea294bbd00bc825ddd5630bffe9107"><td class="memItemLeft" align="right" valign="top"><a id="a2bea294bbd00bc825ddd5630bffe9107" name="a2bea294bbd00bc825ddd5630bffe9107"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>saveMD</b> (std::ostream &amp;output)</td></tr>
+<tr class="memdesc:a2bea294bbd00bc825ddd5630bffe9107"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write local timer statistics as Markdown. <br /></td></tr>
+<tr class="separator:a2bea294bbd00bc825ddd5630bffe9107"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a35ef1243cfca270bbd6f71106d564888"><td class="memItemLeft" align="right" valign="top"><a id="a35ef1243cfca270bbd6f71106d564888" name="a35ef1243cfca270bbd6f71106d564888"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>test</b> ()</td></tr>
+<tr class="memdesc:a35ef1243cfca270bbd6f71106d564888"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retained compatibility hook; currently performs no work. <br /></td></tr>
+<tr class="separator:a35ef1243cfca270bbd6f71106d564888"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a55154b7ed367e004fe5dc116e506ed70"><td class="memItemLeft" align="right" valign="top"><a id="a55154b7ed367e004fe5dc116e506ed70" name="a55154b7ed367e004fe5dc116e506ed70"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>TimerTable</b> ()</td></tr>
+<tr class="memdesc:a55154b7ed367e004fe5dc116e506ed70"><td class="mdescLeft">&#160;</td><td class="mdescRight">Register a local timer table with the environment journal. <br /></td></tr>
+<tr class="separator:a55154b7ed367e004fe5dc116e506ed70"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aabbd0a2134eeb689bd5c550f4cf3beff"><td class="memItemLeft" align="right" valign="top"><a id="aabbd0a2134eeb689bd5c550f4cf3beff" name="aabbd0a2134eeb689bd5c550f4cf3beff"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>~TimerTable</b> () override</td></tr>
-<tr class="memdesc:aabbd0a2134eeb689bd5c550f4cf3beff"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destructor. <br /></td></tr>
+<tr class="memdesc:aabbd0a2134eeb689bd5c550f4cf3beff"><td class="mdescLeft">&#160;</td><td class="mdescRight">Finalize journal registration before destroying samples. <br /></td></tr>
 <tr class="separator:aabbd0a2134eeb689bd5c550f4cf3beff"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classFeel_1_1JournalWatcher"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classFeel_1_1JournalWatcher')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classFeel_1_1JournalWatcher.html">Feel::JournalWatcher</a></td></tr>
 <tr class="memitem:abd9945cd29d3edeb37883dccde52fd1f inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1JournalWatcher.html#abd9945cd29d3edeb37883dccde52fd1f">JournalWatcher</a> (std::string const &amp;category=&quot;&quot;, std::string const &amp;name=&quot;&quot;, <a class="el" href="classbool.html">bool</a> connect=<a class="el" href="classFeel_1_1JournalManager.html#ad6ffb95221b4183f0eb6a91c48305c6c">JournalManager::journalAutoMode</a>())</td></tr>
@@ -187,21 +214,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>addInformationObject<
 void&#160;</td><td class="memItemRight" valign="bottom"><b>journalFinalize</b> ()</td></tr>
 <tr class="memdesc:ac4fe7b05debcbc3fd43502d47dddb589 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="mdescLeft">&#160;</td><td class="mdescRight">finalize journal publication <br /></td></tr>
 <tr class="separator:ac4fe7b05debcbc3fd43502d47dddb589 inherit pub_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a55154b7ed367e004fe5dc116e506ed70"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1TimerTable.html#a55154b7ed367e004fe5dc116e506ed70">TimerTable</a> ()</td></tr>
-<tr class="memdesc:a55154b7ed367e004fe5dc116e506ed70"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructors.  <a href="classFeel_1_1TimerTable.html#a55154b7ed367e004fe5dc116e506ed70">More...</a><br /></td></tr>
-<tr class="separator:a55154b7ed367e004fe5dc116e506ed70"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad19131a76654c40d25839e7292bb3bba"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1TimerTable.html#ad19131a76654c40d25839e7292bb3bba">add</a> (std::string const &amp;msg, std::pair&lt; double, <a class="el" href="classint.html">int</a> &gt; const &amp;t, std::string const &amp;uiname=&quot;&quot;)</td></tr>
-<tr class="memdesc:ad19131a76654c40d25839e7292bb3bba"><td class="mdescLeft">&#160;</td><td class="mdescRight">Modifiers.  <a href="classFeel_1_1TimerTable.html#ad19131a76654c40d25839e7292bb3bba">More...</a><br /></td></tr>
-<tr class="separator:ad19131a76654c40d25839e7292bb3bba"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5f446247895cf1677a0380aad7882fb3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1TimerTable.html#a5f446247895cf1677a0380aad7882fb3">save</a> (<a class="el" href="classbool.html">bool</a> display)</td></tr>
-<tr class="memdesc:a5f446247895cf1677a0380aad7882fb3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Methods.  <a href="classFeel_1_1TimerTable.html#a5f446247895cf1677a0380aad7882fb3">More...</a><br /></td></tr>
-<tr class="separator:a5f446247895cf1677a0380aad7882fb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a104927f4a37a79630b60e8fce7176f21"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1TimerTable.html#a104927f4a37a79630b60e8fce7176f21">saveMD</a> (std::ostream &amp;os)</td></tr>
-<tr class="memdesc:a104927f4a37a79630b60e8fce7176f21"><td class="mdescLeft">&#160;</td><td class="mdescRight">Save timers in markdown format.  <a href="classFeel_1_1TimerTable.html#a104927f4a37a79630b60e8fce7176f21">More...</a><br /></td></tr>
-<tr class="separator:a104927f4a37a79630b60e8fce7176f21"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a35ef1243cfca270bbd6f71106d564888"><td class="memItemLeft" align="right" valign="top"><a id="a35ef1243cfca270bbd6f71106d564888" name="a35ef1243cfca270bbd6f71106d564888"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>test</b> ()</td></tr>
-<tr class="separator:a35ef1243cfca270bbd6f71106d564888"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
@@ -219,35 +231,45 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>applyUpdateInformatio
 <tr class="separator:ace7e1916b49e2d851c7253f6c79347b7 inherit pro_methods_classFeel_1_1JournalWatcher"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p ><a class="el" href="classFeel_1_1TimerTable.html" title="TimerTable is a map of timer.">TimerTable</a> is a map of timer. </p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a55154b7ed367e004fe5dc116e506ed70" name="a55154b7ed367e004fe5dc116e506ed70"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a55154b7ed367e004fe5dc116e506ed70">&#9670;&nbsp;</a></span>TimerTable()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">Feel::TimerTable::TimerTable </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Constructors. </p>
-<p >Default constructor </p>
-
-<p class="reference">References <a class="el" href="classFeel_1_1JournalWatcher.html#abd9945cd29d3edeb37883dccde52fd1f">Feel::JournalWatcher::JournalWatcher()</a>, and <a class="el" href="classFeel_1_1TimerTable.html#a55154b7ed367e004fe5dc116e506ed70">TimerTable()</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1TimerTable.html#a55154b7ed367e004fe5dc116e506ed70">TimerTable()</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Member Function Documentation</h2>
-<a id="ad19131a76654c40d25839e7292bb3bba" name="ad19131a76654c40d25839e7292bb3bba"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad19131a76654c40d25839e7292bb3bba">&#9670;&nbsp;</a></span>add()</h2>
+<div class="textblock"><p >Local timer statistics and their text, Markdown, and journal reports. </p>
+<p >Each tic()/toc() call updates this table locally. Gather profiles only after the timed work; every rank in the communicator must call the gather with the same labels and rank selection. Rank IDs are local to that communicator. The pooled profile combines every call from the selected ranks for each label.</p>
+<dl class="section user"><dt>Record repeated calls under one or more labels</dt><dd><div class="fragment"><div class="line"><span class="preprocessor">#include &lt;feel/feeltiming/tic.hpp&gt;</span></div>
+<div class="line"> </div>
+<div class="line"><span class="keyword">auto</span> <span class="keyword">const</span>&amp; comm = <a class="code hl_function" href="classFeel_1_1Environment.html#ade89e3983d4b3f998fb4ebd0e84f28a7">Feel::Environment::worldComm</a>().<a class="code hl_function" href="classFeel_1_1WorldComm.html#a9d3f5d677a00469e05dd7c2c6dae3f95">localComm</a>();</div>
+<div class="line">Feel::tic();</div>
+<div class="line"><span class="comment">// Assemble a system.</span></div>
+<div class="line">Feel::toc( <span class="stringliteral">&quot;assembly&quot;</span>, Feel::no_display );</div>
+<div class="line">Feel::tic();</div>
+<div class="line"><span class="comment">// Solve the system.</span></div>
+<div class="line">Feel::toc( <span class="stringliteral">&quot;solve&quot;</span>, Feel::no_display );</div>
+<div class="ttc" id="aclassFeel_1_1Environment_html_ade89e3983d4b3f998fb4ebd0e84f28a7"><div class="ttname"><a href="classFeel_1_1Environment.html#ade89e3983d4b3f998fb4ebd0e84f28a7">Feel::Environment::worldComm</a></div><div class="ttdeci">static WorldComm &amp; worldComm()</div><div class="ttdoc">return the worldcomm (static)</div><div class="ttdef"><b>Definition:</b> environment.hpp:346</div></div>
+<div class="ttc" id="aclassFeel_1_1WorldComm_html_a9d3f5d677a00469e05dd7c2c6dae3f95"><div class="ttname"><a href="classFeel_1_1WorldComm.html#a9d3f5d677a00469e05dd7c2c6dae3f95">Feel::WorldComm::localComm</a></div><div class="ttdeci">communicator_type const &amp; localComm() const</div><div class="ttdoc">Returns the local WorldComm.</div><div class="ttdef"><b>Definition:</b> worldcomm.hpp:148</div></div>
+</div><!-- fragment --></dd></dl>
+<dl class="section user"><dt>Default: all labels recorded on communicator rank 0</dt><dd><div class="fragment"><div class="line"><span class="keyword">auto</span> <span class="keyword">const</span>&amp; master = <a class="code hl_function" href="classFeel_1_1Environment.html#a1ac16285fc20aa946876bb86134896b5">Feel::Environment::gatherTimerProfileStatistics</a>( comm );</div>
+<div class="line"><span class="comment">// One report per label on rank 0; each report.ranks contains only rank 0.</span></div>
+<div class="ttc" id="aclassFeel_1_1Environment_html_a1ac16285fc20aa946876bb86134896b5"><div class="ttname"><a href="classFeel_1_1Environment.html#a1ac16285fc20aa946876bb86134896b5">Feel::Environment::gatherTimerProfileStatistics</a></div><div class="ttdeci">static std::vector&lt; TimerProfileReport &gt; const &amp; gatherTimerProfileStatistics(std::vector&lt; std::string &gt; const &amp;labels, mpi::communicator const &amp;comm, std::vector&lt; int &gt; selectedRanks={ 0 })</div><div class="ttdoc">Gather call distributions for selected communicator ranks.</div><div class="ttdef"><b>Definition:</b> environment.cpp:2969</div></div>
+</div><!-- fragment --></dd></dl>
+<dl class="section user"><dt>Specific labels, with rank 0 selected by default</dt><dd><div class="fragment"><div class="line"><span class="keyword">auto</span> <span class="keyword">const</span>&amp; chosenLabels = <a class="code hl_function" href="classFeel_1_1Environment.html#a1ac16285fc20aa946876bb86134896b5">Feel::Environment::gatherTimerProfileStatistics</a>(</div>
+<div class="line">    { <span class="stringliteral">&quot;assembly&quot;</span>, <span class="stringliteral">&quot;solve&quot;</span> }, comm );</div>
+<div class="line"><span class="comment">// Reports follow the requested label order, even if a label has no calls.</span></div>
+</div><!-- fragment --></dd></dl>
+<dl class="section user"><dt>All labels from all ranks</dt><dd><div class="fragment"><div class="line"><span class="keyword">auto</span> <span class="keyword">const</span>&amp; all = <a class="code hl_function" href="classFeel_1_1Environment.html#a1ac16285fc20aa946876bb86134896b5">Feel::Environment::gatherTimerProfileStatistics</a>( comm, {} );</div>
+<div class="line"><span class="comment">// Labels are the sorted union across ranks; each report has all rank profiles.</span></div>
+</div><!-- fragment --></dd></dl>
+<dl class="section user"><dt>All labels from one rank or a group of ranks</dt><dd><div class="fragment"><div class="line"><span class="keywordtype">int</span> targetRank = comm.size() - 1;</div>
+<div class="line"><span class="keyword">auto</span> <span class="keyword">const</span>&amp; one = <a class="code hl_function" href="classFeel_1_1Environment.html#a1ac16285fc20aa946876bb86134896b5">Feel::Environment::gatherTimerProfileStatistics</a>( comm, { targetRank } );</div>
+<div class="line"><span class="keyword">auto</span> <span class="keyword">const</span>&amp; group = <a class="code hl_function" href="classFeel_1_1Environment.html#a1ac16285fc20aa946876bb86134896b5">Feel::Environment::gatherTimerProfileStatistics</a>( comm, { 0, targetRank } );</div>
+<div class="line"><span class="comment">// group[0].pooled covers only rank 0 and targetRank (once if they coincide).</span></div>
+</div><!-- fragment --></dd></dl>
+<dl class="section user"><dt>Specific labels from all ranks or a group</dt><dd><div class="fragment"><div class="line"><span class="keyword">auto</span> <span class="keyword">const</span>&amp; allAssembly = <a class="code hl_function" href="classFeel_1_1Environment.html#a1ac16285fc20aa946876bb86134896b5">Feel::Environment::gatherTimerProfileStatistics</a>(</div>
+<div class="line">    { <span class="stringliteral">&quot;assembly&quot;</span> }, comm, {} );</div>
+<div class="line"><span class="keyword">auto</span> <span class="keyword">const</span>&amp; groupSolve = <a class="code hl_function" href="classFeel_1_1Environment.html#a1ac16285fc20aa946876bb86134896b5">Feel::Environment::gatherTimerProfileStatistics</a>(</div>
+<div class="line">    { <span class="stringliteral">&quot;solve&quot;</span> }, comm, { 0, targetRank } );</div>
+</div><!-- fragment --></dd></dl>
+<p>Each gather replaces the cached reports, so consume a returned reference before the next gather. Quantiles are approximate; counts and moments are accumulated from all recorded calls. </p>
+</div><h2 class="groupheader">Member Function Documentation</h2>
+<a id="a7bb282a0ab552aab3582f5fe53343bfe" name="a7bb282a0ab552aab3582f5fe53343bfe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7bb282a0ab552aab3582f5fe53343bfe">&#9670;&nbsp;</a></span>add()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -256,19 +278,19 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>applyUpdateInformatio
           <td class="memname">void Feel::TimerTable::add </td>
           <td>(</td>
           <td class="paramtype">std::string const &amp;&#160;</td>
-          <td class="paramname"><em>msg</em>, </td>
+          <td class="paramname"><em>message</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">std::pair&lt; double, <a class="el" href="classint.html">int</a> &gt; const &amp;&#160;</td>
-          <td class="paramname"><em>t</em>, </td>
+          <td class="paramname"><em>sample</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">std::string const &amp;&#160;</td>
-          <td class="paramname"><em>uiname</em> = <code>&quot;&quot;</code>&#160;</td>
+          <td class="paramname"><em>instanceName</em> = <code>{}</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -278,58 +300,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>applyUpdateInformatio
       </table>
 </div><div class="memdoc">
 
-<p>Modifiers. </p>
-<p >Add a timer for the given message </p>
-
-<p class="reference">References <a class="el" href="classFeel_1_1JournalWatcher.html#ac4fe7b05debcbc3fd43502d47dddb589">Feel::JournalWatcher::journalFinalize()</a>.</p>
-
-</div>
-</div>
-<a id="a5f446247895cf1677a0380aad7882fb3" name="a5f446247895cf1677a0380aad7882fb3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5f446247895cf1677a0380aad7882fb3">&#9670;&nbsp;</a></span>save()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void Feel::TimerTable::save </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classbool.html">bool</a>&#160;</td>
-          <td class="paramname"><em>display</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Methods. </p>
-<p >Save the timers. If display is true, the timers are printed on the standard output. </p>
-
-</div>
-</div>
-<a id="a104927f4a37a79630b60e8fce7176f21" name="a104927f4a37a79630b60e8fce7176f21"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a104927f4a37a79630b60e8fce7176f21">&#9670;&nbsp;</a></span>saveMD()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void Feel::TimerTable::saveMD </td>
-          <td>(</td>
-          <td class="paramtype">std::ostream &amp;&#160;</td>
-          <td class="paramname"><em>os</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Save timers in markdown format. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">os</td><td>output stream </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="classFeel_1_1TimerTable.html#a5f446247895cf1677a0380aad7882fb3" title="Methods.">save</a> </dd></dl>
+<p>Store a valid duration. </p>
+<p >Empty labels and invalid durations are ignored. </p>
 
 </div>
 </div>

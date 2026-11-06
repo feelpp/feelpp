@@ -1,8 +1,8 @@
 var searchData=
 [
-  ['object_5fcomparator_5ft_0',['object_comparator_t',['../classnlohmann_1_1basic__json.html#ad777f3c1eacc1d0b3f2ec678a59bb91c',1,'nlohmann::basic_json']]],
-  ['object_5ft_1',['object_t',['../classnlohmann_1_1basic__json.html#aef3ff5a73597850597d1d40db9edd376',1,'nlohmann::basic_json']]],
-  ['operator_5finterpolation_5ft_2',['operator_interpolation_t',['../namespaceFeel.html#a07ba931f2adadf4c69a4bee779829f11',1,'Feel']]],
-  ['ordered_5fjson_3',['ordered_json',['../namespacenlohmann.html#ad53cef358adfa7f07cea23eb1e28b9ea',1,'nlohmann']]],
-  ['output_5fadapter_5ft_4',['output_adapter_t',['../namespacenlohmann_1_1detail.html#a9b680ddfb58f27eb53a67229447fc556',1,'nlohmann::detail']]]
+  ['node_5felem_5ftype_0',['node_elem_type',['../classFeel_1_1Localization.html#a92fb12ada0ef90d4a206111c768a19df',1,'Feel::Localization']]],
+  ['nodes_5ftype_1',['nodes_type',['../classFeel_1_1vf_1_1SB9ThroughThicknessLobatto5.html#ab2a9d68d40e3cf4bce14ceeb4b1aff71',1,'Feel::vf::SB9ThroughThicknessLobatto5::nodes_type()'],['../classFeel_1_1vf_1_1SB9LumpedMassLobatto.html#a40592fde187740462ba3451c28c03a9c',1,'Feel::vf::SB9LumpedMassLobatto::nodes_type()']]],
+  ['number_5ffloat_5ft_2',['number_float_t',['../classnlohmann_1_1basic__json.html#a5b8abaebd922d82d69756327c0c347e6',1,'nlohmann::basic_json']]],
+  ['number_5finteger_5ft_3',['number_integer_t',['../classnlohmann_1_1basic__json.html#a11e390944da90db83089eb2426a749d3',1,'nlohmann::basic_json']]],
+  ['number_5funsigned_5ft_4',['number_unsigned_t',['../classnlohmann_1_1basic__json.html#ae09af9c23351b7245d9be4d1b2035fef',1,'nlohmann::basic_json']]]
 ];

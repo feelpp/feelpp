@@ -1,0 +1,28 @@
+var classFeel_1_1vf_1_1detail_1_1SB9VectorOperator =
+[
+    [ "HasTestFunction", "structFeel_1_1vf_1_1detail_1_1SB9VectorOperator_1_1HasTestFunction.html", "structFeel_1_1vf_1_1detail_1_1SB9VectorOperator_1_1HasTestFunction" ],
+    [ "HasTrialFunction", "structFeel_1_1vf_1_1detail_1_1SB9VectorOperator_1_1HasTrialFunction.html", "structFeel_1_1vf_1_1detail_1_1SB9VectorOperator_1_1HasTrialFunction" ],
+    [ "Lambda", "structFeel_1_1vf_1_1detail_1_1SB9VectorOperator_1_1Lambda.html", "structFeel_1_1vf_1_1detail_1_1SB9VectorOperator_1_1Lambda" ],
+    [ "tensor", "structFeel_1_1vf_1_1detail_1_1SB9VectorOperator_1_1tensor.html", "structFeel_1_1vf_1_1detail_1_1SB9VectorOperator_1_1tensor" ],
+    [ "element_type", "classFeel_1_1vf_1_1detail_1_1SB9VectorOperator.html#a15bbd66d90059fffe9302381395c64a9", null ],
+    [ "evaluate_type", "classFeel_1_1vf_1_1detail_1_1SB9VectorOperator.html#a281e9bb1e1c6264d6c70910db85b376a", null ],
+    [ "expression_type", "classFeel_1_1vf_1_1detail_1_1SB9VectorOperator.html#a3837c621948715350f620418fa46132c", null ],
+    [ "fe_type", "classFeel_1_1vf_1_1detail_1_1SB9VectorOperator.html#a0abcaa78d1e4848606087c40b9786658", null ],
+    [ "functionspace_type", "classFeel_1_1vf_1_1detail_1_1SB9VectorOperator.html#a206670ecdb0d748f95f13497b97a62cf", null ],
+    [ "test_basis", "classFeel_1_1vf_1_1detail_1_1SB9VectorOperator.html#a3eba7d23a3db34d5ae09faaa2f33faca", null ],
+    [ "this_type", "classFeel_1_1vf_1_1detail_1_1SB9VectorOperator.html#a23a0351e3cf970521e0d0f19079a2ef7", null ],
+    [ "trial_basis", "classFeel_1_1vf_1_1detail_1_1SB9VectorOperator.html#a205f24bbd490de05756d211d41383dd2", null ],
+    [ "value_type", "classFeel_1_1vf_1_1detail_1_1SB9VectorOperator.html#ae0dd414cc603ada83a7075aeef954d5d", null ],
+    [ "SB9VectorOperator", "classFeel_1_1vf_1_1detail_1_1SB9VectorOperator.html#aa6962e9ca451525d1ea64b636dc9e1d1", null ],
+    [ "applySymbolsExpr", "classFeel_1_1vf_1_1detail_1_1SB9VectorOperator.html#a9c0c20ca309670e7bbfd5cf77c896497", null ],
+    [ "diff", "classFeel_1_1vf_1_1detail_1_1SB9VectorOperator.html#adf2a218ff25638a295c378b7530c0282", null ],
+    [ "element", "classFeel_1_1vf_1_1detail_1_1SB9VectorOperator.html#a927fc38b201aade27811e29afabcf1fa", null ],
+    [ "isPolynomial", "classFeel_1_1vf_1_1detail_1_1SB9VectorOperator.html#a560e2a201a05192baede4402fe9cf9ab", null ],
+    [ "operator()", "classFeel_1_1vf_1_1detail_1_1SB9VectorOperator.html#aa2b1a399cba96a3147275fdbd5cff814", null ],
+    [ "polynomialOrder", "classFeel_1_1vf_1_1detail_1_1SB9VectorOperator.html#ae50e14cb9a61131fef7b9872a1d0a0dd", null ],
+    [ "context", "classFeel_1_1vf_1_1detail_1_1SB9VectorOperator.html#a754c0595f4955d9582ee2bb35be83cc2", null ],
+    [ "has_test_basis", "classFeel_1_1vf_1_1detail_1_1SB9VectorOperator.html#addbf77be25fe2ba19bbcf577d71b1cdc", null ],
+    [ "has_trial_basis", "classFeel_1_1vf_1_1detail_1_1SB9VectorOperator.html#ab6e6a2284a2f9ad363c7a519a49b70be", null ],
+    [ "is_terminal", "classFeel_1_1vf_1_1detail_1_1SB9VectorOperator.html#a0b4d630839750f2706b0fc209d25601f", null ],
+    [ "storage_size", "classFeel_1_1vf_1_1detail_1_1SB9VectorOperator.html#a04a2a1eba5ec8a2bd7b3ebf71181d9c2", null ]
+];

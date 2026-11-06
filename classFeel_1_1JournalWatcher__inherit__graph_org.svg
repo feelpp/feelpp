@@ -240,12 +240,12 @@
 <polyline fill="none" stroke="black" points="1262.5,-1525.5 1342.5,-1525.5 "/>
 <text text-anchor="middle" x="1302.5" y="-1513.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
 <polyline fill="none" stroke="black" points="1262.5,-1506.5 1342.5,-1506.5 "/>
-<text text-anchor="start" x="1270.5" y="-1494.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ check()</text>
-<text text-anchor="start" x="1270.5" y="-1483.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Checker()</text>
+<text text-anchor="start" x="1270.5" y="-1494.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ add()</text>
+<text text-anchor="start" x="1270.5" y="-1483.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ check()</text>
 <text text-anchor="start" x="1270.5" y="-1472.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Checker()</text>
 <text text-anchor="start" x="1270.5" y="-1461.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Checker()</text>
-<text text-anchor="start" x="1270.5" y="-1450.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ gradient()</text>
-<text text-anchor="start" x="1270.5" y="-1439.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 20 more...</text>
+<text text-anchor="start" x="1270.5" y="-1450.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Checker()</text>
+<text text-anchor="start" x="1270.5" y="-1439.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 26 more...</text>
 </a>
 </g>
 </g>
@@ -417,47 +417,46 @@
 <!-- Node47 -->
 <g id="node47" class="node">
 <title>Node47</title>
-<g id="a_node47"><a xlink:href="classFeel_1_1TimerTable.html" target="_top" xlink:title="TimerTable is a map of timer.">
-<polygon fill="white" stroke="black" points="2651.5,-1427 2651.5,-1550 2787.5,-1550 2787.5,-1427 2651.5,-1427"/>
-<text text-anchor="middle" x="2719.5" y="-1538" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::TimerTable</text>
-<polyline fill="none" stroke="black" points="2651.5,-1531 2787.5,-1531 "/>
-<text text-anchor="middle" x="2719.5" y="-1519" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="black" points="2651.5,-1512 2787.5,-1512 "/>
-<text text-anchor="start" x="2659.5" y="-1500" font-family="Helvetica,sans-Serif" font-size="10.00">+ ~TimerTable()</text>
-<text text-anchor="start" x="2659.5" y="-1489" font-family="Helvetica,sans-Serif" font-size="10.00">* TimerTable()</text>
-<text text-anchor="start" x="2659.5" y="-1478" font-family="Helvetica,sans-Serif" font-size="10.00">* add()</text>
-<text text-anchor="start" x="2659.5" y="-1467" font-family="Helvetica,sans-Serif" font-size="10.00">* save()</text>
-<text text-anchor="start" x="2659.5" y="-1456" font-family="Helvetica,sans-Serif" font-size="10.00">* saveMD()</text>
-<text text-anchor="start" x="2659.5" y="-1445" font-family="Helvetica,sans-Serif" font-size="10.00">* test()</text>
-<text text-anchor="start" x="2659.5" y="-1434" font-family="Helvetica,sans-Serif" font-size="10.00">* updateInformationObject()</text>
+<g id="a_node47"><a xlink:href="classFeel_1_1TimerTable.html" target="_top" xlink:title="Local timer statistics and their text, Markdown, and journal reports.">
+<polygon fill="white" stroke="black" points="2652,-1432.5 2652,-1544.5 2751,-1544.5 2751,-1432.5 2652,-1432.5"/>
+<text text-anchor="middle" x="2701.5" y="-1532.5" font-family="Helvetica,sans-Serif" font-size="10.00">Feel::TimerTable</text>
+<polyline fill="none" stroke="black" points="2652,-1525.5 2751,-1525.5 "/>
+<text text-anchor="middle" x="2701.5" y="-1513.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="black" points="2652,-1506.5 2751,-1506.5 "/>
+<text text-anchor="start" x="2660" y="-1494.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ add()</text>
+<text text-anchor="start" x="2660" y="-1483.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ labels()</text>
+<text text-anchor="start" x="2660" y="-1472.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ profileSnapshot()</text>
+<text text-anchor="start" x="2660" y="-1461.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ save()</text>
+<text text-anchor="start" x="2660" y="-1450.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ saveMD()</text>
+<text text-anchor="start" x="2660" y="-1439.5" font-family="Helvetica,sans-Serif" font-size="10.00">and 3 more...</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node47 -->
 <g id="edge56" class="edge">
 <title>Node1&#45;&gt;Node47</title>
-<path fill="none" stroke="midnightblue" d="M1839.99,-1871.48C2041.38,-1853.99 2522.03,-1802.25 2642.5,-1699 2685.9,-1661.8 2704.85,-1597.92 2713.12,-1550.45"/>
-<polygon fill="none" stroke="midnightblue" points="1839.4,-1868.02 1829.74,-1872.36 1840,-1874.99 1839.4,-1868.02"/>
+<path fill="none" stroke="midnightblue" d="M1839.52,-1872.2C2041.48,-1856.14 2525.93,-1807.04 2642.5,-1699 2684.9,-1659.7 2697.69,-1592.54 2701.12,-1544.87"/>
+<polygon fill="none" stroke="midnightblue" points="1839.23,-1868.71 1829.53,-1872.99 1839.78,-1875.69 1839.23,-1868.71"/>
 </g>
 <!-- Node48 -->
 <g id="node48" class="node">
 <title>Node48</title>
 <g id="a_node48"><a xlink:href="classObject2.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="#bfbfbf" points="2805.5,-1454.5 2805.5,-1522.5 2943.5,-1522.5 2943.5,-1454.5 2805.5,-1454.5"/>
-<text text-anchor="middle" x="2874.5" y="-1510.5" font-family="Helvetica,sans-Serif" font-size="10.00">Object2</text>
-<polyline fill="none" stroke="#bfbfbf" points="2805.5,-1503.5 2943.5,-1503.5 "/>
-<text text-anchor="middle" x="2874.5" y="-1491.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
-<polyline fill="none" stroke="#bfbfbf" points="2805.5,-1484.5 2943.5,-1484.5 "/>
-<text text-anchor="start" x="2813.5" y="-1472.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Object2()</text>
-<text text-anchor="start" x="2813.5" y="-1461.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ updateInformationObject()</text>
+<polygon fill="white" stroke="#bfbfbf" points="2769.5,-1454.5 2769.5,-1522.5 2907.5,-1522.5 2907.5,-1454.5 2769.5,-1454.5"/>
+<text text-anchor="middle" x="2838.5" y="-1510.5" font-family="Helvetica,sans-Serif" font-size="10.00">Object2</text>
+<polyline fill="none" stroke="#bfbfbf" points="2769.5,-1503.5 2907.5,-1503.5 "/>
+<text text-anchor="middle" x="2838.5" y="-1491.5" font-family="Helvetica,sans-Serif" font-size="10.00"> </text>
+<polyline fill="none" stroke="#bfbfbf" points="2769.5,-1484.5 2907.5,-1484.5 "/>
+<text text-anchor="start" x="2777.5" y="-1472.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ Object2()</text>
+<text text-anchor="start" x="2777.5" y="-1461.5" font-family="Helvetica,sans-Serif" font-size="10.00">+ updateInformationObject()</text>
 </a>
 </g>
 </g>
 <!-- Node1&#45;&gt;Node48 -->
 <g id="edge57" class="edge">
 <title>Node1&#45;&gt;Node48</title>
-<path fill="none" stroke="midnightblue" d="M1839.65,-1874.4C2065.16,-1862.32 2650.77,-1819.81 2796.5,-1699 2850.13,-1654.54 2866.9,-1569.43 2872.13,-1522.53"/>
-<polygon fill="none" stroke="midnightblue" points="1839.31,-1870.91 1829.51,-1874.94 1839.68,-1877.9 1839.31,-1870.91"/>
+<path fill="none" stroke="midnightblue" d="M1839.97,-1873.72C2059.98,-1860.26 2619.63,-1815.17 2759.5,-1699 2813.02,-1654.54 2830.32,-1569.83 2835.89,-1522.89"/>
+<polygon fill="none" stroke="midnightblue" points="1839.52,-1870.24 1829.75,-1874.34 1839.94,-1877.23 1839.52,-1870.24"/>
 </g>
 <!-- Node2 -->
 <g id="node2" class="node">

@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-preview.14</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.112.0-preview.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -101,7 +101,9 @@ $(document).ready(function(){initNavTree('feelvf_2concepts_8hpp.html',''); initR
 
 <div class="header">
   <div class="summary">
-<a href="#namespaces">Namespaces</a>  </div>
+<a href="#namespaces">Namespaces</a> &#124;
+<a href="#func-members">Functions</a> &#124;
+<a href="#var-members">Variables</a>  </div>
   <div class="headertitle"><div class="title">concepts.hpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
@@ -114,6 +116,30 @@ Namespaces</h2></td></tr>
 <tr class="memitem:namespaceFeel"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceFeel.html">Feel</a></td></tr>
 <tr class="memdesc:namespaceFeel"><td class="mdescLeft">&#160;</td><td class="mdescRight">-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:a1c4a0f8393aa6c17e04a566c8e974638"><td class="memTemplParams" colspan="2"><a id="a1c4a0f8393aa6c17e04a566c8e974638" name="a1c4a0f8393aa6c17e04a566c8e974638"></a>
+template&lt;<a class="el" href="classint.html">int</a> Size&gt; </td></tr>
+<tr class="memitem:a1c4a0f8393aa6c17e04a566c8e974638"><td class="memTemplItemLeft" align="right" valign="top">consteval <a class="el" href="classint.html">int</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::vf::detail::symmetricDimensionFromStorageSize</b> ()</td></tr>
+<tr class="separator:a1c4a0f8393aa6c17e04a566c8e974638"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
+Variables</h2></td></tr>
+<tr class="memitem:a7803b69063ea7e78529f3ee7b0c5aed4"><td class="memTemplParams" colspan="2">template&lt;<a class="el" href="classint.html">int</a> LeftExtent, <a class="el" href="classint.html">int</a> RightExtent&gt; </td></tr>
+<tr class="memitem:a7803b69063ea7e78529f3ee7b0c5aed4"><td class="memTemplItemLeft" align="right" valign="top">constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="feelvf_2concepts_8hpp.html#a7803b69063ea7e78529f3ee7b0c5aed4">Feel::vf::detail::compatible_static_extent_v</a></td></tr>
+<tr class="separator:a7803b69063ea7e78529f3ee7b0c5aed4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7a3fa9b71159dbab5bd34e90a8d0cf4d"><td class="memTemplParams" colspan="2"><a id="a7a3fa9b71159dbab5bd34e90a8d0cf4d" name="a7a3fa9b71159dbab5bd34e90a8d0cf4d"></a>
+template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a7a3fa9b71159dbab5bd34e90a8d0cf4d"><td class="memTemplItemLeft" align="right" valign="top">constexpr <a class="el" href="classint.html">int</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::vf::detail::expression_cols_v</b> = std::remove_cvref_t&lt;T&gt;::evaluate_type::ColsAtCompileTime</td></tr>
+<tr class="separator:a7a3fa9b71159dbab5bd34e90a8d0cf4d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a217a2bcf8e226a0fa0d7fda23e10b5ae"><td class="memTemplParams" colspan="2"><a id="a217a2bcf8e226a0fa0d7fda23e10b5ae" name="a217a2bcf8e226a0fa0d7fda23e10b5ae"></a>
+template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a217a2bcf8e226a0fa0d7fda23e10b5ae"><td class="memTemplItemLeft" align="right" valign="top">constexpr <a class="el" href="classint.html">int</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::vf::detail::expression_rows_v</b> = std::remove_cvref_t&lt;T&gt;::evaluate_type::RowsAtCompileTime</td></tr>
+<tr class="separator:a217a2bcf8e226a0fa0d7fda23e10b5ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a02773d7d21ff80d954eda8a18603ad2a"><td class="memTemplParams" colspan="2">template&lt;typename ExprT &gt; </td></tr>
+<tr class="memitem:a02773d7d21ff80d954eda8a18603ad2a"><td class="memTemplItemLeft" align="right" valign="top">constexpr <a class="el" href="classint.html">int</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="feelvf_2concepts_8hpp.html#a02773d7d21ff80d954eda8a18603ad2a">Feel::vf::detail::vector_length_v</a></td></tr>
+<tr class="separator:a02773d7d21ff80d954eda8a18603ad2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p >C++20 concepts for Feel++ variational formulation expressions. </p>
@@ -126,7 +152,60 @@ Namespaces</h2></td></tr>
 <li>Compilation speed (concepts checked once vs. SFINAE re-evaluated)</li>
 <li>IDE support (better autocomplete and inline documentation) </li>
 </ul>
-</div></div><!-- contents -->
+</div><h2 class="groupheader">Variable Documentation</h2>
+<a id="a7803b69063ea7e78529f3ee7b0c5aed4" name="a7803b69063ea7e78529f3ee7b0c5aed4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7803b69063ea7e78529f3ee7b0c5aed4">&#9670;&nbsp;</a></span>compatible_static_extent_v</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;<a class="el" href="classint.html">int</a> LeftExtent, <a class="el" href="classint.html">int</a> RightExtent&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="el" href="classbool.html">bool</a> Feel::vf::detail::compatible_static_extent_v</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line">=</div>
+<div class="line">    ( LeftExtent == RightExtent ) || ( LeftExtent == Eigen::Dynamic ) || ( RightExtent == Eigen::Dynamic )</div>
+</div><!-- fragment -->
+</div>
+</div>
+<a id="a02773d7d21ff80d954eda8a18603ad2a" name="a02773d7d21ff80d954eda8a18603ad2a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a02773d7d21ff80d954eda8a18603ad2a">&#9670;&nbsp;</a></span>vector_length_v</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename ExprT &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="el" href="classint.html">int</a> Feel::vf::detail::vector_length_v</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line">=</div>
+<div class="line">    expression_rows_v&lt;ExprT&gt; == 1 ? expression_cols_v&lt;ExprT&gt; : expression_rows_v&lt;ExprT&gt;</div>
+</div><!-- fragment -->
+</div>
+</div>
+</div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['wc_0',['wc',['../classFeel_1_1MasterStream.html#a470e6957f8a365b63aa5426f13e4e441',1,'Feel::MasterStream']]]
+  ['total_0',['total',['../structFeel_1_1TimerProfileStatistics.html#a1d0935ae86a28cf52fd5e72d7fae9148',1,'Feel::TimerProfileStatistics']]]
 ];

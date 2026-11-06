@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-preview.14</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.112.0-preview.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -129,20 +129,24 @@ Hello, Stokes</h2>
 </div><!-- fragment --><p >then the mesh</p>
 <div class="fragment"><div class="line">        <span class="keyword">auto</span> mesh = loadMesh(_mesh=<span class="keyword">new</span> Mesh&lt;Simplex&lt;FEELPP_DIM,1&gt;&gt;);</div>
 </div><!-- fragment --><p >then the function solving the Stokes equations</p>
-<div class="fragment"><div class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> SpacePtrType&gt;</div>
+<div class="fragment"><div class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> MeshPtrType&gt;</div>
 <div class="line"><span class="keywordtype">int</span></div>
-<div class="line">stokes(SpacePtrType Vh)</div>
+<div class="line">stokes(MeshPtrType mesh)</div>
 <div class="line">{</div>
 <div class="line">    <span class="keyword">using namespace </span><a class="code hl_namespace" href="namespaceFeel.html">Feel</a>;</div>
 <div class="line"> </div>
 <div class="line">    <span class="comment">// tag::mesh_space[]</span></div>
 <div class="line">    tic();</div>
-<div class="line">    <span class="keyword">auto</span> mesh = Vh-&gt;mesh();</div>
-<div class="line">    <span class="keyword">auto</span> U = Vh-&gt;element(<span class="stringliteral">&quot;U&quot;</span>);</div>
-<div class="line">    <span class="keyword">auto</span> u = U.template element&lt;0&gt;();</div>
-<div class="line">    <span class="keyword">auto</span> p = U.template element&lt;1&gt;();</div>
-<div class="line">    <span class="keyword">auto</span> v = U.template element&lt;0&gt;();</div>
-<div class="line">    <span class="keyword">auto</span> q = U.template element&lt;1&gt;();</div>
+<div class="line">    <span class="keyword">auto</span> Uh = Pchv&lt;2&gt;(mesh);</div>
+<div class="line">    <span class="keyword">auto</span> Qh = Pch&lt;1&gt;(mesh);</div>
+<div class="line">    <span class="keyword">auto</span> ps = <a class="code hl_function" href="namespaceFeel.html#a401d5458e6b22d05d71752700ab29c01">product</a>( Uh, Qh );</div>
+<div class="line">    <span class="keyword">auto</span> u = trial( Uh, <span class="stringliteral">&quot;u&quot;</span> );</div>
+<div class="line">    <span class="keyword">auto</span> v = test( Uh, <span class="stringliteral">&quot;v&quot;</span> );</div>
+<div class="line">    <span class="keyword">auto</span> p = trial( Qh, <span class="stringliteral">&quot;p&quot;</span> );</div>
+<div class="line">    <span class="keyword">auto</span> q = test( Qh, <span class="stringliteral">&quot;q&quot;</span> );</div>
+<div class="line">    <span class="keyword">auto</span> W = ps.element();</div>
+<div class="line">    <span class="keyword">auto</span> uh = W( 0_c );</div>
+<div class="line">    <span class="keyword">auto</span> ph = W( 1_c );</div>
 <div class="line">    <span class="keyword">auto</span> mu = doption(_name=<span class="stringliteral">&quot;mu&quot;</span>);</div>
 <div class="line">    <span class="keyword">auto</span> f = expr&lt;FEELPP_DIM,1&gt;( soption(_name=<span class="stringliteral">&quot;functions.f&quot;</span>) );</div>
 <div class="line">    <span class="keyword">auto</span> thechecker = <a class="code hl_function" href="namespaceFeel.html#aad75bc3dcabd553f9b7fc2aa214666e2">checker</a>(_name=<span class="stringliteral">&quot;qs_stokes&quot;</span>,_solution_key=soption(<span class="stringliteral">&quot;checker.solution&quot;</span>));</div>
@@ -153,34 +157,33 @@ Hello, Stokes</h2>
 <div class="line"> </div>
 <div class="line">    <span class="comment">// tag::forms[]</span></div>
 <div class="line">    tic();</div>
-<div class="line">    <span class="keyword">auto</span> l = <a class="code hl_function" href="group__DSEL-Variational-Formulation.html#gaa7b95d2d10a5d0e4457740daa190a6e0">form1</a>( _test=Vh );</div>
-<div class="line">    l = integrate(_range=<a class="code hl_function" href="namespaceFeel.html#a21ba4f3c2c67b2adee4f9bd174300bc3">elements</a>(mesh),</div>
-<div class="line">                  _expr=inner(f,<span class="keywordtype">id</span>(v)));</div>
+<div class="line">    <span class="keyword">auto</span> l = blockform1( ps, solve::strategy::monolithic, backend() );</div>
+<div class="line">    l( 0_c ) = integrate(_range=<a class="code hl_function" href="namespaceFeel.html#a21ba4f3c2c67b2adee4f9bd174300bc3">elements</a>(mesh),</div>
+<div class="line">                         _expr=inner(f,v));</div>
 <div class="line">    toc(<span class="stringliteral">&quot;l&quot;</span>);</div>
 <div class="line"> </div>
 <div class="line">    tic();</div>
-<div class="line">    <span class="keyword">auto</span> a = <a class="code hl_function" href="group__DSEL-Variational-Formulation.html#gaae0194bba0f2f858c384597706e3c59e">form2</a>( _trial=Vh, _test=Vh);</div>
-<div class="line">    <span class="keyword">auto</span> Id = eye&lt;FEELPP_DIM,FEELPP_DIM&gt;();</div>
-<div class="line">    <span class="keyword">auto</span> deft = sym(gradt(u));</div>
-<div class="line">    <span class="keyword">auto</span> sigmat = -idt(p)*Id + 2*mu*deft;</div>
-<div class="line">    tic();</div>
-<div class="line">    a = integrate(_range=<a class="code hl_function" href="namespaceFeel.html#a21ba4f3c2c67b2adee4f9bd174300bc3">elements</a>(mesh),</div>
-<div class="line">                  _expr=inner( 2*mu*deft, grad(v) ) );</div>
-<div class="line">    a += integrate(_range=<a class="code hl_function" href="namespaceFeel.html#a21ba4f3c2c67b2adee4f9bd174300bc3">elements</a>(mesh),</div>
-<div class="line">                   _expr=-idt(p)*<a class="code hl_function" href="namespaceFeel.html#a5cd00556a1c26cfc9ee56213c8121868">div</a>(v) );</div>
-<div class="line">    a += integrate(_range=<a class="code hl_function" href="namespaceFeel.html#a21ba4f3c2c67b2adee4f9bd174300bc3">elements</a>(mesh),</div>
-<div class="line">                   _expr=<span class="keywordtype">id</span>(q)*divt(u) );</div>
+<div class="line">    <span class="keyword">auto</span> a = blockform2( ps, solve::strategy::monolithic, backend() );</div>
+<div class="line">    a( 0_c, 0_c ) += integrate(_range=<a class="code hl_function" href="namespaceFeel.html#a21ba4f3c2c67b2adee4f9bd174300bc3">elements</a>(mesh),</div>
+<div class="line">                               _expr=2*mu*inner( symm_grad(u), symm_grad(v) ) );</div>
+<div class="line">    a( 0_c, 1_c ) += integrate(_range=<a class="code hl_function" href="namespaceFeel.html#a21ba4f3c2c67b2adee4f9bd174300bc3">elements</a>(mesh),</div>
+<div class="line">                               _expr=-p*<a class="code hl_function" href="namespaceFeel.html#a5cd00556a1c26cfc9ee56213c8121868">div</a>(v) );</div>
+<div class="line">    a( 1_c, 0_c ) += integrate(_range=<a class="code hl_function" href="namespaceFeel.html#a21ba4f3c2c67b2adee4f9bd174300bc3">elements</a>(mesh),</div>
+<div class="line">                               _expr=q*<a class="code hl_function" href="namespaceFeel.html#a5cd00556a1c26cfc9ee56213c8121868">div</a>(u) );</div>
 <div class="line">    toc(<span class="stringliteral">&quot;a&quot;</span>);</div>
 <div class="line"> </div>
+<div class="line">    l.close();</div>
+<div class="line">    a.close();</div>
+<div class="line"> </div>
 <div class="line">    <span class="keywordflow">if</span> ( mesh-&gt;hasAnyMarker({<span class="stringliteral">&quot;inlet&quot;</span>,<span class="stringliteral">&quot;Dirichlet&quot;</span>}) )</div>
-<div class="line">        a+=<a class="code hl_function" href="on_8hpp.html#ac948958b68a6ab39e788fa5bf64347cc">on</a>(_range=<a class="code hl_function" href="namespaceFeel.html#ac7961ec0ad07a9bfe8984b9181ea7f13">markedfaces</a>(mesh,{<span class="stringliteral">&quot;inlet&quot;</span>,<span class="stringliteral">&quot;Dirichlet&quot;</span>}), _rhs=l, _element=u, _expr=g );</div>
+<div class="line">        a.row( 0_c ) += <a class="code hl_function" href="on_8hpp.html#ac948958b68a6ab39e788fa5bf64347cc">on</a>(_range=<a class="code hl_function" href="namespaceFeel.html#ac7961ec0ad07a9bfe8984b9181ea7f13">markedfaces</a>(mesh,{<span class="stringliteral">&quot;inlet&quot;</span>,<span class="stringliteral">&quot;Dirichlet&quot;</span>}), _rhs=l( 0_c ), _element=uh, _expr=g, _type=<span class="stringliteral">&quot;elimination&quot;</span> );</div>
 <div class="line">    <span class="keywordflow">if</span> ( mesh-&gt;hasAnyMarker({<span class="stringliteral">&quot;wall&quot;</span>,<span class="stringliteral">&quot;letters&quot;</span>}) )</div>
-<div class="line">        a+=<a class="code hl_function" href="on_8hpp.html#ac948958b68a6ab39e788fa5bf64347cc">on</a>(_range=<a class="code hl_function" href="namespaceFeel.html#ac7961ec0ad07a9bfe8984b9181ea7f13">markedfaces</a>(mesh,{<span class="stringliteral">&quot;wall&quot;</span>,<span class="stringliteral">&quot;letters&quot;</span>}), _rhs=l, _element=u, _expr=zero&lt;FEELPP_DIM,1&gt;() );</div>
+<div class="line">        a.row( 0_c ) += <a class="code hl_function" href="on_8hpp.html#ac948958b68a6ab39e788fa5bf64347cc">on</a>(_range=<a class="code hl_function" href="namespaceFeel.html#ac7961ec0ad07a9bfe8984b9181ea7f13">markedfaces</a>(mesh,{<span class="stringliteral">&quot;wall&quot;</span>,<span class="stringliteral">&quot;letters&quot;</span>}), _rhs=l( 0_c ), _element=uh, _expr=zero&lt;FEELPP_DIM,1&gt;(), _type=<span class="stringliteral">&quot;elimination&quot;</span> );</div>
 <div class="line">    toc(<span class="stringliteral">&quot;a&quot;</span>);</div>
 <div class="line"> </div>
 <div class="line">    tic();</div>
 <div class="line">    <span class="keywordflow">if</span> ( !boption( <span class="stringliteral">&quot;no-solve&quot;</span> ) )</div>
-<div class="line">        a.solve(_rhs=l,_solution=U);</div>
+<div class="line">        a.solve(_rhs=l,_solution=W);</div>
 <div class="line">    toc(<span class="stringliteral">&quot;a.solve&quot;</span>);</div>
 <div class="line">    <span class="comment">// end::forms[]</span></div>
 <div class="line"> </div>
@@ -188,8 +191,8 @@ Hello, Stokes</h2>
 <div class="line">    tic();</div>
 <div class="line">    <span class="keyword">auto</span> e = exporter( _mesh=mesh );</div>
 <div class="line">    e-&gt;addRegions();</div>
-<div class="line">    e-&gt;add( <span class="stringliteral">&quot;uh&quot;</span>, u );</div>
-<div class="line">    e-&gt;add( <span class="stringliteral">&quot;ph&quot;</span>, p );</div>
+<div class="line">    e-&gt;add( <span class="stringliteral">&quot;uh&quot;</span>, uh );</div>
+<div class="line">    e-&gt;add( <span class="stringliteral">&quot;ph&quot;</span>, ph );</div>
 <div class="line">    <span class="keywordflow">if</span> ( thechecker.check() )</div>
 <div class="line">    {</div>
 <div class="line">        e-&gt;add( <span class="stringliteral">&quot;u&quot;</span>, solution );</div>
@@ -198,31 +201,19 @@ Hello, Stokes</h2>
 <div class="line">    toc(<span class="stringliteral">&quot;Exporter&quot;</span>);</div>
 <div class="line">    <span class="comment">// end::export[]</span></div>
 <div class="line"> </div>
-<div class="line">    <span class="keywordflow">return</span> check( thechecker, u );</div>
+<div class="line">    <span class="keywordflow">return</span> check( thechecker, uh );</div>
 <div class="line">}</div>
-<div class="ttc" id="agroup__DSEL-Variational-Formulation_html_gaa7b95d2d10a5d0e4457740daa190a6e0"><div class="ttname"><a href="group__DSEL-Variational-Formulation.html#gaa7b95d2d10a5d0e4457740daa190a6e0">Feel::form1</a></div><div class="ttdeci">auto form1(Ts &amp;&amp;... v)</div><div class="ttdoc">create a linear form using named arguments</div><div class="ttdef"><b>Definition:</b> form.hpp:79</div></div>
-<div class="ttc" id="agroup__DSEL-Variational-Formulation_html_gaae0194bba0f2f858c384597706e3c59e"><div class="ttname"><a href="group__DSEL-Variational-Formulation.html#gaae0194bba0f2f858c384597706e3c59e">Feel::form2</a></div><div class="ttdeci">auto form2(Ts &amp;&amp;... v)</div><div class="ttdoc">create a bi-linear form using named arguments</div><div class="ttdef"><b>Definition:</b> form.hpp:115</div></div>
 <div class="ttc" id="anamespaceFeel_html_a21ba4f3c2c67b2adee4f9bd174300bc3"><div class="ttname"><a href="namespaceFeel.html#a21ba4f3c2c67b2adee4f9bd174300bc3">Feel::elements</a></div><div class="ttdeci">auto elements(MeshType const &amp;mesh, entity_process_t ept=entity_process_t::LOCAL_ONLY)</div><div class="ttdef"><b>Definition:</b> filters.hpp:92</div></div>
+<div class="ttc" id="anamespaceFeel_html_a401d5458e6b22d05d71752700ab29c01"><div class="ttname"><a href="namespaceFeel.html#a401d5458e6b22d05d71752700ab29c01">Feel::product</a></div><div class="ttdeci">ProductSpaces&lt; SpaceList... &gt; product(SpaceList... spaces)</div><div class="ttdoc">compile time product of function spaces</div><div class="ttdef"><b>Definition:</b> product.hpp:531</div></div>
 <div class="ttc" id="anamespaceFeel_html_a5cd00556a1c26cfc9ee56213c8121868"><div class="ttname"><a href="namespaceFeel.html#a5cd00556a1c26cfc9ee56213c8121868">Feel::div</a></div><div class="ttdeci">ElementType div(ElementType const &amp;v1, ElementType const &amp;v2, typename boost::enable_if&lt; boost::is_base_of&lt; FunctionSpaceBase::ElementBase, ElementType &gt; &gt;::type *dummy=0)</div><div class="ttdoc">Computes the element wise division of two vectors and eventually in parallel.</div><div class="ttdef"><b>Definition:</b> elementdiv.hpp:45</div></div>
-<div class="ttc" id="anamespaceFeel_html_aad75bc3dcabd553f9b7fc2aa214666e2"><div class="ttname"><a href="namespaceFeel.html#aad75bc3dcabd553f9b7fc2aa214666e2">Feel::checker</a></div><div class="ttdeci">Checker checker(Ts &amp;&amp;... v)</div><div class="ttdoc">check create function</div><div class="ttdef"><b>Definition:</b> checker.hpp:278</div></div>
+<div class="ttc" id="anamespaceFeel_html_aad75bc3dcabd553f9b7fc2aa214666e2"><div class="ttname"><a href="namespaceFeel.html#aad75bc3dcabd553f9b7fc2aa214666e2">Feel::checker</a></div><div class="ttdeci">Checker checker(Ts &amp;&amp;... v)</div><div class="ttdoc">check create function</div><div class="ttdef"><b>Definition:</b> checker.hpp:317</div></div>
 <div class="ttc" id="anamespaceFeel_html_ac7961ec0ad07a9bfe8984b9181ea7f13"><div class="ttname"><a href="namespaceFeel.html#ac7961ec0ad07a9bfe8984b9181ea7f13">Feel::markedfaces</a></div><div class="ttdeci">auto markedfaces(MeshType const &amp;mesh)</div><div class="ttdef"><b>Definition:</b> filters.hpp:543</div></div>
 <div class="ttc" id="aon_8hpp_html_ac948958b68a6ab39e788fa5bf64347cc"><div class="ttname"><a href="on_8hpp.html#ac948958b68a6ab39e788fa5bf64347cc">Feel::vf::on</a></div><div class="ttdeci">detail auto on(Ts &amp;&amp;... v)</div><div class="ttdoc">projection/interpolation of an expresion onto a nodal functionspace</div><div class="ttdef"><b>Definition:</b> on.hpp:1099</div></div>
 </div><!-- fragment --><p >We can now call this functions with different velocity/pressure function spaces:</p><ul>
 <li>P1P0, P1P0 which aren't inf-sup stable</li>
 <li>P2P1 (aka TaylorHood) which is inf-sup stable</li>
 </ul>
-<div class="fragment"><div class="line">        <span class="keywordtype">int</span> status;</div>
-<div class="line">        <span class="keywordflow">if</span> ( soption(<span class="stringliteral">&quot;space&quot;</span>) == <span class="stringliteral">&quot;P1P0&quot;</span> )</div>
-<div class="line">            status = stokes( <a class="code hl_function" href="namespaceFeel.html#a97ab5b73aff464263d9faec5f6797d5f">P2ch</a>&lt;Lagrange&lt;1,Vectorial&gt;,Lagrange&lt;0,Scalar,Discontinuous&gt;&gt;( mesh ) );</div>
-<div class="line">        <span class="keywordflow">else</span> <span class="keywordflow">if</span> ( soption(<span class="stringliteral">&quot;space&quot;</span>) == <span class="stringliteral">&quot;P1P1&quot;</span> )</div>
-<div class="line">            status = stokes( <a class="code hl_function" href="namespaceFeel.html#a97ab5b73aff464263d9faec5f6797d5f">P2ch</a>&lt;Lagrange&lt;1,Vectorial&gt;,Lagrange&lt;1,Scalar&gt;&gt;( mesh ) );</div>
-<div class="line">        <span class="keywordflow">else</span></div>
-<div class="line">        {</div>
-<div class="line">            <span class="comment">// default P2P1: good space</span></div>
-<div class="line">            status = stokes( THch&lt;1&gt;( mesh ) );</div>
-<div class="line">        }</div>
-<div class="ttc" id="anamespaceFeel_html_a97ab5b73aff464263d9faec5f6797d5f"><div class="ttname"><a href="namespaceFeel.html#a97ab5b73aff464263d9faec5f6797d5f">Feel::P2ch</a></div><div class="ttdeci">P2ch_ptrtype&lt; Base1, Base2, MeshType &gt; P2ch(std::shared_ptr&lt; MeshType &gt; mesh, std::vector&lt; DofTableExtendedType &gt; dte=std::vector&lt; DofTableExtendedType &gt;(2, DofTableExtendedType::DEFAULT))</div><div class="ttdoc">Given a mesh and polynomial order (template argument), build a product function space of  where $d$ i...</div><div class="ttdef"><b>Definition:</b> p2ch.hpp:81</div></div>
-</div><!-- fragment --> </div></div><!-- contents -->
+<div class="fragment"></div><!-- fragment --> </div></div><!-- contents -->
 </div><!-- PageDoc -->
 </div><!-- doc-content -->
 <!-- start footer part -->

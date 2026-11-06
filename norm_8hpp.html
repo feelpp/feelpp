@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.111.0-preview.14</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.112.0-preview.1</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -115,10 +115,11 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a7b82db4dab41a3e14d2709e7e24838bc"><td class="memTemplParams" colspan="2">template&lt;typename ExprL , typename ExprR &gt; </td></tr>
-<tr class="memitem:a7b82db4dab41a3e14d2709e7e24838bc"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="norm_8hpp.html#a7b82db4dab41a3e14d2709e7e24838bc">Feel::vf::ddot</a> (ExprL l, ExprR r) -&gt; decltype(trace(trans(l) *r))</td></tr>
-<tr class="memdesc:a7b82db4dab41a3e14d2709e7e24838bc"><td class="mdescLeft">&#160;</td><td class="mdescRight">double dot product of the left and right expressions  <a href="norm_8hpp.html#a7b82db4dab41a3e14d2709e7e24838bc">More...</a><br /></td></tr>
-<tr class="separator:a7b82db4dab41a3e14d2709e7e24838bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8a4db7dae3005fcfd49679c4739cce35"><td class="memTemplParams" colspan="2">template&lt;typename ExprL , typename ExprR &gt; <br />
+requires requires { typename ExprL::evaluate_type; typename ExprR::evaluate_type; } &amp;&amp; ( ExprL::evaluate_type::RowsAtCompileTime == ExprR::evaluate_type::RowsAtCompileTime ) &amp;&amp; ( ExprL::evaluate_type::ColsAtCompileTime == ExprR::evaluate_type::ColsAtCompileTime )</td></tr>
+<tr class="memitem:a8a4db7dae3005fcfd49679c4739cce35"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="norm_8hpp.html#a8a4db7dae3005fcfd49679c4739cce35">Feel::vf::ddot</a> (ExprL l, ExprR r) -&gt; decltype(trace(trans(l) *r))</td></tr>
+<tr class="memdesc:a8a4db7dae3005fcfd49679c4739cce35"><td class="mdescLeft">&#160;</td><td class="mdescRight">double dot product of the left and right expressions  <a href="norm_8hpp.html#a8a4db7dae3005fcfd49679c4739cce35">More...</a><br /></td></tr>
+<tr class="separator:a8a4db7dae3005fcfd49679c4739cce35"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adac3137af39ab2aab154b6b3981c1850"><td class="memTemplParams" colspan="2">template&lt;typename ExprL , typename ExprR &gt; </td></tr>
 <tr class="memitem:adac3137af39ab2aab154b6b3981c1850"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="norm_8hpp.html#adac3137af39ab2aab154b6b3981c1850">Feel::vf::outer_prod</a> (ExprL l, ExprR r) -&gt; decltype(l *trans(r))</td></tr>
 <tr class="memdesc:adac3137af39ab2aab154b6b3981c1850"><td class="mdescLeft">&#160;</td><td class="mdescRight">inner product of the left and right expressions  <a href="norm_8hpp.html#adac3137af39ab2aab154b6b3981c1850">More...</a><br /></td></tr>
@@ -128,13 +129,14 @@ Functions</h2></td></tr>
 <div class="textblock"><dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme <a href="#" onclick="location.href='mai'+'lto:'+'chr'+'is'+'top'+'he'+'.pr'+'ud'+'hom'+'me'+'@fe'+'el'+'pp.'+'or'+'g'; return false;">chris<span class="obfuscator">.nosp@m.</span>toph<span class="obfuscator">.nosp@m.</span>e.pru<span class="obfuscator">.nosp@m.</span>dhom<span class="obfuscator">.nosp@m.</span>me@fe<span class="obfuscator">.nosp@m.</span>elpp<span class="obfuscator">.nosp@m.</span>.org</a> </dd></dl>
 <dl class="section date"><dt>Date</dt><dd>2010-04-17 </dd></dl>
 </div><h2 class="groupheader">Function Documentation</h2>
-<a id="a7b82db4dab41a3e14d2709e7e24838bc" name="a7b82db4dab41a3e14d2709e7e24838bc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7b82db4dab41a3e14d2709e7e24838bc">&#9670;&nbsp;</a></span>ddot()</h2>
+<a id="a8a4db7dae3005fcfd49679c4739cce35" name="a8a4db7dae3005fcfd49679c4739cce35"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8a4db7dae3005fcfd49679c4739cce35">&#9670;&nbsp;</a></span>ddot()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename ExprL , typename ExprR &gt; </div>
+template&lt;typename ExprL , typename ExprR &gt; <br />
+requires requires { typename ExprL::evaluate_type; typename ExprR::evaluate_type; } &amp;&amp; ( ExprL::evaluate_type::RowsAtCompileTime == ExprR::evaluate_type::RowsAtCompileTime ) &amp;&amp; ( ExprL::evaluate_type::ColsAtCompileTime == ExprR::evaluate_type::ColsAtCompileTime )</div>
       <table class="memname">
         <tr>
           <td class="memname">auto Feel::vf::ddot </td>
@@ -160,10 +162,6 @@ template&lt;typename ExprL , typename ExprR &gt; </div>
 <p>double dot product of the left and right expressions </p>
 <dl class="section note"><dt>Note</dt><dd>it handles matricial(rank 2 tensors) expressions</dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>the double dot product \((l : r)\) </dd></dl>
-
-<p class="reference">References <a class="el" href="norm_8hpp.html#a7b82db4dab41a3e14d2709e7e24838bc">Feel::vf::ddot()</a>, <a class="el" href="trace_8hpp.html#ad0cc855fabcf90c638afa6619ad42c5d">Feel::vf::trace()</a>, and <a class="el" href="trans_8hpp.html#a73f66163b62c17b26257ea3a4184cde8">Feel::vf::trans()</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="norm_8hpp.html#a7b82db4dab41a3e14d2709e7e24838bc">Feel::vf::ddot()</a>.</p>
 
 </div>
 </div>
@@ -200,7 +198,7 @@ template&lt;typename ExprL , typename ExprR &gt; </div>
 <dl class="section note"><dt>Note</dt><dd>it handles vectorial expressions</dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>the inner product \((l * r^T)\) </dd></dl>
 
-<p class="reference">References <a class="el" href="norm_8hpp.html#adac3137af39ab2aab154b6b3981c1850">Feel::vf::outer_prod()</a>, and <a class="el" href="trans_8hpp.html#a73f66163b62c17b26257ea3a4184cde8">Feel::vf::trans()</a>.</p>
+<p class="reference">References <a class="el" href="norm_8hpp.html#adac3137af39ab2aab154b6b3981c1850">Feel::vf::outer_prod()</a>.</p>
 
 <p class="reference">Referenced by <a class="el" href="norm_8hpp.html#adac3137af39ab2aab154b6b3981c1850">Feel::vf::outer_prod()</a>.</p>
 
