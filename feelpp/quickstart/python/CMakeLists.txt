@@ -25,5 +25,4 @@
 # Set quickstart label for all tests
 set_directory_properties(PROPERTIES LABELS "quickstart")
 
-install(PROGRAMS  ${CMAKE_CURRENT_SOURCE_DIR}/elasticity.py   DESTINATION share/feelpp/data/testcases/python )
 install(PROGRAMS  ${CMAKE_CURRENT_SOURCE_DIR}/stokes.py   DESTINATION share/feelpp/data/testcases/python )
