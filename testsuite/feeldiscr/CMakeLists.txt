@@ -99,6 +99,7 @@ feelpp_add_test( upmarker_faces )
 feelpp_add_test( listofrange )
 
 feelpp_add_test( productspaces CLI "--pc-type=gasm --sub-pc-factor-mat-solver-package-type=umfpack" )
+feelpp_add_test( staticcondensation_rhs )
 feelpp_add_test( productspaces_dirichlet SRCS test_productspaces_dirichlet.cpp CFG test_productspaces_dirichlet.cfg GEO square_mmarked.geo CLI "--pc-type=gasm --sub-pc-factor-mat-solver-package-type=umfpack" )
 feelpp_add_test( space_cst )
 # feelpp_add_test( element0D )
