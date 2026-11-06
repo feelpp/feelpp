@@ -1,8 +1,8 @@
 /*
- * SPDX-FileContributor: Vincent Chabannes
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
  * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  *
- * SPDX-FileCopyrightText: 2012 Université de Grenoble 1
+ * SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
  *
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
@@ -1379,23 +1379,17 @@ DofTable<MeshType, FEType, MortarType>::buildGhostDofMapExtended( mesh_type& mes
 
             auto partitionCanonicalEntity = []( auto const& entity )
             {
-                rank_type canonicalPartition = entity.pidInPartition();
+                // Ghost copies can have different sets of neighboring copies.
+                // The entity owner gives every copy the same partition key.
+                rank_type canonicalPartition = entity.processId();
                 if ( canonicalPartition == invalid_rank_type_value )
-                    canonicalPartition = entity.processId();
+                    canonicalPartition = entity.pidInPartition();
                 size_type canonicalId = entity.id();
                 if ( canonicalPartition != entity.pidInPartition() )
                 {
                     auto const itId = entity.idInOthersPartitions().find( canonicalPartition );
                     if ( itId != entity.idInOthersPartitions().end() && itId->second != invalid_v<size_type> )
                         canonicalId = itId->second;
-                }
-                for ( auto const& [pid,entityId] : entity.idInOthersPartitions() )
-                {
-                    if ( entityId != invalid_v<size_type> && pid < canonicalPartition )
-                    {
-                        canonicalPartition = pid;
-                        canonicalId = entityId;
-                    }
                 }
                 return std::make_pair( canonicalPartition, canonicalId );
             };
