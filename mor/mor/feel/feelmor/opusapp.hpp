@@ -1,27 +1,14 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-
-
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2011-06-18
-
-  Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
-  Copyright (C) 2011-present Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+/*
+ * SPDX-FileContributor: Stephane Veys <stephane.veys@gmail.com>
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Cécile Daversin <daversin@math.unistra.fr>
+ * SPDX-FileContributor: Thomas Saigre <saigre@math.unistra.fr>
+ *
+ * SPDX-FileCopyrightText: 2011 Université Joseph Fourier (Grenoble I)
+ * SPDX-FileCopyrightText: 2011-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 /**
    \file opusapp.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -37,6 +24,8 @@
 #include <feel/feelmor/eim.hpp>
 #include <feel/feelmor/ser.hpp>
 #include <feel/feelmor/crbmodel.hpp>
+#include <feel/feelvf/normh1.hpp>
+#include <feel/feelvf/norml2.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/range/join.hpp>
 #include <boost/regex.hpp>
@@ -546,7 +535,8 @@ private:
     }
     double l2Norm( element_type const& u, mpl::bool_<false> )
     {
-        return math::sqrt( integrate( _range=u.functionSpace()->template rangeElements<0>(), _expr=(vf::idv(u))*(vf::idv(u)) ).evaluate()(0,0) );
+        return normL2( _range=u.functionSpace()->template rangeElements<0>(),
+                       _expr=vf::idv( u ) );
     }
     double l2Norm( element_type const& u, mpl::bool_<true>)
     {
@@ -561,18 +551,16 @@ private:
     }
     double h1Norm( element_type const& u, mpl::bool_<false> )
     {
-        auto mesh = model->functionSpace()->mesh();
-        double l22 = integrate( _range=u.functionSpace()->template rangeElements<0>(), _expr=(vf::idv(u))*(vf::idv(u)) ).evaluate()(0,0);
-        double semih12 = integrate( _range=u.functionSpace()->template rangeElements<0>(), _expr=(vf::gradv(u))*trans(vf::gradv(u)) ).evaluate()(0,0);
-        return math::sqrt( l22+semih12 );
+        return normH1( _range=u.functionSpace()->template rangeElements<0>(),
+                       _expr=vf::idv( u ),
+                       _grad_expr=vf::gradv( u ) );
     }
     double h1Norm( element_type const& u, mpl::bool_<true>)
     {
-        auto mesh = model->functionSpace()->mesh();
         auto u_femT = u.template element<1>();
-        double l22 = integrate( _range=u.functionSpace()->template rangeElements<0>(), _expr=(vf::idv(u_femT))*(vf::idv(u_femT)) ).evaluate()(0,0);
-        double semih12 = integrate( _range=u_femT.functionSpace()->template rangeElements<0>(), _expr=(vf::gradv(u_femT))*trans(vf::gradv(u_femT))).evaluate()(0,0);
-        return math::sqrt( l22+semih12 );
+        return normH1( _range=u_femT.functionSpace()->template rangeElements<0>(),
+                       _expr=vf::idv( u_femT ),
+                       _grad_expr=vf::gradv( u_femT ) );
     }
 
     struct ComputeNormL2InCompositeCase

@@ -1,0 +1,35 @@
+= Elasticity quickstart
+
+The elasticity quickstart follows the same layout as `../laplacian/`:
+
+* `CMakeLists.txt` registers the elasticity applications and tests.
+* `qs_elasticity*.cpp` and `qs_hdg_elasticity.cpp` contain the drivers.
+* The local headers provide elasticity case loading, reference checks,
+  rigid-body nullspaces, and the shared shell benchmark framework.
+* `.tests.*` files describe the regression cases.
+* `cases/` contains the cantilever, triangle, tetrahedron, solenoid,
+  quarter-turn, and generic shell configurations and meshes.
+* `python/elasticity.py` supplies symbolic expressions for the checker and
+  HDG applications.
+* `meshes/` contains the generic elasticity mesh templates.
+* `sb9/` contains the SB9 applications, cases, mesh templates, and notes.
+
+Existing executable and CTest names are preserved. `qs_elasticity_qk_benchmark.cpp`
+is retained as a source example without adding a new default build target.
+
+From the repository root:
+
+[source,shell]
+----
+cmake --build build/default --target qs_elasticity -j2
+cmake --build build/default --target qs_add_testcase_elasticity
+
+build/default/feelpp/quickstart/elasticity/feelpp_qs_elasticity_2d \
+  --config-file=feelpp/quickstart/elasticity/cases/cantilever/cantilever.cfg
+
+ctest --test-dir build/default -R '^feelpp_qs_(elasticity|hdg_elasticity|sb9)' --output-on-failure
+----
+
+`qs_add_testcase_elasticity` copies `cases/`, `python/`, `meshes/`, and `sb9/`
+beside the built elasticity executables. Installation places those directories
+under `share/feelpp/data/testcases/quickstart/elasticity/`.

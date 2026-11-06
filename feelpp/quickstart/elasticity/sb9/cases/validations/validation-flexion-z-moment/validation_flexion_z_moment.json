@@ -1,0 +1,123 @@
+{
+  "name": "validation-flexion-z-moment",
+  "description": "Flexion case from validation.pdf page 13: clamp ZMoins and apply the MATLAB nodal force-couple on ZPlus.",
+  "gmsh": {
+    "filename": "validation_flexion_z_moment.geo"
+  },
+  "material": {
+    "E": 10.0,
+    "nu": 0.45
+  },
+  "boundaryConditions": {
+    "clampMarkers": [
+      "ZMoins"
+    ]
+  },
+  "loads": {
+    "bodyForce": "{0,0,0}",
+    "pointLoads": [
+      {
+        "marker": "P5",
+        "value": [
+          -0.6546666666666666,
+          -0.1645,
+          0.0
+        ]
+      },
+      {
+        "marker": "P6",
+        "value": [
+          0.6546666666666666,
+          -0.1645,
+          0.0
+        ]
+      },
+      {
+        "marker": "P7",
+        "value": [
+          -0.6546666666666666,
+          0.1645,
+          0.0
+        ]
+      },
+      {
+        "marker": "P8",
+        "value": [
+          0.6546666666666666,
+          0.1645,
+          0.0
+        ]
+      }
+    ]
+  },
+  "probe": {
+    "point": [
+      1.0,
+      1.0,
+      0.5
+    ],
+    "direction": [
+      1.0,
+      0.0,
+      0.0
+    ],
+    "label": "diagnostic x displacement"
+  },
+  "checks": {
+    "target": "hexa8",
+    "items": [
+      {
+        "type": "elasticity-point-fields",
+        "name": "validation-pdf-page-13-center",
+        "point": [
+          0.5,
+          0.5,
+          0.0
+        ],
+        "references": {
+          "hexa8": {
+            "epsilon": [
+              0.0809,
+              -0.0446,
+              0.0,
+              0.0,
+              -0.29,
+              0.0
+            ],
+            "sigma": [
+              1.685,
+              0.8197,
+              1.1271,
+              0.0,
+              -1.0,
+              0.0
+            ]
+          },
+          "sb9g25": {
+            "epsilon": [
+              0.1742,
+              -0.039,
+              -0.1106,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sigma": [
+              1.964,
+              0.4935,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "description": "PDF Epsilon/Sigma at element center; component order xx,yy,zz,xy,xz,yz.",
+        "tolerance": {
+          "absolute": 0.0005,
+          "relative": 0.005
+        }
+      }
+    ]
+  }
+}

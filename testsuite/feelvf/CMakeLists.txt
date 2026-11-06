@@ -5,6 +5,12 @@ set(FEELPP_VF_TEST_TARGETS)
 set(FEELPP_VF_SIMPLE_TESTS
     symbolic_ad_expr
     vf_operators
+    trial_test_basis
+    tensor_basis
+    voigt
+    contractions
+    voigt_elasticity
+    shellgeometric
     inner_curl
     inner_laplacian
     vf_integrals
@@ -57,6 +63,13 @@ endif()
 feelpp_add_test( convolve CFG test_convolve.cfg )
 list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
 feelpp_add_test( pow CFG test_pow.cfg)
+list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
+
+foreach(t sb9bending sb9pinching sb9shear sb9shearing sb9stabilization)
+    feelpp_add_test(${t} LABEL sb9)
+    list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
+endforeach()
+feelpp_add_test(sb9mass LABEL sb9 NO_MPI_TEST)
 list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
 
 if ( NOT TARGET testvf )

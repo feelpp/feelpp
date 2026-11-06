@@ -1,30 +1,21 @@
-//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-//!
-//! This file is part of the Feel++ library
-//!
-//! This library is free software; you can redistribute it and/or
-//! modify it under the terms of the GNU Lesser General Public
-//! License as published by the Free Software Foundation; either
-//! version 2.1 of the License, or (at your option) any later version.
-//!
-//! This library is distributed in the hope that it will be useful,
-//! but WITHOUT ANY WARRANTY; without even the implied warranty of
-//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//! Lesser General Public License for more details.
-//!
-//! You should have received a copy of the GNU Lesser General Public
-//! License along with this library; if not, write to the Free Software
-//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-//!
-//! @file
-//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-//! @date 23 Jul 2017
-//! @copyright 2017 Feel++ Consortium
-//!
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2017-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 #ifndef FEELPP_CORE_CHECKER_H
 #define FEELPP_CORE_CHECKER_H
 
+#include <algorithm>
+#include <functional>
+#include <map>
 #include <optional>
+#include <string>
+#include <utility>
+#include <vector>
 #include <feel/feelcore/environment.hpp>
 
 
@@ -148,8 +139,12 @@ public:
 
     bool check() const { return M_check; }
     void setCheck( bool c ) { M_check = c; }
+    bool exact() const { return M_exact; }
+    void setExact( bool e ) { M_exact = e; }
     bool verbose() const { return M_verbose; }
     void setVerbose( bool v ) { M_verbose = v; }
+    void setExactTolerance( double t ) { M_etol = t; }
+    void setOrderTolerance( double t ) { M_otol = t; }
 
 
     /*
@@ -188,8 +183,22 @@ public:
     int
     runOnce( ErrorFn fn, ErrorLaw law, std::string metric = "||u-u_h||_" );
 
+    template<typename Fn>
+    Checker&
+    add( std::string name, bool enabled, Fn&& fn );
+
+    int run();
+
 private:
+    struct CheckTask
+    {
+        std::string name;
+        bool enabled;
+        std::function<int()> run;
+    };
+
     bool M_check;
+    bool M_exact;
     bool M_verbose;
     std::string M_solution;
     std::optional<std::string> M_gradient;
@@ -199,7 +208,16 @@ private:
     std::map<std::string,std::string> M_script_in;
     std::map<std::string,double> M_param_values;
     bool M_use_script;
+    std::vector<CheckTask> M_tasks;
 };
+
+template<typename Fn>
+Checker&
+Checker::add( std::string name, bool enabled, Fn&& fn )
+{
+    M_tasks.push_back( CheckTask{ std::move( name ), enabled, std::function<int()>( std::forward<Fn>( fn ) ) } );
+    return *this;
+}
 
 
 template<typename ErrorFn, typename ErrorRate>
@@ -228,7 +246,18 @@ Checker::runOnce( ErrorFn fn, ErrorRate rate, std::string metric )
         //cout << "||u-u_h||_" << e.first << "=" << e.second  << std::endl;
         try
         {
-            Checks c = rate(M_solution, e, M_otol, M_etol);
+            Checks c = Checks::NONE;
+            if ( M_exact )
+            {
+                if ( e.second < M_etol )
+                    c = Checks::EXACT;
+                else
+                    throw CheckerExactFailed( e.second, M_etol );
+            }
+            else
+            {
+                c = rate(M_solution, e, M_otol, M_etol);
+            }
             
             switch( c ) 
             {
@@ -286,17 +315,23 @@ template <typename ... Ts>
 Checker checker( Ts && ... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
-    std::string const& name = args.get(_name);
-    std::string const& solution_key = args.get(_solution_key);
+    std::string name = args.get(_name);
+    std::string solution_key = args.get_else(_solution_key,std::string{"solution"});
+    std::string prefix = args.get_else(_prefix,"");
+    auto getStringOption = []( std::string const& opt ) {
+        return Environment::vm().count( opt ) ? soption(_name=opt) : std::string{};
+    };
+    auto getBoolOption = []( std::string const& opt, bool defaultValue ) {
+        return Environment::vm().count( opt ) ? boption(_name=opt) : defaultValue;
+    };
 
     std::map<std::string,std::string> const& inputs = args.get_else(_inputs,std::map<std::string,std::string>{});
     std::map<std::string,double> const& parameter_values = args.get_else(_parameter_values,std::map<std::string,double>{});
-    std::string const& solution = args.get_else_invocable(_solution,[&inputs,&solution_key](){ return inputs.count(solution_key)?inputs.at(solution_key):soption(_name="checker.solution"); } );
-    std::string const& gradient_key = args.get_else(_gradient_key,std::string{"grad_"}+solution_key);
-    std::string const& gradient = args.get_else_invocable(_gradient,[&inputs,&gradient_key](){ return inputs.count(gradient_key)?inputs.at(gradient_key):soption("checker.gradient"); } );
-    std::string const& script = args.get_else_invocable(_script,[](){ return soption(_name="checker.script"); } );
-    bool compute_pde_coefficients = args.get_else_invocable(_compute_pde_coefficients,[](){ return boption(_name="checker.compute-pde-coefficients"); });
-    std::string const& prefix =args.get_else(_prefix,"");
+    std::string solution = args.get_else_invocable(_solution,[&inputs,&solution_key,&getStringOption](){ return inputs.count(solution_key)?inputs.at(solution_key):getStringOption("checker.solution"); } );
+    std::string gradient_key = args.get_else(_gradient_key,std::string{"grad_"}+solution_key);
+    std::string gradient = args.get_else_invocable(_gradient,[&inputs,&gradient_key,&getStringOption](){ return inputs.count(gradient_key)?inputs.at(gradient_key):getStringOption("checker.gradient"); } );
+    std::string script = args.get_else_invocable(_script,[&getStringOption](){ return getStringOption("checker.script"); } );
+    bool compute_pde_coefficients = args.get_else_invocable(_compute_pde_coefficients,[&getBoolOption](){ return getBoolOption("checker.compute-pde-coefficients", true); });
     bool verbose = args.get_else_invocable(_verbose,[&prefix](){ return boption(_prefix=prefix,_name="checker.verbose"); } );
 
 

@@ -1,26 +1,11 @@
-//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-//!
-//! This file is part of the Feel++ library
-//!
-//! This library is free software; you can redistribute it and/or
-//! modify it under the terms of the GNU Lesser General Public
-//! License as published by the Free Software Foundation; either
-//! version 2.1 of the License, or (at your option) any later version.
-//!
-//! This library is distributed in the hope that it will be useful,
-//! but WITHOUT ANY WARRANTY; without even the implied warranty of
-//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//! Lesser General Public License for more details.
-//!
-//! You should have received a copy of the GNU Lesser General Public
-//! License along with this library; if not, write to the Free Software
-//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-//!
-//! @file
-//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-//! @date 24 Jul 2017
-//! @copyright 2017 Feel++ Consortium
-//!
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2017-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 #include <boost/algorithm/string.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <stdexcept>
@@ -186,6 +171,7 @@ Checker::Checker( std::string const& name )
     :
     super( "Checker", name ),
     M_check( boption(_name="checker.check") ),
+    M_exact( boption(_name="checker.exact") ),
     M_verbose( boption(_name="checker.verbose" ) ),
     M_solution( soption(_name="checker.solution" ) ),
     M_etol( doption(_name="checker.tolerance.exact" ) ),
@@ -227,6 +213,58 @@ Checker::runScript()
         M_gradient = gradient;
     return locals;
 #endif
+}
+
+int
+Checker::run()
+{
+    int status = 0;
+    for ( auto const& task : M_tasks )
+    {
+        if ( !task.enabled )
+            continue;
+
+        try
+        {
+            int taskStatus = task.run();
+            if ( taskStatus )
+            {
+                cout << tc::red
+                     << "[Checker] " << this->journalWatcherInstanceName()
+                     << " check '" << task.name << "' failed with status " << taskStatus
+                     << tc::reset << std::endl;
+                status = 1;
+            }
+        }
+        catch( CheckerConvergenceFailed const& ex )
+        {
+            cout << tc::red
+                 << "[Checker] " << this->journalWatcherInstanceName()
+                 << " convergence order verification failed for check '" << task.name << "'" << std::endl
+                 << " Computed order " << ex.computedOrder() << std::endl
+                 << " Expected order " << ex.expectedOrder() << std::endl
+                 << " Tolerance " << ex.tolerance() << tc::reset << std::endl;
+            status = 1;
+        }
+        catch( CheckerExactFailed const& ex )
+        {
+            cout << tc::red
+                 << "[Checker] " << this->journalWatcherInstanceName()
+                 << " exact verification failed for check '" << task.name << "'" << std::endl
+                 << " Computed error " << ex.computedError() << std::endl
+                 << " Tolerance " << ex.tolerance() << tc::reset << std::endl;
+            status = 1;
+        }
+        catch( std::exception const& ex )
+        {
+            cout << tc::red
+                 << "[Checker] " << this->journalWatcherInstanceName()
+                 << " caught exception in check '" << task.name << "': " << ex.what()
+                 << tc::reset << std::endl;
+            status = 1;
+        }
+    }
+    return status;
 }
 
 }

@@ -13,10 +13,12 @@ feelpp_add_application( mesh SRCS 02-mesh.cpp LINK_LIBRARIES  benchmark EXEC B_M
 feelpp_add_application( space SRCS 03-space.cpp LINK_LIBRARIES  benchmark EXEC B_SPACE )
 feelpp_add_application( integrate SRCS 04-integrate.cpp LINK_LIBRARIES  benchmark EXEC B_INTEGRATE )
 
+feelpp_add_application( basis SRCS 05-basis.cpp LINK_LIBRARIES benchmark EXEC B_BASIS )
+
 add_subdirectory( feelpoly )
 
 if ( FEELPP_ENABLE_SPECX )
     feelpp_add_application( specx SRCS 99-specx.cpp LINK_LIBRARIES Feelpp::feelpp_specx )
 endif()
-add_dependencies( benchs ${B_ENV} ${B_MESH} ${B_SPACE} ${B_INTEGRATE} ${B_GMC}
+add_dependencies( benchs ${B_ENV} ${B_MESH} ${B_SPACE} ${B_INTEGRATE} ${B_BASIS}
                   ${B_FSPACE_MANAGER_BASELINE} ${B_FSPACE_MANAGER} benchs-feelpoly )
