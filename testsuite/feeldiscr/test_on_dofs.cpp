@@ -31,6 +31,8 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
+#include <feel/feeldiscr/product.hpp>
+#include <feel/feelvf/blockforms.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelfilters/exporter.hpp>
 
@@ -252,6 +254,144 @@ void runTestDeferredEliminationAllOrders()
     BOOST_CHECK_EQUAL( permutationCount, 24 );
 }
 
+template<int Dim, int PolyOrder=1>
+void runTestPointLinearForm()
+{
+    using mesh_type = Mesh< Simplex<Dim> >;
+    auto mesh = loadMesh( _mesh=new mesh_type );
+    size_type np = nelements( markedpoints( mesh,"P"), true );
+    BOOST_CHECK( np > 0 );
+
+    auto Xh = Pch<PolyOrder>( mesh );
+    auto v = Xh->element();
+    auto rhs = backend()->newVector( Xh );
+    auto l = form1( _test=Xh, _vector=rhs, _init=true );
+    l += integrate( _range=markedpoints( mesh,"P" ), _expr=cst(7.)*id(v) );
+    rhs->close();
+    BOOST_CHECK_SMALL( rhs->sum() - 7.*np, 1e-10 );
+
+    auto Vh = Pchv<PolyOrder>( mesh );
+    auto u = Vh->element();
+    auto rhsVectorial = backend()->newVector( Vh );
+    auto lv = form1( _test=Vh, _vector=rhsVectorial, _init=true );
+    double expectedForceSum = 0;
+    if constexpr ( Dim == 2 )
+    {
+        lv += integrate( _range=markedpoints( mesh,"P" ),
+                         _expr=inner( vec( cst(2.), cst(3.) ), id(u) ) );
+        expectedForceSum = 5.;
+    }
+    else
+    {
+        lv += integrate( _range=markedpoints( mesh,"P" ),
+                         _expr=inner( vec( cst(2.), cst(3.), cst(5.) ), id(u) ) );
+        expectedForceSum = 10.;
+    }
+    rhsVectorial->close();
+    BOOST_CHECK_SMALL( rhsVectorial->sum() - expectedForceSum*np, 1e-10 );
+}
+
+template<int Dim, int PolyOrder=1>
+void runTestPointBlockLinearForm()
+{
+    using namespace boost::hana::literals;
+
+    using mesh_type = Mesh< Simplex<Dim> >;
+    auto mesh = loadMesh( _mesh=new mesh_type );
+    size_type np = nelements( markedpoints( mesh,"P"), true );
+    BOOST_CHECK( np > 0 );
+
+    auto Xh = Pch<PolyOrder>( mesh );
+    auto Vh = Pchv<PolyOrder>( mesh );
+    auto ps = product( Xh, Vh );
+    auto v = Xh->element();
+    auto u = Vh->element();
+
+    auto l = blockform1( ps, solve::strategy::monolithic, backend() );
+
+    auto l0 = l( 0_c );
+    BOOST_CHECK_EQUAL( l0.rowStartInVector(), 0 );
+    l0 += integrate( _range=markedpoints( mesh,"P" ), _expr=cst(7.)*id(v) );
+
+    auto l1 = l( 1_c );
+    BOOST_CHECK_EQUAL( l1.rowStartInVector(), 1 );
+
+    double expectedForceSum = 0;
+    if constexpr ( Dim == 2 )
+    {
+        l1 += integrate( _range=markedpoints( mesh,"P" ),
+                         _expr=inner( vec( cst(2.), cst(3.) ), id(u) ) );
+        expectedForceSum = 5.;
+    }
+    else
+    {
+        l1 += integrate( _range=markedpoints( mesh,"P" ),
+                         _expr=inner( vec( cst(2.), cst(3.), cst(5.) ), id(u) ) );
+        expectedForceSum = 10.;
+    }
+
+    l.close();
+    BOOST_CHECK_SMALL( l.sum() - ( 7. + expectedForceSum )*np, 1e-10 );
+
+    if ( mesh->worldComm().localSize() == 1 )
+    {
+        auto const& vector = *l.vectorPtr()->getVector();
+        auto const& scalarBlockDofs = vector.map().dofIdToContainerId( 0 );
+        auto const& vectorBlockDofs = vector.map().dofIdToContainerId( 1 );
+        double scalarBlockSum = 0;
+        for ( auto dof : scalarBlockDofs )
+            scalarBlockSum += vector( dof );
+        double vectorBlockSum = 0;
+        for ( auto dof : vectorBlockDofs )
+            vectorBlockSum += vector( dof );
+
+        BOOST_CHECK_SMALL( scalarBlockSum - 7.*np, 1e-10 );
+        BOOST_CHECK_SMALL( vectorBlockSum - expectedForceSum*np, 1e-10 );
+    }
+}
+
+template<int Dim, int PolyOrder=1>
+void runTestPointMomentLinearForm()
+{
+    static_assert( Dim == 3, "point moment virtual work test currently uses a 3D rotation field" );
+
+    using mesh_type = Mesh< Simplex<Dim> >;
+    auto mesh = loadMesh( _mesh=new mesh_type );
+    size_type np = nelements( markedpoints( mesh,"P"), true );
+    BOOST_CHECK( np > 0 );
+
+    auto Vh = Pchv<PolyOrder>( mesh );
+    auto u = Vh->element();
+
+    auto rhs = backend()->newVector( Vh );
+    auto l = form1( _test=Vh, _vector=rhs, _init=true );
+    l += integrate( _range=markedpoints( mesh,"P" ),
+                    _expr=inner( vec( cst(2.), cst(3.), cst(5.) ), omega( u ) ) );
+    rhs->close();
+
+    auto rotation = Vh->element();
+    rotation.on( _range=elements( mesh ),
+                 _expr=cross( vec( cst(7.), cst(11.), cst(13.) ), P() ) );
+    sync( rotation );
+
+    double expectedWork = ( 2.*7. + 3.*11. + 5.*13. )*np;
+    BOOST_CHECK_SMALL( l( rotation ) - expectedWork, 1e-8 );
+
+    auto w = vf::test( Vh );
+    auto rhsZ = backend()->newVector( Vh );
+    auto lz = form1( _test=Vh, _vector=rhsZ, _init=true );
+    lz += integrate( _range=markedpoints( mesh,"P" ),
+                     _expr=cst(5.)*omegaz( w ) );
+    rhsZ->close();
+
+    auto rotationZ = Vh->element();
+    rotationZ.on( _range=elements( mesh ),
+                  _expr=cross( vec( cst(0.), cst(0.), cst(13.) ), P() ) );
+    sync( rotationZ );
+
+    BOOST_CHECK_SMALL( lz( rotationZ ) - 5.*13.*np, 1e-8 );
+}
+
 
 template<int Dim, int PolyOrder=1,template<class Convex, uint16_type Order, typename T> class PointSetT = PointSetFekete>
 void runTestAssignMeshRelated()
@@ -314,6 +454,18 @@ BOOST_AUTO_TEST_SUITE( test_on_dofs )
 BOOST_AUTO_TEST_CASE( assign_3d_assign )
 {
     runTestAssign<3>();
+}
+BOOST_AUTO_TEST_CASE( point_linear_form_3d )
+{
+    runTestPointLinearForm<3>();
+}
+BOOST_AUTO_TEST_CASE( point_block_linear_form_3d )
+{
+    runTestPointBlockLinearForm<3>();
+}
+BOOST_AUTO_TEST_CASE( point_moment_linear_form_3d )
+{
+    runTestPointMomentLinearForm<3>();
 }
 BOOST_AUTO_TEST_CASE( assign_3d_meshrelated_order3 )
 {

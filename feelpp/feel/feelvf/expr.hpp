@@ -312,6 +312,201 @@ public:
     int M_c1, M_c2;
 };
 
+template<typename ExprT, int C1, int C2>
+class StaticComponentsExpr
+{
+public:
+
+    static_assert( C1 >= 0, "StaticComponentsExpr row component index must be non-negative" );
+    static_assert( C2 >= 0, "StaticComponentsExpr column component index must be non-negative" );
+
+    static const size_type context = ExprT::context;
+    static inline const bool is_terminal = false;
+
+    template<typename Func>
+    struct HasTestFunction
+    {
+        static inline const bool result = ExprT::template HasTestFunction<Func>::result;
+    };
+
+    template<typename Func>
+    struct HasTrialFunction
+    {
+        static inline const bool result = ExprT::template HasTrialFunction<Func>::result;
+    };
+
+    template<typename Func>
+    static inline const bool has_test_basis = ExprT::template has_test_basis<Func>;
+    template<typename Func>
+    static inline const bool has_trial_basis = ExprT::template has_trial_basis<Func>;
+    using test_basis = typename ExprT::test_basis;
+    using trial_basis = typename ExprT::trial_basis;
+
+    typedef ExprT expression_type;
+    typedef typename expression_type::value_type value_type;
+    using evaluate_type = Eigen::Matrix<value_type,1,1>;
+    typedef StaticComponentsExpr<ExprT, C1, C2> this_type;
+
+    StaticComponentsExpr()
+        :
+        M_expr()
+    {}
+
+    explicit StaticComponentsExpr( expression_type const& expr )
+        :
+        M_expr( expr )
+    {}
+
+    size_type dynamicContext() const { return Feel::vf::dynamicContext( M_expr ); }
+    uint16_type polynomialOrder() const { return M_expr.polynomialOrder(); }
+    bool isPolynomial() const { return M_expr.isPolynomial(); }
+
+    expression_type const& expression() const
+    {
+        return M_expr;
+    }
+
+    evaluate_type evaluate( bool p ) const
+    {
+        return evaluate_type::Constant( M_expr.evaluate( p )( C1, C2 ) );
+    }
+
+    void setParameterValues( std::map<std::string,double> const& mp )
+    {
+        M_expr.setParameterValues( mp );
+    }
+    void updateParameterValues( std::map<std::string,double> & pv ) const
+    {
+        M_expr.updateParameterValues( pv );
+    }
+
+    template <typename SymbolsExprType>
+    auto applySymbolsExpr( SymbolsExprType const& se ) const
+    {
+        auto newExpr = M_expr.applySymbolsExpr( se );
+        using new_expr_type = std::decay_t<decltype(newExpr)>;
+        return StaticComponentsExpr<new_expr_type, C1, C2>( newExpr );
+    }
+
+    template <typename TheSymbolExprType>
+    bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
+    {
+        return M_expr.hasSymbolDependency( symb, se );
+    }
+    template <typename TheSymbolExprType>
+    void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se ) const
+    {
+        M_expr.dependentSymbols( symb, res, se );
+    }
+
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
+               TheSymbolExprType const& se ) const
+    {
+        auto theDiffExpr = M_expr.template diff<diffOrder>( diffVariable, world, dirLibExpr, se );
+        using new_expr_type = std::decay_t<decltype(theDiffExpr)>;
+        return StaticComponentsExpr<new_expr_type, C1, C2>( theDiffExpr );
+    }
+
+    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
+    struct tensor
+    {
+        typedef typename expression_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_type;
+        typedef typename tensor_expr_type::value_type value_type;
+        using key_type = key_t<Geo_t>;
+        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
+        typedef Shape<gmc_type::NDim, Scalar, false> shape;
+
+        template <class Args> struct sig
+        {
+            typedef value_type type;
+        };
+
+        struct is_zero
+        {
+            static inline const bool value = tensor_expr_type::is_zero::value;
+        };
+
+        tensor( this_type const& expr,
+                Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
+            :
+            M_tensor_expr( expr.expression(), geom, fev, feu )
+        {}
+
+        tensor( this_type const& expr,
+                Geo_t const& geom, Basis_i_t const& fev )
+            :
+            M_tensor_expr( expr.expression(), geom, fev )
+        {}
+
+        tensor( this_type const& expr, Geo_t const& geom )
+            :
+            M_tensor_expr( expr.expression(), geom )
+        {}
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        tensor( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                this_type const& expr, Geo_t const& geom, const TheArgsType&... theInitArgs )
+            :
+            M_tensor_expr( std::true_type{}, exprExpanded.expression(), ttse, expr.expression(), geom, theInitArgs... )
+            {}
+
+        void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
+        {
+            M_tensor_expr.update( geom, fev, feu );
+        }
+        void update( Geo_t const& geom, Basis_i_t const& fev )
+        {
+            M_tensor_expr.update( geom, fev );
+        }
+        void update( Geo_t const& geom )
+        {
+            M_tensor_expr.update( geom );
+        }
+        template<typename TheExprExpandedType,typename TupleTensorSymbolsExprType, typename... TheArgsType>
+        void update( std::true_type /**/, TheExprExpandedType const& exprExpanded, TupleTensorSymbolsExprType & ttse,
+                     Geo_t const& geom, const TheArgsType&... theUpdateArgs )
+        {
+            M_tensor_expr.update( std::true_type{}, exprExpanded.expression(), ttse, geom, theUpdateArgs... );
+        }
+        template<typename ... CTX>
+        void updateContext( CTX const& ... ctx )
+        {
+            M_tensor_expr.updateContext( ctx... );
+        }
+
+        value_type evalij( uint16_type i, uint16_type j ) const
+        {
+            return M_tensor_expr.evalij( i, j );
+        }
+
+        value_type evalijq( uint16_type i, uint16_type j, uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q ) const
+        {
+            return M_tensor_expr.evalijq( i, j, C1, C2, q );
+        }
+
+        template<int PatternContext>
+        value_type evalijq( uint16_type i, uint16_type j, uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q,
+                            mpl::int_<PatternContext> ) const
+        {
+            return M_tensor_expr.evalijq( i, j, C1, C2, q, mpl::int_<PatternContext>() );
+        }
+
+        value_type evaliq( uint16_type i, uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q ) const
+        {
+            return M_tensor_expr.evaliq( i, C1, C2, q );
+        }
+
+        value_type evalq( uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q ) const
+        {
+            return M_tensor_expr.evalq( C1, C2, q );
+        }
+
+        tensor_expr_type M_tensor_expr;
+    };
+
+    expression_type M_expr;
+};
+
 class IntegratorBase {};
 
 
@@ -1010,6 +1205,14 @@ Expr<ExprT>
 expr( ExprT && exprt )
 {
     return Expr<ExprT>( std::forward<ExprT>( exprt ) );
+}
+
+template <int C1, int C2, typename ExprT>
+[[nodiscard]] inline auto
+component( Expr<ExprT> const& exprt )
+{
+    using component_expr_type = StaticComponentsExpr<Expr<ExprT>, C1, C2>;
+    return Expr<component_expr_type>( component_expr_type( exprt ) );
 }
 
 template <typename ExprT>

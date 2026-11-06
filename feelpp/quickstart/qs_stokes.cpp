@@ -27,29 +27,33 @@
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/thch.hpp>
 #include <feel/feeldiscr/p2ch.hpp>
-#include <feel/feeldiscr/traits.hpp>
+#include <feel/feeldiscr/product.hpp>
 #include <feel/feeldiscr/check.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelpython/pyexpr.hpp>
+#include <feel/feelvf/blockforms.hpp>
 #include <feel/feelvf/vf.hpp>
-#include <feel/feelvf/print.hpp>
 
 ///[stokes]
-template<typename SpacePtrType>
+template<typename MeshPtrType>
 int
-stokes(SpacePtrType Vh)
+stokes(MeshPtrType mesh)
 {
     using namespace Feel;
 
     // tag::mesh_space[]
     tic();
-    auto mesh = Vh->mesh();
-    auto U = Vh->element("U");
-    auto u = U.template element<0>();
-    auto p = U.template element<1>();
-    auto v = U.template element<0>();
-    auto q = U.template element<1>();
+    auto Uh = Pchv<2>(mesh);
+    auto Qh = Pch<1>(mesh);
+    auto ps = product( Uh, Qh );
+    auto u = trial( Uh, "u" );
+    auto v = test( Uh, "v" );
+    auto p = trial( Qh, "p" );
+    auto q = test( Qh, "q" );
+    auto W = ps.element();
+    auto uh = W( 0_c );
+    auto ph = W( 1_c );
     auto mu = doption(_name="mu");
     auto f = expr<FEELPP_DIM,1>( soption(_name="functions.f") );
     auto thechecker = checker(_name="qs_stokes",_solution_key=soption("checker.solution"));
@@ -60,35 +64,34 @@ stokes(SpacePtrType Vh)
 
     // tag::forms[]
     tic();
-    auto l = form1( _test=Vh );
-    l = integrate(_range=elements(mesh),
-                  _expr=inner(f,id(v)));
+    auto l = blockform1( ps, solve::strategy::monolithic, backend() );
+    l( 0_c ) = integrate(_range=elements(mesh),
+                         _expr=inner(f,v));
     toc("l");
 
     tic();
-    auto a = form2( _trial=Vh, _test=Vh);
-    auto Id = eye<FEELPP_DIM,FEELPP_DIM>();
-    auto deft = sym(gradt(u));
-    auto sigmat = -idt(p)*Id + 2*mu*deft;
-    tic();
-    a = integrate(_range=elements(mesh),
-                  _expr=inner( 2*mu*deft, grad(v) ) );
-    a += integrate(_range=elements(mesh),
-                   _expr=-idt(p)*div(v) );
-    a += integrate(_range=elements(mesh),
-                   _expr=id(q)*divt(u) );
+    auto a = blockform2( ps, solve::strategy::monolithic, backend() );
+    a( 0_c, 0_c ) += integrate(_range=elements(mesh),
+                               _expr=2*mu*inner( symm_grad(u), symm_grad(v) ) );
+    a( 0_c, 1_c ) += integrate(_range=elements(mesh),
+                               _expr=-p*div(v) );
+    a( 1_c, 0_c ) += integrate(_range=elements(mesh),
+                               _expr=q*div(u) );
     toc("a");
 
+    l.close();
+    a.close();
+
     if ( mesh->hasAnyMarker({"inlet","Dirichlet"}) )
-        a+=on(_range=markedfaces(mesh,{"inlet","Dirichlet"}), _rhs=l, _element=u, _expr=g );
+        a.row( 0_c ) += on(_range=markedfaces(mesh,{"inlet","Dirichlet"}), _rhs=l( 0_c ), _element=uh, _expr=g, _type="elimination" );
     if ( mesh->hasAnyMarker({"wall","letters"}) )
-        a+=on(_range=markedfaces(mesh,{"wall","letters"}), _rhs=l, _element=u, _expr=zero<FEELPP_DIM,1>() );
+        a.row( 0_c ) += on(_range=markedfaces(mesh,{"wall","letters"}), _rhs=l( 0_c ), _element=uh, _expr=zero<FEELPP_DIM,1>(), _type="elimination" );
     toc("a");
 
     tic();
     //! solve the linear system, find u s.t. a(u,v)=l(v) for all v
     if ( !boption( "no-solve" ) )
-        a.solve(_rhs=l,_solution=U);
+        a.solve(_rhs=l,_solution=W);
     toc("a.solve");
     // end::forms[]
 
@@ -96,8 +99,8 @@ stokes(SpacePtrType Vh)
     tic();
     auto e = exporter( _mesh=mesh );
     e->addRegions();
-    e->add( "uh", u );
-    e->add( "ph", p );
+    e->add( "uh", uh );
+    e->add( "ph", ph );
     if ( thechecker.check() )
     {
         e->add( "u", solution );
@@ -106,7 +109,7 @@ stokes(SpacePtrType Vh)
     toc("Exporter");
     // end::export[]
 
-    return check( thechecker, u );
+    return check( thechecker, uh );
 }
 ///[stokes]
 int main(int argc, char**argv )
@@ -136,18 +139,7 @@ int main(int argc, char**argv )
         toc("loadMesh");
 
         ///[stokes-space]
-        int status;
-        if ( soption("space") == "P1P0" )
-            status = stokes( P2ch<Lagrange<1,Vectorial>,Lagrange<0,Scalar,Discontinuous>>( mesh ) );
-        else if ( soption("space") == "P1P1" )
-            status = stokes( P2ch<Lagrange<1,Vectorial>,Lagrange<1,Scalar>>( mesh ) );
-        else
-        {
-            // default P2P1: good space
-            status = stokes( THch<1>( mesh ) );
-        }
-        ///[stokes-space]
-        return status;
+        return stokes(mesh);
     }
     catch( ... ) 
     {

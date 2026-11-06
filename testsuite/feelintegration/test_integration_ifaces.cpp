@@ -127,8 +127,9 @@ struct test_integration_internal_faces_v: public Application
         FEELPP_ASSERT( math::abs( v2-0.0 ) < eps )( v2 )( math::abs( v2-0.0 ) )( eps ).warn ( "v2 != 0" );
 #endif /* USE_BOOST_TEST */
 
+        auto const p2 = hadamard( P(), P() );
         value_type v3 = integrate( _range=internalfaces( mesh ),
-                                   _expr=leftfacev( vf::sqrt( trans( P()*P() )*( P()*P() ) ) )-rightfacev( vf::sqrt( trans( P()*P() )*( P()*P() ) ) ) ).evaluate()( 0, 0 );
+                                   _expr=leftfacev( vf::sqrt( trans( p2 )*p2 ) )-rightfacev( vf::sqrt( trans( p2 )*p2 ) ) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( v3, eps );
 #else

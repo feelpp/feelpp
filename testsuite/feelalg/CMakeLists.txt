@@ -12,7 +12,7 @@ if(FEELPP_HAS_PETSC)
   feelpp_add_test( hpddm_laplacian CLI "--gmsh.hsize=0.2 --test-hpddm-laplacian.pc-type=hpddm" )
   feelpp_add_test( mumps )
 
-  foreach(TEST vector matrix)
+  foreach(TEST vector matrix matvec)
     feelpp_add_test( ${TEST} )
   endforeach()
 endif()
