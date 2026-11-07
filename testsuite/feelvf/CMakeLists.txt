@@ -71,6 +71,8 @@ foreach(t sb9bending sb9pinching sb9shear sb9shearing sb9stabilization)
 endforeach()
 feelpp_add_test(sb9mass LABEL sb9 NO_MPI_TEST)
 list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
+feelpp_add_test(sb9transient LABEL sb9 NO_MPI_TEST)
+list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
 
 if ( NOT TARGET testvf )
     add_custom_target( testvf )

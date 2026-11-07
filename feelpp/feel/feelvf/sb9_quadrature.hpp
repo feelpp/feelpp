@@ -160,9 +160,9 @@ sb9ThroughThicknessLobatto5()
  *
  * For Q1 Lagrange displacement basis functions on a hexahedron, evaluating the
  * mass matrix at the interpolation vertices diagonalizes the consistent mass
- * contribution. The internal SB9 scalar mode is not a physical displacement
- * degree of freedom and should not receive an inertia contribution from this
- * rule.
+ * contribution. This rule cannot represent the internal SB9 displacement
+ * enrichment (1-zeta^2)*alpha*n, which vanishes at every vertex. Consistent
+ * internal inertia requires full volume quadrature for all four mass blocks.
  *
  * @tparam T Floating-point value type used for quadrature points and weights.
  */

@@ -19,6 +19,7 @@
 #include <feel/feelmesh/hypercube.hpp>
 #include <feel/feelvf/blockforms.hpp>
 #include <feel/feelvf/sb9_bending.hpp>
+#include <feel/feelvf/sb9_inertia.hpp>
 #include <feel/feelvf/sb9_pinching.hpp>
 #include <feel/feelvf/sb9_quadrature.hpp>
 #include <feel/feelvf/sb9_shear.hpp>
@@ -31,7 +32,10 @@
 
 #include <boost/format.hpp>
 
+#include <cmath>
+#include <cstdlib>
 #include <iostream>
+#include <memory>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -64,6 +68,8 @@ makeOptions()
           "dynamic mode" )
         ( "sb9-ts.rho", po::value<double>()->default_value( 0.0 ),
           "density of the solid" )
+        ( "sb9-ts.internal-inertia", po::value<std::string>()->default_value( "consistent" ),
+          "internal thickness-mode inertia: consistent or massless" )
         ( "sb9-ts.final-time", po::value<double>()->default_value( 1.0 ),
           "final time of the simulation" )
         ( "sb9-ts.init-time", po::value<double>()->default_value( 0.0 ),
@@ -183,12 +189,15 @@ main( int argc, char** argv )
 {
     using namespace vf;
 
+    // Exception diagnostics need the environment and its communicator alive.
+    std::unique_ptr<Environment> env;
     try
     {
-        Environment env( _argc=argc, _argv=argv, _desc=makeOptions(), _about=makeAbout() );
+        env = std::make_unique<Environment>( _argc=argc, _argv=argv, _desc=makeOptions(), _about=makeAbout() );
 
         std::shared_ptr<sb9_mesh_type> mesh;
-        if ( Environment::vm().count( "gmsh.filename" ) )
+        if ( Environment::vm().count( "gmsh.filename" ) &&
+             !Environment::vm()["gmsh.filename"].defaulted() )
         {
           auto const mesh_file_opt = soption( _name = "gmsh.filename" );
           if ( !mesh_file_opt.empty() )
@@ -227,13 +236,22 @@ main( int argc, char** argv )
         double const t0 = doption( "sb9-ts.init-time" ); 
         double const tf = doption( "sb9-ts.final-time" );
         double const dt = doption( "sb9-ts.time-step" );
+        std::string const internalInertia = soption( "sb9-ts.internal-inertia" );
+        if ( internalInertia != "consistent" && internalInertia != "massless" )
+            throw std::invalid_argument( "sb9-ts.internal-inertia must be consistent or massless" );
+        bool const consistentInternalInertia = internalInertia == "consistent";
+        if ( dynamic && ( !std::isfinite( rho ) || rho <= 0.0 ||
+                          !std::isfinite( dt ) || dt <= 0.0 ||
+                          !std::isfinite( t0 ) || !std::isfinite( tf ) || tf <= t0 ) )
+            throw std::invalid_argument( "SB9 dynamics requires rho > 0, time-step > 0, and finite final-time > init-time" );
         
         if( dynamic ) {
             std::cout << "dynamic : " << dynamic
                       << ", rho = " << rho
                       << ", init time = " << t0
                       << ", final time = " << tf
-                      << ", time step = " << dt << "\n";
+                      << ", time step = " << dt
+                      << ", internal inertia = " << internalInertia << "\n";
         }
 
         auto Uh = Pchv<Dynamic>( mesh, RuntimeOrder{1} );
@@ -377,25 +395,48 @@ main( int argc, char** argv )
 
         else 
         {
-          auto uh = X(0_c);
+          auto uh = Uh->element( "u" );
+          auto alphah = Ah->element( "alpha" );
           uh.zero();
+          alphah.zero();
 
           auto newmark_scheme = newmark(_space = Uh, _name = "sb9", _initial_time = t0, _final_time = tf,
-                          _time_step = dt, _rank_proc_in_files_name = true, _restart_at_last_save = true);
-          newmark_scheme->start();
-          newmark_scheme->initialize( uh ); 
+                          _time_step = dt, _steady=false, _rank_proc_in_files_name = true, _restart_at_last_save = true);
+          if ( !std::isfinite( newmark_scheme->beta() ) || newmark_scheme->beta() <= 0.0 ||
+               !std::isfinite( newmark_scheme->gamma() ) )
+              throw std::invalid_argument( "SB9 dynamics requires a finite Newmark beta > 0 and finite gamma" );
+          newmark_scheme->start( uh );
+          if ( newmark_scheme->isRestart() )
+              uh = newmark_scheme->previousUnknown();
 
-          a( 0_c, 0_c ) += integrate( _range=elements( mesh ), _expr= rho * newmark_scheme->polyDerivCoefficient() * inner( id(u), id(v) ) );
+          auto alpha_scheme = newmark( _space=Ah, _name="sb9-alpha", _initial_time=t0, _final_time=tf,
+                                       _time_step=dt, _steady=false, _rank_proc_in_files_name=true, _restart_at_last_save=true );
+          if ( consistentInternalInertia )
+          {
+              alpha_scheme->start( alphah );
+              if ( alpha_scheme->isRestart() )
+                  alphah = alpha_scheme->previousUnknown();
+              if ( std::abs( alpha_scheme->time() - newmark_scheme->time() ) > 1e-12 )
+                  throw std::runtime_error( "SB9 displacement and internal-mode restart times differ" );
+              if ( alpha_scheme->polyDerivCoefficient() != newmark_scheme->polyDerivCoefficient() )
+                  throw std::runtime_error( "SB9 displacement and internal-mode Newmark coefficients differ" );
+          }
+
+          assembleSb9Inertia( a, elements( mesh ), u, v, alpha, beta,
+                               rho, newmark_scheme->polyDerivCoefficient(), consistentInternalInertia );
 
           auto time = newmark_scheme->time();
           while ( !newmark_scheme->isFinished() )
           {
             time = newmark_scheme->time();
-            l( 0_c ).zero();
-            l( 0_c ) += integrate( _range = elements( mesh ), _expr = rho * inner( idv( newmark_scheme->polyDeriv() ), id(v) ) );
+            l.zero();
+            assembleSb9InertiaHistory( l, elements( mesh ), v, beta,
+                                       newmark_scheme->polyDeriv(), alpha_scheme->polyDeriv(),
+                                       rho, consistentInternalInertia );
             
             // plate (perforated or unperforated)
-            l( 0_c ) += integrate( _range = markedpoints( mesh, "force_apply" ),   
+            if ( !csv_file.empty() )
+                l( 0_c ) += integrate( _range = markedpoints( mesh, "force_apply" ),
                                    _expr = inner( vec( cst(0.0), cst(0.0), - fit( expr( time ), csv_file, "Temps", "Marteau", "P1") ), id(v) ) );
             // tank (cuve)
             // l( 0_c ) += integrate( _range = markedpoints( mesh, "pt_P1" ),   
@@ -404,15 +445,23 @@ main( int argc, char** argv )
             l.close();
             a.close();
 
-            a.solve( _rhs=l, _solution=X,
+            auto status = a.solve( _rhs=l, _solution=X,
                           _condense=useStaticCondensation,
                           _condenser=condenser_sb9() );
+            if ( !status.isConverged() )
+                throw std::runtime_error( "SB9 transient linear solve did not converge" );
 
             uh = X(0_c);
+            alphah = X(1_c);
             newmark_scheme->next( uh );
+            if ( consistentInternalInertia )
+                alpha_scheme->next( alphah );
 
             e->step(time)->add( "u", uh );
+            e->step(time)->add( "alpha", alphah );
             e->step(time)->add("acceleration", newmark_scheme->currentAcceleration() );
+            if ( consistentInternalInertia )
+                e->step(time)->add( "alpha_acceleration", alpha_scheme->currentAcceleration() );
           }
         }
 
@@ -421,12 +470,15 @@ main( int argc, char** argv )
         auto uh = X( 0_c );
         auto alphah = X( 1_c );
         auto dispNormMax = normLinf( _range=elements( mesh ), _pset=_Q<2>(), _expr=norm2( idv( uh ) ) );
+        double const alphaNorm = normL2( _range=elements( mesh ), _expr=idv( alphah ) );
         std::cout << "max displacement norm = " << dispNormMax.value()
                   << " at " << dispNormMax.arg().transpose() << "\n";
+        std::cout << "internal mode L2 norm = " << alphaNorm << "\n";
     }
     catch ( ... )
     {
         handleExceptions();
+        return EXIT_FAILURE;
     }
 
     return 0;

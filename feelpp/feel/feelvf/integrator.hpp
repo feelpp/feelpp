@@ -4488,9 +4488,13 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
     auto fe = space->fe();
     auto gm = __form.gm();
 
-    Eigen::Matrix<int, test_dof_type::nDofPerElement, 1> localRows;
-    Eigen::Matrix<form_value_type, test_dof_type::nDofPerElement, 1> localValues;
-    Eigen::Matrix<int, test_dof_type::nDofPerElement, 1> localSigns;
+    // Runtime-order FE metadata uses zero for an unknown fixed local size.
+    constexpr int localStorage = test_dof_type::is_order_dynamic
+                                     ? Eigen::Dynamic
+                                     : static_cast<int>( test_dof_type::nDofPerElement );
+    Eigen::Matrix<int, localStorage, 1> localRows;
+    Eigen::Matrix<form_value_type, localStorage, 1> localValues;
+    Eigen::Matrix<int, localStorage, 1> localSigns;
 
     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
     {
