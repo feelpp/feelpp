@@ -1,0 +1,19 @@
+<map id="Feel::GeoElement2D&lt; Dim, GEOSHAPE, SubFace, T, IndexT, UseMeasuresStorage &gt;" name="Feel::GeoElement2D&lt; Dim, GEOSHAPE, SubFace, T, IndexT, UseMeasuresStorage &gt;">
+<area shape="rect" id="Node000001" title="Class for 2D elements." alt="" coords="528,1353,744,1648"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1GeoND.html" title="Base class for Multi&#45;dimensional basis Geometrical Entities." alt="" coords="401,951,644,1305"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="583,1318,594,1352,589,1354,578,1319"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1GeoEntity.html" title="base class for all geometric entities" alt="" coords="309,148,499,903"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="484,916,490,950,485,951,478,917"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="5,5,184,100"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="135,110,311,378,307,381,130,113"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="208,5,392,100"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="316,113,323,147,318,148,311,114"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="416,5,600,100"/>
+<area shape="poly" id="edge5_Node000003_Node000006" title=" " alt="" coords="497,114,490,148,485,147,492,113"/>
+<area shape="rect" id="Node000007" href="$classFeel_1_1Entity.html" title=" " alt="" coords="625,20,791,85"/>
+<area shape="poly" id="edge6_Node000003_Node000007" title=" " alt="" coords="631,94,613,102,583,114,557,120,535,130,513,150,501,164,497,161,509,146,532,125,556,115,581,109,611,98,629,89"/>
+<area shape="rect" id="Node000008" href="$classmpl_1_1if___3_01mpl_1_1bool___3_01false_01_4_00_01mpl_1_1identity_3_01GeoNDMeasuresStorage_1b4a2037756985fd616e6afd271a4aef.html" title=" " alt="" coords="523,456,762,595"/>
+<area shape="poly" id="edge7_Node000002_Node000008" title=" " alt="" coords="629,609,561,951,555,950,624,608"/>
+<area shape="rect" id="Node000009" href="$classFeel_1_1SubFaceOfNone.html" title=" " alt="" coords="668,1038,831,1218"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="721,1232,683,1354,678,1352,715,1231"/>
+</map>

@@ -1,0 +1,7 @@
+<map id="Feel::FunctionSpaceManagerConfig" name="Feel::FunctionSpaceManagerConfig">
+<area shape="rect" id="Node000001" title="Runtime configuration of the process&#45;local function&#45;space manager." alt="" coords="34,148,218,228"/>
+<area shape="rect" id="Node000002" href="$classbool.html" title=" " alt="" coords="5,5,44,71"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="21,71,21,97,28,123,37,135,33,138,24,125,15,98,16,71"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="203,5,252,71"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="223,72,214,99,200,125,191,138,187,134,196,123,209,97,218,70"/>
+</map>

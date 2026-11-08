@@ -1,0 +1,7 @@
+<map id="Feel::SubFaceOf&lt; ElementType &gt;" name="Feel::SubFaceOf&lt; ElementType &gt;">
+<area shape="rect" id="Node000001" title="description of a subface or facet (topological d&#45;1) of an element of topologicql dimension d" alt="" coords="75,133,249,313"/>
+<area shape="rect" id="Node000002" href="$structFeel_1_1SubFaceOfBase.html" title="Tag base class." alt="" coords="5,5,148,71"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="99,82,123,132,118,134,95,84"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="172,5,325,71"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="236,72,213,120,209,117,231,70"/>
+</map>

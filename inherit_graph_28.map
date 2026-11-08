@@ -1,0 +1,11 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" title=" " alt="" coords="5,77,80,103"/>
+<area shape="rect" id="Node000001" href="$classFeel_1_1DofTableBase.html" title=" " alt="" coords="128,13,299,53"/>
+<area shape="poly" id="edge273_Node000000_Node000001" title=" " alt="" coords="92,71,152,50,154,55,94,76"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1DofComposite.html" title="Compositing of degree of freedom table." alt="" coords="144,77,283,103"/>
+<area shape="poly" id="edge275_Node000000_Node000003" title=" " alt="" coords="94,87,144,87,144,93,94,93"/>
+<area shape="rect" id="Node000004" href="$classFeel_1_1DofTableBase.html" title=" " alt="" coords="145,127,282,167"/>
+<area shape="poly" id="edge276_Node000000_Node000004" title=" " alt="" coords="94,104,154,125,152,130,92,109"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1DofTable.html" title="Local&#45;to&#45;global Degree of Freedom table." alt="" coords="347,5,529,60"/>
+<area shape="poly" id="edge274_Node000001_Node000002" title=" " alt="" coords="313,30,346,30,346,35,313,35"/>
+</map>

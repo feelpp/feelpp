@@ -1,0 +1,24 @@
+<map id="Feel::Reference&lt; Simplex&lt; Dim, Order, RDim &gt;, Dim, Order, RDim, T &gt;" name="Feel::Reference&lt; Simplex&lt; Dim, Order, RDim &gt;, Dim, Order, RDim, T &gt;">
+<area shape="rect" id="Node000001" title=" " alt="" coords="548,945,726,1500"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="262,533,420,853"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="430,847,550,1061,545,1064,425,849"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1Convex.html" title=" " alt="" coords="59,173,191,313"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="167,325,267,532,262,534,162,327"/>
+<area shape="rect" id="Node000004" href="$classFeel_1_1ConvexBase.html" title=" " alt="" coords="64,5,186,71"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="128,85,128,173,122,173,122,85"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="374,5,527,71"/>
+<area shape="poly" id="edge11_Node000001_Node000005" title=" " alt="" coords="529,66,561,83,592,105,621,131,645,161,658,188,669,220,685,297,694,389,697,492,691,714,674,929,669,929,686,713,692,492,689,389,679,298,664,221,653,190,640,164,617,134,589,109,558,88,526,71"/>
+<area shape="poly" id="edge7_Node000002_Node000005" title=" " alt="" coords="456,71,462,149,463,259,456,384,447,448,434,510,428,530,423,529,429,509,442,447,451,384,458,258,456,149,451,71"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="375,72,290,112,204,165,203,165,200,161,201,160,287,108,372,67"/>
+<area shape="rect" id="Node000006" href="$classFeel_1_1SimplexBase.html" title=" " alt="" coords="215,211,339,276"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="286,289,321,532,316,533,281,290"/>
+<area shape="rect" id="Node000007" href="$classbool.html" title=" " alt="" coords="363,211,402,276"/>
+<area shape="poly" id="edge6_Node000002_Node000007" title=" " alt="" coords="372,277,345,349,335,433,332,517,327,517,329,432,340,347,367,275"/>
+<area shape="rect" id="Node000008" href="$classint.html" title=" " alt="" coords="7,211,35,276"/>
+<area shape="poly" id="edge8_Node000002_Node000008" title=" " alt="" coords="17,277,11,325,9,385,17,449,27,479,41,508,60,535,82,560,135,602,192,635,248,660,246,664,190,640,132,606,79,563,56,538,36,511,22,481,12,450,3,385,5,324,12,276"/>
+<area shape="rect" id="Node000009" href="$classsize__t.html" title=" " alt="" coords="582,211,631,276"/>
+<area shape="poly" id="edge12_Node000001_Node000009" title=" " alt="" coords="609,276,605,533,602,693,605,853,610,929,604,929,600,853,597,693,600,533,603,276"/>
+<area shape="poly" id="edge9_Node000002_Node000009" title=" " alt="" coords="598,277,584,303,564,326,546,336,528,337,512,339,498,350,484,369,478,388,476,424,478,464,475,486,468,510,432,578,427,575,463,508,470,485,472,463,470,424,472,387,480,367,494,346,510,335,527,332,544,330,561,322,580,300,593,275"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="728,661,906,726"/>
+<area shape="poly" id="edge10_Node000001_Node000010" title=" " alt="" coords="809,727,734,945,729,943,804,725"/>
+</map>

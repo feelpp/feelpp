@@ -1,0 +1,9 @@
+<map id="Feel::SensorMap&lt; Space &gt;" name="Feel::SensorMap&lt; Space &gt;">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,248,180,413"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="35,133,150,199"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="95,213,95,248,90,248,90,213"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="45,5,68,71"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="56,71,61,109,64,118,59,120,55,110,51,71"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="117,5,140,71"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="122,72,109,118,104,117,117,70"/>
+</map>

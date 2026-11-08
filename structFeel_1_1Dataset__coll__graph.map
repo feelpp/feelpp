@@ -1,0 +1,15 @@
+<map id="Feel::Dataset" name="Feel::Dataset">
+<area shape="rect" id="Node000001" title=" " alt="" coords="109,628,203,693"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="120,135,192,200"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="124,202,81,251,38,314,22,349,12,386,8,423,15,461,33,504,57,546,113,614,109,617,53,549,28,507,9,462,3,424,6,385,17,347,34,311,77,247,120,198"/>
+<area shape="rect" id="Node000005" href="$structFeel_1_1Configuration.html" title=" " alt="" coords="94,292,218,357"/>
+<area shape="poly" id="edge5_Node000005_Node000002" title=" " alt="" coords="159,200,159,276,153,276,153,200"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="228,381,367,461"/>
+<area shape="poly" id="edge7_Node000006_Node000002" title=" " alt="" coords="194,184,218,201,239,222,260,257,275,294,293,365,288,366,270,295,255,259,235,226,215,205,191,188"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="97,5,215,85"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="159,99,159,134,153,134,153,99"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="95,485,217,565"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="159,565,159,612,153,612,153,565"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="155,358,153,381,153,461,154,469,148,469,148,461,148,381,150,357"/>
+<area shape="poly" id="edge6_Node000001_Node000006" title=" " alt="" coords="300,462,297,495,289,533,277,571,257,606,239,623,219,637,216,633,236,619,253,602,272,569,284,531,291,494,294,461"/>
+</map>

@@ -1,0 +1,7 @@
+<map id="Feel::OseenDefaults" name="Feel::OseenDefaults">
+<area shape="rect" id="Node000001" title="Oseen Default Data." alt="" coords="44,207,179,272"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,5,57,71"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="26,71,22,125,25,154,35,181,43,194,39,197,30,184,20,155,17,125,21,71"/>
+<area shape="rect" id="Node000003" href="$classbool.html" title=" " alt="" coords="172,5,211,71"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="192,72,184,125,176,155,164,184,158,195,153,192,160,181,171,154,179,124,187,71"/>
+</map>

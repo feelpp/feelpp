@@ -1,0 +1,25 @@
+<map id="Feel::FeelModels::ModelPhysic&lt; Dim &gt;" name="Feel::FeelModels::ModelPhysic&lt; Dim &gt;">
+<area shape="rect" id="Node000001" title="Physic of the Model." alt="" coords="881,647,1097,971"/>
+<area shape="rect" id="Node000004" href="$classFeel_1_1FeelModels_1_1ModelPhysicCoefficientFormPDE.html" title="CoefficientFormPDE Physic Model." alt="" coords="5,1043,203,1238"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="868,824,728,846,560,883,471,909,383,940,297,977,216,1021,184,1045,180,1041,213,1016,295,972,381,935,470,903,558,878,727,840,867,819"/>
+<area shape="rect" id="Node000005" href="$classFeel_1_1FeelModels_1_1ModelPhysicCoefficientFormPDEs.html" title="CoefficientFormPDE set Physic Model." alt="" coords="227,1019,424,1263"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="869,841,771,869,659,908,545,959,490,988,437,1021,426,1029,423,1025,435,1016,487,984,543,954,657,903,769,864,867,836"/>
+<area shape="rect" id="Node000006" href="$classFeel_1_1FeelModels_1_1ModelPhysicElectric.html" title="Electric Physic Model." alt="" coords="448,1061,645,1221"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="871,877,765,943,659,1021,615,1062,612,1058,656,1017,762,938,868,873"/>
+<area shape="rect" id="Node000007" href="$classFeel_1_1FeelModels_1_1ModelPhysicFSI.html" title="Fluid Structure Interaction Physic Model." alt="" coords="669,1041,867,1241"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="876,983,837,1042,832,1039,872,980"/>
+<area shape="rect" id="Node000008" href="$classFeel_1_1FeelModels_1_1ModelPhysicFluid.html" title="Fluid Physic Model." alt="" coords="891,1051,1088,1231"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="992,984,992,1050,987,1050,987,984"/>
+<area shape="rect" id="Node000009" href="$classFeel_1_1FeelModels_1_1ModelPhysicHeat.html" title="Heat Physic Model." alt="" coords="1112,1051,1309,1231"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="1107,981,1153,1049,1149,1052,1103,984"/>
+<area shape="rect" id="Node000010" href="$classFeel_1_1FeelModels_1_1ModelPhysicMultibody.html" title="Multibody Physic Model." alt="" coords="1333,1051,1531,1231"/>
+<area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="1110,873,1217,938,1323,1017,1357,1048,1354,1052,1320,1021,1214,943,1108,877"/>
+<area shape="rect" id="Node000011" href="$classFeel_1_1FeelModels_1_1ModelPhysicSolid.html" title="Solid Physic Model." alt="" coords="1555,1043,1773,1238"/>
+<area shape="poly" id="edge10_Node000001_Node000011" title=" " alt="" coords="1111,837,1209,866,1320,906,1435,956,1544,1016,1577,1041,1574,1045,1541,1021,1433,961,1318,911,1207,871,1110,842"/>
+<area shape="rect" id="Node000012" href="$classFeel_1_1FeelModels_1_1ModelPhysicThermoElectric.html" title="ThermoElectric Physic Model." alt="" coords="1797,1061,1995,1221"/>
+<area shape="poly" id="edge11_Node000001_Node000012" title=" " alt="" coords="1111,818,1256,838,1430,875,1521,901,1613,933,1702,971,1787,1016,1813,1036,1837,1058,1834,1062,1810,1040,1784,1021,1700,976,1611,938,1520,906,1428,880,1255,844,1111,823"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="889,119,1090,599"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="992,612,992,646,987,646,987,612"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="927,5,1051,71"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="992,84,992,119,987,119,987,84"/>
+</map>

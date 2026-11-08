@@ -1,0 +1,5 @@
+<map id="Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::BodySetBoundaryCondition" name="Feel::FeelModels::FluidMechanics&lt; ConvexType, BasisVelocityType, BasisPressureType &gt;::BodySetBoundaryCondition">
+<area shape="rect" id="Node000001" title="boundary conditions for a set of bodies" alt="" coords="5,139,316,348"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="103,5,218,91"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="163,105,163,139,158,139,158,105"/>
+</map>

@@ -1,0 +1,13 @@
+<map id="Feel::SensorPointwise&lt; Space &gt;" name="Feel::SensorPointwise&lt; Space &gt;">
+<area shape="rect" id="Node000001" title="pointwise type sensor" alt="" coords="79,721,225,921"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1SensorBase.html" title="base class for sensors" alt="" coords="67,492,237,672"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="155,686,155,721,149,721,149,686"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1FsFunctionalLinear.html" title=" " alt="" coords="5,235,163,415"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="114,427,131,491,126,493,109,428"/>
+<area shape="rect" id="Node000004" href="$classFeel_1_1FsFunctional.html" title=" " alt="" coords="20,5,143,185"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="85,199,86,235,80,235,80,199"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="189,292,261,357"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="219,358,185,477,180,475,214,357"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="167,55,286,135"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="229,149,228,292,223,292,224,149"/>
+</map>

@@ -1,0 +1,18 @@
+<map id="Feel::PointSet&lt; Convex, T &gt;" name="Feel::PointSet&lt; Convex, T &gt;">
+<area shape="rect" id="Node000001" title="Class of all PointSet on a Convex." alt="" coords="267,380,483,585"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1VisitableBase.html" title=" " alt="" coords="5,163,132,303"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="144,300,145,301,269,399,265,403,142,305,141,304"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1PointSetBase.html" title="base class for point sets, to be used eg with SFINAE" alt="" coords="156,200,283,265"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="249,276,313,378,309,381,244,279"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="307,200,367,265"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="337,266,334,327,334,356,335,364,330,365,329,356,329,327,332,266"/>
+<area shape="rect" id="Node000005" href="$classboost_1_1numeric_1_1ublas_1_1matrix.html" title=" " alt="" coords="407,5,557,100"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="461,101,437,163,424,217,418,259,414,302,406,356,404,365,399,364,401,356,409,301,413,258,419,216,431,162,456,99"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="511,185,639,280"/>
+<area shape="poly" id="edge6_Node000006_Node000005" title=" " alt="" coords="509,99,546,169,541,171,504,101"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="540,282,470,369,466,365,536,279"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="663,200,735,265"/>
+<area shape="poly" id="edge7_Node000001_Node000007" title=" " alt="" coords="681,267,653,304,631,333,604,358,553,394,499,425,497,421,550,389,600,354,627,329,649,301,677,264"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="640,13,759,93"/>
+<area shape="poly" id="edge8_Node000007_Node000008" title=" " alt="" coords="702,106,702,200,697,200,697,106"/>
+</map>

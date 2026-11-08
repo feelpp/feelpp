@@ -1,0 +1,7 @@
+<map id="Feel::FunctionSpaceManagerStats" name="Feel::FunctionSpaceManagerStats">
+<area shape="rect" id="Node000001" title="Process&#45;local counters and retained&#45;state measurements." alt="" coords="5,236,189,316"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="11,5,71,71"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="38,71,33,137,36,175,45,211,50,221,45,223,40,213,31,176,28,137,33,71"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="130,5,179,71"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="154,71,145,137,128,213,125,221,120,220,123,211,140,136,149,71"/>
+</map>

@@ -1,0 +1,8 @@
+<map id="Feel::PeriodicEntity" name="Feel::PeriodicEntity">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,276,133,341"/>
+<area shape="rect" id="Node000002" href="$classint.html" title=" " alt="" coords="55,5,83,71"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="69,71,63,148,63,213,66,260,61,260,57,213,57,148,63,70"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="121,148,247,213"/>
+<area shape="poly" id="edge3_Node000003_Node000002" title=" " alt="" coords="85,55,150,133,146,137,81,58"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="157,215,111,265,107,262,153,212"/>
+</map>

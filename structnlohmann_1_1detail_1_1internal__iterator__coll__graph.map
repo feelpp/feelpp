@@ -1,0 +1,9 @@
+<map id="nlohmann::detail::internal_iterator&lt; BasicJsonType &gt;" name="nlohmann::detail::internal_iterator&lt; BasicJsonType &gt;">
+<area shape="rect" id="Node000001" title="an iterator value" alt="" coords="71,248,245,328"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,63,60,128"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="35,128,41,175,48,200,60,223,71,235,67,239,56,225,43,202,36,176,30,128"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="131,63,185,128"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="161,128,161,231,155,231,155,128"/>
+<area shape="rect" id="Node000004" href="$classnlohmann_1_1detail_1_1primitive__iterator__t.html" title=" " alt="" coords="209,5,376,185"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="276,187,255,226,243,239,239,235,250,222,271,184"/>
+</map>

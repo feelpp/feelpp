@@ -1,0 +1,27 @@
+<map id="Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;" name="Feel::GeoND&lt; Dim, GEOSHAPE, T, IndexT, POINTTYPE, UseMeasuresStorage &gt;">
+<area shape="rect" id="Node000001" title="Base class for Multi&#45;dimensional basis Geometrical Entities." alt="" coords="1051,1156,1294,1411"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1GeoEntity.html" title="base class for all geometric entities" alt="" coords="577,309,766,1064"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="777,823,895,973,1028,1130,1053,1158,1049,1162,1024,1134,891,976,773,826"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="173,5,351,100"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="302,110,579,537,574,540,297,113"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="375,5,559,100"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="489,112,579,392,574,393,484,114"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="647,5,831,100"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="736,114,715,309,709,309,730,114"/>
+<area shape="rect" id="Node000006" href="$classFeel_1_1Entity.html" title=" " alt="" coords="856,20,1023,85"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="895,97,872,125,815,231,769,342,764,340,810,228,868,123,890,94"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="5,20,148,85"/>
+<area shape="poly" id="edge10_Node000001_Node000007" title=" " alt="" coords="83,85,94,156,113,257,143,382,186,522,243,668,277,741,316,812,359,881,407,946,459,1007,517,1062,576,1106,640,1144,708,1176,778,1203,847,1225,915,1242,1036,1265,1035,1270,913,1247,846,1230,776,1208,706,1181,638,1149,573,1111,514,1066,455,1011,402,949,354,884,311,815,272,743,238,670,181,523,138,384,108,259,89,157,78,86"/>
+<area shape="poly" id="edge6_Node000002_Node000007" title=" " alt="" coords="98,84,159,176,199,231,241,284,322,370,407,454,566,595,562,599,404,458,318,374,237,287,194,234,154,179,94,87"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="1047,20,1200,85"/>
+<area shape="poly" id="edge11_Node000001_Node000008" title=" " alt="" coords="1115,86,1085,185,1070,247,1059,310,1030,522,1019,609,1013,689,1012,770,1019,855,1034,951,1059,1063,1071,1102,1088,1140,1083,1142,1066,1104,1054,1065,1029,952,1014,856,1007,770,1008,689,1014,608,1025,521,1054,309,1065,246,1080,184,1110,85"/>
+<area shape="poly" id="edge7_Node000002_Node000008" title=" " alt="" coords="1070,88,1035,103,994,109,961,107,930,108,915,114,898,126,882,144,872,161,864,197,862,238,851,286,775,471,770,469,846,285,857,237,859,197,867,159,877,141,895,122,912,110,929,103,961,101,994,104,1033,97,1068,83"/>
+<area shape="rect" id="Node000009" href="$classbool.html" title=" " alt="" coords="584,20,623,85"/>
+<area shape="poly" id="edge8_Node000002_Node000009" title=" " alt="" coords="608,85,625,285,625,293,620,293,619,286,603,86"/>
+<area shape="rect" id="Node000010" href="$classmpl_1_1if___3_01mpl_1_1bool___3_01false_01_4_00_01mpl_1_1identity_3_01GeoNDMeasuresStorage_1b4a2037756985fd616e6afd271a4aef.html" title=" " alt="" coords="1183,617,1421,756"/>
+<area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="1287,770,1203,1156,1198,1155,1282,769"/>
+<area shape="rect" id="Node000011" href="$classint.html" title=" " alt="" coords="1445,654,1473,719"/>
+<area shape="poly" id="edge12_Node000001_Node000011" title=" " alt="" coords="1468,719,1476,785,1478,874,1475,922,1468,971,1455,1020,1436,1065,1411,1106,1380,1142,1346,1176,1309,1205,1306,1200,1342,1172,1376,1139,1407,1103,1432,1063,1450,1018,1463,970,1470,922,1473,874,1470,786,1462,720"/>
+<area shape="rect" id="Node000012" title=" " alt="" coords="1517,654,1695,719"/>
+<area shape="poly" id="edge13_Node000001_Node000012" title=" " alt="" coords="1615,719,1625,799,1628,851,1627,908,1621,967,1608,1026,1587,1083,1556,1134,1532,1161,1505,1184,1443,1222,1376,1248,1311,1266,1309,1261,1375,1243,1440,1217,1502,1180,1528,1157,1552,1130,1582,1080,1603,1025,1616,967,1622,908,1623,851,1620,800,1610,720"/>
+</map>

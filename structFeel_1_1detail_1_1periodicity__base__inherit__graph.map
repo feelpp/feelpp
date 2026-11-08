@@ -1,0 +1,11 @@
+<map id="Feel::detail::periodicity_base" name="Feel::detail::periodicity_base">
+<area shape="rect" id="Node000001" title=" " alt="" coords="193,5,373,71"/>
+<area shape="rect" id="Node000002" href="$structFeel_1_1Periodicity.html" title=" " alt="" coords="5,181,121,361"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="191,79,162,98,136,120,113,150,96,182,91,180,109,147,132,117,159,94,188,75"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1NoPeriodicity.html" title="NoPeriodicity class holder." alt="" coords="146,169,271,374"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="271,85,244,169,239,168,266,83"/>
+<area shape="rect" id="Node000004" href="$classFeel_1_1Periodic.html" title="Periodic class holder." alt="" coords="296,119,423,424"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="300,83,312,118,307,119,295,84"/>
+<area shape="rect" id="Node000005" href="$structFeel_1_1Periodicity.html" title=" " alt="" coords="447,181,584,361"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="379,75,409,94,437,117,462,147,482,180,477,182,458,150,433,121,406,98,376,79"/>
+</map>

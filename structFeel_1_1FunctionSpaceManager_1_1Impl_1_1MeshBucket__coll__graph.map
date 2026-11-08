@@ -1,0 +1,40 @@
+<map id="Feel::FunctionSpaceManager::Impl::MeshBucket" name="Feel::FunctionSpaceManager::Impl::MeshBucket">
+<area shape="rect" id="Node000001" title="Entries, observers, and counters associated with one mesh owner." alt="" coords="744,1583,928,1663"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="498,1411,686,1520"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="659,1518,713,1556,741,1573,739,1577,711,1561,656,1522"/>
+<area shape="rect" id="Node000003" href="$structFeel_1_1FunctionSpaceManager_1_1Impl_1_1Key.html" title="Key for one function space associated with a mesh bucket." alt="" coords="237,1203,421,1283"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="377,1281,517,1398,514,1402,374,1285"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="562,965,622,1030"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="563,1010,516,1030,492,1045,471,1063,451,1092,443,1120,435,1148,417,1180,404,1194,401,1190,413,1177,431,1146,438,1118,447,1090,467,1060,489,1041,514,1026,561,1005"/>
+<area shape="rect" id="Node000008" href="$structFeel_1_1FunctionSpaceManager_1_1Impl_1_1Entry.html" title="Strongly retained function space and its LRU metadata." alt="" coords="500,1203,684,1283"/>
+<area shape="poly" id="edge13_Node000008_Node000004" title=" " alt="" coords="595,1030,595,1186,589,1186,589,1030"/>
+<area shape="rect" id="Node000017" href="$structFeel_1_1FunctionSpaceManagerStats.html" title="Process&#45;local counters and retained&#45;state measurements." alt="" coords="708,1203,892,1283"/>
+<area shape="poly" id="edge19_Node000017_Node000004" title=" " alt="" coords="624,1015,648,1035,669,1060,677,1077,680,1093,681,1121,681,1148,685,1162,694,1177,705,1190,701,1193,690,1180,681,1164,676,1149,675,1121,675,1093,672,1079,664,1063,644,1038,620,1019"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="5,965,83,1030"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="47,1030,50,1064,58,1104,73,1143,98,1177,125,1198,155,1214,188,1225,221,1232,220,1238,187,1230,153,1219,122,1202,94,1181,69,1146,53,1105,45,1065,41,1030"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="107,965,256,1030"/>
+<area shape="poly" id="edge5_Node000003_Node000006" title=" " alt="" coords="180,1030,179,1063,182,1102,191,1141,209,1177,226,1195,222,1199,204,1180,186,1143,177,1103,174,1064,175,1030"/>
+<area shape="rect" id="Node000007" href="$classsize__t.html" title=" " alt="" coords="305,965,354,1030"/>
+<area shape="poly" id="edge6_Node000003_Node000007" title=" " alt="" coords="332,1030,332,1186,327,1186,327,1030"/>
+<area shape="poly" id="edge7_Node000002_Node000008" title=" " alt="" coords="595,1283,595,1394,589,1394,589,1283"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="703,957,865,1037"/>
+<area shape="poly" id="edge8_Node000008_Node000009" title=" " alt="" coords="798,1037,804,1070,805,1108,799,1146,782,1180,765,1195,747,1200,700,1205,700,1200,746,1195,763,1190,778,1177,794,1144,800,1108,798,1071,793,1038"/>
+<area shape="rect" id="Node000010" href="$classFeel_1_1FunctionSpaceBase.html" title="base class for FunctionSpace" alt="" coords="825,649,999,895"/>
+<area shape="poly" id="edge9_Node000009_Node000010" title=" " alt="" coords="844,896,817,945,812,942,840,894"/>
+<area shape="rect" id="Node000015" title=" " alt="" coords="966,957,1117,1037"/>
+<area shape="poly" id="edge16_Node000015_Node000010" title=" " alt="" coords="985,894,1013,942,1008,945,980,896"/>
+<area shape="rect" id="Node000011" href="$classFeel_1_1CommObject.html" title=" " alt="" coords="834,277,958,443"/>
+<area shape="poly" id="edge10_Node000010_Node000011" title=" " alt="" coords="902,456,910,649,905,649,897,456"/>
+<area shape="rect" id="Node000012" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="982,120,1183,600"/>
+<area shape="poly" id="edge11_Node000010_Node000012" title=" " alt="" coords="980,614,965,650,960,648,975,612"/>
+<area shape="rect" id="Node000013" title=" " alt="" coords="1021,5,1145,71"/>
+<area shape="poly" id="edge12_Node000012_Node000013" title=" " alt="" coords="1085,84,1085,120,1080,120,1080,84"/>
+<area shape="rect" id="Node000014" title=" " alt="" coords="933,1307,1155,1387"/>
+<area shape="poly" id="edge14_Node000001_Node000014" title=" " alt="" coords="1052,1387,1053,1427,1049,1472,1037,1519,1026,1541,1013,1560,982,1587,945,1605,942,1600,979,1583,1009,1557,1022,1538,1032,1517,1043,1472,1047,1426,1046,1387"/>
+<area shape="poly" id="edge15_Node000014_Node000015" title=" " alt="" coords="1044,1037,1046,1290,1041,1290,1039,1037"/>
+<area shape="rect" id="Node000016" title=" " alt="" coords="869,1433,947,1498"/>
+<area shape="poly" id="edge17_Node000001_Node000016" title=" " alt="" coords="896,1499,863,1569,858,1567,891,1497"/>
+<area shape="poly" id="edge18_Node000001_Node000017" title=" " alt="" coords="797,1283,788,1390,789,1455,797,1519,812,1567,807,1568,792,1521,784,1456,783,1390,791,1283"/>
+<area shape="rect" id="Node000018" title=" " alt="" coords="890,965,939,1030"/>
+<area shape="poly" id="edge20_Node000017_Node000018" title=" " alt="" coords="913,1031,897,1102,884,1142,865,1180,857,1191,853,1188,860,1177,879,1140,892,1100,908,1030"/>
+</map>

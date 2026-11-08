@@ -1,0 +1,9 @@
+<map id="Feel::detail::PrecomputedEdge&lt; ValueType, RealDim &gt;" name="Feel::detail::PrecomputedEdge&lt; ValueType, RealDim &gt;">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,291,192,411"/>
+<area shape="rect" id="Node000002" href="$classint.html" title=" " alt="" coords="33,141,61,206"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="48,206,49,236,55,266,57,274,52,276,49,267,44,236,42,206"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="85,133,230,213"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="147,214,126,276,121,274,142,213"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="120,5,195,71"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="160,71,160,117,155,117,155,71"/>
+</map>

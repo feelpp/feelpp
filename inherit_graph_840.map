@@ -1,0 +1,11 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" title=" " alt="" coords="5,121,135,147"/>
+<area shape="rect" id="Node000001" href="$structFeel_1_1detail_1_1is__backend__shared__ptr_3_01std_1_1shared__ptr_3_01T_01_4_01_4.html" title=" " alt="" coords="183,5,349,60"/>
+<area shape="poly" id="edge478_Node000000_Node000001" title=" " alt="" coords="104,112,181,70,206,58,209,62,184,75,107,117"/>
+<area shape="rect" id="Node000002" href="$structFeel_1_1is__ptr__or__shared__ptr.html" title=" " alt="" coords="191,85,341,125"/>
+<area shape="poly" id="edge479_Node000000_Node000002" title=" " alt="" coords="148,120,190,113,191,119,149,125"/>
+<area shape="rect" id="Node000003" href="$structFeel_1_1is__std__vector.html" title=" " alt="" coords="183,149,349,175"/>
+<area shape="poly" id="edge480_Node000000_Node000003" title=" " alt="" coords="149,143,184,148,183,153,148,148"/>
+<area shape="rect" id="Node000004" href="$structFeel_1_1is__std__vector_3_01std_1_1vector_3_01T_01_4_01_4.html" title=" " alt="" coords="196,199,336,239"/>
+<area shape="poly" id="edge481_Node000000_Node000004" title=" " alt="" coords="111,150,184,184,215,197,213,202,182,188,109,155"/>
+</map>

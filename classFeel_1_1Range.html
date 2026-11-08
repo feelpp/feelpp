@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.112.0-preview.1</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.112.0</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -118,14 +118,14 @@ $(document).ready(function(){initNavTree('classFeel_1_1Range.html',''); initResi
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
-<div class="center"><!-- SVG 0 --></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classFeel_1_1Range__inherit__graph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div></div>
 </div>
 <div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-1-trigger" src="closed.png" alt="+"/> Collaboration diagram for Feel::Range&lt; MeshType, MESH_ENTITIES, &gt;:</div>
 <div id="dynsection-1-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-1-content" class="dyncontent" style="display:none;">
-<div class="center"><!-- SVG 1 --></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classFeel_1_1Range__coll__graph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div></div>
 </div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
@@ -155,7 +155,7 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>iterator_t</b> = typ
 using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_const_t</b> = std::add_const_t&lt; mesh_t &gt;</td></tr>
 <tr class="separator:a2905bf210edf83f1e337fd4b644a6a7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abeea84580f8bc92ae4c251309098984a" id="r_abeea84580f8bc92ae4c251309098984a"><td class="memItemLeft" align="right" valign="top"><a id="abeea84580f8bc92ae4c251309098984a" name="abeea84580f8bc92ae4c251309098984a"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_non_const_t</b> = std::remove_const_t&lt; decay_type&lt; std::remove_pointer_t&lt; <a class="el" href="classFeel_1_1Mesh.html">MeshType</a> &gt; &gt; &gt;</td></tr>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_non_const_t</b> = std::remove_const_t&lt; decay_type&lt; std::remove_pointer_t&lt; MeshType &gt; &gt; &gt;</td></tr>
 <tr class="separator:abeea84580f8bc92ae4c251309098984a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a82658b03afdc0f13984e3afe9ce89f26" id="r_a82658b03afdc0f13984e3afe9ce89f26"><td class="memItemLeft" align="right" valign="top"><a id="a82658b03afdc0f13984e3afe9ce89f26" name="a82658b03afdc0f13984e3afe9ce89f26"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_ptr_const_t</b> = std::shared_ptr&lt; const mesh_non_const_t &gt;</td></tr>
@@ -167,10 +167,10 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_ptr_non_const_t
 using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_ptr_t</b> = std::shared_ptr&lt; mesh_t &gt;</td></tr>
 <tr class="separator:aa607730f68f51013fc1e782ee5d83937"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a14f35430f78d8ca76d114031e636df0b" id="r_a14f35430f78d8ca76d114031e636df0b"><td class="memItemLeft" align="right" valign="top"><a id="a14f35430f78d8ca76d114031e636df0b" name="a14f35430f78d8ca76d114031e636df0b"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_support_ptr_t</b> = std::shared_ptr&lt; <a class="el" href="classFeel_1_1MeshSupport.html">MeshSupport</a>&lt; decay_type&lt; std::remove_pointer_t&lt; <a class="el" href="classFeel_1_1Mesh.html">MeshType</a> &gt; &gt; &gt; &gt;</td></tr>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_support_ptr_t</b> = std::shared_ptr&lt; <a class="el" href="classFeel_1_1MeshSupport.html">MeshSupport</a>&lt; decay_type&lt; std::remove_pointer_t&lt; MeshType &gt; &gt; &gt; &gt;</td></tr>
 <tr class="separator:a14f35430f78d8ca76d114031e636df0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac89ff67175b67586d4f9bc719666612c" id="r_ac89ff67175b67586d4f9bc719666612c"><td class="memItemLeft" align="right" valign="top"><a id="ac89ff67175b67586d4f9bc719666612c" name="ac89ff67175b67586d4f9bc719666612c"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_support_t</b> = <a class="el" href="classFeel_1_1MeshSupport.html">MeshSupport</a>&lt; decay_type&lt; <a class="el" href="classFeel_1_1Mesh.html">MeshType</a> &gt; &gt;</td></tr>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_support_t</b> = <a class="el" href="classFeel_1_1MeshSupport.html">MeshSupport</a>&lt; decay_type&lt; MeshType &gt; &gt;</td></tr>
 <tr class="separator:ac89ff67175b67586d4f9bc719666612c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acac466245be19b8a55ba856c21a66d9d" id="r_acac466245be19b8a55ba856c21a66d9d"><td class="memItemLeft" align="right" valign="top"><a id="acac466245be19b8a55ba856c21a66d9d" name="acac466245be19b8a55ba856c21a66d9d"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_t</b> = mesh_non_const_t</td></tr>
@@ -280,10 +280,10 @@ template&lt;typename OtherMeshType &gt; </td></tr>
 &#160;</td><td class="memItemRight" valign="bottom"><b>Range</b> (super const &amp;er, mesh_non_const_t const *m)</td></tr>
 <tr class="separator:abbd09183666787b117f992b1e9fe4444"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1cb8cde8651eeee92e588819282bc5c5" id="r_a1cb8cde8651eeee92e588819282bc5c5"><td class="memItemLeft" align="right" valign="top"><a id="a1cb8cde8651eeee92e588819282bc5c5" name="a1cb8cde8651eeee92e588819282bc5c5"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>Range</b> (super const &amp;er, std::shared_ptr&lt; const <a class="el" href="classFeel_1_1Mesh.html">MeshType</a> &gt; const &amp;m)</td></tr>
+&#160;</td><td class="memItemRight" valign="bottom"><b>Range</b> (super const &amp;er, std::shared_ptr&lt; const MeshType &gt; const &amp;m)</td></tr>
 <tr class="separator:a1cb8cde8651eeee92e588819282bc5c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a68c0edb0a0e5742c813df8255c9f02f9" id="r_a68c0edb0a0e5742c813df8255c9f02f9"><td class="memItemLeft" align="right" valign="top"><a id="a68c0edb0a0e5742c813df8255c9f02f9" name="a68c0edb0a0e5742c813df8255c9f02f9"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>Range</b> (super const &amp;er, std::shared_ptr&lt; std::remove_const_t&lt; <a class="el" href="classFeel_1_1Mesh.html">MeshType</a> &gt; &gt; const &amp;m)</td></tr>
+&#160;</td><td class="memItemRight" valign="bottom"><b>Range</b> (super const &amp;er, std::shared_ptr&lt; std::remove_const_t&lt; MeshType &gt; &gt; const &amp;m)</td></tr>
 <tr class="separator:a68c0edb0a0e5742c813df8255c9f02f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8f5a52d5e1413b34391618c7dceea011" id="r_a8f5a52d5e1413b34391618c7dceea011"><td class="memItemLeft" align="right" valign="top"><a id="a8f5a52d5e1413b34391618c7dceea011" name="a8f5a52d5e1413b34391618c7dceea011"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setMeshSupport</b> (mesh_support_ptr_t const &amp;ms)</td></tr>

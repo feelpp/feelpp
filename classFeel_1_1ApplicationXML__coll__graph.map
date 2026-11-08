@@ -1,0 +1,24 @@
+<map id="Feel::ApplicationXML" name="Feel::ApplicationXML">
+<area shape="rect" id="Node000001" title="XML application." alt="" coords="145,1312,287,1577"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1Application.html" title="provides information about the Application" alt="" coords="5,709,144,1235"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="151,1239,165,1287,173,1311,168,1313,160,1289,145,1241"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="121,477,242,557"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="185,557,209,1235,212,1296,207,1296,204,1235,180,558"/>
+<area shape="rect" id="Node000004" href="$classFeel_1_1Parameter.html" title="parameter class to describe code inputs" alt="" coords="171,220,277,285"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="196,287,184,310,175,348,171,388,175,461,169,461,166,388,169,347,179,308,192,285"/>
+<area shape="rect" id="Node000008" href="$classFeel_1_1Output__impl.html" title=" " alt="" coords="219,348,354,453"/>
+<area shape="poly" id="edge8_Node000008_Node000004" title=" " alt="" coords="249,297,254,308,270,347,265,349,250,310,244,299"/>
+<area shape="rect" id="Node000005" href="$classFeel_1_1Parameter__impl.html" title=" " alt="" coords="155,5,293,171"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="227,184,227,220,221,220,221,184"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="219,932,341,1012"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="277,1013,239,1296,234,1295,272,1012"/>
+<area shape="rect" id="Node000007" href="$classFeel_1_1Output.html" title="output class to describe code outputs" alt="" coords="243,581,330,647"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="289,647,284,916,278,916,283,647"/>
+<area shape="poly" id="edge7_Node000007_Node000008" title=" " alt="" coords="289,467,289,581,284,581,284,467"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="365,939,523,1005"/>
+<area shape="poly" id="edge9_Node000001_Node000009" title=" " alt="" coords="438,1006,405,1109,381,1173,354,1236,339,1263,322,1289,299,1326,294,1323,318,1287,335,1261,350,1234,376,1171,400,1108,433,1004"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="408,581,480,647"/>
+<area shape="poly" id="edge10_Node000009_Node000010" title=" " alt="" coords="447,647,447,923,441,923,441,647"/>
+<area shape="rect" id="Node000011" title=" " alt="" coords="385,361,503,441"/>
+<area shape="poly" id="edge11_Node000010_Node000011" title=" " alt="" coords="447,455,447,581,441,581,441,455"/>
+</map>

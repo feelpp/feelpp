@@ -1,0 +1,7 @@
+<map id="Feel::TabulateInformationsTable" name="Feel::TabulateInformationsTable">
+<area shape="rect" id="Node000001" title="describe informations in table" alt="" coords="109,353,296,473"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1TabulateInformations.html" title="base class that describe informations by tabulate/section design" alt="" coords="5,5,184,305"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="165,317,180,352,175,354,160,319"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="208,108,416,203"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="289,216,230,354,225,352,284,214"/>
+</map>

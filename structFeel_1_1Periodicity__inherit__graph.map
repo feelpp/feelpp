@@ -1,0 +1,9 @@
+<map id="Feel::Periodicity&lt; A0, A1, A2, A3, A4 &gt;" name="Feel::Periodicity&lt; A0, A1, A2, A3, A4 &gt;">
+<area shape="rect" id="Node000001" title=" " alt="" coords="217,383,355,563"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,137,172,203"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="114,213,186,333,219,381,215,384,181,336,110,216"/>
+<area shape="rect" id="Node000003" href="$structFeel_1_1detail_1_1periodicity__base.html" title=" " alt="" coords="196,137,376,203"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="289,217,289,383,283,383,283,217"/>
+<area shape="rect" id="Node000004" href="$classmpl_1_1if___3_01boost_1_1is__same_3_01mpl_1_1void___00_01mpl_1_1void___01_4_00_01boost_1_1f63384247e94ddf6485d6e3d150878af5.html" title=" " alt="" coords="400,5,679,335"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="395,347,357,392,353,388,390,343"/>
+</map>

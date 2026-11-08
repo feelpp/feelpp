@@ -1,0 +1,7 @@
+<map id="Feel::vf::SymbolExpr&lt; ExprT &gt;" name="Feel::vf::SymbolExpr&lt; ExprT &gt;">
+<area shape="rect" id="Node000001" title="attach a symbol (string) with a feel++ expression ex : auto se = SymbolExpr( &quot;u&quot;, cst(3...." alt="" coords="5,248,143,428"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="20,133,128,199"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="77,212,77,248,71,248,71,212"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="63,5,85,71"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="77,71,77,117,71,117,71,71"/>
+</map>

@@ -1,0 +1,25 @@
+<map id="Feel::SimplexBase" name="Feel::SimplexBase">
+<area shape="rect" id="Node000001" title=" " alt="" coords="494,5,618,71"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="21,119,179,539"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="481,50,402,61,317,77,242,97,213,108,192,121,181,131,178,127,189,117,211,103,240,92,316,71,401,56,480,45"/>
+<area shape="rect" id="Node000004" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="203,126,362,531"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="482,60,426,84,399,101,375,121,364,133,360,129,371,117,396,96,423,80,480,55"/>
+<area shape="rect" id="Node000006" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="386,119,545,539"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="545,84,534,119,529,118,540,83"/>
+<area shape="rect" id="Node000008" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="569,126,727,531"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="573,83,586,125,581,127,568,84"/>
+<area shape="rect" id="Node000010" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="751,126,910,531"/>
+<area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="632,55,690,79,717,96,742,117,753,129,749,133,738,121,714,101,687,84,630,60"/>
+<area shape="rect" id="Node000012" href="$classFeel_1_1Simplex.html" title="simplex of dimension Dim" alt="" coords="934,119,1093,539"/>
+<area shape="poly" id="edge11_Node000001_Node000012" title=" " alt="" coords="632,45,711,56,797,71,873,92,903,103,924,117,935,127,932,131,921,121,900,108,871,97,795,77,710,61,631,50"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1GeoEntity.html" title=" " alt="" coords="5,587,195,1356"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="103,552,103,586,97,586,97,552"/>
+<area shape="rect" id="Node000005" href="$structFeel_1_1Line.html" title=" " alt="" coords="223,939,342,1004"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="285,545,285,938,280,938,280,545"/>
+<area shape="rect" id="Node000007" href="$classFeel_1_1Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html" title=" " alt="" coords="376,694,555,1249"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="468,552,468,693,463,693,463,552"/>
+<area shape="rect" id="Node000009" href="$structFeel_1_1Tetrahedron.html" title=" " alt="" coords="587,931,709,1011"/>
+<area shape="poly" id="edge8_Node000008_Node000009" title=" " alt="" coords="651,545,651,931,645,931,645,545"/>
+<area shape="rect" id="Node000011" href="$structFeel_1_1Triangle.html" title=" " alt="" coords="760,939,901,1004"/>
+<area shape="poly" id="edge10_Node000010_Node000011" title=" " alt="" coords="833,545,833,938,828,938,828,545"/>
+</map>

@@ -1,0 +1,16 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataDofEliminationIds.html" title=" " alt="" coords="5,37,224,77"/>
+<area shape="rect" id="Node000001" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateJacobian.html" title=" " alt="" coords="272,5,491,45"/>
+<area shape="poly" id="edge316_Node000000_Node000001" title=" " alt="" coords="237,40,271,36,272,41,238,45"/>
+<area shape="rect" id="Node000006" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateResidual.html" title=" " alt="" coords="272,69,491,109"/>
+<area shape="poly" id="edge317_Node000000_Node000006" title=" " alt="" coords="238,69,272,74,271,79,237,75"/>
+<area shape="rect" id="Node000004" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataDofEliminationIdsByEntity.html" title=" " alt="" coords="5,197,224,237"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataNewtonInitialGuess.html" title=" " alt="" coords="272,197,491,237"/>
+<area shape="poly" id="edge318_Node000004_Node000003" title=" " alt="" coords="238,215,272,215,272,220,238,220"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateBase.html" title=" " alt="" coords="5,133,224,173"/>
+<area shape="poly" id="edge320_Node000002_Node000001" title=" " alt="" coords="161,124,223,87,246,70,271,55,301,43,303,48,273,60,249,75,225,92,164,129"/>
+<area shape="poly" id="edge322_Node000002_Node000006" title=" " alt="" coords="211,127,297,107,298,112,213,133"/>
+<area shape="poly" id="edge319_Node000002_Node000003" title=" " alt="" coords="213,174,298,195,297,200,211,179"/>
+<area shape="rect" id="Node000005" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateLinear.html" title=" " alt="" coords="272,133,491,173"/>
+<area shape="poly" id="edge321_Node000002_Node000005" title=" " alt="" coords="238,151,272,151,272,156,238,156"/>
+</map>

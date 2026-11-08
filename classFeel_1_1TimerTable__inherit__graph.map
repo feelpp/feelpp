@@ -1,0 +1,9 @@
+<map id="Feel::TimerTable" name="Feel::TimerTable">
+<area shape="rect" id="Node000001" title="Local timer statistics and their text, Markdown, and journal reports." alt="" coords="91,647,215,812"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,316,120,401"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="79,414,136,646,131,647,74,415"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="145,119,346,599"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="185,613,176,647,171,646,180,611"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="183,5,307,71"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="248,84,248,119,243,119,243,84"/>
+</map>

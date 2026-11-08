@@ -1,0 +1,18 @@
+<map id="Feel::Simplex&lt; Dim, Order, RDim &gt;" name="Feel::Simplex&lt; Dim, Order, RDim &gt;">
+<area shape="rect" id="Node000001" title="simplex of dimension Dim" alt="" coords="365,489,523,809"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1Convex.html" title="Convex base class." alt="" coords="49,173,181,313"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="142,325,171,396,191,431,213,464,247,503,286,539,366,598,363,602,283,543,244,507,209,467,186,434,166,398,137,327"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1ConvexBase.html" title=" " alt="" coords="5,5,128,71"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="80,84,101,173,96,174,75,85"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="153,5,306,71"/>
+<area shape="poly" id="edge6_Node000001_Node000004" title=" " alt="" coords="228,71,225,121,225,184,230,254,245,323,267,380,294,435,357,535,353,538,290,438,262,382,240,325,225,255,219,185,220,121,223,71"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="169,73,146,96,131,125,122,157,117,156,126,123,142,93,165,69"/>
+<area shape="rect" id="Node000005" href="$classFeel_1_1SimplexBase.html" title=" " alt="" coords="361,211,485,276"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="428,290,438,489,433,489,422,290"/>
+<area shape="rect" id="Node000006" href="$classbool.html" title=" " alt="" coords="509,211,547,276"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="522,277,513,302,499,326,483,338,476,342,470,349,463,370,457,400,449,473,444,473,451,399,457,369,466,347,473,338,480,333,495,322,508,299,517,275"/>
+<area shape="rect" id="Node000007" href="$classint.html" title=" " alt="" coords="573,211,601,276"/>
+<area shape="poly" id="edge7_Node000001_Node000007" title=" " alt="" coords="589,277,583,363,574,415,560,466,534,523,529,521,555,464,569,414,578,363,584,276"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="681,211,823,276"/>
+<area shape="poly" id="edge8_Node000001_Node000008" title=" " alt="" coords="758,276,759,317,756,366,745,418,724,467,685,514,639,554,588,587,539,613,537,608,586,583,636,550,682,511,719,464,740,417,751,365,754,317,753,276"/>
+</map>

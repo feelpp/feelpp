@@ -1,0 +1,15 @@
+<map id="Feel::vf::DeferredDirichletColumnGroup&lt; T &gt;" name="Feel::vf::DeferredDirichletColumnGroup&lt; T &gt;">
+<area shape="rect" id="Node000001" title="Compact local storage for columns erased by one symmetric group." alt="" coords="123,291,287,371"/>
+<area shape="rect" id="Node000002" href="$classsize__t.html" title=" " alt="" coords="5,148,55,213"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="32,213,37,240,49,265,76,288,108,305,106,310,73,293,45,268,32,242,27,214"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="108,148,160,213"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="128,214,127,240,132,266,139,277,134,279,128,268,121,240,123,213"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="202,148,317,213"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="261,214,257,240,250,268,246,277,241,275,245,266,252,239,256,213"/>
+<area shape="rect" id="Node000005" href="$classint.html" title=" " alt="" coords="245,5,273,71"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="262,71,262,131,257,131,257,71"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="341,133,517,228"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="360,230,279,284,276,279,357,226"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="319,5,539,71"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="431,71,431,117,426,117,426,71"/>
+</map>

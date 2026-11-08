@@ -1,0 +1,5 @@
+<map id="Feel::Sphere" name="Feel::Sphere">
+<area shape="rect" id="Node000001" title="This class defines a sphere." alt="" coords="5,299,181,624"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1Surface.html" title="This class defines a surface." alt="" coords="36,5,151,251"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="96,265,96,299,91,299,91,265"/>
+</map>

@@ -1,0 +1,25 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" title=" " alt="" coords="5,173,109,198"/>
+<area shape="rect" id="Node000001" href="$classFeel_1_1FactoryDefaultError_1_1Exception.html" title=" " alt="" coords="157,94,371,149"/>
+<area shape="poly" id="edge483_Node000000_Node000001" title=" " alt="" coords="111,166,174,146,176,151,113,171"/>
+<area shape="rect" id="Node000002" href="$classnlohmann_1_1detail_1_1exception.html" title="general exception of the basic_json class" alt="" coords="173,173,355,198"/>
+<area shape="poly" id="edge484_Node000000_Node000002" title=" " alt="" coords="123,183,173,183,173,188,123,188"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="210,361,318,386"/>
+<area shape="poly" id="edge490_Node000000_Node000008" title=" " alt="" coords="84,205,250,358,247,362,81,209"/>
+<area shape="rect" id="Node000003" href="$classnlohmann_1_1detail_1_1invalid__iterator.html" title="exception indicating errors with iterators" alt="" coords="442,5,605,45"/>
+<area shape="poly" id="edge485_Node000002_Node000003" title=" " alt="" coords="360,164,369,158,380,146,387,134,392,109,398,82,405,68,417,55,440,40,443,45,420,59,409,71,403,84,398,110,392,136,385,149,372,162,364,168"/>
+<area shape="rect" id="Node000004" href="$classnlohmann_1_1detail_1_1other__error.html" title="exception indicating other library errors" alt="" coords="446,69,601,109"/>
+<area shape="poly" id="edge486_Node000002_Node000004" title=" " alt="" coords="349,166,369,158,383,149,393,139,403,129,417,119,445,107,447,112,420,124,406,133,397,143,387,153,372,162,351,171"/>
+<area shape="rect" id="Node000005" href="$classnlohmann_1_1detail_1_1out__of__range.html" title="exception indicating access out of the defined range" alt="" coords="452,133,595,173"/>
+<area shape="poly" id="edge487_Node000002_Node000005" title=" " alt="" coords="368,170,452,159,452,165,369,175"/>
+<area shape="rect" id="Node000006" href="$classnlohmann_1_1detail_1_1parse__error.html" title="exception indicating a parse error" alt="" coords="445,197,602,237"/>
+<area shape="poly" id="edge488_Node000002_Node000006" title=" " alt="" coords="369,196,445,205,444,210,368,201"/>
+<area shape="rect" id="Node000007" href="$classnlohmann_1_1detail_1_1type__error.html" title="exception indicating executing a member function with a wrong type" alt="" coords="448,261,599,301"/>
+<area shape="poly" id="edge489_Node000002_Node000007" title=" " alt="" coords="307,201,420,247,455,259,453,264,418,252,305,206"/>
+<area shape="rect" id="Node000009" href="$structFeel_1_1CheckerConvergenceFailed.html" title=" " alt="" coords="433,325,614,365"/>
+<area shape="poly" id="edge491_Node000008_Node000009" title=" " alt="" coords="332,363,432,352,433,358,332,369"/>
+<area shape="rect" id="Node000010" href="$structFeel_1_1CheckerExactFailed.html" title=" " alt="" coords="437,390,610,415"/>
+<area shape="poly" id="edge492_Node000008_Node000010" title=" " alt="" coords="332,378,437,390,436,396,331,384"/>
+<area shape="rect" id="Node000011" href="$classFeel_1_1vf_1_1SymbolicDifferentiationError.html" title="Exception used when symbolic differentiation is known to be unsupported." alt="" coords="419,440,628,480"/>
+<area shape="poly" id="edge493_Node000008_Node000011" title=" " alt="" coords="314,388,420,425,457,437,455,442,418,431,312,393"/>
+</map>

@@ -1,0 +1,27 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" href="$classFeel_1_1Operator.html" title="Operator between function spaces." alt="" coords="5,218,208,258"/>
+<area shape="rect" id="Node000001" href="$classFeel_1_1OperatorLinear.html" title=" " alt="" coords="263,5,489,60"/>
+<area shape="poly" id="edge349_Node000000_Node000001" title=" " alt="" coords="126,205,179,137,215,102,255,70,277,58,280,62,257,75,218,106,183,141,131,208"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1OperatorLinear.html" title=" " alt="" coords="256,85,496,154"/>
+<area shape="poly" id="edge351_Node000000_Node000003" title=" " alt="" coords="158,209,255,164,283,152,285,156,257,168,160,214"/>
+<area shape="rect" id="Node000005" href="$classFeel_1_1OperatorLinear.html" title=" " alt="" coords="306,178,446,218"/>
+<area shape="poly" id="edge353_Node000000_Node000005" title=" " alt="" coords="221,218,305,206,306,211,222,224"/>
+<area shape="rect" id="Node000007" href="$classFeel_1_1OperatorLinear.html" title=" " alt="" coords="267,242,485,311"/>
+<area shape="poly" id="edge355_Node000000_Node000007" title=" " alt="" coords="222,252,267,258,267,264,221,257"/>
+<area shape="rect" id="Node000009" href="$classFeel_1_1OperatorLinear.html" title=" " alt="" coords="282,335,470,375"/>
+<area shape="poly" id="edge357_Node000000_Node000009" title=" " alt="" coords="150,263,200,293,257,321,290,333,289,338,255,326,198,298,147,268"/>
+<area shape="rect" id="Node000010" href="$classFeel_1_1OperatorLinear.html" title="Linear Operator between function spaces, represented by a matrix." alt="" coords="258,399,494,439"/>
+<area shape="poly" id="edge358_Node000000_Node000010" title=" " alt="" coords="132,267,185,328,220,359,257,385,283,397,280,402,255,390,216,363,182,331,128,271"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1OperatorInterpolation.html" title="Global interpolation operator." alt="" coords="544,5,801,60"/>
+<area shape="poly" id="edge350_Node000001_Node000002" title=" " alt="" coords="502,30,544,30,544,35,502,35"/>
+<area shape="rect" id="Node000004" href="$classFeel_1_1OperatorLagrangeP1.html" title=" " alt="" coords="585,99,760,139"/>
+<area shape="poly" id="edge352_Node000003_Node000004" title=" " alt="" coords="509,117,585,117,585,122,509,122"/>
+<area shape="rect" id="Node000006" href="$classFeel_1_1OperatorSteklovPc.html" title="OperatorSteklovPc made easy." alt="" coords="590,178,755,218"/>
+<area shape="poly" id="edge354_Node000005_Node000006" title=" " alt="" coords="460,195,590,195,590,201,460,201"/>
+<area shape="rect" id="Node000008" href="$classFeel_1_1Projector.html" title="Projection made easy." alt="" coords="570,257,775,297"/>
+<area shape="poly" id="edge356_Node000007_Node000008" title=" " alt="" coords="499,274,570,274,570,279,499,279"/>
+<area shape="rect" id="Node000011" href="$classFeel_1_1OperatorLinearComposite.html" title=" " alt="" coords="555,363,791,403"/>
+<area shape="poly" id="edge359_Node000010_Node000011" title=" " alt="" coords="508,401,554,395,555,400,508,406"/>
+<area shape="rect" id="Node000012" href="$classFeel_1_1OperatorLinearFree.html" title="Linear Operator Free between function spaces, represented by a matrix but this matrix is not automati..." alt="" coords="559,428,787,483"/>
+<area shape="poly" id="edge360_Node000010_Node000012" title=" " alt="" coords="508,433,559,439,558,444,508,438"/>
+</map>

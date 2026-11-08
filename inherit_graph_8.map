@@ -1,0 +1,13 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" href="$classboost_1_1fusion_1_1map.html" title=" " alt="" coords="48,39,179,64"/>
+<area shape="rect" id="Node000001" href="$structFeel_1_1StencilRangeMap0Type.html" title=" " alt="" coords="280,5,473,31"/>
+<area shape="poly" id="edge89_Node000000_Node000001" title=" " alt="" coords="192,39,280,28,280,33,193,44"/>
+<area shape="rect" id="Node000003" href="$structFeel_1_1StencilRangeMap1Type.html" title=" " alt="" coords="280,55,473,95"/>
+<area shape="poly" id="edge90_Node000000_Node000003" title=" " alt="" coords="193,56,280,64,280,69,192,61"/>
+<area shape="rect" id="Node000004" href="$structFeel_1_1StencilRangeMap2Type.html" title=" " alt="" coords="269,119,484,159"/>
+<area shape="poly" id="edge91_Node000000_Node000004" title=" " alt="" coords="193,63,223,73,247,89,271,105,300,117,298,122,268,110,244,93,220,78,191,68"/>
+<area shape="rect" id="Node000002" href="$structFeel_1_1StencilRangeMapTypeBase.html" title=" " alt="" coords="5,88,221,113"/>
+<area shape="poly" id="edge92_Node000002_Node000001" title=" " alt="" coords="196,82,220,73,244,57,268,41,305,28,307,33,271,46,247,62,223,78,198,87"/>
+<area shape="poly" id="edge93_Node000002_Node000003" title=" " alt="" coords="235,86,279,82,280,87,235,92"/>
+<area shape="poly" id="edge94_Node000002_Node000004" title=" " alt="" coords="214,113,269,121,269,126,214,118"/>
+</map>

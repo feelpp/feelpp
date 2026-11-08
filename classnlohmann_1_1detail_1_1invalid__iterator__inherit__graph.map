@@ -1,0 +1,7 @@
+<map id="nlohmann::detail::invalid_iterator" name="nlohmann::detail::invalid_iterator">
+<area shape="rect" id="Node000001" title="exception indicating errors with iterators" alt="" coords="15,332,169,412"/>
+<area shape="rect" id="Node000002" href="$classnlohmann_1_1detail_1_1exception.html" title="general exception of the basic_json class" alt="" coords="5,119,179,284"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="95,298,95,332,89,332,89,298"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="44,5,140,71"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="95,84,95,118,89,118,89,84"/>
+</map>

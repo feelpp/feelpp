@@ -1,0 +1,11 @@
+<map id="Feel::FeelModels::ModelAlgebraic::DataUpdateBase" name="Feel::FeelModels::ModelAlgebraic::DataUpdateBase">
+<area shape="rect" id="Node000001" title=" " alt="" coords="357,5,568,185"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataNewtonInitialGuess.html" title=" " alt="" coords="5,253,216,393"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="347,164,229,236,201,255,198,251,227,231,344,159"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateJacobian.html" title=" " alt="" coords="240,233,451,413"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="412,199,394,234,389,232,408,197"/>
+<area shape="rect" id="Node000004" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateLinear.html" title=" " alt="" coords="475,233,685,413"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="518,197,536,232,531,234,513,199"/>
+<area shape="rect" id="Node000005" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateResidual.html" title=" " alt="" coords="709,233,920,413"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="581,159,699,231,710,239,707,243,696,236,579,164"/>
+</map>

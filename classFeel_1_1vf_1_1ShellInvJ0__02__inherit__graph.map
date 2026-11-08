@@ -1,0 +1,7 @@
+<map id="Feel::vf::ShellInvJ0_02" name="Feel::vf::ShellInvJ0_02">
+<area shape="rect" id="Node000001" title=" " alt="" coords="47,396,195,461"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1vf_1_1detail_1_1ShellCellScalarTerminal.html" title=" " alt="" coords="5,253,236,348"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="123,362,123,396,118,396,118,362"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1vf_1_1detail_1_1ShellCellTerminalBase.html" title=" " alt="" coords="39,5,202,205"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="123,219,123,253,118,253,118,219"/>
+</map>

@@ -1,0 +1,21 @@
+<map id="Feel::Convex&lt; Dim, Order, RDim &gt;" name="Feel::Convex&lt; Dim, Order, RDim &gt;">
+<area shape="rect" id="Node000001" title="Convex base class." alt="" coords="384,119,516,319"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="5,374,164,779"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="372,248,324,269,272,295,222,329,177,369,166,382,162,378,173,365,218,324,269,291,322,264,370,243"/>
+<area shape="rect" id="Node000005" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="188,374,347,779"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="381,332,360,368,349,390,344,387,356,365,376,329"/>
+<area shape="rect" id="Node000007" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="371,374,529,779"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="453,333,453,374,447,374,447,333"/>
+<area shape="rect" id="Node000009" href="$classFeel_1_1Hypercube.html" title=" " alt="" coords="553,367,712,787"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="523,329,543,365,556,390,551,393,538,368,518,332"/>
+<area shape="rect" id="Node000010" href="$classFeel_1_1Simplex.html" title="simplex of dimension Dim" alt="" coords="736,367,895,787"/>
+<area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="530,244,578,264,630,291,681,325,725,365,738,380,734,383,721,369,677,329,627,296,576,269,528,249"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1ConvexBase.html" title=" " alt="" coords="389,5,511,71"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="453,84,453,119,447,119,447,84"/>
+<area shape="rect" id="Node000004" href="$structFeel_1_1Line.html" title=" " alt="" coords="25,842,144,907"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="87,793,87,842,82,842,82,793"/>
+<area shape="rect" id="Node000006" href="$structFeel_1_1Tetrahedron.html" title=" " alt="" coords="206,835,329,915"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="270,793,270,834,265,834,265,793"/>
+<area shape="rect" id="Node000008" href="$structFeel_1_1Triangle.html" title=" " alt="" coords="379,842,521,907"/>
+<area shape="poly" id="edge7_Node000007_Node000008" title=" " alt="" coords="453,793,453,842,447,842,447,793"/>
+</map>

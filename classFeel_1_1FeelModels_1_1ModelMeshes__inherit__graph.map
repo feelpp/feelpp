@@ -1,0 +1,13 @@
+<map id="Feel::FeelModels::ModelMeshes&lt; IndexType &gt;" name="Feel::FeelModels::ModelMeshes&lt; IndexType &gt;">
+<area shape="rect" id="Node000001" title="Mesh Model Collection." alt="" coords="55,860,262,1055"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,687,120,772"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="88,784,120,859,115,861,83,786"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title="Model base class." alt="" coords="145,647,365,812"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="217,826,202,861,197,859,212,823"/>
+<area shape="rect" id="Node000004" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="50,119,251,599"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="224,611,234,646,229,647,219,612"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="89,5,213,71"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="153,84,153,119,148,119,148,84"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="275,319,439,399"/>
+<area shape="poly" id="edge5_Node000003_Node000006" title=" " alt="" coords="345,413,280,647,275,646,340,411"/>
+</map>

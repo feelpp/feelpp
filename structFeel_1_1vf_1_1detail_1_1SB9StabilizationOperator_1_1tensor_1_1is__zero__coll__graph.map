@@ -1,0 +1,5 @@
+<map id="Feel::vf::detail::SB9StabilizationOperator&lt; ElementType, Role, KernelCacheTemplate, Kind, Rows &gt;::tensor&lt; Geo_t, Basis_i_t, Basis_j_t &gt;::is_zero" name="Feel::vf::detail::SB9StabilizationOperator&lt; ElementType, Role, KernelCacheTemplate, Kind, Rows &gt;::tensor&lt; Geo_t, Basis_i_t, Basis_j_t &gt;::is_zero">
+<area shape="rect" id="Node000001" title="Zero&#45;trait required by the Feel++ tensor API." alt="" coords="5,133,207,257"/>
+<area shape="rect" id="Node000002" href="$classbool.html" title=" " alt="" coords="87,5,125,71"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="109,71,109,117,103,117,103,71"/>
+</map>

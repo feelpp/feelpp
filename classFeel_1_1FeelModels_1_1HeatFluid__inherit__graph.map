@@ -1,0 +1,24 @@
+<map id="Feel::FeelModels::HeatFluid&lt; HeatType, FluidType &gt;" name="Feel::FeelModels::HeatFluid&lt; HeatType, FluidType &gt;">
+<area shape="rect" id="Node000001" title="class for conjuguate heat transfer toolbox" alt="" coords="303,1480,482,1660"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1FeelModels_1_1ModelNumerical.html" title="Handles some numerical model aspects: timestepping, mesh and properties." alt="" coords="148,1103,387,1432"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="343,1444,358,1479,353,1481,338,1446"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title="Model base class." alt="" coords="236,647,456,812"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="291,825,278,861,265,921,258,983,256,1103,250,1102,253,982,260,920,273,859,286,823"/>
+<area shape="rect" id="Node000007" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic.html" title=" " alt="" coords="287,875,498,1040"/>
+<area shape="poly" id="edge7_Node000007_Node000003" title=" " alt="" coords="368,825,378,874,373,875,363,826"/>
+<area shape="rect" id="Node000008" href="$classFeel_1_1FeelModels_1_1ModelMeshes.html" title=" " alt="" coords="5,860,212,1055"/>
+<area shape="poly" id="edge10_Node000008_Node000003" title=" " alt="" coords="252,823,212,862,208,858,248,820"/>
+<area shape="rect" id="Node000010" href="$classFeel_1_1FeelModels_1_1ModelPhysics.html" title=" " alt="" coords="419,1137,633,1397"/>
+<area shape="poly" id="edge12_Node000010_Node000003" title=" " alt="" coords="469,803,493,829,512,859,527,892,538,927,551,999,554,1070,550,1137,545,1137,548,1070,545,999,533,928,522,894,508,861,489,832,465,807"/>
+<area shape="rect" id="Node000004" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="141,119,343,599"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="316,611,326,646,320,647,311,612"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="180,5,304,71"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="245,84,245,119,239,119,239,84"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="367,319,531,399"/>
+<area shape="poly" id="edge5_Node000003_Node000006" title=" " alt="" coords="437,413,371,647,366,646,432,411"/>
+<area shape="poly" id="edge6_Node000002_Node000007" title=" " alt="" coords="357,1054,336,1104,332,1102,352,1052"/>
+<area shape="poly" id="edge8_Node000002_Node000008" title=" " alt="" coords="167,1066,185,1101,180,1104,162,1068"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="51,687,166,772"/>
+<area shape="poly" id="edge9_Node000008_Node000009" title=" " alt="" coords="111,786,111,860,106,860,106,786"/>
+<area shape="poly" id="edge11_Node000001_Node000010" title=" " alt="" coords="466,1411,435,1481,430,1479,461,1409"/>
+</map>

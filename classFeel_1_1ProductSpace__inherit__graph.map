@@ -1,0 +1,7 @@
+<map id="Feel::ProductSpace&lt; T, same_mesh &gt;" name="Feel::ProductSpace&lt; T, same_mesh &gt;">
+<area shape="rect" id="Node000001" title=" " alt="" coords="45,119,215,319"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,5,113,71"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="79,82,93,118,88,120,74,84"/>
+<area shape="rect" id="Node000003" href="$classProductSpaceBase.html" title=" " alt="" coords="137,5,264,71"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="186,84,172,120,167,118,181,82"/>
+</map>

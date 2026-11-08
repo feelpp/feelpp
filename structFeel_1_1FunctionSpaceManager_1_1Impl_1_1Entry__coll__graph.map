@@ -1,0 +1,15 @@
+<map id="Feel::FunctionSpaceManager::Impl::Entry" name="Feel::FunctionSpaceManager::Impl::Entry">
+<area shape="rect" id="Node000001" title="Strongly retained function space and its LRU metadata." alt="" coords="69,1115,253,1195"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="11,957,174,1037"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="112,1037,139,1098,134,1100,107,1039"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1FunctionSpaceBase.html" title="base class for FunctionSpace" alt="" coords="5,649,180,895"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="95,895,95,941,90,941,90,895"/>
+<area shape="rect" id="Node000004" href="$classFeel_1_1CommObject.html" title=" " alt="" coords="15,277,139,443"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="83,456,91,649,85,649,78,456"/>
+<area shape="rect" id="Node000005" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="163,120,364,600"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="161,614,146,650,141,648,156,612"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="201,5,325,71"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="266,84,266,120,261,120,261,84"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="199,965,259,1030"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="217,1031,187,1101,182,1099,212,1029"/>
+</map>

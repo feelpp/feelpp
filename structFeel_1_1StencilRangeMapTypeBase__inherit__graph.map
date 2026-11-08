@@ -1,0 +1,9 @@
+<map id="Feel::StencilRangeMapTypeBase" name="Feel::StencilRangeMapTypeBase">
+<area shape="rect" id="Node000001" title=" " alt="" coords="203,5,411,71"/>
+<area shape="rect" id="Node000002" href="$structFeel_1_1StencilRangeMap0Type.html" title=" " alt="" coords="5,126,191,211"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="246,80,167,128,164,124,243,76"/>
+<area shape="rect" id="Node000003" href="$structFeel_1_1StencilRangeMap1Type.html" title=" " alt="" coords="215,119,400,219"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="310,84,310,119,305,119,305,84"/>
+<area shape="rect" id="Node000004" href="$structFeel_1_1StencilRangeMap2Type.html" title=" " alt="" coords="424,119,631,219"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="375,76,445,116,442,121,372,80"/>
+</map>

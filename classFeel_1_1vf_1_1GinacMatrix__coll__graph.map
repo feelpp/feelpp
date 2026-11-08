@@ -1,0 +1,33 @@
+<map id="Feel::vf::GinacMatrix&lt; M, N, Order, SymbolsExprType &gt;" name="Feel::vf::GinacMatrix&lt; M, N, Order, SymbolsExprType &gt;">
+<area shape="rect" id="Node000001" title="Handle Ginac matrix expression." alt="" coords="976,703,1196,1312"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1vf_1_1GiNaCBase.html" title=" " alt="" coords="533,475,698,640"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="710,645,978,899,974,903,706,649"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="5,277,180,383"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="194,387,316,448,429,493,533,528,532,533,427,498,314,453,191,391"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="205,290,333,370"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="295,369,326,410,366,449,402,472,441,493,518,525,516,530,438,498,399,477,363,453,322,414,291,372"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="241,142,297,207"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="271,208,271,273,266,273,266,208"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="357,290,495,370"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="428,370,434,410,441,431,451,449,482,483,520,511,517,515,478,487,446,452,436,433,429,412,423,371"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="519,283,655,377"/>
+<area shape="poly" id="edge6_Node000002_Node000007" title=" " alt="" coords="549,379,534,408,529,429,534,450,538,459,533,461,529,451,524,429,529,406,544,376"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="528,135,647,215"/>
+<area shape="poly" id="edge7_Node000007_Node000008" title=" " alt="" coords="590,215,590,266,585,266,585,215"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="679,290,818,370"/>
+<area shape="poly" id="edge8_Node000002_Node000009" title=" " alt="" coords="727,372,704,408,673,462,668,459,700,405,722,369"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="691,142,763,207"/>
+<area shape="poly" id="edge9_Node000009_Node000010" title=" " alt="" coords="734,207,744,273,738,274,729,208"/>
+<area shape="rect" id="Node000011" title=" " alt="" coords="668,5,787,85"/>
+<area shape="poly" id="edge10_Node000010_Node000011" title=" " alt="" coords="730,99,730,142,725,142,725,99"/>
+<area shape="rect" id="Node000012" title=" " alt="" coords="787,142,865,207"/>
+<area shape="poly" id="edge11_Node000009_Node000012" title=" " alt="" coords="812,209,778,276,773,274,808,206"/>
+<area shape="rect" id="Node000013" href="$classsize__t.html" title=" " alt="" coords="907,297,956,363"/>
+<area shape="poly" id="edge15_Node000001_Node000013" title=" " alt="" coords="947,362,962,406,999,546,1030,686,1025,687,993,547,957,407,942,364"/>
+<area shape="poly" id="edge12_Node000002_Node000013" title=" " alt="" coords="915,364,882,418,857,453,824,477,788,498,715,530,713,525,785,494,821,473,853,449,877,415,910,361"/>
+<area shape="rect" id="Node000014" href="$classbool.html" title=" " alt="" coords="1055,297,1093,363"/>
+<area shape="poly" id="edge16_Node000001_Node000014" title=" " alt="" coords="1095,337,1138,362,1160,382,1176,405,1181,418,1181,428,1177,451,1165,569,1148,687,1143,686,1159,568,1171,450,1175,428,1175,419,1172,408,1156,385,1135,367,1092,342"/>
+<area shape="poly" id="edge13_Node000002_Node000014" title=" " alt="" coords="1056,362,1018,409,993,433,966,453,905,485,839,511,774,530,715,543,714,538,773,525,837,506,902,481,963,448,990,428,1014,405,1052,359"/>
+<area shape="rect" id="Node000015" href="$classint.html" title=" " alt="" coords="1321,525,1349,590"/>
+<area shape="poly" id="edge14_Node000001_Node000015" title=" " alt="" coords="1326,591,1304,641,1257,731,1207,819,1202,816,1252,728,1300,639,1321,589"/>
+</map>

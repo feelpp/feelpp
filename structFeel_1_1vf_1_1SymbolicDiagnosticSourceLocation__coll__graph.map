@@ -1,0 +1,9 @@
+<map id="Feel::vf::SymbolicDiagnosticSourceLocation" name="Feel::vf::SymbolicDiagnosticSourceLocation">
+<area shape="rect" id="Node000001" title="Stored source&#45;location information for symbolic diagnostics." alt="" coords="28,277,211,377"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="29,135,101,200"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="72,199,86,253,89,261,84,263,81,254,67,201"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="5,5,124,85"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="67,99,67,134,62,134,62,99"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="125,135,220,200"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="165,201,144,263,138,261,159,199"/>
+</map>

@@ -1,0 +1,9 @@
+<map id="Feel::TimeSet" name="Feel::TimeSet">
+<area shape="rect" id="Node000001" title="Handles a set of time steps." alt="" coords="139,119,241,284"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1CNAB2.html" title=" " alt="" coords="5,332,177,597"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="157,298,144,333,139,331,152,296"/>
+<area shape="rect" id="Node000004" href="$classFeel_1_1CNAB2x2.html" title=" " alt="" coords="201,375,379,555"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="229,296,258,373,253,375,224,298"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="136,5,244,71"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="193,84,193,118,187,118,187,84"/>
+</map>

@@ -1,0 +1,103 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" title=" " alt="" coords="385,318,567,343"/>
+<area shape="rect" id="Node000001" href="$classFeel_1_1Geo0D.html" title=" " alt="" coords="918,253,1101,293"/>
+<area shape="poly" id="edge29_Node000000_Node000001" title=" " alt="" coords="580,314,620,309,917,279,918,284,620,314,580,319"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1Geo0D.html" title=" " alt="" coords="946,318,1073,343"/>
+<area shape="poly" id="edge30_Node000000_Node000003" title=" " alt="" coords="580,328,946,328,946,333,580,333"/>
+<area shape="rect" id="Node000005" href="$classFeel_1_1GeoEntity.html" title=" " alt="" coords="636,483,808,538"/>
+<area shape="poly" id="edge31_Node000000_Node000005" title=" " alt="" coords="508,349,574,406,588,424,597,439,606,453,622,468,641,481,639,485,618,472,602,457,592,442,584,427,570,409,505,353"/>
+<area shape="rect" id="Node000026" href="$classFeel_1_1GeoEntity.html" title=" " alt="" coords="620,138,824,178"/>
+<area shape="poly" id="edge32_Node000000_Node000026" title=" " alt="" coords="493,305,545,247,580,215,619,188,643,176,645,181,621,193,584,219,549,251,497,309"/>
+<area shape="rect" id="Node000028" href="$classFeel_1_1Geo0D.html" title="Zero dimensional entity." alt="" coords="934,368,1085,408"/>
+<area shape="poly" id="edge33_Node000000_Node000028" title=" " alt="" coords="581,339,934,377,933,382,580,344"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1GeoEntity.html" title="base class for all geometric entities" alt="" coords="641,418,803,458"/>
+<area shape="poly" id="edge35_Node000000_Node000002" title=" " alt="" coords="515,347,621,397,667,416,665,421,619,402,513,352"/>
+<area shape="rect" id="Node000037" href="$classFeel_1_1detail_1_1TimeSet_1_1Step.html" title="A temporal sample composed of a time&#45;neutral field set. Time/index metadata belongs here; field conve..." alt="" coords="643,202,801,242"/>
+<area shape="poly" id="edge45_Node000000_Node000037" title=" " alt="" coords="513,309,619,259,665,240,667,245,621,263,515,314"/>
+<area shape="rect" id="Node000029" href="$classFeel_1_1GeoElement0D.html" title="Class for Points and Vertices." alt="" coords="1211,368,1403,408"/>
+<area shape="poly" id="edge34_Node000028_Node000029" title=" " alt="" coords="1099,385,1210,385,1210,390,1099,390"/>
+<area shape="poly" id="edge36_Node000002_Node000001" title=" " alt="" coords="747,406,800,353,834,326,871,303,917,285,919,290,873,307,837,330,804,357,751,410"/>
+<area shape="poly" id="edge37_Node000002_Node000003" title=" " alt="" coords="763,409,813,379,871,353,945,335,947,340,873,358,816,384,765,413"/>
+<area shape="poly" id="edge40_Node000002_Node000028" title=" " alt="" coords="816,419,933,398,934,403,817,424"/>
+<area shape="rect" id="Node000038" href="$classFeel_1_1GeoND.html" title=" " alt="" coords="872,835,1147,1007"/>
+<area shape="poly" id="edge38_Node000002_Node000038" title=" " alt="" coords="816,459,826,469,852,507,863,544,865,580,862,616,857,653,854,690,859,731,874,774,892,805,914,833,910,836,888,808,870,777,854,732,849,691,851,652,856,615,860,580,858,545,847,509,822,472,812,463"/>
+<area shape="rect" id="Node000040" href="$classFeel_1_1GeoND.html" title=" " alt="" coords="882,694,1137,764"/>
+<area shape="poly" id="edge39_Node000002_Node000040" title=" " alt="" coords="816,460,826,468,843,492,851,516,854,539,853,562,853,608,860,631,874,655,894,676,918,692,915,696,891,680,870,659,855,633,848,609,848,562,848,539,846,517,838,495,822,472,813,464"/>
+<area shape="rect" id="Node000032" href="$classFeel_1_1GeoND.html" title="Base class for Multi&#45;dimensional basis Geometrical Entities." alt="" coords="884,519,1135,574"/>
+<area shape="poly" id="edge41_Node000002_Node000032" title=" " alt="" coords="804,460,825,468,873,489,939,516,937,521,871,494,823,473,802,465"/>
+<area shape="rect" id="Node000031" href="$classFeel_1_1GeoElement1D.html" title="class for 1D elements" alt="" coords="1203,512,1410,581"/>
+<area shape="poly" id="edge42_Node000032_Node000031" title=" " alt="" coords="1148,544,1203,544,1203,549,1148,549"/>
+<area shape="rect" id="Node000033" href="$classFeel_1_1GeoElement2D.html" title="Class for 2D elements." alt="" coords="1195,432,1419,487"/>
+<area shape="poly" id="edge43_Node000032_Node000033" title=" " alt="" coords="1116,512,1211,484,1213,490,1118,518"/>
+<area shape="rect" id="Node000034" href="$classFeel_1_1GeoElement3D.html" title="Class for 3D elements." alt="" coords="1201,606,1412,660"/>
+<area shape="poly" id="edge44_Node000032_Node000034" title=" " alt="" coords="1118,575,1213,603,1211,608,1116,580"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="380,122,572,147"/>
+<area shape="poly" id="edge46_Node000004_Node000001" title=" " alt="" coords="497,110,549,66,583,45,619,29,676,12,724,3,771,8,825,29,860,51,891,77,919,108,943,140,980,203,1002,252,998,254,975,205,938,143,915,111,887,81,857,55,823,34,769,13,724,9,677,17,621,34,585,50,552,71,500,114"/>
+<area shape="poly" id="edge47_Node000004_Node000003" title=" " alt="" coords="509,113,573,81,613,66,657,54,701,47,745,48,788,58,826,80,848,106,857,134,857,162,853,191,848,221,848,249,855,277,874,303,889,315,907,323,946,330,945,336,906,328,887,319,870,307,850,279,842,250,843,220,848,191,852,162,852,134,843,109,822,84,786,63,745,53,702,53,658,59,615,71,575,86,511,117"/>
+<area shape="poly" id="edge48_Node000004_Node000005" title=" " alt="" coords="571,153,574,157,589,176,600,196,610,235,608,274,601,313,594,351,592,390,599,429,622,469,637,483,634,487,618,472,594,431,586,390,589,350,596,312,603,273,604,236,595,198,585,179,570,160,567,157"/>
+<area shape="poly" id="edge49_Node000004_Node000026" title=" " alt="" coords="586,142,620,146,619,151,585,148"/>
+<area shape="poly" id="edge50_Node000004_Node000028" title=" " alt="" coords="521,114,586,95,667,83,709,83,751,89,790,102,826,124,849,150,858,179,858,208,854,237,849,267,848,296,855,325,874,352,902,372,935,382,933,387,899,376,870,356,850,327,843,297,844,266,849,236,853,207,853,179,844,153,822,128,788,107,750,94,709,88,667,88,588,101,522,120"/>
+<area shape="poly" id="edge51_Node000004_Node000002" title=" " alt="" coords="567,151,574,156,594,179,604,201,611,225,622,253,712,417,707,419,618,255,606,227,599,203,590,181,570,160,564,156"/>
+<area shape="poly" id="edge52_Node000004_Node000037" title=" " alt="" coords="554,148,573,156,598,172,621,188,650,200,648,205,619,193,595,176,571,161,552,153"/>
+<area shape="rect" id="Node000023" href="$classFeel_1_1ConvexBase.html" title=" " alt="" coords="5,602,136,627"/>
+<area shape="rect" id="Node000007" href="$classFeel_1_1Convex.html" title=" " alt="" coords="188,562,328,602"/>
+<area shape="poly" id="edge53_Node000023_Node000007" title=" " alt="" coords="149,598,187,592,188,597,150,603"/>
+<area shape="rect" id="Node000024" href="$classFeel_1_1Convex.html" title=" " alt="" coords="188,448,328,488"/>
+<area shape="poly" id="edge60_Node000023_Node000024" title=" " alt="" coords="88,589,129,544,182,497,203,485,206,490,186,502,133,548,92,593"/>
+<area shape="rect" id="Node000025" href="$classFeel_1_1Convex.html" title=" " alt="" coords="188,626,328,666"/>
+<area shape="poly" id="edge61_Node000023_Node000025" title=" " alt="" coords="150,625,188,632,187,637,149,630"/>
+<area shape="rect" id="Node000012" href="$classFeel_1_1Convex.html" title="Convex base class." alt="" coords="188,773,328,813"/>
+<area shape="poly" id="edge62_Node000023_Node000012" title=" " alt="" coords="88,637,128,697,155,729,186,758,206,771,203,775,182,762,151,732,123,700,84,640"/>
+<area shape="rect" id="Node000008" href="$classFeel_1_1Hypercube.html" title=" " alt="" coords="397,470,555,510"/>
+<area shape="poly" id="edge54_Node000007_Node000008" title=" " alt="" coords="316,554,331,547,379,520,409,508,411,513,381,525,333,551,318,559"/>
+<area shape="rect" id="Node000006" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="406,534,546,574"/>
+<area shape="poly" id="edge56_Node000007_Node000006" title=" " alt="" coords="341,569,406,561,406,566,342,574"/>
+<area shape="rect" id="Node000016" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="405,662,547,702"/>
+<area shape="poly" id="edge58_Node000007_Node000016" title=" " alt="" coords="322,606,333,612,357,631,381,648,407,660,405,665,379,653,354,635,331,617,320,611"/>
+<area shape="rect" id="Node000009" href="$classFeel_1_1Reference_3_01Hypercube_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html" title=" " alt="" coords="627,562,817,616"/>
+<area shape="poly" id="edge55_Node000008_Node000009" title=" " alt="" coords="556,513,573,520,621,547,649,559,647,564,619,551,571,525,554,518"/>
+<area shape="poly" id="edge57_Node000006_Node000005" title=" " alt="" coords="559,537,635,523,636,528,560,542"/>
+<area shape="rect" id="Node000017" href="$classFeel_1_1Reference_3_01Simplex_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html" title=" " alt="" coords="629,640,815,695"/>
+<area shape="poly" id="edge59_Node000016_Node000017" title=" " alt="" coords="561,675,628,671,628,676,562,680"/>
+<area shape="rect" id="Node000013" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="393,727,559,752"/>
+<area shape="poly" id="edge63_Node000012_Node000013" title=" " alt="" coords="341,770,423,750,424,755,342,775"/>
+<area shape="rect" id="Node000018" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="393,776,559,802"/>
+<area shape="poly" id="edge65_Node000012_Node000018" title=" " alt="" coords="341,789,393,788,393,793,341,794"/>
+<area shape="rect" id="Node000020" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="393,826,559,851"/>
+<area shape="poly" id="edge67_Node000012_Node000020" title=" " alt="" coords="342,808,415,823,414,828,341,813"/>
+<area shape="rect" id="Node000011" href="$classFeel_1_1Hypercube.html" title=" " alt="" coords="397,598,555,638"/>
+<area shape="poly" id="edge69_Node000012_Node000011" title=" " alt="" coords="324,763,330,758,341,744,347,731,353,704,359,676,366,662,378,648,395,636,398,641,382,652,370,665,364,678,358,705,352,732,345,747,334,761,328,767"/>
+<area shape="rect" id="Node000022" href="$classFeel_1_1Simplex.html" title="simplex of dimension Dim" alt="" coords="405,876,547,916"/>
+<area shape="poly" id="edge70_Node000012_Node000022" title=" " alt="" coords="304,818,381,860,413,873,411,878,379,865,301,823"/>
+<area shape="rect" id="Node000014" href="$structFeel_1_1Line.html" title=" " alt="" coords="659,719,785,744"/>
+<area shape="poly" id="edge64_Node000013_Node000014" title=" " alt="" coords="572,734,659,731,659,736,572,739"/>
+<area shape="rect" id="Node000019" href="$structFeel_1_1Tetrahedron.html" title=" " alt="" coords="657,769,787,809"/>
+<area shape="poly" id="edge66_Node000018_Node000019" title=" " alt="" coords="572,786,656,786,656,792,572,792"/>
+<area shape="rect" id="Node000021" href="$structFeel_1_1Triangle.html" title=" " alt="" coords="647,883,797,908"/>
+<area shape="poly" id="edge68_Node000020_Node000021" title=" " alt="" coords="545,852,667,880,666,886,544,857"/>
+<area shape="rect" id="Node000041" href="$classFeel_1_1Entity.html" title=" " alt="" coords="389,420,563,446"/>
+<area shape="poly" id="edge71_Node000041_Node000002" title=" " alt="" coords="577,432,641,434,641,439,577,438"/>
+<area shape="rect" id="Node000010" href="$classFeel_1_1HypercubeBase.html" title=" " alt="" coords="184,512,332,538"/>
+<area shape="poly" id="edge72_Node000010_Node000008" title=" " alt="" coords="345,508,396,500,397,506,346,514"/>
+<area shape="poly" id="edge73_Node000010_Node000011" title=" " alt="" coords="317,540,333,548,358,566,381,584,407,596,405,601,379,589,354,570,331,553,314,545"/>
+<area shape="rect" id="Node000015" href="$classFeel_1_1SimplexBase.html" title=" " alt="" coords="192,723,324,748"/>
+<area shape="poly" id="edge74_Node000015_Node000006" title=" " alt="" coords="290,713,330,677,345,652,351,629,360,607,378,584,404,568,407,573,382,588,364,610,356,631,349,654,334,680,293,717"/>
+<area shape="poly" id="edge76_Node000015_Node000016" title=" " alt="" coords="324,717,404,697,405,702,325,722"/>
+<area shape="poly" id="edge75_Node000015_Node000013" title=" " alt="" coords="338,734,393,735,393,741,338,740"/>
+<area shape="poly" id="edge77_Node000015_Node000018" title=" " alt="" coords="325,749,424,774,423,779,324,754"/>
+<area shape="poly" id="edge78_Node000015_Node000020" title=" " alt="" coords="320,751,334,759,349,772,358,786,367,799,381,811,409,823,407,828,379,815,363,802,354,789,345,776,330,763,318,756"/>
+<area shape="poly" id="edge79_Node000015_Node000022" title=" " alt="" coords="325,753,334,759,345,772,352,785,359,811,365,836,371,848,382,860,406,876,403,880,378,864,367,851,360,838,353,812,347,787,341,775,330,763,322,757"/>
+<area shape="rect" id="Node000030" href="$classFeel_1_1SubFaceOfNone.html" title=" " alt="" coords="933,440,1085,480"/>
+<area shape="poly" id="edge80_Node000030_Node000029" title=" " alt="" coords="1098,436,1223,405,1224,410,1099,441"/>
+<area shape="poly" id="edge81_Node000030_Node000031" title=" " alt="" coords="1093,481,1204,514,1203,519,1091,486"/>
+<area shape="poly" id="edge82_Node000030_Node000033" title=" " alt="" coords="1099,457,1194,457,1194,462,1099,462"/>
+<area shape="rect" id="Node000027" title=" " alt="" coords="427,171,525,196"/>
+<area shape="poly" id="edge83_Node000027_Node000026" title=" " alt="" coords="538,175,620,166,620,171,539,180"/>
+<area shape="rect" id="Node000036" href="$classmpl_1_1if___3_01mpl_1_1bool___3_01false_01_4_00_01mpl_1_1identity_3_01GeoNDMeasuresStorage_1b4a2037756985fd616e6afd271a4aef.html" title=" " alt="" coords="657,834,787,859"/>
+<area shape="poly" id="edge84_Node000036_Node000032" title=" " alt="" coords="799,834,822,819,841,794,849,768,850,743,848,717,845,690,845,663,853,635,870,606,890,586,914,572,917,576,894,591,874,609,858,637,851,663,850,690,853,716,855,743,854,769,845,796,826,823,802,839"/>
+<area shape="rect" id="Node000039" title=" " alt="" coords="657,932,787,958"/>
+<area shape="poly" id="edge85_Node000039_Node000038" title=" " alt="" coords="801,936,872,930,872,935,801,941"/>
+<area shape="poly" id="edge86_Node000039_Node000040" title=" " alt="" coords="799,932,822,919,841,897,848,873,854,848,870,821,904,788,942,761,945,766,908,792,874,824,859,850,853,875,845,899,826,923,801,937"/>
+<area shape="rect" id="Node000035" href="$classFeel_1_1SubFaceOfNone.html" title=" " alt="" coords="918,620,1101,646"/>
+<area shape="poly" id="edge87_Node000035_Node000034" title=" " alt="" coords="1114,630,1201,630,1201,636,1114,636"/>
+</map>

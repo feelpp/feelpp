@@ -1,0 +1,27 @@
+<map id="Feel::MeshStructuredSetup&lt; Dim, RealDim, T, IndexT &gt;" name="Feel::MeshStructuredSetup&lt; Dim, RealDim, T, IndexT &gt;">
+<area shape="rect" id="Node000001" title="MeshStructuredSetup class define :" alt="" coords="343,320,526,540"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,163,184,228"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="115,227,139,261,170,294,207,322,248,347,329,387,327,392,245,352,204,326,166,298,135,265,110,230"/>
+<area shape="rect" id="Node000003" href="$classint.html" title=" " alt="" coords="209,163,237,228"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="230,227,239,261,256,295,290,334,332,367,328,371,287,338,251,297,234,263,225,229"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="261,163,333,228"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="318,227,364,304,360,307,314,230"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="238,5,357,85"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="300,99,300,162,295,162,295,99"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="357,155,512,235"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="437,235,437,303,432,303,432,235"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="380,13,492,78"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="438,78,438,139,433,139,433,78"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="537,155,679,235"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="597,237,584,267,566,297,539,333,535,330,562,295,579,265,592,235"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="546,13,670,78"/>
+<area shape="poly" id="edge8_Node000008_Node000009" title=" " alt="" coords="611,78,611,139,605,139,605,78"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="703,155,822,235"/>
+<area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="751,237,735,269,713,298,674,330,630,357,542,398,540,393,628,353,670,326,709,294,731,266,747,235"/>
+<area shape="rect" id="Node000011" title=" " alt="" coords="724,13,801,78"/>
+<area shape="poly" id="edge10_Node000010_Node000011" title=" " alt="" coords="765,78,765,139,760,139,760,78"/>
+<area shape="rect" id="Node000012" title=" " alt="" coords="847,148,1017,243"/>
+<area shape="poly" id="edge11_Node000001_Node000012" title=" " alt="" coords="904,244,879,273,850,298,774,340,694,373,615,397,543,414,541,409,613,392,692,368,772,335,846,294,875,269,900,241"/>
+<area shape="rect" id="Node000013" title=" " alt="" coords="851,5,1013,85"/>
+<area shape="poly" id="edge12_Node000012_Node000013" title=" " alt="" coords="935,85,935,131,929,131,929,85"/>
+</map>

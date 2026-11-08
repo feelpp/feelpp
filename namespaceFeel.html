@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.112.0-preview.1</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.112.0</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -5537,7 +5537,7 @@ template&lt;<a class="el" href="classint.html">int</a> Order, typename MeshType 
 <tr><td class="fieldname"><a id="a9e8a34e55922ab08cf593c8f9addd590a9a4435f4374f50c44d57dbbcff2b0fd3" name="a9e8a34e55922ab08cf593c8f9addd590a9a4435f4374f50c44d57dbbcff2b0fd3"></a>MESH_POINTS&#160;</td><td class="fielddoc"><p>points </p>
 </td></tr>
 </table>
-<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="_2scratch_2github-runners_2feelpp-actions-runner-0_2_work_2feelpp_2feelpp_2feelpp_2feel_2feeldiscr_2concepts_8hpp-example.html#a1">/scratch/github-runners/feelpp-actions-runner-0/_work/feelpp/feelpp/feelpp/feel/feeldiscr/concepts.hpp</a>.</dd>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="_2data_2cemosis_2github-actions-runner_2actions-runner-feelpp-1_2_work_2feelpp_2feelpp_2feelpp_2d9db2bd5f9a174c18f5de1dcb82d452a.html#a1">/data/cemosis/github-actions-runner/actions-runner-feelpp-1/_work/feelpp/feelpp/feelpp/feel/feeldiscr/concepts.hpp</a>.</dd>
 </dl>
 
 </div>
@@ -6083,10 +6083,6 @@ template&lt;typename MeshType &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>constexpr int </dd></dl>
 
-<p class="reference">References <a class="el" href="namespaceFeel.html#a836ab2c61887858548d7a4ec9783ca76">cantor_pairing()</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#a836ab2c61887858548d7a4ec9783ca76">cantor_pairing()</a>.</p>
-
 </div>
 </div>
 <a id="a1645407bb64a135dc3e67a7b15e912c5" name="a1645407bb64a135dc3e67a7b15e912c5"></a>
@@ -6416,6 +6412,8 @@ template&lt;typename Predicate &gt; </div>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Lambda function. </dd></dl>
+
+<p class="reference">References <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590aba9f37f6ea35ac09cf969b638eac11d6">MESH_ELEMENTS</a>, and <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590a45f482eab6ccb2dd97a838fbbf7b287a">MESH_FACES</a>.</p>
 
 </div>
 </div>
@@ -7524,8 +7522,6 @@ template&lt;typename T , typename RangeT , std::enable_if_t&lt; is_range_v&lt; R
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Reduced result. </dd></dl>
 
-<p class="reference">References <a class="el" href="group__Core.html#ga9ac2567d303c357e7c0de44280697997">range()</a>.</p>
-
 </div>
 </div>
 <a id="a97601b408c9394658593a50533885676" name="a97601b408c9394658593a50533885676"></a>
@@ -7547,7 +7543,7 @@ template&lt;typename T , typename RangeT , std::enable_if_t&lt; is_range_v&lt; R
 <p>Return a std::tm in UTC from a given system_clock::time_point. </p>
 <p>Example: </p><div class="fragment"><div class="line"><span class="keyword">auto</span> tp = std::chrono::system_clock::now();</div>
 <div class="line">fmt::print(<span class="stringliteral">&quot;[{:%Y-%m-%d %H:%M:%S}] checkpoint\\n&quot;</span>, <a class="code hl_function" href="namespaceFeel.html#a97601b408c9394658593a50533885676">Feel::gmtimeFrom</a>(tp));</div>
-<div class="ttc" id="anamespaceFeel_html_a97601b408c9394658593a50533885676"><div class="ttname"><a href="namespaceFeel.html#a97601b408c9394658593a50533885676">Feel::gmtimeFrom</a></div><div class="ttdeci">std::tm gmtimeFrom(std::chrono::system_clock::time_point tp)</div><div class="ttdoc">Return a std::tm in UTC from a given system_clock::time_point.</div><div class="ttdef"><b>Definition</b> timeutils.hpp:64</div></div>
+<div class="ttc" id="anamespaceFeel_html_a97601b408c9394658593a50533885676"><div class="ttname"><a href="namespaceFeel.html#a97601b408c9394658593a50533885676">Feel::gmtimeFrom</a></div><div class="ttdeci">std::tm gmtimeFrom(std::chrono::system_clock::time_point tp)</div><div class="ttdoc">Return a std::tm in UTC from a given system_clock::time_point.</div><div class="ttdef"><b>Definition</b> timeutils.hpp:63</div></div>
 </div><!-- fragment --> 
 </div>
 </div>
@@ -7576,7 +7572,7 @@ template&lt;typename T , typename RangeT , std::enable_if_t&lt; is_range_v&lt; R
 <div class="line">    fmt::print(<span class="stringliteral">&quot;[{:%Y-%m-%d %H:%M:%S}] hello from Feel++!\\n&quot;</span>, <a class="code hl_function" href="namespaceFeel.html#a2f94fab8a8f9e152ed982d379579db54">Feel::gmtimeNow</a>());</div>
 <div class="line">    <span class="keywordflow">return</span> 0;</div>
 <div class="line">}</div>
-<div class="ttc" id="anamespaceFeel_html_a2f94fab8a8f9e152ed982d379579db54"><div class="ttname"><a href="namespaceFeel.html#a2f94fab8a8f9e152ed982d379579db54">Feel::gmtimeNow</a></div><div class="ttdeci">std::tm gmtimeNow()</div><div class="ttdoc">Return current time as std::tm in UTC for use with {fmt}.</div><div class="ttdef"><b>Definition</b> timeutils.hpp:47</div></div>
+<div class="ttc" id="anamespaceFeel_html_a2f94fab8a8f9e152ed982d379579db54"><div class="ttname"><a href="namespaceFeel.html#a2f94fab8a8f9e152ed982d379579db54">Feel::gmtimeNow</a></div><div class="ttdeci">std::tm gmtimeNow()</div><div class="ttdoc">Return current time as std::tm in UTC for use with {fmt}.</div><div class="ttdef"><b>Definition</b> timeutils.hpp:46</div></div>
 </div><!-- fragment --> 
 </div>
 </div>
@@ -7673,7 +7669,7 @@ template&lt;typename SpaceT , typename RangeType , std::enable_if_t&lt; std::is_
 <div class="line">{</div>
 <div class="line">  <a class="code hl_function" href="namespaceFeel.html#a2785f8892f89d072d026f84d0225fd50">handleExceptions</a>()</div>
 <div class="line">}</div>
-<div class="ttc" id="aclassFeel_1_1Environment_html"><div class="ttname"><a href="classFeel_1_1Environment.html">Feel::Environment</a></div><div class="ttdoc">Initialize, finalize, and query the Feel++ environment.</div><div class="ttdef"><b>Definition</b> environment.hpp:196</div></div>
+<div class="ttc" id="aclassFeel_1_1Environment_html"><div class="ttname"><a href="classFeel_1_1Environment.html">Feel::Environment</a></div><div class="ttdoc">Initialize, finalize, and query the Feel++ environment.</div><div class="ttdef"><b>Definition</b> environment.hpp:194</div></div>
 <div class="ttc" id="anamespaceFeel_html_a2785f8892f89d072d026f84d0225fd50"><div class="ttname"><a href="namespaceFeel.html#a2785f8892f89d072d026f84d0225fd50">Feel::handleExceptions</a></div><div class="ttdeci">void handleExceptions()</div><div class="ttdoc">handle exceptions using a Lippincott function this funnction allows to handle the exceptions thrown i...</div><div class="ttdef"><b>Definition</b> exceptions.cpp:81</div></div>
 </div><!-- fragment --> 
 </div>
@@ -8221,6 +8217,8 @@ template&lt;typename RangeT , std::enable_if_t&lt; is_range_v&lt; RangeT &gt;, <
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Lambda function. </dd></dl>
+
+<p class="reference">References <a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6a9c70933aff6b2a6d08c687a6cbb6b765">global</a>.</p>
 
 </div>
 </div>
@@ -8872,6 +8870,8 @@ template&lt;typename CollectionOfRangeT , std::enable_if_t&lt; is_range_v&lt; ty
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Number of elements. </dd></dl>
 
+<p class="reference">References <a class="el" href="namespaceFeel.html#ad150a39999969f8618dff7d7ee98b8d6a9c70933aff6b2a6d08c687a6cbb6b765">global</a>, and <a class="el" href="namespaceFeel.html#a4e2bdd6b420a1a530ec78ca7000f5922">nelements()</a>.</p>
+
 </div>
 </div>
 <a id="ae915e9b349bfe11d7ecdfcd630afd2aa" name="ae915e9b349bfe11d7ecdfcd630afd2aa"></a>
@@ -8970,6 +8970,8 @@ template&lt;typename RangeT , std::enable_if_t&lt; is_filter_v&lt; RangeT &gt;, 
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Number of elements. </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#ab499330771e4e5c00d6b4c7df96b2d47">nelements()</a>.</p>
 
 </div>
 </div>
@@ -10372,7 +10374,7 @@ template&lt;typename <a class="el" href="classC.html">C</a> &gt; </div>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the local MPI rank of the data structure <code>c</code> </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#a2783017430d0c08cd2342be3af8d8d08">allmarkededgesByType()</a>, <a class="el" href="classFeel_1_1Environment.html#ab50252c2800889bf8bb2e58b7fa49c11">Feel::Environment::gatherTimerProfileStatistics()</a>, <a class="el" href="classFeel_1_1Environment.html#a1ac16285fc20aa946876bb86134896b5">Feel::Environment::gatherTimerProfileStatistics()</a>, <a class="el" href="namespaceFeel.html#a50f4f2c0c9ba95d40d27dcaf1e261ece">internaledges()</a>, <a class="el" href="namespaceFeel.html#ad484a144ccf2024606e39652578d18ea">internalelements()</a>, <a class="el" href="classFeel_1_1WorldComm.html#ae5a950d70bfa275540869ca949c87966">Feel::WorldComm::isActive()</a>, <a class="el" href="namespaceFeel.html#ae66d485232af16c705a48a90615a9fcc">markedelements()</a>, <a class="el" href="namespaceFeel.html#afca65d88e0e671b432cb278b5ed15390">markedelementsByType()</a>, <a class="el" href="classFeel_1_1Environment.html#a3d7d6588b9cfdc5ad1ca1d4197c2b173">Feel::Environment::printTimerProfileReports()</a>, <a class="el" href="classFeel_1_1WorldComm.html#a99f10bd89247bc33adffa817fac59e84">Feel::WorldComm::split()</a>, <a class="el" href="classFeel_1_1Environment.html#af0fa80df613e602f56dc46f72d0a456c">Feel::Environment::startLogging()</a>, and <a class="el" href="classFeel_1_1Environment.html#a6e9aec9cb267f42a6e1b64f084bcc1ec">Feel::Environment::timerProfileReportsJson()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#a2783017430d0c08cd2342be3af8d8d08">allmarkededgesByType()</a>, <a class="el" href="classFeel_1_1Environment.html#ab50252c2800889bf8bb2e58b7fa49c11">Feel::Environment::gatherTimerProfileStatistics()</a>, <a class="el" href="classFeel_1_1Environment.html#a1ac16285fc20aa946876bb86134896b5">Feel::Environment::gatherTimerProfileStatistics()</a>, <a class="el" href="namespaceFeel.html#a50f4f2c0c9ba95d40d27dcaf1e261ece">internaledges()</a>, <a class="el" href="namespaceFeel.html#ad484a144ccf2024606e39652578d18ea">internalelements()</a>, <a class="el" href="classFeel_1_1WorldComm.html#ae5a950d70bfa275540869ca949c87966">Feel::WorldComm::isActive()</a>, <a class="el" href="classFeel_1_1Environment.html#af9fdf673bcff6d39948fa889c8b6ea27">Feel::Environment::isParallel()</a>, <a class="el" href="namespaceFeel.html#ae66d485232af16c705a48a90615a9fcc">markedelements()</a>, <a class="el" href="namespaceFeel.html#afca65d88e0e671b432cb278b5ed15390">markedelementsByType()</a>, <a class="el" href="classFeel_1_1Environment.html#a3d7d6588b9cfdc5ad1ca1d4197c2b173">Feel::Environment::printTimerProfileReports()</a>, <a class="el" href="classFeel_1_1WorldComm.html#a99f10bd89247bc33adffa817fac59e84">Feel::WorldComm::split()</a>, <a class="el" href="classFeel_1_1Environment.html#af0fa80df613e602f56dc46f72d0a456c">Feel::Environment::startLogging()</a>, and <a class="el" href="classFeel_1_1Environment.html#a6e9aec9cb267f42a6e1b64f084bcc1ec">Feel::Environment::timerProfileReportsJson()</a>.</p>
 
 </div>
 </div>
@@ -11971,8 +11973,6 @@ template&lt;class <a class="el" href="classE.html">E</a> &gt; </div>
   </dd>
 </dl>
 
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1Environment.html#afb9a1d5d0f25b22bf6bd5c9bf03b4e0f">Feel::Environment::logVerbosityLevel()</a>.</p>
-
 </div>
 </div>
 <a id="ac392a856a3eab9465b96ffe557074c87" name="ac392a856a3eab9465b96ffe557074c87"></a>
@@ -12208,7 +12208,7 @@ template&lt;<a class="el" href="classint.html">int</a> Dmin = 2, <a class="el" h
       </table>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">= hana::transform( hana::cartesian_product( hana::make_tuple( dim_t&lt;Dmin, Dmax&gt;, order_t&lt;Omin, Omax&gt; ) ), []( <span class="keyword">auto</span> x )</div>
-<div class="line">                              { <span class="keywordflow">return</span> hana::append( x, fmt::format( FMT_COMPILE( <span class="stringliteral">&quot;P{}&quot;</span> ), std::decay_t&lt;<span class="keyword">decltype</span>( hana::at_c&lt;1&gt;( x ) )&gt;::value ) ); } )</div>
+<div class="line">                              { <span class="keywordflow">return</span> hana::append( x, fmt::format( [] {   <span class="keyword">struct </span>FMT_COMPILE_STRING : fmt::detail::compiled_string { <span class="keyword">using </span>char_type [[maybe_unused]] = fmt::remove_cvref_t&lt;<span class="keyword">decltype</span>(<span class="stringliteral">&quot;P{}&quot;</span>[0])&gt;; [[maybe_unused]] <span class="keyword">constexpr</span> <span class="keyword">explicit</span> <span class="keyword">operator</span> fmt::basic_string_view&lt;char_type&gt;()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> fmt::detail_exported::compile_string_to_view&lt;char_type&gt;(<span class="stringliteral">&quot;P{}&quot;</span>); } }; <span class="keywordflow">return</span> FMT_COMPILE_STRING(); }(), std::decay_t&lt;<span class="keyword">decltype</span>( hana::at_c&lt;1&gt;( x ) )&gt;::value ) ); } )</div>
 </div><!-- fragment -->
 <p>Continuous Lagrange Function space identifier collection generator. </p>
 <dl class="tparams"><dt>Template Parameters</dt><dd>
@@ -12237,7 +12237,7 @@ template&lt;<a class="el" href="classint.html">int</a> Dmin = 2, <a class="el" h
       </table>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">= hana::transform( hana::cartesian_product( hana::make_tuple( dim_t&lt;Dmin, Dmax&gt;, order_t&lt;Omin, Omax&gt; ) ), []( <span class="keyword">auto</span> x )</div>
-<div class="line">                              { <span class="keywordflow">return</span> hana::append( x, fmt::format( FMT_COMPILE( <span class="stringliteral">&quot;Pd{}&quot;</span> ), std::decay_t&lt;<span class="keyword">decltype</span>( hana::at_c&lt;1&gt;( x ) )&gt;::value ) ); } )</div>
+<div class="line">                              { <span class="keywordflow">return</span> hana::append( x, fmt::format( [] {   <span class="keyword">struct </span>FMT_COMPILE_STRING : fmt::detail::compiled_string { <span class="keyword">using </span>char_type [[maybe_unused]] = fmt::remove_cvref_t&lt;<span class="keyword">decltype</span>(<span class="stringliteral">&quot;Pd{}&quot;</span>[0])&gt;; [[maybe_unused]] <span class="keyword">constexpr</span> <span class="keyword">explicit</span> <span class="keyword">operator</span> fmt::basic_string_view&lt;char_type&gt;()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> fmt::detail_exported::compile_string_to_view&lt;char_type&gt;(<span class="stringliteral">&quot;Pd{}&quot;</span>); } }; <span class="keywordflow">return</span> FMT_COMPILE_STRING(); }(), std::decay_t&lt;<span class="keyword">decltype</span>( hana::at_c&lt;1&gt;( x ) )&gt;::value ) ); } )</div>
 </div><!-- fragment -->
 <p>Discontinuous Lagrange Function space identifier collection generator. </p>
 <dl class="tparams"><dt>Template Parameters</dt><dd>

@@ -1,0 +1,16 @@
+<map id="Feel::Hypercube&lt; Dim, Order, RDim &gt;" name="Feel::Hypercube&lt; Dim, Order, RDim &gt;">
+<area shape="rect" id="Node000001" title=" " alt="" coords="374,401,533,821"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1Convex.html" title="Convex base class." alt="" coords="49,173,181,313"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="171,323,213,376,295,462,376,539,372,542,291,466,209,379,167,326"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1ConvexBase.html" title=" " alt="" coords="5,5,128,71"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="80,84,101,173,96,174,75,85"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="153,5,306,71"/>
+<area shape="poly" id="edge7_Node000001_Node000004" title=" " alt="" coords="227,71,223,121,222,185,227,255,244,323,267,376,297,427,330,474,365,516,361,520,326,477,292,430,262,379,239,325,222,256,216,185,218,121,222,71"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="169,73,146,96,131,125,122,157,117,156,126,123,142,93,165,69"/>
+<area shape="rect" id="Node000005" href="$classFeel_1_1HypercubeBase.html" title=" " alt="" coords="383,211,523,276"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="456,290,456,401,451,401,451,290"/>
+<area shape="rect" id="Node000006" href="$classbool.html" title=" " alt="" coords="547,211,586,276"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="559,277,525,386,520,385,554,276"/>
+<area shape="rect" id="Node000007" href="$classsize__t.html" title=" " alt="" coords="635,211,685,276"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="658,277,648,326,629,378,590,447,545,510,541,506,586,444,624,376,643,324,653,276"/>
+</map>

@@ -1,0 +1,22 @@
+<map id="Feel::DebugStream::Private" name="Feel::DebugStream::Private">
+<area shape="rect" id="Node000001" title=" " alt="" coords="129,636,264,716"/>
+<area shape="rect" id="Node000002" href="$classbool.html" title=" " alt="" coords="5,493,44,559"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="29,558,36,586,49,610,80,635,115,653,113,658,77,640,45,614,31,588,24,560"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="68,493,187,559"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="135,558,152,611,158,621,153,623,148,613,130,560"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="25,364,182,444"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="116,457,124,493,118,494,111,458"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="123,235,249,315"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="156,327,131,365,126,362,151,325"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="207,364,336,444"/>
+<area shape="poly" id="edge10_Node000010_Node000005" title=" " alt="" coords="222,324,247,362,243,365,217,327"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="113,120,259,185"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="189,199,189,235,183,235,183,199"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="140,5,232,71"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="189,85,189,120,183,120,183,85"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="327,493,381,559"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="344,560,329,588,309,614,279,638,276,634,305,610,325,585,339,558"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="211,493,302,559"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="246,560,221,621,216,619,241,558"/>
+<area shape="poly" id="edge9_Node000009_Node000010" title=" " alt="" coords="268,458,263,493,258,493,262,457"/>
+</map>

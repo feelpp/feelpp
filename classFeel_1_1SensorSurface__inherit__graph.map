@@ -1,0 +1,9 @@
+<map id="Feel::SensorSurface&lt; Space &gt;" name="Feel::SensorSurface&lt; Space &gt;">
+<area shape="rect" id="Node000001" title="surface type sensor" alt="" coords="24,709,157,909"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1SensorBase.html" title="base class for sensors" alt="" coords="5,461,176,661"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="93,675,93,709,88,709,88,675"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1FsFunctionalLinear.html" title=" " alt="" coords="12,233,169,413"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="93,427,93,461,88,461,88,427"/>
+<area shape="rect" id="Node000004" href="$classFeel_1_1FsFunctional.html" title=" " alt="" coords="29,5,152,185"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="93,199,93,233,88,233,88,199"/>
+</map>

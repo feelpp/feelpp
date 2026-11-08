@@ -1,0 +1,5 @@
+<map id="nlohmann::ordered_map&lt; Key, T, IgnoredLess, Allocator &gt;" name="nlohmann::ordered_map&lt; Key, T, IgnoredLess, Allocator &gt;">
+<area shape="rect" id="Node000001" title="a minimal map&#45;like container that preserves insertion order" alt="" coords="12,163,165,357"/>
+<area shape="rect" id="Node000002" href="$classstd_1_1vector_3_01std_1_1pair_3_01const_01Key_00_01T_01_4_00_01std_1_1allocator_3_01std_1_1055070a8754fc62b2ea08263be14c560.html" title=" " alt="" coords="5,5,172,115"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="91,128,91,163,86,163,86,128"/>
+</map>

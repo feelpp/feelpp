@@ -1,0 +1,7 @@
+<map id="Feel::vf::SB9ThroughThicknessLobatto5&lt; T &gt;" name="Feel::vf::SB9ThroughThicknessLobatto5&lt; T &gt;">
+<area shape="rect" id="Node000001" title="Reduced Gauss&#45;Lobatto quadrature through the SB9 shell thickness." alt="" coords="54,148,270,248"/>
+<area shape="rect" id="Node000002" href="$classIMGeneral.html" title=" " alt="" coords="5,5,148,85"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="108,96,136,146,132,149,103,99"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="172,13,325,78"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="233,79,201,135,196,132,228,77"/>
+</map>

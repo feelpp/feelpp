@@ -1,0 +1,11 @@
+<map id="Feel::vf::ShellArea0" name="Feel::vf::ShellArea0">
+<area shape="rect" id="Node000001" title=" " alt="" coords="34,496,163,561"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1vf_1_1detail_1_1ShellCellScalarTerminal.html" title=" " alt="" coords="5,352,192,447"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="101,460,101,496,96,496,96,460"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1vf_1_1detail_1_1ShellCellTerminalBase.html" title=" " alt="" coords="17,163,180,303"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="101,317,101,352,96,352,96,317"/>
+<area shape="rect" id="Node000004" href="$classsize__t.html" title=" " alt="" coords="31,5,81,71"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="56,71,56,104,60,138,62,147,57,148,55,139,50,104,51,71"/>
+<area shape="rect" id="Node000005" href="$classbool.html" title=" " alt="" coords="123,5,162,71"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="138,72,121,147,115,146,133,70"/>
+</map>

@@ -1,0 +1,33 @@
+<map id="pybind11::detail::type_caster&lt; nl::json &gt;" name="pybind11::detail::type_caster&lt; nl::json &gt;">
+<area shape="rect" id="Node000001" title=" " alt="" coords="320,2512,469,2692"/>
+<area shape="rect" id="Node000002" href="$classnlohmann_1_1basic__json.html" title="a class to store JSON values" alt="" coords="167,811,409,2449"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="381,2449,386,2496,380,2496,375,2450"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="5,515,128,595"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="77,595,166,1024,161,1026,72,596"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="152,523,304,588"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="232,588,244,794,239,794,227,588"/>
+<area shape="rect" id="Node000005" href="$classbool.html" title=" " alt="" coords="329,523,367,588"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="349,588,337,794,332,794,344,588"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="391,436,654,675"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="509,676,491,734,461,788,451,797,441,801,432,804,423,812,421,817,416,814,419,809,429,800,439,796,448,793,457,785,486,732,504,674"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="55,214,124,279"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="98,279,112,326,123,350,138,372,163,396,188,410,214,416,242,418,304,419,339,423,377,433,375,438,338,428,303,424,242,424,213,422,186,415,160,400,134,375,119,352,107,328,92,281"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="149,214,211,279"/>
+<area shape="poly" id="edge7_Node000006_Node000008" title=" " alt="" coords="187,279,200,326,211,350,226,372,242,388,258,399,292,410,331,418,377,433,376,438,329,423,290,415,256,404,239,392,222,375,207,352,195,327,182,280"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="236,214,303,279"/>
+<area shape="poly" id="edge8_Node000006_Node000009" title=" " alt="" coords="279,279,293,325,317,372,380,431,377,435,313,375,288,327,273,280"/>
+<area shape="rect" id="Node000010" href="$classnlohmann_1_1byte__container__with__subtype.html" title="an internal type for a backed binary type" alt="" coords="327,120,513,373"/>
+<area shape="poly" id="edge9_Node000006_Node000010" title=" " alt="" coords="465,372,480,419,475,421,460,374"/>
+<area shape="rect" id="Node000011" href="$classBinaryType.html" title=" " alt="" coords="381,5,459,71"/>
+<area shape="poly" id="edge10_Node000010_Node000011" title=" " alt="" coords="423,85,423,120,417,120,417,85"/>
+<area shape="rect" id="Node000012" title=" " alt="" coords="538,214,627,279"/>
+<area shape="poly" id="edge11_Node000006_Node000012" title=" " alt="" coords="579,280,552,420,546,419,574,279"/>
+<area shape="rect" id="Node000013" title=" " alt="" coords="652,214,780,279"/>
+<area shape="poly" id="edge12_Node000006_Node000013" title=" " alt="" coords="699,281,642,375,611,424,607,421,638,372,695,278"/>
+<area shape="rect" id="Node000014" title=" " alt="" coords="805,214,947,279"/>
+<area shape="poly" id="edge13_Node000006_Node000014" title=" " alt="" coords="862,281,833,328,794,375,734,428,669,474,666,469,731,424,790,371,828,325,857,278"/>
+<area shape="rect" id="Node000015" title=" " alt="" coords="972,214,1089,279"/>
+<area shape="poly" id="edge14_Node000006_Node000015" title=" " alt="" coords="1022,281,998,328,982,353,962,375,895,427,821,468,744,500,671,524,669,519,742,495,818,463,892,422,958,371,977,350,994,326,1017,278"/>
+<area shape="rect" id="Node000016" title=" " alt="" coords="433,1597,569,1663"/>
+<area shape="poly" id="edge15_Node000001_Node000016" title=" " alt="" coords="504,1663,502,1795,492,1999,471,2241,454,2366,433,2489,432,2497,426,2496,428,2487,449,2366,466,2241,487,1998,496,1795,499,1663"/>
+</map>

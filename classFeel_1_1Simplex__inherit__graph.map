@@ -1,0 +1,9 @@
+<map id="Feel::Simplex&lt; Dim, Order, RDim &gt;" name="Feel::Simplex&lt; Dim, Order, RDim &gt;">
+<area shape="rect" id="Node000001" title="simplex of dimension Dim" alt="" coords="68,367,227,787"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1Convex.html" title="Convex base class." alt="" coords="5,119,137,319"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="98,332,105,366,100,367,93,333"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1ConvexBase.html" title=" " alt="" coords="10,5,133,71"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="74,84,74,119,69,119,69,84"/>
+<area shape="rect" id="Node000004" href="$classFeel_1_1SimplexBase.html" title=" " alt="" coords="161,186,285,251"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="216,265,195,367,189,366,211,264"/>
+</map>

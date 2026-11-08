@@ -38,7 +38,7 @@ MathJax.Hub.Config({
  <tr id="projectrow">
   <td id="projectlogo"><img alt="Logo" src="feel_logo_small.png"/></td>
   <td id="projectalign">
-   <div id="projectname">Feel++<span id="projectnumber">&#160;0.112.0-preview.1</span>
+   <div id="projectname">Feel++<span id="projectnumber">&#160;0.112.0</span>
    </div>
    <div id="projectbrief">Finite Element Embedded Library in C++</div>
   </td>
@@ -120,7 +120,7 @@ $(document).ready(function(){initNavTree('classFeel_1_1MasterStream.html',''); i
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
-<div class="center"><!-- SVG 0 --></div>
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classFeel_1_1MasterStream__coll__graph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div></div>
 </div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
@@ -193,8 +193,8 @@ std::shared_ptr&lt; <a class="el" href="classFeel_1_1WorldComm.html">WorldComm</
 <p>The first application is to use the instantiation of <a class="el" href="classFeel_1_1MasterStream.html" title="Output Stream that outputs only on master rank of a worldcomm.">MasterStream</a> cout, cerr or clog to default output on master rank process of a Feel++ application </p><div class="fragment"><div class="line"><a class="code hl_class" href="classFeel_1_1Environment.html">Environment</a> env(...); <span class="comment">// initialize Feel++ environment</span></div>
 <div class="line"><span class="comment">// cout only on master rank process</span></div>
 <div class="line">cout &lt;&lt; <span class="stringliteral">&quot;Hello World from process &quot;</span> &lt;&lt; <a class="code hl_function" href="classFeel_1_1Environment.html#aa09f0629660a77fd416e0c66da2e7ba4">Environment::rank</a>()  &lt;&lt; std::endl;</div>
-<div class="ttc" id="aclassFeel_1_1Environment_html"><div class="ttname"><a href="classFeel_1_1Environment.html">Feel::Environment</a></div><div class="ttdoc">Initialize, finalize, and query the Feel++ environment.</div><div class="ttdef"><b>Definition</b> environment.hpp:196</div></div>
-<div class="ttc" id="aclassFeel_1_1Environment_html_aa09f0629660a77fd416e0c66da2e7ba4"><div class="ttname"><a href="classFeel_1_1Environment.html#aa09f0629660a77fd416e0c66da2e7ba4">Feel::Environment::rank</a></div><div class="ttdeci">static rank_type rank()</div><div class="ttdoc">return the rank in global mpi communicator</div><div class="ttdef"><b>Definition</b> environment.hpp:385</div></div>
+<div class="ttc" id="aclassFeel_1_1Environment_html"><div class="ttname"><a href="classFeel_1_1Environment.html">Feel::Environment</a></div><div class="ttdoc">Initialize, finalize, and query the Feel++ environment.</div><div class="ttdef"><b>Definition</b> environment.hpp:194</div></div>
+<div class="ttc" id="aclassFeel_1_1Environment_html_aa09f0629660a77fd416e0c66da2e7ba4"><div class="ttname"><a href="classFeel_1_1Environment.html#aa09f0629660a77fd416e0c66da2e7ba4">Feel::Environment::rank</a></div><div class="ttdeci">static rank_type rank()</div><div class="ttdoc">return the rank in global mpi communicator</div><div class="ttdef"><b>Definition</b> environment.hpp:383</div></div>
 </div><!-- fragment --><p>Behavior based on MPI state:</p><ul>
 <li>Before MPI initialization: outputs on all processes (typically just one)</li>
 <li>After MPI initialization: outputs only on master rank</li>

@@ -1,0 +1,7 @@
+<map id="Feel::TimerProfileStatistics" name="Feel::TimerProfileStatistics">
+<area shape="rect" id="Node000001" title="Distribution of repeated toc() calls for one rank or selected ranks." alt="" coords="5,280,177,345"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="21,5,81,71"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="50,71,46,156,49,206,59,255,63,265,58,267,54,257,44,207,40,156,44,71"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="105,5,157,71"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="130,71,105,256,103,264,98,263,99,256,125,71"/>
+</map>

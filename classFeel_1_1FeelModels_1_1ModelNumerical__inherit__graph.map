@@ -1,0 +1,37 @@
+<map id="Feel::FeelModels::ModelNumerical" name="Feel::FeelModels::ModelNumerical">
+<area shape="rect" id="Node000001" title="Handles some numerical model aspects: timestepping, mesh and properties." alt="" coords="934,1103,1173,1432"/>
+<area shape="rect" id="Node000009" href="$classFeel_1_1FeelModels_1_1CoefficientFormPDEBase.html" title=" " alt="" coords="5,1480,259,1915"/>
+<area shape="poly" id="edge10_Node000001_Node000009" title=" " alt="" coords="920,1278,776,1296,694,1312,607,1332,519,1359,432,1392,349,1433,272,1482,261,1491,257,1487,269,1478,347,1428,430,1387,517,1354,606,1327,692,1306,775,1291,920,1273"/>
+<area shape="rect" id="Node000011" href="$classFeel_1_1FeelModels_1_1CoefficientFormPDEs.html" title="class for Coefficient Form PDE toolbox" alt="" coords="283,1563,543,1832"/>
+<area shape="poly" id="edge12_Node000001_Node000011" title=" " alt="" coords="922,1304,834,1333,739,1371,643,1421,598,1450,556,1482,518,1520,485,1564,481,1561,514,1517,553,1478,595,1446,641,1416,737,1367,833,1328,920,1299"/>
+<area shape="rect" id="Node000012" href="$classFeel_1_1FeelModels_1_1Electric.html" title="class for Electric toolbox" alt="" coords="567,1577,798,1817"/>
+<area shape="poly" id="edge13_Node000001_Node000012" title=" " alt="" coords="925,1370,867,1424,813,1482,778,1529,746,1579,742,1576,773,1526,809,1478,863,1420,922,1366"/>
+<area shape="rect" id="Node000013" href="$classFeel_1_1FeelModels_1_1FluidMechanics.html" title="Fluid Mechanics Toolbox." alt="" coords="823,1511,1044,1884"/>
+<area shape="poly" id="edge14_Node000001_Node000013" title=" " alt="" coords="1006,1446,988,1511,983,1510,1001,1445"/>
+<area shape="rect" id="Node000014" href="$classFeel_1_1FeelModels_1_1Heat.html" title="class for heat transfer toolbox" alt="" coords="1069,1480,1281,1915"/>
+<area shape="poly" id="edge15_Node000001_Node000014" title=" " alt="" coords="1106,1444,1116,1479,1111,1481,1101,1446"/>
+<area shape="rect" id="Node000015" href="$classFeel_1_1FeelModels_1_1HeatFluid.html" title="class for conjuguate heat transfer toolbox" alt="" coords="1305,1607,1484,1787"/>
+<area shape="poly" id="edge16_Node000001_Node000015" title=" " alt="" coords="1185,1364,1243,1418,1295,1478,1335,1541,1365,1606,1360,1608,1330,1544,1291,1482,1239,1422,1182,1368"/>
+<area shape="rect" id="Node000016" href="$classFeel_1_1FeelModels_1_1SolidMechanics.html" title="class for Solid Mechanics toolbox" alt="" coords="1509,1547,1769,1847"/>
+<area shape="poly" id="edge17_Node000001_Node000016" title=" " alt="" coords="1187,1308,1262,1338,1344,1376,1424,1423,1498,1478,1530,1510,1558,1546,1554,1549,1526,1514,1494,1482,1421,1427,1341,1381,1260,1343,1185,1313"/>
+<area shape="rect" id="Node000017" href="$classFeel_1_1FeelModels_1_1SolidMechanics1dReduced.html" title=" " alt="" coords="1793,1577,2105,1817"/>
+<area shape="poly" id="edge18_Node000001_Node000017" title=" " alt="" coords="1187,1280,1319,1302,1474,1340,1554,1366,1634,1397,1711,1434,1783,1478,1836,1523,1880,1576,1876,1579,1832,1527,1780,1482,1708,1439,1632,1402,1552,1371,1472,1345,1318,1307,1186,1285"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title="Model base class." alt="" coords="969,647,1189,812"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="1077,826,1064,1102,1058,1102,1071,826"/>
+<area shape="rect" id="Node000006" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic.html" title=" " alt="" coords="1091,875,1301,1040"/>
+<area shape="poly" id="edge6_Node000006_Node000002" title=" " alt="" coords="1130,823,1156,873,1151,876,1125,825"/>
+<area shape="rect" id="Node000007" href="$classFeel_1_1FeelModels_1_1ModelMeshes.html" title=" " alt="" coords="809,860,1015,1055"/>
+<area shape="poly" id="edge9_Node000007_Node000002" title=" " alt="" coords="1012,825,985,861,981,858,1008,821"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="874,119,1075,599"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="1048,611,1058,646,1053,647,1043,612"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="913,5,1037,71"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="977,84,977,119,972,119,972,84"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="1099,319,1263,399"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="1169,413,1104,647,1099,646,1164,411"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="1155,1054,1132,1104,1127,1101,1150,1052"/>
+<area shape="poly" id="edge7_Node000001_Node000007" title=" " alt="" coords="964,1066,981,1101,976,1103,960,1068"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="829,687,944,772"/>
+<area shape="poly" id="edge8_Node000007_Node000008" title=" " alt="" coords="896,786,904,859,899,860,890,786"/>
+<area shape="rect" id="Node000010" href="$classFeel_1_1FeelModels_1_1CoefficientFormPDE.html" title="class for a single CoefficientFormPDE" alt="" coords="5,1963,259,2257"/>
+<area shape="poly" id="edge11_Node000009_Node000010" title=" " alt="" coords="135,1929,135,1962,129,1962,129,1929"/>
+</map>

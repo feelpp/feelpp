@@ -1,0 +1,17 @@
+<map id="Feel::mpfr::MpfrClass" name="Feel::mpfr::MpfrClass">
+<area shape="rect" id="Node000001" title=" " alt="" coords="253,381,403,667"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,193,56,259"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="42,258,53,288,70,317,108,361,152,401,240,468,237,472,148,406,105,365,66,320,48,290,37,260"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1mpfr_1_1InexactFlag.html" title=" " alt="" coords="80,153,229,299"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="199,297,247,379,242,382,194,300"/>
+<area shape="rect" id="Node000004" href="$classint.html" title=" " alt="" coords="141,5,169,71"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="157,71,157,137,152,137,152,71"/>
+<area shape="rect" id="Node000005" href="$classFeel_1_1mpfr_1_1RefCounter.html" title=" " alt="" coords="254,133,402,319"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="331,319,331,365,325,365,325,319"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="309,5,347,71"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="331,71,331,117,325,117,325,71"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="426,193,571,259"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="483,260,414,379,409,377,478,258"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="595,193,746,259"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="645,261,586,321,501,394,418,459,415,455,498,389,582,317,641,257"/>
+</map>

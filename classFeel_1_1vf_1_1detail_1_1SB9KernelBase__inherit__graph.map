@@ -1,0 +1,14 @@
+<map id="Feel::vf::detail::SB9KernelBase&lt; GeometryDataType &gt;" name="Feel::vf::detail::SB9KernelBase&lt; GeometryDataType &gt;">
+<area shape="rect" id="Node000001" title="Base cache for SB9 element&#45;local geometric data." alt="" coords="655,5,836,325"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1vf_1_1detail_1_1SB9BendingKernelCache.html" title="Element&#45;local cache for SB9 membrane and bending coefficients." alt="" coords="5,373,232,493"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="642,210,457,286,245,376,233,381,231,376,243,371,455,281,640,205"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1vf_1_1detail_1_1SB9PinchingKernelCache.html" title="Element&#45;local cache for SB9 pinching coefficients." alt="" coords="256,373,483,493"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="645,241,455,375,452,371,642,236"/>
+<area shape="rect" id="Node000004" href="$classFeel_1_1vf_1_1detail_1_1SB9ShearKernelCache.html" title="Element&#45;local cache for SB9 transverse&#45;shear coefficients." alt="" coords="507,373,733,493"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="667,339,650,374,645,372,662,337"/>
+<area shape="rect" id="Node000005" href="$classFeel_1_1vf_1_1detail_1_1SB9ShearingKernelCache.html" title="Element&#45;local cache for SB9 transverse&#45;shearing coefficients." alt="" coords="757,373,984,493"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="829,337,845,372,840,374,824,339"/>
+<area shape="rect" id="Node000006" href="$classFeel_1_1vf_1_1detail_1_1SB9StabilizationKernelCache.html" title="Element&#45;local cache for SB9 mode&#45;stabilization coefficients." alt="" coords="1008,373,1235,493"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="849,242,1032,371,1029,375,845,246"/>
+<area shape="poly" id="edge6_Node000001_Node000006" title=" " alt="" coords="849,231,1047,371,1044,375,846,235"/>
+</map>

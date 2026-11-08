@@ -1,0 +1,5 @@
+<map id="Feel::vf::detail::SB9ShearKernelCache&lt; GeometryDataType &gt;" name="Feel::vf::detail::SB9ShearKernelCache&lt; GeometryDataType &gt;">
+<area shape="rect" id="Node000001" title="Element&#45;local cache for SB9 transverse&#45;shear coefficients." alt="" coords="5,373,232,493"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1vf_1_1detail_1_1SB9KernelBase.html" title="Base cache for SB9 element&#45;local geometric data." alt="" coords="28,5,209,325"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="121,339,121,373,116,373,116,339"/>
+</map>

@@ -1,0 +1,9 @@
+<map id="Feel::BasisFunctions&lt; SpaceType, IsTest &gt;" name="Feel::BasisFunctions&lt; SpaceType, IsTest &gt;">
+<area shape="rect" id="Node000001" title="base class for basis functions" alt="" coords="5,276,156,536"/>
+<area shape="rect" id="Node000002" href="$classbool.html" title=" " alt="" coords="20,133,59,199"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="47,198,57,252,58,260,53,261,51,252,42,199"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="83,133,217,199"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="143,200,126,260,120,259,138,198"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="139,5,161,71"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="153,71,153,117,147,117,147,71"/>
+</map>

@@ -1,0 +1,11 @@
+<map id="Feel::Triangle&lt; Dim &gt;" name="Feel::Triangle&lt; Dim &gt;">
+<area shape="rect" id="Node000001" title=" " alt="" coords="77,820,218,885"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1Simplex.html" title=" " alt="" coords="68,367,227,772"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="150,786,150,820,145,820,145,786"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1Convex.html" title="Convex base class." alt="" coords="5,119,137,319"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="98,332,106,366,101,367,93,333"/>
+<area shape="rect" id="Node000004" href="$classFeel_1_1ConvexBase.html" title=" " alt="" coords="10,5,133,71"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="74,84,74,119,69,119,69,84"/>
+<area shape="rect" id="Node000005" href="$classFeel_1_1SimplexBase.html" title=" " alt="" coords="161,186,285,251"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="216,265,194,367,189,366,211,264"/>
+</map>

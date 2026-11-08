@@ -1,0 +1,7 @@
+<map id="Feel::CheckerConvergenceFailed" name="Feel::CheckerConvergenceFailed">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,232,200,392"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="53,119,153,184"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="105,198,105,231,100,231,100,198"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="55,5,151,71"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="105,84,105,119,100,119,100,84"/>
+</map>

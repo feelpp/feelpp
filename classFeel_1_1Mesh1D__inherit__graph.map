@@ -1,0 +1,17 @@
+<map id="Feel::Mesh1D&lt; Shape, T, IndexT &gt;" name="Feel::Mesh1D&lt; Shape, T, IndexT &gt;">
+<area shape="rect" id="Node000001" title="1D mesh class" alt="" coords="282,1395,469,1909"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1VisitableBase.html" title=" " alt="" coords="5,927,132,1067"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="79,1080,87,1140,101,1208,120,1278,146,1346,175,1401,210,1455,284,1550,280,1554,205,1458,170,1404,141,1348,115,1280,96,1209,82,1141,73,1081"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1MeshBase.html" title="base mesh class" alt="" coords="156,647,376,1347"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="329,1360,335,1394,330,1395,324,1360"/>
+<area shape="rect" id="Node000004" href="$classFeel_1_1CommObject.html" title=" " alt="" coords="111,276,235,441"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="189,455,217,646,212,647,184,455"/>
+<area shape="rect" id="Node000005" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="259,119,460,599"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="325,612,320,647,315,646,320,612"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="297,5,421,71"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="362,84,362,119,357,119,357,84"/>
+<area shape="rect" id="Node000007" href="$classElements.html" title=" " alt="" coords="401,957,569,1037"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="479,1051,421,1395,416,1394,473,1050"/>
+<area shape="rect" id="Node000008" href="$classPoints.html" title=" " alt="" coords="593,935,797,1059"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="680,1073,641,1203,614,1277,583,1348,530,1443,471,1530,467,1527,525,1440,578,1345,609,1275,636,1202,675,1071"/>
+</map>

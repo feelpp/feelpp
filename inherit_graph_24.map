@@ -1,0 +1,21 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" href="$classboost_1_1parameter_1_1template__keyword.html" title=" " alt="" coords="5,211,184,251"/>
+<area shape="rect" id="Node000001" href="$structFeel_1_1bases__list.html" title=" " alt="" coords="248,5,395,31"/>
+<area shape="poly" id="edge257_Node000000_Node000001" title=" " alt="" coords="108,198,128,161,155,118,189,76,230,40,252,28,255,33,234,44,193,80,159,121,132,164,113,200"/>
+<area shape="rect" id="Node000002" href="$structFeel_1_1basis__type.html" title=" " alt="" coords="246,55,397,80"/>
+<area shape="poly" id="edge258_Node000000_Node000002" title=" " alt="" coords="116,198,165,142,196,114,231,89,256,78,258,83,233,94,199,118,169,146,120,202"/>
+<area shape="rect" id="Node000003" href="$structFeel_1_1continuity__type.html" title=" " alt="" coords="234,104,409,129"/>
+<area shape="poly" id="edge259_Node000000_Node000003" title=" " alt="" coords="131,201,177,169,231,140,265,127,267,132,233,144,180,174,134,205"/>
+<area shape="rect" id="Node000004" href="$structFeel_1_1domain__value__type.html" title=" " alt="" coords="254,154,389,194"/>
+<area shape="poly" id="edge260_Node000000_Node000004" title=" " alt="" coords="187,205,253,188,255,193,188,211"/>
+<area shape="rect" id="Node000005" href="$structFeel_1_1expansion__type.html" title=" " alt="" coords="232,219,411,244"/>
+<area shape="poly" id="edge261_Node000000_Node000005" title=" " alt="" coords="198,229,232,229,232,234,198,234"/>
+<area shape="rect" id="Node000006" href="$structFeel_1_1mesh__type.html" title=" " alt="" coords="246,268,397,293"/>
+<area shape="poly" id="edge262_Node000000_Node000006" title=" " alt="" coords="199,251,263,265,262,271,198,256"/>
+<area shape="rect" id="Node000007" href="$structFeel_1_1model__type.html" title=" " alt="" coords="244,317,399,343"/>
+<area shape="poly" id="edge263_Node000000_Node000007" title=" " alt="" coords="142,256,185,280,233,302,270,315,268,320,231,307,183,285,139,261"/>
+<area shape="rect" id="Node000008" href="$structFeel_1_1mortar__type.html" title=" " alt="" coords="243,367,399,392"/>
+<area shape="poly" id="edge264_Node000000_Node000008" title=" " alt="" coords="124,259,172,307,202,331,233,352,263,364,261,369,231,356,198,335,168,311,120,263"/>
+<area shape="rect" id="Node000009" href="$structFeel_1_1periodicity__type.html" title=" " alt="" coords="232,416,411,441"/>
+<area shape="poly" id="edge265_Node000000_Node000009" title=" " alt="" coords="115,262,163,333,196,370,233,401,258,413,256,418,231,406,192,374,159,336,111,265"/>
+</map>

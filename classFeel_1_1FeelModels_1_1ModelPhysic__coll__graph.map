@@ -1,0 +1,9 @@
+<map id="Feel::FeelModels::ModelPhysic&lt; Dim &gt;" name="Feel::FeelModels::ModelPhysic&lt; Dim &gt;">
+<area shape="rect" id="Node000001" title="Physic of the Model." alt="" coords="149,663,365,987"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="5,120,207,600"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="191,612,207,662,202,663,186,614"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="44,5,168,71"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="109,84,109,120,103,120,103,84"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="231,327,384,393"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="307,393,279,646,273,646,301,392"/>
+</map>

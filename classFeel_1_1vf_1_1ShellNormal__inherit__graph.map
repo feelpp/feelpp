@@ -1,0 +1,7 @@
+<map id="Feel::vf::ShellNormal" name="Feel::vf::ShellNormal">
+<area shape="rect" id="Node000001" title=" " alt="" coords="34,396,171,461"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1vf_1_1detail_1_1ShellCellVectorTerminal.html" title=" " alt="" coords="5,253,200,348"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="105,362,105,396,100,396,100,362"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1vf_1_1detail_1_1ShellCellTerminalBase.html" title=" " alt="" coords="21,5,184,205"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="105,219,105,253,100,253,100,219"/>
+</map>

@@ -1,0 +1,19 @@
+<map id="Feel::FeelModels::ModelPhysics&lt; Dim &gt;" name="Feel::FeelModels::ModelPhysics&lt; Dim &gt;">
+<area shape="rect" id="Node000001" title="Physic set Model." alt="" coords="143,860,347,1120"/>
+<area shape="rect" id="Node000006" href="$classFeel_1_1FeelModels_1_1ModelGenericPDE.html" title=" " alt="" coords="31,1168,233,1348"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="187,1134,172,1169,168,1167,183,1132"/>
+<area shape="rect" id="Node000009" href="$classFeel_1_1FeelModels_1_1ModelGenericPDE.html" title="Generic PDE Model class." alt="" coords="257,1168,460,1348"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="308,1132,323,1167,318,1169,303,1134"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title="Model base class." alt="" coords="135,647,355,812"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="248,826,248,860,243,860,243,826"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="42,119,243,599"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="215,611,225,646,220,647,210,612"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="81,5,205,71"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="145,84,145,119,140,119,140,84"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="267,319,431,399"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="337,413,271,647,266,646,332,411"/>
+<area shape="rect" id="Node000007" href="$classFeel_1_1FeelModels_1_1CoefficientFormPDEBase.html" title=" " alt="" coords="5,1396,259,1831"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="135,1362,135,1396,129,1396,129,1362"/>
+<area shape="rect" id="Node000008" href="$classFeel_1_1FeelModels_1_1CoefficientFormPDE.html" title="class for a single CoefficientFormPDE" alt="" coords="5,1879,259,2173"/>
+<area shape="poly" id="edge7_Node000007_Node000008" title=" " alt="" coords="135,1845,135,1878,129,1878,129,1845"/>
+</map>

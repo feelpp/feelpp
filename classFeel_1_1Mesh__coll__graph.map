@@ -1,0 +1,13 @@
+<map id="Feel::Mesh&lt; GeoShape, T, Tag, IndexT, _EnableSharedFromThis &gt;" name="Feel::Mesh&lt; GeoShape, T, Tag, IndexT, _EnableSharedFromThis &gt;">
+<area shape="rect" id="Node000001" title="unifying mesh class" alt="" coords="485,324,701,1317"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,5,224,203"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="190,212,487,656,483,659,185,215"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="248,64,451,144"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="370,156,488,502,483,504,365,158"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="475,35,711,173"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="596,188,596,324,591,324,591,188"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="735,71,889,137"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="805,138,709,452,704,450,800,136"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="913,71,1127,137"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="1003,138,712,625,708,623,999,136"/>
+</map>

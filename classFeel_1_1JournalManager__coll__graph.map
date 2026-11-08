@@ -1,0 +1,5 @@
+<map id="Feel::JournalManager" name="Feel::JournalManager">
+<area shape="rect" id="Node000001" title="JournalManager that manage the journal system handles all journalWatchers." alt="" coords="5,119,183,644"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="25,5,163,71"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="97,84,97,119,91,119,91,84"/>
+</map>

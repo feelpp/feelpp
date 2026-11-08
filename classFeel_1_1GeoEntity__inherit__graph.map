@@ -1,0 +1,31 @@
+<map id="Feel::GeoEntity&lt; Entity, T, IndexT &gt;" name="Feel::GeoEntity&lt; Entity, T, IndexT &gt;">
+<area shape="rect" id="Node000001" title="base class for all geometric entities" alt="" coords="526,148,715,903"/>
+<area shape="rect" id="Node000006" href="$classFeel_1_1Geo0D.html" title=" " alt="" coords="5,1087,180,1287"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="517,612,439,680,354,762,269,854,194,952,156,1019,127,1087,122,1085,151,1016,189,949,265,850,350,758,435,676,513,608"/>
+<area shape="rect" id="Node000007" href="$classFeel_1_1Geo0D.html" title=" " alt="" coords="204,1094,323,1279"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="520,659,425,797,379,873,338,952,309,1024,287,1095,282,1093,304,1022,333,950,374,871,421,794,516,656"/>
+<area shape="rect" id="Node000008" href="$classFeel_1_1GeoND.html" title=" " alt="" coords="347,951,614,1423"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="540,917,533,951,528,950,535,916"/>
+<area shape="rect" id="Node000009" href="$classFeel_1_1GeoND.html" title=" " alt="" coords="639,1002,885,1371"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="707,916,725,1001,720,1003,702,917"/>
+<area shape="rect" id="Node000010" href="$classFeel_1_1Geo0D.html" title="Zero dimensional entity." alt="" coords="909,1087,1052,1287"/>
+<area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="726,665,815,800,859,874,899,950,929,1018,953,1085,948,1087,924,1020,894,952,854,877,810,803,721,668"/>
+<area shape="rect" id="Node000012" href="$classFeel_1_1GeoND.html" title="Base class for Multi&#45;dimensional basis Geometrical Entities." alt="" coords="1198,1009,1441,1364"/>
+<area shape="poly" id="edge11_Node000001_Node000012" title=" " alt="" coords="728,624,1199,1069,1196,1072,724,628"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="222,5,401,100"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="352,110,528,378,524,381,347,113"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="425,5,609,100"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="532,113,540,147,535,148,527,114"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="633,5,817,100"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="714,114,707,148,701,147,709,113"/>
+<area shape="rect" id="Node000005" href="$classFeel_1_1Entity.html" title=" " alt="" coords="841,20,1008,85"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="899,98,718,379,713,376,895,96"/>
+<area shape="rect" id="Node000011" href="$classFeel_1_1GeoElement0D.html" title="Class for Points and Vertices." alt="" coords="886,1515,1070,1755"/>
+<area shape="poly" id="edge10_Node000010_Node000011" title=" " alt="" coords="983,1301,981,1515,976,1515,977,1301"/>
+<area shape="rect" id="Node000013" href="$classFeel_1_1GeoElement1D.html" title="class for 1D elements" alt="" coords="1095,1471,1307,1800"/>
+<area shape="poly" id="edge12_Node000012_Node000013" title=" " alt="" coords="1271,1378,1247,1471,1242,1470,1266,1377"/>
+<area shape="rect" id="Node000014" href="$classFeel_1_1GeoElement2D.html" title="Class for 2D elements." alt="" coords="1331,1488,1547,1783"/>
+<area shape="poly" id="edge13_Node000012_Node000014" title=" " alt="" coords="1373,1377,1403,1487,1397,1488,1368,1378"/>
+<area shape="rect" id="Node000015" href="$classFeel_1_1GeoElement3D.html" title="Class for 3D elements." alt="" coords="1571,1508,1774,1763"/>
+<area shape="poly" id="edge14_Node000012_Node000015" title=" " alt="" coords="1452,1334,1561,1469,1589,1506,1585,1509,1557,1472,1447,1337"/>
+</map>

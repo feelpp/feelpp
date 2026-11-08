@@ -1,0 +1,5 @@
+<map id="nlohmann::detail::has_non_default_from_json&lt; BasicJsonType, T, enable_if_t&lt; !is_basic_json&lt; T &gt;::value &gt; &gt;" name="nlohmann::detail::has_non_default_from_json&lt; BasicJsonType, T, enable_if_t&lt; !is_basic_json&lt; T &gt;::value &gt; &gt;">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,133,180,257"/>
+<area shape="rect" id="Node000002" href="$classbool.html" title=" " alt="" coords="73,5,112,71"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="95,71,95,117,90,117,90,71"/>
+</map>

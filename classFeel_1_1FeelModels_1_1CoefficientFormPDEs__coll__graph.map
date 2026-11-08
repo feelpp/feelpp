@@ -1,0 +1,47 @@
+<map id="Feel::FeelModels::CoefficientFormPDEs&lt; ConvexType, BasisUnknownType &gt;" name="Feel::FeelModels::CoefficientFormPDEs&lt; ConvexType, BasisUnknownType &gt;">
+<area shape="rect" id="Node000001" title="class for Coefficient Form PDE toolbox" alt="" coords="844,1956,1104,2171"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1FeelModels_1_1ModelNumerical.html" title="Handles some numerical model aspects: timestepping, mesh and properties." alt="" coords="144,1549,383,1879"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="396,1777,845,1996,843,2001,394,1782"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title="Model base class." alt="" coords="68,1049,288,1215"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="74,1227,50,1259,32,1293,14,1346,8,1390,14,1433,32,1486,54,1526,81,1564,113,1598,146,1628,142,1632,109,1602,77,1567,49,1529,28,1488,9,1435,3,1390,9,1345,28,1291,46,1256,69,1224"/>
+<area shape="rect" id="Node000007" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic.html" title=" " alt="" coords="42,1307,253,1472"/>
+<area shape="poly" id="edge7_Node000007_Node000003" title=" " alt="" coords="169,1229,160,1307,155,1306,164,1228"/>
+<area shape="rect" id="Node000008" href="$classFeel_1_1FeelModels_1_1ModelMeshes.html" title=" " alt="" coords="277,1292,484,1487"/>
+<area shape="poly" id="edge12_Node000008_Node000003" title=" " alt="" coords="253,1224,306,1290,302,1293,249,1227"/>
+<area shape="rect" id="Node000012" href="$classFeel_1_1FeelModels_1_1ModelPhysics.html" title=" " alt="" coords="715,1604,919,1824"/>
+<area shape="poly" id="edge14_Node000012_Node000003" title=" " alt="" coords="302,1204,318,1212,370,1232,414,1242,455,1256,476,1270,497,1290,516,1315,527,1339,536,1386,542,1433,550,1458,564,1485,598,1529,636,1570,716,1640,713,1644,632,1574,594,1533,560,1488,545,1460,536,1434,530,1386,522,1341,512,1318,493,1294,472,1274,452,1261,412,1247,368,1237,316,1217,299,1209"/>
+<area shape="rect" id="Node000004" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="181,120,383,600"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="187,614,177,663,166,753,167,824,172,895,177,987,178,1049,173,1049,171,987,167,895,161,824,161,753,171,662,182,613"/>
+<area shape="rect" id="Node000019" href="$classFeel_1_1FeelModels_1_1ModelPhysic.html" title=" " alt="" coords="571,663,787,987"/>
+<area shape="poly" id="edge22_Node000019_Node000004" title=" " alt="" coords="394,487,573,696,569,699,390,491"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="220,5,344,71"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="285,84,285,120,279,120,279,84"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="187,785,351,865"/>
+<area shape="poly" id="edge5_Node000003_Node000006" title=" " alt="" coords="256,879,205,1050,200,1049,251,878"/>
+<area shape="poly" id="edge6_Node000002_Node000007" title=" " alt="" coords="184,1484,207,1548,202,1550,179,1486"/>
+<area shape="poly" id="edge8_Node000002_Node000008" title=" " alt="" coords="344,1500,326,1550,321,1548,339,1499"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="329,1099,443,1165"/>
+<area shape="poly" id="edge9_Node000008_Node000009" title=" " alt="" coords="388,1179,385,1292,380,1291,382,1179"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="375,792,397,857"/>
+<area shape="poly" id="edge10_Node000009_Node000010" title=" " alt="" coords="389,857,389,1083,383,1083,383,857"/>
+<area shape="rect" id="Node000011" title=" " alt="" coords="447,792,469,857"/>
+<area shape="poly" id="edge11_Node000009_Node000011" title=" " alt="" coords="458,858,449,935,431,1026,410,1085,405,1083,426,1025,444,934,453,857"/>
+<area shape="poly" id="edge13_Node000001_Node000012" title=" " alt="" coords="874,1835,928,1954,923,1957,869,1838"/>
+<area shape="rect" id="Node000013" title=" " alt="" coords="880,327,1033,393"/>
+<area shape="poly" id="edge24_Node000001_Node000013" title=" " alt="" coords="969,392,989,468,1013,574,1032,697,1041,823,1041,1715,1038,1773,1031,1832,1010,1941,1005,1940,1026,1831,1033,1773,1035,1715,1035,823,1027,698,1008,575,984,469,964,394"/>
+<area shape="poly" id="edge15_Node000012_Node000013" title=" " alt="" coords="959,393,959,823,959,1391,958,1460,952,1490,940,1526,909,1591,904,1589,936,1524,947,1488,953,1459,954,1391,954,823,954,393"/>
+<area shape="poly" id="edge23_Node000019_Node000013" title=" " alt="" coords="940,394,787,650,782,647,936,391"/>
+<area shape="rect" id="Node000014" title=" " alt="" coords="810,1357,882,1422"/>
+<area shape="poly" id="edge16_Node000012_Node000014" title=" " alt="" coords="839,1423,829,1465,821,1511,816,1588,811,1588,815,1510,824,1464,834,1422"/>
+<area shape="rect" id="Node000015" title=" " alt="" coords="789,1092,908,1172"/>
+<area shape="poly" id="edge17_Node000014_Node000015" title=" " alt="" coords="851,1186,849,1357,844,1357,845,1186"/>
+<area shape="rect" id="Node000016" title=" " alt="" coords="575,1335,784,1444"/>
+<area shape="poly" id="edge18_Node000012_Node000016" title=" " alt="" coords="705,1443,766,1587,761,1589,700,1445"/>
+<area shape="rect" id="Node000017" title=" " alt="" coords="467,1099,569,1165"/>
+<area shape="poly" id="edge19_Node000016_Node000017" title=" " alt="" coords="540,1164,639,1319,634,1322,536,1166"/>
+<area shape="rect" id="Node000018" title=" " alt="" coords="593,1085,765,1179"/>
+<area shape="poly" id="edge20_Node000016_Node000018" title=" " alt="" coords="682,1179,682,1318,677,1318,677,1179"/>
+<area shape="poly" id="edge21_Node000018_Node000019" title=" " alt="" coords="682,987,682,1068,677,1068,677,987"/>
+<area shape="rect" id="Node000020" title=" " alt="" coords="1075,1681,1211,1747"/>
+<area shape="poly" id="edge25_Node000001_Node000020" title=" " alt="" coords="1135,1748,1104,1833,1059,1933,1054,1943,1049,1940,1054,1931,1099,1831,1130,1746"/>
+</map>

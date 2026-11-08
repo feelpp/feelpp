@@ -1,0 +1,7 @@
+<map id="Feel::FeelModels::ModelAlgebraic::DataNewtonInitialGuess" name="Feel::FeelModels::ModelAlgebraic::DataNewtonInitialGuess">
+<area shape="rect" id="Node000001" title=" " alt="" coords="124,233,335,373"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateBase.html" title=" " alt="" coords="5,5,216,185"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="171,196,192,231,187,234,166,198"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataDofEliminationIdsByEntity.html" title=" " alt="" coords="241,5,455,185"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="292,198,272,234,267,231,288,196"/>
+</map>

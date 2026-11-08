@@ -1,0 +1,13 @@
+<map id="Feel::FeelModels::ModelGenericPDE&lt; Dim &gt;" name="Feel::FeelModels::ModelGenericPDE&lt; Dim &gt;">
+<area shape="rect" id="Node000001" title="Generic PDE Model class." alt="" coords="107,1168,310,1348"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1FeelModels_1_1ModelPhysics.html" title="Physic set Model." alt="" coords="107,860,311,1120"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="211,1134,211,1168,206,1168,206,1134"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title="Model base class." alt="" coords="99,647,319,812"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="211,826,211,860,206,860,206,826"/>
+<area shape="rect" id="Node000004" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="5,119,207,599"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="179,611,189,646,183,647,174,612"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="44,5,168,71"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="109,84,109,119,103,119,103,84"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="231,319,395,399"/>
+<area shape="poly" id="edge5_Node000003_Node000006" title=" " alt="" coords="301,413,234,647,229,646,295,411"/>
+</map>

@@ -1,0 +1,45 @@
+<map id="Feel::FeelModels::SolidMechanics&lt; ConvexType, BasisDisplacementType &gt;" name="Feel::FeelModels::SolidMechanics&lt; ConvexType, BasisDisplacementType &gt;">
+<area shape="rect" id="Node000001" title="class for Solid Mechanics toolbox" alt="" coords="647,1987,907,2187"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1FeelModels_1_1ModelNumerical.html" title="Handles some numerical model aspects: timestepping, mesh and properties." alt="" coords="196,1608,435,1937"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="447,1860,648,1995,645,2000,445,1864"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title="Model base class." alt="" coords="76,1049,296,1215"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="103,1227,63,1286,46,1318,33,1352,16,1405,9,1450,13,1493,32,1544,64,1594,105,1639,150,1677,197,1709,194,1713,147,1681,101,1643,60,1598,28,1547,8,1494,3,1450,11,1404,28,1350,41,1316,58,1283,99,1224"/>
+<area shape="rect" id="Node000007" href="$classFeel_1_1FeelModels_1_1ModelAlgebraic.html" title=" " alt="" coords="42,1365,253,1531"/>
+<area shape="poly" id="edge7_Node000007_Node000003" title=" " alt="" coords="177,1228,160,1365,155,1365,172,1228"/>
+<area shape="rect" id="Node000008" href="$classFeel_1_1FeelModels_1_1ModelMeshes.html" title=" " alt="" coords="277,1351,484,1545"/>
+<area shape="poly" id="edge12_Node000008_Node000003" title=" " alt="" coords="246,1225,323,1349,319,1352,242,1228"/>
+<area shape="rect" id="Node000012" href="$classFeel_1_1FeelModels_1_1ModelPhysics.html" title=" " alt="" coords="675,1663,879,1883"/>
+<area shape="poly" id="edge14_Node000012_Node000003" title=" " alt="" coords="309,1195,358,1226,408,1263,456,1304,499,1349,518,1375,531,1400,547,1445,561,1490,587,1544,630,1605,677,1662,672,1665,626,1608,582,1547,556,1492,542,1446,527,1402,514,1378,495,1352,452,1308,405,1267,355,1231,306,1200"/>
+<area shape="rect" id="Node000004" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="203,120,404,600"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="209,614,198,663,184,766,179,871,179,968,182,1049,177,1049,174,968,174,871,179,766,193,662,204,613"/>
+<area shape="rect" id="Node000019" href="$classFeel_1_1FeelModels_1_1ModelPhysic.html" title=" " alt="" coords="593,663,809,987"/>
+<area shape="poly" id="edge22_Node000019_Node000004" title=" " alt="" coords="415,487,594,696,590,699,411,491"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="241,5,365,71"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="306,84,306,120,301,120,301,84"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="208,785,372,865"/>
+<area shape="poly" id="edge5_Node000003_Node000006" title=" " alt="" coords="275,879,216,1050,211,1048,270,878"/>
+<area shape="poly" id="edge6_Node000002_Node000007" title=" " alt="" coords="199,1542,232,1606,228,1609,194,1545"/>
+<area shape="poly" id="edge8_Node000002_Node000008" title=" " alt="" coords="361,1559,351,1608,346,1607,356,1558"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="350,1099,465,1165"/>
+<area shape="poly" id="edge9_Node000008_Node000009" title=" " alt="" coords="406,1179,392,1351,386,1350,401,1178"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="396,792,419,857"/>
+<area shape="poly" id="edge10_Node000009_Node000010" title=" " alt="" coords="410,857,410,1083,405,1083,405,857"/>
+<area shape="rect" id="Node000011" title=" " alt="" coords="468,792,491,857"/>
+<area shape="poly" id="edge11_Node000009_Node000011" title=" " alt="" coords="480,858,471,935,453,1026,432,1085,427,1083,448,1025,466,934,474,857"/>
+<area shape="poly" id="edge13_Node000001_Node000012" title=" " alt="" coords="779,1896,779,1986,774,1986,774,1896"/>
+<area shape="rect" id="Node000013" title=" " alt="" coords="901,327,1055,393"/>
+<area shape="poly" id="edge24_Node000001_Node000013" title=" " alt="" coords="990,392,1010,468,1034,574,1054,697,1062,823,1062,1774,1059,1808,1050,1841,1036,1873,1018,1902,973,1955,922,2000,918,1996,969,1951,1014,1899,1031,1870,1045,1840,1054,1808,1057,1774,1057,823,1049,698,1029,575,1005,469,985,394"/>
+<area shape="poly" id="edge15_Node000012_Node000013" title=" " alt="" coords="981,393,981,823,981,1449,981,1519,975,1549,960,1585,930,1634,892,1678,888,1675,926,1631,956,1583,970,1548,975,1519,975,1449,975,823,975,393"/>
+<area shape="poly" id="edge23_Node000019_Node000013" title=" " alt="" coords="962,394,808,650,803,647,957,391"/>
+<area shape="rect" id="Node000014" title=" " alt="" coords="831,1415,903,1481"/>
+<area shape="poly" id="edge16_Node000012_Node000014" title=" " alt="" coords="861,1482,814,1648,809,1646,856,1480"/>
+<area shape="rect" id="Node000015" title=" " alt="" coords="811,1092,929,1172"/>
+<area shape="poly" id="edge17_Node000014_Node000015" title=" " alt="" coords="872,1186,870,1415,865,1415,867,1186"/>
+<area shape="rect" id="Node000016" title=" " alt="" coords="596,1393,805,1503"/>
+<area shape="poly" id="edge18_Node000012_Node000016" title=" " alt="" coords="708,1502,721,1583,737,1646,732,1647,715,1585,703,1503"/>
+<area shape="rect" id="Node000017" title=" " alt="" coords="489,1099,590,1165"/>
+<area shape="poly" id="edge19_Node000016_Node000017" title=" " alt="" coords="558,1164,668,1377,663,1380,553,1166"/>
+<area shape="rect" id="Node000018" title=" " alt="" coords="615,1085,787,1179"/>
+<area shape="poly" id="edge20_Node000016_Node000018" title=" " alt="" coords="703,1180,703,1377,698,1377,698,1180"/>
+<area shape="poly" id="edge21_Node000018_Node000019" title=" " alt="" coords="703,987,703,1068,698,1068,698,987"/>
+</map>

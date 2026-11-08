@@ -1,0 +1,11 @@
+<map id="Feel::vf::SymbolicDependencyReport" name="Feel::vf::SymbolicDependencyReport">
+<area shape="rect" id="Node000001" title="Report symbolic dependencies against an explicit candidate set." alt="" coords="28,405,221,525"/>
+<area shape="rect" id="Node000002" href="$classbool.html" title=" " alt="" coords="5,263,44,328"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="22,328,22,355,28,380,34,391,30,393,24,382,16,355,16,328"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="147,263,305,328"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="221,329,212,356,199,383,192,393,188,390,194,380,207,354,216,327"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="190,135,262,200"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="229,200,229,246,223,246,223,200"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="167,5,285,85"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="229,99,229,134,223,134,223,99"/>
+</map>

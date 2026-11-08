@@ -1,0 +1,9 @@
+<map id="nlohmann::detail::parser&lt; BasicJsonType, InputAdapterType &gt;" name="nlohmann::detail::parser&lt; BasicJsonType, InputAdapterType &gt;">
+<area shape="rect" id="Node000001" title="syntax analysis" alt="" coords="50,163,287,303"/>
+<area shape="rect" id="Node000002" href="$classbool.html" title=" " alt="" coords="5,13,44,78"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="31,77,38,108,52,137,61,148,56,152,48,140,33,110,26,79"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="129,13,208,78"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="171,78,171,146,166,146,166,78"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="233,5,379,85"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="285,87,250,140,241,151,237,148,245,137,281,84"/>
+</map>

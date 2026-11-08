@@ -1,0 +1,29 @@
+<map id="Feel::Newmark&lt; SpaceType &gt;" name="Feel::Newmark&lt; SpaceType &gt;">
+<area shape="rect" id="Node000001" title="Newmark discretization." alt="" coords="577,740,769,905"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1TSBase.html" title="base class for time sets" alt="" coords="593,505,752,691"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="675,704,675,740,670,740,670,704"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="29,205,101,270"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="56,271,45,317,39,372,40,401,44,429,54,456,69,480,103,505,153,527,217,545,289,560,441,580,577,590,576,595,441,585,288,565,215,550,151,532,100,510,65,483,49,458,39,431,34,402,33,372,40,316,51,269"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="5,5,124,85"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="67,99,67,204,62,204,62,99"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="157,205,209,270"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="176,271,167,317,162,372,164,401,170,429,179,456,195,480,219,500,256,518,303,534,356,548,471,570,577,585,577,590,470,575,355,553,301,539,254,523,216,504,191,483,175,458,164,431,159,402,157,372,161,316,171,270"/>
+<area shape="rect" id="Node000006" href="$classint.html" title=" " alt="" coords="279,205,307,270"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="288,271,281,316,279,372,288,429,298,456,313,480,339,507,369,529,402,548,437,562,509,582,577,592,577,597,508,587,435,567,400,552,366,534,336,511,309,483,293,458,283,430,273,372,275,316,282,270"/>
+<area shape="rect" id="Node000007" href="$classbool.html" title=" " alt="" coords="457,205,496,270"/>
+<area shape="poly" id="edge6_Node000002_Node000007" title=" " alt="" coords="475,271,471,315,473,369,482,427,491,454,504,480,520,501,538,520,581,552,578,556,535,524,516,505,500,483,487,456,477,428,467,370,466,315,469,270"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="641,205,704,270"/>
+<area shape="poly" id="edge7_Node000002_Node000008" title=" " alt="" coords="675,270,675,489,670,489,670,270"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="743,205,781,270"/>
+<area shape="poly" id="edge8_Node000002_Node000009" title=" " alt="" coords="764,270,758,366,749,424,735,482,732,491,727,489,730,481,744,423,753,366,759,270"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="853,205,900,270"/>
+<area shape="poly" id="edge9_Node000002_Node000010" title=" " alt="" coords="884,270,887,314,886,370,875,428,866,456,852,483,835,506,815,526,768,558,765,554,811,522,831,502,848,480,861,454,870,427,880,369,882,315,879,270"/>
+<area shape="rect" id="Node000011" title=" " alt="" coords="925,205,1037,270"/>
+<area shape="poly" id="edge10_Node000002_Node000011" title=" " alt="" coords="983,270,975,386,965,443,958,466,949,483,911,521,866,549,817,570,769,584,768,579,815,565,863,544,908,516,945,480,953,464,960,442,970,385,977,270"/>
+<area shape="rect" id="Node000012" href="$classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators." alt="" coords="1064,135,1217,340"/>
+<area shape="poly" id="edge11_Node000002_Node000012" title=" " alt="" coords="1156,340,1154,377,1147,415,1134,451,1113,483,1090,502,1056,519,967,548,865,571,769,587,768,581,864,565,966,543,1054,514,1087,497,1109,480,1129,449,1142,414,1149,377,1150,340"/>
+<area shape="rect" id="Node000013" href="$classboost_1_1mpi_1_1communicator.html" title=" " alt="" coords="962,13,1127,78"/>
+<area shape="poly" id="edge12_Node000012_Node000013" title=" " alt="" coords="1069,89,1091,133,1087,135,1064,92"/>
+<area shape="rect" id="Node000014" title=" " alt="" coords="1151,5,1322,85"/>
+<area shape="poly" id="edge13_Node000012_Node000014" title=" " alt="" coords="1213,99,1195,135,1190,133,1209,96"/>
+</map>

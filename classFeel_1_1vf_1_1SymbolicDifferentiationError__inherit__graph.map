@@ -1,0 +1,7 @@
+<map id="Feel::vf::SymbolicDifferentiationError" name="Feel::vf::SymbolicDifferentiationError">
+<area shape="rect" id="Node000001" title="Exception used when symbolic differentiation is known to be unsupported." alt="" coords="5,232,207,372"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="56,119,156,184"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="109,198,109,232,103,232,103,198"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="58,5,154,71"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="109,84,109,119,103,119,103,84"/>
+</map>

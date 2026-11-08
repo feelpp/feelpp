@@ -1,0 +1,7 @@
+<map id="Feel::vf::SB9LumpedMassLobatto&lt; T &gt;" name="Feel::vf::SB9LumpedMassLobatto&lt; T &gt;">
+<area shape="rect" id="Node000001" title="Full vertex Gauss&#45;Lobatto quadrature for lumped SB9 displacement mass." alt="" coords="38,148,282,233"/>
+<area shape="rect" id="Node000002" href="$classIMGeneral.html" title=" " alt="" coords="5,5,144,85"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="107,96,138,147,133,149,103,99"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="169,13,322,78"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="229,80,196,135,191,132,224,77"/>
+</map>

@@ -1,0 +1,11 @@
+<map id="Feel::DofTableInfos" name="Feel::DofTableInfos">
+<area shape="rect" id="Node000001" title=" " alt="" coords="119,439,247,644"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,135,65,200"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="35,200,33,244,35,299,44,357,63,414,84,447,110,477,106,481,79,450,58,416,39,359,30,299,28,244,30,200"/>
+<area shape="rect" id="Node000003" href="$classbool.html" title=" " alt="" coords="164,135,203,200"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="186,200,186,422,181,422,181,200"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="303,135,375,200"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="345,200,346,244,343,299,333,359,312,416,290,452,262,483,258,479,285,448,308,413,327,357,337,299,340,244,339,200"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="280,5,399,85"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="342,99,342,134,337,134,337,99"/>
+</map>

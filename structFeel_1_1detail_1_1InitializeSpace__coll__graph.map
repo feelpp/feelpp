@@ -1,0 +1,29 @@
+<map id="Feel::detail::InitializeSpace&lt; SpaceType &gt;" name="Feel::detail::InitializeSpace&lt; SpaceType &gt;">
+<area shape="rect" id="Node000001" title=" " alt="" coords="490,779,630,879"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,636,144,716"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="113,714,139,735,168,752,245,782,327,802,405,815,474,821,473,827,404,820,326,807,244,787,166,757,136,739,110,718"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="181,643,241,709"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="242,704,255,714,287,735,321,752,399,781,475,804,473,809,397,786,319,757,284,740,252,718,239,708"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="265,636,420,716"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="372,714,410,753,442,774,476,792,474,797,439,779,406,757,368,718"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="276,328,409,393"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="345,394,345,619,340,619,340,394"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="331,13,354,78"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="345,78,345,311,340,311,340,78"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="444,643,537,709"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="508,708,533,762,528,764,503,710"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="561,636,700,716"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="615,717,592,765,588,763,610,715"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="725,636,846,716"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="756,718,715,757,682,778,646,796,644,792,679,774,712,753,753,714"/>
+<area shape="rect" id="Node000010" href="$classFeel_1_1Dof.html" title="class that represents a degree of freedom" alt="" coords="722,148,849,573"/>
+<area shape="poly" id="edge9_Node000009_Node000010" title=" " alt="" coords="788,574,788,619,783,619,783,574"/>
+<area shape="rect" id="Node000011" title=" " alt="" coords="728,5,843,85"/>
+<area shape="poly" id="edge10_Node000010_Node000011" title=" " alt="" coords="788,99,788,148,783,148,783,99"/>
+<area shape="rect" id="Node000012" title=" " alt="" coords="870,643,975,709"/>
+<area shape="poly" id="edge11_Node000001_Node000012" title=" " alt="" coords="891,711,860,735,825,757,781,777,735,793,647,815,645,810,733,788,779,772,823,752,857,731,888,707"/>
+<area shape="rect" id="Node000013" title=" " alt="" coords="1000,636,1195,716"/>
+<area shape="poly" id="edge12_Node000001_Node000013" title=" " alt="" coords="1031,719,988,739,944,757,866,780,788,798,647,820,646,815,786,792,865,775,942,752,986,734,1029,714"/>
+<area shape="rect" id="Node000014" title=" " alt="" coords="1023,328,1172,393"/>
+<area shape="poly" id="edge13_Node000013_Node000014" title=" " alt="" coords="1100,394,1100,619,1095,619,1095,394"/>
+</map>

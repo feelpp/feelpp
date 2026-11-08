@@ -1,0 +1,11 @@
+<map id="Feelpp" name="Feelpp">
+<area shape="rect" id="Node000002" href="$group__Core.html" title="Core classes provided by the library." alt="" coords="186,5,237,31"/>
+<area shape="rect" id="Node000006" href="$group__DSEL-Variational-Formulation.html" title="Variational forms provided by the library." alt="" coords="115,55,308,80"/>
+<area shape="rect" id="Node000004" href="$group__Discretization.html" title="Discretization classes and algorithms provided by the library." alt="" coords="160,104,263,129"/>
+<area shape="rect" id="Node000001" title="Feel++ classes and methods." alt="" coords="5,179,67,204"/>
+<area shape="rect" id="Node000005" href="$group__Filters.html" title="Filter classes provided by the library." alt="" coords="182,153,241,179"/>
+<area shape="rect" id="Node000003" href="$group__Mesh.html" title="Mesh classes and algorithms provided by the library." alt="" coords="184,203,239,228"/>
+<area shape="rect" id="Node000007" href="$group__SpaceTime.html" title="Time stepping including space provided by the library." alt="" coords="167,252,255,277"/>
+<area shape="rect" id="Node000008" href="$group__Timing.html" title="Timing methods provided by the library." alt="" coords="181,301,242,327"/>
+<area shape="rect" id="Node000009" href="$group__Traits.html" title="Traits provided by the library." alt="" coords="184,351,239,376"/>
+</map>

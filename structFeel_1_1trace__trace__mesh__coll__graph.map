@@ -1,0 +1,7 @@
+<map id="Feel::trace_trace_mesh&lt; MeshType, TheTag &gt;" name="Feel::trace_trace_mesh&lt; MeshType, TheTag &gt;">
+<area shape="rect" id="Node000001" title="helper class to get the type of the trace of the trace of a mesh" alt="" coords="8,133,159,213"/>
+<area shape="rect" id="Node000002" href="$classint.html" title=" " alt="" coords="5,5,33,71"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="36,68,60,117,55,120,31,70"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="58,5,237,71"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="135,72,111,120,107,118,130,70"/>
+</map>

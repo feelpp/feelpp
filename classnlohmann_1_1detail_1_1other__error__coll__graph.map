@@ -1,0 +1,11 @@
+<map id="nlohmann::detail::other_error" name="nlohmann::detail::other_error">
+<area shape="rect" id="Node000001" title="exception indicating other library errors" alt="" coords="67,328,213,408"/>
+<area shape="rect" id="Node000002" href="$classnlohmann_1_1detail_1_1exception.html" title="general exception of the basic_json class" alt="" coords="53,133,227,279"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="143,292,143,328,137,328,137,292"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="5,5,101,71"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="78,81,105,132,100,134,74,84"/>
+<area shape="rect" id="Node000004" href="$classint.html" title=" " alt="" coords="126,5,154,71"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="143,71,143,117,137,117,137,71"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="178,5,262,71"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="207,72,184,119,179,117,202,70"/>
+</map>

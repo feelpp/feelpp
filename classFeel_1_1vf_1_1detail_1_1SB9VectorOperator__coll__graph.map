@@ -1,0 +1,9 @@
+<map id="Feel::vf::detail::SB9VectorOperator&lt; ElementType, Role, KernelCacheTemplate, Kind &gt;" name="Feel::vf::detail::SB9VectorOperator&lt; ElementType, Role, KernelCacheTemplate, Kind &gt;">
+<area shape="rect" id="Node000001" title="Generic Feel++ expression node for an SB9 vector&#45;valued contribution." alt="" coords="21,163,213,377"/>
+<area shape="rect" id="Node000002" href="$classsize__t.html" title=" " alt="" coords="5,5,55,71"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="39,70,58,138,61,147,56,149,53,139,34,72"/>
+<area shape="rect" id="Node000003" href="$classbool.html" title=" " alt="" coords="97,5,136,71"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="119,71,119,146,114,146,114,71"/>
+<area shape="rect" id="Node000004" href="$classint.html" title=" " alt="" coords="235,5,263,71"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="245,72,236,105,222,140,216,150,211,148,217,138,231,103,240,70"/>
+</map>

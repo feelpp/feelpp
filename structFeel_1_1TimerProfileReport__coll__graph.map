@@ -1,0 +1,18 @@
+<map id="Feel::TimerProfileReport" name="Feel::TimerProfileReport">
+<area shape="rect" id="Node000001" title="Per&#45;rank and pooled call distributions for one toc() label." alt="" coords="127,565,283,631"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="29,430,101,495"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="100,494,161,552,157,556,96,497"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="5,280,124,360"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="67,374,67,430,62,430,62,374"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="125,423,284,503"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="207,503,207,549,202,549,202,503"/>
+<area shape="rect" id="Node000005" href="$classint.html" title=" " alt="" coords="161,287,189,353"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="176,353,179,398,182,407,176,408,174,399,170,353"/>
+<area shape="rect" id="Node000006" href="$structFeel_1_1TimerProfileStatistics.html" title="Distribution of repeated toc() calls for one rank or selected ranks." alt="" coords="231,287,403,353"/>
+<area shape="poly" id="edge8_Node000001_Node000006" title=" " alt="" coords="322,353,321,424,313,465,299,504,281,532,259,556,255,552,277,528,294,501,308,464,315,424,317,353"/>
+<area shape="poly" id="edge5_Node000004_Node000006" title=" " alt="" coords="280,355,251,386,234,410,230,407,247,382,276,351"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="247,5,307,71"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="275,71,272,155,275,206,285,255,290,271,285,273,279,257,270,206,267,156,270,71"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="331,5,383,71"/>
+<area shape="poly" id="edge7_Node000006_Node000008" title=" " alt="" coords="355,71,330,256,328,271,322,271,325,256,350,71"/>
+</map>

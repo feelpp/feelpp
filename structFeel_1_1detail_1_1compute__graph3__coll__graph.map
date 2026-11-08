@@ -1,0 +1,11 @@
+<map id="Feel::detail::compute_graph3&lt; BFType, Space1Type, SizeT &gt;" name="Feel::detail::compute_graph3&lt; BFType, Space1Type, SizeT &gt;">
+<area shape="rect" id="Node000001" title=" " alt="" coords="96,291,297,405"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,133,73,199"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="67,197,124,265,135,277,131,280,120,268,63,201"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="98,133,295,199"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="199,199,199,274,194,274,194,199"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="153,5,240,71"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="199,71,199,117,194,117,194,71"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="320,133,401,199"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="337,200,277,268,266,280,262,277,273,265,333,197"/>
+</map>

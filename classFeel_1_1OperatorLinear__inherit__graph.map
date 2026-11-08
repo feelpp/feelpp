@@ -1,0 +1,9 @@
+<map id="Feel::OperatorLinear&lt; DomainSpace, DualImageSpace &gt;" name="Feel::OperatorLinear&lt; DomainSpace, DualImageSpace &gt;">
+<area shape="rect" id="Node000001" title="Linear Operator between function spaces, represented by a matrix." alt="" coords="129,233,357,413"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1OperatorLinearComposite.html" title=" " alt="" coords="5,469,233,649"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="192,427,169,470,164,467,187,425"/>
+<area shape="rect" id="Node000004" href="$classFeel_1_1OperatorLinearFree.html" title="Linear Operator Free between function spaces, represented by a matrix but this matrix is not automati..." alt="" coords="257,461,477,656"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="300,425,319,460,314,463,295,427"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1Operator.html" title="Operator between function spaces." alt="" coords="146,5,341,185"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="246,199,246,233,241,233,241,199"/>
+</map>

@@ -1,0 +1,15 @@
+<map id="Feel::FeelModels::ElectricBoundaryConditions" name="Feel::FeelModels::ElectricBoundaryConditions">
+<area shape="rect" id="Node000001" title=" " alt="" coords="163,1209,358,1409"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1FeelModels_1_1BoundaryConditionsBase.html" title=" " alt="" coords="170,1020,351,1160"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="263,1174,263,1209,258,1209,258,1174"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="173,877,348,957"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="263,958,263,1004,258,1004,258,958"/>
+<area shape="rect" id="Node000004" href="$classFeel_1_1FeelModels_1_1ModelBase.html" title="Model base class." alt="" coords="151,649,371,815"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="263,815,263,861,258,861,258,815"/>
+<area shape="rect" id="Node000005" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="5,120,207,600"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="214,612,229,648,224,650,209,614"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="44,5,168,71"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="109,84,109,120,103,120,103,84"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="231,320,395,400"/>
+<area shape="poly" id="edge6_Node000004_Node000007" title=" " alt="" coords="308,414,275,650,269,649,303,413"/>
+</map>

@@ -1,0 +1,15 @@
+<map id="Feel::BVH_ThirdParty&lt; MeshEntityType &gt;" name="Feel::BVH_ThirdParty&lt; MeshEntityType &gt;">
+<area shape="rect" id="Node000001" title="implementation of BVH tool with an external third party" alt="" coords="245,765,388,905"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1BVH.html" title="BVH base class." alt="" coords="220,491,413,716"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="319,730,319,765,314,765,314,730"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1CommObject.html" title=" " alt="" coords="5,248,129,413"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="141,408,144,412,222,495,218,499,140,415,137,412"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="154,298,333,363"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="254,363,285,474,279,475,249,364"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="357,291,519,371"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="423,372,376,476,371,474,418,370"/>
+<area shape="rect" id="Node000006" href="$structFeel_1_1BVH_1_1BVHPrimitiveInfo.html" title="Information on the primitive (mesh entity, bounding box, centroid)" alt="" coords="347,5,529,185"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="441,186,441,274,435,274,435,186"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="544,298,599,363"/>
+<area shape="poly" id="edge6_Node000002_Node000007" title=" " alt="" coords="560,365,534,415,517,443,496,469,428,529,425,525,492,465,512,440,529,412,555,362"/>
+</map>

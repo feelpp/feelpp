@@ -1,0 +1,28 @@
+<map id="Feel::MasterStream" name="Feel::MasterStream">
+<area shape="rect" id="Node000001" title="Output Stream that outputs only on master rank of a worldcomm." alt="" coords="215,825,358,991"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="39,593,126,659"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="86,659,92,709,100,736,112,761,131,788,153,813,203,854,200,858,149,816,126,791,107,764,95,738,87,710,80,659"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="5,235,131,315"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="73,328,84,593,79,593,68,329"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="68,120,215,185"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="117,198,94,236,90,233,113,195"/>
+<area shape="rect" id="Node000013" title=" " alt="" coords="155,235,280,315"/>
+<area shape="poly" id="edge13_Node000013_Node000004" title=" " alt="" coords="171,195,195,233,190,236,166,198"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="95,5,187,71"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="144,85,144,120,139,120,139,85"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="295,683,433,763"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="350,764,330,811,325,809,345,762"/>
+<area shape="rect" id="Node000007" href="$classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators." alt="" coords="314,364,467,569"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="383,570,372,666,367,666,377,569"/>
+<area shape="rect" id="Node000008" href="$classboost_1_1mpi_1_1communicator.html" title=" " alt="" coords="307,242,472,307"/>
+<area shape="poly" id="edge7_Node000007_Node000008" title=" " alt="" coords="392,321,393,364,387,364,387,321"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="496,235,667,315"/>
+<area shape="poly" id="edge8_Node000007_Node000009" title=" " alt="" coords="534,327,469,391,466,387,530,323"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="457,690,503,755"/>
+<area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="459,752,447,765,372,836,368,832,443,761,455,748"/>
+<area shape="rect" id="Node000011" title=" " alt="" coords="151,690,270,755"/>
+<area shape="poly" id="edge10_Node000001_Node000011" title=" " alt="" coords="226,754,249,809,244,811,221,756"/>
+<area shape="rect" id="Node000012" title=" " alt="" coords="132,427,289,507"/>
+<area shape="poly" id="edge11_Node000011_Node000012" title=" " alt="" coords="213,521,213,690,208,690,208,521"/>
+<area shape="poly" id="edge12_Node000012_Node000013" title=" " alt="" coords="218,329,215,427,209,427,213,328"/>
+</map>

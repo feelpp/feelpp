@@ -1,0 +1,7 @@
+<map id="Feel::SymmetricTensorFormat" name="Feel::SymmetricTensorFormat">
+<area shape="rect" id="Node000001" title="Field&#45;level symmetric tensor format." alt="" coords="72,133,263,199"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,5,153,71"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="104,69,138,118,133,121,99,72"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="177,5,336,71"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="236,73,201,122,197,118,232,69"/>
+</map>

@@ -1,0 +1,11 @@
+<map id="Feel::DofTable&lt; MeshType, FEType, PeriodicityType, MortarType &gt;" name="Feel::DofTable&lt; MeshType, FEType, PeriodicityType, MortarType &gt;">
+<area shape="rect" id="Node000001" title="Local&#45;to&#45;global Degree of Freedom table." alt="" coords="125,553,299,828"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1DofTableBase.html" title=" " alt="" coords="5,135,168,315"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="117,327,178,552,173,554,112,328"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="13,5,160,85"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="89,99,89,134,84,134,84,99"/>
+<area shape="rect" id="Node000004" href="$classbool.html" title=" " alt="" coords="193,192,231,257"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="215,257,215,537,209,537,209,257"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="291,192,445,257"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="373,257,375,311,373,380,363,456,341,530,311,585,307,582,336,528,357,455,367,379,370,311,368,258"/>
+</map>

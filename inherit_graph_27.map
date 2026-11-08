@@ -1,0 +1,7 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" title=" " alt="" coords="5,45,96,70"/>
+<area shape="rect" id="Node000001" href="$structFeel_1_1vf_1_1minmaxData.html" title="data returned by minmax" alt="" coords="146,5,294,45"/>
+<area shape="poly" id="edge271_Node000000_Node000001" title=" " alt="" coords="109,44,145,37,146,42,110,49"/>
+<area shape="rect" id="Node000002" href="$structFeel_1_1vf_1_1normLinfData.html" title="data returned by normLinf" alt="" coords="144,69,296,109"/>
+<area shape="poly" id="edge272_Node000000_Node000002" title=" " alt="" coords="110,66,144,72,143,78,109,71"/>
+</map>

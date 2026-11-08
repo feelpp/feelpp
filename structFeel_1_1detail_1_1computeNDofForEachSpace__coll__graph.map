@@ -1,0 +1,9 @@
+<map id="Feel::detail::computeNDofForEachSpace&lt; UseComponentsSplit &gt;" name="Feel::detail::computeNDofForEachSpace&lt; UseComponentsSplit &gt;">
+<area shape="rect" id="Node000001" title=" " alt="" coords="53,261,301,421"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,133,188,199"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="108,198,122,236,126,246,121,248,117,238,103,200"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="61,5,133,71"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="99,71,99,117,94,117,94,71"/>
+<area shape="rect" id="Node000004" href="$classsize__t.html" title=" " alt="" coords="212,133,261,199"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="228,200,212,247,207,245,223,198"/>
+</map>

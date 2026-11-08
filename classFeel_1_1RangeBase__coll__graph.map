@@ -1,0 +1,22 @@
+<map id="Feel::RangeBase&lt; IndexT &gt;" name="Feel::RangeBase&lt; IndexT &gt;">
+<area shape="rect" id="Node000001" title="RangeBase class." alt="" coords="18,1581,197,1747"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1CommObject.html" title=" " alt="" coords="5,433,129,599"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="73,612,107,1581,102,1581,68,612"/>
+<area shape="rect" id="Node000003" href="$classFeel_1_1MeshBase.html" title=" " alt="" coords="133,819,353,1519"/>
+<area shape="poly" id="edge3_Node000003_Node000002" title=" " alt="" coords="96,611,151,818,146,819,90,613"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="150,1520,137,1566,132,1564,144,1518"/>
+<area shape="rect" id="Node000004" href="$classFeel_1_1JournalWatcher.html" title=" " alt="" coords="153,276,355,756"/>
+<area shape="poly" id="edge4_Node000003_Node000004" title=" " alt="" coords="253,770,252,819,246,819,247,770"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="192,148,316,213"/>
+<area shape="poly" id="edge5_Node000004_Node000005" title=" " alt="" coords="257,228,257,276,251,276,251,228"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="379,476,551,556"/>
+<area shape="poly" id="edge6_Node000003_Node000006" title=" " alt="" coords="454,557,361,830,356,828,449,555"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="385,148,457,213"/>
+<area shape="poly" id="edge7_Node000006_Node000007" title=" " alt="" coords="428,214,460,459,455,460,422,214"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="361,5,480,85"/>
+<area shape="poly" id="edge8_Node000007_Node000008" title=" " alt="" coords="423,99,423,148,418,148,418,99"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="481,148,637,213"/>
+<area shape="poly" id="edge9_Node000006_Node000009" title=" " alt="" coords="553,215,483,461,478,460,548,213"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="524,13,595,78"/>
+<area shape="poly" id="edge10_Node000009_Node000010" title=" " alt="" coords="562,78,562,131,557,131,557,78"/>
+</map>

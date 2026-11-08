@@ -1,0 +1,19 @@
+<map id="Feel::vf::detail::SB9StabilizationKernelCache&lt; GeometryDataType &gt;" name="Feel::vf::detail::SB9StabilizationKernelCache&lt; GeometryDataType &gt;">
+<area shape="rect" id="Node000001" title="Element&#45;local cache for SB9 mode&#45;stabilization coefficients." alt="" coords="212,708,439,808"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1vf_1_1detail_1_1SB9KernelBase.html" title="Base cache for SB9 element&#45;local geometric data." alt="" coords="235,419,416,659"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="319,673,320,708,315,708,314,673"/>
+<area shape="poly" id="edge8_Node000001_Node000002" title=" " alt="" coords="337,673,336,708,330,708,331,673"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="5,269,184,334"/>
+<area shape="poly" id="edge9_Node000001_Node000003" title=" " alt="" coords="88,335,75,399,67,483,68,529,75,574,88,617,109,657,127,679,148,697,198,724,195,729,145,701,123,682,104,660,83,619,70,575,63,529,61,483,69,398,83,334"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="124,332,184,393,218,417,224,422,220,426,214,421,181,397,120,336"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="208,269,384,334"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="303,334,311,402,306,403,297,335"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="408,269,491,334"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="435,336,398,405,394,402,430,333"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="515,261,685,341"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="556,343,431,451,427,447,553,339"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="549,133,651,199"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="603,199,603,245,597,245,597,199"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="589,5,611,71"/>
+<area shape="poly" id="edge7_Node000007_Node000008" title=" " alt="" coords="603,71,603,117,597,117,597,71"/>
+</map>

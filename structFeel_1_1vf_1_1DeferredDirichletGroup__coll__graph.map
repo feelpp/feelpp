@@ -1,0 +1,13 @@
+<map id="Feel::vf::DeferredDirichletGroup&lt; VectorPtrType &gt;" name="Feel::vf::DeferredDirichletGroup&lt; VectorPtrType &gt;">
+<area shape="rect" id="Node000001" title="One synchronized set of constraints sharing an elimination policy." alt="" coords="175,565,339,645"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1meta_1_1Context.html" title=" " alt="" coords="5,133,136,488"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="70,487,80,515,95,540,125,566,161,584,159,589,122,571,91,543,76,517,65,489"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="161,278,213,343"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="180,344,172,385,167,435,170,489,176,515,185,540,192,551,187,554,180,542,171,517,165,490,162,435,167,384,175,343"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="255,278,369,343"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="318,343,320,434,315,489,303,542,299,552,294,550,297,541,310,488,315,434,313,343"/>
+<area shape="rect" id="Node000005" href="$classint.html" title=" " alt="" coords="298,5,326,71"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="315,71,315,261,309,261,309,71"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="394,278,491,343"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="440,344,430,387,413,440,387,494,351,543,336,557,333,553,347,540,382,492,408,438,425,386,435,343"/>
+</map>

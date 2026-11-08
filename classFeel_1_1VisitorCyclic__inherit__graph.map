@@ -1,0 +1,5 @@
+<map id="Feel::VisitorCyclic&lt; R, TList &gt;" name="Feel::VisitorCyclic&lt; R, TList &gt;">
+<area shape="rect" id="Node000001" title="Put it in every class that you want to make visitable (in addition to deriving it from VisitableBase&lt;..." alt="" coords="22,179,143,279"/>
+<area shape="rect" id="Node000002" href="$classFeel_1_1Visitor.html" title=" " alt="" coords="5,5,160,131"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="85,144,85,178,80,178,80,144"/>
+</map>
