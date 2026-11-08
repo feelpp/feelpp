@@ -67,6 +67,7 @@ def command_release(args: argparse.Namespace) -> int:
     plan = service.execute_release(
         args.version,
         dry_run=args.dry_run,
+        previous_tag=args.previous_tag,
         dists=tuple(args.dist) or None,
         spack_targets=tuple(args.spack),
         publication_rows=args.publications_rows,
@@ -182,6 +183,11 @@ def build_parser() -> argparse.ArgumentParser:
     release_parser.add_argument(
         "version",
         help="Upstream semantic version for GitHub releases or full Debian package version for packaging-only releases",
+    )
+    release_parser.add_argument(
+        "--previous-tag",
+        default=None,
+        help="Use this existing tag as the release notes baseline instead of selecting a merged tag automatically.",
     )
     release_parser.add_argument(
         "--dist",

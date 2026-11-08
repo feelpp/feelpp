@@ -106,9 +106,16 @@ class CliTests(VersionRepoMixin, unittest.TestCase):
             with mock.patch("feelpp.ops.version.cli.ReleaseService") as service_cls:
                 service_cls.return_value.execute_release.return_value = FakePlan()
                 with mock.patch("sys.stdout", stdout):
-                    rc = version_main(["--repo-root", str(repo_root), "release", "0.111.0-preview.13", "--pretty"])
+                    rc = version_main([
+                        "--repo-root", str(repo_root), "release", "0.111.0-preview.13",
+                        "--previous-tag", "v0.111.0-preview.12", "--pretty",
+                    ])
 
             self.assertEqual(rc, 0)
+            self.assertEqual(
+                service_cls.return_value.execute_release.call_args.kwargs["previous_tag"],
+                "v0.111.0-preview.12",
+            )
             output = stdout.getvalue()
             self.assertIn("Release: v0.111.0-preview.13", output)
             self.assertIn("Package notes:", output)

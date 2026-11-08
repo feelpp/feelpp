@@ -1,3 +1,9 @@
+feelpp-toolboxes (0.112.0-1) unstable; urgency=medium
+
+  * New upstream release
+
+ -- Christophe Prud'homme <christophe.prudhomme@cemosis.fr>  Sun, 08 Nov 2026 16:04:10 +0100
+
 feelpp-toolboxes (0.112.0~preview.1-1) unstable; urgency=medium
 
   * New upstream release
