@@ -78,11 +78,28 @@ class BuildTests(unittest.TestCase):
         (archive_root / "data").mkdir(parents=True)
         (archive_root / "data" / "payload.txt").write_text("payload\n", encoding="utf-8")
         (archive_root / "data" / "payload-link").symlink_to("payload.txt")
+        (archive_root / "data" / "payload-dir").mkdir()
+        (archive_root / "data" / "payload-dir-link").symlink_to("payload-dir/")
 
         archive_path = Path(tmpdir) / f"{component}-{raw_version}.tar.gz"
         with tarfile.open(archive_path, "w:gz") as handle:
             handle.add(archive_root, arcname=archive_root.name, recursive=True)
         return archive_path
+
+    @unittest.skipUnless(hasattr(tarfile, "data_filter"), "Requires tar extraction filters")
+    def test_prepare_source_tree_preserves_symlink_targets_with_data_filter_default(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            context = self.make_context(tmpdir)
+            self.make_packaging_tree(context)
+            archive_path = self.make_source_archive(tmpdir, "feelpp", "0.111.0")
+
+            with mock.patch.object(
+                tarfile.TarFile, "extraction_filter", staticmethod(tarfile.data_filter),
+            ):
+                with mock.patch("feelpp.pkg.build.sourcepkg.run"):
+                    tree_root, _, _ = _prepare_source_tree(context, "feelpp", archive_path)
+
+            self.assertEqual(os.readlink(tree_root / "data" / "payload-dir-link"), "payload-dir/")
 
     def test_prepare_source_tree_flattens_stable_archive_root(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
