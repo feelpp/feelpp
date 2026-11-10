@@ -18,15 +18,19 @@ def _build_source_archive(
     dry_run: bool = False,
 ) -> Path:
     preset = _component_preset(component)
+    configure_command = [
+        "cmake",
+        "--preset",
+        preset,
+        "-DFEELPP_ENABLE_GIT=OFF",
+        "-DLIBBSON_DIR=/usr",
+        "-DLIBMONGOC_DIR=/usr",
+    ]
+    if context.dist == "resolute" and component == "feelpp":
+        # Keep archive preparation aligned with the Resolute DEB build.
+        configure_command.append("-DFEELPP_ENABLE_SIMPLE_WEB_SERVER=OFF")
     run(
-        [
-            "cmake",
-            "--preset",
-            preset,
-            "-DFEELPP_ENABLE_GIT=OFF",
-            "-DLIBBSON_DIR=/usr",
-            "-DLIBMONGOC_DIR=/usr",
-        ],
+        configure_command,
         cwd=context.repo_root,
         env=build_env,
         dry_run=dry_run,
