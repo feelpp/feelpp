@@ -424,6 +424,8 @@ if ( FEELPP_ENABLE_NLOPT )
     set(INSTALL_MAN_DIR ${CMAKE_INSTALL_DATADIR}/man CACHE PATH "Installation directory for man documentation")
     set(INSTALL_CMAKE_DIR ${CMAKE_INSTALL_DATADIR}/nlopt/cmake CACHE PATH "Installation directory for cmake config files")
 
+    include("${CMAKE_CURRENT_SOURCE_DIR}/patches/nlopt-cmake.cmake")
+    feelpp_patch_nlopt_cmake("${CMAKE_CURRENT_SOURCE_DIR}/nlopt")
     add_subdirectory( nlopt )
 
     add_library(feelpp_nlopt INTERFACE)
