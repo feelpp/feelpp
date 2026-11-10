@@ -26,9 +26,17 @@ def _build_source_archive(
         "-DLIBBSON_DIR=/usr",
         "-DLIBMONGOC_DIR=/usr",
     ]
-    if context.dist == "resolute" and component == "feelpp":
-        # Keep archive preparation aligned with the Resolute DEB build.
-        configure_command.append("-DFEELPP_ENABLE_SIMPLE_WEB_SERVER=OFF")
+    if context.dist == "resolute":
+        # Avoid Clang 21's recursive template canonicalization crash, and keep
+        # archive preparation aligned with the compiler used by the DEB builds.
+        configure_command.extend(
+            [
+                "-DCMAKE_C_COMPILER=/usr/bin/clang-20",
+                "-DCMAKE_CXX_COMPILER=/usr/bin/clang++-20",
+            ]
+        )
+        if component == "feelpp":
+            configure_command.append("-DFEELPP_ENABLE_SIMPLE_WEB_SERVER=OFF")
     run(
         configure_command,
         cwd=context.repo_root,

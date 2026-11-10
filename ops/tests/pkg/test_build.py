@@ -18,7 +18,7 @@ from feelpp.pkg.config import PackagingContext
 
 
 class BuildTests(unittest.TestCase):
-    def make_context(self, tmpdir: str) -> PackagingContext:
+    def make_context(self, tmpdir: str, *, dist: str = "noble") -> PackagingContext:
         repo_root = Path(tmpdir) / "repo"
         (repo_root / "packaging" / "pbuilder" / "hooks").mkdir(parents=True)
         (repo_root / "packaging" / "manifest").mkdir(parents=True)
@@ -60,7 +60,7 @@ class BuildTests(unittest.TestCase):
         job_root = repo_root / "job"
         return PackagingContext.create(
             repo_root=repo_root,
-            dist="noble",
+            dist=dist,
             flavor="ubuntu",
             branch="develop",
             channel="latest",
@@ -387,6 +387,22 @@ class BuildTests(unittest.TestCase):
             self.assertEqual(run.call_count, 2)
             self.assertEqual(run.call_args_list[0].kwargs["env"], build_env)
             self.assertEqual(run.call_args_list[1].kwargs["env"], build_env)
+
+    def test_build_source_archive_pins_clang_20_for_resolute(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            context = self.make_context(tmpdir, dist="resolute")
+            for component in ("feelpp", "feelpp-toolboxes", "feelpp-mor"):
+                with self.subTest(component=component):
+                    with mock.patch("feelpp.pkg.build.archive.run") as run:
+                        _build_source_archive(context, component, dry_run=True)
+
+                    configure = run.call_args_list[0].args[0]
+                    self.assertIn("-DCMAKE_C_COMPILER=/usr/bin/clang-20", configure)
+                    self.assertIn("-DCMAKE_CXX_COMPILER=/usr/bin/clang++-20", configure)
+                    self.assertEqual(
+                        "-DFEELPP_ENABLE_SIMPLE_WEB_SERVER=OFF" in configure,
+                        component == "feelpp",
+                    )
 
     def test_validate_runtime_linkage_rejects_unversioned_feelpp_needed_entry(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

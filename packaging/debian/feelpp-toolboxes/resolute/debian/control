@@ -3,7 +3,7 @@ Section: science
 Priority: extra
 Maintainer: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 Uploaders: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-Build-Depends: quilt, debhelper (>= 10), cmake, ninja-build, rsync, dh-python, python3, python3-dev, chrpath, libfeelpp-dev, feelpp-tools
+Build-Depends: quilt, debhelper (>= 10), cmake, clang-20, ninja-build, rsync, dh-python, python3, python3-dev, chrpath, libfeelpp-dev, feelpp-tools
 Standards-Version: 3.9.4
 X-Python-Version: current
 Homepage: http://www.feelpp.org

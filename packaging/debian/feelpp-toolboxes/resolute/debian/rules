@@ -36,11 +36,12 @@ endif
 
 override_dh_auto_configure: cmake-configure
 
+# Clang 21 can recurse indefinitely while canonicalizing dependent template types.
 cmake-configure:
 	cmake --preset $(PRESET) \
 		-DCMAKE_INSTALL_PREFIX=/usr/ \
-		-DCMAKE_C_COMPILER=/usr/bin/clang \
-		-DCMAKE_CXX_COMPILER=/usr/bin/clang++\
+		-DCMAKE_C_COMPILER=/usr/bin/clang-20 \
+		-DCMAKE_CXX_COMPILER=/usr/bin/clang++-20\
 		-DCMAKE_C_FLAGS:STRING="-DNDEBUG -O2 -Wdate-time " \
 		-DCMAKE_C_FLAGS_DEBUG:STRING="" \
 		-DCMAKE_C_FLAGS_RELEASE:STRING="-DNDEBUG -O3" \

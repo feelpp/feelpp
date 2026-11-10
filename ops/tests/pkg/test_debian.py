@@ -136,7 +136,7 @@ class DebianControlTests(unittest.TestCase):
                 ],
             )
 
-    def test_resolute_feelpp_build_deps_include_clang(self) -> None:
+    def test_resolute_build_deps_pin_clang_20(self) -> None:
         repo_root = Path(__file__).resolve().parents[3]
         context = PackagingContext.create(
             repo_root=repo_root,
@@ -148,14 +148,17 @@ class DebianControlTests(unittest.TestCase):
             job_root=repo_root / "build" / "packaging-test-job",
         )
 
-        deps = collect_component_build_dependencies(
-            context,
-            "feelpp",
-            include_prefix_scope=False,
-        )
+        for component in ("feelpp", "feelpp-toolboxes", "feelpp-mor"):
+            with self.subTest(component=component):
+                deps = collect_component_build_dependencies(
+                    context,
+                    component,
+                    include_prefix_scope=False,
+                )
 
-        self.assertIn("clang", deps)
-        self.assertNotIn("gcc", deps)
+                self.assertIn("clang-20", deps)
+                self.assertNotIn("clang", deps)
+                self.assertNotIn("gcc", deps)
 
 
 if __name__ == "__main__":
