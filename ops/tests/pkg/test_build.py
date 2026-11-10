@@ -474,7 +474,7 @@ class BuildTests(unittest.TestCase):
                                         "0.111.0~preview.13",
                                     ),
                                 ):
-                                    with mock.patch("feelpp.pkg.build.run_pbuilder_build"):
+                                    with mock.patch("feelpp.pkg.build.run_pbuilder_build") as pbuilder_build:
                                         with mock.patch(
                                             "feelpp.pkg.build.collect_component_internal_build_dependencies",
                                             return_value=[],
@@ -493,6 +493,7 @@ class BuildTests(unittest.TestCase):
                 build_env=build_env,
                 dry_run=False,
             )
+            self.assertFalse(pbuilder_build.call_args.kwargs["allow_public_fallback"])
 
             payload = json.loads(context.job_manifest_path.read_text(encoding="utf-8"))
             self.assertEqual(payload["state"], "built")
