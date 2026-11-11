@@ -22,7 +22,7 @@ usr/include/feelpp/napp
 usr/include/feelpp/nlopt
 usr/include/feelpp/parmmg
 usr/include/feelpp/range
-usr/include/feelpp/simple-web-server
+# usr/include/feelpp/simple-web-server
 usr/include/feelpp/specx
 usr/include/feelpp/spdlog
 usr/include/feelpp/std
