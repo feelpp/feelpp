@@ -73,6 +73,10 @@ For the MPICH core, dispatch with `targets=spack:mpich`, `only=feelpp`, and
 `spack_components=true`. The MPICH target has no full, Testsuite, Quickstart,
 Toolboxes, or MOR image jobs.
 
+The OpenMPI 5 full and core presets disable Simple-Web-Server, as does the
+Resolute package build. The bundled server requires a compiled Boost.System
+library that is absent from the environment's Boost 1.90 installation.
+
 The OCI environment sets `SPACK_USER_CONFIG_PATH=/opt/spack-user` and
 `SPACK_USER_CACHE_PATH=/opt/spack-user-cache` inside the image. Locally
 configured host paths are used by local Spack commands; Docker does not mount
