@@ -27,10 +27,16 @@ if(FEELPP_ENABLE_OPENTURNS)
     set(OPENTURNS_DOC_INSTALL_DIR "share/doc/feelpp/openturns")
     set(FETCHCONTENT_SOURCE_DIR_OPENTURNS ${CMAKE_CURRENT_SOURCE_DIR}/openturns)
 
+    # Source-directory overrides bypass FetchContent's PATCH_COMMAND.
+    include("${CMAKE_CURRENT_SOURCE_DIR}/patches/openturns-exprtk.cmake")
+    feelpp_patch_openturns_exprtk("${FETCHCONTENT_SOURCE_DIR_OPENTURNS}")
+
     # patch includes fix for 18.04 compilation
     FetchContent_Declare(openturns GIT_REPOSITORY https://github.com/feelpp/openturns.git GIT_TAG 4198b836e5fecc0757241f2dc74ec5cc6f79fe40)
 
     FetchContent_MakeAvailable(openturns)
+    # Recent Boost.Math headers require C++14; OpenTURNS defaults to C++11.
+    target_compile_features(OT PRIVATE cxx_std_14)
     add_library(feelpp_openturns INTERFACE)
     set_target_properties(OT PROPERTIES OUTPUT_NAME "feelpp_openturns")
     target_link_libraries(feelpp_openturns INTERFACE OT)

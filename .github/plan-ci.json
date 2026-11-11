@@ -211,6 +211,14 @@
           "apptainer": "true",
           "continue-on-error": "false"
         },
+        "ubuntu:resolute": {
+          "flavor": "ubuntu",
+          "dist": "resolute",
+          "version": "26.04",
+          "docker": "true",
+          "apptainer": "true",
+          "continue-on-error": "false"
+        },
         "debian:bookworm": {
           "flavor": "debian",
           "dist": "bookworm",
@@ -261,8 +269,10 @@
         }
       },
       "groups": {
-        "ubuntu": ["ubuntu:noble"],
+        "ubuntu": ["ubuntu:noble", "ubuntu:resolute"],
         "noble": ["ubuntu:noble"],
+        "resolute": ["ubuntu:resolute"],
+        "26.04": ["ubuntu:resolute"],
         "debian": [
           "debian:bookworm",
           "debian:trixie",

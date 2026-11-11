@@ -89,7 +89,13 @@ def _prepare_source_tree(
     shutil.copy2(archive_path, orig_archive)
     with tarfile.open(orig_archive, "r:gz") as handle:
         archive_roots = _archive_root_members(handle)
-        handle.extractall(source_root)
+        # These archives come from our CPack build. Preserve their metadata:
+        # Python 3.14's default data filter normalizes symlink targets, which
+        # dpkg-source then rejects as changes relative to the orig archive.
+        if hasattr(tarfile, "fully_trusted_filter"):
+            handle.extractall(source_root, filter="fully_trusted")
+        else:
+            handle.extractall(source_root)
 
     if len(archive_roots) != 1:
         roots_text = ", ".join(sorted(archive_roots)) or "<none>"

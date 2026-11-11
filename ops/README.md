@@ -73,6 +73,7 @@ fpp-version release 0.111.0-preview.13 --dist noble --dist trixie --dry-run
 fpp-version release 0.111.0-preview.13 --dist noble --dist trixie --dry-run --pretty
 fpp-version release 0.111.0 --dist noble --dist trixie --spack openmpi5 --dry-run --pretty
 fpp-version release 0.111.0 --dist noble --dist trixie --spack openmpi5 --pretty
+fpp-version release 0.112.0 --previous-tag v0.111.0 --dist noble --dist trixie --spack openmpi5 --dry-run --pretty
 fpp-version release 0.111.0-preview.13 --dist noble --dist trixie --dry-run --pretty --publications-rows 10 --publications-since 2026-01-01
 ```
 
@@ -87,6 +88,10 @@ the packaging catalog in [`.github/plan-ci.json`](../.github/plan-ci.json).
 Use `--spack openmpi5` to verify the published Spack full image and include its
 Docker pull command in the release notes. Spack image tags track the branch and
 are not versioned like the Noble and Trixie package images.
+
+Use `--previous-tag` to pin the release notes baseline, including when the
+previous release tag is outside the current branch's ancestry. Otherwise, the
+baseline is selected automatically from tags merged into `HEAD`.
 
 `publications --pretty` harvests recent HAL records from the `FEEL` and
 `CEMOSIS` collections and renders them as a Markdown section that can be added

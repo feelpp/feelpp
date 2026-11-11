@@ -172,7 +172,16 @@ jobs:
             name: feelpp-pkg-${{ inputs.flavor }}-${{ inputs.dist }}
             path: ${{ steps.pkg_workspace.outputs.artifacts_dir }}
             if-no-files-found: error
-            retention-days: 7
+            retention-days: 2
+
+        - name: Preserve completed package artifacts after failure
+          if: ${{ failure() && !cancelled() && !contains( format( '{0} {1}', github.event.head_commit.message, inputs.skip ), 'skip publish' ) }}
+          uses: actions/upload-artifact@v4
+          with:
+            name: feelpp-pkg-${{ inputs.flavor }}-${{ inputs.dist }}-partial
+            path: ${{ steps.pkg_workspace.outputs.artifacts_dir }}
+            if-no-files-found: ignore
+            retention-days: 2
 
     publish:
       if: ${{ inputs.flavor == 'ubuntu' || inputs.flavor == 'debian' }}

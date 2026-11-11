@@ -48,6 +48,7 @@ class ReleaseService:
         requested_version: str,
         *,
         dry_run: bool = False,
+        previous_tag: str | None = None,
         dists: tuple[str, ...] | None = None,
         spack_targets: tuple[str, ...] = (),
         publication_rows: int | None = None,
@@ -118,7 +119,10 @@ class ReleaseService:
         for check in container_checks:
             self._ensure_container_available(check)
 
-        previous_tag = self._previous_tag(tag)
+        if previous_tag is not None:
+            self._git_capture(["rev-parse", "--verify", f"refs/tags/{previous_tag}"])
+        else:
+            previous_tag = self._previous_tag(tag)
         package_notes = self._package_notes(
             package_versions_by_dist=dist_versions,
             package_checks=package_checks,
@@ -161,6 +165,7 @@ class ReleaseService:
         requested_version: str,
         *,
         dry_run: bool = False,
+        previous_tag: str | None = None,
         dists: tuple[str, ...] | None = None,
         spack_targets: tuple[str, ...] = (),
         publication_rows: int | None = None,
@@ -169,6 +174,7 @@ class ReleaseService:
         plan = self.prepare_release(
             requested_version,
             dry_run=dry_run,
+            previous_tag=previous_tag,
             dists=dists,
             spack_targets=spack_targets,
             publication_rows=publication_rows,

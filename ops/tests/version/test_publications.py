@@ -141,6 +141,7 @@ class PublicationsTests(VersionRepoMixin, unittest.TestCase):
             service_cls.return_value.execute_release.assert_called_once_with(
                 "0.111.0-preview.13",
                 dry_run=False,
+                previous_tag=None,
                 dists=None,
                 spack_targets=(),
                 publication_rows=7,

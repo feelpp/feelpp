@@ -5,13 +5,49 @@ import json
 import unittest
 import tempfile
 
-from feelpp.ops.version.models import GitHubContributor
+from feelpp.ops.version.models import GitHubContributor, SemanticVersion
 from feelpp.ops.version.release import GENERATED_NOTES_UNAVAILABLE, ReleaseService
 
 from ops.tests.version.support import VersionRepoMixin
 
 
 class ReleaseTests(VersionRepoMixin, unittest.TestCase):
+    def test_release_can_use_a_previous_tag_outside_head_ancestry(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            repo_root = self.make_repo(tmpdir)
+            service = ReleaseService(repo_root)
+            service.repository.bump_upstream(SemanticVersion.parse("0.112.0"))
+            git_outputs = {
+                ("rev-parse", "HEAD"): "abc123\n",
+                ("rev-parse", "--verify", "refs/tags/v0.111.0"): "def456\n",
+            }
+
+            with (
+                mock.patch.object(service, "_current_branch", return_value="develop"),
+                mock.patch.object(service, "_repo_slug", return_value="feelpp/feelpp"),
+                mock.patch.object(service, "_git_capture", side_effect=lambda args: git_outputs[tuple(args)]),
+                mock.patch.object(service, "_ensure_clean_worktree"),
+                mock.patch.object(service, "_ensure_head_pushed"),
+                mock.patch.object(service, "_ensure_tag_absent"),
+                mock.patch.object(service, "_ensure_github_checks_green"),
+                mock.patch.object(service, "_ensure_package_available"),
+                mock.patch.object(service, "_ensure_container_available"),
+                mock.patch.object(service, "_publication_notes", return_value=""),
+                mock.patch.object(service, "_generated_notes_preview", return_value="Notes") as notes,
+                mock.patch("feelpp.ops.version.release.run_checked") as run_checked,
+            ):
+                plan = service.execute_release(
+                    "0.112.0", dry_run=True, previous_tag="v0.111.0",
+                )
+
+            self.assertEqual(plan.previous_tag, "v0.111.0")
+            self.assertFalse(plan.prerelease)
+            notes.assert_called_once_with(
+                repo_slug="feelpp/feelpp", tag="v0.112.0",
+                head_sha="abc123", previous_tag="v0.111.0",
+            )
+            run_checked.assert_not_called()
+
     def test_release_dry_run_builds_plan_without_publishing(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             repo_root = self.make_repo(tmpdir)
