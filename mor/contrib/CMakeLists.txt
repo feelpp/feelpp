@@ -35,6 +35,8 @@ if(FEELPP_ENABLE_OPENTURNS)
     FetchContent_Declare(openturns GIT_REPOSITORY https://github.com/feelpp/openturns.git GIT_TAG 4198b836e5fecc0757241f2dc74ec5cc6f79fe40)
 
     FetchContent_MakeAvailable(openturns)
+    # Recent Boost.Math headers require C++14; OpenTURNS defaults to C++11.
+    target_compile_features(OT PRIVATE cxx_std_14)
     add_library(feelpp_openturns INTERFACE)
     set_target_properties(OT PROPERTIES OUTPUT_NAME "feelpp_openturns")
     target_link_libraries(feelpp_openturns INTERFACE OT)
