@@ -81,7 +81,7 @@ def binary_package_paths(input_dir: Path) -> list[Path]:
     return sorted(
         path
         for path in input_dir.rglob("*")
-        if path.is_file() and path.suffix in {".deb", ".udeb"}
+        if path.is_file() and path.suffix in {".deb", ".udeb", ".ddeb"}
     )
 
 

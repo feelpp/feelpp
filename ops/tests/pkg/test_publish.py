@@ -246,7 +246,7 @@ class PublishTests(unittest.TestCase):
             passphrase_file = Path(passphrase_arg.split("=", 1)[1])
             self.assertFalse(passphrase_file.exists())
 
-    def test_publish_snapshot_repo_add_ignores_source_package_sidecars(self) -> None:
+    def test_publish_snapshot_includes_debug_packages_and_ignores_source_sidecars(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             context = self.make_context(tmpdir)
             write_job_manifest(
@@ -257,6 +257,7 @@ class PublishTests(unittest.TestCase):
             )
             context.artifacts_dir.mkdir(parents=True, exist_ok=True)
             (context.artifacts_dir / "feelpp-tools_1_amd64.deb").write_text("deb", encoding="utf-8")
+            (context.artifacts_dir / "feelpp-tools-dbgsym_1_amd64.ddeb").write_text("ddeb", encoding="utf-8")
             (context.artifacts_dir / "feelpp_1.dsc").write_text("dsc", encoding="utf-8")
             (context.artifacts_dir / "feelpp_1.orig.tar.gz").write_text("orig", encoding="utf-8")
 
@@ -295,6 +296,7 @@ class PublishTests(unittest.TestCase):
                     "add",
                     "-force-replace",
                     "feelpp-noble-latest",
+                    str(context.artifacts_dir / "feelpp-tools-dbgsym_1_amd64.ddeb"),
                     str(context.artifacts_dir / "feelpp-tools_1_amd64.deb"),
                 ],
             )
