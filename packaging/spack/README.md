@@ -76,6 +76,8 @@ Toolboxes, or MOR image jobs.
 The OpenMPI 5 full and core presets disable Simple-Web-Server, as does the
 Resolute package build. The bundled server requires a compiled Boost.System
 library that is absent from the environment's Boost 1.90 installation.
+The bundled EigenRand 0.6.0.rc2 supports the environment's Eigen 5 as well as
+Eigen 3.3.4 and later. Its test is registered when the integration is available.
 
 The OCI environment sets `SPACK_USER_CONFIG_PATH=/opt/spack-user` and
 `SPACK_USER_CACHE_PATH=/opt/spack-user-cache` inside the image. Locally

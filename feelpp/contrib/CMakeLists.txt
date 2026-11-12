@@ -987,7 +987,8 @@ if(FEELPP_ENABLE_EIGENRAND)
   set(EIGENRAND_BUILD_EXAMPLES OFF)
   set(EIGENRAND_BUILD_BENCHMARK OFF)
   set(FETCHCONTENT_SOURCE_DIR_EIGENRAND ${CMAKE_CURRENT_SOURCE_DIR}/eigenrand)
-  FetchContent_Declare(EIGENRAND GIT_REPOSITORY https://github.com/feelpp/EigenRand.git GIT_TAG 0f25f9ef26d48ec09510d2e8ff07cb12e8f3fa81)
+  # v0.6.0.rc2 supports Eigen 5 and retains Eigen 3 compatibility.
+  FetchContent_Declare(EIGENRAND GIT_REPOSITORY https://github.com/feelpp/EigenRand.git GIT_TAG f03ffe2cfd77ad0cd75690ba828d8125cb4a1822)
 
   FetchContent_MakeAvailable(eigenrand)
   add_library(feelpp_eigenrand INTERFACE)
