@@ -1,3 +1,9 @@
+# SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+#
+# SPDX-FileCopyrightText: 2013-2026 University of Strasbourg
+#
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
 set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testvf")
 
 set(FEELPP_VF_TEST_TARGETS)
@@ -46,6 +52,11 @@ feelpp_add_test( ginac_jit_cache NO_MPI_TEST TIMEOUT 180 )
 list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
 feelpp_add_test( ginac_jit_mpi TIMEOUT 180 )
 list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
+feelpp_add_test( basis_expressions NO_MPI_TEST )
+list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
+feelpp_add_test( facet NO_MPI_TEST )
+list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
+
 feelpp_add_test( inner CFG test_inner.cfg )
 list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
 feelpp_add_test( laplacianv CFG test_laplacianv.cfg )

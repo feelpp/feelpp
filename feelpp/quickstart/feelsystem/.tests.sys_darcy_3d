@@ -1,0 +1,2 @@
+quarterturn-mixed --config-file ${CMAKE_CURRENT_SOURCE_DIR}/../laplacian/cases/quarter-turn/darcy-quarter-turn3D.cfg --no-export
+fe-rt1-geometry-g2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/../laplacian/cases/quarter-turn/darcy-quarter-turn3D.cfg --darcy.order=1 --geometry.order=2 --directory=qs_sys/darcy_rt1_g2 --no-export

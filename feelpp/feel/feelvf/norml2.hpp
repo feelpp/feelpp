@@ -15,6 +15,7 @@
 #ifndef FEELPP_VF_NORML2_H
 #define FEELPP_VF_NORML2_H
 
+#include <feel/feelvf/field.hpp>
 #include <feel/feelvf/inner.hpp>
 
 namespace Feel {
@@ -24,7 +25,7 @@ double normL2( Ts && ... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
     auto && range = args.get(_range);
-    auto && expr = args.get(_expr);
+    auto expr = Feel::vf::toValueExpression( args.get(_expr) );
     bool parallel = args.get_else( _parallel, true );
     auto && quad = args.get_else( _quad, quad_order_from_expression );
     auto && quad1 = args.get_else( _quad1, quad_order_from_expression );

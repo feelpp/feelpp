@@ -3,6 +3,7 @@
  * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
  *
  * SPDX-FileCopyrightText: 2009 Université de Grenoble 1
+ * SPDX-FileCopyrightText: 2011-2026 University of Strasbourg
  *
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
@@ -286,6 +287,7 @@ using residual = NA::named_argument_t<struct residual_tag>;
 using currentElt = NA::named_argument_t<struct currentElt_tag>;
 using newElt = NA::named_argument_t<struct newElt_tag>;
 using space = NA::named_argument_t<struct space_tag>;
+using spaces = NA::named_argument_t<struct spaces_tag>;
 using space2 = NA::named_argument_t<struct space2_tag>;
 using space_path = NA::named_argument_t<struct space_path_tag>;
 using initial_theta = NA::named_argument_t<struct initial_theta_tag>;
@@ -606,6 +608,7 @@ inline constexpr auto& _residual = NA::identifier<na::residual>;
 inline constexpr auto& _currentElt = NA::identifier<na::currentElt>;
 inline constexpr auto& _newElt = NA::identifier<na::newElt>;
 inline constexpr auto& _space = NA::identifier<na::space>;
+inline constexpr auto& _spaces = NA::identifier<na::spaces>;
 inline constexpr auto& _space2 = NA::identifier<na::space2>;
 inline constexpr auto& _space_path = NA::identifier<na::space_path>;
 inline constexpr auto& _initial_theta = NA::identifier<na::initial_theta>;

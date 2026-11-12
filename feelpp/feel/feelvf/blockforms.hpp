@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2016-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-
-    SPDX-FileCopyrightText: 2026 University of Strasbourg
-
-    SPDX-License-Identifier: LGPL-3.0-or-later
-*/
 #ifndef FEELPP_VF_BLOCKFORMS_H
 #define FEELPP_VF_BLOCKFORMS_H
 
@@ -998,6 +998,22 @@ public :
     using pre_solve_type = typename Backend<value_type>::pre_solve_type;
     using post_solve_type = typename Backend<value_type>::post_solve_type;
 
+    /**
+     * @brief Solve the block form through the current monolithic, local, or
+     * static-condensation path.
+     *
+     * The block-form construction strategy controls the matrix/storage layout.
+     * The `_condense` named argument controls the solve-time static
+     * condensation dispatch; current HDG quickstarts pass the same
+     * `sc.condense` option to both decisions. If `_condenser` is omitted, the
+     * Poisson condenser is used. Condensed solves assemble an auxiliary
+     * trace/global system and solve it with backend name `prefixvm(_name,"sc")`,
+     * then recover eliminated local fields through `StaticCondensation`.
+     *
+     * `condenser_stokes()` is a current special case: it routes through the
+     * active-system solve path and should be preserved until a typed
+     * condensation policy replaces this dispatch.
+     */
     template <typename ... Ts>
     typename Backend<double>::solve_return_type solve( Ts && ... v )
         {
@@ -1012,13 +1028,14 @@ public :
             bool rebuild = args.get_else_invocable(_rebuild,[&name](){ return boption(_prefix=name,_name="backend.rebuild"); } );
             pre_solve_type pre = args.get_else(_pre, pre_solve_type() );
             post_solve_type post = args.get_else(_post,post_solve_type() );
+            preconditioner_ptrtype prec = args.get_else( _prec, preconditioner_ptrtype{} );
             bool const dirichletInPlace = args.get_else( _dirichlet_inplace, this->dirichletInPlace() );
             this->setDirichletInPlace( dirichletInPlace );
 
             this->checkSquareBlockForm( "BlockBilinearForm::solve" );
 
             if constexpr ( StokesCondenserTag<decltype( condenser )> )
-                return solveImpl( solution, rhs, name, kind, rebuild, pre, post );
+                return solveImpl( solution, rhs, name, kind, rebuild, pre, post, prec );
             else
             {
                 if ( condense )
@@ -1031,7 +1048,7 @@ public :
                     this->checkSameTestTrialFunctionSpace( "BlockBilinearForm::solve(_local=true)" );
                     return solveImplLocal( M_test_ps, solution, rhs, name, kind, rebuild, pre, post );
                 }
-                return solveImpl( solution, rhs, name, kind, rebuild, pre, post );
+                return solveImpl( solution, rhs, name, kind, rebuild, pre, post, prec );
             }
         }
     template <typename PS_t, typename Solution_t, typename Rhs_t>
@@ -1129,7 +1146,8 @@ public :
     template <typename Solution_t, typename Rhs_t>
     typename Backend<double>::solve_return_type
     solveImpl( Solution_t& solution, Rhs_t const& rhs, std::string const& name, std::string const& kind = "petsc",
-               bool rebuild = false, pre_solve_type pre = pre_solve_type(), post_solve_type post = post_solve_type() )
+               bool rebuild = false, pre_solve_type pre = pre_solve_type(), post_solve_type post = post_solve_type(),
+               preconditioner_ptrtype prec = {} )
         {
             this->closeBaseOperator();
             rhs.vectorPtr()->close();
@@ -1138,12 +1156,18 @@ public :
             auto solveBackend = backend( _name=name, _kind=kind, _rebuild=rebuild,
                                          _worldcomm=Environment::worldCommPtr() );
             tic();
-            auto r1 = solveBackend->solve( _matrix=matrix,
-                                           _rhs=rhsVector,
-                                           _solution=U,
-                                           _pre=pre,
-                                           _post=post
-                                           );
+            auto r1 = prec
+                ? solveBackend->solve( _matrix=matrix,
+                                       _rhs=rhsVector,
+                                       _solution=U,
+                                       _pre=pre,
+                                       _post=post,
+                                       _prec=prec )
+                : solveBackend->solve( _matrix=matrix,
+                                       _rhs=rhsVector,
+                                       _solution=U,
+                                       _pre=pre,
+                                       _post=post );
             toc("blockform.monolithic",Environment::logVerbosityLevel()>0);
             if ( Environment::isSequential() && boption("exporter.matlab") )
             {
@@ -1161,6 +1185,15 @@ public :
         {
             return typename Backend<double>::solve_return_type{};
         }
+    /**
+     * @brief Static condensation for the legacy three-block HDG layout.
+     *
+     * The current Poisson and elasticity quickstarts use block order
+     * `(local0, local1, trace)`. This path builds and solves the condensed
+     * trace system for block `2_c` with backend `prefixvm(name,"sc")`, stores
+     * the trace solution back in `solution(2_c)`, and reconstructs local blocks
+     * through `StaticCondensation::localSolve()`.
+     */
     template <typename PS_t, typename Solution_t, typename Rhs_t>
         requires StaticProductSpacesType<PS_t>
     typename Backend<double>::solve_return_type
@@ -1232,9 +1265,14 @@ public :
 #endif
         }
 
-    //!
-    //! solve using static condensation in the case of 2 trace spaces
-    //!
+    /**
+     * @brief Static condensation for the legacy four-block dynamic HDG layout.
+     *
+     * This path is used by IBC-style layouts with the Poisson triple plus a
+     * dynamic boundary/auxiliary product block. Blocks `2_c` and `3_c` are the
+     * nonlocal unknown groups of the condensed system; blocks `0_c` and `1_c`
+     * are reconstructed locally after the condensed solve.
+     */
     template <typename PS_t, typename Solution_t, typename Rhs_t>
         requires StaticProductSpacesType<PS_t>
     typename Backend<double>::solve_return_type
@@ -1292,9 +1330,14 @@ public :
             return r;
         }
  
-    //!
-    //! solve using static condensation in the case of 2 trace spaces
-    //!
+    /**
+     * @brief Static condensation for the legacy five-block HDG layout.
+     *
+     * The condensed system contains the trace/constraint pressure groups used by
+     * mixed HDG layouts. The exact role meaning is owned by the caller's product
+     * ordering; tests should preserve this mapping before a high-level role API
+     * wraps it.
+     */
     template <typename PS_t, typename Solution_t, typename Rhs_t>
         requires StaticProductSpacesType<PS_t>
     typename Backend<double>::solve_return_type

@@ -16,6 +16,7 @@
 #define FEELPP_VF_INTEGRATE_H
 
 #include <feel/feelvf/expr.hpp>
+#include <feel/feelvf/field.hpp>
 #include <feel/feelvf/integrator.hpp>
 
 namespace Feel {
@@ -52,7 +53,7 @@ auto integrate( Ts && ... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
     auto && range = args.get(_range);
-    auto && expr = args.get(_expr);
+    auto expr = Feel::vf::toValueExpression( args.get(_expr) );
     auto && quad = args.get_else(_quad,quad_order_from_expression );
     auto && quad1 = args.get_else(_quad1,quad_order_from_expression );
     GeomapStrategyType geomap = args.get_else(_geomap,GeomapStrategyType::GEOMAP_OPT);

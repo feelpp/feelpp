@@ -3,10 +3,11 @@
  *
  * SPDX-FileCopyrightText: 2005,2006 EPFL
  * SPDX-FileCopyrightText: 2006-2011 Université Joseph Fourier (Grenoble I)
- * SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
+ * SPDX-FileCopyrightText: 2011-2026 University of Strasbourg
  *
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
+
 /**
    \file vf.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -23,6 +24,8 @@
 #include <feel/feelvf/vf_dsl.hpp>
 #include <feel/feelvf/vf_eval.hpp>
 #include <feel/feelvf/basis.hpp>
+#include <feel/feelvf/field.hpp>
+#include <feel/feelvf/facet.hpp>
 #include <feel/feelvf/shellgeometric.hpp>
 #include <feel/feelvf/sb9.hpp>
 #include <feel/feelvf/tensorbasis.hpp>

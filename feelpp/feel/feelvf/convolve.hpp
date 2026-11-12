@@ -2,7 +2,7 @@
  * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
  *
- * SPDX-FileCopyrightText: 2015 University of Strasbourg
+ * SPDX-FileCopyrightText: 2015-2026 University of Strasbourg
  *
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
@@ -11,6 +11,7 @@
 #define FEELPP_VF_CONVOLVE_H
 
 #include <feel/feelvf/expr.hpp>
+#include <feel/feelvf/field.hpp>
 //#include <feel/feelvf/integrator.hpp>
 #include <feel/feelvf/integrate.hpp>
 
@@ -21,7 +22,7 @@ auto convolve( Ts && ... varg )
 {
     auto args = NA::make_arguments( std::forward<Ts>(varg)... );
     auto && range = args.get(_range);
-    auto && expr = args.get(_expr);
+    auto expr = Feel::vf::toValueExpression( args.get(_expr) );
     auto && space = args.get(_space);
     auto && quad = args.get_else( _quad, quad_order_from_expression );
     auto && quad1 = args.get_else( _quad1, quad_order_from_expression );

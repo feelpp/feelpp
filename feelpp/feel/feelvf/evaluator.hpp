@@ -1,26 +1,14 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ * SPDX-FileContributor: Jean-Baptiste Wahl <wahl.jb@gmail.com>
+ *
+ * SPDX-FileCopyrightText: 2012 Université Joseph Fourier (Grenoble I)
+ * SPDX-FileCopyrightText: 2011-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-2.1-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2012-05-27
-
-  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file evaluator.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -31,6 +19,7 @@
 
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelvf/field.hpp>
 
 namespace Feel
 {
@@ -597,7 +586,7 @@ auto evaluate( Ts && ... v )
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
     auto && range = args.get(_range);
     auto && pset = args.get(_pset);
-    auto && expr = args.get(_expr);
+    auto expr = Feel::vf::toValueExpression( args.get(_expr) );
     GeomapStrategyType geomap = args.get_else(_geomap,GeomapStrategyType::GEOMAP_OPT );
 
     LOG(INFO) << "evaluate expression..." << std::endl;
@@ -684,7 +673,7 @@ auto normLinf( Ts && ... v )
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
     auto && range = args.get(_range);
     auto && pset = args.get(_pset);
-    auto && expr = args.get(_expr);
+    auto expr = Feel::vf::toValueExpression( args.get(_expr) );
     worldcomm_ptr_t worldcomm =args.get_else(_worldcomm,Environment::worldCommPtr() );
     GeomapStrategyType geomap = args.get_else(_geomap,GeomapStrategyType::GEOMAP_OPT );
 
@@ -835,7 +824,7 @@ auto minmax( Ts && ... v )
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
     auto && range = args.get(_range);
     auto && pset = args.get(_pset);
-    auto && expr = args.get(_expr);
+    auto expr = Feel::vf::toValueExpression( args.get(_expr) );
     GeomapStrategyType geomap = args.get_else(_geomap,GeomapStrategyType::GEOMAP_OPT );
     worldcomm_ptr_t worldcomm = args.get_else(_worldcomm,Environment::worldCommPtr() );
 
@@ -920,7 +909,7 @@ auto maxPerCell( Ts && ... v )
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
     auto && range = args.get(_range);
     auto && pset = args.get(_pset);
-    auto && expr = args.get(_expr);
+    auto expr = Feel::vf::toValueExpression( args.get(_expr) );
     GeomapStrategyType geomap = args.get_else(_geomap,GeomapStrategyType::GEOMAP_OPT );
 
     using _expr_type = std::decay_t<decltype(expr)>;

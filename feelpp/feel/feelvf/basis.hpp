@@ -1,10 +1,11 @@
 /*
  * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  *
- * SPDX-FileCopyrightText: 2026-2026 University of Strasbourg
+ * SPDX-FileCopyrightText: 2026 University of Strasbourg
  *
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
+
 /**
    \file basis.hpp
    \author Christophe Prud'homme
@@ -19,6 +20,7 @@
 #include <utility>
 
 #include <feel/feelvf/operators.hpp>
+#include <feel/feelvf/basisfunction.hpp>
 
 namespace Feel
 {
@@ -134,12 +136,26 @@ template <typename T>
 concept BasisProxyType = requires( T const& t )
 {
     typename std::remove_cvref_t<T>::element_type;
-    { std::remove_cvref_t<T>::role } -> std::convertible_to<OperatorType>;
     { t.element() } -> std::same_as<typename std::remove_cvref_t<T>::element_type const&>;
+} && ( is_basis_function_v<T> || requires {
+    { std::remove_cvref_t<T>::role } -> std::convertible_to<OperatorType>;
+} );
+
+// Normalize the role for shell operators accepting either basis interface.
+template <BasisProxyType ProxyType>
+struct basis_proxy_traits
+{
+    using element_type = typename std::remove_cvref_t<ProxyType>::element_type;
+    static constexpr OperatorType role = [] {
+        if constexpr ( is_basis_function_v<ProxyType> )
+            return basis_operator_type_v<ProxyType>;
+        else
+            return std::remove_cvref_t<ProxyType>::role;
+    }();
 };
 
 template <BasisProxyType ProxyType>
-using basis_proxy_type_t = std::remove_cvref_t<ProxyType>;
+using basis_proxy_type_t = basis_proxy_traits<ProxyType>;
 
 } // namespace detail
 
@@ -327,10 +343,7 @@ template <detail::BasisProxyType ProxyType>
 [[nodiscard]] inline auto
 omega( ProxyType const& proxy )
 {
-    if constexpr ( detail::basis_proxy_type_t<ProxyType>::role == __TRIAL )
-        return omegat( proxy.element() );
-    else
-        return omega( proxy.element() );
+    return 0.5*curl( proxy );
 }
 
 template <detail::FunctionSpaceElement ElementType>
@@ -351,10 +364,7 @@ template <detail::BasisProxyType ProxyType>
 [[nodiscard]] inline auto
 omegaz( ProxyType const& proxy )
 {
-    if constexpr ( detail::basis_proxy_type_t<ProxyType>::role == __TRIAL )
-        return omegazt( proxy.element() );
-    else
-        return omegaz( proxy.element() );
+    return 0.5*curlz( proxy );
 }
 
 template <detail::BasisProxyType ProxyType>

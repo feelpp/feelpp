@@ -2,7 +2,7 @@
  * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
  *
- * SPDX-FileCopyrightText: 2010-2026 University of Strasbourg
+ * SPDX-FileCopyrightText: 2011-2026 University of Strasbourg
  *
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
@@ -977,7 +977,7 @@ assemble( std::pair<index_type,index_type> const& elt_0,
     {
         M_form.addMatrix( M_local_rows_2.data(), M_local_rows_2.size(),
                           M_local_cols_2.data(), M_local_cols_2.size(),
-                          M_rep_2.data() );
+                          M_rep_2.data(), test_elt_0, test_elt_1 );
     }
     else
     {

@@ -3,7 +3,7 @@
  * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
  *
  * SPDX-FileCopyrightText: 2006-2011 Universite Joseph Fourier (Grenoble I)
- * SPDX-FileCopyrightText: 2011-2016 University of Strasbourg
+ * SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
  *
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
@@ -19,6 +19,7 @@
 #include <feel/feelalg/enums.hpp>
 #include <feel/feelalg/vectorblock.hpp>
 #include <feel/feelalg/vectorcondensed.hpp>
+#include <feel/feelvf/field.hpp>
 #include <feel/feelvf/dirichletconstraints.hpp>
 namespace Feel
 {
@@ -1201,7 +1202,7 @@ auto on( Ts && ... v )
     // NOTE : the line below allows to defined element as an lvalue or rvalue (as given when called the function) : TODO : add api in NApp
     auto && element = std::move(args.template getArgument<na::element>()).value();
     auto && rhs = args.get(_rhs);
-    auto && expr = args.get(_expr);
+    auto expr = Feel::vf::toValueExpression( args.get(_expr) );
     po::variables_map const& vm = args.get_else( _vm, Environment::vm() );
     std::string const& prefix = args.get_else(_prefix,"");
     std::string const& type = args.get_else_invocable(_type,[&prefix,&vm](){ return soption(_prefix=prefix,_name="on.type",_vm=vm); } );

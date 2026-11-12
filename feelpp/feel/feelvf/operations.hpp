@@ -8,6 +8,7 @@
  *
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
+
 /**
    \file operations.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -389,7 +390,7 @@
         template<typename Func>                                         \
             static inline const bool has_trial_basis = L_type::template HasTrialFunction<Func>::result|R_type::template HasTrialFunction<Func>::result; \
         using test_basis = std::conditional_t<std::is_null_pointer_v<typename L_type::test_basis>, typename R_type::test_basis, typename L_type::test_basis>; \
-        using trial_basis = std::nullptr_t;                             \
+        using trial_basis = std::conditional_t<std::is_null_pointer_v<typename L_type::trial_basis>, typename R_type::trial_basis, typename L_type::trial_basis>;                             \
                                                                         \
         using value_type = std::conditional_t<( sizeof( value_left_type ) > sizeof( value_right_type ) ), value_left_type, value_right_type>; \
         using evaluate_type = Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic >; \
