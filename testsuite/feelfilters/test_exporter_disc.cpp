@@ -1,11 +1,16 @@
 #define BOOST_TEST_MODULE test_exporter_disc
 #include <feel/feelcore/testsuite.hpp>
+#include <boost/test/data/test_case.hpp>
+#include <array>
+#include <format>
+#include <sstream>
+#include <type_traits>
 
 
 #include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelfilters/unitsquare.hpp>
-#include <feel/feelfilters/geotool.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/pchm.hpp>
@@ -21,6 +26,84 @@
 
 /** use Feel namespace */
 using namespace Feel;
+namespace bdata = boost::unit_test::data;
+
+namespace
+{
+template <typename Callable>
+void runForDim( int dim, Callable&& c )
+{
+    switch ( dim )
+    {
+    case 2:
+        c( std::integral_constant<int,2>{} );
+        break;
+    case 3:
+        c( std::integral_constant<int,3>{} );
+        break;
+    default:
+        BOOST_FAIL( "Unsupported dimension " << dim );
+    }
+}
+
+template <int Dim>
+std::string exporterOccDescription( double h );
+
+template <>
+std::string exporterOccDescription<2>( double h )
+{
+    std::ostringstream ostr;
+    ostr << "SetFactory(\"OpenCASCADE\");\n"
+         << "Mesh.CharacteristicLengthMin = " << h << ";\n"
+         << "Mesh.CharacteristicLengthMax = " << h << ";\n"
+         // OpenCASCADE expands entity bounding boxes by approximately 1e-7.
+         << "eps = 1e-6;\n"
+         << "Rectangle(1) = {0,0,0,0.5,1};\n"
+         << "Rectangle(2) = {0.5,0,0,1,1};\n"
+         << "Rectangle(3) = {1.5,0,0,0.5,1};\n"
+         << "BooleanFragments{ Surface{1}; Delete; }{ Surface{2,3}; Delete; }\n"
+         << "Physical Surface(\"Omega1\") = Surface In BoundingBox{-eps,-eps,-eps,0.5+eps,1+eps,eps};\n"
+         << "Physical Surface(\"Omega2\") = Surface In BoundingBox{0.5-eps,-eps,-eps,1.5+eps,1+eps,eps};\n"
+         << "Physical Surface(\"Omega3\") = Surface In BoundingBox{1.5-eps,-eps,-eps,2+eps,1+eps,eps};\n";
+    return ostr.str();
+}
+
+template <>
+std::string exporterOccDescription<3>( double h )
+{
+    std::ostringstream ostr;
+    ostr << "SetFactory(\"OpenCASCADE\");\n"
+         << "Mesh.CharacteristicLengthMin = " << h << ";\n"
+         << "Mesh.CharacteristicLengthMax = " << h << ";\n"
+         // Keep the selection margin larger than the CAD bounding-box tolerance.
+         << "eps = 1e-6;\n"
+         << "Box(1) = {0,0,0,0.5,1,0.5};\n"
+         << "Box(2) = {0.5,0,0,1,1,0.5};\n"
+         << "Box(3) = {1.5,0,0,0.5,1,0.5};\n"
+         << "BooleanFragments{ Volume{1}; Delete; }{ Volume{2,3}; Delete; }\n"
+         << "Physical Volume(\"Omega1\") = Volume In BoundingBox{-eps,-eps,-eps,0.5+eps,1+eps,0.5+eps};\n"
+         << "Physical Volume(\"Omega2\") = Volume In BoundingBox{0.5-eps,-eps,-eps,1.5+eps,1+eps,0.5+eps};\n"
+         << "Physical Volume(\"Omega3\") = Volume In BoundingBox{1.5-eps,-eps,-eps,2+eps,1+eps,0.5+eps};\n";
+    return ostr.str();
+}
+
+template <int Dim>
+std::shared_ptr<Mesh<Simplex<Dim>>> createExporterOccMesh( double h, std::string const& prefix )
+{
+    using mesh_type = Mesh<Simplex<Dim>>;
+    auto gmshDesc = std::make_shared<Gmsh>();
+    gmshDesc->setPrefix( prefix );
+    gmshDesc->setDimension( Dim );
+    gmshDesc->setOrder( 1 );
+    gmshDesc->setCharacteristicLength( h );
+    gmshDesc->setDescription( exporterOccDescription<Dim>( h ) );
+    gmshDesc->usePhysicalNames( true );
+    return createGMSHMesh( _mesh=new mesh_type,
+                           _desc=gmshDesc,
+                           _h=h,
+                           _force_rebuild=true );
+}
+}
 
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
@@ -59,7 +142,7 @@ BOOST_AUTO_TEST_CASE( test_1 )
         {
             disp->scale(-1);
             meshMove( mesh, *disp );
-            disp->on(_range=elements(mesh),_expr=(t-timeByTimeSet[0][0])*P() );
+            disp->on(_range=elements(mesh),_expr=(t-timeByTimeSet[0][0])*vf::P() );
             meshMove( mesh, *disp );
             //std::cout << "k=" << k << " tsIndex="<<tsIndex << " t=" << t << std::endl;
             auto currentStep = e->step(t,tsIndex);
@@ -91,76 +174,22 @@ BOOST_AUTO_TEST_CASE( test_1 )
 
 }
 
-typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
-BOOST_AUTO_TEST_CASE_TEMPLATE( test_2, T, dim_types )
+BOOST_DATA_TEST_CASE( test_2, bdata::make( std::array<int,2>{ { 2,3 } } ), dim )
 {
-    static const uint16_type nDim = T::value;
-    typedef Mesh<Simplex<nDim> > mesh_type;
-    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
+    BOOST_TEST_CONTEXT( "nDim=" << dim )
+    {
+        runForDim( dim, []( auto d )
+        {
+    static constexpr int nDim = decltype( d )::value;
+    using mesh_type = Mesh<Simplex<nDim> >;
+    using mesh_ptrtype = std::shared_ptr<mesh_type>;
     //auto mesh = loadMesh( _mesh=new mesh_type);
 
     mesh_ptrtype mesh;
     double meshSize = doption(_name="gmsh.hsize");
-    bool keepInterface = true;
-    if constexpr ( nDim == 2 )
-    {
-        GeoTool::Node x1a( 0,0 );
-        GeoTool::Node x2a( 0.5,1 );
-        GeoTool::Rectangle Ra( meshSize,"Omega1",x1a,x2a );
-        Ra.setMarker(_type="line",_name="Boundary1",_marker1=true,_marker3=true,_marker4=true);
-        Ra.setMarker(_type="line",_name="InternalInterface",_marker2=true);
-        Ra.setMarker(_type="surface",_name="Omega1",_markerAll=true);
-
-        GeoTool::Node x1b( 0.5,0 );
-        GeoTool::Node x2b( 1.5,1 );
-        GeoTool::Rectangle Rb( meshSize,"Omega2",x1b,x2b );
-        Rb.setMarker(_type="line",_name="Boundary1",_marker1=true,_marker3=true);
-        Rb.setMarker(_type="line",_name="InternalInterface",_marker2=true,_marker4=true);
-        Rb.setMarker(_type="surface",_name="Omega2",_markerAll=true);
-
-        GeoTool::Node x1e( 1.5,0 );
-        GeoTool::Node x2e( 2,1 );
-        GeoTool::Rectangle Rc( meshSize,"Omega3",x1e,x2e );
-        Rc.setMarker(_type="line",_name="Boundary1",_marker1=true,_marker3=true,_marker2=true);
-        Rc.setMarker(_type="line",_name="InternalInterface",_marker4=true);
-        Rc.setMarker(_type="surface",_name="Omega3",_markerAll=true);
-
-        mesh = (Ra+Rb+Rc).
-            fusion(Ra,2,Rb,4,keepInterface).
-            fusion(Rb,2,Rc,4,keepInterface).
-            createMesh(_mesh=new mesh_type,
-                       _name="test_2_domain2d" );
-    }
-    else
-    {
-        GeoTool::Node x1a(0,0,0);
-        GeoTool::Node x2a(0.5,1,0.5);
-        GeoTool::Cube Ca( meshSize,"Cube1",x1a,x2a);
-        Ca.setMarker(_type="surface",_name="Boundary1",_marker1=true,_marker2=true,_marker3=true,_marker5=true,_marker6=true );
-        Ca.setMarker(_type="surface",_name="InternalInterface_1_2",_marker4=true);
-        Ca.setMarker(_type="volume",_name="Omega1",_markerAll=true);
-
-        GeoTool::Node x1b(0.5,0,0);
-        GeoTool::Node x2b(1.5,1,0.5);
-        GeoTool::Cube Cb( meshSize,"Cube2",x1b,x2b);
-        Cb.setMarker(_type="surface",_name="Boundary1",_marker1=true,_marker2=true,_marker3=true,_marker5=true );
-        Cb.setMarker(_type="surface",_name="InternalInterface_2_3",_marker4=true);
-        Cb.setMarker(_type="surface",_name="InternalInterface_1_2",_marker6=true);
-        Cb.setMarker(_type="volume",_name="Omega2",_markerAll=true);
-
-        GeoTool::Node x1c(1.5,0,0);
-        GeoTool::Node x2c(2,1,0.5);
-        GeoTool::Cube Cc( meshSize,"Cube3",x1c,x2c);
-        Cc.setMarker(_type="surface",_name="Boundary1",_marker1=true,_marker2=true,_marker3=true,_marker5=true,_marker4=true );
-        Cc.setMarker(_type="surface",_name="InternalInterface_2_3",_marker6=true);
-        Cc.setMarker(_type="volume",_name="Omega3",_markerAll=true);
-
-        mesh = (Ca+Cb+Cc).
-            fusion(Ca,4,Cb,6,keepInterface).
-            fusion(Cb,4,Cc,6,keepInterface).
-            createMesh(_mesh=new mesh_type,
-                       _name="test_2_domain3d" );
-    }
+    mesh = createExporterOccMesh<nDim>( meshSize, std::format( "test_2_domain{}d_occ", nDim ) );
+    for ( auto const* region : { "Omega1", "Omega2", "Omega3" } )
+        BOOST_REQUIRE_GT( nelements( markedelements( mesh, region ), true ), 0 );
 
     auto VhScalar = Pch<2>( mesh );
     auto uScalar = VhScalar->element();
@@ -228,14 +257,17 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_2, T, dim_types )
     e->add( "wTensor2Symm", wTensor2Symm );
 
     // Interpolate each expression directly into one immutable export snapshot.
-    e->add( "expr1Scalar", inner( P() ), markedelements( mesh, { "Omega1", "Omega2", "Omega3" } ) );
+    e->add( "expr1Scalar", vf::inner( vf::P() ), markedelements( mesh, { "Omega1", "Omega2", "Omega3" } ) );
     e->add( "expr2Scalar",
             cst( 1. ) * ( emarker() == mesh->markerName( "Omega1" ) ) +
                 cst( 2. ) * ( emarker() == mesh->markerName( "Omega2" ) ) +
                 cst( 3. ) * ( emarker() == mesh->markerName( "Omega3" ) ),
             "element" );
-    e->add( "expr3Vectorial", P(), std::set<std::string>{ "nodal", "element" } );
+    e->add( "expr3Vectorial", vf::P(), std::set<std::string>{ "nodal", "element" } );
     BOOST_CHECK_EQUAL( e->defaultTimeSet()->numberOfSteps(), 0 );
+    auto const& exportedRegions = e->staticFields()->element( "expr2Scalar" ).second[0][0];
+    BOOST_CHECK_CLOSE( exportedRegions->min(), 1., 1e-8 );
+    BOOST_CHECK_CLOSE( exportedRegions->max(), 3., 1e-8 );
     e->save();
 
 
@@ -359,7 +391,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_2, T, dim_types )
 
     }
 #endif
-
+        } );
+    }
 }
 
 BOOST_AUTO_TEST_CASE( test_3 )

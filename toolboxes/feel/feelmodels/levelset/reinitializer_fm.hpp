@@ -229,8 +229,7 @@ ReinitializerFM<FunctionSpaceType>::init(functionspace_ptrtype const& space,
 {
     M_opLagrangeP1 = lagrangeP1( _space=space, _update=MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES );
     M_spaceReinitP1 = functionspace_reinitP1_type::New(
-            _mesh=M_opLagrangeP1->mesh(),
-            _periodicity=periodicity(NoPeriodicity())
+            _mesh=M_opLagrangeP1->mesh()
             );
     M_reinitializerFMS.reset(
             new reinitializerFMS_type( M_spaceReinitP1, this->M_periodicity )

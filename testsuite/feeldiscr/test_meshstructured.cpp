@@ -38,6 +38,7 @@
 #include <feel/feelvf/norml2.hpp>
 #include <feel/feelvf/operators.hpp>
 #include <feel/feelvf/operations.hpp>
+#include <feel/feelvf/vf_eval.hpp>
 //#include <feel/feelvf/projectors.hpp>
 //#include <feel/feelpoly/multiscalequadrature.hpp>
 //#include <feel/feelvf/ginac.hpp>
@@ -131,7 +132,7 @@ void runLaplacian( std::shared_ptr<MeshStructuredType> mesh, std::string const& 
     a = integrate( _range=elements(mesh),
                    _expr=inner(gradt(u),grad(v)) );
 
-    a += on( _range = boundaryfaces(mesh), _rhs = l, _element = u, _expr = u_exact/*cst(0)*/ );
+    a += Feel::vf::on( _range = boundaryfaces(mesh), _rhs = l, _element = u, _expr = u_exact/*cst(0)*/ );
 
     a.solve(_rhs=l,_solution=u,_rebuild=true) ;
 

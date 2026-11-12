@@ -1,55 +1,101 @@
+# SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+#
+# SPDX-FileCopyrightText: 2013-2026 University of Strasbourg
+#
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
 set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testvf")
 
-feelpp_add_test(
-  expr
-  CFG test_expr.cfg
-  PYTHON test_expr.py
-  CLI "--repository.prefix=${CMAKE_CURRENT_BINARY_DIR}/test_expr_repository_np_$np"
+set(FEELPP_VF_TEST_TARGETS)
+
+set(FEELPP_VF_SIMPLE_TESTS
+    symbolic_ad_expr
+    vf_operators
+    trial_test_basis
+    tensor_basis
+    voigt
+    contractions
+    voigt_elasticity
+    shellgeometric
+    inner_curl
+    inner_laplacian
+    vf_integrals
+    #vf_val
+    vf_chi
+    projtangent
+    forms
+    idf_functor
+    idf2_functor
+    localform_lowering
+    quadrature_batch
+    divergence
+    productspace_dofs
+    expr_evaluate
+    symbolic_diff
+    symbolic_subentity
+    functionexpr
 )
 
+foreach(t ${FEELPP_VF_SIMPLE_TESTS})
+    feelpp_add_test(${t})
+    list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
+endforeach()
+
 feelpp_add_test( ginac TIMEOUT 600 )
+list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
+
+feelpp_add_test( expr CFG test_expr.cfg PYTHON test_expr.py
+    CLI "--repository.prefix=${CMAKE_CURRENT_BINARY_DIR}/test_expr_repository_np_$np" )
+list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
+
 feelpp_add_test( ginac_jit_cache NO_MPI_TEST TIMEOUT 180 )
+list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
 feelpp_add_test( ginac_jit_mpi TIMEOUT 180 )
+list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
+feelpp_add_test( basis_expressions NO_MPI_TEST )
+list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
+feelpp_add_test( facet NO_MPI_TEST )
+list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
+
 feelpp_add_test( inner CFG test_inner.cfg )
-feelpp_add_test( vf_operators )
-feelpp_add_test( trial_test_basis )
-feelpp_add_test( tensor_basis )
-feelpp_add_test( voigt )
-feelpp_add_test( contractions )
-feelpp_add_test( voigt_elasticity )
+list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
 feelpp_add_test( laplacianv CFG test_laplacianv.cfg )
+list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
 feelpp_add_test( laplacian CFG test_laplacian.cfg )
+list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
 feelpp_add_test( laplaciant CFG test_laplaciant.cfg )
+list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
+
 if ( FEELPP_HAS_FFTW )
     feelpp_add_test( msi CFG test_msi.cfg LINK_LIBRARIES ${FFTW_LIBRARIES})
+    list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
 endif()
 
-feelpp_add_test( inner_curl )
-feelpp_add_test( inner_laplacian )
-feelpp_add_test( vf_integrals )
-#feelpp_add_test( vf_val )
-feelpp_add_test( vf_chi )
 feelpp_add_test( convolve CFG test_convolve.cfg )
+list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
 feelpp_add_test( pow CFG test_pow.cfg)
+list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
 
-feelpp_add_test( projtangent )
-feelpp_add_test( shellgeometric )
-feelpp_add_test( sb9bending LABEL sb9 )
-feelpp_add_test( sb9pinching LABEL sb9 )
-feelpp_add_test( sb9shear LABEL sb9 )
-feelpp_add_test( sb9shearing LABEL sb9 )
-feelpp_add_test( sb9mass LABEL sb9 NO_MPI_TEST )
-feelpp_add_test( sb9stabilization LABEL sb9 )
+foreach(t sb9bending sb9pinching sb9shear sb9shearing sb9stabilization)
+    feelpp_add_test(${t} LABEL sb9)
+    list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
+endforeach()
+feelpp_add_test(sb9mass LABEL sb9 NO_MPI_TEST)
+list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
+feelpp_add_test(sb9transient LABEL sb9 NO_MPI_TEST)
+list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
 
-feelpp_add_test( forms )
+if ( NOT TARGET testvf )
+    add_custom_target( testvf )
+endif()
+
 feelpp_add_test( forms_dirichlet CFG test_forms_dirichlet.cfg GEO ../feeldiscr/square_mmarked.geo )
+list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
 
-feelpp_add_test( idf_functor )
-feelpp_add_test( idf2_functor )
+if ( TARGET feelpp )
+    add_dependencies( testvf feelpp )
+elseif ( TARGET Feelpp::feelpp )
+    add_dependencies( testvf Feelpp::feelpp )
+endif()
 
-feelpp_add_test( divergence )
-feelpp_add_test(productspace_dofs)
-feelpp_add_test( expr_evaluate )
-feelpp_add_test( symbolic_diff )
-feelpp_add_test( symbolic_ad_expr )
-feelpp_add_test( functionexpr )
+add_dependencies( testvf ${FEELPP_VF_TEST_TARGETS} )

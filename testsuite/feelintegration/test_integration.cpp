@@ -1,27 +1,12 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2006-2009 Universite Joseph Fourier (Grenoble I)
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2006-08-25
-
-  Copyright (C) 2006 EPFL
-  Copyright (C) 2006-2009 Universite Joseph Fourier (Grenoble I)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file test_integration.cpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -226,7 +211,7 @@ struct test_integration_circle: public Application
 
             int Order=2;
             double t = 0.0;
-            AUTO( mycst, cst_ref( t ) );
+            auto mycst = cst_ref( t );
 
             t = 1.0;
             //value_type v0 = integrate( elements(mesh), mycst, _Q<2>() ).evaluate()( 0, 0 );
@@ -1163,22 +1148,22 @@ struct test_integration_composite_functions: public Application
         BOOST_TEST_MESSAGE( "int(grad(P()^T*grad(P())) = " << m2 << "\n" );
 
 #if 0
-        AUTO( u_exact,( P()^( 2 ) )*( Px()+Py() ) );
-        AUTO( grad_exact, ( mat<2,2>( 3*Px()*Px()+2*Px()*Py(), ( Px()^( 2 ) ), ( Py()^( 2 ) ), 3*Py()*Py()+2*Py()*Px() ) ) );
-        AUTO( div_grad_exact, vec( 6*Px()+2*Py(), 6*Py()+2*Px() ) );
+        auto u_exact = ( P()^( 2 ) )*( Px()+Py() );
+        auto grad_exact = ( mat<2,2>( 3*Px()*Px()+2*Px()*Py(), ( Px()^( 2 ) ), ( Py()^( 2 ) ), 3*Py()*Py()+2*Py()*Px() ) );
+        auto div_grad_exact = vec( 6*Px()+2*Py(), 6*Py()+2*Px() );
 #else
-        //AUTO( u_exact, vec(sin(Px())*sin(Py()), cos(Px())*cos(Py()) ) );
-        AUTO( u_exact, sin( Px() )*sin( Py() )*oneX() + cos( Px() )*cos( Py() )*oneY() );
-        AUTO( p_exact, val( cos( Px() )*sin( Py() ) ) );
-        AUTO( du_dx, val( cos( Px() )*sin( Py() ) ) );
-        AUTO( du_dy, val( sin( Px() )*cos( Py() ) ) );
+        // auto u_exact = vec(sin(Px())*sin(Py()), cos(Px())*cos(Py()) );
+        auto u_exact = sin( Px() )*sin( Py() )*oneX() + cos( Px() )*cos( Py() )*oneY();
+        auto p_exact = val( cos( Px() )*sin( Py() ) );
+        auto du_dx = val( cos( Px() )*sin( Py() ) );
+        auto du_dy = val( sin( Px() )*cos( Py() ) );
 
-        AUTO( dv_dx, val( -sin( Px() )*cos( Py() ) ) );
-        AUTO( dv_dy, val( -cos( Px() )*sin( Py() ) ) );
+        auto dv_dx = val( -sin( Px() )*cos( Py() ) );
+        auto dv_dy = val( -cos( Px() )*sin( Py() ) );
 
-        AUTO( grad_exact, ( mat<2,2>( du_dx, du_dy, dv_dx, dv_dy ) ) );
-        AUTO( div_grad_exact, ( vec( -sin( Px() )*sin( Py() )-sin( Px() )*sin( Py() ),
-                                     -cos( Px() )*cos( Py() )-cos( Px() )*cos( Py() ) ) ) );
+        auto grad_exact = ( mat<2,2>( du_dx, du_dy, dv_dx, dv_dy ) );
+        auto div_grad_exact = ( vec( -sin( Px() )*sin( Py() )-sin( Px() )*sin( Py() ),
+                                     -cos( Px() )*cos( Py() )-cos( Px() )*cos( Py() ) ) );
 
 #endif
 
@@ -1301,28 +1286,7 @@ BOOST_AUTO_TEST_CASE( test_integration_1 )
 {
     BOOST_TEST_MESSAGE( "Test integration Circle" );
     Feel::test_integration_circle<double> t;
-#if defined( FEELPP_HAS_TBB )
-    //int n = tbb::task_scheduler_init::default_num_threads();
-    int n = 1 ;
-
-    for ( int p=1; p<=n; ++p )
-    {
-        BOOST_TEST_MESSAGE( "[test_integration_1] start tests with nthreads = " << p );
-
-        tbb::task_scheduler_init init( p );
-        tbb::tick_count t0 = tbb::tick_count::now();
-
-        t();
-
-        tbb::tick_count t1 = tbb::tick_count::now();
-        double t = ( t1-t0 ).seconds();
-
-        BOOST_TEST_MESSAGE( "[test_integration_1] start tests with " << p << " threads, time=" << t << "seconds\n" );
-    }
-
-#else
     t();
-#endif // FEELPP_HAS_TBB
     BOOST_TEST_MESSAGE( "Test integration Circle Done" );
 }
 

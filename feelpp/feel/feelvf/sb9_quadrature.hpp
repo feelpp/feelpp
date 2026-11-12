@@ -1,11 +1,10 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-
-    SPDX-FileCopyrightText: 2026 University of Strasbourg
-
-    SPDX-License-Identifier: LGPL-3.0-or-later
-*/
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2026-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
 /**
  * @file sb9_quadrature.hpp
@@ -70,7 +69,7 @@ public:
     SB9ThroughThicknessLobatto5()
         : super()
     {
-        this->M_order = 5;
+        this->setOrder( 5 );
         this->M_name = "sb9-through-thickness-lobatto5";
         this->M_w.resize( Npoints );
         this->M_prod.resize( Npoints );
@@ -161,9 +160,9 @@ sb9ThroughThicknessLobatto5()
  *
  * For Q1 Lagrange displacement basis functions on a hexahedron, evaluating the
  * mass matrix at the interpolation vertices diagonalizes the consistent mass
- * contribution. The internal SB9 scalar mode is not a physical displacement
- * degree of freedom and should not receive an inertia contribution from this
- * rule.
+ * contribution. This rule cannot represent the internal SB9 displacement
+ * enrichment (1-zeta^2)*alpha*n, which vanishes at every vertex. Consistent
+ * internal inertia requires full volume quadrature for all four mass blocks.
  *
  * @tparam T Floating-point value type used for quadrature points and weights.
  */
@@ -196,7 +195,7 @@ public:
     SB9LumpedMassLobatto()
         : super()
     {
-        this->M_order = 1;
+        this->setOrder( 1 );
         this->M_name = "sb9-lumped-mass-lobatto";
         this->M_w.resize( Npoints );
         this->M_prod.resize( Npoints );

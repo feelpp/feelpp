@@ -1,4 +1,10 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:set fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2026-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
 #include "qs_shell_benchmark_framework.hpp"
 
@@ -532,7 +538,7 @@ buildMesh( BenchmarkConfig const& cfg, MeshBuildOptions const& options )
              << "-nr" << meshCfg.nr
              << "-nt" << meshCfg.nt;
 
-    auto mesh = createGMSHMesh( _mesh=new mesh_type,
+    auto mesh = createGMSHMesh( _mesh=new mesh_type( RuntimeOrder{1} ),
                                 _desc=geo( _filename=meshName.str() + ".geo",
                                            _desc=makeGeoDescription( meshCfg ),
                                            _dim=3,

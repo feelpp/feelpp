@@ -1,30 +1,17 @@
 /*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2006-2012 Universite Joseph Fourier
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-01-12
-
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2006-2012 Universite Joseph Fourier
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-//! \file timeSet.hpp
-//! \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-//! \date 2005-01-12
+/**
+   \file timeSet.hpp
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+   \date 2005-01-12
+ */
 #ifndef FEELPP_DISCR_TIMESET_HPP
 #define FEELPP_DISCR_TIMESET_HPP 1
 
@@ -66,7 +53,8 @@
 #include <feel/feeldiscr/elementdiv.hpp>
 #include <feel/feeldiscr/exportfieldset.hpp>
 #include <feel/feelmesh/filters.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/fieldops.hpp>
+#include <feel/feelvf/projectors.hpp>
 
 #define TS_INITIAL_INDEX 1
 
@@ -84,8 +72,7 @@ enum
     STEP_IGNORED = ( 1 << 4 ),   //!< Output frequency suppresses this sample.
     STEP_OVERWRITE = ( 1 << 10 ) //!< Legacy overwrite policy.
 };
-
-template <typename A0, typename A1, typename A2, typename A3, typename A4> class FunctionSpace;
+template<typename A0, typename A1, typename A2, typename A3> class FunctionSpace;
 template <typename MeshType, int N> class Exporter;
 namespace detail
 {
@@ -107,7 +94,7 @@ template <typename MeshType, int N = 1> class TimeSet
     using size_type = typename mesh_type::size_type;
 
     typedef Pdh_type<MeshType, 0> scalar_p0_space_type;
-    typedef Pch_type<MeshType, N /*1*/> scalar_p1_space_type;
+    using scalar_p1_space_type = typename ExportFieldSet<MeshType, N>::scalar_p1_space_type;
     typedef std::shared_ptr<scalar_p0_space_type> scalar_p0_space_ptrtype;
     typedef std::shared_ptr<scalar_p1_space_type> scalar_p1_space_ptrtype;
 

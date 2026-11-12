@@ -1,32 +1,21 @@
-/* -*- mode: c++: coding: utf-8 -*-
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2007-2010 Université Joseph Fourier (Grenoble I)
+ * SPDX-FileCopyrightText: 2007-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2007-06-16
-
-  Copyright (C) 2007-2010 Université Joseph Fourier (Grenoble I)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file test_importergmsh.cpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-06-16
  */
 #include <sstream>
+#include <cmath>
+#include <array>
+#include <type_traits>
 
 // Boost.Test
 // make sure that the init_unit_test function is defined by UTF
@@ -34,12 +23,13 @@
 // give a name to the testsuite
 #define BOOST_TEST_MODULE mesh filter testsuite
 #include <feel/feelcore/testsuite.hpp>
-#include <boost/mpl/list.hpp>
+#include <boost/test/data/test_case.hpp>
 
 #include <feel/feelcore/feel.hpp>
 
 
 using boost::unit_test::test_suite;
+namespace bdata = boost::unit_test::data;
 
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/mesh.hpp>
@@ -58,7 +48,7 @@ using boost::unit_test::test_suite;
 using namespace Feel;
 
 
-template<int Dim, template <uint16_type,uint16_type,uint16_type> class Entity = Simplex>
+template<int Dim, template <int,int,int> class Entity = Simplex>
 void
 checkCreateGmshMesh( std::string const& shape, std::string const& convex = "Simplex" )
 {
@@ -82,29 +72,238 @@ checkCreateGmshMesh( std::string const& shape, std::string const& convex = "Simp
                        nelements(boundaryfaces(mesh),false) );
 }
 
+namespace
+{
+template <typename Callable>
+void runForDim( int dim, Callable&& c )
+{
+    switch ( dim )
+    {
+    case 1:
+        c( std::integral_constant<int, 1>{} );
+        break;
+    case 2:
+        c( std::integral_constant<int, 2>{} );
+        break;
+    case 3:
+        c( std::integral_constant<int, 3>{} );
+        break;
+    default:
+        BOOST_FAIL( "Unsupported dimension " << dim );
+    }
+}
+
+template <int Dim>
+void checkGmshImportExport()
+{
+    if ( Environment::worldComm().size() > 1 )
+        return;
+
+    BOOST_TEST_MESSAGE( "[gmshimportexport] for dimension " << Dim << "\n" );
+    using mesh_type = Mesh<Simplex<Dim,1>>;
+    using mesh_ptrtype = std::shared_ptr<mesh_type>;
+
+    mesh_ptrtype mesh, meshimp;
+    mesh = createGMSHMesh( _mesh=new mesh_type,
+                           _desc=domain( _name=( boost::format( "simplex-%1%" )  % Dim ).str() ,
+                                         _usenames=true,
+                                         _addmidpoint=false,
+                                         _shape="simplex",
+                                         _dim=Dim,
+                                         _h=0.5 ) );
+
+    std::ostringstream fstr;
+    fstr << "gmshexp-" << Dim << ".msh";
+    saveGMSHMesh( _mesh=mesh, _filename=fstr.str() );
+
+    meshimp = loadGMSHMesh( _mesh=new mesh_type,
+                            _filename=fstr.str(),
+                            _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
+
+    BOOST_CHECK_EQUAL( nelements( elements( mesh ) ), nelements( elements( meshimp ) ) );
+    BOOST_CHECK_EQUAL( nelements( markedfaces( mesh, "Neumann" ) ), nelements( markedfaces( meshimp, "Neumann" ) ) );
+    BOOST_CHECK_EQUAL( nelements( markedfaces( mesh, "Dirichlet" ) ), nelements( markedfaces( meshimp, "Dirichlet" ) ) );
+    BOOST_WARN_EQUAL( nelements( boundaryfaces( mesh ) ), nelements( boundaryfaces( meshimp ) ) );
+    BOOST_CHECK_EQUAL( std::distance( mesh->beginElement(), mesh->endElement() ),
+                       std::distance( meshimp->beginElement(), meshimp->endElement() ) );
+
+    double r1 = integrate( _range=boundaryfaces( mesh ), _expr=cst( 1. ) ).evaluate()( 0,0 );
+    double r2 = integrate( _range=boundaryfaces( meshimp ), _expr=cst( 1. ) ).evaluate()( 0,0 );
+    BOOST_CHECK_SMALL( std::abs( r1-r2 ), 1e-12 );
+
+    BOOST_TEST_MESSAGE( "[gmshimportexport] for dimension " << Dim << " done.\n" );
+}
+
+using periodic_mesh_type = Mesh<Simplex<2,1>>;
+using periodic_mesh_ptrtype = std::shared_ptr<periodic_mesh_type>;
+
+bool gmshDefaultIsV4()
+{
+    std::string version = FEELPP_GMSH_FORMAT_VERSION;
+    return !version.empty() && version.front() == '4';
+}
+
+std::string periodicSquareGeoDescription( std::string const& mshVersion, double h = 0.2 )
+{
+    std::ostringstream ostr;
+    ostr << "Mesh.MshFileVersion = " << mshVersion << ";\n"
+         << "h=" << h << ";\n"
+         << "Point(1) = {0,0,0,h};\n"
+         << "Point(2) = {1,0,0,h};\n"
+         << "Point(3) = {1,1,0,h};\n"
+         << "Point(4) = {0,1,0,h};\n"
+         << "Line(1) = {1,2};\n"
+         << "Line(2) = {2,3};\n"
+         << "Line(3) = {3,4};\n"
+         << "Line(4) = {4,1};\n"
+         << "Line Loop(5) = {1,2,3,4};\n"
+         << "Plane Surface(6) = {5};\n"
+         << "Physical Surface(\"Omega\") = {6};\n"
+         << "Physical Line(\"Bottom\") = {1};\n"
+         << "Physical Line(\"Right\") = {2};\n"
+         << "Physical Line(\"Top\") = {3};\n"
+         << "Physical Line(\"Left\") = {4};\n"
+         << "Periodic Curve {2} = {4} Translate {1,0,0};\n"
+         << "Periodic Curve {3} = {1} Translate {0,1,0};\n";
+    return ostr.str();
+}
+
+periodic_mesh_ptrtype createPeriodicMeshFromGmsh( GMSH_FORMAT format, std::string const& prefix,
+                                                  std::string const& mshVersion = FEELPP_GMSH_FORMAT_VERSION )
+{
+    Gmsh gmsh;
+    gmsh.setDimension( 2 );
+    gmsh.setOrder( 1 );
+    gmsh.setVersion( mshVersion, format );
+    gmsh.setPrefix( prefix );
+
+    std::string fname;
+    bool generated_or_modified = false;
+    boost::tie( fname, generated_or_modified ) = gmsh.generate( prefix, periodicSquareGeoDescription( mshVersion ), true );
+    Feel::detail::ignore_unused_variable_warning( generated_or_modified );
+
+    return loadGMSHMesh( _mesh=new periodic_mesh_type,
+                         _filename=fname,
+                         _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
+}
+
+void checkPeriodicMeshData( periodic_mesh_ptrtype const& mesh )
+{
+    BOOST_REQUIRE( mesh );
+    BOOST_CHECK( mesh->isPeriodic() );
+
+    auto const& periodicEntities = mesh->periodicEntities();
+    BOOST_CHECK_GE( periodicEntities.size(), static_cast<std::size_t>( 2 ) );
+
+    int matchedEntities = 0;
+    for ( auto const& e : periodicEntities )
+    {
+        if ( e.dim != 1 )
+            continue;
+
+        double tx = 0.0;
+        double ty = 0.0;
+        bool known = false;
+        if ( e.slave == 2 && e.master == 4 )
+        {
+            tx = 1.0;
+            ty = 0.0;
+            known = true;
+        }
+        else if ( e.slave == 3 && e.master == 1 )
+        {
+            tx = 0.0;
+            ty = 1.0;
+            known = true;
+        }
+
+        if ( !known )
+            continue;
+
+        BOOST_CHECK( !e.correspondingVertices.empty() );
+        int checkedPairs = 0;
+        int mappedPairs = 0;
+        for ( auto const& [slavePointId, masterPointId] : e.correspondingVertices )
+        {
+            auto pitSlave = mesh->pointIterator( slavePointId );
+            auto pitMaster = mesh->pointIterator( masterPointId );
+            BOOST_REQUIRE( pitSlave != mesh->endPoint() );
+            BOOST_REQUIRE( pitMaster != mesh->endPoint() );
+
+            auto const& pSlave = pitSlave->second;
+            auto const& pMaster = pitMaster->second;
+            BOOST_CHECK_SMALL( std::abs( pSlave.node()[0] - pMaster.node()[0] - tx ), 1e-11 );
+            BOOST_CHECK_SMALL( std::abs( pSlave.node()[1] - pMaster.node()[1] - ty ), 1e-11 );
+            if ( pSlave.id() != pMaster.id() )
+            {
+                ++checkedPairs;
+                if ( pSlave.masterId() == pMaster.id() )
+                    ++mappedPairs;
+            }
+        }
+        BOOST_CHECK_GT( checkedPairs, 0 );
+        BOOST_CHECK_GT( mappedPairs, 0 );
+        ++matchedEntities;
+    }
+    BOOST_CHECK_EQUAL( matchedEntities, 2 );
+
+    int periodicPointCount = 0;
+    for ( auto it = mesh->beginPoint(); it != mesh->endPoint(); ++it )
+    {
+        if ( it->second.masterId() != it->second.id() )
+            ++periodicPointCount;
+    }
+    BOOST_CHECK_GT( periodicPointCount, 0 );
+}
+}
+
 FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_SUITE( gmshsuite )
 
-
-typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
-//typedef boost::mpl::list<boost::mpl::int_<2> > dim_types;
-
-BOOST_AUTO_TEST_CASE_TEMPLATE( gmshsimplex, T, dim_types )
+BOOST_DATA_TEST_CASE( gmshsimplex, bdata::make( std::array<int,3>{ { 1,2,3 } } ), dim )
 {
-    checkCreateGmshMesh<T::value>( "simplex" );
+    BOOST_TEST_CONTEXT( "shape=simplex dim=" << dim )
+    {
+        runForDim( dim, []( auto d )
+        {
+            constexpr int Dim = decltype( d )::value;
+            checkCreateGmshMesh<Dim>( "simplex" );
+        } );
+    }
 }
-BOOST_AUTO_TEST_CASE_TEMPLATE( gmshhypercube_simplex, T, dim_types )
+BOOST_DATA_TEST_CASE( gmshhypercube_simplex, bdata::make( std::array<int,3>{ { 1,2,3 } } ), dim )
 {
-    checkCreateGmshMesh<T::value>( "hypercube" );
+    BOOST_TEST_CONTEXT( "shape=hypercube simplex-convex dim=" << dim )
+    {
+        runForDim( dim, []( auto d )
+        {
+            constexpr int Dim = decltype( d )::value;
+            checkCreateGmshMesh<Dim>( "hypercube" );
+        } );
+    }
 }
-BOOST_AUTO_TEST_CASE_TEMPLATE( gmshhypercube_hypercube, T, dim_types )
+BOOST_DATA_TEST_CASE( gmshhypercube_hypercube, bdata::make( std::array<int,3>{ { 1,2,3 } } ), dim )
 {
-    checkCreateGmshMesh<T::value, Hypercube>( "hypercube", "Hypercube" );
+    BOOST_TEST_CONTEXT( "shape=hypercube hypercube-convex dim=" << dim )
+    {
+        runForDim( dim, []( auto d )
+        {
+            constexpr int Dim = decltype( d )::value;
+            checkCreateGmshMesh<Dim, Hypercube>( "hypercube", "Hypercube" );
+        } );
+    }
 }
-BOOST_AUTO_TEST_CASE_TEMPLATE( gmshellipsoid, T, dim_types )
+BOOST_DATA_TEST_CASE( gmshellipsoid, bdata::make( std::array<int,3>{ { 1,2,3 } } ), dim )
 {
-    checkCreateGmshMesh<T::value>( "ellipsoid" );
+    BOOST_TEST_CONTEXT( "shape=ellipsoid dim=" << dim )
+    {
+        runForDim( dim, []( auto d )
+        {
+            constexpr int Dim = decltype( d )::value;
+            checkCreateGmshMesh<Dim>( "ellipsoid" );
+        } );
+    }
 }
 
 BOOST_AUTO_TEST_CASE( gmshgeo )
@@ -142,127 +341,54 @@ BOOST_AUTO_TEST_CASE( gmshpartgeo )
                            _partitions=2 );
 }
 
-
-#if defined( FEELPP_HAS_TBB )
-template<typename elt_iterator>
-class tbb_check_mesh
+BOOST_AUTO_TEST_CASE( gmshperiodic_import_v4_ascii )
 {
-public:
-    tbb_check_mesh()
-        :
-        count( 0 )
-    {}
-    tbb_check_mesh( tbb_check_mesh& o, tbb::split )
-        :
-        count( o.count )
-    {}
-    void operator() ( const tbb::blocked_range<elt_iterator >& r )
-    {
-        for ( auto _elt = r.begin(); _elt != r.end(); ++_elt, ++count )
-        {
+    if ( Environment::isParallel() || !gmshDefaultIsV4() )
+        return;
 
-        }
-
-    }
-    void join( tbb_check_mesh& other )
-    {
-        count += other.count;
-    }
-    double count;
-};
-BOOST_AUTO_TEST_CASE( gmshgeo_tbb )
-{
-    typedef Mesh<Simplex<2,1> > mesh_type;
-    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
-
-    mesh_ptrtype mesh;
-    // simplex
-    mesh = createGMSHMesh( _mesh=new mesh_type,
-                           _desc=geo( _filename="feel.geo",
-                                      _dim=2,
-                                      _order=1,
-                                      _h=0.2 ) );
-    std::vector<boost::reference_wrapper<const mesh_type::element_type> > v;
-    for( const mesh_type::element_type& i : mesh->elements( ) )
-    v.push_back( boost::cref( i ) );
-    tbb::blocked_range<decltype( v.begin() )> r( v.begin(), v.end() );
-    BOOST_TEST_MESSAGE( "range size=" << r.size() << "\n" );
-    tbb_check_mesh<decltype( v.begin() )> counter;
-    tbb::tick_count parallel_t0 = tbb::tick_count::now();
-    tbb::parallel_reduce( r, counter );
-    tbb::tick_count parallel_t1 = tbb::tick_count::now();
-
-    BOOST_CHECK_EQUAL( counter.count, mesh->numElements() );
-
-    tbb::tick_count serial_t0 = tbb::tick_count::now();
-    int count = 0;
-
-    for ( auto _elt = mesh->beginElement(); _elt != mesh->endElement(); ++_elt, ++count )
-    {
-
-    }
-
-    tbb::tick_count serial_t1 = tbb::tick_count::now();
-    BOOST_CHECK_EQUAL( count, mesh->numElements() );
-
-    BOOST_TEST_MESSAGE( "Serial version ran in " << ( serial_t1 - serial_t0 ).seconds() << " seconds" << "\n"
-                        << "Parallel version ran in " <<  ( parallel_t1 - parallel_t0 ).seconds() << " seconds" << "\n"
-                        << "Resulting in a speedup of " << ( serial_t1 - serial_t0 ).seconds() / ( parallel_t1 - parallel_t0 ).seconds() << "\n" );
-
+    auto mesh = createPeriodicMeshFromGmsh( GMSH_FORMAT_ASCII, "periodic-import-v4-ascii" );
+    checkPeriodicMeshData( mesh );
 }
-#endif // FEELPP_HAS_TBB
 
-BOOST_AUTO_TEST_CASE_TEMPLATE( gmshimportexport, T, dim_types )
+BOOST_AUTO_TEST_CASE( gmshperiodic_import_v4_binary )
 {
-    if ( Environment::worldComm().size()>1) return;
+    if ( Environment::isParallel() || !gmshDefaultIsV4() )
+        return;
 
-    BOOST_TEST_MESSAGE( "[gmshimportexport] for dimension " << T::value << "\n" );
-    typedef Mesh<Simplex<T::value,1> > mesh_type;
-    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
+    auto mesh = createPeriodicMeshFromGmsh( GMSH_FORMAT_BINARY, "periodic-import-v4-binary" );
+    checkPeriodicMeshData( mesh );
+}
 
-    mesh_ptrtype mesh,meshimp;
-    // simplex
-    mesh = createGMSHMesh( _mesh=new mesh_type,
-                           _desc=domain( _name=( boost::format( "simplex-%1%" )  % T::value ).str() ,
-                                         _usenames=true,
-                                         _addmidpoint=false,
-                                         _shape="simplex",
-                                         _dim=T::value,
-                                         _h=0.5 ) );
+BOOST_AUTO_TEST_CASE( gmshperiodic_import_v2_ascii )
+{
+    if ( Environment::isParallel() )
+        return;
 
-#if 0
-    std::ostringstream estr;
-    estr << "gmshexp-" << T::value;
-    typedef Exporter<mesh_type> export_type;
-    typedef std::shared_ptr<export_type> export_ptrtype;
-    export_ptrtype exporter( Exporter<mesh_type>::New( "gmsh", estr.str() ) );
-    exporter->step( 0 )->setMesh( mesh );
-    exporter->save();
-    std::ostringstream fstr;
-    fstr << "gmshexp-" << T::value << "-1_0.msh";
-#else
-    std::ostringstream fstr;
-    fstr << "gmshexp-" << T::value << ".msh";
-    saveGMSHMesh(_mesh=mesh,_filename=fstr.str() );
-#endif
+    auto mesh = createPeriodicMeshFromGmsh( GMSH_FORMAT_ASCII, "periodic-import-v2-ascii", "2" );
+    checkPeriodicMeshData( mesh );
+}
+
+BOOST_AUTO_TEST_CASE( gmshperiodic_import_v2_binary )
+{
+    if ( Environment::isParallel() )
+        return;
+
+    auto mesh = createPeriodicMeshFromGmsh( GMSH_FORMAT_BINARY, "periodic-import-v2-binary", "2" );
+    checkPeriodicMeshData( mesh );
+}
 
 
-    meshimp = loadGMSHMesh( _mesh=new mesh_type,
-                            _filename=fstr.str(),
-                            _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
 
-    BOOST_CHECK_EQUAL( nelements( elements(mesh) ),nelements( elements(meshimp) ) );
-    BOOST_CHECK_EQUAL( nelements( markedfaces(mesh,"Neumann") ),nelements( markedfaces(meshimp,"Neumann") ) );
-    BOOST_CHECK_EQUAL( nelements( markedfaces(mesh,"Dirichlet") ),nelements( markedfaces(meshimp,"Dirichlet") ) );
-    BOOST_WARN_EQUAL( nelements( boundaryfaces( mesh ) ),  nelements( boundaryfaces( meshimp ) ) );
-    BOOST_CHECK_EQUAL( std::distance( mesh->beginElement(), mesh->endElement() ),
-                       std::distance( meshimp->beginElement(), meshimp->endElement() ) );
-
-    double r1 = integrate( _range=boundaryfaces( mesh ), _expr=cst( 1. ) ).evaluate()(0,0);
-    double r2 = integrate( _range=boundaryfaces( meshimp ), _expr=cst( 1. ) ).evaluate()(0,0);
-    BOOST_CHECK_SMALL( std::abs(r1-r2),1e-12 );
-
-    BOOST_TEST_MESSAGE( "[gmshimportexport] for dimension " << T::value << " done.\n" );
+BOOST_DATA_TEST_CASE( gmshimportexport, bdata::make( std::array<int,3>{ { 1,2,3 } } ), dim )
+{
+    BOOST_TEST_CONTEXT( "gmshimportexport dim=" << dim )
+    {
+        runForDim( dim, []( auto d )
+        {
+            constexpr int Dim = decltype( d )::value;
+            checkGmshImportExport<Dim>();
+        } );
+    }
 }
 
 /*
@@ -338,6 +464,83 @@ BOOST_AUTO_TEST_CASE( supportedgmshmesh_import )
 
 	BOOST_TEST_MESSAGE( "[supportedgmshmesh_import] mesh format: " << format << " done.\n" );
       }
+}
+
+/** @test Round-trip dynamic quadratic Bezier geometry through nodal Gmsh I/O. */
+BOOST_AUTO_TEST_CASE( dynamic_bezier_geometry_roundtrip )
+{
+    if ( Environment::isParallel() )
+        return;
+
+    using mesh_type = Mesh<Simplex<2, Dynamic>>;
+    auto mesh = mesh_type::New( RuntimeOrder{ 2 } );
+    mesh = createGMSHMesh(
+        _mesh = mesh,
+        _desc = domain(
+            _name = "dynamic-bezier-gmsh-roundtrip",
+            _shape = "ellipsoid", _dim = 2,
+            _xmin = -1., _ymin = -1., _h = 0.45 ) );
+    BOOST_REQUIRE( mesh );
+    BOOST_REQUIRE_GT( mesh->numGlobalElements(), 0 );
+    auto const expectedCoordinates =
+        mesh->nodalGeometryCoordinates();
+    mesh->setGeometryRepresentation(
+        geometry::GeometryRepresentationKind::BernsteinBezier );
+
+    auto const filename =
+        ( Environment::repository().directory() /
+          "dynamic-bezier-roundtrip.msh" )
+            .string();
+    saveGMSHMesh( _mesh = mesh, _filename = filename );
+
+    auto restored = mesh_type::New(
+        RuntimeOrder{ 2 },
+        geometry::GeometryRepresentationKind::BernsteinBezier );
+    restored = loadGMSHMesh(
+        _mesh = restored, _filename = filename,
+        _update = MESH_CHECK | MESH_UPDATE_FACES |
+                  MESH_UPDATE_EDGES );
+    BOOST_REQUIRE( restored );
+    BOOST_CHECK_EQUAL( restored->order(), 2 );
+    BOOST_CHECK(
+        restored->geometryRepresentation() ==
+        geometry::GeometryRepresentationKind::BernsteinBezier );
+    BOOST_CHECK_SMALL(
+        ( restored->nodalGeometryCoordinates() -
+          expectedCoordinates )
+            .norm(),
+        2e-10 );
+
+    auto const originalArea =
+        integrate( _range = elements( mesh ), _expr = cst( 1. ),
+                   _geomap = GeomapStrategyType::GEOMAP_HO )
+            .evaluate()( 0, 0 );
+    auto const restoredArea =
+        integrate( _range = elements( restored ), _expr = cst( 1. ),
+                   _geomap = GeomapStrategyType::GEOMAP_HO )
+            .evaluate()( 0, 0 );
+    BOOST_CHECK_SMALL( originalArea - restoredArea, 2e-11 );
+}
+
+/** @test Reject unsupported Gmsh orders and representation tags pre-mutation. */
+BOOST_AUTO_TEST_CASE( geometry_capability_rejection_is_early )
+{
+    using mesh_type = Mesh<Simplex<2, Dynamic>>;
+    auto unsupportedOrder =
+        mesh_type::New( RuntimeOrder{ 6 } );
+    ImporterGmsh<mesh_type> importer(
+        "unsupported-order-is-validated-before-file-access.msh" );
+    BOOST_CHECK_THROW(
+        importer.visit( unsupportedOrder.get() ),
+        std::invalid_argument );
+    BOOST_CHECK_EQUAL( unsupportedOrder->numPoints(), 0 );
+    BOOST_CHECK_EQUAL( unsupportedOrder->numElements(), 0 );
+
+    BOOST_CHECK_THROW(
+        mesh_type::New(
+            RuntimeOrder{ 2 },
+            static_cast<geometry::GeometryRepresentationKind>( 255 ) ),
+        std::invalid_argument );
 }
 
 

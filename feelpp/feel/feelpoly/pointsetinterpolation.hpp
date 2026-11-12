@@ -1,26 +1,10 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileCopyrightText: 2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2006-03-03
-
-  Copyright (C) 2006 EPFL
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file pointsetinterpolation.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -30,6 +14,8 @@
 #define __PointSetInterpolation_H 1
 
 #include <feel/feelmesh/pointset.hpp>
+#include <boost/mp11/utility.hpp>
+#include <stdexcept>
 
 // clang-format off
 #include <feel/feelcore/warnoff.hpp>
@@ -51,9 +37,9 @@ namespace ublas = boost::numeric::ublas;
  * @see
  */
 template<uint16_type Dim,
-         uint16_type Order,
+         int Order,
          typename T,
-         template<uint16_type,uint16_type,uint16_type> class Convex = Simplex>
+         template<int,int,int> class Convex = Simplex>
 class PointSetInterpolation : public PointSet<Convex<Dim,Order,Dim>,T>
 {
     typedef PointSet<Convex<Dim,Order,Dim>,T> super;
@@ -77,9 +63,11 @@ public:
     static const uint32_type convexOrder = convex_type::nOrder;
     static const uint32_type topological_dimension = convex_type::topological_dimension;
 
-    typedef mpl::if_< mpl::bool_< is_simplex >,
-            Simplex<Dim, Order, Dim> ,
-            Hypercube<Dim, Order, Dim> > conv_order_type;
+    /** Reference-cell geometry selected without MPL metafunction machinery. */
+    using ConvexOrder = boost::mp11::mp_if_c<is_simplex,
+        Simplex<Dim,Order,Dim>,Hypercube<Dim,Order,Dim>>;
+    /** Compatibility metafunction wrapper for the selected geometry. */
+    using conv_order_type = boost::mp11::mp_identity<ConvexOrder>;
 
     typedef Reference<convex_type, Dim, convexOrder, Dim, value_type> RefElem;
 
@@ -90,6 +78,7 @@ public:
     static const uint32_type nbPtsPerFace = conv_order_type::type::nbPtsPerFace;
     static const uint32_type nbPtsPerVolume = conv_order_type::type::nbPtsPerVolume;
 
+    /** Canonical reference geometry associated with the interpolation nodes. */
     RefElem RefConv;
 
     typedef std::pair<uint16_type, uint16_type> range_type;
@@ -102,6 +91,7 @@ public:
      */
     //@{
 
+    /** @brief Construct node-to-entity bookkeeping at the static degree. */
     PointSetInterpolation()
         :
         super()
@@ -109,6 +99,7 @@ public:
         M_eid.resize( topological_dimension + 1 );
         M_pt_to_entity.resize( numPoints );
     }
+    /** @brief Construct bookkeeping with storage for np interpolation nodes. */
     PointSetInterpolation( size_type np )
         :
         super( np )
@@ -116,19 +107,24 @@ public:
         M_eid.resize( topological_dimension + 1 );
         M_pt_to_entity.resize( numPoints );
     }
-    PointSetInterpolation( PointSetInterpolation & psi )
-        :
-        super( psi ),
-        M_eid( psi.getEid() ),
-        M_pt_to_entity( psi.getPtE() )
+    /** @brief Copy coordinates, reference geometry and entity bookkeeping from a const source. */
+    PointSetInterpolation( PointSetInterpolation const& ) = default;
 
-    {}
+    /** @brief Move coordinates and entity bookkeeping together. */
+    PointSetInterpolation( PointSetInterpolation&& ) = default;
+
+    /** @brief Copy-assign the complete interpolation point-set state. */
+    PointSetInterpolation& operator=( PointSetInterpolation const& ) = default;
+
+    /** @brief Move-assign the complete interpolation point-set state. */
+    PointSetInterpolation& operator=( PointSetInterpolation&& ) = default;
 
     ~PointSetInterpolation() override {}
 
     ublas::matrix_range<nodes_type const> pointsByEntity( uint16_type e ) const
     {
-        FEELPP_ASSERT( M_eid[e].size() )( e ).error( "no points defined on this entity" );
+        if(e>=M_eid.size() || M_eid[e].empty())
+            throw std::out_of_range("no interpolation points are defined on this entity");
 
         return ublas::project( this->points(),
                                ublas::range( 0,Dim ),
@@ -254,6 +250,16 @@ public:
 
     points_type pointsBySubEntity( uint16_type top_dim, uint16_type local_id, bool boundary = 0 ) const
     {
+        // Interior-only interpolation sets have no lower-dimensional entity
+        // partition: all stored coordinates belong to the cell interior.
+        // This also gives the single P0 coordinate its natural cell owner.
+        bool has_entity_partition = false;
+        for ( auto const& entity_points : M_eid )
+            has_entity_partition = has_entity_partition || !entity_points.empty();
+        if ( !boundary && top_dim == topological_dimension && local_id == 0 &&
+             !has_entity_partition )
+            return this->points();
+
         index_map_type index_list = entityToLocal( top_dim, local_id, boundary );
 
         uint16_type matrix_size = 0;
@@ -324,7 +330,9 @@ public:
 
 private:
 
+    /** Coordinate indices grouped by reference-entity dimension. */
     index_map_type M_eid;
+    /** Reference entity and local ordinal associated with each coordinate. */
     std::vector<range_type> M_pt_to_entity;
 
 };

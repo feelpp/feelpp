@@ -114,27 +114,15 @@ void ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::st
         DVLOG(2) << "filenameForCompile: " << filenameForCompile << std::endl;
         DVLOG(2) << "filenameWithSuffix: " << filenameWithSuffix << std::endl;
 
-        if ( !filenameForCompile.empty() )
-        {
-            fs::path filenameForCompileParent = fs::path( filenameForCompile ).parent_path();
-            if ( !filenameForCompileParent.empty() && !fs::exists( filenameForCompileParent ) )
-                fs::create_directories( filenameForCompileParent );
-            if ( !filenameForCompileParent.empty() && !fs::exists( filenameForCompileParent ) )
-            {
-                using namespace std::string_literals;
-                throw std::logic_error( "directories "s + filenameForCompileParent.string() + " not created");
-            }
-        }
-
         DVLOG( 2 ) << "GiNaC::compile_ex with filename " << filenameForCompile << "\n";
-        GiNaC::compile_ex( exprs, syml, *cfun, filenameForCompile, !exprDesc.empty() );
+        GiNaC::compile_ex( exprs, syml, *cfun, filenameForCompile, !exprDesc.empty(), world.localComm() );
 
         hasLinked = true;
         if ( !filename.empty() )
         {
             GinacExprManager::instance().operator[]( keyExprManager /*exprDesc*/ /*filename*/ ) = cfun;
 
-            if ( world.isMasterRank() && !exprDesc.empty() && !filenameDescExpr.empty() )
+            if ( world.localRank() == 0 && !exprDesc.empty() && !filenameDescExpr.empty() )
             {
                 std::ofstream file( filenameDescExpr, std::ios::out | std::ios::trunc );
                 file << exprDesc;

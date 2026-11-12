@@ -33,14 +33,15 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelpoly/im.hpp>
 
-#include <feel/feelvf/vf.hpp>
-
 #include <feel/feeldiscr/operatorlinear.hpp>
+#include <feel/feelmesh/filters.hpp>
+#include <feel/feelvf/fieldops.hpp>
+#include <feel/feelvf/integrate.hpp>
 
 namespace Feel
 {
 
-enum StabilizationMethods {NO, CIP, SGS, SUPG, GALS};
+enum StabilizationMethods { AdvReactNo, AdvReactCIP, AdvReactSGS, AdvReactSUPG, AdvReactGALS };
 
 /**
  * \class AdvReact
@@ -91,7 +92,7 @@ public:
         M_imposeBC( imposeBC ),
         M_stabcoeff( 0.1 * std::pow( polyOrder, -3.5 ) )
     {
-        M_StabMethod=GALS;
+        M_StabMethod=AdvReactGALS;
     }
 
     // setting of options
@@ -177,12 +178,12 @@ void AdvReact<Space>::update( const Esigma& sigma,
                      );
     }
 
-    if ( M_StabMethod != NO )
+    if ( M_StabMethod != AdvReactNo )
     {
         if ( updateStabilization )
         {
             //good review of stabilization methods in [Chaple 2006]
-            if ( M_StabMethod== CIP && ( M_stabcoeff != 0.0 ) )
+            if ( M_StabMethod== AdvReactCIP && ( M_stabcoeff != 0.0 ) )
             {
                 /* don't work properly in 3D (because of internalfaces) */
                 M_operatorStab=
@@ -193,11 +194,11 @@ void AdvReact<Space>::update( const Esigma& sigma,
                              );
             }//Continuous Interior Penalty
 
-            else if ( M_StabMethod== SUPG )
+            else if ( M_StabMethod== AdvReactSUPG )
             {
-                AUTO( coeff, vf::h()/( 2*vf::sqrt( val( trans( beta ) )*val( beta ) ) ) );
-                AUTO( L_op, ( grad( M_phi )*val( beta ) ) );
-                AUTO( L_opt, ( gradt( M_phi )*val( beta ) + val( sigma )*idt( M_phi ) ) );
+                auto coeff = vf::h()/( 2*vf::sqrt( val( trans( beta ) )*val( beta ) ) );
+                auto L_op = ( grad( M_phi )*val( beta ) );
+                auto L_opt = ( gradt( M_phi )*val( beta ) + val( sigma )*idt( M_phi ) );
 
                 M_operatorStab=
                     integrate( elements( M_mesh ),
@@ -223,7 +224,7 @@ void AdvReact<Space>::update( const Esigma& sigma,
 
             }//Streamline Upwind Petrov Galerkin
 
-            else if ( M_StabMethod== GALS )
+            else if ( M_StabMethod== AdvReactGALS )
             {
                 auto coeff = val( 1.0 / ( 2*vf::sqrt( trans( beta )*beta )/vf::h()+vf::abs( sigma ) ) );
                 auto L_op = ( grad( M_phi )*val( beta ) + val( sigma )*id( M_phi ) );
@@ -251,14 +252,14 @@ void AdvReact<Space>::update( const Esigma& sigma,
 
             }//Galerkin Least Square
 
-            else if ( M_StabMethod== SGS )
+            else if ( M_StabMethod== AdvReactSGS )
             {
-                AUTO( coeff, 1.0 / ( 2*vf::sqrt( val( trans( beta ) )*val( beta ) )/vf::h()+vf::abs( val( sigma ) ) ) );
+                auto coeff = 1.0 / ( 2*vf::sqrt( val( trans( beta ) )*val( beta ) )/vf::h()+vf::abs( val( sigma ) ) );
 
-                //                            AUTO(coeff_bound, 1.0 / (2*vf::sqrt(val(trans(beta))*val(beta))/vf::hFace()+vf::abs(val(sigma))));
+                //                            auto coeff_bound = 1.0 / (2*vf::sqrt(val(trans(beta))*val(beta))/vf::hFace()+vf::abs(val(sigma)));
 
-                AUTO( L_op, ( grad( M_phi )* val( beta ) - val( sigma ) * id( M_phi ) ) );
-                AUTO( L_opt, ( gradt( M_phi )*val( beta ) + val( sigma )*idt( M_phi ) ) );
+                auto L_op = ( grad( M_phi )* val( beta ) - val( sigma ) * id( M_phi ) );
+                auto L_opt = ( gradt( M_phi )*val( beta ) + val( sigma )*idt( M_phi ) );
 
                 M_operatorStab=
                     integrate( elements( M_mesh ),
@@ -306,7 +307,7 @@ void AdvReact<Space>::update( const Esigma& sigma,
                      );
     }
 
-    if ( M_StabMethod != NO )
+    if ( M_StabMethod != AdvReactNo )
         M_rhs.add( M_rhsStab );
 
     //M_rhs.container().printMatlab("F_advReact.m");

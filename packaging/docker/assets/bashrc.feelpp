@@ -18,4 +18,3 @@ fi
 if [ -f /usr/local/share/feelpp/image/WELCOME ]; then
     cat /usr/local/share/feelpp/image/WELCOME
 fi
-

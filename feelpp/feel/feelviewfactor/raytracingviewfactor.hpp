@@ -20,7 +20,7 @@
 
 #include <feel/feelviewfactor/viewfactorbase.hpp>
 #include <feel/feelmesh/bvh.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/vf_eval.hpp>
 #include <nanoflann.hpp>
 #include <feel/feelviewfactor/kdtreevectorofvectorsadaptor.hpp>
 
@@ -432,7 +432,7 @@ public:
         //std::cout << M_Nrays*ray_submesh->numElements() << std::endl;
 
         auto index_marker =std::find(M_markers_string.begin(),M_markers_string.end(),marker);
-        this->areas_[std::distance(M_markers_string.begin(),index_marker)] = integrate(_range=elements(ray_submesh),_expr=cst(1.)).evaluate()(0,0);
+        this->areas_[std::distance(M_markers_string.begin(),index_marker)] = Feel::integrate(_range=elements(ray_submesh),_expr=vf::cst(1.)).evaluate()(0,0);
 
         //std::cout << "Areas_" << marker << " " << this->areas_[std::distance(M_markers_string.begin(),index_marker)] << std::endl;
 

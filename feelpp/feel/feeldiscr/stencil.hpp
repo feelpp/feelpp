@@ -2175,9 +2175,12 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
 
                 ublas::column(ptsReal,0 ) = ptRealDof;
                 if (notUseOptLocTrial) IdEltInXh2=invalid_v<index_type>;
-                auto resLocalisationInXh2 = locToolForXh2->run_analysis(ptsReal,IdEltInXh2,elem.vertices(),mpl::int_<0>());
-                IdEltInXh2 = resLocalisationInXh2.template get<1>();
-                bool hasFind = resLocalisationInXh2.template get<0>()[0];
+                auto resLocalisationInXh2 =
+                    locToolForXh2->template localize<
+                        LocalizationPolicy::Unconstrained>(
+                            ptsReal, IdEltInXh2, elem.vertices() );
+                IdEltInXh2 = resLocalisationInXh2.lastElementId;
+                bool hasFind = resLocalisationInXh2.found[0];
 
                 listTup.clear();
 
@@ -2277,12 +2280,12 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
                 for ( int q = 0; q <  gmc->nPoints(); ++ q )
                 {
                     ublas::column(ptsReal,0 ) = gmc->xReal( q );
-                    //auto const resQuad = locToolForXh2->run_analysis(ptsReal,IdEltInXh2,elem_it->vertices(),mpl::int_<0>());
-                    auto const resQuad = locToolForXh2->searchElement( gmc->xReal( q ) );
+                    auto const resQuad =
+                        locToolForXh2->locateElement( gmc->xReal( q ) );
 
-                    if ( resQuad.template get<0>() )
+                    if ( resQuad.found )
                     {
-                        IdEltInXh2 = resQuad.template get<1>();
+                        IdEltInXh2 = resQuad.elementId;
 #if FEELPP_EXPORT_GRAPH
                         mapBetweenMeshes[IdEltInXh2].push_back( elem.id() );
 #endif
@@ -2331,17 +2334,19 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
                 //auto res = locTool->searchElements(ublas::column( elem.G(),i )/*ptReal*/);
                 //auto hasFind = res.template get<0>();
 
-                auto resTemp = locToolForXh2->searchElement( ublas::column( elem.G(),i ) );
-                bool hasFind = resTemp.template get<0>();
+                auto resTemp =
+                    locToolForXh2->locateElement(
+                        ublas::column( elem.G(),i ) );
+                bool hasFind = resTemp.found;
                 std::set<index_type > listTup;
 
                 if ( hasFind )
                 {
-                    listTup.insert( resTemp.template get<1>() );
-                    hasFinds[i] = boost::make_tuple( true,resTemp.template get<1>() );
+                    listTup.insert( resTemp.elementId );
+                    hasFinds[i] = boost::make_tuple( true,resTemp.elementId );
                     // maybe is on boundary->more elts
                     //size_type idElt1 = elem.id();
-                    index_type idElt2 = resTemp.template get<1>();
+                    index_type idElt2 = resTemp.elementId;
                     auto const& geoelt2 = _M_X2->mesh()->element( idElt2 );// warning miss processId
                     std::vector<index_type> neighbor_ids( geoelt2.nNeighbors() ); //neighbor_ids.clear();//(geoelt2.nNeighbors());
 
@@ -2379,9 +2384,12 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
 
                                         for ( size_type iii=0; iii<nPtGeoBis && !findNeih ; iii++ )
                                         {
-                                            auto  resBis = locToolForXh1->searchElement( ublas::column( geoeltNEW.G(),iii ) );
+                                            auto resBis =
+                                                locToolForXh1->locateElement(
+                                                    ublas::column(
+                                                        geoeltNEW.G(),iii ) );
 
-                                            if ( resBis.template get<0>() )
+                                            if ( resBis.found )
                                             {
                                                 listTup.insert( *it_neigh );
                                                 findNeih=true;
@@ -2442,14 +2450,16 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCa
 
                 for ( int q = 0; q <  gmc->nPoints(); ++ q )
                 {
-                    auto resQuad = locToolForXh2->searchElement( gmc->xReal( q ) );
+                    auto resQuad =
+                        locToolForXh2->locateElement( gmc->xReal( q ) );
 
-                    if ( resQuad.template get<0>() )
+                    if ( resQuad.found )
                     {
 #if FEELPP_EXPORT_GRAPH
-                        mapBetweenMeshes[resQuad.template get<1>()].push_back( elem.id() );
+                        mapBetweenMeshes[resQuad.elementId].push_back( elem.id() );
 #endif
-                        element_dof2 = _M_X2->dof()->getIndices( resQuad.template get<1>() );
+                        element_dof2 =
+                            _M_X2->dof()->getIndices( resQuad.elementId );
                         //for (size_type i=0; i<n1_dof_on_element; i++)
                         //   {
                         const size_type ig1 = element_dof1[0];

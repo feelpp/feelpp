@@ -1,26 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme
-       Date: 2026-03-25
-
-  Copyright (C) 2026 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file basis.hpp
    \author Christophe Prud'homme
@@ -35,6 +20,7 @@
 #include <utility>
 
 #include <feel/feelvf/operators.hpp>
+#include <feel/feelvf/basisfunction.hpp>
 
 namespace Feel
 {
@@ -150,12 +136,26 @@ template <typename T>
 concept BasisProxyType = requires( T const& t )
 {
     typename std::remove_cvref_t<T>::element_type;
-    { std::remove_cvref_t<T>::role } -> std::convertible_to<OperatorType>;
     { t.element() } -> std::same_as<typename std::remove_cvref_t<T>::element_type const&>;
+} && ( is_basis_function_v<T> || requires {
+    { std::remove_cvref_t<T>::role } -> std::convertible_to<OperatorType>;
+} );
+
+// Normalize the role for shell operators accepting either basis interface.
+template <BasisProxyType ProxyType>
+struct basis_proxy_traits
+{
+    using element_type = typename std::remove_cvref_t<ProxyType>::element_type;
+    static constexpr OperatorType role = [] {
+        if constexpr ( is_basis_function_v<ProxyType> )
+            return basis_operator_type_v<ProxyType>;
+        else
+            return std::remove_cvref_t<ProxyType>::role;
+    }();
 };
 
 template <BasisProxyType ProxyType>
-using basis_proxy_type_t = std::remove_cvref_t<ProxyType>;
+using basis_proxy_type_t = basis_proxy_traits<ProxyType>;
 
 } // namespace detail
 
@@ -343,10 +343,7 @@ template <detail::BasisProxyType ProxyType>
 [[nodiscard]] inline auto
 omega( ProxyType const& proxy )
 {
-    if constexpr ( detail::basis_proxy_type_t<ProxyType>::role == __TRIAL )
-        return omegat( proxy.element() );
-    else
-        return omega( proxy.element() );
+    return 0.5*curl( proxy );
 }
 
 template <detail::FunctionSpaceElement ElementType>
@@ -367,10 +364,7 @@ template <detail::BasisProxyType ProxyType>
 [[nodiscard]] inline auto
 omegaz( ProxyType const& proxy )
 {
-    if constexpr ( detail::basis_proxy_type_t<ProxyType>::role == __TRIAL )
-        return omegazt( proxy.element() );
-    else
-        return omegaz( proxy.element() );
+    return 0.5*curlz( proxy );
 }
 
 template <detail::BasisProxyType ProxyType>

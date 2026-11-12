@@ -1,3 +1,11 @@
+# SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+# SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+# SPDX-FileContributor: Alexandre Ancel <alexandre.ancel@cemosis.fr>
+#
+# SPDX-FileCopyrightText: 2009-2026 University of Strasbourg
+#
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
 set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testmesh")
 feelpp_add_test( entity_measure SRCS test_entity_measure.cpp TIMEOUT 120 )
 feelpp_add_test( mesh_face_cleanup SRCS test_mesh_face_cleanup.cpp TIMEOUT 120 )
@@ -10,11 +18,23 @@ foreach(THETEST entity mesh regiontree mesh_codim1 kdtree P1mesh updatemarker pa
       message(STATUS "compiling feelpp_test_partitioner_metis...")
       feelpp_add_test( ${THETEST} )
     endif()
+  elseif(THETEST STREQUAL "mesh")
+    # This suite now validates runtime G1--G5 simplex/hypercube import,
+    # submeshes, archives, and distributed ownership.
+    feelpp_add_test( ${THETEST} TIMEOUT 900 )
   else()
     feelpp_add_test( ${THETEST} )
   endif()
 
 endforeach()
+
+feelpp_add_test( meshadaptation_header SRCS test_meshadaptation_header.cpp NO_MPI_TEST )
+feelpp_add_test( periodic_mesh SRCS test_periodic_mesh.cpp NO_MPI_TEST )
+feelpp_add_test( geoentity_sparse_storage
+  SRCS test_geoentity_sparse_storage.cpp
+  NO_MPI_TEST )
+feelpp_add_test( geoentity_views
+  SRCS test_geoentity_views.cpp )
 
 feelpp_add_test( meshmarker CFG test_meshmarker.cfg GEO test_meshmarker_square_4mat.geo )
 feelpp_add_test( mesh_filters_operations SRCS test_mesh_filters_operations.cpp CFG test_mesh_filters_operations.cfg GEO test_mesh_filters_operations.geo )

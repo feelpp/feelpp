@@ -41,11 +41,15 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::Electric( std::string const& prefix,
                                         std::string const& keyword,
                                         worldcomm_ptr_t const& worldComm,
                                         std::string const& subPrefix,
-                                        ModelBaseRepository const& modelRep )
+                                        ModelBaseRepository const& modelRep,
+                                        RuntimeOrder polynomialOrder,
+                                        RuntimeOrder geometryOrder )
     :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
     ModelPhysics<nDim>( "electric" ),
-    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep )
+    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep ),
+    M_runtimeOrderPotential( polynomialOrder ),
+    M_runtimeOrderGeo( geometryOrder )
 {
     this->log("Electric","constructor", "start" );
 
@@ -84,7 +88,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initMesh()
         super_type::super_model_meshes_type::setup( this->modelProperties().jsonData().at("Meshes"), {this->keyword()} );
      if ( this->doRestart() )
         super_type::super_model_meshes_type::setupRestart( this->keyword() );
-    super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
+    super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword(), M_runtimeOrderGeo );
 
     CHECK( this->mesh() ) << "mesh generation fail";
 
@@ -143,12 +147,12 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( mom->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() ) )
     {
         M_rangeMeshElements = elements(this->mesh());
-        M_XhElectricPotential = space_electricpotential_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
+        M_XhElectricPotential = space_electricpotential_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(), _runtime_order=M_runtimeOrderPotential );
     }
     else
     {
         M_rangeMeshElements = markedelements(this->mesh(), mom->markers( this->physicsAvailableFromCurrentType() ));
-        M_XhElectricPotential = space_electricpotential_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
+        M_XhElectricPotential = space_electricpotential_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=M_rangeMeshElements, _runtime_order=M_runtimeOrderPotential );
     }
     M_fieldElectricPotential.reset( new element_electricpotential_type(M_XhElectricPotential,"V"));
 

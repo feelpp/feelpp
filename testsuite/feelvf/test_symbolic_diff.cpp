@@ -36,6 +36,21 @@
 // #include <feel/feelfilters/unitcube.hpp>
 #include <feel/feelvf/vf.hpp>
 
+namespace
+{
+void resetExprRepository()
+{
+    using namespace Feel;
+
+    if ( Environment::isMasterRank() )
+    {
+        auto exprRepo = fs::path( Environment::exprRepository() );
+        fs::remove_all( exprRepo );
+        fs::create_directories( exprRepo );
+    }
+    Environment::worldComm().barrier();
+}
+}
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
 
@@ -44,6 +59,7 @@ BOOST_AUTO_TEST_SUITE( symbolic_diff )
 BOOST_AUTO_TEST_CASE( test1 )
 {
     using namespace Feel;
+    resetExprRepository();
 
     auto e1 = expr( "u*u:u");
     e1.setParameterValues( { "u", 2 } );
@@ -77,6 +93,7 @@ BOOST_AUTO_TEST_CASE( test1 )
 BOOST_AUTO_TEST_CASE( test2 )
 {
     using namespace Feel;
+    resetExprRepository();
 
     auto a1 = expr( "3*u^2:u" );
     auto a2 = expr( "2*u:u" );
@@ -85,7 +102,7 @@ BOOST_AUTO_TEST_CASE( test2 )
     auto my_eval_diff = [&a1,&a2,&a3]( auto && a4 )
         {
             auto a5base = expr( "5*a4:a4" );
-            auto a5 = expr( a5base, symbolExpr("a1",a1), symbolExpr("a2",a3), symbolExpr("a3",a3), symbolExpr("a4",a4) );
+            auto a5 = expr( a5base, symbolExpr("a1",a1), symbolExpr("a2",a2), symbolExpr("a3",a3), symbolExpr("a4",a4) );
             a5.setParameterValues( { "u", 2 } );
 
             auto diff_a5_u = a5.template diff<1>( "u" );
@@ -105,6 +122,7 @@ BOOST_AUTO_TEST_CASE( test2 )
 BOOST_AUTO_TEST_CASE( test3 )
 {
     using namespace Feel;
+    resetExprRepository();
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<3,1>>);
     auto Vh = Pch<2>( mesh );
     auto u = Vh->element( inner(P()) );
@@ -181,6 +199,7 @@ BOOST_AUTO_TEST_CASE( test3 )
 BOOST_AUTO_TEST_CASE( test_vectorialspace )
 {
     using namespace Feel;
+    resetExprRepository();
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<3,1>>);
     auto Vh = Pchv<2>( mesh );
     auto u = Vh->element( P() );

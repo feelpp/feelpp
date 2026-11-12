@@ -268,7 +268,7 @@ class Eig : public ExprDynamicBase
 /**
  * \brief eig of the expression tensor (expression is supposed to be self adjoint)
  */
-template <VfExpr ExprT>
+template <VfExprConcept ExprT>
 [[nodiscard]] inline Expr<Eig<ExprT>>
 eig( ExprT v )
 {

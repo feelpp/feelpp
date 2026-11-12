@@ -1,25 +1,15 @@
-//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-//!
-//! This file is part of the Feel++ library
-//!
-//! This library is free software; you can redistribute it and/or
-//! modify it under the terms of the GNU Lesser General Public
-//! License as published by the Free Software Foundation; either
-//! version 2.1 of the License, or (at your option) any later version.
-//!
-//! This library is distributed in the hope that it will be useful,
-//! but WITHOUT ANY WARRANTY; without even the implied warranty of
-//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//! Lesser General Public License for more details.
-//!
-//! You should have received a copy of the GNU Lesser General Public
-//! License along with this library; if not, write to the Free Software
-//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-//!
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2019 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
 //! @file
 //! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 //! @date 25 Oct 2017
-//! @copyright 2019 Feel++ Consortium
 
 #ifndef FEELPP_FILTERS_DETAILS_MESHCONTIGUOUSNUMBERINGMAPPING_HPP
 #define FEELPP_FILTERS_DETAILS_MESHCONTIGUOUSNUMBERINGMAPPING_HPP 1
@@ -32,6 +22,14 @@ namespace Feel
 {
 namespace detail
 {
+
+template <typename MeshType>
+uint16_type geometryPointsPerElement( MeshType const* mesh )
+{
+    CHECK( mesh ) << "a mesh is required to build exporter connectivity";
+    CHECK( mesh->gm() ) << "the mesh has no geometric mapping";
+    return mesh->gm()->nbPoints();
+}
 
 template <typename MeshType,typename StorageNodeValueType>
 struct MeshContiguousNumberingMapping
@@ -58,7 +56,8 @@ struct MeshContiguousNumberingMapping
     explicit MeshContiguousNumberingMapping( mesh_type* mesh, bool interprocessPointAreDuplicated = false, MeshFragmentation<mesh_type> const& meshFragmentation = MeshFragmentation<mesh_type>{} )
         :
         M_mesh( mesh ),
-        M_interprocessPointAreDuplicated( interprocessPointAreDuplicated )
+        M_interprocessPointAreDuplicated( interprocessPointAreDuplicated ),
+        M_pointsPerElement( geometryPointsPerElement( mesh ) )
         {
             this->updateForUse( meshFragmentation );
         }
@@ -66,6 +65,9 @@ struct MeshContiguousNumberingMapping
     void updateForUse( MeshFragmentation<mesh_type> const& meshFragmentation );
 
     const mesh_type* mesh() const { return M_mesh; }
+
+    /** Effective geometry-point cardinality, valid for static/runtime order. */
+    uint16_type pointsPerElement() const noexcept { return M_pointsPerElement; }
 
     std::map<int,std::tuple<std::string,range_element_type>> const& partIdToRangeElement() const { return M_partIdToRangeElement; }
 
@@ -149,21 +151,21 @@ struct MeshContiguousNumberingMapping
 
     void updateNodesCoordinates()
         {
+            auto const nodalCoordinates = M_mesh->nodalGeometryCoordinates();
             rank_type currentPid = M_mesh->worldComm().localRank();
             for ( auto const& [part,pointIdToContiguous] : M_pointIdToContiguous )
             {
                 index_type spi = this->startPointIds(part,currentPid);
                 auto & nodes = M_nodes[part];
-                CHECK( nodes.size() == 3*pointIdToContiguous.size() ) << "wrong size";
-                //nodes.resize( 3*pointIdToContiguous.size(),0 );
+                nodes.assign( 3*pointIdToContiguous.size(), 0 );
                 for ( auto const& [ptId,ptData] : pointIdToContiguous )
                 {
                     index_type newPtId = ptData.first - spi;
-                    auto const& pt = unwrap_ref( ptData.second );
                     for ( uint16_type d=0 ; d<mesh_type::nRealDim ;++d )
                     {
                         CHECK( (3*newPtId+d) < nodes.size() ) << "invalid size : " << (3*newPtId+d) << " vs " << nodes.size() ;
-                        nodes[3*newPtId+d] = pt.node()[d];
+                        nodes[3*newPtId+d] = nodalCoordinates(
+                            d, M_mesh->pointLocalIndex( ptId ) );
                     }
                 }
             }
@@ -174,8 +176,10 @@ struct MeshContiguousNumberingMapping
     template <typename TheNodeIndexType>
     void updateOrderingOfPointsIdsInElt( int part, rank_type therank, std::vector<TheNodeIndexType> & newPointsIdsInElt,
                                          std::vector<uint16_type> const& mappingWithThisKindOfElement, int shiftId = 0,
-                                         int nPointsUsedInElt = mesh_type::element_type::numPoints ) const
+                                         int nPointsUsedInElt = -1 ) const
         {
+            if ( nPointsUsedInElt < 0 )
+                nPointsUsedInElt = M_pointsPerElement;
             CHECK( nPointsUsedInElt <= mappingWithThisKindOfElement.size() ) << "incomplete ordering";
 
             index_type _nElt = this->numberOfElement( part,therank );
@@ -185,7 +189,7 @@ struct MeshContiguousNumberingMapping
             for ( int k=0;k<_nElt;++k )
             {
                 for ( uint16_type p=0;p<nPointsUsedInElt;++p )
-                    newPointsIdsInElt[ k*nPointsUsedInElt + mappingWithThisKindOfElement[p] ] = pointsIdsInElt_B[ k*mesh_type::element_type::numPoints+p ] + shiftId;
+                    newPointsIdsInElt[ k*nPointsUsedInElt + mappingWithThisKindOfElement[p] ] = pointsIdsInElt_B[ k*M_pointsPerElement+p ] + shiftId;
             }
         }
 private :
@@ -209,6 +213,7 @@ private :
 private:
     mesh_type* M_mesh;
     bool M_interprocessPointAreDuplicated;
+    uint16_type M_pointsPerElement;
     std::map<int,std::tuple<std::string,range_element_type>> M_partIdToRangeElement;
     std::map<int,std::unordered_map<index_type,std::pair<index_type,point_ref_type> >> M_pointIdToContiguous;
     std::map<int,std::unordered_map<index_type,index_type>> M_elementIdToContiguous;
@@ -241,7 +246,7 @@ MeshContiguousNumberingMapping<MeshType,StorageNodeValueType>::updateForUse( Mes
         auto & pointIdsInElements = M_pointIdsInElements[part];
         auto & pointIdToContiguous = M_pointIdToContiguous[part];
         auto & dataPointsInterProcess = dataPointsInterProcessRequest[part];
-        pointIdsInElements.resize( nEltInRange*mesh_type::element_type::numPoints, invalid_v<index_type> );
+        pointIdsInElements.resize( nEltInRange*M_pointsPerElement, invalid_v<index_type> );
         index_type countPtId = 0, countEltId = 0;
         for ( auto const& eltWrap : rangeElt )
         {
@@ -250,7 +255,9 @@ MeshContiguousNumberingMapping<MeshType,StorageNodeValueType>::updateForUse( Mes
             auto [itElt,eltIsInserted] = elementIdToContiguous.try_emplace( eltId, countEltId++ );
             DCHECK( eltIsInserted ) << "something wrong, element already inserted";
             index_type newEltId = itElt->second;
-            for ( uint16_type j = 0; j < mesh_type::element_type::numPoints; j++ )
+            CHECK( elt.nPoints() == M_pointsPerElement )
+                << "mesh element geometry cardinality disagrees with its mapping";
+            for ( uint16_type j = 0; j < M_pointsPerElement; j++ )
             {
                 auto const& pt = elt.point( j );
                 index_type ptid = pt.id();
@@ -262,8 +269,8 @@ MeshContiguousNumberingMapping<MeshType,StorageNodeValueType>::updateForUse( Mes
                         ++countPtId;
                     index_type newPtId = itPt->second.first;
 
-                    DCHECK( (newEltId*mesh_type::element_type::numPoints+j) < pointIdsInElements.size() ) << "invalid size : " << (newEltId*mesh_type::element_type::numPoints+j) << " vs " <<  pointIdsInElements.size();
-                    pointIdsInElements[newEltId*mesh_type::element_type::numPoints+j] = newPtId;
+                    DCHECK( (newEltId*M_pointsPerElement+j) < pointIdsInElements.size() ) << "invalid size : " << (newEltId*M_pointsPerElement+j) << " vs " <<  pointIdsInElements.size();
+                    pointIdsInElements[newEltId*M_pointsPerElement+j] = newPtId;
                 }
                 else
                 {
@@ -385,7 +392,7 @@ MeshContiguousNumberingMapping<MeshType,StorageNodeValueType>::updateForUse( Mes
                     DCHECK( isInserted ) << "something wrong";
                     index_type newPtId = itPt->second.first;
                     for ( auto const& [newEltId, j] : std::get<1>( ptData ) )
-                        pointIdsInElements[newEltId*mesh_type::element_type::numPoints+j] = newPtId;
+                        pointIdsInElements[newEltId*M_pointsPerElement+j] = newPtId;
                 }
                 else
                 {
@@ -401,25 +408,6 @@ MeshContiguousNumberingMapping<MeshType,StorageNodeValueType>::updateForUse( Mes
             }
         }
     }
-    // --------------------------------------------------------------------------------------- //
-    // build nodes vector (important before shift id)
-    for ( auto const& [markerId,pointIdToContiguous] : M_pointIdToContiguous )
-    {
-        auto & nodes = M_nodes[markerId];
-        nodes.resize( 3*pointIdToContiguous.size(),0 );
-        for ( auto const& [ptId,ptData] : pointIdToContiguous )
-        {
-            index_type newPtId = ptData.first;
-            auto const& pt = unwrap_ref( ptData.second );
-            for ( uint16_type d=0 ; d<mesh_type::nRealDim ;++d )
-            {
-                DCHECK( (3*newPtId+d) < nodes.size() ) << "invalid size : " << (3*newPtId+d) << " vs " << nodes.size() ;
-                CHECK( (3*newPtId+d) < nodes.size() ) << "invalid size : " << (3*newPtId+d) << " vs " << nodes.size() ;
-                nodes[3*newPtId+d] = pt.node()[d];
-            }
-        }
-    }
-
     // --------------------------------------------------------------------------------------- //
     // update statistic and start index in world
     std::size_t k = 0;
@@ -467,6 +455,10 @@ MeshContiguousNumberingMapping<MeshType,StorageNodeValueType>::updateForUse( Mes
                 ptId += spi;
         }
     }
+
+    // Export formats consume nodal coordinates independently of native mesh
+    // storage (nodal interpolation points or Bezier controls).
+    this->updateNodesCoordinates();
 
     // --------------------------------------------------------------------------------------- //
     // update parallelism
@@ -537,7 +529,7 @@ MeshContiguousNumberingMapping<MeshType,StorageNodeValueType>::updateForUse( Mes
                     index_type ptId = partDataToSendStep2aMemory[k];
                     auto & dataPointsInterProcessPointData = dataPointsInterProcessPart.at( ptId );
                     for ( auto const& [ newEltId, j ] : std::get<1>( dataPointsInterProcessPointData ) )
-                        pointIdsInElements[newEltId*mesh_type::element_type::numPoints+j] = newPtId;
+                        pointIdsInElements[newEltId*M_pointsPerElement+j] = newPtId;
                 }
             }
         }
@@ -602,6 +594,7 @@ template <typename T>
 template <typename MeshType, typename IteratorType>
 MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorType it, IteratorType en, const bool outer, const bool renumber, const bool fill, const int startIndex )
 {
+    uint16_type const pointsPerElement = geometryPointsPerElement( mesh );
     std::set<int> nodeset;
     size_type p = 0;
     auto elt_it = it;
@@ -611,7 +604,9 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
     for ( auto eit = it; eit != en; ++eit )
     {
         auto const& elt = boost::unwrap_ref( *eit );
-        for ( size_type j = 0; j < MeshType::element_type::numPoints; j++ )
+        CHECK( elt.nPoints() == pointsPerElement )
+            << "mesh element geometry cardinality disagrees with its mapping";
+        for ( size_type j = 0; j < pointsPerElement; j++ )
         {
             int pid = elt.point( j ).id();
             auto ins = nodeset.insert( pid );
@@ -642,6 +637,7 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
 
     auto pit = ids.begin();
     auto pen = ids.end();
+    auto const nodalCoordinates = mesh->nodalGeometryCoordinates();
     //! for( auto i = 0; i < nv; ++i )
 
     //!  put coords of each point into the coords array */
@@ -654,25 +650,26 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
         //! int pid = (renumber)?nodemap[*pit]+1:*pit;
         int pid = *pit;
 
-        auto const& p = mesh->point( new2old[*pit] );
+        auto const pointId = new2old[*pit];
+        auto const pointIndex = mesh->pointLocalIndex( pointId );
         if ( outer )
         {
-            coords[i] = (T)p.node()[0];
+            coords[i] = static_cast<T>( nodalCoordinates( 0, pointIndex ) );
         }
         else
         {
-            coords[3 * i] = (T)p.node()[0];
+            coords[3 * i] = static_cast<T>( nodalCoordinates( 0, pointIndex ) );
         }
 
         if constexpr ( MeshType::nRealDim >= 2 )
         {
             if ( outer )
             {
-                coords[nv + i] = ( T )( p.node()[1] );
+                coords[nv + i] = static_cast<T>( nodalCoordinates( 1, pointIndex ) );
             }
             else
             {
-                coords[3 * i + 1] = ( T )( p.node()[1] );
+                coords[3 * i + 1] = static_cast<T>( nodalCoordinates( 1, pointIndex ) );
             }
         }
         //!  Fill 2nd components with 0 if told to do so */
@@ -695,11 +692,11 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
         {
             if ( outer )
             {
-                coords[2 * nv + i] = ( T )( p.node()[2] );
+                coords[2 * nv + i] = static_cast<T>( nodalCoordinates( 2, pointIndex ) );
             }
             else
             {
-                coords[3 * i + 2] = ( T )( p.node()[2] );
+                coords[3 * i + 2] = static_cast<T>( nodalCoordinates( 2, pointIndex ) );
             }
         }
         //!  Fill 3rd components with 0 if told to do so */
@@ -726,7 +723,7 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
     //!  otherwise it will segfault */
     if ( it != en )
     {
-        elem.resize( __ne * MeshType::element_type::numPoints );
+        elem.resize( __ne * pointsPerElement );
         //! elem.resize( __ne*mesh->numLocalVertices() );
         elemids.resize( __ne );
     }
@@ -741,12 +738,12 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
         elemids[e] = elt.id() + 1;
         //! std::cout << "LocalV = " << elt.numLocalVertices << std::endl;
         //! for ( size_type j = 0; j < mesh->numLocalVertices(); j++ )
-        for ( size_type j = 0; j < MeshType::element_type::numPoints; j++ )
+        for ( size_type j = 0; j < pointsPerElement; j++ )
         {
             //! std::cout << "LocalVId = " << j << " " << e*elt.numLocalVertices+j << std::endl;
             //! std::cout << elt.point( j ).id() << std::endl;
             //!  ensight id start at 1
-            elem[e * MeshType::element_type::numPoints + j] = old2new[elt.point( j ).id()];
+            elem[e * pointsPerElement + j] = old2new[elt.point( j ).id()];
 #if 0
             DCHECK( (elem[e*mesh->numLocalVertices()+j] > 0) && (elem[e*mesh->numLocalVertices()+j] <= nv ) )
                 << "Invalid entry : " << elem[e*mesh->numLocalVertices()+j]

@@ -7,7 +7,7 @@ if ( PETSC4PY_FOUND )
   target_compile_definitions(_alg PRIVATE -DFEELPP_HAS_PETSC4PY=1)
 endif()
 feelpp_add_pymodule(mesh SRCS mesh.cpp mesh1.cpp mesh2.cpp mesh3.cpp DESTINATION feelpp/core )
-feelpp_add_pymodule(discr SRCS discr.cpp DESTINATION feelpp/core )
+feelpp_add_pymodule(discr SRCS discr.cpp discr_common.cpp discr_space_pch.cpp discr_space_pchv.cpp discr_space_pdh.cpp discr_space_pdhv.cpp discr_space_dh.cpp DESTINATION feelpp/core )
 feelpp_add_pymodule(exporter SRCS exporter.cpp hbf.cpp  DESTINATION feelpp/core )
 feelpp_add_pymodule(ls SRCS ls.cpp DESTINATION feelpp/core )
 feelpp_add_pymodule(ts SRCS ts.cpp DESTINATION feelpp/core )
@@ -28,6 +28,7 @@ endforeach()
 
 set(PYFILES
   ${CMAKE_CURRENT_BINARY_DIR}/__init__.py
+  discr.py
   integrate.py
   measure.py
   quality.py

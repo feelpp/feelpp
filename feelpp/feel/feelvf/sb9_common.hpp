@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-
-    SPDX-FileCopyrightText: 2026 University of Strasbourg
-
-    SPDX-License-Identifier: LGPL-3.0-or-later
-*/
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Hanna Chetouane <h.chetouane@unistra.fr>
+ *
+ * SPDX-FileCopyrightText: 2026-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
 /**
    \file sb9_common.hpp
@@ -591,7 +591,7 @@ public:
                 << "SB9 shell operators require a vector-valued displacement basis";
             CHECK( M_fe->nComponents == 3 )
                 << "SB9 shell operators require a 3-component displacement basis";
-            CHECK( M_fe->nLocalDof == 8 )
+            CHECK( M_fe->localDofCount( true ) == 8 )
                 << "SB9 shell operators currently support Q1 eight-node hexahedra only";
         }
 
@@ -607,7 +607,7 @@ public:
         /// Build the coefficient matrix for all vector components and nodes.
         void computeCoefficients()
         {
-            uint16_type const nScalarLocalDof = M_fe->nLocalDof;
+            uint16_type const nScalarLocalDof = M_fe->localDofCount( true );
             uint16_type const nElementDof = M_fe->nComponents * nScalarLocalDof;
             uint16_type const nComponents = M_fe->nComponents;
             kernel_cache_type const cache( this->M_data );
@@ -961,7 +961,7 @@ public:
                 << "SB9 stabilization operators require a vector-valued displacement basis";
             CHECK( M_fe->nComponents == 3 )
                 << "SB9 stabilization operators require a 3-component displacement basis";
-            CHECK( M_fe->nLocalDof == 8 )
+            CHECK( M_fe->localDofCount( true ) == 8 )
                 << "SB9 stabilization operators currently support Q1 eight-node hexahedra only";
         }
 
@@ -977,7 +977,7 @@ public:
         /// Build the stabilization coefficient matrix for all components/nodes.
         void computeCoefficients()
         {
-            uint16_type const nScalarLocalDof = M_fe->nLocalDof;
+            uint16_type const nScalarLocalDof = M_fe->localDofCount( true );
             uint16_type const nElementDof = M_fe->nComponents * nScalarLocalDof;
             uint16_type const nComponents = M_fe->nComponents;
             kernel_cache_type const cache( this->M_data );

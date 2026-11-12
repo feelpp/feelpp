@@ -1,25 +1,10 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
-
- This file is part of the Feel++ library
-
- Author(s): Guillaume Dollé <gdolle@unistra.fr>
- Date: 26 Mar 2015
-
- Copyright (C) 2015 Feel++ Consortium
-
- This library is free software; you can redistribute it and/or
- modify it under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation; either
- version 2.1 of the License, or (at your option) any later version.
-
- This library is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
-
- You should have received a copy of the GNU Lesser General Public
- License along with this library; if not, write to the Free Software
- Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2015-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
 #define BOOST_TEST_MODULE test_on_dofs
@@ -255,14 +240,19 @@ void runTestDeferredEliminationAllOrders()
 }
 
 template<int Dim, int PolyOrder=1>
-void runTestPointLinearForm()
+void runTestPointLinearForm( int runtimeOrder = PolyOrder )
 {
     using mesh_type = Mesh< Simplex<Dim> >;
     auto mesh = loadMesh( _mesh=new mesh_type );
     size_type np = nelements( markedpoints( mesh,"P"), true );
     BOOST_CHECK( np > 0 );
 
-    auto Xh = Pch<PolyOrder>( mesh );
+    auto Xh = [&]() {
+        if constexpr ( PolyOrder == Dynamic )
+            return Pch<Dynamic>( mesh, RuntimeOrder::checked( runtimeOrder ) );
+        else
+            return Pch<PolyOrder>( mesh );
+    }();
     auto v = Xh->element();
     auto rhs = backend()->newVector( Xh );
     auto l = form1( _test=Xh, _vector=rhs, _init=true );
@@ -270,7 +260,12 @@ void runTestPointLinearForm()
     rhs->close();
     BOOST_CHECK_SMALL( rhs->sum() - 7.*np, 1e-10 );
 
-    auto Vh = Pchv<PolyOrder>( mesh );
+    auto Vh = [&]() {
+        if constexpr ( PolyOrder == Dynamic )
+            return Pchv<Dynamic>( mesh, RuntimeOrder::checked( runtimeOrder ) );
+        else
+            return Pchv<PolyOrder>( mesh );
+    }();
     auto u = Vh->element();
     auto rhsVectorial = backend()->newVector( Vh );
     auto lv = form1( _test=Vh, _vector=rhsVectorial, _init=true );
@@ -393,7 +388,7 @@ void runTestPointMomentLinearForm()
 }
 
 
-template<int Dim, int PolyOrder=1,template<class Convex, uint16_type Order, typename T> class PointSetT = PointSetFekete>
+template<int Dim, int PolyOrder=1,template<class Convex, int Order, typename T> class PointSetT = PointSetFekete>
 void runTestAssignMeshRelated()
 {
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<Dim,1>>);
@@ -458,6 +453,11 @@ BOOST_AUTO_TEST_CASE( assign_3d_assign )
 BOOST_AUTO_TEST_CASE( point_linear_form_3d )
 {
     runTestPointLinearForm<3>();
+}
+BOOST_AUTO_TEST_CASE( point_linear_form_dynamic_3d )
+{
+    runTestPointLinearForm<3,Dynamic>( 1 );
+    runTestPointLinearForm<3,Dynamic>( 2 );
 }
 BOOST_AUTO_TEST_CASE( point_block_linear_form_3d )
 {

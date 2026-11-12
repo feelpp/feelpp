@@ -33,6 +33,10 @@
 #include <feel/feelmesh/concatenate.hpp>
 #include <feel/feelfilters/unitcube.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
+#include <feel/feelvf/form.hpp>
+#include <feel/feelvf/norml2.hpp>
+#include <feel/feelvf/on.hpp>
+#include <feel/feelvf/vf_dsl.hpp>
 
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
@@ -86,7 +90,7 @@ BOOST_AUTO_TEST_CASE( test_2d )
     auto a = form2( _trial=VhPS, _test=VhPS);
     a = integrate(_range=therange,
                   _expr=gradt(u)*trans(grad(v)) );
-    a+=on(_range=myboundaryfaces, _rhs=l, _element=u, _expr=idv(g) );
+    a+=Feel::vf::on(_range=myboundaryfaces, _rhs=l, _element=u, _expr=idv(g) );
     a.solve(_rhs=l,_solution=u);
 
     // test a laplacian solve (weak dirichlet)
@@ -252,7 +256,7 @@ BOOST_AUTO_TEST_CASE( test_extended_2d )
                    -average( grad( v ) )*jumpt( idt( u ) )
                    + 50* ( trans( jumpt( idt( u ) ) )*jump( id( v ) ) )/hFace() );
     auto myboundaryfaces = boundaryfaces( support( Vh ) );
-    a+=on(_range=myboundaryfaces, _rhs=l, _element=u, _expr=cst(0.) );
+    a+=Feel::vf::on(_range=myboundaryfaces, _rhs=l, _element=u, _expr=cst(0.) );
     a.solve(_rhs=l,_solution=u,_rebuild=true);
 }
 BOOST_AUTO_TEST_CASE( test_integrate_boundaryfaces )

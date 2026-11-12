@@ -1,0 +1,66 @@
+name: Docker Bake Runtime
+description: Login to GHCR, prepare docker repo, and run buildx bake with branch-safe tagging
+
+inputs:
+  bake-target:
+    description: buildx bake target name
+    required: true
+  matrix-target:
+    description: Matrix target value (e.g. ubuntu:24.04)
+    required: true
+  raw-branch:
+    description: Raw git branch name used for Dockerfile BRANCH build arg
+    required: true
+  cr-login:
+    description: GHCR login username
+    required: true
+  cr-pat:
+    description: GHCR login token/password
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Login to GHCR
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ inputs.cr-login }}
+        password: ${{ inputs.cr-pat }}
+
+    - name: Clone or update docker repo
+      shell: bash
+      run: |
+        if [ -d docker ]; then
+          cd docker && git pull --ff-only
+        else
+          git clone --depth=1 https://github.com/feelpp/docker.git
+        fi
+
+    - name: Set DIST from TARGET
+      id: dist
+      shell: bash
+      run: |
+        DIST=$(echo "${{ inputs.matrix-target }}" | tr ':' '-')
+        echo "dist=${DIST}" >> "$GITHUB_OUTPUT"
+
+    - name: Set Docker-safe BRANCH tag
+      id: branch
+      shell: bash
+      run: |
+        RAW_BRANCH="${{ inputs.raw-branch }}"
+        SAFE_BRANCH=$(echo "$RAW_BRANCH" | tr '[:upper:]' '[:lower:]' | sed -E 's#[^a-z0-9._-]+#-#g; s#^-+##; s#-+$##; s#-+#-#g')
+        if [ -z "$SAFE_BRANCH" ]; then SAFE_BRANCH="unknown-branch"; fi
+        echo "raw_branch=${RAW_BRANCH}" >> "$GITHUB_OUTPUT"
+        echo "branch=${SAFE_BRANCH}" >> "$GITHUB_OUTPUT"
+
+    - name: Build and push runtime image
+      working-directory: docker
+      shell: bash
+      run: |
+        docker buildx bake "${{ inputs.bake-target }}" --push \
+          --set "*.args.BRANCH=${RAW_BRANCH}"
+      env:
+        DIST: ${{ steps.dist.outputs.dist }}
+        BRANCH: ${{ steps.branch.outputs.branch }}
+        RAW_BRANCH: ${{ steps.branch.outputs.raw_branch }}

@@ -43,4 +43,13 @@ void operators1( py::module& m )
                            defOperator<Pchv_type<Mesh<Simplex<_dim, _geo>>, _order>>( m );
                            defOperator<Pdhv_type<Mesh<Simplex<_dim, _geo>>, _order>>( m );
                        });
+    hana::for_each( geot, [&m]( auto const& g )
+                    {
+                        constexpr int _dim = 1;
+                        constexpr int _geo = std::decay_t<decltype(g)>::value;
+                        defOperator<Pch_type<Mesh<Simplex<_dim, _geo>>, Dynamic>>( m );
+                        defOperator<Pdh_type<Mesh<Simplex<_dim, _geo>>, Dynamic>>( m );
+                        defOperator<Pchv_type<Mesh<Simplex<_dim, _geo>>, Dynamic>>( m );
+                        defOperator<Pdhv_type<Mesh<Simplex<_dim, _geo>>, Dynamic>>( m );
+                    } );
 }

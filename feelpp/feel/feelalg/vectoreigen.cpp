@@ -1,26 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2012 Université Joseph Fourier (Grenoble I)
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2012-06-20
-
-  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file vectoreigen.cpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -39,10 +24,6 @@
 
 #include <feel/feelalg/vectoreigen.hpp>
 
-#if defined( FEELPP_HAS_TBB )
-#include <parallel_for.h>
-#include <blocked_range.h>
-#endif // FEELPP_HAS_TBB
 
 namespace Feel
 {
@@ -469,43 +450,16 @@ VectorEigen<T>::checkInvariant() const
                        this->localSize(), this->size());
 }
 
-namespace detail
-{
-#if defined(FEELPP_HAS_TBB)
-template<typename VectorType>
-struct Sqrt
-{
-    VectorType M_in;
-    VectorType& M_out;
-    Sqrt( VectorType const& _in, VectorType& _out )
-        :
-        M_in( _in ), M_out( _out )
-    { }
-    void operator() ( const tbb::blocked_range<size_t>& r ) const
-    {
-        for ( size_t i = r.begin(); i != r.end(); ++i )
-        {
-            M_out[i] = math::sqrt( M_in[i] );
-        }
-    }
-};
-#endif // FEELPP_HAS_TBB
-} //detail
 template <typename T>
 typename VectorEigen<T>::this_type
 VectorEigen<T>::sqrt() const
 {
     this_type _tmp( this->mapPtr() );
 
-#if defined( FEELPP_HAS_TBB )
-    tbb::parallel_for( tbb::blocked_range<size_t>( 0, this->localSize() ),
-                       detail::Sqrt<this_type>( *this, _tmp ) );
-#else
 
     for ( int i = 0; i < ( int )this->localSize(); ++i )
         _tmp[i] = math::sqrt( this->operator[]( i ) );
 
-#endif // FEELPP_HAS_TBB
 
     return _tmp;
 }

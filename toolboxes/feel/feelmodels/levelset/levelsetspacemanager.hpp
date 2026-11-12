@@ -92,13 +92,13 @@ public:
     //--------------------------------------------------------------------//
     // PN (iso) spaces
     typedef BasisPnType basis_scalar_PN_type;
-    typedef FunctionSpace< mesh_type, bases<basis_scalar_PN_type>, Periodicity<periodicity_type> > space_scalar_PN_type;
+    typedef FunctionSpace< mesh_type, bases<basis_scalar_PN_type> > space_scalar_PN_type;
     typedef std::shared_ptr<space_scalar_PN_type> space_scalar_PN_ptrtype;
     typedef typename space_scalar_PN_type::element_type element_scalar_PN_type;
     typedef std::shared_ptr<element_scalar_PN_type> element_scalar_PN_ptrtype;
 
     typedef typename detail::ChangeBasisPolySet<Vectorial, basis_scalar_PN_type>::type basis_vectorial_PN_type;
-    typedef FunctionSpace<mesh_type, bases<basis_vectorial_PN_type>, Periodicity<periodicity_type> > space_vectorial_PN_type;
+    typedef FunctionSpace<mesh_type, bases<basis_vectorial_PN_type> > space_vectorial_PN_type;
     typedef std::shared_ptr<space_vectorial_PN_type> space_vectorial_PN_ptrtype;
     typedef typename space_vectorial_PN_type::element_type element_vectorial_PN_type;
     typedef std::shared_ptr<element_vectorial_PN_type> element_vectorial_PN_ptrtype;
@@ -172,7 +172,7 @@ public:
     //--------------------------------------------------------------------//
     // Space markers P0
     typedef Lagrange<0, Scalar, Discontinuous> basis_markers_type;
-    typedef FunctionSpace<mesh_type, bases<basis_markers_type>, value_type, Periodicity<NoPeriodicity> > space_markers_type;
+    typedef FunctionSpace<mesh_type, bases<basis_markers_type>, value_type> space_markers_type;
     typedef std::shared_ptr<space_markers_type> space_markers_ptrtype;
     typedef typename space_markers_type::element_type element_markers_type;
     typedef std::shared_ptr<element_markers_type> element_markers_ptrtype;
@@ -181,7 +181,7 @@ public:
     // Tensor2 symmetric function space
     //typedef Lagrange<Order, Tensor2Symm> basis_tensor2symm_type;
     typedef typename detail::ChangeBasisPolySet<Tensor2Symm, basis_scalar_type>::type basis_tensor2symm_type;
-    typedef FunctionSpace<mesh_type, bases<basis_tensor2symm_type>, Periodicity<periodicity_type> > space_tensor2symm_type;
+    typedef FunctionSpace<mesh_type, bases<basis_tensor2symm_type> > space_tensor2symm_type;
     typedef std::shared_ptr<space_tensor2symm_type> space_tensor2symm_ptrtype;
     typedef typename space_tensor2symm_type::element_type element_tensor2symm_type;
     typedef std::shared_ptr<element_tensor2symm_type> element_tensor2symm_ptrtype;

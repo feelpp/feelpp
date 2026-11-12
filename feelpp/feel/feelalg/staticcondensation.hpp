@@ -1,26 +1,12 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
-
- This file is part of the Feel++ library
-
- Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- Date: 02 Aug 2016
-
- Copyright (C) 2016 Feel++ Consortium
-
- This library is free software; you can redistribute it and/or
- modify it under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation; either
- version 2.1 of the License, or (at your option) any later version.
-
- This library is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
-
- You should have received a copy of the GNU Lesser General Public
- License along with this library; if not, write to the Free Software
- Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2016-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-2.1-or-later
  */
+
 #ifndef FEELPP_STATICCONDENSATION_HPP
 #define FEELPP_STATICCONDENSATION_HPP 1
 
@@ -52,9 +38,9 @@ namespace Feel {
 //!
 enum class scstate
 {
-    none=0, //! no initialized 
-    updated,  
-    modified, 
+    none=0, //! no initialized
+    updated,
+    modified,
 };
 
 namespace detail {
@@ -116,14 +102,14 @@ public:
 
     bool hasSameTrace() const { return M_has_same_trace; }
     int spaceIndex() const { return M_space_index; }
-    
+
     //! @return list of faces of first type
     std::vector<size_type> const& faces1() const { return M_f1; }
     //! @return list of faces of second type
     std::vector<size_type> const& faces2() const { return M_f2; }
-    
+
 private:
-    
+
     bool M_has_same_trace;
     int M_space_index;
     std::vector<size_type> M_f1;
@@ -150,7 +136,7 @@ public:
     template<typename E, typename M_ptrtype, typename V_ptrtype>
         requires ProductElementNSpaces<E,3>
     void condense( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, M_ptrtype& S, V_ptrtype& V );
-    
+
     template<typename E, typename M_ptrtype, typename V_ptrtype>
         requires ProductElementAtLeastNSpaces<E,4>
     void condense( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e, M_ptrtype& S, V_ptrtype& V );
@@ -166,7 +152,7 @@ public:
     template<typename E>
         requires ProductElementNSpaces<E,1>
     void localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e );
-    
+
     template<typename E>
         requires Sb9CondensableProductElement<E>
     void localSolve( std::shared_ptr<StaticCondensation<T>> const& rhs, E& e );
@@ -436,7 +422,7 @@ public:
         }
     //!
     //! zero out the set of local matrices
-    //! @note the allocated memory is preserved    
+    //! @note the allocated memory is preserved
     //!
     void zeroMatrix()
         {
@@ -448,11 +434,11 @@ public:
                                    e.second.setZero();
                                }
                            } );
-                           
+
         }
     //!
     //! zero out the block matrix @arg n1,n2
-    //! @note the allocated memory is preserved    
+    //! @note the allocated memory is preserved
     //!
     void zero( int n1, int n2 )
         {
@@ -463,7 +449,7 @@ public:
         }
     //!
     //! zero out the set of local vectors
-    //! @note the allocated memory is preserved    
+    //! @note the allocated memory is preserved
     //!
     void zeroVector()
         {
@@ -546,25 +532,57 @@ public:
             }
     };
     using block_local_vectors_t = Feel::detail::LocalVector<local_vector_t>;
+    using block_local_vector_rows_t = std::unordered_map<size_type,local_index_t>;
     using block_local_matrices_t = Feel::detail::LocalMatrix<block_element_t,local_matrix_t>;
+    using block_local_matrix_indices_t = std::unordered_map<block_element_t,local_index_t,boost::hash<block_element_t>>;
+
+    block_local_vectors_t const& localVectors( int row ) const
+        {
+            static block_local_vectors_t const empty;
+            auto const it = M_local_vectors.find( row );
+            return it == M_local_vectors.end() ? empty : it->second;
+        }
+    block_local_vector_rows_t const& localVectorRows( int row ) const
+        {
+            static block_local_vector_rows_t const empty;
+            auto const it = M_local_vrows.find( row );
+            return it == M_local_vrows.end() ? empty : it->second;
+        }
+    block_local_matrices_t const& localMatrices( int row, int col ) const
+        {
+            static block_local_matrices_t const empty;
+            auto const it = M_local_matrices.find( std::make_pair( row, col ) );
+            return it == M_local_matrices.end() ? empty : it->second;
+        }
+    block_local_matrix_indices_t const& localMatrixRows( int row, int col ) const
+        {
+            static block_local_matrix_indices_t const empty;
+            auto const it = M_local_rows.find( std::make_pair( row, col ) );
+            return it == M_local_rows.end() ? empty : it->second;
+        }
+    block_local_matrix_indices_t const& localMatrixCols( int row, int col ) const
+        {
+            static block_local_matrix_indices_t const empty;
+            auto const it = M_local_cols.find( std::make_pair( row, col ) );
+            return it == M_local_cols.end() ? empty : it->second;
+        }
 private:
     /**
      * unassembled view of the matrix
      */
 
     std::unordered_map<int,block_local_vectors_t> M_local_vectors;
-    
-    std::unordered_map<int,std::unordered_map<size_type,local_index_t>> M_local_vrows;
 
-    
+    std::unordered_map<int,block_local_vector_rows_t> M_local_vrows;
+
+
     std::unordered_map<block_index_t,block_local_matrices_t,boost::hash<block_index_t>> M_local_matrices;
-    
-    std::unordered_map<block_index_t,std::unordered_map<block_element_t,local_index_t,boost::hash<block_element_t>>,boost::hash<block_index_t>> M_local_rows;
 
-    using block_local_cols_t = std::unordered_map<block_element_t,local_index_t,boost::hash<block_element_t>>;
-    std::unordered_map<block_index_t,block_local_cols_t,boost::hash<block_index_t>> M_local_cols;
+    std::unordered_map<block_index_t,block_local_matrix_indices_t,boost::hash<block_index_t>> M_local_rows;
 
-    
+    std::unordered_map<block_index_t,block_local_matrix_indices_t,boost::hash<block_index_t>> M_local_cols;
+
+
     std::unordered_map<int,local_matrix_t> M_AinvB;
     std::unordered_map<int,local_vector_t> M_AinvF;
     std::unordered_map<int,local_matrix_t> M_AK;
@@ -572,8 +590,8 @@ private:
     std::unordered_map<int,local_matrix_t> M_CK;
     std::unordered_map<int,local_vector_t> M_FK;
     std::unordered_map<int,local_vector_t> M_F3;
-    
-    
+
+
     using dK_iterator_type = std::unordered_map<int,Feel::detail::ElementFaces<>>::iterator;
     std::unordered_map<int,Feel::detail::ElementFaces<>> M_dK;
     block_index_t M_block_rowcol;
@@ -793,9 +811,9 @@ struct Condenser
     using ainvb_t = typename sc_t::ainvb_t;
     using ainvb_const_iterator_t = typename sc_t::ainvb_const_iterator_t;
     using ainvf_t = typename sc_t::ainvf_t;
-    
+
     using dk_t = typename sc_t::dk_t;
-    
+
     template<typename LM_t, typename LV_t,typename Data_t>
     Condenser( LM_t const& lm, LV_t const& lv, E& _e, dk_t& _dkset, ainvb_t& _ainvb, ainvf_t& _ainvf,  M_t& _m, V_t& _v, Data_t const& d )
         :
@@ -822,7 +840,7 @@ struct Condenser
             auto& e1 = e(0_c);
             auto& e2 = e(1_c);
             auto& e3 = e(2_c);
-            
+
             N00 = e1.dof()->nLocalDof();
             N0 = e1.dof()->nRealLocalDof();
             N1 = e2.dof()->nLocalDof();
@@ -879,13 +897,13 @@ struct Condenser
                     //std::cout << "AK-AK^T=\n" << (AK-AK.transpose()) << std::endl;
                     // dK contains the set of faces ids in the submesh associated to the boundary of K
                     std::pair<typename dk_t::iterator,bool> dK;
-                    
+
                     {
                         std::lock_guard<std::mutex> guard(this->mutex_dk);
                         dK = dkset.emplace(key.first,
                                            Feel::detail::ElementFaces<>(e3.mesh()->meshToSubMesh( e1.mesh()->element(key.first).facesId()).first) );
                     }
-        
+
                     int n = 0;
                     std::for_each( dK.first->second.faces1().begin(), dK.first->second.faces1().end(), [&]( auto dKi )
                                    {
@@ -951,7 +969,7 @@ struct Condenser
             this->operator()( beg, mid );
             handle.get();
         }
-    
+
 private:
     int N00, N, N0, N1, N2, N3;
     block_local_matrices_t const& A00K, A10K, A20K, A30K,
@@ -1129,7 +1147,7 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
             //std::cout << "AK-AK^T=\n" << (AK-AK.transpose()) << std::endl;
             // dK contains the set of faces ids in the submesh associated to the boundary of K
             auto dK = M_dK.emplace(key.first, Feel::detail::ElementFaces<>(e3.mesh()->meshToSubMesh( e1.mesh()->element(key.first).facesId()).first) );
-        
+
             int n = 0;
             std::for_each( dK.first->second.faces1().begin(), dK.first->second.faces1().end(), [&]( auto dKi )
                            {
@@ -1201,7 +1219,7 @@ template<typename T, typename IndexT>
 template<typename E, typename M_ptrtype, typename V_ptrtype>
     requires ProductElementAtLeastNSpaces<E,4>
 void
-StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> const& rhs, E &e, M_ptrtype& S, V_ptrtype& V ) 
+StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> const& rhs, E &e, M_ptrtype& S, V_ptrtype& V )
 {
     using Feel::cout;
     auto& e1 = e(0_c);
@@ -1234,7 +1252,7 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
     auto const& F1K = rhs->M_local_vectors[1];
     //LOG(INFO) << "F1K.size=" << F1K.size();
     auto const& F2K = rhs->M_local_vectors[2];
-    
+
     //LOG(INFO) << "F2K.size=" << F2K.size();
     auto F4K = [&rhs]( int i ) { return rhs->M_local_vectors[i]; };
 
@@ -1286,7 +1304,7 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
         AK = local_matrix_t::Zero( N, N );
         BK = local_matrix_t::Zero( N, N3 );
         CK = local_matrix_t::Zero( N3, N );
-        
+
         tic();
         extractBlock( A00K.at(key), A01K.at(key), A10K.at(key), AK, e1, e2 );
         AK.bottomRightCorner(N1, N1 ) = A11K.at(key);
@@ -1320,13 +1338,13 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
                         dK1 = e(3_c,i).mesh()->meshToSubMesh( e1.mesh()->element(key.first).facesId());
                         if ( !dK1.first.empty() )
                         {
-                            
+
                             index_not_ibc = i;
                             has_ibc_coupling = true;
                             //Feel::cout << "index_not_ibc: " << index_not_ibc << std::endl;
                         }
                     }
-                    
+
                 }
                 DCHECK( dK_it != M_dK.end() ) << "could not find missing faces";
             }
@@ -1346,7 +1364,7 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
             //std::cout << "AK=\n" << AK << std::endl;
             //std::cout << "AK-AK^T=\n" << (AK-AK.transpose()) << std::endl;
             // dK contains the set of faces ids in the submesh associated to the boundary of K
-        
+
             int n = 0;
             std::for_each( dK.faces1().begin(), dK.faces1().end(), [&]( auto dKi )
                            {
@@ -1405,7 +1423,7 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
             toc("sc.condense.localassembly", Environment::logVerbosityLevel()>1);
             tic();
             auto dofs = e3.dofs(dK.faces1(),S.matrixPtr()->mapRow(),0);
-            
+
             S(0_c,0_c).addMatrix( dofs.data(), dofs.size(), dofs.data(), dofs.size(), DK.data(), invalid_v<size_type>, invalid_v<size_type> );
             V(0_c).addVector( dofs.data(), dofs.size(), DKF.data(), invalid_v<size_type>, invalid_v<size_type> );
             toc("sc.condense.globalassembly", Environment::logVerbosityLevel()>1);
@@ -1424,7 +1442,7 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
             F2 = local_vector_t::Zero(N4);
             F4 = local_vector_t::Zero(N43);
             BK3 = local_matrix_t::Zero(N, N4);
-            
+
             auto const& A30K = Adyn( 3+dK.spaceIndex(), 0 );
             auto const& A31K = Adyn( 3+dK.spaceIndex(), 1 );
             auto const& A03K = Adyn( 0, 3+dK.spaceIndex() );
@@ -1550,7 +1568,7 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
             Eigen::VectorXd upK( N0 + N1 );
             upK.segment(0,N0)=local_vector_t::Zero(N0);
             upK.segment(N0,N1)=local_vector_t::Constant(N1,1.);
-            
+
             std::cout << "AK*U=" << AK*upK << std::endl;
             std::cout << "BK*K=" << BK3*pK << std::endl;
             std::cout << "FK=" << FK << std::endl;
@@ -1573,7 +1591,7 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
             auto p  = Dldlt.solve( DKF3);
             std::cout << "pdK=" << p  << std::endl;
             std::cout << "uK = " << -AinvB*p + AinvF << std::endl;
-#endif            
+#endif
             M_AinvB.emplace( K, AinvB );
             M_AinvF.emplace( K, AinvF );
             toc("sc.condense.localassembly", Environment::logVerbosityLevel()>1);
@@ -1588,7 +1606,7 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
             local_matrix_t DK11( DK3.block( N41, N41, N42, N42 ) );
             local_vector_t DKF1( DKF3.head( N41 ) );
             local_vector_t DKF2( DKF3.segment( N41, N42 ) );
-            
+
             S(0_c,0_c).addMatrix( dofs1.data(), dofs1.size(), dofs1.data(), dofs1.size(), DK00.data(), invalid_v<size_type>, invalid_v<size_type> );
             //S.matrixPtr()->printMatlab("S1.m");
             S(0_c,1_c,0,dK.spaceIndex()).addMatrix( dofs1.data(), dofs1.size(), dofs2.data(), dofs2.size(), DK01.data(), invalid_v<size_type>, invalid_v<size_type> );
@@ -1596,7 +1614,7 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
             S(1_c,0_c,dK.spaceIndex(),0).addMatrix( dofs2.data(), dofs2.size(), dofs1.data(), dofs1.size(), DK10.data(), invalid_v<size_type>, invalid_v<size_type> );
             //S.matrixPtr()->printMatlab("S3.m");
             S(1_c,1_c,dK.spaceIndex(),dK.spaceIndex()).addMatrix( dofs2.data(), dofs2.size(), dofs2.data(), dofs2.size(), DK11.data(), invalid_v<size_type>, invalid_v<size_type> );
-            
+
             //S.matrixPtr()->printMatlab("S4.m");
             V(0_c).addVector( dofs1.data(), dofs1.size(), DKF1.data(), invalid_v<size_type>, invalid_v<size_type> );
             //V.vectorPtr()->printMatlab("g1.m");
@@ -1609,11 +1627,11 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
                 S(1_c,1_c,dK.spaceIndex(),index_not_ibc).addMatrix( dofs2.data(), dofs2.size(), dofs3.data(), dofs3.size(), A34.data(), invalid_v<size_type>, invalid_v<size_type> );
                 S(1_c,1_c,index_not_ibc,dK.spaceIndex()).addMatrix( dofs3.data(), dofs3.size(), dofs2.data(), dofs2.size(), A43.data(), invalid_v<size_type>, invalid_v<size_type> );
                 S(1_c,1_c,index_not_ibc,index_not_ibc).addMatrix( dofs3.data(), dofs3.size(), dofs3.data(), dofs3.size(), A44.data(), invalid_v<size_type>, invalid_v<size_type> );
-            
+
                 V(1_c,index_not_ibc).addVector( dofs3.data(), dofs3.size(), F4.data(), invalid_v<size_type>, invalid_v<size_type> );
 
             }
-            
+
             //condense2( dK, rhs, e, S, V );
            //V.vectorPtr()->printMatlab("g2.m");
             toc("sc.condense.globalassembly", Environment::logVerbosityLevel()>1);
@@ -1627,7 +1645,7 @@ template<typename T, typename IndexT>
 template<typename DK, typename E, typename M_ptrtype, typename V_ptrtype>
     requires ProductElementNSpaces<E,4>
 void
-StaticCondensation<T,IndexT>::condense2( DK const& dK, std::shared_ptr<StaticCondensation<T>> const& rhs, E &e, M_ptrtype& S, V_ptrtype& V ) 
+StaticCondensation<T,IndexT>::condense2( DK const& dK, std::shared_ptr<StaticCondensation<T>> const& rhs, E &e, M_ptrtype& S, V_ptrtype& V )
 {
 	//Feel::cout << __LINE__ << std::endl;
 }
@@ -1636,19 +1654,19 @@ template<typename T, typename IndexT>
 template<typename DK, typename E, typename M_ptrtype, typename V_ptrtype>
     requires ProductElementNSpaces<E,5>
 void
-StaticCondensation<T,IndexT>::condense2( DK const& dK, std::shared_ptr<StaticCondensation<T>> const& rhs, E &e, M_ptrtype& S, V_ptrtype& V ) 
+StaticCondensation<T,IndexT>::condense2( DK const& dK, std::shared_ptr<StaticCondensation<T>> const& rhs, E &e, M_ptrtype& S, V_ptrtype& V )
 {
     auto const& A34K = M_local_matrices[std::make_pair(3,4)];
     auto const& A43K = M_local_matrices[std::make_pair(4,3)];
     auto const& A44K = M_local_matrices[std::make_pair(4,4)];
-    
+
     auto const& V4K = rhs->M_local_vectors[4];
 #if 0
     A33 = local_matrix_t::Zero(N5,N5);
     A32 = local_matrix_t::Zero(N5,N4);
     A23 = local_matrix_t::Zero(N4,N5);
     F3 = local_vector_t::Zero(N5);
-    
+
     int n2 = 0;
     std::for_each( dK.faces2().begin(), dK.faces2().end(), [&]( auto dKi )
                    {
@@ -1662,7 +1680,7 @@ StaticCondensation<T,IndexT>::condense2( DK const& dK, std::shared_ptr<StaticCon
                        //std::cout << "f CK=" << CK << std::endl;
                        if ( A33K.count(key4) )
                            A22.block(n*N2+n2*N42, n*N2, N42, N42 ) = A33K.at(key4);
-                       
+
                        if ( F3K.count(dKi) )
                        {
                            F2.segment(n*N2+n2*N42,N42)=F3K.at(dKi);
@@ -1686,7 +1704,7 @@ StaticCondensation<T,IndexT>::condense2( DK const& dK, std::shared_ptr<StaticCon
                        Feel::cout << "A43(" << key.first << "):" << A43K.at(key) << "\n";
                        Feel::cout << "A44(" << key.first << "):" << A44K.at(key) << "\n";
                        Feel::cout << "V4(" << key.first << "):" << V4K.at(key) << "\n";
-                       
+
                        S(1_c,2_c,dK.spaceIndex(),dK.spaceIndex()).addMatrix( dofs1.data(), dofs1.size(), dofs2.data(), dofs2.size(), A34K.at(key).data(), invalid_v<size_type>, invalid_v<size_type> );
                        S(2_c,2_c,dK.spaceIndex(),dK.spaceIndex()).addMatrix( dofs2.data(), dofs2.size(), dofs2.data(), dofs2.size(), A44K.at(key).data(), invalid_v<size_type>, invalid_v<size_type> );
                        S(2_c,1_c,dK.spaceIndex(),dK.spaceIndex()).addMatrix( dofs2.data(), dofs2.size(), dofs1.data(), dofs1.size(), A43K.at(key).data(), invalid_v<size_type>, invalid_v<size_type> );
@@ -1705,7 +1723,7 @@ struct LocalSolver
     using ainvb_t = typename sc_t::ainvb_t;
     using ainvb_const_iterator_t = typename sc_t::ainvb_const_iterator_t;
     using ainvf_t = typename sc_t::ainvf_t;
-    
+
     using dk_t = typename sc_t::dk_t;
 
     template<typename Data_t>
@@ -1728,17 +1746,17 @@ struct LocalSolver
             auto& e1 = e(1_c);
             // trace
             auto& e2 = e(2_c);
-            
+
             using trace_interpolant_t  = typename std::decay_t<decltype(e2)>::local_interpolant_type;
             Eigen::VectorXd upK( N0+N1 );
             trace_interpolant_t pdK( N2 );
 
-            // get the amount of work within task 
+            // get the amount of work within task
             int len = std::distance( beg, end );
             // do the local solve if amount of work not too much
             if ( len < grain )
             {
-                for( auto it= beg ;  it != end; ++it ) 
+                for( auto it= beg ;  it != end; ++it )
                 {
                     auto K = it->first;
                     auto const& A = it->second;
@@ -1787,8 +1805,8 @@ StaticCondensation<T,IndexT>::localSolve( std::shared_ptr<StaticCondensation<T>>
     auto const& A00K = M_local_matrices[std::make_pair(0,0)];
     auto const& F0K = rhs->M_local_vectors[0];
     int N = e1.dof()->nLocalDof();
-#if 0    
-    if ( M_localsolve.parallel ) 
+#if 0
+    if ( M_localsolve.parallel )
     {
         tic();
         LocalSolver<E,T> ls( N0, N1, N3, e, M_AinvB, M_AinvF, M_dK, M_localsolve );
@@ -1798,17 +1816,17 @@ StaticCondensation<T,IndexT>::localSolve( std::shared_ptr<StaticCondensation<T>>
         toc("sc.localsolve.parallel",Environment::logVerbosityLevel()>0);
     }
     else
-#endif        
+#endif
     {
         tic();
         Eigen::VectorXd pK( N ), zK{Eigen::VectorXd::Zero(N)};
 
-        
+
         for( auto const& elt : A00K )
         {
             auto key = elt.first;
             size_type K = key.first;
-            
+
             auto const& A = elt.second;
             if ( F0K.count(K) )
             {
@@ -1875,14 +1893,14 @@ StaticCondensation<T,IndexT>::localSolve( std::shared_ptr<StaticCondensation<T>>
     auto& e1 = e(0_c);
     auto& e2 = e(1_c);
     auto& e3 = e(2_c);
-    
+
     int N0 = e1.dof()->nRealLocalDof();
     int N1 = e2.dof()->nLocalDof();
     int N2 = e3.dof()->nLocalDof();
     int N3 = N2*e1.mesh()->numLocalTopologicalFaces();
     LOG(INFO) << "[staticcondensation::localSolve]  N(flux)=" << N0 << " N(potential)=" << N1;
-    
-    if ( M_localsolve.parallel ) 
+
+    if ( M_localsolve.parallel )
     {
         tic();
         LocalSolver<E,T> ls( N0, N1, N3, e, M_AinvB, M_AinvF, M_dK, M_localsolve );

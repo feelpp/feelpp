@@ -58,7 +58,7 @@ loadGMSHMeshImpl( std::shared_ptr<MeshType> mesh, std::string const& filename, s
 
         if ( refine > 0 )
         {
-            Gmsh gmsh( _mesh_type::nDim,_mesh_type::nOrder, Environment::worldCommSeqPtr() );
+            Gmsh gmsh( _mesh_type::nDim, _mesh->order(), Environment::worldCommSeqPtr() );
             gmsh.setRefinementLevels( refine );
             gmsh.setNumberOfPartitions( 1/*partitions*/ );
             gmsh.setPartitioner( (GMSH_PARTITIONER)partitioner );
@@ -103,7 +103,11 @@ loadGMSHMeshImpl( std::shared_ptr<MeshType> mesh, std::string const& filename, s
         import.setRespectPartition( respect_partition );
         if ( rebuild_partitions && partitions > 1 )
         {
-            _mesh_ptrtype _meshSeq = std::make_shared<_mesh_type>( Environment::worldCommSeqPtr() );
+            _mesh_ptrtype _meshSeq;
+            if constexpr ( _mesh_type::is_order_dynamic )
+                _meshSeq = std::make_shared<_mesh_type>( RuntimeOrder{ _mesh->order() }, "", Environment::worldCommSeqPtr() );
+            else
+                _meshSeq = std::make_shared<_mesh_type>( Environment::worldCommSeqPtr() );
             tic();
             _meshSeq->accept( import );
             toc( "loadGMSHMesh.partition import", Environment::logVerbosityLevel() > 0 );
@@ -153,8 +157,18 @@ loadGMSHMeshImpl( std::shared_ptr<MeshType> mesh, std::string const& filename, s
         _mesh->loadHDF5( fnamePartitioned, update, scale );
     }
 #endif
-    if ( straighten && _mesh_type::nOrder > 1 )
-        return straightenMesh( _mesh, worldcomm->subWorldCommPtr() );
+    if ( straighten )
+    {
+        if constexpr ( _mesh_type::is_order_dynamic )
+        {
+            if ( _mesh->order() > 1 )
+                return straightenMesh( _mesh, worldcomm->subWorldCommPtr() );
+        }
+        else if constexpr ( _mesh_type::nOrder > 1 )
+        {
+            return straightenMesh( _mesh, worldcomm->subWorldCommPtr() );
+        }
+    }
 
     return _mesh;
 }

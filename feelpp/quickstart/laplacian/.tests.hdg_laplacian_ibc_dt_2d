@@ -1,0 +1,7 @@
+# SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+# SPDX-FileCopyrightText: 2026 University of Strasbourg
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
+# Preserve a stationary linear solution across two implicit time steps, including IBC and postprocessing.
+triangle-linear-p1-g1-condensed --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/triangle/triangle-ibc.cfg --checker.script=${CMAKE_CURRENT_SOURCE_DIR}/python/laplacian.py --k=1 --checker.solution=x --solution.p=x:x --solution.u={-1,0} --initial-condition=x:x --time-step=0.1 --time-final=0.2 --gmsh.hsize=0.5 --order=1 --geometry.order=1 --sc.condense=1 --directory=qs_hdg_laplacian_ibc_dt/runtime-triangle-linear-p1-g1-condensed
+triangle-linear-p2-g2-monolithic --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/triangle/triangle-ibc.cfg --checker.script=${CMAKE_CURRENT_SOURCE_DIR}/python/laplacian.py --k=1 --checker.solution=x --solution.p=x:x --solution.u={-1,0} --initial-condition=x:x --time-step=0.1 --time-final=0.2 --gmsh.hsize=0.5 --order=2 --geometry.order=2 --sc.condense=0 --directory=qs_hdg_laplacian_ibc_dt/runtime-triangle-linear-p2-g2-monolithic

@@ -1,26 +1,10 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Gilles Steiner <gilles.steiner@epfl.ch>
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Gilles Steiner <gilles.steiner@epfl.ch>
-       Date: 2005-11-10
-
-  Copyright (C) 2005,2006 EPFL
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    @file pointset.hpp
    @author Gilles Steiner
@@ -143,7 +127,8 @@ public:
 
     self_type& operator=( self_type const& p ) = default;
 
-    uint32_type nPoints() const
+    /** Number of coordinates currently stored by this point-set object. */
+    [[nodiscard]] uint32_type nPoints() const noexcept
     {
         return M_npoints;
     }

@@ -186,7 +186,14 @@ public:
      */
     void visit( pointset_type* pset ) override
     {
-        visit( pset, mpl::int_<nDim>() );
+        if constexpr ( nDim == 1 )
+            visit1D( pset );
+        else if constexpr ( nDim == 2 )
+            visit2D( pset );
+        else if constexpr ( nDim == 3 )
+            visit3D( pset );
+        else
+            static_assert( nDim >= 1 && nDim <= 3, "PointSetToMesh supports dimensions 1, 2, and 3 only." );
     }
 
 
@@ -198,9 +205,9 @@ protected:
 
 private:
 
-    void visit( pointset_type* pset, mpl::int_<1> );
-    void visit( pointset_type* pset, mpl::int_<2> );
-    void visit( pointset_type* pset, mpl::int_<3> );
+    void visit1D( pointset_type* pset );
+    void visit2D( pointset_type* pset );
+    void visit3D( pointset_type* pset );
 private:
 
     mesh_ptrtype M_mesh;
@@ -209,7 +216,7 @@ private:
 
 template<typename Convex, typename T>
 void
-PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<1> )
+PointSetToMesh<Convex, T>::visit1D( pointset_type* pset )
 {
     DVLOG(2) << "[PointSetToMesh::visit(<1>)] pointset to mesh\n";
     M_mesh = mesh_ptrtype( new mesh_type( Environment::worldComm().subWorldCommSeq() ) );
@@ -320,7 +327,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<1> )
 }
 template<typename Convex, typename T>
 void
-PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<2> )
+PointSetToMesh<Convex, T>::visit2D( pointset_type* pset )
 {
 #if defined(FEELPP_HAS_VTK)
     // reinitialize mesh
@@ -422,7 +429,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<2> )
 
 template<typename Convex, typename T>
 void
-PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<3> )
+PointSetToMesh<Convex, T>::visit3D( pointset_type* pset )
 {
 #if defined(FEELPP_HAS_VTK)
     // reinitialize mesh

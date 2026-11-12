@@ -42,8 +42,8 @@
 
 #include <feel/feelfilters/exporter.hpp>
 
-/** include  the header for the variational formulation language (vf) aka FEEL++ */
-#include <feel/feelvf/vf.hpp>
+/** include runtime VF entry point used by mesh adaptation assembly/projection paths */
+#include <feel/feelvf/vf_eval.hpp>
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feeldiscr/mesh.hpp>
@@ -259,12 +259,6 @@ namespace Feel
         std::vector<matrixN_type> M_directions;
 
     };
-
-    template<int Dim,
-             int Order,
-             int OrderGeo>
-    const bool
-    MeshAdaptation<Dim, Order, OrderGeo>::isP1;
 
     template<int Dim,
              int Order,

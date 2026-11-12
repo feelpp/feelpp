@@ -1,36 +1,27 @@
-// -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-//!
-//! This file is part of the Feel++ library
-//!
-//! This library is free software; you can redistribute it and/or
-//! modify it under the terms of the GNU Lesser General Public
-//! License as published by the Free Software Foundation; either
-//! version 2.1 of the License, or (at your option) any later version.
-//!
-//! This library is distributed in the hope that it will be useful,
-//! but WITHOUT ANY WARRANTY; without even the implied warranty of
-//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//! Lesser General Public License for more details.
-//!
-//! You should have received a copy of the GNU Lesser General Public
-//! License along with this library; if not, write to the Free Software
-//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-//!
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2017 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
 //! @file
 //! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 //! @date 05 Feb 2017
-//! @copyright 2017 Feel++ Consortium
-//!
+
 #ifndef FEELPP_MESH2D_HPP
 #define FEELPP_MESH2D_HPP 1
 
 #include <cstdlib>
 #include <fstream>
 #include <iomanip>
+#include <concepts>
+#include <type_traits>
 
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
-
 
 #include <boost/mpl/print.hpp>
 #include <feel/feelcore/boostmultiarray.hpp>
@@ -54,6 +45,7 @@
 #include <feel/feelmesh/faces.hpp>
 #include <feel/feelmesh/functors.hpp>
 #include <feel/feelmesh/points.hpp>
+#include <feel/feelpoly/order.hpp>
 
 namespace Feel
 {
@@ -78,19 +70,28 @@ class Mesh2D
       public MeshBase<IndexT>,
       public Elements<Shape,T>,
       public Points<Shape::nRealDim,T>,
-      public Faces<typename Shape::template shape<1, Shape::nOrder, Shape::nRealDim>,
+      public Faces<typename Shape::template shape<1, Shape::nOrder_v, Shape::nRealDim>,
                    typename Elements<Shape,T>::element_type>
 {
     // check at compilation time that the shape has indeed dimension 2
-    BOOST_STATIC_ASSERT( Shape::nDim == 2 );
+    static_assert( Shape::nDim == 2, "Mesh2D requires a 2D shape" );
 
   public:
     /** @name Typedefs
      */
     //@{
 
-    static inline const uint16_type nDim = Shape::nRealDim;
-    static inline const uint16_type nRealDim = Shape::nRealDim;
+    static constexpr uint16_type nDim = Shape::nRealDim;
+    static constexpr uint16_type nRealDim = Shape::nRealDim;
+
+    //! @brief True if Order is known at compile time
+    static constexpr bool is_order_static = Shape::is_order_static;
+    //! @brief True if Order is determined at runtime
+    static constexpr bool is_order_dynamic = Shape::is_order_dynamic;
+    //! @brief Template order parameter value (may be Dynamic = -1)
+    static constexpr int nOrder_v = Shape::nOrder_v;
+    //! @brief Static order (or 1 as placeholder for dynamic case)
+    static constexpr uint16_type nOrder = Shape::nOrder;
 
     typedef typename VisitableBase<>::return_type return_type;
 
@@ -111,7 +112,7 @@ class Mesh2D
     typedef typename super_points::points_type points_type;
     typedef typename super_points::point_type point_type;
 
-    typedef Faces<typename Shape::template shape<1, Shape::nOrder, Shape::nRealDim>,
+    typedef Faces<typename Shape::template shape<1, Shape::nOrder_v, Shape::nRealDim>,
                   typename super_elements::element_type>
         super_faces;
     typedef typename super_faces::face_iterator face_iterator;

@@ -1,26 +1,13 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Gilles Steiner <gilles.steiner@epfl.ch>
+ * SPDX-FileContributor: Goncalo Pena <goncalo.pena@epfl.ch>
+ *
+ * SPDX-FileCopyrightText: 2006-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-This file is part of the Feel library
-
-Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-Date: 2006-03-06
-
-Copyright (C) 2006 EPFL
-
-This library is free software; you can redistribute it and/or
-modify it under the terms of the GNU Lesser General Public
-License as published by the Free Software Foundation; either
-version 3.0 of the License, or (at your option) any later version.
-
-This library is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with this library; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file equispaced.hpp
    \author Gilles Steiner <gilles.steiner@epfl.ch>
@@ -37,6 +24,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include <feel/feelcore/visitor.hpp>
 #include <feel/feelcore/traits.hpp>
+#include <feel/feelpoly/order.hpp>
 
 #include <stdexcept>
 
@@ -54,13 +42,25 @@ namespace Feel
 {
 namespace ublas = boost::numeric::ublas;
 
-template<class Convex, uint16_type Order, typename T>
-class PointSetEquiSpaced :  public PointSet< Convex, T>
+/**
+ * @brief Equispaced point set on a convex.
+ *
+ * @tparam Convex The convex type (Simplex or Hypercube).
+ * @tparam Order Polynomial order. Use Dynamic (-1) for runtime order.
+ * @tparam T Value type for coordinates.
+ *
+ * Supports both static and dynamic order following the Eigen-style pattern:
+ * - Static order: PointSetEquiSpaced<Simplex<2,1,2>, 3, double>
+ * - Dynamic order: PointSetEquiSpaced<Simplex<2,1,2>, Dynamic, double>
+ */
+template<class Convex, int Order, typename T>
+class PointSetEquiSpaced :  public PointSet< Convex, T>, public OrderBase<Order>
 {
 
 public :
 
     typedef PointSet<Convex, T> super;
+    using order_base_type = OrderBase<Order>;
 
     typedef T value_type;
 
@@ -82,18 +82,33 @@ public :
 
     static inline const bool is_simplex = Convex::is_simplex;
     static inline const bool is_hypercube = Convex::is_hypercube;
+    using cardinality_type = std::conditional_t<
+        is_simplex,
+        ::Feel::detail::SimplexCardinality,
+        ::Feel::detail::HypercubeCardinality>;
 
-    typedef mpl::if_< mpl::bool_< is_simplex >,
-            Simplex<Dim, Order, /*nRealDim*/Dim> ,
-            Hypercube<Dim, Order, /*nRealDim*/Dim> > conv_order_type;
+    //! @name Static/Dynamic Order Support
+    //! @{
+    static constexpr int order_spec = order_base_type::order_spec;
+    static constexpr int static_order = order_spec;
+    static constexpr bool is_order_static = order_base_type::is_order_static;
+    static constexpr bool is_order_dynamic = order_base_type::is_order_dynamic;
+    //! @}
+
+    // For static order, use compile-time convex type; for dynamic, use order 1 as placeholder
+    static constexpr int order_for_convex = is_order_static ? order_spec : 1;
+    typedef typename std::conditional_t<is_simplex,
+            Simplex<Dim, order_for_convex, Dim>,
+            Hypercube<Dim, order_for_convex, Dim>> conv_order_type;
 
     typedef Reference<Convex, Dim, convexOrder, Dim/*nRealDim*/, value_type> RefElem;
 
-    static inline const uint32_type numPoints = conv_order_type::type::numPoints;
-    static inline const uint32_type nbPtsPerVertex = conv_order_type::type::nbPtsPerVertex;
-    static inline const uint32_type nbPtsPerEdge = conv_order_type::type::nbPtsPerEdge;
-    static inline const uint32_type nbPtsPerFace = conv_order_type::type::nbPtsPerFace;
-    static inline const uint32_type nbPtsPerVolume = conv_order_type::type::nbPtsPerVolume;
+    // Compile-time point counts (only valid for static order)
+    static inline const uint32_type numPoints = is_order_static ? conv_order_type::numPoints : 0;
+    static inline const uint32_type nbPtsPerVertex = is_order_static ? conv_order_type::nbPtsPerVertex : 0;
+    static inline const uint32_type nbPtsPerEdge = is_order_static ? conv_order_type::nbPtsPerEdge : 0;
+    static inline const uint32_type nbPtsPerFace = is_order_static ? conv_order_type::nbPtsPerFace : 0;
+    static inline const uint32_type nbPtsPerVolume = is_order_static ? conv_order_type::nbPtsPerVolume : 0;
 
     typedef typename Convex::edge_to_point_t edge_to_point_t;
     typedef typename Convex::face_to_point_t face_to_point_t;
@@ -104,55 +119,72 @@ public :
 
     RefElem RefConv;
 
+    using order_base_type::order;
+    using super::nPoints;
+
+    /**
+     * @brief Return the mathematical number of points attached to one vertex.
+     */
+    [[nodiscard]] constexpr uint32_type nPointsOnVertex() const noexcept
+    {
+        return cardinality_type::perVertex( Dim, this->order() );
+    }
+
+    /**
+     * @brief Return the mathematical number of points attached to one edge.
+     */
+    [[nodiscard]] constexpr uint32_type nPointsOnEdge() const noexcept
+    {
+        return cardinality_type::perEdge( Dim, this->order() );
+    }
+
+    /**
+     * @brief Return the mathematical number of points attached to one face.
+     */
+    [[nodiscard]] constexpr uint32_type nPointsOnFace() const noexcept
+    {
+        return cardinality_type::perFace( Dim, this->order() );
+    }
+
+    /**
+     * @brief Return the mathematical number of points attached to one volume.
+     */
+    [[nodiscard]] constexpr uint32_type nPointsOnVolume() const noexcept
+    {
+        return cardinality_type::perVolume( Dim, this->order() );
+    }
+
+    //! @}
+
+    /**
+     * @brief Constructor for static order (Order >= 0).
+     * @param interior If 1, only interior points are generated.
+     */
     PointSetEquiSpaced( int interior = 0 )
+        requires ( is_order_static )
         :
-        super( numPoints, Dim ),
+        super( 0, Dim ),
+        order_base_type(),
         M_eid()
     {
-        M_eid.resize( topological_dimension + 1 );
-        M_pt_to_entity.resize( numPoints );
+        initialize( interior );
+    }
 
-        nodes_type pts( Dim, numPoints );
-
-        if ( interior == 0 && Order > 0 )
-        {
-            // loop on each convex of topological dimension <= to the current convex
-            // where we build the polynomial set
-            for ( uint16_type d = 0, p = 0; d < topological_dimension+1; ++d )
-            {
-                // loop on each entity forming the convex of topological
-                // dimension d
-                for ( int e = RefConv.entityRange( d ).begin();
-                        e < RefConv.entityRange( d ).end();
-                        ++e )
-                {
-                    nodes_type Gt ( makePoints( d, e ) );
-
-                    if ( Gt.size2() )
-                    {
-                        ublas::subrange( pts, 0, Dim, p, p+Gt.size2() ) = Gt;
-
-                        for ( size_type j = 0; j < Gt.size2(); ++j )
-                        {
-                            addToEid( d, p+j );
-                            addToPtE( p+j, std::make_pair( d, e ) );
-                        }
-
-                        p+=Gt.size2();
-                    }
-                }
-            }
-
-            this->setPoints( pts );
-        }
-
-        else if ( interior == 1 && Order > 0 )
-            this->setPoints( makePoints( Dim, 0 ) );
-
-        else if ( Order == 0 )
-            this->setPoints( glas::average( RefConv.vertices() ) );
-
-        this->setName( "equispaced", Order );
+    /**
+     * @brief Constructor for dynamic order (Order == Dynamic).
+     * @param order The runtime order.
+     * @param interior If 1, only interior points are generated.
+     */
+    PointSetEquiSpaced( RuntimeOrder ro, int interior = 0 )
+        requires ( is_order_dynamic )
+        :
+        super( 0, Dim ),  // Will be resized in body
+        order_base_type(
+            ::Feel::detail::validatedNodalOrder<cardinality_type>(
+                Dim, ro ) ),
+        M_eid()
+    {
+        initialize( interior );
     }
 
     ~PointSetEquiSpaced() override {}
@@ -281,19 +313,25 @@ public :
     {
         index_map_type index_list = entityToLocal( top_dim, local_id, boundary );
 
+        // Use runtime point counts for dynamic order support
+        const auto pts_per_vertex = nPointsOnVertex();
+        const auto pts_per_edge = nPointsOnEdge();
+        const auto pts_per_face = nPointsOnFace();
+        const auto pts_per_volume = nPointsOnVolume();
+
         uint16_type matrix_size = 0;
 
         if ( index_list[0].size() != 0 )
-            matrix_size +=index_list[0].size()*nbPtsPerVertex;
+            matrix_size +=index_list[0].size()*pts_per_vertex;
 
         if ( ( top_dim >= 1 ) && ( index_list[1].size() != 0 ) )
-            matrix_size +=index_list[1].size()*nbPtsPerEdge;
+            matrix_size +=index_list[1].size()*pts_per_edge;
 
         if ( ( top_dim >= 2 ) && ( index_list[2].size() != 0 ) )
-            matrix_size +=index_list[2].size()*nbPtsPerFace;
+            matrix_size +=index_list[2].size()*pts_per_face;
 
         if ( ( top_dim == 3 ) && ( index_list[3].size() != 0 ) )
-            matrix_size +=nbPtsPerVolume;
+            matrix_size +=pts_per_volume;
 
         points_type G ( Dim, matrix_size );
 
@@ -348,6 +386,87 @@ public :
     FEELPP_DEFINE_VISITABLE();
 
 private:
+
+    /**
+     * @brief Return the complete cell cardinality used while constructing a
+     * full lattice.
+     *
+     * This is deliberately private because `nPoints()` reports the points
+     * actually stored by the object, which may be an interior-only subset.
+     */
+    [[nodiscard]] constexpr uint32_type fullPointCount() const noexcept
+    {
+        return static_cast<uint32_type>(
+            cardinality_type::total( Dim, this->order() ) );
+    }
+
+    /** @brief Build complete or interior-only storage for either order mode. */
+    void initialize( int interior )
+    {
+        if ( interior != 0 && interior != 1 )
+            throw std::invalid_argument(
+                "PointSetEquiSpaced interior selector must be 0 or 1" );
+
+        M_eid.assign( topological_dimension + 1, {} );
+
+        if ( this->order() == 0 )
+        {
+            this->setPoints( glas::average( RefConv.vertices() ) );
+            M_pt_to_entity.resize( this->nPoints() );
+            addToEid( Dim, 0 );
+            addToPtE( 0, std::make_pair( Dim, 0 ) );
+        }
+        else if ( interior == 1 )
+        {
+            this->setPoints( makePoints( Dim, 0 ) );
+            M_pt_to_entity.resize( this->nPoints() );
+            for ( uint16_type point = 0;
+                  point < this->nPoints(); ++point )
+            {
+                addToEid( Dim, point );
+                addToPtE( point, std::make_pair( Dim, 0 ) );
+            }
+        }
+        else
+        {
+            const uint32_type pointCount = fullPointCount();
+            M_pt_to_entity.resize( pointCount );
+            nodes_type points( Dim, pointCount );
+
+            for ( uint16_type entityDim = 0, point = 0;
+                  entityDim < topological_dimension + 1;
+                  ++entityDim )
+            {
+                for ( int entity = RefConv.entityRange( entityDim ).begin();
+                      entity < RefConv.entityRange( entityDim ).end();
+                      ++entity )
+                {
+                    nodes_type entityPoints(
+                        makePoints( entityDim, entity ) );
+                    if ( entityPoints.size2() == 0 )
+                        continue;
+
+                    ublas::subrange(
+                        points, 0, Dim, point,
+                        point + entityPoints.size2() ) = entityPoints;
+                    for ( size_type localPoint = 0;
+                          localPoint < entityPoints.size2();
+                          ++localPoint )
+                    {
+                        addToEid(
+                            entityDim, point + localPoint );
+                        addToPtE(
+                            point + localPoint,
+                            std::make_pair( entityDim, entity ) );
+                    }
+                    point += entityPoints.size2();
+                }
+            }
+            this->setPoints( points );
+        }
+
+        this->setName( "equispaced", this->order() );
+    }
 
     index_map_type M_eid;
     std::vector<range_type> M_pt_to_entity;
@@ -435,8 +554,9 @@ private:
     points_type makeLattice( uint16_type interior = 0 )
     {
         points_type G;
+        const auto runtime_order = this->order();
 
-        if ( Order > 0 )
+        if ( runtime_order > 0 )
         {
             if ( shape == SHAPE_LINE )
                 G = make_line_points( interior );
@@ -454,63 +574,71 @@ private:
                 return make_hexa_points( interior );
         }
 
-        else if ( Order == 0 )
+        else if ( runtime_order == 0 )
             G = glas::average( RefConv.vertices() );
 
         return G;
     }
 
     //---------------------------------------------------------------------------------------------
-    int n_line_points( int interior = 0 )
+    // Point count methods - use semantic order accessor for both static and dynamic cases
+    //---------------------------------------------------------------------------------------------
+    int n_line_points( int interior = 0 ) const
     {
-        return std::max( 0, int( Order )+1-2*interior );
+        const int runtime_order = static_cast<int>( this->order() );
+        return std::max( 0, runtime_order+1-2*interior );
     }
-    int n_triangle_points( int interior = 0 )
+    int n_triangle_points( int interior = 0 ) const
     {
+        const int runtime_order = static_cast<int>( this->order() );
         if ( interior == 1 )
-            return std::max( 0, ( int( Order )+1-2*interior )*( int( Order )-2*interior )/2 );
+            return std::max( 0, ( runtime_order+1-2*interior )*( runtime_order-2*interior )/2 );
 
-        return ( Order+1 )*( Order+2 )/2;
+        return ( runtime_order+1 )*( runtime_order+2 )/2;
     }
-    int n_tetrahedron_points( int interior = 0 )
+    int n_tetrahedron_points( int interior = 0 ) const
     {
+        const int runtime_order = static_cast<int>( this->order() );
         if ( interior == 1 )
-            return std::max( 0, ( int( Order )+1-2*interior )*( int( Order )-2*interior )*( int( Order )-1-2*interior )/6 );
+            return std::max( 0, ( runtime_order+1-2*interior )*( runtime_order-2*interior )*( runtime_order-1-2*interior )/6 );
 
-        return ( Order+1 )*( Order+2 )*( Order+3 )/6;
+        return ( runtime_order+1 )*( runtime_order+2 )*( runtime_order+3 )/6;
     }
 
     int n_quad_points( int interior = 0 ) const
     {
+        const int runtime_order = static_cast<int>( this->order() );
         if ( interior == 1 )
-            return std::max( 0, ( int( Order )+1-2*interior )*( int( Order )+1-2*interior ) );
+            return std::max( 0, ( runtime_order+1-2*interior )*( runtime_order+1-2*interior ) );
 
-        return ( Order+1 )*( Order+1 );
+        return ( runtime_order+1 )*( runtime_order+1 );
     }
 
     int n_hexa_points( int interior = 0 ) const
     {
+        const int runtime_order = static_cast<int>( this->order() );
         if ( interior == 1 )
-            return std::max( 0, ( int( Order )+1-2*interior )*( int( Order )+1-2*interior )*( int( Order )+1-2*interior ) );
+            return std::max( 0, ( runtime_order+1-2*interior )*( runtime_order+1-2*interior )*( runtime_order+1-2*interior ) );
 
-        return ( Order+1 )*( Order+1 )*( Order+1 );
+        return ( runtime_order+1 )*( runtime_order+1 )*( runtime_order+1 );
     }
 
     points_type
     make_line_points( int interior = 0 )
     {
         points_type G;
+        const int runtime_order = static_cast<int>( this->order() );
 
-        if ( Order > 0 )
+        if ( runtime_order > 0 )
         {
             ublas::vector<node_type> h ( 1 );
             h( 0 ) = RefConv.vertex( 1 ) - RefConv.vertex( 0 );
 
             G.resize( Dim, n_line_points( interior ) );
 
-            for ( int i = interior, indp = 0; i < int( Order )+1-interior; ++i, ++indp )
+            for ( int i = interior, indp = 0; i < runtime_order+1-interior; ++i, ++indp )
             {
-                ublas::column( G, indp ) = RefConv.vertex( 0 ) + ( h( 0 ) * value_type( i ) )/value_type( Order );
+                ublas::column( G, indp ) = RefConv.vertex( 0 ) + ( h( 0 ) * value_type( i ) )/value_type( runtime_order );
             }
         }
 
@@ -525,8 +653,9 @@ private:
     make_triangle_points( int interior = 0 )
     {
         points_type G;
+        const int runtime_order = static_cast<int>( this->order() );
 
-        if ( Order > 0 )
+        if ( runtime_order > 0 )
         {
             ublas::vector<node_type> h ( 2 );
             h( 0 ) = RefConv.vertex( 1 ) - RefConv.vertex( 0 );
@@ -534,12 +663,12 @@ private:
 
             G.resize( Dim, n_triangle_points( interior ) );
 
-            for ( int i = interior, p = 0; i < int( Order )+1-interior; ++i )
+            for ( int i = interior, p = 0; i < runtime_order+1-interior; ++i )
             {
-                for ( int j = interior; j < int( Order ) + 1 - i-interior; ++j, ++p )
+                for ( int j = interior; j < runtime_order + 1 - i-interior; ++j, ++p )
                 {
                     ublas::column( G, p ) = RefConv.vertex( 0 ) + ( value_type( i ) * h( 1 )  +
-                                            value_type( j ) * h( 0 ) )/ value_type( Order );
+                                            value_type( j ) * h( 0 ) )/ value_type( runtime_order );
                 }
             }
         }
@@ -554,8 +683,9 @@ private:
     make_tetrahedron_points( int interior = 0 )
     {
         points_type G;
+        const int runtime_order = static_cast<int>( this->order() );
 
-        if ( Order > 0 )
+        if ( runtime_order > 0 )
         {
             ublas::vector<node_type> h ( 3 );
             h( 0 ) = RefConv.vertex( 1 ) - RefConv.vertex( 0 );
@@ -564,15 +694,15 @@ private:
 
             G.resize( Dim, n_tetrahedron_points( interior ) );
 
-            for ( int i = interior, p = 0; i < int( Order )+1-interior; ++i )
+            for ( int i = interior, p = 0; i < runtime_order+1-interior; ++i )
             {
-                for ( int j = interior; j < int( Order ) + 1 - i - interior; ++j )
+                for ( int j = interior; j < runtime_order + 1 - i - interior; ++j )
                 {
-                    for ( int k = interior; k < int( Order ) + 1 - i - j - interior; ++k, ++p )
+                    for ( int k = interior; k < runtime_order + 1 - i - j - interior; ++k, ++p )
                     {
                         ublas::column( G, p ) = RefConv.vertex( 0 ) + ( value_type( i ) * h( 2 ) +
                                                 value_type( j ) * h( 1 ) +
-                                                value_type( k ) * h( 0 ) ) / value_type( Order );
+                                                value_type( k ) * h( 0 ) ) / value_type( runtime_order );
 
                     }
                 }
@@ -588,7 +718,8 @@ private:
     points_type
     make_quad_points( int interior = 0 )
     {
-        if ( Order > 0 )
+        const int runtime_order = static_cast<int>( this->order() );
+        if ( runtime_order > 0 )
         {
             ublas::vector<node_type> h ( 2 );
             h( 0 ) = RefConv.vertex( 1 ) - RefConv.vertex( 0 );
@@ -597,12 +728,12 @@ private:
             DVLOG(2) << "n quad pts = " << n_quad_points( interior ) << "\n";
             points_type G( Dim, n_quad_points( interior ) );
 
-            for ( int i = interior, p = 0; i < int( Order )+1-interior; ++i )
+            for ( int i = interior, p = 0; i < runtime_order+1-interior; ++i )
             {
-                for ( int j = interior; j < int( Order ) + 1 -interior; ++j, ++p )
+                for ( int j = interior; j < runtime_order + 1 -interior; ++j, ++p )
                 {
                     ublas::column( G, p ) = RefConv.vertex( 0 ) + ( value_type( i ) * h( 0 )  +
-                                            value_type( j ) * h( 1 ) )/ value_type( Order );
+                                            value_type( j ) * h( 1 ) )/ value_type( runtime_order );
                 }
             }
 
@@ -616,7 +747,8 @@ private:
     points_type
     make_hexa_points( int interior = 0 )
     {
-        if ( Order > 0 )
+        const int runtime_order = static_cast<int>( this->order() );
+        if ( runtime_order > 0 )
         {
             ublas::vector<node_type> h ( 3 );
             h( 0 ) = RefConv.vertex( 1 ) - RefConv.vertex( 0 );
@@ -626,15 +758,15 @@ private:
             points_type G( Dim, n_hexa_points( interior ) );
             DVLOG(2) << "n hexa pts = " << n_hexa_points( interior ) << "\n";
 
-            for ( int i = interior, p = 0; i < int( Order )+1-interior; ++i )
+            for ( int i = interior, p = 0; i < runtime_order+1-interior; ++i )
             {
-                for ( int j = interior; j < int( Order ) + 1 - interior; ++j )
+                for ( int j = interior; j < runtime_order + 1 - interior; ++j )
                 {
-                    for ( int k = interior; k < int( Order ) + 1 - interior; ++k, ++p )
+                    for ( int k = interior; k < runtime_order + 1 - interior; ++k, ++p )
                     {
                         ublas::column( G, p ) = RefConv.vertex( 0 ) + ( value_type( i ) * h( 0 ) +
                                                 value_type( j ) * h( 1 ) +
-                                                value_type( k ) * h( 2 ) ) / value_type( Order );
+                                                value_type( k ) * h( 2 ) ) / value_type( runtime_order );
 
                     }
                 }

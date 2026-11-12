@@ -8,6 +8,7 @@ def run(m, geo):
     mesh = fppc.load(m, mesh_name, 0.1)
 
     Xh = fppc.functionSpace(mesh=mesh,space="Pchv")
+    assert Xh.order() == 1
     u = Xh.element()
     M=measure(range=fppc.elements(mesh))
 

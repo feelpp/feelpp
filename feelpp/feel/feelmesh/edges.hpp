@@ -1,11 +1,12 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-  SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-  SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+    SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
 
-  SPDX-FileCopyrightText: 2005-2006 EPFL
-  SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
-  SPDX-License-Identifier: LGPL-3.0-or-later
+    SPDX-FileCopyrightText: 2005-2006 EPFL
+    SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
+
+    SPDX-License-Identifier: LGPL-3.0-or-later
 */
 
 #ifndef FEELPP_MESH_EDGES_HPP
@@ -43,6 +44,8 @@ public:
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<EdgeType::nRealDim>, mpl::int_<3> >,
                               mpl::identity<GeoElement1D<3, EdgeType,SubFaceOfMany<FaceType>,value_type > >,
                               mpl::identity<boost::none_t> >::type::type edge_type;
+    using sparse_metadata_storage_type =
+        typename edge_type::sparse_metadata_storage_type;
 
     typedef std::unordered_map<size_type,edge_type> edges_type;
 
@@ -69,6 +72,7 @@ public:
         :
         M_worldComm( worldComm ),
         M_edges(),
+        M_sparseMetadata(),
         M_needToOrderEdges( false )
     {}
 
@@ -76,8 +80,10 @@ public:
         :
         M_worldComm( f.M_worldComm ),
         M_edges( f.M_edges ),
+        M_sparseMetadata(),
         M_needToOrderEdges( false )
     {
+        this->bindSparseMetadata();
         this->buildOrderedEdges();
     }
 
@@ -88,6 +94,7 @@ public:
             DVLOG(1) << "deleting edges...\n";
             M_orderedEdges.clear();
             M_edges.clear();
+            M_sparseMetadata.clear();
             M_needToOrderEdges = false;
         }
 
@@ -97,7 +104,18 @@ public:
      */
     //@{
 
-
+    Edges& operator=( Edges const& other )
+    {
+        if ( this != &other )
+        {
+            M_worldComm = other.M_worldComm;
+            M_sparseMetadata.clear();
+            M_edges = other.M_edges;
+            this->bindSparseMetadata();
+            this->buildOrderedEdges();
+        }
+        return *this;
+    }
     //@}
 
     /** @name Accessors
@@ -118,6 +136,22 @@ public:
     edges_type const& edges() const
     {
         return M_edges;
+    }
+
+    /**
+     * @brief Return populated edge sparse-sidecar counts.
+     */
+    [[nodiscard]] GeoEntitySparseMetadataStatistics
+    edgeSparseMetadataStatistics() const noexcept
+    {
+        return M_sparseMetadata.statistics();
+    }
+
+    /** @brief Return compact edge-point connectivity occupancy counters. */
+    [[nodiscard]] GeoEntityConnectivityStatistics
+    edgeConnectivityStatistics() const noexcept
+    {
+        return M_sparseMetadata.connectivityStatistics();
     }
 
     /**
@@ -439,6 +473,8 @@ public:
         if ( ret.second )
         {
             auto & newEdge = ret.first->second;
+            newEdge.attachSparseMetadataStorage( M_sparseMetadata );
+            newEdge.synchronizePointConnectivity();
             if ( !M_needToOrderEdges && !M_orderedEdges.empty() && unwrap_ref( M_orderedEdges.back() ).id() > newEdge.id() )
                 M_needToOrderEdges = true;
             M_orderedEdges.push_back( boost::ref( newEdge ) );
@@ -450,11 +486,15 @@ public:
     std::pair<edge_iterator,bool>  addEdge( edge_type&& f )
         {
             //f.setId( M_edges.size() );
-            std::pair<edge_iterator,bool> ret = M_edges.emplace( std::make_pair( f.id(),f ) );
+            std::pair<edge_iterator,bool> ret =
+                M_edges.emplace(
+                    std::make_pair( f.id(), std::move( f ) ) );
 
             if ( ret.second )
             {
                 auto & newEdge = ret.first->second;
+                newEdge.attachSparseMetadataStorage( M_sparseMetadata );
+                newEdge.synchronizePointConnectivity();
                 if ( !M_needToOrderEdges && !M_orderedEdges.empty() && unwrap_ref( M_orderedEdges.back() ).id() > newEdge.id() )
                     M_needToOrderEdges = true;
                 M_orderedEdges.push_back( boost::ref( newEdge ) );
@@ -475,10 +515,15 @@ public:
     edge_iterator eraseEdge( edge_iterator it )
         {
             size_type erasedId = it->first;
-            auto itOrdered = std::find_if( M_orderedEdges.begin(), M_orderedEdges.end(),
-                                           [&erasedId]( auto & edgeWrap ) { return unwrap_ref( edgeWrap ).id() == erasedId; } );
+            auto itOrdered = std::find_if(
+                M_orderedEdges.begin(), M_orderedEdges.end(),
+                [&erasedId]( auto& edgeWrap )
+                {
+                    return unwrap_ref( edgeWrap ).id() == erasedId;
+                } );
             CHECK( itOrdered != M_orderedEdges.end() ) << "edge " << erasedId << " is missing from ordered edges";
             M_orderedEdges.erase( itOrdered );
+            it->second.clearEntityStorage();
             return M_edges.erase( it );
         }
 
@@ -507,7 +552,11 @@ public:
                                           } );
         M_orderedEdges.erase( firstErased, M_orderedEdges.end() );
         for ( auto id : erasedIds )
-            M_edges.erase( id );
+        {
+            auto it = M_edges.find( id );
+            it->second.clearEntityStorage();
+            M_edges.erase( it );
+        }
         return erasedIds.size();
     }
 
@@ -558,6 +607,15 @@ protected:
 
 private:
 
+    void bindSparseMetadata()
+    {
+        for ( auto& [id, edge] : M_edges )
+        {
+            (void)id;
+            edge.attachSparseMetadataStorage( M_sparseMetadata );
+        }
+    }
+
     void buildOrderedEdges()
         {
             M_orderedEdges.clear();
@@ -577,6 +635,7 @@ private:
             if ( Archive::is_loading::value )
             {
                 M_edges.clear();
+                M_sparseMetadata.clear();
                 M_orderedEdges.clear();
                 M_needToOrderEdges = false;
                 size_type nEdges = 0;
@@ -601,6 +660,7 @@ private:
 private:
     worldcomm_ptr_t M_worldComm;
     edges_type M_edges;
+    sparse_metadata_storage_type M_sparseMetadata;
     ordered_edges_reference_wrapper_type M_orderedEdges;
     bool M_needToOrderEdges;
     edges_interprocess_map_type M_interprocessEdges;

@@ -1,26 +1,12 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2014-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-2.1-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2014-05-13
-
-  Copyright (C) 2014-2016 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file pow.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -29,6 +15,7 @@
 #ifndef FEELPP_VF_POW_HPP
 #define FEELPP_VF_POW_HPP 1
 
+#include <feel/feelvf/field.hpp>
 #include <feel/feelvf/symbolicdiagnostics.hpp>
 
 namespace Feel
@@ -383,7 +370,7 @@ powImpl( ExprT1 && __e1, ExprT2 && __e2 )
                            if constexpr ( std::is_arithmetic_v<std::decay_t<decltype(b)>> )
                                return cst( std::forward<decltype(b)>( b ) );
                            else
-                               return std::forward<decltype(b)>( b );
+                               return Feel::vf::toValueExpression( std::forward<decltype(b)>( b ) );
                        };
     decltype(auto) e1 = arg_to_expr( std::forward<ExprT1>( __e1 ) );
     decltype(auto) e2 = arg_to_expr( std::forward<ExprT2>( __e2 ) );
@@ -443,7 +430,7 @@ powPositiveBase( ExprT1 && __e1, ExprT2 && __e2 )
  * @ingroup DSEL-Variational-Formulation
  */
 template<typename ExprT1, typename ExprT2>
-    requires VfExpr<ExprT1> || VfExpr<ExprT2>
+    requires VfExprConcept<ExprT1> || VfExprConcept<ExprT2>
 inline
 auto
 operator^( ExprT1 && __e1, ExprT2 && __e2 )

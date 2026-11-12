@@ -108,6 +108,32 @@ void checkDistinctManagedTypes( LeftFactory&& leftFactory, RightFactory&& rightF
 }
 } // namespace
 
+BOOST_AUTO_TEST_CASE( runtime_orders_are_distinct_cache_entries )
+{
+    resetManager( managerConfig( true ) );
+    auto mesh = unitSquare( 0.25 );
+    auto p1 = Pch<Dynamic>( mesh, RuntimeOrder{1} );
+    auto p2 = Pch<Dynamic>( mesh, RuntimeOrder{2} );
+    auto p2Again = Pch<Dynamic>( _mesh=mesh, _runtime_order=RuntimeOrder{2} );
+    BOOST_CHECK( p1.get() != p2.get() );
+    BOOST_CHECK( p2.get() == p2Again.get() );
+    BOOST_CHECK_EQUAL( p1->order(), 1 );
+    BOOST_CHECK_EQUAL( p2->order(), 2 );
+    BOOST_CHECK_LT( p1->nDof(), p2->nDof() );
+
+    auto d0 = Pdh<Dynamic>( mesh, RuntimeOrder{0} );
+    auto d1 = Pdh<Dynamic>( mesh, RuntimeOrder{1} );
+    BOOST_CHECK( d0.get() != d1.get() );
+    BOOST_CHECK( d0.get() == Pdh<Dynamic>( _mesh=mesh, _runtime_order=RuntimeOrder{0} ).get() );
+    BOOST_CHECK_LT( d0->nDof(), d1->nDof() );
+
+    auto staticP1 = Pch<1>( mesh );
+    BOOST_CHECK_THROW( Pch<1>( mesh, RuntimeOrder{2} ), std::invalid_argument );
+    BOOST_CHECK_THROW( Pch<1>( _mesh=mesh, _runtime_order=RuntimeOrder{2} ), std::invalid_argument );
+    BOOST_CHECK( staticP1.get() == Pch<1>( _mesh=mesh ).get() );
+    resetManager();
+}
+
 BOOST_AUTO_TEST_CASE( explicit_reuse_normalizes_options_and_reports_stats )
 {
     resetManager();

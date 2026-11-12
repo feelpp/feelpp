@@ -1,26 +1,12 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2010 Université Joseph Fourier (Grenoble I)
+ * SPDX-FileCopyrightText: 2010-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2010-07-15
-
-  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file gmshenums.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -38,6 +24,10 @@
 #pragma clang diagnostic pop
 #endif
 #include <boost/assign/list_of.hpp>
+#include <feel/feelpoly/order.hpp>
+
+#include <array>
+#include <stdexcept>
 namespace Feel
 {
 enum GMSH_PARTITIONER
@@ -120,7 +110,13 @@ enum GMSH_ENTITY
 
     GMSH_TETRAHEDRON_3=29, //!< tetra of order 3
     GMSH_TETRAHEDRON_4=30, //!< tetra of order 4
-    GMSH_TETRAHEDRON_5=31  //!< tetra of order 5
+    GMSH_TETRAHEDRON_5=31, //!< tetra of order 5
+    GMSH_QUADRANGLE_3=36,  //!< complete quadrangle of order 3
+    GMSH_QUADRANGLE_4=37,  //!< complete quadrangle of order 4
+    GMSH_QUADRANGLE_5=38,  //!< complete quadrangle of order 5
+    GMSH_HEXAHEDRON_3=92,  //!< complete hexahedron of order 3
+    GMSH_HEXAHEDRON_4=93,  //!< complete hexahedron of order 4
+    GMSH_HEXAHEDRON_5=94   //!< complete hexahedron of order 5
 };
 
 enum class GMSH_ALGORITHM_2D
@@ -149,7 +145,15 @@ class GmshOrdering
 {
 public:
     typedef boost::bimap<int,int> id_type;
-    GmshOrdering();
+    /** @brief Construct ordering for a compile-time convex order. */
+    GmshOrdering()
+        requires( orderIsStatic<ConvexType> );
+    /**
+     * @brief Construct ordering for a runtime convex order.
+     * @param order effective geometric polynomial order
+     */
+    explicit GmshOrdering( RuntimeOrder order )
+        requires( orderIsDynamic<ConvexType> );
     ~GmshOrdering() {}
 
     /**
@@ -193,6 +197,8 @@ public:
     }
 
 private:
+    /** Build the permutation shared by static and runtime constructors. */
+    void build( uint16_type order, size_type pointCount );
 
     int M_type;
     id_type M_id;
@@ -207,8 +213,65 @@ const int tetrahedron_type[6] = { 0, GMSH_TETRAHEDRON, GMSH_TETRAHEDRON_2, GMSH_
 
 
 
-const int quad_type[6] = { 0, GMSH_QUADRANGLE, GMSH_QUADRANGLE_2, 0, 0, 0 };
-const int hexa_type[6] = { 0, GMSH_HEXAHEDRON, GMSH_HEXAHEDRON_2, 0, 0, 0 };
+const int quad_type[6] = {
+    0, GMSH_QUADRANGLE, GMSH_QUADRANGLE_2,
+    GMSH_QUADRANGLE_3, GMSH_QUADRANGLE_4,
+    GMSH_QUADRANGLE_5 };
+const int hexa_type[6] = {
+    0, GMSH_HEXAHEDRON, GMSH_HEXAHEDRON_2,
+    GMSH_HEXAHEDRON_3, GMSH_HEXAHEDRON_4,
+    GMSH_HEXAHEDRON_5 };
+
+/**
+ * Complete hypercube permutations obtained by matching Gmsh reference nodes
+ * with the Feel++ equispaced reference point set. Entry `g` is the Feel++
+ * point identifier associated with Gmsh point `g`.
+ */
+inline constexpr std::array<int, 16> quadrangle_g3{
+    0, 1, 2, 3, 4, 5, 6, 7,
+    8, 9, 10, 11, 12, 14, 15, 13 };
+inline constexpr std::array<int, 25> quadrangle_g4{
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+    10, 11, 12, 13, 14, 15, 16, 22, 24, 18,
+    19, 23, 21, 17, 20 };
+inline constexpr std::array<int, 36> quadrangle_g5{
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+    10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+    20, 32, 35, 23, 24, 28, 33, 34, 31, 27,
+    22, 21, 25, 29, 30, 26 };
+
+inline constexpr std::array<int, 64> hexahedron_g3{
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 15, 14, 21, 20, 10, 11,
+    16, 17, 12, 13, 22, 23, 26, 27, 19, 18, 30, 31, 25, 24, 29, 28,
+    32, 33, 35, 34, 36, 38, 39, 37, 50, 51, 49, 48, 40, 42, 43, 41,
+    44, 46, 47, 45, 52, 54, 55, 53, 56, 60, 62, 58, 57, 61, 63, 59 };
+inline constexpr std::array<int, 125> hexahedron_g4{
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 19, 18, 17, 28, 27,
+    26, 11, 12, 13, 20, 21, 22, 14, 15, 16, 29, 30, 31, 35, 36, 37,
+    25, 24, 23, 41, 42, 43, 34, 33, 32, 40, 39, 38, 44, 46, 52, 50,
+    45, 49, 51, 47, 48, 53, 59, 61, 55, 56, 60, 58, 54, 57, 86, 88,
+    82, 80, 87, 85, 81, 83, 84, 62, 68, 70, 64, 65, 69, 67, 63, 66,
+    71, 77, 79, 73, 74, 78, 76, 72, 75, 89, 95, 97, 91, 92, 96, 94,
+    90, 93, 98, 116, 122, 104, 100, 118, 124, 106, 107, 101, 99, 119,
+    117, 113, 123, 105, 109, 103, 121, 115, 110, 108, 102, 120, 114,
+    112, 111 };
+inline constexpr std::array<int, 216> hexahedron_g5{
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 23, 22, 21, 20,
+    35, 34, 33, 32, 12, 13, 14, 15, 24, 25, 26, 27, 16, 17, 18, 19,
+    36, 37, 38, 39, 44, 45, 46, 47, 31, 30, 29, 28, 52, 53, 54, 55,
+    43, 42, 41, 40, 51, 50, 49, 48, 56, 59, 71, 68, 57, 58, 63, 67,
+    70, 69, 64, 60, 61, 62, 66, 65, 72, 84, 87, 75, 76, 80, 85, 86,
+    83, 79, 74, 73, 77, 81, 82, 78, 132, 135, 123, 120, 133, 134, 131,
+    127, 122, 121, 124, 128, 129, 130, 126, 125, 88, 100, 103, 91, 92,
+    96, 101, 102, 99, 95, 90, 89, 93, 97, 98, 94, 104, 116, 119, 107,
+    108, 112, 117, 118, 115, 111, 106, 105, 109, 113, 114, 110, 136,
+    148, 151, 139, 140, 144, 149, 150, 147, 143, 138, 137, 141, 145,
+    146, 142, 152, 200, 212, 164, 155, 203, 215, 167, 168, 184, 156,
+    160, 153, 154, 204, 208, 201, 202, 196, 180, 213, 214, 165, 166,
+    171, 187, 159, 163, 207, 211, 199, 183, 172, 176, 192, 188, 169,
+    185, 186, 170, 157, 158, 162, 161, 205, 209, 210, 206, 197, 181,
+    182, 198, 175, 191, 195, 179, 173, 189, 193, 177, 174, 190, 194,
+    178 };
 
 //int gmshquadtype[5] = { 0, 4, 10, 0, 0 };
 }
@@ -216,15 +279,58 @@ const int hexa_type[6] = { 0, GMSH_HEXAHEDRON, GMSH_HEXAHEDRON_2, 0, 0, 0 };
 
 template<typename ConvexType>
 GmshOrdering<ConvexType>::GmshOrdering()
+    requires( orderIsStatic<ConvexType> )
+{
+    this->build( ConvexType::nOrder,
+                 ConvexType::numPoints );
+}
+
+template<typename ConvexType>
+GmshOrdering<ConvexType>::GmshOrdering(
+    RuntimeOrder order )
+    requires( orderIsDynamic<ConvexType> )
+{
+    size_type const pointCount =
+        ConvexType::is_simplex
+            ? ::Feel::detail::simplexTotal(
+                  ConvexType::nDim, order.value )
+            : ::Feel::detail::hypercubeTotal(
+                  ConvexType::nDim, order.value );
+    this->build( order.value, pointCount );
+}
+
+template<typename ConvexType>
+void
+GmshOrdering<ConvexType>::build(
+    uint16_type order, size_type pointCount )
 {
     using namespace boost::assign;
     typedef typename id_type::relation relation;
+    auto insertPermutation =
+        [&]( auto const& permutation )
+    {
+        if ( permutation.size() != pointCount )
+            throw std::logic_error(
+                "Gmsh permutation cardinality does not match the geometry" );
+        for ( int gmshPoint = 0;
+              gmshPoint < static_cast<int>(
+                  permutation.size() );
+              ++gmshPoint )
+            M_id.insert( id_type::value_type(
+                permutation[gmshPoint],
+                gmshPoint ) );
+    };
+
+    if ( ConvexType::nDim > 0 &&
+         ( order < 1 || order > GMSH_ORDER_FIVE ) )
+        throw std::invalid_argument(
+            "Gmsh ordering supports complete geometry orders G1 through G5" );
 
     if ( ConvexType::nDim == 0 )
     {
         M_type = GMSH_POINT;
 
-        for ( int i = 0; i < ConvexType::numPoints; ++i )
+        for ( int i = 0; i < pointCount; ++i )
             M_id.insert( id_type::value_type( i, i ) );
     }
 
@@ -232,33 +338,33 @@ GmshOrdering<ConvexType>::GmshOrdering()
     {
         if ( ConvexType::nDim == 1 )
         {
-            M_type = Feel::detail::line_type[ConvexType::nOrder];
+            M_type = Feel::detail::line_type[order];
 
-            for ( int i = 0; i < ConvexType::numPoints; ++i )
+            for ( int i = 0; i < pointCount; ++i )
                 M_id.insert( id_type::value_type( i, i ) );
         }
 
         if ( ConvexType::nDim == 2 )
         {
-            M_type = Feel::detail::triangle_type[ConvexType::nOrder];
+            M_type = Feel::detail::triangle_type[order];
 
-            if ( ConvexType::nOrder == 1 )
+            if ( order == 1 )
                 M_id = list_of<relation>( 0,0 )( 1,1 )( 2,2 );
 
             //M_id+=0,1,2;
-            if ( ConvexType::nOrder == 2 )
+            if ( order == 2 )
                 M_id = list_of<relation>( 0,0 )( 1,1 )( 2,2 )( 3,4 )( 4,5 )( 5,3 );
 
             //M_id += 0,1,2,5,3,4;
-            if ( ConvexType::nOrder == 3 )
+            if ( order == 3 )
                 M_id = list_of<relation>( 0,0 )( 1,1 )( 2,2 )( 3,5 )( 4,6 )( 5,7 )( 6,8 )( 7,3 )( 8,4 )( 9,9 );
 
             //M_id += 0,1,2,7,8,3,4,5,6,9;
-            if ( ConvexType::nOrder == 4 )
+            if ( order == 4 )
                 M_id = list_of<relation>( 0,0 )( 1,1 )( 2,2 )( 3,6 )( 4,7 )( 5,8 )( 6,9 )( 7,10 )( 8,11 )( 9,3 )( 10,4 )( 11,5 )( 12,12 )( 13,13 )( 14,14 );
 
             //M_id += 0,1,2,9,10,11,3,4,5,6,7,8,12,13,14;
-            if ( ConvexType::nOrder == 5 )
+            if ( order == 5 )
                 M_id = list_of<relation>( 0,0 )( 1,1 )( 2,2 )( 3,7 )( 4,8 )( 5,9 )( 6,10 )( 7,11 )( 8,12 )( 9,13 )( 10,14 )( 11,3 )( 12,4 )( 13,5 )( 14,6 )( 15,15 )( 16,18 )( 17,16 )( 18,20 )( 19,19 )( 20,17 );
 
             //M_id += 0,1,2,11,12,13,14,3,4,5,6,7,8,9,10,15,16,17,19,20,18;
@@ -266,15 +372,15 @@ GmshOrdering<ConvexType>::GmshOrdering()
 
         if ( ConvexType::nDim == 3 )
         {
-            M_type = Feel::detail::tetrahedron_type[ConvexType::nOrder];
+            M_type = Feel::detail::tetrahedron_type[order];
 
-            if ( ConvexType::nOrder == 1 )
+            if ( order == 1 )
                 M_id = list_of<relation>
                        ( 0,0 )( 1,1 )( 2,2 )( 3,3 ) // vertices
                        ;
 
             //M_id+=0,1,2,3;
-            if ( ConvexType::nOrder == 2 )
+            if ( order == 2 )
                 M_id = list_of<relation>
                        ( 0,0 )( 1,1 )( 2,2 )( 3,3 ) // vertices
                        ( 4,5 ) // edge 0
@@ -286,7 +392,7 @@ GmshOrdering<ConvexType>::GmshOrdering()
                        ;
 
             //M_id+=0,1,2,3,6,4,5,7,9,8;
-            if ( ConvexType::nOrder == 3 )
+            if ( order == 3 )
                 M_id = list_of<relation>
                        ( 0,0 )( 1,1 )( 2,2 )( 3,3 ) // vertices
                        ( 4,6 )( 5,7 ) // edge 0
@@ -301,7 +407,7 @@ GmshOrdering<ConvexType>::GmshOrdering()
                        ( 19,16 )      // face 3
                        ;
 
-            if ( ConvexType::nOrder == 4 )
+            if ( order == 4 )
                 M_id = list_of<relation>
                        ( 0,0 )( 1,1 )( 2,2 )( 3,3 ) // vertices
                        ( 4,7 )( 5,8 )( 6,9 ) // edge 0
@@ -317,33 +423,47 @@ GmshOrdering<ConvexType>::GmshOrdering()
                        ( 34,34 )             // interior point
                        ;
 
-            if ( ConvexType::nOrder > 4 )
-                for ( int i = 0; i < ConvexType::numPoints; ++i )
-                    M_id.insert( id_type::value_type( i, i ) );
+            if ( order == 5 )
+                M_id = list_of<relation>
+                       ( 0,0 )( 1,1 )( 2,2 )( 3,3 ) // vertices
+                       ( 12,4 )( 13,5 )( 14,6 )( 15,7 ) // edge 0
+                       ( 4,8 )( 5,9 )( 6,10 )( 7,11 ) // edge 1
+                       ( 8,12 )( 9,13 )( 10,14 )( 11,15 ) // edge 2
+                       ( 19,16 )( 18,17 )( 17,18 )( 16,19 ) // edge 3
+                       ( 27,20 )( 26,21 )( 25,22 )( 24,23 ) // edge 4
+                       ( 23,24 )( 22,25 )( 21,26 )( 20,27 ) // edge 5
+                       ( 46,28 )( 51,29 )( 48,30 )
+                       ( 49,31 )( 50,32 )( 47,33 ) // face 0
+                       ( 40,34 )( 42,35 )( 45,36 )
+                       ( 41,37 )( 44,38 )( 43,39 ) // face 1
+                       ( 34,40 )( 39,41 )( 36,42 )
+                       ( 37,43 )( 38,44 )( 35,45 ) // face 2
+                       ( 33,46 )( 28,47 )( 30,48 )
+                       ( 31,49 )( 29,50 )( 32,51 ) // face 3
+                       ( 52,52 )( 53,53 )( 54,54 )( 55,55 ); // volume
 
         }
     }
 
     else
     {
-
         if ( ConvexType::nDim == 1 )
         {
-            M_type = Feel::detail::line_type[ConvexType::nOrder];
+            M_type = Feel::detail::line_type[order];
 
-            for ( int i = 0; i < ConvexType::numPoints; ++i )
+            for ( int i = 0; i < pointCount; ++i )
                 M_id.insert( id_type::value_type( i, i ) );
         }
 
         if ( ConvexType::nDim == 2 )
         {
-            M_type = Feel::detail::quad_type[ConvexType::nOrder];
+            M_type = Feel::detail::quad_type[order];
 
-            if ( ConvexType::nOrder == 1 )
+            if ( order == 1 )
                 M_id = list_of<relation>( 0,0 )( 1,1 )( 2,2 )( 3,3 );
 
             //M_id+=0,1,2,3;
-            if ( ConvexType::nOrder == 2 )
+            if ( order == 2 )
                 M_id = list_of<relation>( 0,0 )( 1,1 )( 2,2 )( 3,3 ) // vertices
                        ( 4,4 ) // edge 0
                        ( 5,5 ) // edge 1
@@ -351,16 +471,25 @@ GmshOrdering<ConvexType>::GmshOrdering()
                        ( 7,7 ) // edge 3
                        ( 8,8 ) // face 0
                        ;
+            if ( order == 3 )
+                insertPermutation(
+                    Feel::detail::quadrangle_g3 );
+            if ( order == 4 )
+                insertPermutation(
+                    Feel::detail::quadrangle_g4 );
+            if ( order == 5 )
+                insertPermutation(
+                    Feel::detail::quadrangle_g5 );
         }
 
         if ( ConvexType::nDim == 3 )
         {
-            M_type = Feel::detail::hexa_type[ConvexType::nOrder];
+            M_type = Feel::detail::hexa_type[order];
 
-            if ( ConvexType::nOrder == 1 )
+            if ( order == 1 )
                 M_id = list_of<relation>( 0,0 )( 1,1 )( 2,2 )( 3,3 )( 4,4 )( 5,5 )( 6,6 )( 7,7 );
 
-            if ( ConvexType::nOrder == 2 )
+            if ( order == 2 )
                 M_id = list_of<relation>
                        ( 0,0 )( 1,1 )( 2,2 )( 3,3 )( 4,4 )( 5,5 )( 6,6 )( 7,7 ) // vertices
                        ( 8,8 ) // edge 0
@@ -383,11 +512,37 @@ GmshOrdering<ConvexType>::GmshOrdering()
                        ( 25,25 ) // face 5
                        ( 26,26 ) // volume 0
                        ;
+            if ( order == 3 )
+                insertPermutation(
+                    Feel::detail::hexahedron_g3 );
+            if ( order == 4 )
+                insertPermutation(
+                    Feel::detail::hexahedron_g4 );
+            if ( order == 5 )
+                insertPermutation(
+                    Feel::detail::hexahedron_g5 );
 
             //M_id+=0,1,2,3,4,5,6,7;
         }
 
     }
+}
+
+/**
+ * @brief Construct a Gmsh ordering through the common order policy.
+ *
+ * @tparam ConvexType Feel++ geometric entity or convex type
+ * @param order effective mesh geometry order
+ * @return ordering initialized from the compile-time or runtime order source
+ */
+template <typename ConvexType>
+[[nodiscard]] GmshOrdering<ConvexType>
+makeGmshOrdering( RuntimeOrder order )
+{
+    if constexpr ( orderIsDynamic<ConvexType> )
+        return GmshOrdering<ConvexType>{ order };
+    else
+        return GmshOrdering<ConvexType>{};
 }
 
 } // Feel

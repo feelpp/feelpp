@@ -1,30 +1,16 @@
-//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-//!
-//! This file is part of the Feel++ library
-//!
-//! This library is free software; you can redistribute it and/or
-//! modify it under the terms of the GNU Lesser General Public
-//! License as published by the Free Software Foundation; either
-//! version 2.1 of the License, or (at your option) any later version.
-//!
-//! This library is distributed in the hope that it will be useful,
-//! but WITHOUT ANY WARRANTY; without even the implied warranty of
-//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//! Lesser General Public License for more details.
-//!
-//! You should have received a copy of the GNU Lesser General Public
-//! License along with this library; if not, write to the Free Software
-//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-//!
-//! @file
-//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-//! @date 23 Sep 2017
-//! @copyright 2017-2026 University of Strasbourg
-//!
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2017 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
 #ifndef FEELPP_VF_BILINEARFORMBASE_H
 #define FEELPP_VF_BILINEARFORMBASE_H
 
 #include <future>
+#include <mutex>
 
 
 #include <feel/feelconfig.h>
@@ -391,8 +377,12 @@ public:
     //@{
 
 
-    // Close the assembled base operator only. Deferred Dirichlet constraints
-    // remain logical form state until materialized explicitly.
+    /**
+     * @brief Close the assembled base operator.
+     *
+     * Deferred Dirichlet constraints remain logical form state until
+     * materialized explicitly.
+     */
     void close()
         {
             this->get(); // futures
@@ -1042,6 +1032,8 @@ public:
                     value_type* data,
                     size_type K  = 0,
                     size_type K2 = invalid_v<size_type> );
+
+
 
 
     /**

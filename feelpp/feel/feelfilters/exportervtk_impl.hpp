@@ -1,11 +1,13 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Alexandre Ancel <alexandre.ancel@cemosis.fr>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-
-    SPDX-FileCopyrightText: 2026 University of Strasbourg
-
-    SPDX-License-Identifier: LGPL-3.0-or-later
-*/
 /**
    \file exporterVTK_impl.cpp
    \author Alexandre Ancel <alexandre.ancel@cemosis.fr>
@@ -490,10 +492,11 @@ ExporterVTK<MeshType,N>::saveMesh( timeset_ptrtype __ts, mesh_ptrtype mesh, std:
         vtkSmartPointer<vtkelement_type> cell = vtkSmartPointer<vtkelement_type>::New();
 
         auto const& pointsIdsInElt = mp.pointIdsInElements( part );
+        auto const pointsPerElement = mp.pointsPerElement();
         for( index_type i = 0; i < nElt; ++i )
         {
-            for( uint16_type p=0; p < mesh_type::element_type::numPoints; ++p )
-                cell->GetPointIds()->SetId( p, pointsIdsInElt[i*mesh_type::element_type::numPoints+p] - startPtId );
+            for( uint16_type p=0; p < pointsPerElement; ++p )
+                cell->GetPointIds()->SetId( p, pointsIdsInElt[i*pointsPerElement+p] - startPtId );
             out->InsertNextCell( cell->GetCellType(), cell->GetPointIds() );
         }
 
@@ -719,24 +722,5 @@ ExporterVTK<MeshType,N>::updateInSituProcessor( vtkSmartPointer<vtkMultiBlockDat
 }
 #endif
 
-#if 0
-#if defined( FEELPP_INSTANTIATION_MODE )
-
-//
-// explicit instances
-//
-
-# define DIMS BOOST_PP_TUPLE_TO_LIST(3,(1,2,3))
-# define ORDERS BOOST_PP_TUPLE_TO_LIST(5,(1,2,3,4,5))
-# define ORDERS_FUN_GMSH BOOST_PP_TUPLE_TO_LIST(5,(1,2,3,4,5))
-
-// exporter VTK
-# define FACTORY(LDIM,LORDER,ORDERFUN) template class ExporterVTK<Mesh<Simplex<LDIM,LORDER,LDIM> >, ORDERFUN >;
-# define FACTORY_OP(_, GDO) FACTORY GDO
-
-BOOST_PP_LIST_FOR_EACH_PRODUCT( FACTORY_OP, 3, ( DIMS, ORDERS, ORDERS_FUN_GMSH ) )
-
-#endif // FEELPP_INSTANTIATION_MODE
-#endif
 }
 #endif // __EXPORTERVTK_CPP

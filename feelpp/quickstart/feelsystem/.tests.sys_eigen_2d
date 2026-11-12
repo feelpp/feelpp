@@ -1,0 +1,2 @@
+smoke --directory=qs_sys/eigen
+fe-p2-geometry-g2 --order=2 --geometry.order=2 --directory=qs_sys/eigen_p2_g2

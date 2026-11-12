@@ -1,13 +1,10 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Goncalo Pena <goncalo.pena@epfl.ch>
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-    SPDX-FileContributor: Goncalo Pena <goncalo.pena@epfl.ch>
-
-    SPDX-FileCopyrightText: 2006 EPFL
-    SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
-
-    SPDX-License-Identifier: LGPL-3.0-or-later
-*/
 /**
    \file warpblend.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -20,19 +17,19 @@
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelpoly/pointsetinterpolation.hpp>
 #include <feel/feelpoly/jacobi.hpp>
-#include <feel/feelpoly/geomap.hpp>
 #include <feel/feelmesh/geond.hpp>
 #include <feel/feelmesh/geo0d.hpp>
 #include <feel/feelpoly/gausslobatto.hpp>
 
 #include <feel/feelpoly/equispaced.hpp>
+#include <concepts>
 
 
 namespace Feel
 {
 
 template< class Convex,
-          uint16_type Order,
+          int Order,
           typename T = double >
 class PointSetWarpBlend : public  PointSetInterpolation<Convex::nDim, Order, T, Simplex>
 {
@@ -102,7 +99,7 @@ public :
 
                         points_type coord_bar = toBarycentric( pts );
 
-                        pts += calculateFaceDeformation( coord_bar, entityMap( d,e ), mpl::int_<3>() );
+                        pts += calculateFaceDeformationOnFace3D( coord_bar, entityMap( d,e ) );
 
                         final_pts = putInPointset ( final_pts,
                                                     toEquilateral( pts, false ),
@@ -395,7 +392,7 @@ private :
         return coord;
     }
 
-    points_type calculateFaceDeformation( points_type const& coord_bar, mpl::int_<2> )
+    points_type calculateFaceDeformation2D( points_type const& coord_bar )
     {
         points_type blend ( 3, coord_bar.size2() );
 
@@ -430,13 +427,13 @@ private :
     }
 
     //calculates the face deformation for one of the faces of the tetrahedra
-    points_type calculateFaceDeformation( points_type const& pts, uint16_type face_id, mpl::int_<3> )
+    points_type calculateFaceDeformationOnFace3D( points_type const& pts, uint16_type face_id )
     {
         points_type coord_bar;
 
         coord_bar = getCoordinates( pts, face_id );
 
-        points_type def = calculateFaceDeformation( coord_bar, mpl::int_<2>() );
+        points_type def = calculateFaceDeformation2D( coord_bar );
 
         points_type w ( 3, pts.size2() );
 
@@ -476,7 +473,7 @@ private :
         return blend;
     }
 
-    points_type calculateFaceDeformation( points_type const& coord_bar, mpl::int_<3> )
+    points_type calculateFaceDeformation3D( points_type const& coord_bar )
     {
         points_type blend = blendFunction( coord_bar );
 
@@ -488,9 +485,8 @@ private :
 
             for ( uint16_type i=0; i<3; i++ )
             {
-                vector_type aux = ublas::row( calculateFaceDeformation( coord_bar,
-                                              entityMap( 2, face_id ),
-                                              mpl::int_<3>() ), i );
+                vector_type aux = ublas::row( calculateFaceDeformationOnFace3D( coord_bar,
+                                              entityMap( 2, face_id ) ), i );
 
                 ublas::row( warp[face_id], i ) = ublas::element_prod( ublas::row( blend, face_id ), aux );
             }
@@ -503,13 +499,17 @@ private :
     }
 
     template<int N>
+        requires ( N == 2 || N == 3 )
     points_type transformPoints( points_type pts )
     {
         pts = toEquilateral( pts, true );
 
         points_type coord_bar = toBarycentric( pts );
 
-        pts += calculateFaceDeformation( coord_bar, mpl::int_<N>() );
+        if constexpr ( N == 2 )
+            pts += calculateFaceDeformation2D( coord_bar );
+        else
+            pts += calculateFaceDeformation3D( coord_bar );
 
         return toEquilateral( pts, false );
     }

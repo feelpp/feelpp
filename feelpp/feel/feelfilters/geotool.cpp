@@ -31,6 +31,7 @@
 
 #include <feel/feelfilters/geotool.hpp>
 #include <feel/feelfilters/geotoolshape.cpp>
+#include <array>
 
 #if defined( FEELPP_HAS_GMSH_H )
 #if !defined( FEELPP_HAS_GMSH_API )
@@ -2168,29 +2169,45 @@ GeoGMSHTool::updateSurfaceListFromFusionMarkersLineWithoutInterface( std::map<st
 
 
 
+namespace
+{
+using geotool_run_fn_type = void ( * )( data_geo_ptrtype );
+using geotool_dispatch_entry_type = std::pair<const char*, geotool_run_fn_type>;
 
+const std::array<geotool_dispatch_entry_type, 19> geotoolDispatchTable = {{
+    { "line", &runLine },
+    { "triangle", &runTriangle },
+    { "rectangle", &runRectangle },
+    { "quadrangle", &runQuadrangle },
+    { "pentagon", &runPentagon },
+    { "hexagon", &runHexagon },
+    { "circle", &runCircle },
+    { "ellipse", &runEllipse },
+    { "pie", &runPie },
+    { "special_1a", &runSpecial_1a },
+    { "special_1b", &runSpecial_1b },
+    { "peanut", &runPeanut },
+    { "tetrahedron", &runTetrahedron },
+    { "hexahedron", &runHexahedron },
+    { "cube", &runCube },
+    { "cylindre", &runCylindre },
+    { "sphere", &runSphere },
+    { "tube", &runTube },
+    { "special3D_1", &runSpecial3D_1 },
+}};
+} // namespace
 
-
-
-
-#define GEOTOOL_GENERATE_RUN(r,state)                                   \
-        if( boost::get<2>(*__dg) ==  GEOTOOL_SHAPE_NAME_STR(BOOST_PP_TUPLE_ELEM(2,0,state)) ) \
-            {                                                           \
-                BOOST_PP_CAT(run,GEOTOOL_SHAPE_NAME_CLASS(BOOST_PP_TUPLE_ELEM(2,0,state))) (__dg); \
-            }                                                           \
-        /**/
-/*_________________________________________________*/
-/*                                                 */
-/**/
-
-
-// A refaire avec les boost pp
 void run( data_geo_ptrtype __dg )
 {
-    BOOST_PP_FOR( ( 0, BOOST_PP_SUB( BOOST_PP_ARRAY_SIZE( GEOTOOL_SHAPE ),1 ) ),
-                  GEOTOOL_INSTANTIATES_FOR_COMP,
-                  GEOTOOL_INSTANTIATES_FOR_INCR,
-                  GEOTOOL_GENERATE_RUN );
+    auto const& shape = boost::get<2>( *__dg );
+    for ( auto const& [shapeName, runFn] : geotoolDispatchTable )
+    {
+        if ( shape == shapeName )
+        {
+            runFn( __dg );
+            return;
+        }
+    }
 }
 
 /*_________________________________________________*

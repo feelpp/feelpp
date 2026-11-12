@@ -1,26 +1,12 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@imag.fr>
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2011 Université Joseph Fourier (Grenoble I)
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Vincent Chabannes <vincent.chabannes@imag.fr>
-       Date: 2011-03-03
-
-  Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file geotool.hpp
    \author Vincent Chabannes <vincent.chabannes@imag.fr>
@@ -142,35 +128,25 @@ typedef std::shared_ptr<data_geo_type> data_geo_ptrtype;
 
 
 void run( data_geo_ptrtype __dg );
-
-
-
-#define GEOTOOL_INSTANTIATES_FOR_COMP(r, state)                         \
-        BOOST_PP_NOT_EQUAL( BOOST_PP_TUPLE_ELEM(2, 0, state),           \
-                            BOOST_PP_INC(BOOST_PP_TUPLE_ELEM(2, 1, state)) \
-                            )                                           \
-        /**/
-/*_________________________________________________*/
-/*                                                 */
-/**/
-#define GEOTOOL_INSTANTIATES_FOR_INCR(r, state)             \
-        (                                                   \
-         BOOST_PP_INC(BOOST_PP_TUPLE_ELEM(2, 0, state)),	\
-         BOOST_PP_TUPLE_ELEM(2, 1, state) )                 \
-        /**/
-/*_________________________________________________*/
-/*                                                 */
-/**/
-#define GEOTOOL_INSTANTIATES_FOR(r,state)                               \
-        void BOOST_PP_CAT(run,GEOTOOL_SHAPE_NAME_CLASS(BOOST_PP_TUPLE_ELEM(2,0,state))) (data_geo_ptrtype dg); \
-        /**/
-/*_________________________________________________*/
-/*                                                 */
-/**/
-BOOST_PP_FOR( ( 0, BOOST_PP_SUB( BOOST_PP_ARRAY_SIZE( GEOTOOL_SHAPE ),1 ) ),
-              GEOTOOL_INSTANTIATES_FOR_COMP,
-              GEOTOOL_INSTANTIATES_FOR_INCR,
-              GEOTOOL_INSTANTIATES_FOR )
+void runLine( data_geo_ptrtype dg );
+void runTriangle( data_geo_ptrtype dg );
+void runRectangle( data_geo_ptrtype dg );
+void runQuadrangle( data_geo_ptrtype dg );
+void runPentagon( data_geo_ptrtype dg );
+void runHexagon( data_geo_ptrtype dg );
+void runCircle( data_geo_ptrtype dg );
+void runEllipse( data_geo_ptrtype dg );
+void runPie( data_geo_ptrtype dg );
+void runSpecial_1a( data_geo_ptrtype dg );
+void runSpecial_1b( data_geo_ptrtype dg );
+void runPeanut( data_geo_ptrtype dg );
+void runTetrahedron( data_geo_ptrtype dg );
+void runHexahedron( data_geo_ptrtype dg );
+void runCube( data_geo_ptrtype dg );
+void runCylindre( data_geo_ptrtype dg );
+void runSphere( data_geo_ptrtype dg );
+void runTube( data_geo_ptrtype dg );
+void runSpecial3D_1( data_geo_ptrtype dg );
 
 
 
@@ -1199,6 +1175,8 @@ public :
             int format = args.get_else_invocable( _format, [](){ return ioption(_name="gmsh.format"); } );
             bool straighten = args.get_else( _straighten, true );
             int refine = args.get_else( _refine, 0 );
+            bool forceRebuild =
+                args.get_else( _force_rebuild, false );
             worldcomm_ptr_t worldcomm = args.get_else( _worldcomm, mesh->worldCommPtr() );
             int partitions = args.get_else( _partitions, worldcomm->size() );
             int partition_file =args.get_else( _partition_file, 0 );
@@ -1216,7 +1194,9 @@ public :
             this->cleanOstr();
             this->zeroCpt();
 
-            auto gmshDesc = std::make_shared<Gmsh>( _mesh_type::nDim, _mesh_type::nOrder, worldcomm );
+            auto gmshDesc = std::make_shared<Gmsh>(
+                _mesh_type::nDim, mesh->order(),
+                worldcomm );
             gmshDesc->setRecombine( _mesh_type::shape_type::is_hypercube );
             gmshDesc->setPrefix( name );
 
@@ -1238,6 +1218,7 @@ public :
                                               _format=format,
                                               _straighten=straighten,
                                               _refine=refine,
+                                              _force_rebuild=forceRebuild,
                                               _worldcomm=worldcomm,
                                               _partitions=partitions,
                                               _update=update );

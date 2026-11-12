@@ -1,0 +1,29 @@
+# SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+# SPDX-FileCopyrightText: 2026 University of Strasbourg
+# SPDX-License-Identifier: LGPL-3.0-or-later
+ned1-k0 --family=ned1 --order=0 --solution=polynomial --error-max=1e-8 --gmsh.hsize=0.5 --ksp-type=preonly --pc-type=lu --no-export --directory=qs_sys/maxwell_3d/ned1-k0
+ned1-k1 --family=ned1 --order=1 --solution=polynomial --error-max=1e-8 --gmsh.hsize=0.5 --ksp-type=preonly --pc-type=lu --no-export --directory=qs_sys/maxwell_3d/ned1-k1
+ned1-k2 --family=ned1 --order=2 --solution=polynomial --error-max=1e-8 --gmsh.hsize=0.5 --ksp-type=preonly --pc-type=lu --no-export --directory=qs_sys/maxwell_3d/ned1-k2
+ned1-k3 --family=ned1 --order=3 --solution=polynomial --error-max=1e-8 --gmsh.hsize=0.5 --ksp-type=preonly --pc-type=lu --no-export --directory=qs_sys/maxwell_3d/ned1-k3
+ned1-k4 --family=ned1 --order=4 --solution=polynomial --error-max=1e-8 --gmsh.hsize=0.5 --ksp-type=preonly --pc-type=lu --no-export --directory=qs_sys/maxwell_3d/ned1-k4
+ned1-k1-g2 --family=ned1 --order=1 --geometry.order=2 --solution=polynomial --error-max=1e-8 --gmsh.hsize=0.5 --ksp-type=preonly --pc-type=lu --no-export --directory=qs_sys/maxwell_3d/ned1-k1-g2
+ned1-sin-k2 --family=ned1 --order=2 --solution=sin --error-max=0.5 --gmsh.hsize=0.5 --ksp-type=preonly --pc-type=lu --no-export --directory=qs_sys/maxwell_3d/ned1-sin-k2
+ned2-k0 --family=ned2 --order=0 --solution=polynomial --error-max=1e-8 --gmsh.hsize=0.5 --ksp-type=preonly --pc-type=lu --no-export --directory=qs_sys/maxwell_3d/ned2-k0
+ned2-k1 --family=ned2 --order=1 --solution=polynomial --error-max=1e-8 --gmsh.hsize=0.5 --ksp-type=preonly --pc-type=lu --no-export --directory=qs_sys/maxwell_3d/ned2-k1
+ned2-k2 --family=ned2 --order=2 --solution=polynomial --error-max=1e-8 --gmsh.hsize=0.5 --ksp-type=preonly --pc-type=lu --no-export --directory=qs_sys/maxwell_3d/ned2-k2
+ned2-k3 --family=ned2 --order=3 --solution=polynomial --error-max=1e-8 --gmsh.hsize=0.5 --ksp-type=preonly --pc-type=lu --no-export --directory=qs_sys/maxwell_3d/ned2-k3
+ned2-k4 --family=ned2 --order=4 --solution=polynomial --error-max=1e-8 --gmsh.hsize=0.5 --ksp-type=preonly --pc-type=lu --no-export --directory=qs_sys/maxwell_3d/ned2-k4
+ned2-k1-g2 --family=ned2 --order=1 --geometry.order=2 --solution=polynomial --error-max=1e-8 --gmsh.hsize=0.5 --ksp-type=preonly --pc-type=lu --no-export --directory=qs_sys/maxwell_3d/ned2-k1-g2
+ned2-sin-k2 --family=ned2 --order=2 --solution=sin --error-max=0.5 --gmsh.hsize=0.5 --ksp-type=preonly --pc-type=lu --no-export --directory=qs_sys/maxwell_3d/ned2-sin-k2
+sphere-ned1-k0-g1 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/../maxwell/cases/sphere/maxwell-sphere.cfg --family=ned1 --order=0 --geometry.order=1 --error-max=8.0 --no-export --directory=qs_sys/maxwell_3d/sphere-ned1-k0-g1
+sphere-ned1-k0-g2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/../maxwell/cases/sphere/maxwell-sphere.cfg --family=ned1 --order=0 --geometry.order=2 --error-max=8.0 --no-export --directory=qs_sys/maxwell_3d/sphere-ned1-k0-g2
+sphere-ned1-k1-g1 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/../maxwell/cases/sphere/maxwell-sphere.cfg --family=ned1 --order=1 --geometry.order=1 --error-max=1.0 --no-export --directory=qs_sys/maxwell_3d/sphere-ned1-k1-g1
+sphere-ned1-k1-g2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/../maxwell/cases/sphere/maxwell-sphere.cfg --family=ned1 --order=1 --geometry.order=2 --error-max=1.0 --no-export --directory=qs_sys/maxwell_3d/sphere-ned1-k1-g2
+sphere-ned1-k2-g1 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/../maxwell/cases/sphere/maxwell-sphere.cfg --family=ned1 --order=2 --geometry.order=1 --error-max=0.5 --no-export --directory=qs_sys/maxwell_3d/sphere-ned1-k2-g1
+sphere-ned1-k2-g2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/../maxwell/cases/sphere/maxwell-sphere.cfg --family=ned1 --order=2 --geometry.order=2 --error-max=0.5 --no-export --directory=qs_sys/maxwell_3d/sphere-ned1-k2-g2
+sphere-ned2-k0-g1 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/../maxwell/cases/sphere/maxwell-sphere.cfg --family=ned2 --order=0 --geometry.order=1 --error-max=8.0 --no-export --directory=qs_sys/maxwell_3d/sphere-ned2-k0-g1
+sphere-ned2-k0-g2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/../maxwell/cases/sphere/maxwell-sphere.cfg --family=ned2 --order=0 --geometry.order=2 --error-max=8.0 --no-export --directory=qs_sys/maxwell_3d/sphere-ned2-k0-g2
+sphere-ned2-k1-g1 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/../maxwell/cases/sphere/maxwell-sphere.cfg --family=ned2 --order=1 --geometry.order=1 --error-max=1.0 --no-export --directory=qs_sys/maxwell_3d/sphere-ned2-k1-g1
+sphere-ned2-k1-g2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/../maxwell/cases/sphere/maxwell-sphere.cfg --family=ned2 --order=1 --geometry.order=2 --error-max=1.0 --no-export --directory=qs_sys/maxwell_3d/sphere-ned2-k1-g2
+sphere-ned2-k2-g1 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/../maxwell/cases/sphere/maxwell-sphere.cfg --family=ned2 --order=2 --geometry.order=1 --error-max=0.5 --no-export --directory=qs_sys/maxwell_3d/sphere-ned2-k2-g1
+sphere-ned2-k2-g2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/../maxwell/cases/sphere/maxwell-sphere.cfg --family=ned2 --order=2 --geometry.order=2 --error-max=0.5 --no-export --directory=qs_sys/maxwell_3d/sphere-ned2-k2-g2

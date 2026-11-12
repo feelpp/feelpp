@@ -38,7 +38,7 @@
 #include <boost/math/special_functions/nonfinite_num_facets.hpp>
 #endif
 #include <feel/feeldiscr/operatorlinear.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/forms.hpp>
 namespace Feel
 {
 

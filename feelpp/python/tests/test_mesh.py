@@ -2,6 +2,20 @@ import feelpp.core as fppc
 import sys
 import pytest
 
+@pytest.mark.parametrize("dim,order,realdim", [
+    (1, 1, 1), (1, 2, 1), (1, 1, 2),
+    (2, 1, 2), (2, 2, 2), (2, 1, 3),
+    (3, 1, 3), (3, 2, 3),
+])
+def test_mesh_create(init_feelpp, dim, order, realdim):
+    mesh_type = getattr(fppc, f"Mesh_S{dim}DG{order}R{realdim}")
+    mesh = mesh_type.create(fppc.Environment.worldCommPtr())
+    assert isinstance(mesh, mesh_type)
+    assert mesh.dimension() == dim
+    assert mesh.order() == order
+    assert mesh.realDimension() == realdim
+
+
 def run( m, geofile):
     if fppc.Environment.isMasterRank():
         print("mesh dim:", m.dimension())

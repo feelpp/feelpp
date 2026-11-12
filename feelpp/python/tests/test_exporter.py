@@ -9,6 +9,9 @@ def run(m, geo):
     Xh = fppc.functionSpace(space="Pch", mesh=m2d, order=1)
     Xhv = fppc.functionSpace(space="Pchv", mesh=m2d, order=1)
     P0h = fppc.functionSpace(space="Pdh", mesh=m2d, order=0)
+    assert Xh.order() == 1
+    assert Xhv.order() == 1
+    assert P0h.order() == 0
     #u=Xh.elementFromExpr("{sin(2*pi*x)*cos(pi*y)}:x:y")
     u = Xh.element()
     u.on(range=fppc.elements(m2d), expr=fppc.expr("x*x:x"))
@@ -32,6 +35,5 @@ def test_exporter(init_feelpp):
     }
     run( fppc.mesh( dim=2 ), geo['2'] )
     run( fppc.mesh( dim=3, realdim=3 ), geo['3'] )
-
 
 

@@ -16,7 +16,7 @@ from urllib.request import Request, urlopen
 from feelpp.pkg.config import detect_channel, detect_flavor
 from feelpp.pkg.graph import load_manifest
 from feelpp.pkg.image import normalize_package_version_tag
-from feelpp.pkg.oci.common import branch_tag_suffix
+from feelpp.pkg.oci.common import branch_image_tag
 from feelpp.pkg.shell import run_capture, run_checked
 
 from .publications import HalPublicationService
@@ -603,7 +603,8 @@ class ReleaseService:
             oci_dist = str(row.get("oci_dist") or "").strip()
             if not oci_dist:
                 raise ValueError(f"Spack target {target} has no OCI tag in {config_path}")
-            image_ref = f"{OCI_REGISTRY}/{OCI_REPOSITORY}:{oci_dist}{branch_tag_suffix(branch)}-full"
+            tag = branch_image_tag(oci_dist, branch=branch, suffix="-full")
+            image_ref = f"{OCI_REGISTRY}/{OCI_REPOSITORY}:{tag}"
             checks.append(
                 ContainerAvailabilityCheck(
                     dist=target,

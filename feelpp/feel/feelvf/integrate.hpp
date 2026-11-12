@@ -1,26 +1,12 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2014-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2014-01-04
-
-  Copyright (C) 2014-2016 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file integrate.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -30,6 +16,7 @@
 #define FEELPP_VF_INTEGRATE_H
 
 #include <feel/feelvf/expr.hpp>
+#include <feel/feelvf/field.hpp>
 #include <feel/feelvf/integrator.hpp>
 
 namespace Feel {
@@ -66,24 +53,30 @@ auto integrate( Ts && ... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
     auto && range = args.get(_range);
-    auto && expr = args.get(_expr);
+    auto expr = Feel::vf::toValueExpression( args.get(_expr) );
     auto && quad = args.get_else(_quad,quad_order_from_expression );
     auto && quad1 = args.get_else(_quad1,quad_order_from_expression );
     GeomapStrategyType geomap = args.get_else(_geomap,GeomapStrategyType::GEOMAP_OPT);
-    bool use_tbb = args.get_else(_use_tbb,false);
+    auto geometryEvaluation = args.get_else(
+        _geometry_evaluation,
+        geometry::geometry_evaluation_strategy::automatic );
     bool use_harts = args.get_else(_use_harts,false);
-    int grainsize = args.get_else(_grainsize,100);
-    std::string const& partitioner = args.get_else(_partitioner, "auto");
+    auto localFormLowering = args.get_else(
+        _local_form_lowering, vf::local_form_lowering::automatic );
     bool verbose = args.get_else(_verbose,false);
 
     using _integrate_helper_type = Feel::detail::integrate_type<decltype(expr),decltype(range),decltype(quad),decltype(quad1)>;
     auto && quadptloc = args.get_else(_quadptloc, typename _integrate_helper_type::_quadptloc_ptrtype{});
 
-    auto the_ims = _integrate_helper_type::_im_type::im( quad,quad1,expr );
+    auto const geometryOrder = _integrate_helper_type::expr_order_t::geometryOrder( range );
+    auto the_ims = _integrate_helper_type::_im_type::im( quad,quad1,expr,geometryOrder );
     auto const& the_im = the_ims.first;
     auto const& the_im1 = the_ims.second;
 
-    auto ret =  integrate_impl( range, the_im , expr,  Feel::detail::geomapStrategy(range,geomap), the_im1, use_tbb, use_harts, grainsize, partitioner, quadptloc );
+    auto ret = integrate_impl( range, the_im, expr,
+                               geometryOrder == 1 ? GeomapStrategyType::GEOMAP_HO : geomap,
+                               geometryEvaluation, the_im1,
+                               use_harts, quadptloc, localFormLowering );
 
     if ( verbose )
     {

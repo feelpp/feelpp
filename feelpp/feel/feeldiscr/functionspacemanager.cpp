@@ -72,13 +72,14 @@ struct FunctionSpaceManager::Impl
         std::type_index spaceType;                  ///< Concrete function-space type.
         DofTableExtendedType extendedDofTable;      ///< Normalized DOF-table mode.
         size_type components;                       ///< Effective mesh components.
+        int runtimeOrder;                           ///< Effective runtime FE order.
 
         /** @return @c true when this key precedes @p other. */
         bool operator<( Key const& other ) const
         {
-            return std::tie( structuralRevision, spaceType, extendedDofTable, components ) <
+            return std::tie( structuralRevision, spaceType, extendedDofTable, components, runtimeOrder ) <
                    std::tie( other.structuralRevision, other.spaceType,
-                             other.extendedDofTable, other.components );
+                             other.extendedDofTable, other.components, other.runtimeOrder );
         }
     };
 
@@ -271,6 +272,7 @@ FunctionSpaceManager::erased_space_ptrtype FunctionSpaceManager::getOrCreate(
     requestSignature = hashCombine( requestSignature, structuralRevision );
     requestSignature = hashCombine( requestSignature, static_cast<uint64_type>( normalizedDofTable ) );
     requestSignature = hashCombine( requestSignature, options.components );
+    requestSignature = hashCombine( requestSignature, static_cast<uint64_type>( options.runtimeOrder ) );
     requestSignature = hashCombine( requestSignature, M_impl->config.enabled );
     requestSignature = hashCombine( requestSignature, M_impl->config.maxEntries );
     requestSignature = hashCombine( requestSignature, M_impl->config.maxEntriesPerMesh );
@@ -312,7 +314,7 @@ FunctionSpaceManager::erased_space_ptrtype FunctionSpaceManager::getOrCreate(
             ++entryIt;
     }
 
-    Impl::Key key{ structuralRevision, spaceType, normalizedDofTable, options.components };
+    Impl::Key key{ structuralRevision, spaceType, normalizedDofTable, options.components, options.runtimeOrder };
     M_impl->increment( bucket, &FunctionSpaceManagerStats::lookups );
     auto found = bucket.entries.find( key );
     bool const localHit = found != bucket.entries.end();

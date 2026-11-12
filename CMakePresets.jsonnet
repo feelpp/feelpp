@@ -103,6 +103,28 @@ local usrlocalPreset = {
   },
 };
 
+local perfFlagsPreset = {
+  name: 'perf-flags',
+  hidden: true,
+  description: 'RelWithDebInfo flags for perf-friendly sampling',
+  cacheVariables: {
+    CMAKE_CXX_FLAGS_RELWITHDEBINFO: '-g -O2 -fno-omit-frame-pointer',
+    CMAKE_C_FLAGS_RELWITHDEBINFO: '-g -O2 -fno-omit-frame-pointer',
+  },
+};
+
+local eztraceFlagsPreset = {
+  name: 'eztrace-flags',
+  hidden: true,
+  description: 'RelWithDebInfo flags for EZTrace instrumentation',
+  cacheVariables: {
+    CMAKE_CXX_FLAGS_RELWITHDEBINFO: '-g -O2 -fno-omit-frame-pointer -finstrument-functions',
+    CMAKE_C_FLAGS_RELWITHDEBINFO: '-g -O2 -fno-omit-frame-pointer -finstrument-functions',
+    CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO: '-rdynamic',
+    CMAKE_SHARED_LINKER_FLAGS_RELWITHDEBINFO: '-rdynamic',
+  },
+};
+
 local macosxPreset = {
   name: 'macosx',
   hidden: true,
@@ -198,8 +220,6 @@ local debugPreset = {
     FEELPP_ENABLE_TOOLBOXES: 'ON',
     FEELPP_ENABLE_MOR: 'OFF',
     FEELPP_ENABLE_FEELPP_PYTHON: 'OFF',
-    FEELPP_INSTANTIATION_ORDER_MAX: '1',
-    FEELPP_MESH_MAX_ORDER: '1',
   },
   environment: {
     VERBOSE: '1',
@@ -226,8 +246,6 @@ local devPreset = {
     FEELPP_ENABLE_TOOLBOXES: 'ON',
     FEELPP_ENABLE_MOR: 'ON',
     FEELPP_ENABLE_FEELPP_PYTHON: 'ON',
-    FEELPP_INSTANTIATION_ORDER_MAX: '1',
-    FEELPP_MESH_MAX_ORDER: '1',
   },
   environment: {
     VERBOSE: '1',
@@ -261,8 +279,6 @@ local dbgPreset = {
       value: 'ON',
     },
     FEELPP_ENABLE_MOR: 'OFF',
-    FEELPP_INSTANTIATION_ORDER_MAX: '1',
-    FEELPP_MESH_MAX_ORDER: '1',
   },
   environment: {
     MY_ENVIRONMENT_VARIABLE: 'Test',
@@ -648,6 +664,8 @@ local configurePresets =
     defaultPreset,
     warningsPreset,
     usrlocalPreset,
+    perfFlagsPreset,
+    eztraceFlagsPreset,
     macosxPreset,
   ] +
   // C++ standard presets

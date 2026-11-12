@@ -1,0 +1,3 @@
+quarterturn-hybrid --config-file ${CMAKE_CURRENT_SOURCE_DIR}/../laplacian/cases/quarter-turn/darcy-quarter-turn3D-hybrid.cfg --no-export
+fe-rt1-geometry-g2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/../laplacian/cases/quarter-turn/darcy-quarter-turn3D-hybrid.cfg --darcy.order=1 --geometry.order=2 --directory=qs_sys/darcy_hybrid_rt1_g2 --no-export
+fe-rt1-geometry-g2-monolithic --config-file ${CMAKE_CURRENT_SOURCE_DIR}/../laplacian/cases/quarter-turn/darcy-quarter-turn3D-hybrid.cfg --darcy.order=1 --geometry.order=2 --sc.condense=false --directory=qs_sys/darcy_hybrid_rt1_g2_monolithic --no-export

@@ -1,0 +1,198 @@
+= Mathematical problems and systems
+
+The Problem/System API belongs in `feelsystem`, under `Feel::systems`.
+A `Problem` stores a replayable mathematical description: spaces, variational
+terms, constraints, parameters, and solver metadata. A `System` owns the
+assembled or evaluable state created from that description. Keeping both in
+one module makes their shared concepts and assembly/solve dispatch explicit.
+A separate `feelproblem` module would split this closely coupled interface
+without establishing a separate dependency boundary.
+
+The layers are:
+
+* `feelvf`: expression terminals, owning test/trial bases, field values,
+  facet expressions, forms, and integration.
+* `feelsystem`: scalar, nonlinear, block, HDG, eigenvalue, and evolution
+  problem descriptors and their systems; assembly/solve strategies and
+  auxiliary operators.
+* `feelpde`: material and boundary-condition adapters for model properties.
+  Application-specific PDE formulations can use these descriptors.
+
+Include `feel/feelsystem/system.hpp` for the complete API. Existing
+`System`, `SystemExplicit`, and `SystemImplicit*` names remain available via
+the legacy compatibility headers.
+
+== Example
+
+[source,cpp]
+----
+auto mesh = loadMesh( _mesh = new Mesh<Simplex<2, Dynamic>>( RuntimeOrder{ 1 } ) );
+auto Xh = Pch<Dynamic>( mesh, RuntimeOrder{ 2 } );
+auto uh = Xh->element( "solution" );
+auto u = trial( Xh, "u" );
+auto v = test( Xh, "v" );
+
+auto problem = ellipticProblem( _space = Xh, _name = "poisson" )
+    .lhs( integrate( _range = elements( mesh ),
+                     _expr = inner( grad( u ), grad( v ) ) ) )
+    .rhs( integrate( _range = elements( mesh ), _expr = v ) )
+    .dirichlet( _range = boundaryfaces( mesh ),
+                _element = uh, _expr = cst( 0.0 ) );
+
+auto system = problem.assemble();
+auto result = system.solve( _solution = uh );
+----
+
+Space-based `trial(Xh)` and `test(Xh)`, including their named overloads, own
+the internal elements used by expression terminals. This allows a problem
+to retain expressions after the original basis objects leave scope.
+Element-based `trial(uh)` and `test(vh)` remain available for existing code.
+Field values use `value(uh)` / `idv(uh)`; raw `grad(uh)` retains its existing
+test-function meaning, while `grad(value(uh))` evaluates the field gradient.
+
+== Runtime orders in quickstarts
+
+All ten `feelpp/quickstart/feelsystem` examples use `Dynamic` finite-element
+spaces and `Mesh<Simplex<Dim, Dynamic>>` geometry, following the other
+quickstarts in this branch. Polynomial and geometric orders are independent
+runtime choices. The shared `quickstart::checkedOrder`, `geometryOrder`, and
+`checkMeshOrder` helpers validate the requested orders and the loaded mesh.
+
+* Scalar examples use `--order=k` with a default of 1 and require `k >= 1`.
+* The mixed Stokes example uses velocity order `k` and pressure order `k-1`,
+  selected by `--order=k` with a default of 2 and `k >= 2`.
+* Both Darcy examples use `--darcy.order=k` with a default of 0 and `k >= 0`.
+  Flux, pressure, and the hybrid trace use the compatible RT/Pdisc orders.
+  The hybrid flux uses the existing `brokenh<RaviartThomas<Dynamic>>` factory.
+* The Maxwell example uses `Ned1h<Dynamic>` or `Ned2h<Dynamic>` with
+  `--family=ned1|ned2` and `--order=k`, defaulting to the first family at `k=0`.
+* Every example accepts `--geometry.order=g`, defaulting to 1 with `g >= 1`.
+  The hybrid face mesh preserves the volume mesh's runtime geometric order.
+
+The Darcy examples use the existing quickstart quadrature estimate that
+increases with FE and geometry order; `--darcy.quad` can override it.
+Conservation is checked using the pressure test space and assembly
+quadrature, since curved-cell Piola divergence is not generally a plain
+discontinuous polynomial in physical coordinates.
+
+[source,shell]
+----
+feelpp_qs_sys_linear_2d --order=3 --geometry.order=2
+feelpp_qs_sys_mixed_2d --order=3 --geometry.order=2
+feelpp_qs_sys_maxwell_3d --family=ned2 --order=2 --geometry.order=2 --no-export
+feelpp_qs_sys_darcy_hybrid_3d --darcy.order=1 --geometry.order=2 --no-export \
+    --config-file=feelpp/quickstart/laplacian/cases/quarter-turn/darcy-quarter-turn3D-hybrid.cfg
+----
+
+== Maxwell example and shared datasets
+
+`qs_sys_maxwell.cpp` describes `curl curl E + mass E = f` using owning
+`trial`/`test` bases, `ellipticProblem().lhs().rhs().dirichlet()`, and an
+assembled `LinearSystem`. Symmetric elimination imposes the exact tangential
+boundary trace. Passing the default backend to `assemble` preserves the
+existing Maxwell quickstart's unprefixed solver options.
+
+The `qs_sys_maxwell` target builds `feelpp_qs_sys_maxwell_2d` and
+`feelpp_qs_sys_maxwell_3d`; both are also part of `qs_sys`.
+They share `quickstart/maxwell/manufactured.hpp` with the existing
+`qs_maxwell` / `qs_curlcurl` examples, including the sine and polynomial
+fields and their exact curls. Mesh loading, forcing, quadrature, error
+checks, export fields, and command-line options match those examples.
+The shared `quickstart/maxwell/cases/sphere/maxwell-sphere.cfg` case uses
+the unit ball centered at the origin, quadratic geometry, the sine field,
+and runtime Nedelec order one. It works with either Nedelec family and
+either Maxwell implementation; see the Maxwell README for run commands.
+Its order study varies FE orders 0--2 and geometry orders 1--2 at fixed mesh
+size 0.5 for both Nedelec families, with the form-based example as a reference.
+The test cases reproduce the polynomial field through order four for both
+families and dimensions, and exercise quadratic geometry and sine fields
+in serial runs, matching the existing `qs_maxwell` coverage.
+
+Higher-order Maxwell MPI runs currently inherit a core H(curl) ghost-map
+defect: on six ranks, unresolved extended descriptor keys trigger the
+legacy fallback, which aborts on conflicting DoF indices. This was
+reproduced with both `qs_curlcurl_2d --family=ned1 --order=1` and the
+Problem API example, before problem assembly. Maxwell's automatic tests
+remain serial until that core defect is resolved; the other Problem API
+quickstarts retain their serial and MPI tests.
+
+== Copyright and contributor attribution
+
+Integration source and build-file notices use SPDX fields and University
+of Strasbourg in place of Feel++ Consortium. Historical EPFL and Grenoble
+copyright notices and original license versions are retained.
+Strasbourg ranges begin with each file's first Strasbourg-period
+contribution, following Git renames and the `prudhomm` SVN author alias.
+The older integration files generally start in 2011 or 2012; later files
+use their own first contribution year, and new 2026 files retain 2026.
+File-specific contributor credits retain existing authors and include
+authors owning more than 5% of non-comment code lines in the target and
+source Git histories, with known author aliases combined.
+
+== Integration and related issues
+
+This integration comes from `feelpp-7-problem-api`, commit `bed057e91a`,
+including its working-tree auxiliary-operator and preconditioner support.
+The destination's narrow expression headers, shell basis interfaces, and
+dynamic/static order implementations are retained. The existing Laplacian
+implementation and generated benchmark artifacts are outside this import.
+Automatic differentiation extensions are deferred.
+
+Cached PETSc backends can also be reused when a change of polynomial order
+changes the matrix dimensions. The linear solver detects changes in local
+row/column counts and resets its PETSc storage collectively, including the
+attached preconditioner, before setting the new operators.
+
+* https://github.com/feelpp/feelpp/issues/2486[#2486]: Problem/System API.
+* https://github.com/feelpp/feelpp/issues/2433[#2433]: first-class test/trial bases.
+* https://github.com/feelpp/feelpp/issues/2432[#2432]: block-row constraints.
+* https://github.com/feelpp/feelpp/issues/2487[#2487]: local static-condensation
+  storage and local-solve zeroing.
+
+== Validation
+
+The focused test target is `testsuite-feelsystem`. The `system_orders` test
+checks scalar P1/P2 problems with static and runtime orders, temporary named
+bases, manufactured solutions, and replayed assembly. The existing
+`trial_test_basis` and shell tests cover compatibility with the destination's
+basis interface. The `basis_expressions` and `facet` tests cover the imported
+expression features.
+
+Initial integration validation used Clang 18.1.3, C++23, and PETSc 3.19.6 in
+`build/problem-api-core`. The core library, 13 Problem/System test executables,
+9 quickstart executables, and 4 basis/shell test executables built successfully.
+All 49 CTest invocations passed: 26 Problem/System checks, 18 quickstart checks,
+and 5 compatibility checks, including serial and six-rank MPI runs. The
+HPDDM-specific GenEO solve case was skipped because this PETSc installation
+lacks the HPDDM auxiliary API; local Neumann assembly and overlap mapping
+were exercised.
+
+The subsequent Dynamic quickstart conversion rebuilt all nine examples and
+passed all 42 quickstart CTest invocations (21 cases, each in serial and on
+six MPI ranks). These cover independent FE/geometry order changes, higher
+Lagrange and RT orders, quadratic curved geometry, and both condensed and
+monolithic hybrid Darcy solves at the existing conservation tolerances.
+
+The Maxwell extension rebuilt the core and both dimensions of the Problem
+API and existing form-based executables. All 28 Problem API serial cases
+passed, together with all 20 existing Maxwell reference cases. The largest
+3D cases use a 600-second timeout for this `-O1` build; accuracy tolerances
+and datasets are unchanged. Eight direct comparisons across dimensions,
+families, sine/polynomial data, and linear/quadratic geometry agreed in
+DoF count, mesh size, and L2/curl/H(curl) errors. The six-rank core H(curl)
+limitation described above was reproduced independently of the Problem API.
+
+The sphere case adds 24 serial checks across FE orders 0--2, geometry
+orders 1--2, and both Nedelec families. All passed, and all 12 direct
+Problem API/form-based comparisons agreed. H(curl) error decreased with
+FE order for all four family/geometry combinations. The generated meshes
+retain the same 384 tetrahedra, with genuinely curved boundary elements
+at G2; quadratic EnSight Gold field export was also exercised.
+
+[source,shell]
+----
+cmake --build build/default --target testsuite-feelsystem -j
+ctest --test-dir build/default/testsuite/feelsystem --output-on-failure
+cmake --build build/default --target qs_sys -j
+ctest --test-dir build/default/feelpp/quickstart/feelsystem --output-on-failure
+----
