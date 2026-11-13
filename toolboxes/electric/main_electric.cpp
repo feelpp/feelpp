@@ -1,35 +1,15 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Romain Hild <romain.hild@cemosis.fr>
+ *
+ * SPDX-FileCopyrightText: 2019-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
 #include <feel/feelmodels/electric/electric.hpp>
 
-#include <optional>
-#include <regex>
-
-namespace
-{
-struct DiscretizationSpec
-{
-    int potentialOrder = 1;
-    int geometryOrder = 1;
-};
-
-std::optional<DiscretizationSpec>
-parseDiscretization( std::string const& discretization )
-{
-    static const std::regex re( R"(^P([0-9]+)(?:G([0-9]+))?$)" );
-    std::smatch m;
-    if ( !std::regex_match( discretization, m, re ) )
-        return std::nullopt;
-
-    DiscretizationSpec spec;
-    spec.potentialOrder = std::stoi( m[1].str() );
-    spec.geometryOrder = m[2].matched ? std::stoi( m[2].str() ) : 1;
-    if ( spec.potentialOrder < 1 || spec.geometryOrder < 1 )
-        return std::nullopt;
-    return spec;
-}
-} // namespace
+#include <feel/feelmodels/modelcore/scalardiscretization.hpp>
 
 template <int nDim,int OrderPotential,int OrderGeo>
 int
@@ -49,15 +29,15 @@ runApplicationElectricStatic()
 
 template <int nDim>
 int
-runApplicationElectricDynamic( int orderPotential )
+runApplicationElectricDynamic( int orderPotential, int orderGeometry )
 {
     using namespace Feel;
 
-    using model_type = FeelModels::Electric< Simplex<nDim,1>,
+    using model_type = FeelModels::Electric< Simplex<nDim,Dynamic>,
                                              Lagrange<Dynamic, Scalar,Continuous,PointSetFekete> >;
     std::shared_ptr<model_type> electric( new model_type( "electric", "electric",
                                                            Environment::worldCommPtr(), "", FeelModels::ModelBaseRepository(),
-                                                           RuntimeOrder{ orderPotential } ) );
+                                                           RuntimeOrder{ orderPotential }, RuntimeOrder{ orderGeometry } ) );
     electric->init();
     electric->printAndSaveInfo();
     electric->solve();
@@ -86,23 +66,15 @@ main(int argc, char**argv )
 
         int dimension = ioption(_name="case.dimension");
         std::string discretization = soption(_name="case.discretization");
-        auto discretizationSpec = parseDiscretization( discretization );
+        auto discretizationSpec = FeelModels::parseScalarDiscretization( discretization );
         if ( !discretizationSpec )
         {
             if ( Environment::isMasterRank() )
                 std::cerr << "Invalid case.discretization='" << discretization << "'. Expected P<k> or P<k>G<g> with k,g >= 1\n";
             return EXIT_FAILURE;
         }
-        if ( discretizationSpec->geometryOrder != 1 )
-        {
-            if ( Environment::isMasterRank() )
-                std::cerr << "Unsupported geometry order G" << discretizationSpec->geometryOrder
-                          << " for electric toolbox. Use G1.\n";
-            return EXIT_FAILURE;
-        }
-
         int status = EXIT_FAILURE;
-        if ( discretizationSpec->potentialOrder == 1 && discretizationSpec->geometryOrder == 1 )
+        if ( discretizationSpec->polynomialOrder == 1 && discretizationSpec->geometryOrder == 1 )
         {
             if ( dimension == 2 )
                 status = runApplicationElectricStatic<2,1,1>();
@@ -112,9 +84,9 @@ main(int argc, char**argv )
         else
         {
             if ( dimension == 2 )
-                status = runApplicationElectricDynamic<2>( discretizationSpec->potentialOrder );
+                status = runApplicationElectricDynamic<2>( discretizationSpec->polynomialOrder, discretizationSpec->geometryOrder );
             else if ( dimension == 3 )
-                status = runApplicationElectricDynamic<3>( discretizationSpec->potentialOrder );
+                status = runApplicationElectricDynamic<3>( discretizationSpec->polynomialOrder, discretizationSpec->geometryOrder );
         }
 
         if ( status == EXIT_FAILURE && Environment::isMasterRank() && ( dimension != 2 && dimension != 3 ) )

@@ -204,6 +204,9 @@ macro( genLibElectric )
       CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electric/electricconfig.h.in
       )
   endif()
+  if ( ELECTRIC_ORDERPOLY STREQUAL "Dynamic" AND ELECTRIC_ORDERGEO STREQUAL "Dynamic" )
+    set_target_properties(${ELECTRIC_LIB_NAME} PROPERTIES OUTPUT_NAME "feelpp_toolbox_electric_lib_${ELECTRIC_DIM}d")
+  endif()
 endmacro(genLibElectric)
 
 #############################################################################

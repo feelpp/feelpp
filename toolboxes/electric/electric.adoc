@@ -18,7 +18,7 @@ feelpp_toolbox_electric
   [--electric.filename  <path to .json specification file>]
   [--config-file <path to .cfg file]
   [--case <directory to model case>] 
-  [--case.dim 3]
+  [--case.dimension 3]
   [--case.discretization P1]
   [--electric.ksp-monitor=<0,1>]
   [--electric.ksp-view=<0,1>]
@@ -41,6 +41,19 @@ The execution steps are as follows:
 * execute the steady or unsteady simulation
 * post-process the results, viewable in paraview or ensight 
 
+=== Runtime orders
+
+`--case.discretization=P3G2` selects FE order 3 and geometry order 2.
+Omitting `G` selects geometry order 1. The C++ application retains a P1/G1
+baseline; all other orders use Dynamic FE and geometry types.
+Python always uses Dynamic types, including runtime order 1.
+
+[source,python]
+----
+from feelpp.toolboxes.electric import electric
+solver = electric(dim=2, orderPotential=3, orderGeometry=2)
+----
+
 === Options
 
 feelpp_toolbox_electric requires some options.
@@ -49,8 +62,8 @@ feelpp_toolbox_electric requires some options.
 |===
 | Name | Description | Default value | Possible Values
 
-| case.dim | dimension of problem  | 3 | 2,3
-| case.discretization | discretization of problem  | P1 | P1,P2,P3
+| case.dimension | dimension of problem  | 3 | 2,3
+| case.discretization | discretization of problem  | P1 | P<k> or P<k>G<g>, k,g >= 1
 | electric.filename | path to the .json specification case file  | *no default value* | *required from user*
 | electric.ksp-monitor | monitor the Krylov Subspace iterations  | 0 | 0,1
 | electric.ksp-view | view the Krylov Subspace structure  | 0 | 0,1
