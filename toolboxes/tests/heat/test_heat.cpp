@@ -1,7 +1,16 @@
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2022-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
 #define BOOST_TEST_MODULE heat testsuite
 #include <feel/feelcore/testsuite.hpp>
 #include <feel/feelmodels/execute.hpp>
 #include <feel/feelmodels/heat/heat.hpp>
+#include <feel/feelmodels/modelcore/scalardiscretization.hpp>
 
 using namespace Feel;
 
@@ -36,6 +45,19 @@ makeAbout()
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
 
 BOOST_AUTO_TEST_SUITE( heatsuite )
+
+BOOST_AUTO_TEST_CASE( test_scalar_discretization )
+{
+    auto spec = FeelModels::parseScalarDiscretization("P4G3");
+    BOOST_REQUIRE(spec);
+    BOOST_CHECK_EQUAL(spec->polynomialOrder, 4);
+    BOOST_CHECK_EQUAL(spec->geometryOrder, 3);
+    spec = FeelModels::parseScalarDiscretization("P5");
+    BOOST_REQUIRE(spec);
+    BOOST_CHECK_EQUAL(spec->geometryOrder, 1);
+    for ( auto const& invalid : {"P0", "P2G0", "P-1", "P2G3x", "P65536", "P999999999999999999999"} )
+        BOOST_CHECK(!FeelModels::parseScalarDiscretization(invalid));
+}
 
 BOOST_AUTO_TEST_CASE( test_heat_ensemble )
 {

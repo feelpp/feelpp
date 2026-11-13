@@ -10,6 +10,11 @@ MPI_ARGS = ("mpirun", "-n")
 PYTEST_ARGS = (sys.executable, "-mpytest")
 
 
+def pytest_addoption(parser):
+    parser.addoption("--feelpp-arg", action="append", default=[], dest="feelpp_args",
+                     help="Pass an option to the Feel++ environment at initialization")
+
+
 @pytest.fixture
 def has_mpi4py():
     try:
@@ -21,10 +26,10 @@ def has_mpi4py():
 
 
 class InitFeelpp:
-    def __init__(self,config):
+    def __init__(self, config, feelpp_args=()):
         try:
             print('[conftest] init_feelpp;', __file__, flush=True)
-            sys.argv=['test_pyfeelpptoolboxes']
+            sys.argv=['test_pyfeelpptoolboxes', *feelpp_args]
             self.e = fppc.Environment(
                 sys.argv, opts= fppc.backend_options("Iv")
                                 .add(tb.toolboxes_options("electric"))
@@ -44,5 +49,12 @@ class InitFeelpp:
 
 
 @pytest.fixture(scope="session", autouse=True)
-def init_feelpp():
-    return InitFeelpp(fppc.globalRepository("pyfeelpptoolboxes-tests"))
+def init_feelpp(pytestconfig):
+    return InitFeelpp(fppc.globalRepository("pyfeelpptoolboxes-tests"),
+                      pytestconfig.getoption("feelpp_args"))
+
+
+@pytest.fixture
+def case_repository(tmp_path):
+    """One shared, short output path for each serial or MPI test instance."""
+    return fppc.Environment.worldComm().to_comm().bcast(str(tmp_path), root=0)
