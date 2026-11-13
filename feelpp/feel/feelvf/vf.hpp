@@ -1,28 +1,13 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2005,2006 EPFL
+ * SPDX-FileCopyrightText: 2006-2011 Université Joseph Fourier (Grenoble I)
+ * SPDX-FileCopyrightText: 2011-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-01-17
-
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2006-2011 Université Joseph Fourier (Grenoble I)
-  Copyright (C) 2012-2014 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file vf.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -38,6 +23,14 @@
 
 #include <feel/feelvf/vf_dsl.hpp>
 #include <feel/feelvf/vf_eval.hpp>
+#include <feel/feelvf/basis.hpp>
+#include <feel/feelvf/field.hpp>
+#include <feel/feelvf/facet.hpp>
+#include <feel/feelvf/shellgeometric.hpp>
+#include <feel/feelvf/sb9.hpp>
+#include <feel/feelvf/tensorbasis.hpp>
+#include <feel/feelvf/voigt.hpp>
+#include <feel/feelvf/contractions.hpp>
 
 #if defined( FEELPP_HAS_FFTW)
 #include <feel/feelvf/msi.hpp>

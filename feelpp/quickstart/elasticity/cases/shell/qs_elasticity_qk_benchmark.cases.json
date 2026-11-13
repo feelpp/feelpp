@@ -1,0 +1,6 @@
+{
+  "include": [
+    "../../sb9/sb9_benchmarks.json",
+    "../../sb9/sb9_validations.json"
+  ]
+}

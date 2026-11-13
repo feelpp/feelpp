@@ -1,26 +1,13 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2012 Université Joseph Fourier (Grenoble I)
+ * SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-2.1-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2012-01-16
-
-  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file preconditionerpetsc.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -202,6 +189,33 @@ public:
 
         std::vector<PetscInt> hpddmLocalRows( gpToGc.size() );
         std::transform( gpToGc.begin(), gpToGc.end(),
+                        hpddmLocalRows.begin(),
+                        []( auto dof ) { return static_cast<PetscInt>( dof ); } );
+
+        IS is = nullptr;
+        this->check( ISCreateGeneral( PETSC_COMM_SELF,
+                                      static_cast<PetscInt>( hpddmLocalRows.size() ),
+                                      hpddmLocalRows.empty() ? nullptr : hpddmLocalRows.data(),
+                                      PETSC_COPY_VALUES, &is ) );
+        this->attachHpddmAuxiliaryData( is, mat );
+        this->check( ISDestroy( &is ) );
+    }
+
+    void attachLocalNeumannMatrix( typename super::sparse_matrix_ptrtype const& mat,
+                                   std::vector<Feel::size_type> const& globalDofIds ) override
+    {
+        CHECK( mat ) << "cannot attach a null local Neumann matrix";
+        CHECK_EQ( mat->size1(), globalDofIds.size() )
+            << "local Neumann matrix rows and overlap map have different sizes";
+        CHECK_EQ( mat->size2(), globalDofIds.size() )
+            << "local Neumann matrix columns and overlap map have different sizes";
+        CHECK_EQ( mat->worldComm().globalSize(), 1 )
+            << "HPDDM requires a sequential local Neumann matrix on every rank";
+
+        auto matPetsc = std::dynamic_pointer_cast<MatrixPetsc<T>>( mat );
+        CHECK( matPetsc ) << "HPDDM local Neumann matrix must be a PETSc matrix";
+        std::vector<PetscInt> hpddmLocalRows( globalDofIds.size() );
+        std::transform( globalDofIds.begin(), globalDofIds.end(),
                         hpddmLocalRows.begin(),
                         []( auto dof ) { return static_cast<PetscInt>( dof ); } );
 

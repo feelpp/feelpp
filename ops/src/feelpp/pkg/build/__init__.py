@@ -67,15 +67,13 @@ def build_component(
         dry_run=dry_run,
     )
 
-    allow_public_fallback = not collect_component_internal_build_dependencies(
-        context,
-        component,
-    )
+    # A new distro must bootstrap before its public Feel++ repository exists.
+    # Later components consume packages staged in the job-local repository.
     run_pbuilder_build(
         context,
         dsc_path,
         result_dir,
-        allow_public_fallback=allow_public_fallback,
+        allow_public_fallback=False,
         dry_run=dry_run,
     )
 

@@ -1,28 +1,14 @@
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2005,2006 EPFL
+ * SPDX-FileCopyrightText: 2008, 2009 Université de Grenoble 1
+ * SPDX-FileCopyrightText: 2011-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-11-27
-
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2008, 2009 Université de Grenoble 1
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file solverlinearpetsc.cpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -458,6 +444,37 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
 
     solution->close ();
 
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,5,0)
+    // Cached backends may solve spaces of different orders or partitions.
+    // PETSc requires a reset before replacing an operator with a different
+    // local layout. Every rank must reset, even when only one rank changes.
+    PetscBool operatorsSet = PETSC_FALSE;
+    ierr = KSPGetOperatorsSet( M_ksp, &operatorsSet, nullptr );
+    CHKERRABORT( this->worldComm().globalComm(), ierr );
+    if ( operatorsSet )
+    {
+        Mat previousMatrix = nullptr;
+        ierr = KSPGetOperators( M_ksp, &previousMatrix, nullptr );
+        CHKERRABORT( this->worldComm().globalComm(), ierr );
+        PetscInt oldRows, oldCols, newRows, newCols;
+        ierr = MatGetLocalSize( previousMatrix, &oldRows, &oldCols );
+        CHKERRABORT( this->worldComm().globalComm(), ierr );
+        ierr = MatGetLocalSize( matrix->mat(), &newRows, &newCols );
+        CHKERRABORT( this->worldComm().globalComm(), ierr );
+        int localLayoutChanged = oldRows != newRows || oldCols != newCols;
+        int layoutChanged = 0;
+        ierr = MPI_Allreduce( &localLayoutChanged, &layoutChanged, 1, MPI_INT,
+                              MPI_MAX, this->worldComm().globalComm() );
+        CHKERRABORT( this->worldComm().globalComm(), ierr );
+        if ( layoutChanged )
+        {
+            ierr = KSPReset( M_ksp );
+            CHKERRABORT( this->worldComm().globalComm(), ierr );
+            if ( this->M_preconditioner )
+                this->M_preconditioner->clear();
+        }
+    }
+#endif
 
     if ( !this->M_preconditioner && this->preconditionerType() == FIELDSPLIT_PRECOND )
         matrix->updatePCFieldSplit( M_pc );

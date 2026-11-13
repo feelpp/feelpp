@@ -1,0 +1,99 @@
+{
+  "name": "validation-traction-x",
+  "description": "Pure traction case from validation.pdf page 3: clamp XMoins and apply a total 1 N load on XPlus.",
+  "gmsh": {
+    "filename": "validation_traction_x.geo"
+  },
+  "material": {
+    "E": 1.0,
+    "nu": 0.45
+  },
+  "boundaryConditions": {
+    "clampMarkers": [
+      "XMoins"
+    ]
+  },
+  "loads": {
+    "bodyForce": "{0,0,0}",
+    "totalForces": [
+      {
+        "marker": "XPlus",
+        "value": [
+          1.0,
+          0.0,
+          0.0
+        ]
+      }
+    ]
+  },
+  "probe": {
+    "point": [
+      1.0,
+      0.5,
+      0.5
+    ],
+    "direction": [
+      1.0,
+      0.0,
+      0.0
+    ],
+    "label": "tip x displacement"
+  },
+  "checks": {
+    "target": "hexa8",
+    "items": [
+      {
+        "type": "elasticity-point-fields",
+        "name": "validation-pdf-page-3-center",
+        "point": [
+          0.5,
+          0.5,
+          0.0
+        ],
+        "references": {
+          "hexa8": {
+            "epsilon": [
+              0.58,
+              -0.1933,
+              -0.1933,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sigma": [
+              1.0,
+              0.4667,
+              0.4667,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "sb9g25": {
+            "epsilon": [
+              0.698,
+              -0.2654,
+              -0.2654,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "sigma": [
+              1.0,
+              0.3356,
+              0.3356,
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "description": "PDF Epsilon/Sigma at element center; component order xx,yy,zz,xy,xz,yz.",
+        "tolerance": {
+          "absolute": 0.0005,
+          "relative": 0.005
+        }
+      }
+    ]
+  }
+}

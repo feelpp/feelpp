@@ -1,0 +1,215 @@
+name: Build and Publish PyPI Wheels
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish_target:
+        description: 'Publish target'
+        required: true
+        default: 'testpypi'
+        type: choice
+        options:
+          - testpypi
+          - pypi
+          - none
+  release:
+    types: [published]
+
+env:
+  REGISTRY: ghcr.io/feelpp
+
+jobs:
+  # ===========================================================================
+  # Extract version from feelpp.version.cmake and convert to PEP 440
+  # ===========================================================================
+  version:
+    name: Extract version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.extract.outputs.version }}
+      pypi_version: ${{ steps.extract.outputs.pypi_version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version
+        id: extract
+        run: |
+          PYPI_VERSION=$(bash scripts/extract-pypi-version.sh feelpp.version.cmake)
+          # Raw CMake version for reference
+          MAJOR=$(grep 'set(FEELPP_VERSION_MAJOR' feelpp.version.cmake | sed 's/.*"\(.*\)".*/\1/')
+          MINOR=$(grep 'set(FEELPP_VERSION_MINOR' feelpp.version.cmake | sed 's/.*"\(.*\)".*/\1/')
+          MICRO=$(grep 'set(FEELPP_VERSION_MICRO' feelpp.version.cmake | sed 's/.*"\(.*\)".*/\1/')
+          PRE=$(grep 'set(FEELPP_VERSION_PRERELEASE' feelpp.version.cmake | sed 's/.*"\(.*\)".*/\1/')
+          VERSION="${MAJOR}.${MINOR}.${MICRO}${PRE}"
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "pypi_version=${PYPI_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Feel++ version: ${VERSION}"
+          echo "PyPI version:   ${PYPI_VERSION}"
+
+  # ===========================================================================
+  # Build manylinux wheel inside Docker
+  # ===========================================================================
+  build-wheel:
+    name: Build wheel (py${{ matrix.python-version }}, ${{ matrix.dist }})
+    needs: version
+    runs-on: self-docker
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.12']
+        dist: ['ubuntu-24.04']
+    steps:
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.CR_LOGIN }}
+          password: ${{ secrets.CR_PAT }}
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Clone or update docker repo
+        run: |
+          if [ -d docker ]; then
+            cd docker && git pull --ff-only
+          else
+            git clone --depth=1 https://github.com/feelpp/docker.git
+          fi
+
+      - name: Build wheel
+        run: |
+          docker buildx build \
+            -f docker/feelpp-pypi/Dockerfile.wheel \
+            --build-arg FROM_IMAGE=${REGISTRY}/feelpp-env:${{ matrix.dist }} \
+            --build-arg BRANCH=${{ github.ref_name }} \
+            --build-arg PYPI_VERSION=${{ needs.version.outputs.pypi_version }} \
+            --output type=local,dest=./dist \
+            --target output \
+            .
+
+      - name: List wheels
+        run: ls -lh dist/
+
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel-${{ matrix.dist }}-py${{ matrix.python-version }}
+          path: dist/*.whl
+
+  # ===========================================================================
+  # Test the wheel in a clean container
+  # ===========================================================================
+  test-wheel:
+    name: Test wheel (py${{ matrix.python-version }}, ${{ matrix.dist }})
+    needs: [build-wheel]
+    runs-on: self-docker
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.12']
+        dist: ['ubuntu-24.04']
+    steps:
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.CR_LOGIN }}
+          password: ${{ secrets.CR_PAT }}
+
+      - uses: actions/checkout@v4
+
+      - name: Download wheel
+        uses: actions/download-artifact@v4
+        with:
+          name: wheel-${{ matrix.dist }}-py${{ matrix.python-version }}
+          path: dist/
+
+      - name: Test wheel installation and smoke test
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}/dist:/wheels:ro" \
+            -v "${{ github.workspace }}/feelpp/python/tests:/tests:ro" \
+            -e OMPI_ALLOW_RUN_AS_ROOT=1 \
+            -e OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1 \
+            ${REGISTRY}/feelpp-env:${{ matrix.dist }} \
+            bash -c '
+              set -euo pipefail
+
+              echo "=== Installing wheel ==="
+              pip3 install --break-system-packages /wheels/feelpp_core-*.whl
+
+              echo "=== Smoke test ==="
+              python3 -c "
+          import feelpp.core as fppc
+          import sys
+          e = fppc.Environment(sys.argv, opts=fppc.backend_options(\"test\"))
+          print(f\"Feel++ version: {fppc.__version__}\")
+          print(f\"Processes: {e.numberOfProcessors()}\")
+          print(\"Smoke test PASSED\")
+          "
+
+              echo "=== Running pytest ==="
+              pip3 install --break-system-packages pytest
+              cd /tests
+              python3 -m pytest -x -v test_core.py test_mesh.py test_alg.py
+            '
+
+  # ===========================================================================
+  # Publish to TestPyPI (manual dispatch)
+  # ===========================================================================
+  publish-testpypi:
+    name: Publish to TestPyPI
+    needs: [test-wheel, version]
+    if: >
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.publish_target == 'testpypi'
+    runs-on: ubuntu-latest
+    environment: testpypi
+    permissions:
+      id-token: write
+    steps:
+      - name: Download all wheels
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+          merge-multiple: true
+
+      - name: List artifacts
+        run: ls -lh dist/
+
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  # ===========================================================================
+  # Publish to PyPI (release or manual dispatch)
+  # ===========================================================================
+  publish-pypi:
+    name: Publish to PyPI
+    needs: [test-wheel, version]
+    if: >
+      github.event_name == 'release' ||
+      (github.event_name == 'workflow_dispatch' &&
+       github.event.inputs.publish_target == 'pypi')
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - name: Download all wheels
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+          merge-multiple: true
+
+      - name: List artifacts
+        run: ls -lh dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

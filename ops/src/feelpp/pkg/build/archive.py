@@ -18,15 +18,27 @@ def _build_source_archive(
     dry_run: bool = False,
 ) -> Path:
     preset = _component_preset(component)
+    configure_command = [
+        "cmake",
+        "--preset",
+        preset,
+        "-DFEELPP_ENABLE_GIT=OFF",
+        "-DLIBBSON_DIR=/usr",
+        "-DLIBMONGOC_DIR=/usr",
+    ]
+    if context.dist == "resolute":
+        # Avoid Clang 21's recursive template canonicalization crash, and keep
+        # archive preparation aligned with the compiler used by the DEB builds.
+        configure_command.extend(
+            [
+                "-DCMAKE_C_COMPILER=/usr/bin/clang-20",
+                "-DCMAKE_CXX_COMPILER=/usr/bin/clang++-20",
+            ]
+        )
+        if component == "feelpp":
+            configure_command.append("-DFEELPP_ENABLE_SIMPLE_WEB_SERVER=OFF")
     run(
-        [
-            "cmake",
-            "--preset",
-            preset,
-            "-DFEELPP_ENABLE_GIT=OFF",
-            "-DLIBBSON_DIR=/usr",
-            "-DLIBMONGOC_DIR=/usr",
-        ],
+        configure_command,
         cwd=context.repo_root,
         env=build_env,
         dry_run=dry_run,

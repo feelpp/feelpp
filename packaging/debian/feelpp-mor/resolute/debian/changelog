@@ -1,8 +1,14 @@
+feelpp-mor (0.112.0-1) unstable; urgency=medium
+
+  * New upstream release
+
+ -- Christophe Prud'homme <christophe.prudhomme@cemosis.fr>  Sun, 08 Nov 2026 16:04:10 +0100
+
 feelpp-mor (0.112.0~preview.1-1) unstable; urgency=medium
 
-  * New upstream prerelease 0.112.0-preview.1
+  * New upstream release
 
- -- Christophe Prud'homme <christophe.prudhomme@cemosis.fr>  Mon, 02 Nov 2026 13:12:59 +0100
+ -- Christophe Prud'homme <christophe.prudhomme@cemosis.fr>  Fri, 06 Nov 2026 08:39:45 +0100
 
 feelpp-mor (0.111.1-1) unstable; urgency=medium
 

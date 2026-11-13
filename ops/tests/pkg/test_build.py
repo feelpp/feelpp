@@ -18,7 +18,7 @@ from feelpp.pkg.config import PackagingContext
 
 
 class BuildTests(unittest.TestCase):
-    def make_context(self, tmpdir: str) -> PackagingContext:
+    def make_context(self, tmpdir: str, *, dist: str = "noble") -> PackagingContext:
         repo_root = Path(tmpdir) / "repo"
         (repo_root / "packaging" / "pbuilder" / "hooks").mkdir(parents=True)
         (repo_root / "packaging" / "manifest").mkdir(parents=True)
@@ -60,7 +60,7 @@ class BuildTests(unittest.TestCase):
         job_root = repo_root / "job"
         return PackagingContext.create(
             repo_root=repo_root,
-            dist="noble",
+            dist=dist,
             flavor="ubuntu",
             branch="develop",
             channel="latest",
@@ -78,11 +78,28 @@ class BuildTests(unittest.TestCase):
         (archive_root / "data").mkdir(parents=True)
         (archive_root / "data" / "payload.txt").write_text("payload\n", encoding="utf-8")
         (archive_root / "data" / "payload-link").symlink_to("payload.txt")
+        (archive_root / "data" / "payload-dir").mkdir()
+        (archive_root / "data" / "payload-dir-link").symlink_to("payload-dir/")
 
         archive_path = Path(tmpdir) / f"{component}-{raw_version}.tar.gz"
         with tarfile.open(archive_path, "w:gz") as handle:
             handle.add(archive_root, arcname=archive_root.name, recursive=True)
         return archive_path
+
+    @unittest.skipUnless(hasattr(tarfile, "data_filter"), "Requires tar extraction filters")
+    def test_prepare_source_tree_preserves_symlink_targets_with_data_filter_default(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            context = self.make_context(tmpdir)
+            self.make_packaging_tree(context)
+            archive_path = self.make_source_archive(tmpdir, "feelpp", "0.111.0")
+
+            with mock.patch.object(
+                tarfile.TarFile, "extraction_filter", staticmethod(tarfile.data_filter),
+            ):
+                with mock.patch("feelpp.pkg.build.sourcepkg.run"):
+                    tree_root, _, _ = _prepare_source_tree(context, "feelpp", archive_path)
+
+            self.assertEqual(os.readlink(tree_root / "data" / "payload-dir-link"), "payload-dir/")
 
     def test_prepare_source_tree_flattens_stable_archive_root(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -371,6 +388,22 @@ class BuildTests(unittest.TestCase):
             self.assertEqual(run.call_args_list[0].kwargs["env"], build_env)
             self.assertEqual(run.call_args_list[1].kwargs["env"], build_env)
 
+    def test_build_source_archive_pins_clang_20_for_resolute(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            context = self.make_context(tmpdir, dist="resolute")
+            for component in ("feelpp", "feelpp-toolboxes", "feelpp-mor"):
+                with self.subTest(component=component):
+                    with mock.patch("feelpp.pkg.build.archive.run") as run:
+                        _build_source_archive(context, component, dry_run=True)
+
+                    configure = run.call_args_list[0].args[0]
+                    self.assertIn("-DCMAKE_C_COMPILER=/usr/bin/clang-20", configure)
+                    self.assertIn("-DCMAKE_CXX_COMPILER=/usr/bin/clang++-20", configure)
+                    self.assertEqual(
+                        "-DFEELPP_ENABLE_SIMPLE_WEB_SERVER=OFF" in configure,
+                        component == "feelpp",
+                    )
+
     def test_validate_runtime_linkage_rejects_unversioned_feelpp_needed_entry(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             result_dir = Path(tmpdir)
@@ -457,7 +490,7 @@ class BuildTests(unittest.TestCase):
                                         "0.111.0~preview.13",
                                     ),
                                 ):
-                                    with mock.patch("feelpp.pkg.build.run_pbuilder_build"):
+                                    with mock.patch("feelpp.pkg.build.run_pbuilder_build") as pbuilder_build:
                                         with mock.patch(
                                             "feelpp.pkg.build.collect_component_internal_build_dependencies",
                                             return_value=[],
@@ -476,6 +509,7 @@ class BuildTests(unittest.TestCase):
                 build_env=build_env,
                 dry_run=False,
             )
+            self.assertFalse(pbuilder_build.call_args.kwargs["allow_public_fallback"])
 
             payload = json.loads(context.job_manifest_path.read_text(encoding="utf-8"))
             self.assertEqual(payload["state"], "built")

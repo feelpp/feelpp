@@ -1,26 +1,12 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2007-2010 Université Joseph Fourier (Grenoble I)
+ * SPDX-FileCopyrightText: 2011-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2007-05-07
-
-  Copyright (C) 2007-2010 Université Joseph Fourier (Grenoble I)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file twovalued.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -29,8 +15,10 @@
 #ifndef FEELPP_VF_TwoValued_H
 #define FEELPP_VF_TwoValued_H 1
 
+#include <type_traits>
 
 #include <feel/feelvf/expr.hpp>
+#include <feel/feelvf/field.hpp>
 
 namespace Feel
 {
@@ -1019,35 +1007,106 @@ inline double right( double /*a*/, double b )
 {
     return b;
 }
+
+template<double func( double, double ), typename ExprT>
+inline auto
+makeFaceExprV( ExprT const& v )
+{
+    typedef FaceExprV<ExprT, func> face_expr_type;
+    return Expr<face_expr_type>( face_expr_type( v ) );
+}
 }
 
 /// \endcond
 
 template<typename ExprT>
+    requires ( !Feel::is_functionspace_element_v<std::remove_cvref_t<ExprT>> )
 inline
 auto
-sumv( ExprT const& v ) -> decltype( expr( SumvExpr<ExprT>( v ) ) )
+sumv( ExprT const& v )
 {
     typedef SumvExpr<ExprT> sumv_t;
     return expr(  sumv_t( v ) );
 }
 
-template<typename ExprT>
+/**
+ * @brief Sum a finite-element field value over the two adjacent facets.
+ */
+template<typename ElementType>
+    requires Feel::is_functionspace_element_v<std::remove_cvref_t<ElementType>>
 inline
 auto
-leftface( ExprT const& v ) -> decltype( expr(  SumExpr<ExprT,0>( v ) ) )
+sumv( ElementType const& v )
+{
+    return sumv( value( v ) );
+}
+
+template<typename ExprT>
+    requires ( !Feel::is_functionspace_element_v<std::remove_cvref_t<ExprT>> )
+inline
+auto
+leftface( ExprT const& v )
 {
     typedef SumExpr<ExprT,0> sumT_t;
     return expr(  sumT_t( v ) );
 }
 
-template<typename ExprT>
+/**
+ * @brief Evaluate a finite-element field value on the left adjacent facet.
+ */
+template<typename ElementType>
+    requires Feel::is_functionspace_element_v<std::remove_cvref_t<ElementType>>
 inline
 auto
-rightface( ExprT const& v ) -> decltype( expr( SumExpr<ExprT,1>( v ) ) )
+leftface( FieldValue<ElementType> const& v )
+{
+    return vf::detail::makeFaceExprV<vf::detail::left>( v );
+}
+
+/**
+ * @brief Evaluate a finite-element field value on the left adjacent facet.
+ */
+template<typename ElementType>
+    requires Feel::is_functionspace_element_v<std::remove_cvref_t<ElementType>>
+inline
+auto
+leftface( ElementType const& v )
+{
+    return leftfacev( value( v ) );
+}
+
+template<typename ExprT>
+    requires ( !Feel::is_functionspace_element_v<std::remove_cvref_t<ExprT>> )
+inline
+auto
+rightface( ExprT const& v )
 {
     typedef SumExpr<ExprT,1> sumT_t;
     return expr(  sumT_t( v ) );
+}
+
+/**
+ * @brief Evaluate a finite-element field value on the right adjacent facet.
+ */
+template<typename ElementType>
+    requires Feel::is_functionspace_element_v<std::remove_cvref_t<ElementType>>
+inline
+auto
+rightface( FieldValue<ElementType> const& v )
+{
+    return vf::detail::makeFaceExprV<vf::detail::right>( v );
+}
+
+/**
+ * @brief Evaluate a finite-element field value on the right adjacent facet.
+ */
+template<typename ElementType>
+    requires Feel::is_functionspace_element_v<std::remove_cvref_t<ElementType>>
+inline
+auto
+rightface( ElementType const& v )
+{
+    return rightfacev( value( v ) );
 }
 
 
@@ -1055,8 +1114,9 @@ rightface( ExprT const& v ) -> decltype( expr( SumExpr<ExprT,1>( v ) ) )
  *
  */
 template<typename ExprT>
+    requires ( !Feel::is_functionspace_element_v<std::remove_cvref_t<ExprT>> )
 inline
-Expr< SumTExpr<ExprT, 0> >
+auto
 leftfacet( ExprT const& v )
 {
     typedef SumTExpr<ExprT,0> sumT_t;
@@ -1064,15 +1124,64 @@ leftfacet( ExprT const& v )
 }
 
 /**
+ * @brief Evaluate a finite-element field value as a left trial-side facet expression.
+ */
+template<typename ElementType>
+    requires Feel::is_functionspace_element_v<std::remove_cvref_t<ElementType>>
+inline
+auto
+leftfacet( FieldValue<ElementType> const& v )
+{
+    return vf::detail::makeFaceExprV<vf::detail::left>( v );
+}
+
+/**
+ * @brief Evaluate a finite-element field value as a left trial-side facet expression.
+ */
+template<typename ElementType>
+    requires Feel::is_functionspace_element_v<std::remove_cvref_t<ElementType>>
+inline
+auto
+leftfacet( ElementType const& v )
+{
+    return leftfacev( value( v ) );
+}
+
+/**
  *
  */
 template<typename ExprT>
+    requires ( !Feel::is_functionspace_element_v<std::remove_cvref_t<ExprT>> )
 inline
-Expr< SumTExpr<ExprT, 1> >
+auto
 rightfacet( ExprT const& v )
 {
     typedef SumTExpr<ExprT,1> sumT_t;
     return expr(  sumT_t( v ) );
+}
+
+/**
+ * @brief Evaluate a finite-element field value as a right trial-side facet expression.
+ */
+template<typename ElementType>
+    requires Feel::is_functionspace_element_v<std::remove_cvref_t<ElementType>>
+inline
+auto
+rightfacet( FieldValue<ElementType> const& v )
+{
+    return vf::detail::makeFaceExprV<vf::detail::right>( v );
+}
+
+/**
+ * @brief Evaluate a finite-element field value as a right trial-side facet expression.
+ */
+template<typename ElementType>
+    requires Feel::is_functionspace_element_v<std::remove_cvref_t<ElementType>>
+inline
+auto
+rightfacet( ElementType const& v )
+{
+    return rightfacev( value( v ) );
 }
 
 #if 0
@@ -1122,38 +1231,87 @@ averaget( U const&u ) -> decltype( 0.5*( leftfacet( u )+rightfacet( u ) ) )
 #endif
 
 template<typename ExprT>
+    requires ( !Feel::is_functionspace_element_v<std::remove_cvref_t<ExprT>> )
 inline
-Expr< FaceExprV<ExprT,vf::detail::max > >
+auto
 maxface( ExprT const& v )
 {
-    typedef FaceExprV<ExprT,vf::detail::max > maxface_t;
-    return Expr< maxface_t >(  maxface_t( v ) );
+    return vf::detail::makeFaceExprV<vf::detail::max>( v );
 }
-template<typename ExprT>
+/**
+ * @brief Maximum of a finite-element field value over the two adjacent facets.
+ */
+template<typename ElementType>
+    requires Feel::is_functionspace_element_v<std::remove_cvref_t<ElementType>>
 inline
-Expr< FaceExprV<ExprT,vf::detail::min > >
+auto
+maxface( ElementType const& v )
+{
+    return maxface( value( v ) );
+}
+
+template<typename ExprT>
+    requires ( !Feel::is_functionspace_element_v<std::remove_cvref_t<ExprT>> )
+inline
+auto
 minface( ExprT const& v )
 {
-    typedef FaceExprV<ExprT,vf::detail::min > minface_t;
-    return Expr< minface_t >(  minface_t( v ) );
+    return vf::detail::makeFaceExprV<vf::detail::min>( v );
+}
+
+/**
+ * @brief Minimum of a finite-element field value over the two adjacent facets.
+ */
+template<typename ElementType>
+    requires Feel::is_functionspace_element_v<std::remove_cvref_t<ElementType>>
+inline
+auto
+minface( ElementType const& v )
+{
+    return minface( value( v ) );
 }
 
 
 template<typename ExprT>
+    requires ( !Feel::is_functionspace_element_v<std::remove_cvref_t<ExprT>> )
 inline
-Expr< FaceExprV<ExprT,vf::detail::left> >
+auto
 leftfacev( ExprT const& v )
 {
-    typedef FaceExprV<ExprT,vf::detail::left> leftface_t;
-    return Expr< leftface_t >(  leftface_t( v ) );
+    return vf::detail::makeFaceExprV<vf::detail::left>( v );
 }
-template<typename ExprT>
+
+/**
+ * @brief Evaluate a finite-element field value on the left facet value branch.
+ */
+template<typename ElementType>
+    requires Feel::is_functionspace_element_v<std::remove_cvref_t<ElementType>>
 inline
-Expr< FaceExprV<ExprT,vf::detail::right> >
+auto
+leftfacev( ElementType const& v )
+{
+    return leftfacev( value( v ) );
+}
+
+template<typename ExprT>
+    requires ( !Feel::is_functionspace_element_v<std::remove_cvref_t<ExprT>> )
+inline
+auto
 rightfacev( ExprT const& v )
 {
-    typedef FaceExprV<ExprT,vf::detail::right> rightface_t;
-    return Expr< rightface_t >(  rightface_t( v ) );
+    return vf::detail::makeFaceExprV<vf::detail::right>( v );
+}
+
+/**
+ * @brief Evaluate a finite-element field value on the right facet value branch.
+ */
+template<typename ElementType>
+    requires Feel::is_functionspace_element_v<std::remove_cvref_t<ElementType>>
+inline
+auto
+rightfacev( ElementType const& v )
+{
+    return rightfacev( value( v ) );
 }
 
 #if 0

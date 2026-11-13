@@ -1,28 +1,10 @@
-//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-//!
-//! This file is part of the Feel++ library
-//!
-//! This library is free software; you can redistribute it and/or
-//! modify it under the terms of the GNU Lesser General Public
-//! License as published by the Free Software Foundation; either
-//! version 2.1 of the License, or (at your option) any later version.
-//!
-//! This library is distributed in the hope that it will be useful,
-//! but WITHOUT ANY WARRANTY; without even the implied warranty of
-//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//! Lesser General Public License for more details.
-//!
-//! You should have received a copy of the GNU Lesser General Public
-//! License along with this library; if not, write to the Free Software
-//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-//!
-//! @file FunctionalChaos.hpp
-//! @author Thomas Saigre <saigre@math.unistra.fr>
-//! @date 03 Apr 2023
-//! @copyright 2023 Feel++ Consortium
-//! @brief Functional chaos sensitivity analysis adapted from https://openturns.github.io/openturns/latest/auto_meta_modeling/polynomial_chaos_metamodel/plot_chaos_sobol_confidence.html
-//!
-
+/*
+ * SPDX-FileContributor: Thomas Saigre <saigre@math.unistra.fr>
+ *
+ * SPDX-FileCopyrightText: 2023-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
 #include <openturns/OT.hxx>
 
@@ -61,8 +43,13 @@ OT::FunctionalChaosResult computeSparseLeastSquaresChaos( OT::Sample X, OT::Samp
  */
 void checkMetaModel(OT::Sample X_test, OT::Sample Y_test, OT::Function metamodel)
 {
+#if OPENTURNS_VERSION >= 102300
     OT::MetaModelValidation validation(Y_test, metamodel(X_test));
     OT::Scalar Q2 = validation.computeR2Score()[0];
+#else
+    OT::MetaModelValidation validation(X_test, Y_test, metamodel);
+    OT::Scalar Q2 = validation.computePredictivityFactor()[0];
+#endif
     OT::GridLayout graph = validation.drawValidation();
     OT::Graph graphDrawable = graph.getGraph(0, 0);
     //graphDrawable.draw("validation.png");

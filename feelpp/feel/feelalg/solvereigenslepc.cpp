@@ -1,26 +1,13 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2007, 2009 Université Joseph Fourier (Grenoble I)
+ * SPDX-FileCopyrightText: 2011-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2007-07-04
-
-  Copyright (C) 2007, 2009 Université Joseph Fourier (Grenoble I)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file solvereigenslepc.cpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -316,12 +303,15 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
 
     if ( nconv >= 1 )
     {
+        for ( int i = 0; i < nconv; ++i )
+        {
 #if SLEPC_VERSION_LT(3,6,0)
-        ierr = EPSComputeRelativeError( M_eps, nconv, ret_error.data() );
+            ierr = EPSComputeRelativeError( M_eps, i, &ret_error[i] );
 #else
-        ierr = EPSComputeError( M_eps, nconv, EPS_ERROR_RELATIVE, ret_error.data() );
+            ierr = EPSComputeError( M_eps, i, EPS_ERROR_RELATIVE, &ret_error[i] );
 #endif
-        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+            CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        }
     }
 
     // return the number of converged eigenpairs

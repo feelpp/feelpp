@@ -1,7 +1,7 @@
 /*
  * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  *
- * SPDX-FileCopyrightText: 2026 University of Strasbourg
+ * SPDX-FileCopyrightText: 2026-2026 University of Strasbourg
  *
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
@@ -96,9 +96,10 @@ Integrator<Elements, Im, Expr, Im2>::tryAssembleLoweredScalarLocalform( std::sha
                         this->expression() );
         }();
         using lowered_expr_type = decltype( lowered_expr );
-        using lowered_quadptloc_ptrtype = std::shared_ptr<QuadPtLocalization<Elements, Im, lowered_expr_type> >;
+        // M_im and M_im2 hold the evaluated rules, including custom quadrature points.
+        using lowered_quadptloc_ptrtype = std::shared_ptr<QuadPtLocalization<Elements, im_type, lowered_expr_type> >;
         auto lowered_integrator =
-            Integrator<Elements, Im, lowered_expr_type, Im2>(
+            Integrator<Elements, im_type, lowered_expr_type, im2_type>(
                 M_elts, M_im, lowered_expr, M_gt,
                 M_geometry_evaluation, M_im2,
                 M_use_harts,
@@ -129,9 +130,9 @@ Integrator<Elements, Im, Expr, Im2>::tryAssembleLoweredScalarLocalform( std::sha
     {
         auto lowered_expr = detail::lower_scalar_linear_localform( this->expression() );
         using lowered_expr_type = decltype( lowered_expr );
-        using lowered_quadptloc_ptrtype = std::shared_ptr<QuadPtLocalization<Elements, Im, lowered_expr_type> >;
+        using lowered_quadptloc_ptrtype = std::shared_ptr<QuadPtLocalization<Elements, im_type, lowered_expr_type> >;
         auto lowered_integrator =
-            Integrator<Elements, Im, lowered_expr_type, Im2>(
+            Integrator<Elements, im_type, lowered_expr_type, im2_type>(
                 M_elts, M_im, lowered_expr, M_gt,
                 M_geometry_evaluation, M_im2,
                 M_use_harts,

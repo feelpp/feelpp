@@ -1,7 +1,9 @@
 /*
- * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
  * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
  * SPDX-FileCopyrightText: 2014-2026 University of Strasbourg
+ *
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 #include <feel/feelcore/environment.hpp>
@@ -64,10 +66,13 @@ stokes(VelocitySpacePtrType velocitySpace, PressureSpacePtrType pressureSpace)
                          _expr=vf::id(q)*vf::divt(u) );
     toc("a");
 
+    l.close();
+    a.close();
+
     if ( mesh->hasAnyMarker({"inlet","Dirichlet"}) )
-        a.row( 0_c ) += Feel::on(_range=markedfaces(mesh,{"inlet","Dirichlet"}), _rhs=l( 0_c ), _element=u, _expr=g );
+        a.row( 0_c ) += Feel::on(_range=markedfaces(mesh,{"inlet","Dirichlet"}), _rhs=l( 0_c ), _element=u, _expr=g, _type="elimination" );
     if ( mesh->hasAnyMarker({"wall","letters"}) )
-        a.row( 0_c ) += Feel::on(_range=markedfaces(mesh,{"wall","letters"}), _rhs=l( 0_c ), _element=u, _expr=vf::zero<FEELPP_DIM,1>() );
+        a.row( 0_c ) += Feel::on(_range=markedfaces(mesh,{"wall","letters"}), _rhs=l( 0_c ), _element=u, _expr=vf::zero<FEELPP_DIM,1>(), _type="elimination" );
     toc("a");
 
     tic();

@@ -1,0 +1,2 @@
+smoke --directory=qs_sys/nonlinear
+fe-p2-geometry-g2 --order=2 --geometry.order=2 --directory=qs_sys/nonlinear_p2_g2

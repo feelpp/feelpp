@@ -1,0 +1,116 @@
+= SB9 solid-shell applications
+
+This directory contains the SB9 quickstart drivers, their cases, mesh templates,
+measurement data, and formulation notes. The variational operators remain in
+`feelpp/feel/feelvf/` and their unit tests remain in `testsuite/feelvf/`.
+The elasticity case reader, reference checker, and shell benchmark framework
+are shared with the standard elasticity applications in the parent directory.
+
+== Applications
+
+* `feelpp_qs_sb9`: static mixed SB9 formulation with reference checks and
+  postprocessing, implemented in `qs_sb9.cpp` and `qs_sb9_postprocess.hpp`.
+* `feelpp_qs_sb9_mixed_bending`: mixed-bending driver using the specifications
+  in `sb9.json`, `sb9_benchmarks.json`, and `sb9_validations.json`.
+* `feelpp_qs_sb9_dynamic`: experimental driver with Newmark time integration,
+  moved from `research/sb9_dynamic/sb9.cpp`.
+* `feelpp_qs_sb9_minimal`: the original minimal formulation, previously named
+  `qs_sb9_tmp.cpp`. It is available as an explicit build target and excluded
+  from the default build.
+
+The existing static executable and CTest names are preserved.
+
+The drivers use `Dynamic` finite-element and geometry types with explicit
+`RuntimeOrder` values. The SB9 formulation retains Q1 displacement and Q0
+internal modes on a first-order hexahedral geometry. The Q1 restriction is
+checked using the actual runtime number of local basis functions.
+
+== Build and run
+
+From the repository root:
+
+[source,shell]
+----
+cmake --build build/default --target feelpp_qs_sb9 feelpp_qs_sb9_mixed_bending feelpp_qs_sb9_dynamic -j2
+
+build/default/feelpp/quickstart/elasticity/sb9/feelpp_qs_sb9 \
+  --config-file=feelpp/quickstart/elasticity/sb9/cases/affine-hexa/affine_hexa.cfg
+
+build/default/feelpp/quickstart/elasticity/sb9/feelpp_qs_sb9_mixed_bending \
+  --config-file=feelpp/quickstart/elasticity/sb9/qs_sb9_mixed_bending.cfg
+
+ctest --test-dir build/default -R '^feelpp_qs_sb9-' --output-on-failure
+----
+
+The `quickstart` and `check` build targets include the static, mixed-bending,
+and dynamic drivers. Build `feelpp_qs_sb9_minimal` explicitly when needed.
+
+== Transient thickness-mode inertia
+
+The dynamic driver uses `sb9-ts.internal-inertia=consistent` by default.
+The reconstructed displacement on a reference shell cell is
+`u* = u_h + (1-zeta^2)*alpha_h*n_K`, where `n_K` is the fixed cell normal and
+`alpha_h` is a cell-local displacement enrichment amplitude. On an affine,
+orthogonal thickness map its normal derivative gives the existing
+`-4*zeta*alpha_h/h_K` strain contribution. This is a small-displacement,
+cell-frame model; it does not update the normal with the deformation.
+
+The kinetic energy of this reconstruction gives the displacement mass, both
+displacement/internal-mode coupling blocks, and the internal-mode mass.
+All four blocks use full volume quadrature of order six. The vertex Lobatto
+rule is reserved for Q1 mass lumping: it would erase the internal bubble.
+
+Both fields have Newmark displacement, velocity, and acceleration histories.
+Fresh runs start from zero displacement, velocity, and acceleration in both
+fields; load histories should start from an unloaded state.
+The internal mode remains discontinuous and cell-local. Condensation is
+applied to the complete effective matrix `K + M/(beta*dt^2)` and the complete
+history RHS at each step, followed by recovery of `alpha_h`.
+The driver exports `alpha` and, in consistent mode, `alpha_acceleration`.
+Restarting this model requires matching `sb9` and `sb9-alpha` checkpoints.
+
+Use `--sb9-ts.internal-inertia=massless` for the earlier approximation, where
+the internal mode equilibrates algebraically with the displacement at each
+step and only the Q1 field carries inertia. `--monolithic=true` solves either
+model without local elimination. These choices allow comparisons of the
+thickness response and the low-frequency thin-shell limit.
+Consistent inertia introduces thickness vibration frequencies; choose the
+time step using a convergence study of the response being measured.
+
+The focused `sb9mass` and `sb9transient` tests check the affine-cell mass
+coefficients, invariance under a rigid rotation, and agreement of monolithic
+and condensed time stepping with an independent dense Newmark update. They
+also check conservation of the discrete mechanical energy after loading stops.
+The transient tests include point forces on runtime-order displacement spaces,
+as used by the measurement cases.
+
+== Cases and notes
+
+* `cases/` contains the affine-hexa case, static benchmarks, and validation
+  cases. The standard Q1/Q2 elasticity drivers reuse some of these cases.
+* `.tests.sb9` registers the static SB9 regression cases.
+* `meshes/` contains the rectangular and circular shell templates used by the
+  shared shell benchmark framework.
+* `docs/` contains the Typst formulation and implementation notes.
+* `dynamic/` contains the experimental tank and plate configurations and
+  measured load histories.
+
+The dynamic configurations are `dynamic/tank/tank.cfg`,
+`dynamic/unperforated-plate/unperforated_plate.cfg`, and
+`dynamic/perforated-plate/perforated_plate.cfg`.
+
+The experimental dynamic cases require external mesh files, which are not
+included in the repository. Their original filenames are preserved:
+
+* `dynamic/tank/mesh_cuve_feelpp_ok.msh`
+* `dynamic/unperforated-plate/plaque_pas_percee.msh`
+* `dynamic/perforated-plate/plaque_percee_dx1mm_force_apply.msh`
+
+Place the appropriate mesh beside its configuration or override
+`--gmsh.filename`. The dynamic driver currently applies the measured force at
+the `force_apply` point marker; the tank case requires adapting this to its
+`pt_P1` marker. These measurement cases are not registered as CI tests.
+
+The `qs_add_testcase_elasticity` target copies this directory with the other
+elasticity data. Installation places it under
+`share/feelpp/data/testcases/quickstart/elasticity/sb9/`.

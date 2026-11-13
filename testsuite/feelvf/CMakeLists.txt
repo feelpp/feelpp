@@ -1,3 +1,9 @@
+# SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+#
+# SPDX-FileCopyrightText: 2013-2026 University of Strasbourg
+#
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
 set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testvf")
 
 set(FEELPP_VF_TEST_TARGETS)
@@ -5,6 +11,12 @@ set(FEELPP_VF_TEST_TARGETS)
 set(FEELPP_VF_SIMPLE_TESTS
     symbolic_ad_expr
     vf_operators
+    trial_test_basis
+    tensor_basis
+    voigt
+    contractions
+    voigt_elasticity
+    shellgeometric
     inner_curl
     inner_laplacian
     vf_integrals
@@ -40,6 +52,11 @@ feelpp_add_test( ginac_jit_cache NO_MPI_TEST TIMEOUT 180 )
 list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
 feelpp_add_test( ginac_jit_mpi TIMEOUT 180 )
 list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
+feelpp_add_test( basis_expressions NO_MPI_TEST )
+list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
+feelpp_add_test( facet NO_MPI_TEST )
+list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
+
 feelpp_add_test( inner CFG test_inner.cfg )
 list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
 feelpp_add_test( laplacianv CFG test_laplacianv.cfg )
@@ -57,6 +74,15 @@ endif()
 feelpp_add_test( convolve CFG test_convolve.cfg )
 list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
 feelpp_add_test( pow CFG test_pow.cfg)
+list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
+
+foreach(t sb9bending sb9pinching sb9shear sb9shearing sb9stabilization)
+    feelpp_add_test(${t} LABEL sb9)
+    list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
+endforeach()
+feelpp_add_test(sb9mass LABEL sb9 NO_MPI_TEST)
+list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
+feelpp_add_test(sb9transient LABEL sb9 NO_MPI_TEST)
 list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
 
 if ( NOT TARGET testvf )

@@ -10,6 +10,7 @@
 #ifndef FEELPP_VF_MEAN_H
 #define FEELPP_VF_MEAN_H
 
+#include <feel/feelvf/field.hpp>
 #include <feel/feelvf/expr.hpp>
 #include <feel/feelvf/integrator.hpp>
 #include <feel/feelvf/form.hpp>
@@ -21,7 +22,7 @@ auto mean( Ts && ... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
     auto && range = args.get(_range);
-    auto && expr = args.get(_expr);
+    auto expr = Feel::vf::toValueExpression( args.get(_expr) );
     bool parallel = args.get_else( _parallel, parallelEvaluation );
     auto && quad = args.get_else( _quad, quad_order_from_expression );
     auto && quad1 = args.get_else( _quad1, quad_order_from_expression );
@@ -49,7 +50,7 @@ auto form1_mean( Ts && ... v )
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
     auto && test = args.get(_test);
     auto && range = args.get(_range);
-    auto && expr = args.get(_expr);
+    auto expr = Feel::vf::toValueExpression( args.get(_expr) );
     bool parallel = args.get_else( _parallel, true );
     auto && quad = args.get_else( _quad, quad_order_from_expression );
     auto && quad1 = args.get_else( _quad1, quad_order_from_expression );

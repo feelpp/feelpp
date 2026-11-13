@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 #include "../discretization.hpp"
+#include "manufactured.hpp"
 #include <feel/feeldiscr/ned1h.hpp>
 #include <feel/feeldiscr/ned2h.hpp>
 #include <feel/feelfilters/exporter.hpp>
@@ -31,17 +32,8 @@ int solveCurlCurl( SpacePtr const& Xh )
     int const requestedQuad = ioption( "quad" );
     int const quad = requestedQuad > 0 ? requestedQuad :
         std::max( 10, 2 * ( ioption( "order" ) + 2 ) * mesh->order() );
-#if FEELPP_DIM == 2
-    auto exact = expr<2, 1>( polynomial ? "{-y,x}:x:y" :
-                             "{sin(pi*y),sin(pi*x)}:x:y" );
-    auto exactCurl = expr( polynomial ? "2" :
-                           "pi*(cos(pi*x)-cos(pi*y)):x:y" );
-#else
-    auto exact = expr<3, 1>( polynomial ? "{-y,x,0}:x:y:z" :
-                             "{sin(pi*y),sin(pi*z),sin(pi*x)}:x:y:z" );
-    auto exactCurl = expr<3, 1>( polynomial ? "{0,0,2}" :
-                                 "{-pi*cos(pi*z),-pi*cos(pi*x),-pi*cos(pi*y)}:x:y:z" );
-#endif
+    auto exact = quickstart::maxwell::exactField<FEELPP_DIM>( polynomial );
+    auto exactCurl = quickstart::maxwell::exactCurl<FEELPP_DIM>( polynomial );
     auto forcing = ( polynomial ? mass : mass + pi * pi ) * exact;
     auto u = Xh->element( "E" );
     auto v = Xh->element();
@@ -105,7 +97,7 @@ int main( int argc, char** argv )
             ( "error-max", po::value<double>()->default_value( -1 ), "maximum H(curl) error (negative: disabled)" )
             ( "no-export", po::value<bool>()->default_value( false )->implicit_value( true ), "disable field export" );
         Environment env( _argc=argc, _argv=argv, _desc=options,
-                         _about=about( _name="qs_curlcurl", _author="Feel++ Consortium",
+                         _about=about( _name="qs_curlcurl", _author="University of Strasbourg",
                                        _email="feelpp-devel@feelpp.org" ) );
 
         auto const order = quickstart::checkedOrder( "order", 0 );
