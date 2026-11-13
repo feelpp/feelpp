@@ -658,6 +658,23 @@ local pythonCiBuildPresetNames = [
 // Aggregate All Configure Presets
 // ============================================================================
 
+local toolboxDynamicPreset = pythonCiPreset(
+  'toolbox-dynamic',
+  'Build Feel++, core Python, and the dynamic heat, electric and thermoelectric toolboxes and Python bindings',
+  'Dynamic heat, electric and thermoelectric',
+  focusedToolboxCacheVars + {
+    FEELPP_ENABLE_MOR: 'OFF',
+    FEELPP_ENABLE_TOOLBOXES: 'ON',
+    FEELPP_ENABLE_FEELPP_PYTHON: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_PYTHON: 'ON',
+    FEELPP_TOOLBOXES_ENABLE: 'OFF',
+    FEELPP_TOOLBOXES_ENABLE_MESHALE: 'OFF',
+    FEELPP_TOOLBOXES_ENABLE_HEAT: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_ELECTRIC: 'ON',
+    FEELPP_TOOLBOXES_ENABLE_THERMOELECTRIC: 'ON',
+  }
+);
+
 local configurePresets = 
   // Base and mixins
   [
@@ -710,6 +727,7 @@ local configurePresets =
   [spackMpichFeelppPreset] +
   // Special component presets
   [
+    toolboxDynamicPreset,
     feelppUsrlocalPreset,
     feelppCpp20SpackPreset,
     feelppCpp23SpackPreset,
@@ -741,6 +759,10 @@ local buildPresets = [
   buildPreset('debug-cmake'),
   buildPreset('dbg', 2),
   buildPreset('doxygen'),
+  buildPreset('toolbox-dynamic', 20) + {
+    targets: ['feelpp',
+              'feelpp_toolbox_heat', 'feelpp_toolbox_electric', 'feelpp_toolbox_thermoelectric'],
+  },
 ] +
 // Build type + cpp-std + cmake
 [buildPreset('release-cpp' + std + '-cmake') for std in cppStds] +
