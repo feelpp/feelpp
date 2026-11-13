@@ -660,13 +660,15 @@ local pythonCiBuildPresetNames = [
 
 local toolboxDynamicPreset = pythonCiPreset(
   'toolbox-dynamic',
-  'Build Feel++, core Python, and the dynamic heat, electric and thermoelectric toolboxes and Python bindings',
+  'Build Feel++ and the dynamic heat, electric and thermoelectric C++ toolboxes',
   'Dynamic heat, electric and thermoelectric',
   focusedToolboxCacheVars + {
     FEELPP_ENABLE_MOR: 'OFF',
     FEELPP_ENABLE_TOOLBOXES: 'ON',
-    FEELPP_ENABLE_FEELPP_PYTHON: 'ON',
-    FEELPP_TOOLBOXES_ENABLE_PYTHON: 'ON',
+    FEELPP_ENABLE_FEELPP_PYTHON: 'OFF',
+    FEELPP_ENABLE_PYTHON: 'OFF',
+    FEELPP_ENABLE_PYTHON_WRAPPING: 'OFF',
+    FEELPP_TOOLBOXES_ENABLE_PYTHON: 'OFF',
     FEELPP_TOOLBOXES_ENABLE: 'OFF',
     FEELPP_TOOLBOXES_ENABLE_MESHALE: 'OFF',
     FEELPP_TOOLBOXES_ENABLE_HEAT: 'ON',
