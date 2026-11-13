@@ -22,5 +22,11 @@
 #
 #
 feelpp_add_pymodule(thermoelectric SRCS thermoelectric.cpp DESTINATION feelpp/toolboxes/thermoelectric LINK_LIBRARIES Feelpp::feelpp_toolbox_thermoelectric_lib)
+feelpp_stage_python_files(
+  TARGET pyfeelpptoolboxes_thermoelectric_pyfiles
+  DESTINATION feelpp/toolboxes/thermoelectric
+  FILES __init__.py
+)
+add_dependencies(_thermoelectric pyfeelpptoolboxes_thermoelectric_pyfiles)
 install(FILES  __init__.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/thermoelectric
         COMPONENT ${FEELPP_PYTHON_INSTALL_COMPONENT})

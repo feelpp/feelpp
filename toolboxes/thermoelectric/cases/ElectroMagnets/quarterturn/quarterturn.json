@@ -27,8 +27,7 @@
         {
             "Import":
             {
-                "filename":"$cfgdir/quarterturn.geo",
-                "hsize":0.05
+                "filename":"$cfgdir/quarterturn.geo"
             }
         }
     },

@@ -936,6 +936,9 @@ macro( genLibThermoElectric )
       )
   endif()
 
+  if ( THERMOELECTRIC_T_ORDER STREQUAL "Dynamic" AND THERMOELECTRIC_P_ORDER STREQUAL "Dynamic" AND THERMOELECTRIC_ORDERGEO STREQUAL "Dynamic" )
+    set_target_properties(${THERMOELECTRIC_LIB_NAME} PROPERTIES OUTPUT_NAME "feelpp_toolbox_thermoelectric_lib_${THERMOELECTRIC_DIM}d")
+  endif()
 endmacro(genLibThermoElectric)
 
 #############################################################################
