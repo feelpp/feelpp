@@ -1,3 +1,10 @@
+/*
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2017-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
 #ifndef FEELPP_MODELS_STABILIZATIONGLSPARAMETER_HPP
 #define FEELPP_MODELS_STABILIZATIONGLSPARAMETER_HPP 1
@@ -18,7 +25,7 @@ namespace FeelModels
 {
 
 
-template<typename MeshType, uint16_type OrderPoly>
+template<typename MeshType, int OrderPoly>
 class StabilizationGLSParameter : public StabilizationGLSParameterBase<MeshType>
 {
     using super_type = StabilizationGLSParameterBase<MeshType>;
@@ -27,16 +34,20 @@ public :
     using mesh_t = typename super_type::mesh_t;// MeshType;
     using mesh_ptr_t = typename super_type::mesh_ptr_t;
 
-    static inline const uint16_type nOrder = OrderPoly;
+    static constexpr int nOrder = OrderPoly;
     using space_t = Pdh_type<mesh_t,nOrder>;
     using space_ptr_t = std::shared_ptr<space_t>;
     using element_t = typename space_t::element_type;
     using element_ptr_t = typename space_t::element_ptrtype;
 
-    StabilizationGLSParameter( mesh_ptr_t const& mesh, std::string const& prefix, po::variables_map const& vm = Environment::vm() )
+    StabilizationGLSParameter( mesh_ptr_t const& mesh, std::string const& prefix, po::variables_map const& vm = Environment::vm(),
+                               RuntimeOrder polynomialOrder = RuntimeOrder{ OrderPoly == Dynamic ? 1 : OrderPoly } )
         :
         super_type( mesh, prefix, vm )
-        {}
+        {
+            if ( polynomialOrder.value > 1 && ( this->M_method == "eigenvalue" || this->M_method == "eigenvalue-simplified" ) )
+                M_spaceEigenValuesProblem = Pdh<nOrder>(mesh, polynomialOrder);
+        }
 
     virtual ~StabilizationGLSParameter() = default;
 
@@ -82,7 +93,7 @@ private :
 }; // class StabilizationGLSParameter
 
 
-template<typename MeshType, uint16_type OrderPoly>
+template<typename MeshType, int OrderPoly>
 void
 StabilizationGLSParameter<MeshType,OrderPoly>::init()
 {
@@ -128,17 +139,13 @@ StabilizationGLSParameter<MeshType,OrderPoly>::init()
         this->M_sqrtLambdaKValues.clear();
         this->M_mKValues.clear();
 
-        if ( nOrder == 1 )
+        if ( !M_spaceEigenValuesProblem )
         {
             for ( auto const& elt : allelements(mesh) )
                 this->M_mKValues[unwrap_ref(elt).id()] = 1./3;
         }
         else
         {
-            if ( !M_spaceEigenValuesProblem )
-                M_spaceEigenValuesProblem = Pdh<nOrder>(mesh);
-
-
             auto Ph = M_spaceEigenValuesProblem;
             auto w = Ph->element();
 
@@ -192,14 +199,15 @@ StabilizationGLSParameter<MeshType,OrderPoly>::init()
 }
 
 
-template<typename MeshType, uint16_type OrderPoly>
+template<typename MeshType, int OrderPoly>
 void
 StabilizationGLSParameter<MeshType,OrderPoly>::applyRemesh( mesh_ptr_t const& newMesh )
 {
     this->M_mesh = newMesh;
     this->M_spaceTau.reset();
     this->M_fieldTau.reset();
-    M_spaceEigenValuesProblem.reset();
+    if ( M_spaceEigenValuesProblem )
+        M_spaceEigenValuesProblem = Pdh<nOrder>(newMesh, RuntimeOrder{ M_spaceEigenValuesProblem->order() });
     this->init();
 }
 

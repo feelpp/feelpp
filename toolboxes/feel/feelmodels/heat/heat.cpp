@@ -1,4 +1,9 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2018-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
 #include <feel/feelmodels/heat/heat.hpp>
@@ -16,12 +21,18 @@ HEAT_CLASS_TEMPLATE_TYPE::Heat( std::string const& prefix,
                                 worldcomm_ptr_t const& worldComm,
                                 std::string const& subPrefix,
                                 ModelBaseRepository const& modelRep,
-                                ModelBaseCommandLineOptions const& modelOptions )
+                                ModelBaseCommandLineOptions const& modelOptions,
+                                RuntimeOrder polynomialOrder,
+                                RuntimeOrder geometryOrder )
     :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep, modelOptions ),
     ModelPhysics<nDim>( "heat" ),
-    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep, modelOptions )
+    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep, modelOptions ),
+    M_runtimeOrderTemperature( validatedOrder<basis_temperature_type>(polynomialOrder) ),
+    M_runtimeOrderGeo( validatedOrder<convex_type>(geometryOrder) )
 {
+    if ( polynomialOrder.value < 1 || geometryOrder.value < 1 )
+        throw std::invalid_argument("Heat FE and geometry orders must be positive");
     this->log("Heat","constructor", "start" );
 
     std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".HeatConstructor.data";
@@ -71,7 +82,7 @@ HEAT_CLASS_TEMPLATE_TYPE::initMesh()
         super_type::super_model_meshes_type::setup( this->modelProperties().jsonData().at("Meshes"), {this->keyword()} );
     if ( this->doRestart() )
         super_type::super_model_meshes_type::setupRestart( this->keyword() );
-    super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
+    super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword(), M_runtimeOrderGeo );
 
     super_type::super_model_meshes_type::modelMesh( this->keyword() ).setFunctionApplyRemesh(
         [this]( typename super_type::super_model_meshes_type::mesh_base_ptrtype mnew,
@@ -116,12 +127,12 @@ HEAT_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     if ( mom->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() ) )
     {
         M_rangeMeshElements = elements(this->mesh());
-        M_Xh = space_temperature_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(), _extended_doftable=M_useExtendedDoftable );
+        M_Xh = space_temperature_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(), _extended_doftable=M_useExtendedDoftable, _runtime_order=M_runtimeOrderTemperature );
     }
     else
     {
         M_rangeMeshElements = markedelements(this->mesh(), mom->markers( this->physicsAvailableFromCurrentType() ));
-        M_Xh = space_temperature_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=M_rangeMeshElements, _extended_doftable=M_useExtendedDoftable );
+        M_Xh = space_temperature_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=M_rangeMeshElements, _extended_doftable=M_useExtendedDoftable, _runtime_order=M_runtimeOrderTemperature );
     }
     this->log("Heat","initFunctionSpaces", fmt::format("temperature space ndof : {}",M_Xh->nDof()) );
 
@@ -185,7 +196,7 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( M_stabilizationGLS )
     {
         typedef StabilizationGLSParameter<mesh_type, nOrderTemperature> stab_gls_parameter_impl_type;
-        M_stabilizationGLSParameter.reset( new stab_gls_parameter_impl_type( this->mesh(),prefixvm(this->prefix(),"stabilization-gls.parameter") ) );
+        M_stabilizationGLSParameter.reset( new stab_gls_parameter_impl_type( this->mesh(),prefixvm(this->prefix(),"stabilization-gls.parameter"), this->clovm(), M_runtimeOrderTemperature ) );
         M_stabilizationGLSParameter->init();
     }
 

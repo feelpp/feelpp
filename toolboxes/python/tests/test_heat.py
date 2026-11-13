@@ -6,14 +6,14 @@ from _heat_test_utils import run_heat_case
 from _case_paths import toolbox_case
 
 heat_cases = [
-    (toolbox_case('heat/Building/ThermalBridgesENISO10211/case2.cfg'), 2, 1),
-    (toolbox_case('heat/Building/ThermalBridgesENISO10211/case2.cfg'), 2, 2),
+    (toolbox_case('heat/Building/ThermalBridgesENISO10211/case2.cfg'), 2, order, geo)
+    for order, geo in [(1, 1), (1, 3), (2, 1), (2, 3), (3, 2)]
 ]
 
 
-@pytest.mark.parametrize("casefile,dim,order", heat_cases)
-def test_heat(casefile,dim,order):
-    run_heat_case(casefile, dim, order)
+@pytest.mark.parametrize("casefile,dim,order,geo_order", heat_cases)
+def test_heat(casefile, dim, order, geo_order, case_repository):
+    run_heat_case(casefile, dim, order, geo_order, repository=case_repository)
 
 parts = [2,3,6]
 
@@ -43,9 +43,10 @@ def test_heat_ensemble(nparts):
         # 
         # return not f.checkResults()
 
-def test_heat_alg():
+def test_heat_alg(case_repository):
     fppc.Environment.setConfigFile(
         toolbox_case('heat/Building/ThermalBridgesENISO10211/case2.cfg'))
+    fppc.Environment.changeRepository(directory=case_repository)
     f = heat(dim=2, order=1)
     f.init()
     if f.isStationary():

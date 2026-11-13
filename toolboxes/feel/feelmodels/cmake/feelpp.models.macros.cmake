@@ -152,6 +152,9 @@ macro( genLibHeat )
       CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heat/heatconfig.h.in
       )
   endif()
+  if ( HEAT_ORDERPOLY STREQUAL "Dynamic" AND HEAT_ORDERGEO STREQUAL "Dynamic" )
+    set_target_properties(${HEAT_LIB_NAME} PROPERTIES OUTPUT_NAME "feelpp_toolbox_heat_lib_${HEAT_DIM}d")
+  endif()
 endmacro(genLibHeat)
 
 

@@ -1,4 +1,9 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2018-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
 #ifndef FEELPP_TOOLBOXES_HEAT_UPDATESTABILIZATIONGLS_HPP
@@ -54,12 +59,12 @@ exprResidualImpl( HeatType const& heat, ModelPhysicHeat<HeatType::nDim> const& p
     auto thermalConductivityExprBase = matProps.property("thermal-conductivity");
     bool thermalConductivityIsMatrix = thermalConductivityExprBase.template hasExpr<HeatType::nDim,HeatType::nDim>();
     bool thermalConductivityDependsOnCoordinatesInSpace = thermalConductivityExprBase.template hasSymbolDependencyOnCoordinatesInSpace<HeatType::nDim>( se ) && heat.stabilizationGLS_checkConductivityDependencyOnCoordinates();
-    if (  HeatType::nOrderTemperature > 1 || thermalConductivityDependsOnCoordinatesInSpace )
+    if ( heat.orderTemperature() > 1 || thermalConductivityDependsOnCoordinatesInSpace )
     {
         if ( thermalConductivityIsMatrix )
         {
             auto thermalConductivityExpr = expr( thermalConductivityExprBase.template expr<HeatType::nDim,HeatType::nDim>(), se );
-            if constexpr ( HeatType::nOrderTemperature > 1 )
+            if ( heat.orderTemperature() > 1 )
             {
                 residual_full.expression().add( -timeSteppingScaling*inner(thermalConductivityExpr,hessv(u)) );
             }
@@ -71,7 +76,7 @@ exprResidualImpl( HeatType const& heat, ModelPhysicHeat<HeatType::nDim> const& p
         else
         {
             auto thermalConductivityExpr = expr( thermalConductivityExprBase.template expr<1,1>(), se );
-            if constexpr ( HeatType::nOrderTemperature > 1 )
+            if ( heat.orderTemperature() > 1 )
             {
                 residual_full.expression().add( -timeSteppingScaling*thermalConductivityExpr*laplacianv(u) );
             }
@@ -202,7 +207,7 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobianStabilizationGLS( DataUpdat
     if ( thermalConductivityIsMatrix )
     {
         auto thermalConductivityExpr = expr( thermalConductivityExprBase.template expr<nDim,nDim>(), se );
-        if constexpr ( nOrderTemperature > 1 )
+        if ( this->orderTemperature() > 1 )
         {
             residual_lhs.expression().add( -timeSteppingScaling*inner(thermalConductivityExpr,hesst(u)) );
             if ( coeffNatureStabilization != 0 )
@@ -217,7 +222,7 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobianStabilizationGLS( DataUpdat
     else
     {
         auto thermalConductivityExpr = expr( thermalConductivityExprBase.template expr<1,1>(), se );
-        if constexpr ( nOrderTemperature > 1 )
+        if ( this->orderTemperature() > 1 )
         {
             residual_lhs.expression().add( -timeSteppingScaling*thermalConductivityExpr*laplaciant(u) );
             if ( coeffNatureStabilization != 0 )
@@ -355,7 +360,7 @@ Heat<ConvexType,BasisTemperatureType>::updateResidualStabilizationGLS( DataUpdat
     if ( thermalConductivityIsMatrix )
     {
         auto thermalConductivityExpr = expr( thermalConductivityExprBase.template expr<nDim,nDim>(), se );
-        if constexpr ( nOrderTemperature > 1 )
+        if ( this->orderTemperature() > 1 )
         {
             if ( coeffNatureStabilization != 0 )
                 stab_test.expression().add( -coeffNatureStabilization*inner(thermalConductivityExpr,hess(u)) );
@@ -369,7 +374,7 @@ Heat<ConvexType,BasisTemperatureType>::updateResidualStabilizationGLS( DataUpdat
     else
     {
         auto thermalConductivityExpr = expr( thermalConductivityExprBase.template expr<1,1>(), se );
-        if constexpr ( nOrderTemperature > 1 )
+        if ( this->orderTemperature() > 1 )
         {
             if ( coeffNatureStabilization != 0 )
                 stab_test.expression().add( -coeffNatureStabilization*thermalConductivityExpr*laplacian(u) );
@@ -502,7 +507,7 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDEStabilizationGLS( DataUpda
     if ( thermalConductivityIsMatrix )
     {
         auto thermalConductivityExpr = expr( thermalConductivityExprBase.template expr<nDim,nDim>(), se );
-        if constexpr ( nOrderTemperature > 1 )
+        if ( this->orderTemperature() > 1 )
         {
             residual_lhs.expression().add( -timeSteppingScaling*inner(thermalConductivityExpr,hesst(u)) );
             if ( coeffNatureStabilization != 0 )
@@ -517,7 +522,7 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDEStabilizationGLS( DataUpda
     else
     {
         auto thermalConductivityExpr = expr( thermalConductivityExprBase.template expr<1,1>(), se );
-        if constexpr ( nOrderTemperature > 1 )
+        if ( this->orderTemperature() > 1 )
         {
             residual_lhs.expression().add( -timeSteppingScaling*thermalConductivityExpr*laplaciant(u) );
             if ( coeffNatureStabilization != 0 )
