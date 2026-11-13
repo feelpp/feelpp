@@ -41,3 +41,17 @@ MMG5_compareScotchPairsFirst(const void *lhs, const void *rhs) {
         file(WRITE "${header}" "${patched}")
     endif()
 endfunction()
+
+# The bundled Scotch finders discard zlib's resolved path. Spack libraries are
+# not in the linker's default search paths, so a bare -lz fails at build time.
+function(feelpp_patch_scotch_zlib source_dir)
+    set(module "${source_dir}/cmake/modules/FindSCOTCH.cmake")
+    file(READ "${module}" original)
+    string(REPLACE [=[list(APPEND REQUIRED_LIBS "-lz")]=]
+                   [=[list(APPEND REQUIRED_LIBS "${Z_LIBRARY}")]=]
+                   patched "${original}")
+    if(NOT original STREQUAL patched)
+        file(WRITE "${module}" "${patched}")
+        message(STATUS "[feelpp] Preserved zlib's resolved path in ${module}")
+    endif()
+endfunction()

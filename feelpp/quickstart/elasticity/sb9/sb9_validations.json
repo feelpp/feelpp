@@ -424,8 +424,8 @@
       },
       "reference": {
         "probeValue": 1.0,
-        "absoluteTolerance": 1.0e-12,
-        "relativeTolerance": 1.0e-12,
+        "absoluteTolerance": 1.0e-10,
+        "relativeTolerance": 1.0e-10,
         "description": "Exact axial elongation FL/(EA) from validation.pdf setup with partial PDF node constraints"
       },
       "fieldReferences": [

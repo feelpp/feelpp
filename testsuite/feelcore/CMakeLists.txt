@@ -66,4 +66,6 @@ feelpp_add_test(ptree_editions CFG test_ptree_editions.cfg GEO test_ptree_editio
 
 feelpp_add_test( observer )
 feelpp_add_test( observer_mesh )
-feelpp_add_test( eigenrand )
+if(TARGET Feelpp::feelpp_eigenrand)
+  feelpp_add_test( eigenrand )
+endif()
