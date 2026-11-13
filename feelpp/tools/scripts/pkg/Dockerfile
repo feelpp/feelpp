@@ -11,9 +11,10 @@ ENV CHANNEL=${CHANNEL:-latest}
 RUN if test "$FLAVOR" = "ubuntu"; then \
         sed -i 's/http:\/\/archive.ubuntu.com\/ubuntu\//http:\/\/miroir.univ-lorraine.fr\/ubuntu\//' /etc/apt/sources.list; \
     fi
+# Keep the separate Debian security archive unchanged.
 RUN if test "$FLAVOR" = "debian"; then \
         NEW_MIRROR="http://miroir.univ-lorraine.fr/debian/" ;\
-        sed -i "s|URIs: .*|URIs: $NEW_MIRROR|" /etc/apt/sources.list.d/debian.sources;\
+        sed -i -E "s|^URIs: https?://deb[.]debian[.]org/debian/?$|URIs: $NEW_MIRROR|" /etc/apt/sources.list.d/debian.sources;\
         fi
 RUN apt-get update \
         && apt-get install -y \
@@ -21,7 +22,9 @@ RUN apt-get update \
         ssh \
         sudo \
         wget gpg git \
-        software-properties-common \
+        && if test "$FLAVOR" = "ubuntu"; then \
+             apt-get install -y software-properties-common; \
+           fi \
         && rm -rf /var/lib/apt/lists/*
 
 RUN useradd --user-group --create-home --shell /bin/bash feelpp ;\
@@ -49,7 +52,11 @@ RUN wget -qO - http://apt.feelpp.org/apt.gpg | gpg --dearmor > feelpp.gpg \
                          $packages 'libfeelpp1' 'python3-feelpp*' \
         && rm -rf /var/lib/apt/lists/*
 
-# install venv
+COPY setup-python-bindings.py /tmp/setup-python-bindings.py
+RUN python3 /tmp/setup-python-bindings.py \
+    && rm /tmp/setup-python-bindings.py
+
+# Keep the APT NumPy ABI used by PETSc/SLEPc and other native Python modules.
 RUN apt-get update \
     && apt-get install -y python3-venv \
     && rm -rf /var/lib/apt/lists/*
@@ -62,7 +69,8 @@ USER feelpp
 
 RUN    python3 -m venv --system-site-packages /home/feelpp/.venv \
    &&  . /home/feelpp/.venv/bin/activate \
-   &&  pip3 install --no-cache-dir --upgrade pip setuptools wheel pyvista xvfbwrapper ipykernel plotly pandas trame trame-code tabulate \
-   &&  python3 -c "import feelpp.core"
+   &&  numpy_version=$(python3 -c "import numpy; print(numpy.__version__)") \
+   &&  pip3 install --no-cache-dir --upgrade pip setuptools wheel "numpy==$numpy_version" pyvista xvfbwrapper ipykernel plotly pandas trame trame-code tabulate \
+   &&  python3 -c "from petsc4py import PETSc; from slepc4py import SLEPc; import feelpp.core"
 
 CMD ["/bin/bash", "-c", "source /home/feelpp/.venv/bin/activate && exec /bin/bash"]

@@ -648,6 +648,9 @@
          "name": "release-clang-spack-cpu-openmpi"
       },
       {
+         "cacheVariables": {
+            "FEELPP_ENABLE_SIMPLE_WEB_SERVER": "OFF"
+         },
          "inherits": [
             "release-clang-spack"
          ],
@@ -808,6 +811,7 @@
             "FEELPP_ENABLE_MOR": "OFF",
             "FEELPP_ENABLE_PYTHON": "ON",
             "FEELPP_ENABLE_QUICKSTART": "OFF",
+            "FEELPP_ENABLE_SIMPLE_WEB_SERVER": "OFF",
             "FEELPP_ENABLE_TESTS": "OFF",
             "FEELPP_ENABLE_TOOLBOXES": "OFF",
             "FEELPP_USE_EXTERNAL_CLN": "ON"

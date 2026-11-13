@@ -18,4 +18,4 @@ RUN apt-get update \
 #	&& rm cmakeinstall.sh
 
 USER feelpp
-RUN /home/feelpp/.venv/bin/python3 -c "import feelpp.core"
+RUN /home/feelpp/.venv/bin/python3 -c "from petsc4py import PETSc; from slepc4py import SLEPc; import feelpp.core"
