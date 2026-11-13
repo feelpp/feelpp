@@ -1,5 +1,12 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2020-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
  */
+
 #pragma once
 
 #include <feel/feelmesh/meshbase.hpp>
@@ -177,12 +184,12 @@ public:
     void setMeshMotionTool( std::shared_ptr<ModelBase> meshMotionTool ) { M_meshMotionTool = meshMotionTool; }
 
     template <typename SpaceType>
-    auto createFunctionSpace( std::string const& basis )
+    auto createFunctionSpace( std::string const& basis, RuntimeOrder polynomialOrder = SpaceType::defaultBasisOrder() )
         {
             auto itFind = M_functionSpaces.find( basis );
             if ( itFind == M_functionSpaces.end() )
             {
-                auto Vh = SpaceType::New(_mesh=this->mesh<typename SpaceType::mesh_type>());
+                auto Vh = SpaceType::New(_mesh=this->mesh<typename SpaceType::mesh_type>(), _runtime_order=polynomialOrder);
                 M_functionSpaces[basis] = Vh;
                 return Vh;
             }
@@ -517,8 +524,13 @@ public :
                     auto metExpr = expr( M_mas.metricExpr().template expr<1,1>(), se );
                     metField->on( _range=elements(inputMesh),_expr=metExpr );
 
-                    if  constexpr ( (MeshType::nDim == MeshType::nRealDim) && MeshType::nOrder == 1 )
-                                      return this->executeImpl( inputMesh );
+                    if constexpr ( (MeshType::nDim == MeshType::nRealDim) &&
+                                   (MeshType::is_order_dynamic || MeshType::nOrder == 1) )
+                    {
+                        if ( inputMesh->order() != 1 )
+                            throw std::invalid_argument("Mesh adaptation requires geometry order 1");
+                        return this->executeImpl( inputMesh );
+                    }
                     else
                         return std::shared_ptr<MeshType>{};
                 }
@@ -684,7 +696,7 @@ public :
                                     });
 
         // distance to range
-        using distange_to_range_space_type = FunctionSpace<MeshType, bases<Lagrange<MeshType::nOrder,Scalar,Continuous,PointSetFekete>>>;
+        using distange_to_range_space_type = FunctionSpace<MeshType, bases<Lagrange<MeshType::is_order_dynamic ? Dynamic : MeshType::nOrder,Scalar,Continuous,PointSetFekete>>>;
         using distange_to_range_field_type = typename distange_to_range_space_type::element_type;
         using distange_to_range_field_ptrtype = std::shared_ptr<distange_to_range_field_type>;
         auto mftag_distToRange = ModelFieldTag< ModelMesh<index_type>,1>( this );
@@ -939,6 +951,7 @@ private:
     std::optional<MeshMotionSetup> M_meshMotionSetup;
     std::vector<typename MeshAdaptation::Setup> M_meshAdaptationSetup;
     function_apply_remesh M_functionApplyRemesh;
+    std::function<void(nl::json&,std::string const&)> M_updateFieldInformations;
 
 };
 
@@ -1143,3 +1156,5 @@ public:
 
 } // namespace FeelModels
 } // namespace Feel
+
+#include <feel/feelmodels/modelcore/modelmeshes_impl.hpp>
