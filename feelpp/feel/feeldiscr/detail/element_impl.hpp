@@ -2,7 +2,7 @@
  * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
  *
- * SPDX-FileCopyrightText: 2026 University of Strasbourg
+ * SPDX-FileCopyrightText: 2014-2026 University of Strasbourg
  *
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
@@ -332,13 +332,24 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::operator()( node_type const& __x
     this->updateGlobalValues();
 
     node_type __x_ref;
-    size_type __cv_id;
+    size_type __cv_id = invalid_v<size_type>;
     rank_type rank = functionSpace()->mesh()->comm().rank();
     rank_type nprocs = functionSpace()->mesh()->comm().size();
     std::vector<uint8_type/*int*/> found_pt( nprocs, 0 );
     std::vector<uint8_type/*int*/> global_found_pt( nprocs, 0 );
 
-    if ( functionSpace()->findPoint( __x, __cv_id, __x_ref ) || extrapolate )
+    bool foundPoint = functionSpace()->findPoint( __x, __cv_id, __x_ref );
+    if ( !foundPoint && extrapolate && __cv_id != invalid_v<size_type> )
+    {
+        // findPoint returns the closest candidate, but its last reference
+        // coordinates need not belong to that candidate.
+        typename gm_type::Inverse inverse( functionSpace()->gm(),
+            this->mesh()->element( __cv_id ), this->worldComm().subWorldCommSeqPtr() );
+        inverse.setXReal( __x );
+        __x_ref = inverse.xRef();
+        foundPoint = true;
+    }
+    if ( foundPoint )
     {
         DVLOG(2) << "Point " << __x << " is in element " << __cv_id << " pt_ref=" << __x_ref << "\n";
 
@@ -452,36 +463,130 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::operator()( node_type const& __x
 
 } // operator()
 template<typename A0, typename A1, typename A2, typename A3>
+template<typename Y, typename Cont>
+template<typename ContextType, typename Visitor>
+void
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::forEachLocalCoefficient(
+    ContextType const& context, Visitor&& visit ) const
+{
+    if ( !this->areGlobalValuesUpdated() )
+        this->updateGlobalValues();
+
+    index_type elementId = context.eId();
+    auto const& contextMesh = context.gmContext()->element().mesh();
+    if ( contextMesh->isSubMeshFrom( this->mesh() ) )
+        elementId = contextMesh->subMeshToMesh( elementId );
+    if ( contextMesh->isParentMeshOf( this->mesh() ) )
+        elementId = this->mesh()->meshToSubMesh( context.eId() );
+    if ( elementId == invalid_v<index_type> )
+        return;
+
+    for ( auto const& entry : M_functionspace->dof()->localDof( elementId ) )
+    {
+        auto const localDof = entry.first.localDof();
+        visit( localDof, this->orientedLocalCoefficient( elementId, localDof ) );
+    }
+}
+
+template<typename A0, typename A1, typename A2, typename A3>
+template<typename Y, typename Cont>
+template<Feel::size_type Context, typename OutputArray, typename Evaluation>
+void
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::interpolateAtPoints(
+    matrix_node_type const& points, OutputArray& values, bool conformalEval,
+    matrix_node_type const& setPointsConf, Evaluation&& evaluate ) const
+{
+    // Synchronize before localization: a rank with no local points must also
+    // participate in the coefficient exchange.
+    if ( !this->areGlobalValuesUpdated() )
+        this->updateGlobalValues();
+
+    auto localization = this->mesh()->tool_localization();
+    if ( conformalEval )
+        localization->localize( points, invalid_v<index_type>, setPointsConf, std::true_type{} );
+    else
+        localization->localize( points, invalid_v<index_type> );
+    auto it = localization->resultAnalysisBegin();
+    auto const end = localization->resultAnalysisEnd();
+    if ( it == end )
+        return;
+
+    constexpr bool needsMappingDerivatives =
+        vm::has_mapping_hessian_v<Context> ||
+        vm::has_laplacian_v<Context> ||
+        ( ( is_hdiv_conforming || is_hcurl_conforming ) &&
+          ( vm::has_grad_v<Context> || vm::has_first_derivative_v<Context> ) );
+    constexpr size_type geometryContext = vm::POINT|vm::JACOBIAN|vm::KB|
+        ( needsMappingDerivatives ? vm::HESSIAN : 0 );
+    constexpr size_type finiteElementContext = vm::POINT|vm::JACOBIAN|vm::KB|Context;
+
+    auto gm = this->functionSpace()->gm();
+    auto referencePoints = matrix_node_type( boost::get<1>( it->second.front() ).size(), it->second.size() );
+    auto updateReferencePoints = [&]( auto const& locatedPoints )
+    {
+        referencePoints.resize( referencePoints.size1(), locatedPoints.size(), false );
+        size_type q = 0;
+        for ( auto const& point : locatedPoints )
+            ublas::column( referencePoints, q++ ) = boost::get<1>( point );
+    };
+    updateReferencePoints( it->second );
+    auto geometricPrecompute = std::make_shared<geopc_type>( gm, referencePoints );
+    auto basisPrecompute = std::make_shared<pc_type>( this->functionSpace()->fe(), referencePoints );
+    auto geometry = gm->template context<geometryContext>( this->mesh()->element( it->first ), geometricPrecompute );
+    auto context = std::make_shared<fec_t<finiteElementContext,geometryContext>>(
+        this->functionSpace()->fe(), geometry, basisPrecompute );
+
+    for ( ; it != end; ++it )
+    {
+        updateReferencePoints( it->second );
+        geometricPrecompute->update( referencePoints );
+        basisPrecompute->update( referencePoints );
+        geometry->template update<geometryContext>( this->mesh()->element( it->first ), geometricPrecompute );
+        context->update( geometry, basisPrecompute );
+        auto const evaluated = evaluate( *context );
+
+        size_type q = 0;
+        for ( auto const& point : it->second )
+        {
+            auto& value = values[boost::get<0>( point )];
+            for ( int i = 0; i < value.dimension( 0 ); ++i )
+                for ( int j = 0; j < value.dimension( 1 ); ++j )
+                    value( i,j ) = evaluated( i,j,q );
+            ++q;
+        }
+    }
+}
+
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
+template<Feel::size_type Context, typename OutputArray, typename Evaluation>
+void
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::evaluateOnElement(
+    geoelement_type const& element, OutputArray& values, Evaluation&& evaluate ) const
+{
+    constexpr size_type geometryContext = vm::POINT|vm::JACOBIAN|vm::KB|vm::HESSIAN;
+    constexpr size_type finiteElementContext = vm::POINT|vm::JACOBIAN|vm::KB|Context;
+    auto geometry = this->geomapPtr( element );
+    auto precompute = this->pcPtr( element );
+    auto context = std::make_shared<fec_t<finiteElementContext,geometryContext>>(
+        this->functionSpace()->fe(), geometry, precompute );
+    values.resize( boost::extents[geometry->nPoints()] );
+    for ( auto& value : values )
+        value.setZero();
+    evaluate( *context, values );
+}
+
+template<typename A0, typename A1, typename A2, typename A3>
+template<typename Y, typename Cont>
 template<typename Context_t>
 void
 FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v ) const
 {
-#if 0 // TODO VINCENT
-    if ( is_hcurl_conforming && ( ( context.gmContext()->context & vm::KB ) == 0 ) )
-        throw std::logic_error("invalid geometric mapping context for hcurl " + std::to_string(context.gmContext()->context) );
-    if ( is_hdiv_conforming && ( ( context.gmContext()->context & vm::JACOBIAN ) == 0  ) )
-        throw std::logic_error("invalid geometric mapping context for hdiv " + std::to_string(context.gmContext()->context) );
-#endif
-    index_type elt_id = context.eId();
-    if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
-        elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
-    if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
-        elt_id = this->mesh()->meshToSubMesh( context.eId() );
-    if ( elt_id == invalid_v<index_type> )
-        return;
-
-    const uint16_type nq = context.xRefs().size2();
-    for( auto const& ldof : M_functionspace->dof()->localDof( elt_id ) )
+    this->forEachLocalCoefficient( context, [&]( auto localDof, auto coefficient )
     {
-        size_type index = ldof.second.index();
-        uint16_type local_dof = ldof.first.localDof();
-        auto v_ = this->orientedLocalCoefficient( elt_id, local_dof );
-        for ( uint16_type q = 0; q < nq; ++q )
-        {
-            v[q] += context.id(local_dof,q)*v_;
-        }
-    }
+        for ( size_type q = 0; q < context.xRefs().size2(); ++q )
+            v[q] += context.id( localDof, q )*coefficient;
+    } );
 }
 
 template<typename A0, typename A1, typename A2, typename A3>
@@ -489,77 +594,9 @@ template<typename Y,  typename Cont>
 void
 FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::idInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
-
-    // create analysys map : id -> List of pt
-    auto __loc = this->functionSpace()->mesh()->tool_localization();
-    if ( conformalEval )
-        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
-                         std::true_type{} );
-    else
-        __loc->localize( __ptsReal, invalid_v<index_type> );
-    auto it = __loc->resultAnalysisBegin();
-    auto it_end = __loc->resultAnalysisEnd();
-
-    //geomap
-    gm_ptrtype __gm = this->functionSpace()->gm();
-
-    //if analysis map is empty : no interpolation
-    if ( it==it_end ) return;
-
-    //alocate a point matrix
-    size_type nbPtsElt=it->second.size();
-    uint nbCoord=boost::get<1>( *( it->second.begin() ) ).size();
-    matrix_node_type pts( nbCoord, nbPtsElt );
-
-    //init the geomap context and precompute basis function
-    geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
-    pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-
-    auto __c = __gm->template context<DefaultCTX>( this->functionSpace()->mesh()->element( it->first ), __geopc );
-
-    fec_ptr_t<> __ctx = std::make_shared<fec_t<>>( this->functionSpace()->fe(),
-                                                   __c,
-                                                   __pc );
-
-    for ( ; it!=it_end; ++it )
-    {
-        nbPtsElt = it->second.size();
-
-        //iterate in the list pt for a element
-        auto itL=it->second.begin();
-        auto itL_end=it->second.end();
-
-        //compute a point matrix with the list of point
-        pts= matrix_node_type( nbCoord, nbPtsElt );
-
-        for ( size_type i=0; i<nbPtsElt; ++i,++itL )
-            ublas::column( pts, i ) = boost::get<1>( *itL );
-
-        //update geomap context
-        __geopc->update( pts );
-
-        //update precompute of basis functions
-        __pc->update( pts );
-
-        __c->template update<DefaultCTX>( this->functionSpace()->mesh()->element( it->first ), __geopc );
-        __ctx->update( __c, __pc );
-
-        //evaluate element for these points
-        id_type __id( this->id( *__ctx ) );
-
-        //update the output data
-        itL=it->second.begin();
-
-        for ( uint k=0; k<nbPtsElt; ++k,++itL )
-        {
-            for ( typename array_type::index i = 0; i < nComponents1; ++i )
-                for ( typename array_type::index j = 0; j < nComponents2; ++j )
-            {
-                v[boost::get<0>( *itL )]( i,j ) =  __id( i,j,k );
-            }
-        }
-    }
-
+    this->template interpolateAtPoints<0>(
+        __ptsReal, v, conformalEval, setPointsConf,
+        [this]( auto const& context ) { return this->id( context ); } );
 }
 
 //
@@ -589,8 +626,9 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::grad( node_type const& __x ) con
         ublas::column( pts, 0 ) = __x_ref;
         geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
 
-        const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
-        const size_type fec_v = gmc_v|vm::GRAD;
+        constexpr size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT|
+            ( ( is_hdiv_conforming || is_hcurl_conforming ) ? vm::HESSIAN : 0 );
+        constexpr size_type fec_v = vm::JACOBIAN|vm::KB|vm::POINT|vm::GRAD|vm::FIRST_DERIVATIVE;
         auto __c = __gm->template context<gmc_v>( this->functionSpace()->mesh()->element( __cv_id ), __geopc );
         pc_ptrtype pc( new pc_type( this->functionSpace()->fe(), pts ) );
         fec_ptr_t<fec_v,gmc_v> fectx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
@@ -617,7 +655,10 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::grad( node_type const& __x ) con
 
         if ( functionSpace()->mesh()->comm().size() > 1 )
         {
-            mpi::broadcast( functionSpace()->mesh()->comm(), g_, functionSpace()->mesh()->comm().rank() );
+            rank_type owner = 0;
+            while ( owner < global_found_pt.size() && global_found_pt[owner] == 0 )
+                ++owner;
+            mpi::broadcast( functionSpace()->mesh()->comm(), g_, owner );
         }
 
         //DVLOG(2) << "[interpolation] after broadcast g_ = " << g_ << "\n";
@@ -677,70 +718,13 @@ template<typename ContextType>
 void
 FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::grad_( ContextType const & context, grad_array_type& v ) const
 {
-    if ( !this->areGlobalValuesUpdated() )
-        this->updateGlobalValues();
-
-    index_type elt_id = context.eId();
-    if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
-        elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
-    if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
-        elt_id = this->mesh()->meshToSubMesh( context.eId() );
-    if ( elt_id == invalid_v<index_type> )
-        return;
-
-    for ( auto const& ldof : M_functionspace->dof()->localDof( elt_id ) )
+    this->forEachLocalCoefficient( context, [&]( auto localDof, auto coefficient )
     {
-        size_type index = ldof.second.index();
-        uint16_type local_dof = ldof.first.localDof();
-        value_type v_ = this->orientedLocalCoefficient( elt_id, local_dof );
-
         for ( size_type q = 0; q < context.xRefs().size2(); ++q )
-        {
-            for ( int k = 0; k < nComponents1; ++k )
-                for ( int j = 0; j < nRealDim; ++j )
-                    v[q]( k,j ) += v_ * context.grad( local_dof, k, j, q );
-        }
-    }
-
-#if 0
-    std::cout << "xref = " << context.xRefs() << "\n";
-    std::cout << "xreal = " << context.xReal() << "\n";
-    std::cout << "pts = " << context.G() << "\n";
-
-    for ( int l = 0; l < basis_type::nDof; ++l )
-    {
-        for ( typename array_type::index i = 0; i < nDim; ++i )
-        {
-            for ( size_type q = 0; q < context.xRefs().size2(); ++q )
-                std::cout << "Gref[ " << l << "," << i << "," << q << "] = " << pc.grad( l, 0, i, q ) << "\n";
-
-        }
-    }
-
-    for ( int l = 0; l < basis_type::nDof; ++l )
-    {
-        for ( int j = 0; j < nRealDim; ++j )
-            for ( typename array_type::index i = 0; i < nDim; ++i )
-            {
-                for ( size_type q = 0; q < context.xRefs().size2(); ++q )
-                    std::cout << "G[ " << l << "," << j << "," << i << "," << q << "] = " << context.B( q )( j, i )*pc.grad( l, 0, i, q ) << "\n";
-
-            }
-    }
-
-    for ( int k = 0; k < nComponents1; ++k )
-        for ( int j = 0; j < nRealDim; ++j )
-        {
-            for ( size_type q = 0; q < context.xRefs().size2(); ++q )
-            {
-                std::cout << "v[ " << k << "," << j << "," << q << "]= " << v[q]( k,j )  << "\n";
-                std::cout << "B(" << q << ")=" << context.B( q ) << "\n";
-                std::cout << "J(" << q << ")=" << context.J( q ) << "\n";
-                std::cout << "K(" << q << ")=" << context.K( q ) << "\n";
-            }
-        }
-
-#endif
+            for ( int c = 0; c < nComponents1; ++c )
+                for ( int d = 0; d < nRealDim; ++d )
+                    v[q]( c,d ) += coefficient*context.grad( localDof, c, d, q );
+    } );
 }
 
 template<typename A0, typename A1, typename A2, typename A3>
@@ -751,24 +735,11 @@ void
 FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::symmetricGradient( ContextType const & context,
                                                                        grad_array_type& v ) const
 {
-    index_type elt_id = context.eId();
-    if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
-        elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
-    if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
-        elt_id = this->mesh()->meshToSubMesh( context.eId() );
-    if ( elt_id == invalid_v<index_type> )
-        return;
-
-    for ( auto const& ldof : M_functionspace->dof()->localDof( elt_id ) )
+    this->forEachLocalCoefficient( context, [&]( auto localDof, auto coefficient )
     {
-        size_type index = ldof.second.index();
-        uint16_type local_dof = ldof.first.localDof();
-        value_type v_ = this->orientedLocalCoefficient( elt_id, local_dof );
-
         for ( size_type q = 0; q < context.xRefs().size2(); ++q )
-            v[q] = v_ * context.symmetricGradient( local_dof, q );
-    }
-
+            v[q] += coefficient*context.symmetricGradient( localDof, q );
+    } );
 }
 
 template<typename A0, typename A1, typename A2, typename A3>
@@ -776,74 +747,21 @@ template<typename Y,  typename Cont>
 void
 FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::gradInterpolate(  matrix_node_type __ptsReal, grad_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
-    // create analysys map : id -> List of pt
-    auto __loc = this->functionSpace()->mesh()->tool_localization();
-    if ( conformalEval )
-        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
-                         std::true_type{} );
-    else
-        __loc->localize( __ptsReal, invalid_v<index_type> );
-    auto it = __loc->resultAnalysisBegin();
-    auto it_end = __loc->resultAnalysisEnd();
+    this->template interpolateAtPoints<vm::GRAD|vm::FIRST_DERIVATIVE>(
+        __ptsReal, v, conformalEval, setPointsConf,
+        [this]( auto const& context ) { return this->grad( context ); } );
+}
 
-    gm_ptrtype __gm = this->functionSpace()->gm();
-
-    //if analysis map is empty : no interpolation
-    if ( it==it_end ) return;
-
-    size_type nbPtsElt=it->second.size();
-    uint nbCoord=boost::get<1>( *( it->second.begin() ) ).size();
-    matrix_node_type pts( nbCoord, nbPtsElt );
-    geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
-    pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-
-    const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
-    const size_type fec_v = gmc_v|vm::GRAD;
-    auto __c = __gm->template context<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
-
-    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
-                                                                         __c,
-                                                                         __pc );
-    for ( ; it!=it_end; ++it )
-    {
-        nbPtsElt = it->second.size();
-
-        //iterate in the list pt for a element
-        auto itL=it->second.begin();
-        auto itL_end=it->second.end();
-
-        //compute a point matrix with the list of point
-        pts= matrix_node_type( nbCoord, nbPtsElt );
-
-        for ( size_type i=0; i<nbPtsElt; ++i,++itL )
-            ublas::column( pts, i ) = boost::get<1>( *itL );
-
-        //update geomap context
-        __geopc->update( pts );
-
-
-        //update precompute of basis functions
-        __pc->update( pts );
-        __c->template update<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
-        __ctx->update( __c, __pc );
-
-        //evaluate element for these points
-        grad_type __grad( this->grad( *__ctx ) );
-
-        //update the output data
-        itL=it->second.begin();
-
-        for ( uint k=0; k<nbPtsElt; ++k,++itL )
-        {
-            for ( typename array_type::index i = 0; i < nComponents1; ++i )
-                for ( uint j = 0; j < nRealDim; ++j )
-                {
-                    v[boost::get<0>( *itL )]( i,j ) = __grad( i,j,k );
-                }
-        }
-
-    }
-
+template<typename A0, typename A1, typename A2, typename A3>
+template<typename Y, typename Cont>
+void
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::symm_gradInterpolate(
+    matrix_node_type points, grad_array_type& values, bool conformalEval,
+    matrix_node_type const& setPointsConf ) const
+{
+    this->template interpolateAtPoints<vm::SYMM|vm::GRAD|vm::FIRST_DERIVATIVE>(
+        points, values, conformalEval, setPointsConf,
+        [this]( auto const& context ) { return this->symm_grad( context ); } );
 }
 
 template<typename A0, typename A1, typename A2, typename A3>
@@ -852,40 +770,11 @@ template<typename ContextType>
 void
 FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::dn_( ContextType const & context, dn_array_type& v ) const
 {
-    index_type elt_id = context.eId();
-    if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
-        elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
-    if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
-        elt_id = this->mesh()->meshToSubMesh( context.eId() );
-    if ( elt_id == invalid_v<index_type> )
-        return;
-
-    const size_type Q = context.xRefs().size2();
-
-    for ( int l = 0; l < basis_type::nDof; ++l )
+    this->forEachLocalCoefficient( context, [&]( auto localDof, auto coefficient )
     {
-        const int ncdof = is_product?nComponents1:1;
-
-        for ( int c1 = 0; c1 < ncdof; ++c1 )
-        {
-            int ldof = c1*basis_type::nDof+l;
-            //size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
-            size_type gdof = M_functionspace->dof()->localToGlobal( elt_id, l, c1 ).index();
-            FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
-                           gdof < this->lastLocalIndex() )
-            ( context.eId() )
-            ( l )( c1 )( ldof )( gdof )
-            ( this->size() )( this->localSize() )
-            ( this->firstLocalIndex() )( this->lastLocalIndex() )
-            .error( "FunctionSpace::Element invalid access index" );
-
-            value_type v_ = this->orientedLocalCoefficient( elt_id, ldof );
-
-            for ( size_type q = 0; q < Q; ++q )
-                v[q] += context.dn( ldof, q )*v_;
-        }
-    }
-
+        for ( size_type q = 0; q < context.xRefs().size2(); ++q )
+            v[q] += context.dn( localDof, q )*coefficient;
+    } );
 }
 
 template<typename A0, typename A1, typename A2, typename A3>
@@ -893,7 +782,8 @@ template<typename Y,  typename Cont>
 void
 FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::dnInterpolate( matrix_node_type __ptsReal, dn_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
-    CHECK( false ) << "TODO";
+    throw std::logic_error(
+        "Normal-derivative interpolation requires a face context with an explicit normal; point coordinates alone are insufficient" );
 }
 
 template<typename A0, typename A1, typename A2, typename A3>
@@ -903,43 +793,11 @@ template<typename ContextType>
 void
 FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::div_( ContextType const & context, div_array_type& v ) const
 {
-    if ( !this->areGlobalValuesUpdated() )
-        this->updateGlobalValues();
-
-    index_type elt_id = context.eId();
-    if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
-        elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
-    if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
-        elt_id = this->mesh()->meshToSubMesh( context.eId() );
-    if ( elt_id == invalid_v<index_type> )
-        return;
-
-    const size_type Q = context.xRefs().size2();
-
-    const uint16_type nLocalDofPerComponent = M_functionspace->fe()->localDofPerComponent();
-    for ( uint16_type l = 0; l < nLocalDofPerComponent; ++l )
+    this->forEachLocalCoefficient( context, [&]( auto localDof, auto coefficient )
     {
-        const int ncdof = is_product?nComponents:1;
-        const int ncdof2 = is_product?nComponents2:1;
-
-        for ( int c1 = 0; c1 < ncdof; ++c1 )
-        {
-            uint16_type ldof = c1*nLocalDofPerComponent+l;
-            size_type gdof = M_functionspace->dof()->localToGlobal( elt_id, l, c1 ).index();
-            FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
-                           gdof < this->lastLocalIndex() )
-            ( context.eId() )
-            ( l )( c1 )( ldof )( gdof )
-            ( this->size() )( this->localSize() )
-            ( this->firstLocalIndex() )( this->lastLocalIndex() )
-            .error( "FunctionSpace::Element invalid access index" );
-            value_type v_ = this->orientedLocalCoefficient( elt_id, ldof );
-            for ( size_type q = 0; q < Q; ++q )
-            {
-                v[q] += context.div( ldof, q )*v_;
-            }
-        }
-    }
+        for ( size_type q = 0; q < context.xRefs().size2(); ++q )
+            v[q] += context.div( localDof, q )*coefficient;
+    } );
 }
 
 template<typename A0, typename A1, typename A2, typename A3>
@@ -947,74 +805,9 @@ template<typename Y,  typename Cont>
 void
 FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::divInterpolate( matrix_node_type __ptsReal, div_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
-
-    // create analysys map : id -> List of pt
-    auto __loc = this->functionSpace()->mesh()->tool_localization();
-    if ( conformalEval )
-        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
-                         std::true_type{} );
-    else
-        __loc->localize( __ptsReal, invalid_v<index_type> );
-    auto it = __loc->resultAnalysisBegin();
-    auto it_end = __loc->resultAnalysisEnd();
-
-    //geomap
-    gm_ptrtype __gm = this->functionSpace()->gm();
-
-    //if analysis map is empty : no interpolation
-    if ( it==it_end ) return;
-
-    //alocate a point matrix
-    size_type nbPtsElt=it->second.size();
-    uint nbCoord=boost::get<1>( *( it->second.begin() ) ).size();
-    matrix_node_type pts( nbCoord, nbPtsElt );
-
-    //init the geomap context and precompute basis function
-    geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
-    pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
-    const size_type fec_v = gmc_v|vm::DIV|vm::FIRST_DERIVATIVE;
-    auto __c = __gm->template context<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
-
-    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
-                                                                         __c,
-                                                                         __pc );
-
-    for ( ; it!=it_end; ++it )
-    {
-        nbPtsElt = it->second.size();
-
-        //iterate in the list pt for a element
-        auto itL=it->second.begin();
-        auto itL_end=it->second.end();
-
-        //compute a point matrix with the list of point
-        pts= matrix_node_type( nbCoord, nbPtsElt );
-
-        for ( size_type i=0; i<nbPtsElt; ++i,++itL )
-            ublas::column( pts, i ) = boost::get<1>( *itL );
-
-        //update geomap context
-        __geopc->update( pts );
-        __c->template update<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
-        //update precompute of basis functions
-        __pc->update( pts );
-        __ctx->update( __c, __pc );
-
-        //evaluate element for these points
-        div_type __div( this->div( *__ctx ) );
-
-        //update the output data
-        //for( typename array_type::index i = 0; i < nComponents1; ++i )
-        //   {
-        itL=it->second.begin();
-
-        for ( uint k=0; k<nbPtsElt; ++k,++itL )
-            v[boost::get<0>( *itL )]( 0,0 ) =  __div( 0,0,k );
-
-        //   }
-    }
-
+    this->template interpolateAtPoints<vm::DIV|vm::FIRST_DERIVATIVE>(
+        __ptsReal, v, conformalEval, setPointsConf,
+        [this]( auto const& context ) { return this->div( context ); } );
 }
 
 template<typename A0, typename A1, typename A2, typename A3>
@@ -1024,60 +817,17 @@ template<typename ContextType>
 void
 FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::curl_( ContextType const & context, curl_array_type& v ) const
 {
-    if ( !this->areGlobalValuesUpdated() )
-        this->updateGlobalValues();
-
-    index_type elt_id = context.eId();
-    if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
-        elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
-    if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
-        elt_id = this->mesh()->meshToSubMesh( context.eId() );
-    if ( elt_id == invalid_v<index_type> )
-        return;
-
-    const uint16_type nLocalDofPerComponent = M_functionspace->fe()->localDofPerComponent();
-    for ( uint16_type l = 0; l < nLocalDofPerComponent; ++l )
+    this->forEachLocalCoefficient( context, [&]( auto localDof, auto coefficient )
     {
-        const int ncdof = is_product?nComponents1:1;
-
-        for ( int c1 = 0; c1 < ncdof; ++c1 )
+        for ( size_type q = 0; q < context.xRefs().size2(); ++q )
         {
-            uint16_type ldof = c1*nLocalDofPerComponent+l;
-            size_type gdof = M_functionspace->dof()->localToGlobal( elt_id, l, c1 ).index();
-            FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
-                           gdof < this->lastLocalIndex() )
-            ( context.eId() )
-            ( l )( c1 )( ldof )( gdof )
-            ( this->size() )( this->localSize() )
-            ( this->firstLocalIndex() )( this->lastLocalIndex() )
-            .error( "FunctionSpace::Element invalid access index" );
-
-            //value_type v_ = (*this)( gdof );
-            value_type v_ = this->orientedLocalCoefficient( elt_id, ldof );
-            const uint16_type nq = context.xRefs().size2();
-
-            for ( uint16_type q = 0; q < nq ; ++q )
-            {
-#if 0
-                v[q] += v_*context.curl( ldof, q );
-#else
-                if ( nRealDim == 3 )
-                {
-                    for ( typename array_type::index i = 0; i < nRealDim; ++i )
-                    {
-                        v[q]( i,0 ) += v_*context.curl( ldof, i, 0, q );
-                    }
-                }
-
-                else if ( nRealDim == 2 )
-                {
-                    v[q]( 0,0 ) += v_*context.curl( ldof, 0, 0, q );
-                }
-#endif
-            }
+            if constexpr ( nRealDim == 3 )
+                for ( int c = 0; c < nRealDim; ++c )
+                    v[q]( c,0 ) += coefficient*context.curl( localDof, c, 0, q );
+            else if constexpr ( nRealDim == 2 )
+                v[q]( 0,0 ) += coefficient*context.curl( localDof, 0, 0, q );
         }
-    }
-
+    } );
 }
 
 template<typename A0, typename A1, typename A2, typename A3>
@@ -1087,54 +837,16 @@ template<typename ContextType>
 void
 FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::curl_( ContextType const & context, comp_curl_array_type& v, int comp ) const
 {
-    if ( !this->areGlobalValuesUpdated() )
-        this->updateGlobalValues();
-
-    size_type elt_id = context.eId();
-    if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
-        elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
-    if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
-        elt_id = this->mesh()->meshToSubMesh( context.eId() );
-    if ( elt_id == invalid_v<index_type> )
-        return;
-
-    const uint16_type nLocalDofPerComponent = M_functionspace->fe()->localDofPerComponent();
-    for ( uint16_type l = 0; l < nLocalDofPerComponent; ++l )
+    this->forEachLocalCoefficient( context, [&]( auto localDof, auto coefficient )
     {
-        const int ncdof = is_product?nComponents1:1;
-
-        for ( int c1 = 0; c1 < ncdof; ++c1 )
+        for ( size_type q = 0; q < context.xRefs().size2(); ++q )
         {
-            uint16_type ldof = c1*nLocalDofPerComponent+l;
-            size_type gdof = M_functionspace->dof()->localToGlobal( elt_id, l, c1 ).index();
-            FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
-                           gdof < this->lastLocalIndex() )
-            ( context.eId() )
-            ( l )( c1 )( ldof )( gdof )
-            ( this->size() )( this->localSize() )
-            ( this->firstLocalIndex() )( this->lastLocalIndex() )
-            .error( "FunctionSpace::Element invalid access index" );
-
-            //value_type v_ = (*this)( gdof );
-            value_type v_ = this->orientedLocalCoefficient( elt_id, ldof );
-            const uint16_type nq = context.xRefs().size2();
-
-            for ( uint16_type q = 0; q < nq ; ++q )
-            {
-                if ( nRealDim == 3 )
-                {
-                    v[q]( 0,0 ) += v_*context.curl( ldof, comp, 0, q );
-                }
-
-                else if ( nRealDim == 2 )
-                {
-                    v[q]( 0,0 ) += v_*context.curl( ldof, 0, 0, q );
-                }
-
-            }
+            if constexpr ( nRealDim == 3 )
+                v[q]( 0,0 ) += coefficient*context.curl( localDof, comp, 0, q );
+            else if constexpr ( nRealDim == 2 )
+                v[q]( 0,0 ) += coefficient*context.curl( localDof, 0, 0, q );
         }
-    }
-
+    } );
 }
 
 template<typename A0, typename A1, typename A2, typename A3>
@@ -1142,86 +854,9 @@ template<typename Y,  typename Cont>
 void
 FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::curlInterpolate( matrix_node_type __ptsReal, curl_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
-    // create analysys map : id -> List of pt
-    auto __loc = this->functionSpace()->mesh()->tool_localization();
-    if ( conformalEval )
-        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
-                         std::true_type{} );
-    else
-        __loc->localize( __ptsReal, invalid_v<index_type> );
-    auto it = __loc->resultAnalysisBegin();
-    auto it_end = __loc->resultAnalysisEnd();
-
-    //geomap
-    gm_ptrtype __gm = this->functionSpace()->gm();
-
-    //if analysis map is empty : no interpolation
-    if ( it==it_end ) return;
-
-    //alocate a point matrix
-    size_type nbPtsElt=it->second.size();
-    uint nbCoord=boost::get<1>( *( it->second.begin() ) ).size();
-    matrix_node_type pts( nbCoord, nbPtsElt );
-
-    //init the geomap context and precompute basis function
-    geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
-    pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
-    const size_type fec_v = gmc_v|vm::FIRST_DERIVATIVE|vm::CURL;
-    auto __c = __gm->template context<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
-
-    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
-                                                                         __c,
-                                                                         __pc );
-
-    for ( ; it!=it_end; ++it )
-    {
-        nbPtsElt = it->second.size();
-
-        //iterate in the list pt for a element
-        auto itL=it->second.begin();
-        auto itL_end=it->second.end();
-
-        //compute a point matrix with the list of point
-        pts= matrix_node_type( nbCoord, nbPtsElt );
-
-        for ( size_type i=0; i<nbPtsElt; ++i,++itL )
-            ublas::column( pts, i ) = boost::get<1>( *itL );
-
-        //update geomap context
-        __geopc->update( pts );
-        __c->template update<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
-        //update precompute of basis functions
-        __pc->update( pts );
-        __ctx->update( __c, __pc );
-
-        //evaluate element for these points
-        curl_type __curl( this->curl( *__ctx ) );
-
-        //update the output data
-        itL=it->second.begin();
-
-        if ( nRealDim == 3 )
-        {
-            itL=it->second.begin();
-
-            for ( uint k=0; k<nbPtsElt; ++k,++itL )
-            {
-                v[boost::get<0>( *itL )]( 0,0 ) =  __curl( 0,0,k );
-                v[boost::get<0>( *itL )]( 1,0 ) =  __curl( 1,0,k );
-                v[boost::get<0>( *itL )]( 2,0 ) =  __curl( 2,0,k );
-            }
-        }
-
-        else if ( nRealDim == 2 )
-        {
-            itL=it->second.begin();
-
-            for ( uint k=0; k<nbPtsElt; ++k,++itL )
-                v[boost::get<0>( *itL )]( 0,0 ) =  __curl( 0,0,k );
-        }
-    }
-
+    this->template interpolateAtPoints<vm::CURL|vm::FIRST_DERIVATIVE>(
+        __ptsReal, v, conformalEval, setPointsConf,
+        [this]( auto const& context ) { return this->curl( context ); } );
 }
 
 
@@ -1230,86 +865,9 @@ template<typename Y,  typename Cont>
 void
 FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::curlxInterpolate( matrix_node_type __ptsReal, comp_curl_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
-    // create analysys map : id -> List of pt
-    auto __loc = this->functionSpace()->mesh()->tool_localization();
-    if ( conformalEval )
-        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
-                         std::true_type{} );
-    else
-        __loc->localize( __ptsReal, invalid_v<index_type> );
-    auto it = __loc->resultAnalysisBegin();
-    auto it_end = __loc->resultAnalysisEnd();
-
-    //geomap
-    gm_ptrtype __gm = this->functionSpace()->gm();
-
-    //if analysis map is empty : no interpolation
-    if ( it==it_end ) return;
-
-    //alocate a point matrix
-    size_type nbPtsElt=it->second.size();
-    uint nbCoord=boost::get<1>( *( it->second.begin() ) ).size();
-    matrix_node_type pts( nbCoord, nbPtsElt );
-
-    //init the geomap context and precompute basis function
-    geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
-    pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    const size_type gmc_v = vm::KB|vm::POINT;
-    const size_type fec_v = gmc_v|vm::FIRST_DERIVATIVE|vm::CURL;
-    auto __c = __gm->template context<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
-
-    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
-                                                                         __c,
-                                                                         __pc );
-
-    for ( ; it!=it_end; ++it )
-    {
-        nbPtsElt = it->second.size();
-
-        //iterate in the list pt for a element
-        auto itL=it->second.begin();
-        auto itL_end=it->second.end();
-
-        //compute a point matrix with the list of point
-        pts= matrix_node_type( nbCoord, nbPtsElt );
-
-        for ( size_type i=0; i<nbPtsElt; ++i,++itL )
-            ublas::column( pts, i ) = boost::get<1>( *itL );
-
-        //update geomap context
-        __geopc->update( pts );
-        __c->template update<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
-        //update precompute of basis functions
-        __pc->update( pts );
-        __ctx->update( __c, __pc );
-
-        //evaluate element for these points
-        curlx_type __curlx( this->curlx( *__ctx ) );
-
-        //update the output data
-        itL=it->second.begin();
-
-        if ( nRealDim == 3 )
-        {
-            itL=it->second.begin();
-
-            for ( uint k=0; k<nbPtsElt; ++k,++itL )
-            {
-                v[boost::get<0>( *itL )]( 0,0 ) =  __curlx( 0,0,k );
-                v[boost::get<0>( *itL )]( 1,0 ) =  __curlx( 1,0,k );
-                v[boost::get<0>( *itL )]( 2,0 ) =  __curlx( 2,0,k );
-            }
-        }
-
-        else if ( nRealDim == 2 )
-        {
-            itL=it->second.begin();
-
-            for ( uint k=0; k<nbPtsElt; ++k,++itL )
-                v[boost::get<0>( *itL )]( 0,0 ) =  __curlx( 0,0,k );
-        }
-    }
-
+    this->template interpolateAtPoints<vm::CURL|vm::FIRST_DERIVATIVE>(
+        __ptsReal, v, conformalEval, setPointsConf,
+        [this]( auto const& context ) { return this->curlx( context ); } );
 }
 
 template<typename A0, typename A1, typename A2, typename A3>
@@ -1317,86 +875,9 @@ template<typename Y,  typename Cont>
 void
 FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::curlyInterpolate( matrix_node_type __ptsReal, comp_curl_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
-    // create analysys map : id -> List of pt
-    auto __loc = this->functionSpace()->mesh()->tool_localization();
-    if ( conformalEval )
-        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
-                         std::true_type{} );
-    else
-        __loc->localize( __ptsReal, invalid_v<index_type> );
-    auto it = __loc->resultAnalysisBegin();
-    auto it_end = __loc->resultAnalysisEnd();
-
-    //geomap
-    gm_ptrtype __gm = this->functionSpace()->gm();
-
-    //if analysis map is empty : no interpolation
-    if ( it==it_end ) return;
-
-    //alocate a point matrix
-    size_type nbPtsElt=it->second.size();
-    uint nbCoord=boost::get<1>( *( it->second.begin() ) ).size();
-    matrix_node_type pts( nbCoord, nbPtsElt );
-
-    //init the geomap context and precompute basis function
-    geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
-    pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    const size_type gmc_v = vm::KB|vm::POINT;
-    const size_type fec_v = gmc_v|vm::FIRST_DERIVATIVE|vm::CURL;
-    auto __c = __gm->template context<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
-
-    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
-                                                                         __c,
-                                                                         __pc );
-
-    for ( ; it!=it_end; ++it )
-    {
-        nbPtsElt = it->second.size();
-
-        //iterate in the list pt for a element
-        auto itL=it->second.begin();
-        auto itL_end=it->second.end();
-
-        //compute a point matrix with the list of point
-        pts= matrix_node_type( nbCoord, nbPtsElt );
-
-        for ( size_type i=0; i<nbPtsElt; ++i,++itL )
-            ublas::column( pts, i ) = boost::get<1>( *itL );
-
-        //update geomap context
-        __geopc->update( pts );
-        __c->template update<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
-        //update precompute of basis functions
-        __pc->update( pts );
-        __ctx->update( __c, __pc );
-
-        //evaluate element for these points
-        curly_type __curly( this->curly( *__ctx ) );
-
-        //update the output data
-        itL=it->second.begin();
-
-        if ( nRealDim == 3 )
-        {
-            itL=it->second.begin();
-
-            for ( uint k=0; k<nbPtsElt; ++k,++itL )
-            {
-                v[boost::get<0>( *itL )]( 0,0 ) =  __curly( 0,0,k );
-                v[boost::get<0>( *itL )]( 1,0 ) =  __curly( 1,0,k );
-                v[boost::get<0>( *itL )]( 2,0 ) =  __curly( 2,0,k );
-            }
-        }
-
-        else if ( nRealDim == 2 )
-        {
-            itL=it->second.begin();
-
-            for ( uint k=0; k<nbPtsElt; ++k,++itL )
-                v[boost::get<0>( *itL )]( 0,0 ) =  __curly( 0,0,k );
-        }
-    }
-
+    this->template interpolateAtPoints<vm::CURL|vm::FIRST_DERIVATIVE>(
+        __ptsReal, v, conformalEval, setPointsConf,
+        [this]( auto const& context ) { return this->curly( context ); } );
 }
 
 template<typename A0, typename A1, typename A2, typename A3>
@@ -1404,86 +885,9 @@ template<typename Y,  typename Cont>
 void
 FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::curlzInterpolate( matrix_node_type __ptsReal, comp_curl_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
-    // create analysys map : id -> List of pt
-    auto __loc = this->functionSpace()->mesh()->tool_localization();
-    if ( conformalEval )
-        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
-                         std::true_type{} );
-    else
-        __loc->localize( __ptsReal, invalid_v<index_type> );
-    auto it = __loc->resultAnalysisBegin();
-    auto it_end = __loc->resultAnalysisEnd();
-
-    //geomap
-    gm_ptrtype __gm = this->functionSpace()->gm();
-
-    //if analysis map is empty : no interpolation
-    if ( it==it_end ) return;
-
-    //alocate a point matrix
-    size_type nbPtsElt=it->second.size();
-    uint nbCoord=boost::get<1>( *( it->second.begin() ) ).size();
-    matrix_node_type pts( nbCoord, nbPtsElt );
-
-    //init the geomap context and precompute basis function
-    geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
-    pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    const size_type gmc_v = vm::KB|vm::POINT;
-    const size_type fec_v = gmc_v|vm::FIRST_DERIVATIVE|vm::CURL;
-    auto __c = __gm->template context<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
-
-    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
-                                                                         __c,
-                                                                         __pc );
-
-    for ( ; it!=it_end; ++it )
-    {
-        nbPtsElt = it->second.size();
-
-        //iterate in the list pt for a element
-        auto itL=it->second.begin();
-        auto itL_end=it->second.end();
-
-        //compute a point matrix with the list of point
-        pts= matrix_node_type( nbCoord, nbPtsElt );
-
-        for ( size_type i=0; i<nbPtsElt; ++i,++itL )
-            ublas::column( pts, i ) = boost::get<1>( *itL );
-
-        //update geomap context
-        __geopc->update( pts );
-        __c->template update<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
-        //update precompute of basis functions
-        __pc->update( pts );
-        __ctx->update( __c, __pc );
-
-        //evaluate element for these points
-        curlz_type __curlz( this->curlz( *__ctx ) );
-
-        //update the output data
-        itL=it->second.begin();
-
-        if ( nRealDim == 3 )
-        {
-            itL=it->second.begin();
-
-            for ( uint k=0; k<nbPtsElt; ++k,++itL )
-            {
-                v[boost::get<0>( *itL )]( 0,0 ) =  __curlz( 0,0,k );
-                v[boost::get<0>( *itL )]( 1,0 ) =  __curlz( 1,0,k );
-                v[boost::get<0>( *itL )]( 2,0 ) =  __curlz( 2,0,k );
-            }
-        }
-
-        else if ( nRealDim == 2 )
-        {
-            itL=it->second.begin();
-
-            for ( uint k=0; k<nbPtsElt; ++k,++itL )
-                v[boost::get<0>( *itL )]( 0,0 ) =  __curlz( 0,0,k );
-        }
-    }
-
+    this->template interpolateAtPoints<vm::CURL|vm::FIRST_DERIVATIVE>(
+        __ptsReal, v, conformalEval, setPointsConf,
+        [this]( auto const& context ) { return this->curlz( context ); } );
 }
 
 template<typename A0, typename A1, typename A2, typename A3>
@@ -1493,37 +897,12 @@ template<typename ContextType>
 void
 FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::d_( int N, ContextType const & context, id_array_type& v ) const
 {
-    if ( !this->areGlobalValuesUpdated() )
-        this->updateGlobalValues();
-
-    for ( int i = 0; i < basis_type::nDof; ++i )
+    this->forEachLocalCoefficient( context, [&]( auto localDof, auto coefficient )
     {
-        const int ncdof = is_product?nComponents1:1;
-
-        for ( int c1 = 0; c1 < ncdof; ++c1 )
-        {
-            size_type ldof = basis_type::nDof*c1 + i;
-            size_type gdof = M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ).index();
-            FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
-                           gdof < this->lastLocalIndex() )
-            ( context.eId() )
-            ( i )( c1 )( ldof )( gdof )
-            ( this->size() )( this->localSize() )
-            ( this->firstLocalIndex() )( this->lastLocalIndex() )
-            .error( "FunctionSpace::Element invalid access index" );
-
-            value_type v_ = this->globalValue( gdof );
-
-            for ( size_type q = 0; q < context.xRefs().size2(); ++q )
-            {
-                for ( typename array_type::index i = 0; i < nComponents1; ++i )
-                {
-                    v[q]( i,0 ) += v_*context.d( ldof, i, N, q );
-                }
-            }
-
-        }
-    }
+        for ( size_type q = 0; q < context.xRefs().size2(); ++q )
+            for ( int c = 0; c < nComponents1; ++c )
+                v[q]( c,0 ) += coefficient*context.d( localDof, c, N, q );
+    } );
 }
 
 template<typename A0, typename A1, typename A2, typename A3>
@@ -1531,71 +910,9 @@ template<typename Y,  typename Cont>
 void
 FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::dxInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
-    // create analysys map : id -> List of pt
-    auto __loc = this->functionSpace()->mesh()->tool_localization();
-    if ( conformalEval )
-        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
-                         std::true_type{} );
-    else
-        __loc->localize( __ptsReal, invalid_v<index_type> );
-    auto it = __loc->resultAnalysisBegin();
-    auto it_end = __loc->resultAnalysisEnd();
-
-    //geomap
-    gm_ptrtype __gm = this->functionSpace()->gm();
-
-    //if analysis map is empty : no interpolation
-    if ( it==it_end ) return;
-
-    //alocate a point matrix
-    size_type nbPtsElt=it->second.size();
-    uint nbCoord=boost::get<1>( *( it->second.begin() ) ).size();
-    matrix_node_type pts( nbCoord, nbPtsElt );
-
-    //init the geomap context and precompute basis function
-    geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
-    pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT;
-    const size_type fec_v = gmc_v|vm::GRAD;
-    auto __c = __gm->template context<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
-
-    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
-                                                                         __c,
-                                                                         __pc );
-    for ( ; it!=it_end; ++it )
-    {
-        nbPtsElt = it->second.size();
-
-        //iterate in the list pt for a element
-        auto itL=it->second.begin();
-        auto itL_end=it->second.end();
-
-        //compute a point matrix with the list of point
-        pts= matrix_node_type( nbCoord, nbPtsElt );
-
-        for ( size_type i=0; i<nbPtsElt; ++i,++itL )
-            ublas::column( pts, i ) = boost::get<1>( *itL );
-
-        //update geomap context
-        __geopc->update( pts );
-        __c->template update<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
-        //update precompute of basis functions
-        __pc->update( pts );
-        __ctx->update( __c, __pc );
-
-        //evaluate element for these points
-        dx_type __dx( this->dx( *__ctx ) );
-
-        //update the output data
-        itL=it->second.begin();
-
-        for ( uint k=0; k<nbPtsElt; ++k,++itL )
-            for ( typename array_type::index i = 0; i < nComponents1; ++i )
-            {
-                v[boost::get<0>( *itL )]( i,0 ) =  __dx( i,0,k );
-            }
-    }
-
+    this->template interpolateAtPoints<vm::GRAD|vm::FIRST_DERIVATIVE>(
+        __ptsReal, v, conformalEval, setPointsConf,
+        [this]( auto const& context ) { return this->dx( context ); } );
 }
 
 template<typename A0, typename A1, typename A2, typename A3>
@@ -1603,78 +920,9 @@ template<typename Y,  typename Cont>
 void
 FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::dyInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
-
-    typedef typename Localization<mesh_type>::localization_ptrtype localization_ptrtype;
-    typedef typename Localization<mesh_type>::container_search_iterator_type analysis_iterator_type;
-    typedef typename Localization<mesh_type>::container_output_iterator_type analysis_output_iterator_type;
-
-    // create analysys map : id -> List of pt
-    localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
-    if ( conformalEval )
-        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
-                         std::true_type{} );
-    else
-        __loc->localize( __ptsReal, invalid_v<index_type> );
-    analysis_iterator_type it = __loc->resultAnalysisBegin();
-    analysis_iterator_type it_end = __loc->resultAnalysisEnd();
-    analysis_output_iterator_type itL,itL_end;
-
-    //geomap
-    gm_ptrtype __gm = this->functionSpace()->gm();
-
-    //if analysis map is empty : no interpolation
-    if ( it==it_end ) return;
-
-    //alocate a point matrix
-    size_type nbPtsElt=it->second.size();
-    uint nbCoord=boost::get<1>( *( it->second.begin() ) ).size();
-    matrix_node_type pts( nbCoord, nbPtsElt );
-
-    //init the geomap context and precompute basis function
-    geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
-    pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    const size_type gmc_v = vm::KB|vm::POINT;
-    const size_type fec_v = gmc_v|vm::GRAD;
-    auto __c = __gm->template context<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
-
-    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
-                                                                         __c,
-                                                                         __pc );
-
-    for ( ; it!=it_end; ++it )
-    {
-        nbPtsElt = it->second.size();
-
-        //iterate in the list pt for a element
-        itL=it->second.begin();
-        itL_end=it->second.end();
-
-        //compute a point matrix with the list of point
-        pts= matrix_node_type( nbCoord, nbPtsElt );
-
-        for ( size_type i=0; i<nbPtsElt; ++i,++itL )
-            ublas::column( pts, i ) = boost::get<1>( *itL );
-
-        //update geomap context
-        __geopc->update( pts );
-        __c->template update<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
-        //update precompute of basis functions
-        __pc->update( pts );
-        __ctx->update( __c, __pc );
-
-        //evaluate element for these points
-        dy_type __dy( this->dy( *__ctx ) );
-
-        //update the output data
-        itL=it->second.begin();
-
-        for ( uint k=0; k<nbPtsElt; ++k,++itL )
-            for ( typename array_type::index i = 0; i < nComponents1; ++i )
-            {
-                v[boost::get<0>( *itL )]( i,0 ) =  __dy( i,0,k );
-            }
-    }
-
+    this->template interpolateAtPoints<vm::GRAD|vm::FIRST_DERIVATIVE>(
+        __ptsReal, v, conformalEval, setPointsConf,
+        [this]( auto const& context ) { return this->dy( context ); } );
 }
 
 template<typename A0, typename A1, typename A2, typename A3>
@@ -1682,77 +930,9 @@ template<typename Y,  typename Cont>
 void
 FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::dzInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
-
-    typedef typename Localization<mesh_type>::localization_ptrtype localization_ptrtype;
-    typedef typename Localization<mesh_type>::container_search_iterator_type analysis_iterator_type;
-    typedef typename Localization<mesh_type>::container_output_iterator_type analysis_output_iterator_type;
-
-    // create analysys map : id -> List of pt
-    localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
-    if ( conformalEval )
-        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
-                         std::true_type{} );
-    else
-        __loc->localize( __ptsReal, invalid_v<index_type> );
-    analysis_iterator_type it = __loc->resultAnalysisBegin();
-    analysis_iterator_type it_end = __loc->resultAnalysisEnd();
-    analysis_output_iterator_type itL,itL_end;
-
-    //geomap
-    gm_ptrtype __gm = this->functionSpace()->gm();
-
-    //if analysis map is empty : no interpolation
-    if ( it==it_end ) return;
-
-    //alocate a point matrix
-    size_type nbPtsElt=it->second.size();
-    uint nbCoord=boost::get<1>( *( it->second.begin() ) ).size();
-    matrix_node_type pts( nbCoord, nbPtsElt );
-
-    //init the geomap context and precompute basis function
-    geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
-    pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    const size_type gmc_v = vm::KB|vm::POINT;
-    const size_type fec_v = gmc_v|vm::GRAD;
-    auto __c = __gm->template context<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
-
-    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
-                                                                         __c,
-                                                                         __pc );
-
-    for ( ; it!=it_end; ++it )
-    {
-        nbPtsElt = it->second.size();
-
-        //iterate in the list pt for a element
-        itL=it->second.begin();
-        itL_end=it->second.end();
-
-        //compute a point matrix with the list of point
-        pts= matrix_node_type( nbCoord, nbPtsElt );
-
-        for ( size_type i=0; i<nbPtsElt; ++i,++itL )
-            ublas::column( pts, i ) = boost::get<1>( *itL );
-
-        //update geomap context
-        __geopc->update( pts );
-        __c->template update<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
-        //update precompute of basis functions
-        __pc->update( pts );
-        __ctx->update( __c, __pc );
-        //evaluate element for these points
-        dz_type __dz( this->dz( *__ctx ) );
-
-        //update the output data
-        itL=it->second.begin();
-
-        for ( uint k=0; k<nbPtsElt; ++k,++itL )
-            for ( typename array_type::index i = 0; i < nComponents1; ++i )
-            {
-                v[boost::get<0>( *itL )]( i,0 ) =  __dz( i,0,k );
-            }
-    }
-
+    this->template interpolateAtPoints<vm::GRAD|vm::FIRST_DERIVATIVE>(
+        __ptsReal, v, conformalEval, setPointsConf,
+        [this]( auto const& context ) { return this->dz( context ); } );
 }
 
 template<typename A0, typename A1, typename A2, typename A3>
@@ -1762,49 +942,18 @@ template<typename ContextType>
 void
 FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::hess_( ContextType const & context, hess_array_type& v ) const
 {
-    hess_( context, v, mpl::int_<rank>() );
-}
-template<typename A0, typename A1, typename A2, typename A3>
-template<typename Y,  typename Cont>
-template<typename ContextType>
-//typename FunctionSpace<A0, A1, A2, A3>::template Element<Y,Cont>::array_type
-void
-FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::hess_( ContextType const & context, hess_array_type& v, mpl::int_<0> ) const
-{
-    if ( !this->areGlobalValuesUpdated() )
-        this->updateGlobalValues();
-
-    //FEELPP_ASSERT( comp < nRealDim )( comp )( nRealDim ).error( "[FunctionSpace::Element] grad: invalid component" );
-    for ( int i = 0; i < basis_type::nDof; ++i )
+    static_assert( rank <= 1, "Hessian evaluation requires a scalar or vector field" );
+    this->forEachLocalCoefficient( context, [&]( auto localDof, auto coefficient )
     {
-        const int ncdof = is_product?nComponents1:1;
-
-        for ( int c1 = 0; c1 < ncdof; ++c1 )
-        {
-            size_type ldof = basis_type::nDof*c1 + i;
-            size_type gdof = M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ).index();
-            FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
-                           gdof < this->lastLocalIndex() )
-            ( context.eId() )
-            ( i )( c1 )( ldof )( gdof )
-            ( this->size() )( this->localSize() )
-            ( this->firstLocalIndex() )( this->lastLocalIndex() )
-            .error( "FunctionSpace::Element invalid access index" );
-
-            value_type v_ = this->globalValue( gdof );
-
-            for ( size_type q = 0; q < context.xRefs().size2(); ++q )
-            {
-                for ( int i = 0; i < nRealDim; ++i )
-                    for ( int j = 0; j < nRealDim; ++j )
-                    {
-                        v[q]( i,j ) += v_*context.hess( ldof, i, j, q );
-                    } // i,j
-            } // q
-
-        }
-    }
-
+        for ( size_type q = 0; q < context.xRefs().size2(); ++q )
+            for ( int i = 0; i < nRealDim; ++i )
+                for ( int j = 0; j < nRealDim; ++j )
+                    if constexpr ( rank == 0 )
+                        v[q]( i,j ) += coefficient*context.hess( localDof, i, j, q );
+                    else
+                        for ( int c = 0; c < nComponents1; ++c )
+                            v[q]( c + nComponents1*i,j ) += coefficient*context.hess( localDof, c, i, j, q );
+    } );
 }
 
 template<typename A0, typename A1, typename A2, typename A3>
@@ -1812,76 +961,9 @@ template<typename Y,  typename Cont>
 void
 FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::hessInterpolate( matrix_node_type __ptsReal, hess_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
-
-    typedef typename Localization<mesh_type>::localization_ptrtype localization_ptrtype;
-    typedef typename Localization<mesh_type>::container_search_iterator_type analysis_iterator_type;
-    typedef typename Localization<mesh_type>::container_output_iterator_type analysis_output_iterator_type;
-
-    // create analysys map : id -> List of pt
-    localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
-    if ( conformalEval )
-        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
-                         std::true_type{} );
-    else
-        __loc->localize( __ptsReal, invalid_v<index_type> );
-    analysis_iterator_type it = __loc->resultAnalysisBegin();
-    analysis_iterator_type it_end = __loc->resultAnalysisEnd();
-    analysis_output_iterator_type itL,itL_end;
-
-    //geomap
-    gm_ptrtype __gm = this->functionSpace()->gm();
-
-    //if analysis map is empty : no interpolation
-    if ( it==it_end ) return;
-
-    //alocate a point matrix
-    size_type nbPtsElt=it->second.size();
-    uint nbCoord=boost::get<1>( *( it->second.begin() ) ).size();
-    matrix_node_type pts( nbCoord, nbPtsElt );
-
-    //init the geomap context and precompute basis function
-    geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
-    pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT|vm::HESSIAN;
-    const size_type fec_v = gmc_v|vm::GRAD;
-    auto __c = __gm->template context<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
-
-    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
-                                                                         __c,
-                                                                         __pc );
-    for ( ; it!=it_end; ++it )
-    {
-        nbPtsElt = it->second.size();
-
-        //iterate in the list pt for a element
-        itL=it->second.begin();
-        itL_end=it->second.end();
-
-        //compute a point matrix with the list of point
-        pts= matrix_node_type( nbCoord, nbPtsElt );
-
-        for ( size_type i=0; i<nbPtsElt; ++i,++itL )
-            ublas::column( pts, i ) = boost::get<1>( *itL );
-
-        //update geomap context
-        __geopc->update( pts );
-        __c->template update<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
-        //update precompute of basis functions
-        __pc->update( pts );
-        __ctx->update( __c, __pc );
-
-        //evaluate element for these points
-        hess_type __hess( this->hess( *__ctx ) );
-
-        //update the output data
-        itL=it->second.begin();
-
-        for ( uint k=0; k<nbPtsElt; ++k,++itL )
-            for ( int i = 0; i < nRealDim; ++i )
-                for ( int j = 0; j < nRealDim; ++j )
-                    v[boost::get<0>( *itL )]( i,j ) =  __hess( i,j,k );
-    }
-
+    this->template interpolateAtPoints<vm::HESSIAN|vm::SECOND_DERIVATIVE|vm::GRAD>(
+        __ptsReal, v, conformalEval, setPointsConf,
+        [this]( auto const& context ) { return this->hess( context ); } );
 }
 
 
@@ -1895,83 +977,15 @@ template<typename ContextType>
 void
 FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::laplacian_( ContextType const & context, id_array_type& v ) const
 {
-    laplacian_( context, v, mpl::int_<rank>() );
-}
-template<typename A0, typename A1, typename A2, typename A3>
-template<typename Y,  typename Cont>
-template<typename ContextType>
-//typename FunctionSpace<A0, A1, A2, A3>::template Element<Y,Cont>::array_type
-void
-FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::laplacian_( ContextType const & context, id_array_type& v, mpl::int_<0> ) const
-{
-    if ( !this->areGlobalValuesUpdated() )
-        this->updateGlobalValues();
-
-    //FEELPP_ASSERT( comp < nRealDim )( comp )( nRealDim ).error( "[FunctionSpace::Element] grad: invalid component" );
-    for ( int i = 0; i < basis_type::nDof; ++i )
+    static_assert( rank <= 1, "Laplacian evaluation requires a scalar or vector field" );
+    this->forEachLocalCoefficient( context, [&]( auto localDof, auto coefficient )
     {
-        const int ncdof = is_product?nComponents1:1;
-
-        for ( int c1 = 0; c1 < ncdof; ++c1 )
-        {
-            size_type ldof = basis_type::nDof*c1 + i;
-            size_type gdof = M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ).index();
-            FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
-                           gdof < this->lastLocalIndex() )
-            ( context.eId() )
-            ( i )( c1 )( ldof )( gdof )
-            ( this->size() )( this->localSize() )
-            ( this->firstLocalIndex() )( this->lastLocalIndex() )
-            .error( "FunctionSpace::Element invalid access index" );
-
-            value_type v_ = this->globalValue( gdof );
-
-            for ( size_type q = 0; q < context.xRefs().size2(); ++q )
-            {
-                v[q]( 0,0 ) += v_*context.laplacian( ldof, 0, 0, q );
-            }
-
-        }
-    }
-
+        for ( size_type q = 0; q < context.xRefs().size2(); ++q )
+            for ( int c = 0; c < nComponents1; ++c )
+                v[q]( c,0 ) += coefficient*context.laplacian( localDof, c, 0, q );
+    } );
 }
 
-template<typename A0, typename A1, typename A2, typename A3>
-template<typename Y,  typename Cont>
-template<typename ContextType>
-//typename FunctionSpace<A0, A1, A2, A3>::template Element<Y,Cont>::array_type
-void
-FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::laplacian_( ContextType const & context, id_array_type& v, mpl::int_<1> ) const
-{
-    if ( !this->areGlobalValuesUpdated() )
-        this->updateGlobalValues();
-
-    //FEELPP_ASSERT( comp < nRealDim )( comp )( nRealDim ).error( "[FunctionSpace::Element] grad: invalid component" );
-    for ( int i = 0; i < basis_type::nDof; ++i )
-    {
-        const int ncdof = is_product?nComponents1:1;
-
-        for ( int c1 = 0; c1 < ncdof; ++c1 )
-        {
-            size_type ldof = basis_type::nDof*c1 + i;
-            size_type gdof = M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ).index();
-            FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
-                           gdof < this->lastLocalIndex() )
-            ( context.eId() )
-            ( i )( c1 )( ldof )( gdof )
-            ( this->size() )( this->localSize() )
-            ( this->firstLocalIndex() )( this->lastLocalIndex() )
-            .error( "FunctionSpace::Element invalid access index" );
-
-            value_type v_ = this->globalValue( gdof );
-
-            for ( size_type q = 0; q < context.xRefs().size2(); ++q )
-                for ( int c2 = 0; c2 < nRealDim; ++c2 )
-                    v[q]( c2,0 ) += v_*context.laplacian( ldof, c2, 0, q );
-        }
-    }
-
-}
 
 template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
@@ -1979,75 +993,59 @@ void
 FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::laplacianInterpolate( matrix_node_type __ptsReal, id_array_type& v,
                                                                           bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
+    this->template interpolateAtPoints<vm::LAPLACIAN|vm::SECOND_DERIVATIVE|vm::GRAD>(
+        __ptsReal, v, conformalEval, setPointsConf,
+        [this]( auto const& context ) { return this->laplacian( context ); } );
+}
 
-    typedef typename Localization<mesh_type>::localization_ptrtype localization_ptrtype;
-    typedef typename Localization<mesh_type>::container_search_iterator_type analysis_iterator_type;
-    typedef typename Localization<mesh_type>::container_output_iterator_type analysis_output_iterator_type;
-
-    // create analysys map : id -> List of pt
-    localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
-    if ( conformalEval )
-        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
-                         std::true_type{} );
-    else
-        __loc->localize( __ptsReal, invalid_v<index_type> );
-    analysis_iterator_type it = __loc->resultAnalysisBegin();
-    analysis_iterator_type it_end = __loc->resultAnalysisEnd();
-    analysis_output_iterator_type itL,itL_end;
-
-    //geomap
-    gm_ptrtype __gm = this->functionSpace()->gm();
-
-    //if analysis map is empty : no interpolation
-    if ( it==it_end ) return;
-
-    //alocate a point matrix
-    size_type nbPtsElt=it->second.size();
-    uint nbCoord=boost::get<1>( *( it->second.begin() ) ).size();
-    matrix_node_type pts( nbCoord, nbPtsElt );
-
-    //init the geomap context and precompute basis function
-    geopc_ptrtype __geopc( new geopc_type( __gm, pts ) );
-    pc_ptrtype __pc( new pc_type( this->functionSpace()->fe(), pts ) );
-    const size_type gmc_v = vm::JACOBIAN|vm::KB|vm::POINT|vm::HESSIAN;
-    const size_type fec_v = gmc_v|vm::LAPLACIAN|vm::FIRST_DERIVATIVE;
-    auto __c = __gm->template context<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
-
-    fec_ptr_t<fec_v,gmc_v> __ctx = std::make_shared<fec_t<fec_v,gmc_v>>( this->functionSpace()->fe(),
-                                                                         __c,
-                                                                         __pc );
-
-    for ( ; it!=it_end; ++it )
+template<typename A0, typename A1, typename A2, typename A3>
+template<typename Y, typename Cont>
+template<typename ContextType>
+void
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::graddiv_( ContextType const& context, id_array_type& values ) const
+{
+    static_assert( is_vectorial, "graddiv requires a vector field" );
+    this->forEachLocalCoefficient( context, [&]( auto localDof, auto coefficient )
     {
-        nbPtsElt = it->second.size();
+        for ( size_type q = 0; q < context.xRefs().size2(); ++q )
+            values[q] += coefficient * context.graddiv( localDof, q );
+    } );
+}
 
-        //iterate in the list pt for a element
-        itL=it->second.begin();
-        itL_end=it->second.end();
+template<typename A0, typename A1, typename A2, typename A3>
+template<typename Y, typename Cont>
+template<typename ContextType>
+void
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::curlcurl_( ContextType const& context, id_array_type& values ) const
+{
+    static_assert( is_vectorial, "curlcurl requires a vector field" );
+    this->forEachLocalCoefficient( context, [&]( auto localDof, auto coefficient )
+    {
+        for ( size_type q = 0; q < context.xRefs().size2(); ++q )
+            values[q] += coefficient * context.curlcurl( localDof, q );
+    } );
+}
 
-        //compute a point matrix with the list of point
-        pts= matrix_node_type( nbCoord, nbPtsElt );
+template<typename A0, typename A1, typename A2, typename A3>
+template<typename Y, typename Cont>
+void
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::graddivInterpolate(
+    matrix_node_type points, id_array_type& values, bool conformalEval,
+    matrix_node_type const& setPointsConf ) const
+{
+    this->template interpolateAtPoints<vm::GRADDIV>( points, values, conformalEval, setPointsConf,
+        [this]( auto const& context ) { return this->graddiv( context ); } );
+}
 
-        for ( size_type i=0; i<nbPtsElt; ++i,++itL )
-            ublas::column( pts, i ) = boost::get<1>( *itL );
-
-        //update geomap context
-        __geopc->update( pts );
-        __c->template update<gmc_v>( this->functionSpace()->mesh()->element( it->first ), __geopc );
-        //update precompute of basis functions
-        __pc->update( pts );
-        __ctx->update( __c, __pc );
-
-        //evaluate element for these points
-        laplacian_type __lap( this->laplacian( *__ctx ) );
-
-        //update the output data
-        itL=it->second.begin();
-
-        for ( uint k=0; k<nbPtsElt; ++k,++itL )
-            v[boost::get<0>( *itL )]( 0,0 ) =  __lap( 0,0,k );
-    }
-
+template<typename A0, typename A1, typename A2, typename A3>
+template<typename Y, typename Cont>
+void
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::curlcurlInterpolate(
+    matrix_node_type points, id_array_type& values, bool conformalEval,
+    matrix_node_type const& setPointsConf ) const
+{
+    this->template interpolateAtPoints<vm::CURLCURL>( points, values, conformalEval, setPointsConf,
+        [this]( auto const& context ) { return this->curlcurl( context ); } );
 }
 
 template<typename A0, typename A1, typename A2, typename A3>
@@ -2118,8 +1116,6 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::onImpl( std::pair<IteratorType,I
 
 
 
-    const uint16_type ndofv = functionspace_type::fe_type::nDof;
-
     // return if no elements
     if ( it == en )
         return;
@@ -2143,9 +1139,6 @@ FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::onImpl( std::pair<IteratorType,I
     map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
 
     t_expr1_type tensor_expr1( ex, mapgmc1 );
-
-    std::vector<bool> points_done( this->functionSpace()->dof()->nLocalDof()/this->nComponents );
-    std::fill( points_done.begin(), points_done.end(),false );
 
     auto IhLoc = __fe->localInterpolant();
     for ( ; it!=en ; ++it )

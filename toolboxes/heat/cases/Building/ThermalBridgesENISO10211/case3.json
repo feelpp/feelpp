@@ -17,8 +17,7 @@
         {
             "Import":
             {
-                "filename":"$cfgdir/case3.geo",
-                "hsize":0.02
+                "filename":"$cfgdir/case3.geo"
             }
         }
     },
@@ -113,6 +112,8 @@
                     {
                         "type":["min","max"],
                         "field":"temperature",
+                        // Resolve corner extrema on the higher-order test meshes.
+                        "quad":12,
                         "markers":"%1%",
                         "index1":["alpha","beta"]
                     }

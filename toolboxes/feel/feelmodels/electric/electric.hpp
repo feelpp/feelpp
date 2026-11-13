@@ -1,30 +1,10 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-  This file is part of the Feel library
-
-  Author(s): Vincent Chabannes <vincent.chabannes@feelpp.org>
-       Date: 2016-12-12
-
-  Copyright (C) 2016 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-/**
-   \file thermoelectric.hpp
-   \author Vincent Chabannes <vincent.chabannes@feelpp.org>
-   \date 2016-12-12
+/*
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2016-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
 #ifndef FEELPP_TOOLBOXES_ELECTRIC_HPP
@@ -75,7 +55,7 @@ public:
     // mesh
     typedef ConvexType convex_type;
     static inline const uint16_type nDim = convex_type::nDim;
-    static inline const uint16_type nOrderGeo = convex_type::nOrder;
+    static constexpr int nOrderGeo = convex_type::is_order_dynamic ? Dynamic : convex_type::nOrder;
     static inline const uint16_type nRealDim = convex_type::nRealDim;
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
@@ -83,7 +63,7 @@ public:
 
     // function space electric-potential
     typedef BasisPotentialType basis_electricpotential_type;
-    static inline const uint16_type nOrderPolyElectricPotential = basis_electricpotential_type::nOrder;
+    static constexpr int nOrderPolyElectricPotential = basis_electricpotential_type::is_order_dynamic ? Dynamic : basis_electricpotential_type::nOrder;
     typedef FunctionSpace<mesh_type, bases<basis_electricpotential_type> > space_electricpotential_type;
     typedef std::shared_ptr<space_electricpotential_type> space_electricpotential_ptrtype;
     typedef typename space_electricpotential_type::element_type element_electricpotential_type;

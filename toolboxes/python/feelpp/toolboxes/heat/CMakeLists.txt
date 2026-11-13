@@ -25,5 +25,11 @@ cmake_minimum_required(VERSION 3.21)
 project(toolboxes-heat)
 
 feelpp_add_pymodule(heat SRCS heat.cpp DESTINATION feelpp/toolboxes/heat LINK_LIBRARIES Feelpp::feelpp_toolbox_heat_lib)
+feelpp_stage_python_files(
+  TARGET pyfeelpptoolboxes_heat_pyfiles
+  DESTINATION feelpp/toolboxes/heat
+  FILES __init__.py heat.py
+)
+add_dependencies(_heat pyfeelpptoolboxes_heat_pyfiles)
 install(FILES  __init__.py heat.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/heat
         COMPONENT ${FEELPP_PYTHON_INSTALL_COMPONENT})

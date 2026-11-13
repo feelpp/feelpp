@@ -1,26 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2020-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
- This file is part of the Feel++ library
-
- Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- Date: 6 Oct 2021
-
- Copyright (C) 2021 Feel++ Consortium
-
- This library is free software; you can redistribute it and/or
- modify it under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation; either
- version 2.1 of the License, or (at your option) any later version.
-
- This library is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
-
- You should have received a copy of the GNU Lesser General Public
- License along with this library; if not, write to the Free Software
- Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 #pragma once
 
 #include <feel/feeldiscr/pch.hpp>
@@ -106,7 +91,13 @@ remeshImpl( std::shared_ptr<MeshT> const& r,
         r->worldComm().barrier();
         if ( r->worldComm().isMasterRank() )
         {
-            auto meshSeq = loadMesh( _mesh = new mesh_t( Environment::worldCommSeqPtr() ), _savehdf5 = 0,
+            auto meshSeqInput = [&]() {
+                if constexpr ( mesh_t::is_order_dynamic )
+                    return new mesh_t(RuntimeOrder{r->order()}, "", Environment::worldCommSeqPtr());
+                else
+                    return new mesh_t(Environment::worldCommSeqPtr());
+            }();
+            auto meshSeq = loadMesh( _mesh = meshSeqInput, _savehdf5 = 0,
                                      _filename = imeshParaPath,
                                      //_update=update_,  TODO test FACE_MINIMAL
                                      _straighten = false );
@@ -119,7 +110,13 @@ remeshImpl( std::shared_ptr<MeshT> const& r,
             io.write( partitionMesh( m, nPartition /*, partitionByRange, partconfig*/ ) );
         }
         r->worldComm().barrier();
-        auto meshAdaptPara = loadMesh( _mesh = new mesh_t, _savehdf5 = 0,
+        auto meshAdaptInput = [&]() {
+            if constexpr ( mesh_t::is_order_dynamic )
+                return new mesh_t(RuntimeOrder{r->order()}, "", r->worldCommPtr());
+            else
+                return new mesh_t(r->worldCommPtr());
+        }();
+        auto meshAdaptPara = loadMesh( _mesh = meshAdaptInput, _savehdf5 = 0,
                                        _filename = omeshParaPath /*, _update=update_*/ );
         return std::tuple{ meshAdaptPara, ++cpt };
     }

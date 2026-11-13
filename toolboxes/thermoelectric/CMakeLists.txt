@@ -6,6 +6,14 @@ feelpp_add_application( thermoelectric SRCS main_thermoelectric.cpp
   INSTALL TESTS
   MAN thermoelectric
   )
+
+# Allow for expensive assembly in the nonlinear P2/G1 magnet case.
+foreach(_thermoelectric_test IN LISTS APP_TESTS)
+  if(_thermoelectric_test MATCHES "-ElectroMagnets_HL-31_H1_nonlinear-newton_P2G1-np-[0-9]+$")
+    set_tests_properties(${_thermoelectric_test} PROPERTIES TIMEOUT 600)
+  endif()
+endforeach()
+
 if ( 0 )
 feelpp_add_application( cvg_thermoelectric_2d SRCS cvg_thermoelectric.cpp
   LINK_LIBRARIES

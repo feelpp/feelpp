@@ -2,7 +2,7 @@
  * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
  *
- * SPDX-FileCopyrightText: 2026 University of Strasbourg
+ * SPDX-FileCopyrightText: 2008-2026 University of Strasbourg
  *
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
@@ -1761,6 +1761,18 @@ class GeoMap
             return M_hessian[this->computedPointIndex( q )];
         }
 
+        /** Analytic d^3 F_component / (d xi_first d xi_second d xi_third). */
+        [[nodiscard]] value_type thirdDerivative(
+            int component, int first, int second, int third, int q ) const
+        {
+            if ( component < 0 || component >= NDim || first < 0 || first >= PDim ||
+                 second < 0 || second >= PDim || third < 0 || third >= PDim )
+                throw std::out_of_range( "Invalid geometry third derivative component" );
+            this->ensureMappingThirdDerivatives();
+            return M_third_derivative_component_batches[( first * PDim + second ) * PDim + third](
+                component, this->computedPointIndex( q ) );
+        }
+
         /**
          * the tensor of rank 4 for the transformation of 2nd
          * order derivatives from the reference element to the real
@@ -2898,6 +2910,7 @@ class GeoMap
             DCHECK( M_G.cols() == M_gm->nbPoints() ) << "Invalid number of points got " << M_G.cols() << " expected: " << M_gm->nbPoints();
             DCHECK( M_pc ) << "invalid precompute data structure";
             M_mapping_hessian_current = false;
+            M_mapping_third_derivatives_current = false;
 
             if constexpr ( vm::has_point_v<CTX> )
             {
@@ -2962,6 +2975,26 @@ class GeoMap
             for ( uint16_type q = 0; q < computedPoints; ++q )
                 this->updateMappingHessian( q, batched );
             M_mapping_hessian_current = true;
+        }
+
+        /** Third geometry derivatives are needed only by full Piola Hessians. */
+        void ensureMappingThirdDerivatives() const
+        {
+            if ( M_mapping_third_derivatives_current )
+                return;
+            auto const pointCount = this->nComputedPoints();
+            for ( int first = 0; first < PDim; ++first )
+                for ( int second = 0; second < PDim; ++second )
+                    for ( int third = 0; third < PDim; ++third )
+                    {
+                        auto& result = M_third_derivative_component_batches[( first * PDim + second ) * PDim + third];
+                        result.resize( NDim, pointCount );
+                        if ( this->usesAffineStorage() )
+                            result.setZero();
+                        else
+                            result.noalias() = M_G * M_pc->thirdDerivativeEigen( first, second, third );
+                    }
+            M_mapping_third_derivatives_current = true;
         }
 
         FEELPP_STRONG_INLINE
@@ -3162,29 +3195,29 @@ class GeoMap
             {
                 if constexpr ( !IsOnFace )
                 {
-                    if constexpr ( !(vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX>))
+                    if constexpr ( !(vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> || vm::has_mapping_hessian_v<CTX>))
                         return;
                 }
                 else
                 {
-                    if constexpr ( !(vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX> || vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> || vm::has_local_basis_v<CTX>))
+                    if constexpr ( !(vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> || vm::has_mapping_hessian_v<CTX> || vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> || vm::has_local_basis_v<CTX>))
                         return;
                 }
             }
 
-            constexpr bool hasStaticB = IsOnFace ? vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX> || vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> || vm::has_local_basis_v<CTX> : vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX>;
+            constexpr bool hasStaticB = IsOnFace ? vm::has_kb_v<CTX> || vm::has_mapping_hessian_v<CTX> || vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> || vm::has_local_basis_v<CTX> : vm::has_kb_v<CTX> || vm::has_mapping_hessian_v<CTX>;
             bool hasJ = vm::has_jacobian_v<CTX>;
             bool hasLocalBasis = IsOnFace && vm::has_local_basis_v<CTX>;
             bool hasTangent = IsOnFace && vm::has_tangent_v<CTX>;
             bool hasNormal = IsOnFace && ( vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> );
             bool hasB = hasStaticB; // vm::has_normal_v<CTX> || vm::has_tangent_v<CTX>;
-            bool hasSecondDerivative = vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX>;
+            bool hasSecondDerivative = vm::has_mapping_hessian_v<CTX>;
             if constexpr ( vm::has_dynamic_v<CTX> )
             {
                 if constexpr ( !vm::has_jacobian_v<CTX> )
                     hasJ = hasJACOBIAN( M_dynamic_context );
-                if constexpr ( !vm::has_second_derivative_v<CTX> && !vm::has_hessian_v<CTX> )
-                    hasSecondDerivative = hasSECOND_DERIVATIVE( M_dynamic_context ) || hasHESSIAN( M_dynamic_context );
+                if constexpr ( !vm::has_mapping_hessian_v<CTX> )
+                    hasSecondDerivative = hasMAPPING_HESSIAN( M_dynamic_context );
                 if constexpr ( IsOnFace )
                 {
                     hasLocalBasis = hasLOCAL_BASIS( M_dynamic_context );
@@ -3237,8 +3270,7 @@ class GeoMap
             // Second derivatives are represented explicitly for every order.
             // Affine mappings keep one zero tensor so static and runtime G1
             // expose the same mathematical contract and compact storage.
-            if constexpr ( vm::has_second_derivative_v<CTX> ||
-                           vm::has_hessian_v<CTX> )
+            if constexpr ( vm::has_mapping_hessian_v<CTX> )
             {
                 M_hessian.resize( _nComputedPoints );
                 if ( _nComputedPoints > 1 )
@@ -3345,29 +3377,29 @@ class GeoMap
             {
                 if constexpr ( !IsOnFace )
                 {
-                    if constexpr ( !(vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX>))
+                    if constexpr ( !(vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> || vm::has_mapping_hessian_v<CTX>))
                         return;
                 }
                 else
                 {
-                    if constexpr ( !(vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX> || vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> || vm::has_local_basis_v<CTX>))
+                    if constexpr ( !(vm::has_jacobian_v<CTX> || vm::has_kb_v<CTX> || vm::has_mapping_hessian_v<CTX> || vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> || vm::has_local_basis_v<CTX>))
                         return;
                 }
             }
 
-            constexpr bool hasStaticB = IsOnFace ? vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX> || vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> || vm::has_local_basis_v<CTX> : vm::has_kb_v<CTX> || vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX>;
+            constexpr bool hasStaticB = IsOnFace ? vm::has_kb_v<CTX> || vm::has_mapping_hessian_v<CTX> || vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> || vm::has_local_basis_v<CTX> : vm::has_kb_v<CTX> || vm::has_mapping_hessian_v<CTX>;
             bool hasJ = vm::has_jacobian_v<CTX>;
             bool hasLocalBasis = IsOnFace && vm::has_local_basis_v<CTX>;
             bool hasTangent = IsOnFace && vm::has_tangent_v<CTX>;
             bool hasNormal = IsOnFace && ( vm::has_normal_v<CTX> || vm::has_tangent_v<CTX> );
             bool hasB = hasStaticB; // vm::has_normal_v<CTX> || vm::has_tangent_v<CTX>;
-            bool hasSecondDerivative = vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX>;
+            bool hasSecondDerivative = vm::has_mapping_hessian_v<CTX>;
             if constexpr ( vm::has_dynamic_v<CTX> )
             {
                 if constexpr ( !vm::has_jacobian_v<CTX> )
                     hasJ = hasJACOBIAN( M_dynamic_context );
-                if constexpr ( !vm::has_second_derivative_v<CTX> && !vm::has_hessian_v<CTX> )
-                    hasSecondDerivative = hasSECOND_DERIVATIVE( M_dynamic_context ) || hasHESSIAN( M_dynamic_context );
+                if constexpr ( !vm::has_mapping_hessian_v<CTX> )
+                    hasSecondDerivative = hasMAPPING_HESSIAN( M_dynamic_context );
                 if constexpr ( IsOnFace )
                 {
                     hasLocalBasis = hasLOCAL_BASIS( M_dynamic_context );
@@ -3454,7 +3486,7 @@ class GeoMap
                 // second derivative
                 if constexpr ( !affine )
                 {
-                    if constexpr ( vm::has_second_derivative_v<CTX> || vm::has_hessian_v<CTX> /*|| vm::has_laplacian_v<CTX>*/ )
+                    if constexpr ( vm::has_mapping_hessian_v<CTX> )
                     {
                         this->updateMappingHessian(
                             q, useBatchedEvaluation );
@@ -3613,6 +3645,8 @@ class GeoMap
         mutable vector_hessian_type M_hessian;
         mutable hessian_component_batches_type M_hessian_component_batches;
         mutable bool M_mapping_hessian_current = false;
+        mutable std::array<derivative_component_batch_type, PDim * PDim * PDim> M_third_derivative_component_batches;
+        mutable bool M_mapping_third_derivatives_current = false;
         vector_eigen_matrix_nn_type M_Ptangent;
 
         boost::multi_array<value_type, 4> M_B3;

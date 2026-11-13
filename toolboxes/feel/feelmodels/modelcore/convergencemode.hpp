@@ -1,16 +1,29 @@
+/*
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ * SPDX-FileContributor: Romain Hild <romain.hild@cemosis.fr>
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2021-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
 #ifndef FEELPP_TOOLBOXES_CONVERGENCE_HPP
 #define FEELPP_TOOLBOXES_CONVERGENCE_HPP 1
 
 #include <algorithm>
 #include <cmath>
+#include <functional>
+#include <type_traits>
 #include <feel/feelmath/polyfit.hpp>
 #include <feel/feelmath/vector.hpp>
 
 
-template <typename ToolboxType>
+template <typename ToolboxType, typename ToolboxFactory = std::nullptr_t>
 int
 runHConvergence(std::string const& prefix,
-               std::function<int(std::shared_ptr<ToolboxType>)> runToolboxSimulation)
+               std::function<int(std::shared_ptr<ToolboxType>)> runToolboxSimulation,
+               ToolboxFactory createToolbox = nullptr)
 {
     using namespace Feel;
     int status = 0;
@@ -39,10 +52,14 @@ runHConvergence(std::string const& prefix,
                                                                       po::store(po::parse_config_file(iss, _options,true), vm);
                                                                   } ).vm();
 
-        auto tb = ToolboxType::New( _prefix=prefix,
-                                    _repository=Feel::FeelModels::ModelBaseRepository( (fs::path(Environment::appRepository())/runSubdir).string(),
-                                                                                       false, Environment::exprRepository() ),
-                                    _vm=vmToolbox);
+        FeelModels::ModelBaseRepository repository( (fs::path(Environment::appRepository())/runSubdir).string(),
+                                                     false, Environment::exprRepository() );
+        auto tb = [&]() {
+            if constexpr ( std::is_same_v<ToolboxFactory,std::nullptr_t> )
+                return ToolboxType::New( _prefix=prefix, _repository=repository, _vm=vmToolbox );
+            else
+                return std::invoke(createToolbox, prefix, repository, vmToolbox);
+        }();
 
         status = runToolboxSimulation( tb );
         if ( status != 0 )

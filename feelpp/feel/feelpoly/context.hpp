@@ -1,26 +1,8 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-07-19
-
-  Copyright (C) 2005,2006 EPFL
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileCopyrightText: 2005-2026 University of Strasbourg
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 /**
    \file context.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -65,6 +47,8 @@ inline constexpr size_type LOCAL_BASIS              = ( 1<<23 );
 inline constexpr size_type TRACE                    = ( 1<<24 );
 inline constexpr size_type DYNAMIC                  = ( 1<<25 );
 inline constexpr size_type DYNAMIC_BASIS_FUNCTION   = ( 1<<26 );
+inline constexpr size_type GRADDIV                  = ( 1<<27 );
+inline constexpr size_type CURLCURL                 = ( 1<<28 );
 
 #define FEELPP_DEFINE_CONTEXT(ctx_v,ctx)                                \
     template<size_type Context>                                         \
@@ -101,6 +85,18 @@ FEELPP_DEFINE_CONTEXT(LOCAL_BASIS,local_basis)
 FEELPP_DEFINE_CONTEXT(TRACE,trace)
 FEELPP_DEFINE_CONTEXT(DYNAMIC,dynamic)
 FEELPP_DEFINE_CONTEXT(DYNAMIC_BASIS_FUNCTION,dynamic_basis_function)
+FEELPP_DEFINE_CONTEXT(GRADDIV,graddiv)
+FEELPP_DEFINE_CONTEXT(CURLCURL,curlcurl)
+
+/** Mapping derivatives needed by both Hessians and natural second operators. */
+template<size_type Context>
+inline constexpr bool has_mapping_hessian_v =
+    ( Context & ( SECOND_DERIVATIVE | HESSIAN | GRADDIV | CURLCURL ) ) != 0;
+
+inline bool hasMAPPING_HESSIAN( size_type context )
+{
+    return ( context & ( SECOND_DERIVATIVE | HESSIAN | GRADDIV | CURLCURL ) ) != 0;
+}
 
 } // vm
 using namespace vm;

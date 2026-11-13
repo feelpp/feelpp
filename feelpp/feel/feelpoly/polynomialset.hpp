@@ -1,9 +1,7 @@
 /*
  * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- * SPDX-FileContributor: Gilles Steiner <gilles.steiner@epfl.ch>
  *
- * SPDX-FileCopyrightText: 2006-2011 Université Joseph Fourier Grenoble 1
- * SPDX-FileCopyrightText: 2011-2026 University of Strasbourg
+ * SPDX-FileCopyrightText: 2006-2026 University of Strasbourg
  *
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
@@ -939,6 +937,7 @@ public:
             init( M_ref_ele, __pts, rank_t<rank>() );
             initPhiEigen( M_ref_ele, __pts );
             M_derivative_eigen_current = false;
+            M_third_derivative_eigen_current.fill( false );
         }
 
         //! \return the finite element
@@ -1103,6 +1102,29 @@ public:
                     "PolynomialSet Hessian direction is outside the reference dimension" );
             this->ensureDerivativeEigen();
             return M_hessian_eigen[firstDirection * nDim + secondDirection];
+        }
+
+        /** Analytic third reference derivative, cached until the points change. */
+        derivative_matrix_type const& thirdDerivativeEigen(
+            uint16_type first, uint16_type second, uint16_type third ) const
+            requires( rank == 0 )
+        {
+            if ( first >= nDim || second >= nDim || third >= nDim )
+                throw std::out_of_range(
+                    "PolynomialSet third derivative direction is outside the reference dimension" );
+            auto const index = ( first * nDim + second ) * nDim + third;
+            if ( !M_third_derivative_eigen_current[index] )
+            {
+                auto const values = M_ref_ele->derivative( first )
+                                        .derivative( second ).derivative( third ).evaluate( M_nodes );
+                auto& result = M_third_derivative_eigen[index];
+                result.resize( values.size1(), values.size2() );
+                for ( size_type q = 0; q < values.size2(); ++q )
+                    for ( size_type i = 0; i < values.size1(); ++i )
+                        result( i, q ) = values( i, q );
+                M_third_derivative_eigen_current[index] = true;
+            }
+            return M_third_derivative_eigen[index];
         }
 
         value_type grad( size_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
@@ -1486,6 +1508,8 @@ public:
         mutable gradient_component_matrices_type M_gradient_eigen;
         mutable hessian_component_matrices_type M_hessian_eigen;
         mutable bool M_derivative_eigen_current = false;
+        mutable std::array<derivative_matrix_type, nDim * nDim * nDim> M_third_derivative_eigen;
+        mutable std::array<bool, nDim * nDim * nDim> M_third_derivative_eigen_current{};
     }; /** class PreCompute **/
 
     typedef PreCompute precompute_type;
@@ -1750,6 +1774,8 @@ public:
             M_dx( c.M_dx ),
             M_dy( c.M_dy ),
             M_dz( c.M_dz ),
+            M_graddiv( c.M_graddiv ),
+            M_curlcurl( c.M_curlcurl ),
             M_id_batch( c.M_id_batch ),
             M_grad_batch( c.M_grad_batch ),
             M_div_batch( c.M_div_batch ),
@@ -2473,15 +2499,47 @@ public:
                 return M_curl[i][q]( 2 );
             }
 
+        /** Physical gradient of divergence, stored at every evaluation point. */
+        id_type const& graddiv( uint16_type i, uint32_type q ) const
+        {
+            return M_graddiv[i][q];
+        }
+        value_type graddiv( uint16_type i, uint16_type component, uint16_type column, uint32_type q ) const
+        {
+            return M_graddiv[i][q]( component, column );
+        }
+
+        /** Physical curl of curl; its 2D result is an in-plane vector. */
+        id_type const& curlcurl( uint16_type i, uint32_type q ) const
+        {
+            return M_curlcurl[i][q];
+        }
+        value_type curlcurl( uint16_type i, uint16_type component, uint16_type column, uint32_type q ) const
+        {
+            return M_curlcurl[i][q]( component, column );
+        }
+
         hess_type const& hess( uint16_type i, uint32_type q ) const
             {
-                return M_hessian[i][q];
+                return M_hessian[i][this->canUseP2Optimization() ? 0 : q];
             }
+        /** Complete vector Hessian in (component,firstDerivative,secondDerivative) order. */
+        value_type hess( uint16_type i, uint16_type component, uint16_type first,
+                        uint16_type second, uint32_type q ) const
+            requires( rank == 1 )
+        {
+            return M_hessian[i][this->canUseP2Optimization() ? 0 : q]( component, first, second );
+        }
         value_type hess( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
             {
-                if ( this->canUseP2Optimization() )
-                    return hess( i, c1, c2, q, int_t<rank>(), optimization_p2_t() );
-                return hess( i, c1, c2, q, int_t<rank>(), no_optimization_p2_t() );
+                if constexpr ( rank == 1 )
+                    return this->hess( i, c1 % nComponents1, c1 / nComponents1, c2, q );
+                else
+                {
+                    if ( this->canUseP2Optimization() )
+                        return hess( i, c1, c2, q, int_t<rank>(), optimization_p2_t() );
+                    return hess( i, c1, c2, q, int_t<rank>(), no_optimization_p2_t() );
+                }
             }
         value_type hess( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, rank_t<0>, optimization_p2_t ) const
             {
@@ -2740,6 +2798,10 @@ public:
         FEELPP_STRONG_INLINE void updateFirstDerivativeNormal( geometric_mapping_context_type* thegmc, rank_t<1> );
         FEELPP_STRONG_INLINE void updateHessian( geometric_mapping_context_type* thegmc, rank_t<1> );
         FEELPP_STRONG_INLINE void updateLaplacian( geometric_mapping_context_type* thegmc, rank_t<1> );
+        FEELPP_STRONG_INLINE void updateNaturalSecondDerivatives( geometric_mapping_context_type* thegmc );
+        template<typename Consumer>
+        void forEachPiolaHessian( geometric_mapping_context_type* thegmc,
+                                  uint16_type pointCount, Consumer&& consume );
 
         FEELPP_STRONG_INLINE void updateNormalComponent( geometric_mapping_context_type* thegmc, rank_t<2> );
         FEELPP_STRONG_INLINE void updateTrace( geometric_mapping_context_type* thegmc, rank_t<2> );
@@ -2873,6 +2935,8 @@ public:
         boost::multi_array<curl_type,2> M_curl;
         boost::multi_array<hess_type,2> M_hessian;
         boost::multi_array<id_type,2> M_laplacian;
+        boost::multi_array<id_type,2> M_graddiv;
+        boost::multi_array<id_type,2> M_curlcurl;
         mutable quadrature_batch_table_type M_id_batch;
         mutable quadrature_batch_table_type M_grad_batch;
         mutable quadrature_batch_table_type M_div_batch;

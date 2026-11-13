@@ -1,8 +1,9 @@
 /*
  * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ * SPDX-FileContributor: Vincent Huber <vincent.huber@cemosis.fr>
  *
- * SPDX-FileCopyrightText: 2026 University of Strasbourg
+ * SPDX-FileCopyrightText: 2008-2026 University of Strasbourg
  *
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
@@ -2173,7 +2174,9 @@ public:
         typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<nComponents1,nComponents2>> _id_type;
         typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<nComponents1,nRealDim>> _grad_type;
         typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<nComponents1,nComponents2>> _dn_type;
-        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<nRealDim,nRealDim>> _hess_type;
+        // Vector Hessians use rows (component + nComponents1*firstDerivative)
+        // and columns secondDerivative, matching the VF matrix tensor view.
+        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<(rank == 1 ? nComponents1 : 1)*nRealDim,nRealDim>> _hess_type;
         typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<nComponents2,1>> _div_type;
         typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<(nRealDim==3)?nRealDim:1,1>> _curl_type;
         //typedef Eigen::Tensor<value_type,2> _dn_type;
@@ -2641,17 +2644,17 @@ public:
         gmc_ptrtype geomapPtr( geoelement_type const& elt ) const
         {
             gm_ptrtype __gm = functionSpace()->gm();
-            geopc_ptrtype __geopc( new geopc_type( __gm, elt.G() ) );
+            geopc_ptrtype __geopc( new geopc_type( __gm, __gm->points() ) );
             //return gmc_ptrtype( new gmc_type( __gm, elt, __geopc ) );
             return __gm->template context<vm::POINT|vm::JACOBIAN|vm::HESSIAN|vm::KB>( elt, __geopc );
         }
         /**
          * \return a precomputation of the basis functions
-         * \warning this seems quite buggy (where is it used?)
+         * The geometric mapping supplies the reference interpolation points.
          */
         pc_ptrtype pcPtr( geoelement_type const& elt ) const
         {
-            return pc_ptrtype( new pc_type( functionSpace()->fe(), elt.G() ) );
+            return pc_ptrtype( new pc_type( functionSpace()->fe(), functionSpace()->gm()->points() ) );
         }
 
         id_type operator()( Eigen::Matrix<value_type,nDim,1> const& __x, bool extrapolate = false, bool parallel = true ) const
@@ -2699,15 +2702,14 @@ public:
         void
         grad( ElementType const& elt, grad_array_type& v ) const
         {
-            if constexpr ( std::is_base_of_v<ElementType,ConvexBase> )
+            if constexpr ( requires { elt.gmContext(); } )
             {
-                gmc_ptrtype gmc( geomapPtr( elt ) );
-                v.resize( gradExtents(  *gmc ) );
-                grad_( *gmc, *pcPtr( elt ), v );
+                grad_( elt, v );
             }
             else
             {
-                grad_( elt, v );
+                this->template evaluateOnElement<vm::GRAD|vm::FIRST_DERIVATIVE>(
+                    elt, v, [this]( auto const& context, auto& values ) { this->grad_( context, values ); } );
             }
         }
 
@@ -2722,8 +2724,9 @@ public:
          * \todo handle the case where the mesh/element is not the
          * same as the one associated with the discretization space.
          *
-         * \todo need to introduce the geometric transformation to
-         * incorporate the pseudo-inverse of the jacobian for the derivative
+         * Physical derivatives include the geometry chain rule for nodal and
+         * Piola-mapped fields. Local coefficient orientations are handled by
+         * the finite element.
          */
         template<typename ContextType>
         void grad_( ContextType const & context, grad_array_type& v ) const;
@@ -2734,6 +2737,27 @@ public:
         template<typename ContextType,typename EType = this_type>
             requires EType::is_vectorial
         void symmetricGradient( ContextType const & context, grad_array_type& v ) const;
+
+        template<typename ContextType>
+        auto symmetricGradientExtents( ContextType const& context ) const
+        {
+            return this->gradExtents( context );
+        }
+
+        template<typename ContextType>
+        void symm_grad( ContextType const& context, grad_array_type& values ) const
+        {
+            this->symmetricGradient( context, values );
+        }
+
+        template<typename ContextType>
+        auto symm_grad( ContextType const& context ) const
+        {
+            return Feel::detail::SymmetricDD<value_type,nComponents1>( *this, context );
+        }
+
+        void symm_gradInterpolate( matrix_node_type points, grad_array_type& values,
+                                   bool conformalEval, matrix_node_type const& setPointsConf ) const;
 
         void
         gradInterpolate( matrix_node_type __ptsReal, grad_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const;
@@ -3002,7 +3026,7 @@ public:
         boost::array<typename array_type::index, 1>
         hessExtents( ContextType const & context ) const
         {
-            BOOST_STATIC_ASSERT( rank == 0 );
+            BOOST_STATIC_ASSERT( rank <= 1 );
 
             boost::array<typename array_type::index, 1> shape;
             shape[0] = context.xRefs().size2();
@@ -3019,23 +3043,19 @@ public:
          *
          * \todo handle the case where the mesh/element is not the
          * same as the one associated with the discretization space.
-         *
-         * \todo need to introduce the geometric transformation to
-         * incorporate the pseudo-inverse of the jacobian for the derivative
+         * Vector Hessians expose every component through the matrix view
+         * (component + nComponents1*firstDerivative, secondDerivative).
+         * The finite-element context also provides a three-component accessor.
          */
         template<typename ContextType>
         void
         hess_( ContextType const & context, hess_array_type& v ) const;
 
-        template<typename ContextType>
-        void
-        hess_( ContextType const & context, hess_array_type& v, mpl::int_<0> ) const;
-
 
         void
         hessInterpolate( matrix_node_type __ptsReal, hess_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const;
 
-        typedef Feel::detail::H<value_type,nRealDim,nRealDim> hess_type;
+        typedef Feel::detail::H<value_type,(rank == 1 ? nComponents1 : 1)*nRealDim,nRealDim> hess_type;
 
         template<typename ContextType>
         hess_type
@@ -3048,15 +3068,11 @@ public:
         void
         hess( ContextType const & context, hess_array_type& v ) const
         {
-            hess_( context, v );
-        }
-        template<typename ElementType>
-        void
-        hess( ElementType const& elt, hess_array_type& v )
-        {
-            gmc_ptrtype gmc( geomapPtr( elt ) );
-            v.resize( hessExtents(  *gmc ) );
-            hess_( *gmc, *pcPtr( elt ), v );
+            if constexpr ( requires { context.gmContext(); } )
+                hess_( context, v );
+            else
+                this->template evaluateOnElement<vm::HESSIAN|vm::SECOND_DERIVATIVE|vm::GRAD>(
+                    context, v, [this]( auto const& ctx, auto& values ) { this->hess_( ctx, values ); } );
         }
 
         template<typename ContextType>
@@ -3076,13 +3092,6 @@ public:
         void
         laplacian_( ContextType const & context, id_array_type& v ) const;
 
-        template<typename ContextType>
-        void
-        laplacian_( ContextType const & context, id_array_type& v, mpl::int_<0> ) const;
-        template<typename ContextType>
-        void
-        laplacian_( ContextType const & context, id_array_type& v, mpl::int_<1> ) const;
-
         void
         laplacianInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const;
 
@@ -3090,23 +3099,85 @@ public:
         laplacian_type
         laplacian( ContextType const & context ) const
         {
-            return laplacian_type( *this, context );
+            id_array_type values( this->laplacianExtents( context ) );
+            for ( auto& value : values )
+                value.setZero();
+            this->laplacian_( context, values );
+            return laplacian_type( values );
         }
 
         template<typename ContextType>
         void
         laplacian( ContextType const & context, id_array_type& v ) const
         {
-            laplacian_( context, v );
+            if constexpr ( requires { context.gmContext(); } )
+                laplacian_( context, v );
+            else
+                this->template evaluateOnElement<vm::LAPLACIAN|vm::SECOND_DERIVATIVE|vm::GRAD>(
+                    context, v, [this]( auto const& ctx, auto& values ) { this->laplacian_( ctx, values ); } );
         }
-        template<typename ElementType>
-        void
-        laplacian( ElementType const& elt, id_array_type& v )
+        using graddiv_type = id_type;
+        using curlcurl_type = id_type;
+
+        template<typename ContextType>
+        auto graddivExtents( ContextType const& context ) const
         {
-            gmc_ptrtype gmc( geomapPtr( elt ) );
-            v.resize( laplacianExtents(  *gmc ) );
-            laplacian_( *gmc, *pcPtr( elt ), v );
+            static_assert( is_vectorial, "graddiv requires a vector field" );
+            return this->idExtents( context );
         }
+        template<typename ContextType>
+        auto curlcurlExtents( ContextType const& context ) const
+        {
+            static_assert( is_vectorial, "curlcurl requires a vector field" );
+            return this->idExtents( context );
+        }
+
+        template<typename ContextType>
+        void graddiv_( ContextType const& context, id_array_type& values ) const;
+        template<typename ContextType>
+        void curlcurl_( ContextType const& context, id_array_type& values ) const;
+
+        template<typename ContextType>
+        graddiv_type graddiv( ContextType const& context ) const
+        {
+            id_array_type values( this->graddivExtents( context ) );
+            for ( auto& value : values ) value.setZero();
+            this->graddiv_( context, values );
+            return graddiv_type( values );
+        }
+        template<typename ContextType>
+        curlcurl_type curlcurl( ContextType const& context ) const
+        {
+            id_array_type values( this->curlcurlExtents( context ) );
+            for ( auto& value : values ) value.setZero();
+            this->curlcurl_( context, values );
+            return curlcurl_type( values );
+        }
+
+        template<typename ContextType>
+        void graddiv( ContextType const& context, id_array_type& values ) const
+        {
+            if constexpr ( requires { context.gmContext(); } )
+                this->graddiv_( context, values );
+            else
+                this->template evaluateOnElement<vm::GRADDIV>( context, values,
+                    [this]( auto const& ctx, auto& out ) { this->graddiv_( ctx, out ); } );
+        }
+        template<typename ContextType>
+        void curlcurl( ContextType const& context, id_array_type& values ) const
+        {
+            if constexpr ( requires { context.gmContext(); } )
+                this->curlcurl_( context, values );
+            else
+                this->template evaluateOnElement<vm::CURLCURL>( context, values,
+                    [this]( auto const& ctx, auto& out ) { this->curlcurl_( ctx, out ); } );
+        }
+
+        void graddivInterpolate( matrix_node_type points, id_array_type& values,
+                                 bool conformalEval, matrix_node_type const& setPointsConf ) const;
+        void curlcurlInterpolate( matrix_node_type points, id_array_type& values,
+                                  bool conformalEval, matrix_node_type const& setPointsConf ) const;
+
         /**
            \return the finite element space
         */
@@ -3728,6 +3799,21 @@ public:
     }
 
     private:
+
+        /** Visit oriented local FE coefficients in the context's element. */
+        template<typename ContextType, typename Visitor>
+        void forEachLocalCoefficient( ContextType const& context, Visitor&& visit ) const;
+
+        /** Localize and evaluate points with the requested FE context. */
+        template<Feel::size_type Context, typename OutputArray, typename Evaluation>
+        void interpolateAtPoints( matrix_node_type const& points, OutputArray& values,
+                                  bool conformalEval, matrix_node_type const& setPointsConf,
+                                  Evaluation&& evaluate ) const;
+
+        /** Evaluate on the geometric mapping's reference interpolation points. */
+        template<Feel::size_type Context, typename OutputArray, typename Evaluation>
+        void evaluateOnElement( geoelement_type const& element, OutputArray& values,
+                                Evaluation&& evaluate ) const;
 
     //! shared_ptr that may be used in case wrapping in a non owning way a VectorPetsc
     std::shared_ptr<void> M_backingGuard;

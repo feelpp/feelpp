@@ -88,9 +88,125 @@ void checkPiolaIdentities( JacobianType const& jacobian,
     BOOST_CHECK_SMALL(
         contravariantPairing - referenceVector.dot( referenceTest ), 2e-13 );
 }
+/** Independent value differences after Newton inversion of a cubic map. */
+template <int Dim, bool Contravariant>
+void checkCubicPiolaHessian( double orientation )
+{
+    using vector_type = Eigen::Matrix<double, Dim, 1>;
+    using matrix_type = Eigen::Matrix<double, Dim, Dim>;
+    auto weight = []( int c, int a )
+    { return .15 + .1 * ( c + 1 ) + .07 * a; };
+    auto linearCoordinate = [&]( int c, vector_type const& xi )
+    {
+        double result = 0;
+        for ( int a = 0; a < Dim; ++a )
+            result += weight( c, a ) * xi( a );
+        return result;
+    };
+    auto sign = [&]( int c )
+    { return c == 0 ? orientation : 1.; };
+    auto map = [&]( vector_type const& xi )
+    {
+        vector_type result;
+        for ( int c = 0; c < Dim; ++c )
+        {
+            double t = linearCoordinate( c, xi );
+            result( c ) = sign( c ) * ( ( 1.2 + .2 * c ) * xi( c ) + .12 * t * t * t + .08 * xi( c ) * xi( ( c + 1 ) % Dim ) );
+        }
+        return result;
+    };
+    auto jacobian = [&]( vector_type const& xi )
+    {
+        matrix_type result;
+        for ( int c = 0; c < Dim; ++c )
+            for ( int a = 0; a < Dim; ++a )
+                result( c, a ) = sign( c ) * ( ( 1.2 + .2 * c ) * ( c == a ) +
+                                               .36 * std::pow( linearCoordinate( c, xi ), 2 ) * weight( c, a ) +
+                                               .08 * ( ( c == a ) * xi( ( c + 1 ) % Dim ) + ( a == ( c + 1 ) % Dim ) * xi( c ) ) );
+        return result;
+    };
+    auto referenceValue = [&]( vector_type const& xi )
+    {
+        vector_type result;
+        for ( int c = 0; c < Dim; ++c )
+        {
+            double t = linearCoordinate( c, xi );
+            result( c ) = .7 - .2 * c + .4 * t + .3 * t * t;
+        }
+        return result;
+    };
+    vector_type const point = vector_type::LinSpaced( -.17, .23 );
+    matrix_type const K = jacobian( point );
+    matrix_type const B = K.inverse().transpose();
+    geometry::PiolaHessianTransform<double, Dim, Contravariant> transform(
+        K, B, std::abs( K.determinant() ),
+        [&]( int c, int a, int b )
+        {
+            return sign( c ) * ( .72 * linearCoordinate( c, point ) * weight( c, a ) * weight( c, b ) +
+                                 .08 * ( ( c == a && b == ( c + 1 ) % Dim ) + ( c == b && a == ( c + 1 ) % Dim ) ) );
+        },
+        [&]( int c, int a, int b, int d )
+        { return sign( c ) * .72 * weight( c, a ) * weight( c, b ) * weight( c, d ); } );
+    auto const value = referenceValue( point );
+    auto const actual = transform.apply(
+        [&]( int c )
+        { return value( c ); },
+        [&]( int c, int a )
+        { return ( .4 + .6 * linearCoordinate( c, point ) ) * weight( c, a ); },
+        [&]( int c, int a, int b )
+        { return .6 * weight( c, a ) * weight( c, b ); } );
+    auto physicalValue = [&]( vector_type const& x )
+    {
+        vector_type xi = point;
+        for ( int iteration = 0; iteration < 12; ++iteration )
+        {
+            vector_type const residual = map( xi ) - x;
+            if ( residual.norm() < 2e-15 ) break;
+            xi -= jacobian( xi ).partialPivLu().solve( residual );
+        }
+        matrix_type const localK = jacobian( xi );
+        if constexpr ( Contravariant )
+            return ( localK * referenceValue( xi ) / std::abs( localK.determinant() ) ).eval();
+        else
+            return ( localK.inverse().transpose() * referenceValue( xi ) ).eval();
+    };
+    vector_type const x = map( point );
+    auto difference = [&]( int a, int b, double h ) -> vector_type
+    {
+        vector_type da = vector_type::Zero(), db = vector_type::Zero();
+        da( a ) = h;
+        db( b ) = h;
+        if ( a == b )
+            return ( physicalValue( x + da ) - 2 * physicalValue( x ) + physicalValue( x - da ) ) / ( h * h );
+        return ( physicalValue( x + da + db ) - physicalValue( x + da - db ) -
+                 physicalValue( x - da + db ) + physicalValue( x - da - db ) ) /
+               ( 4 * h * h );
+    };
+    for ( int a = 0; a < Dim; ++a )
+        for ( int b = 0; b < Dim; ++b )
+        {
+            vector_type const expected = ( 4 * difference( a, b, 5e-4 ) - difference( a, b, 1e-3 ) ) / 3;
+            for ( int c = 0; c < Dim; ++c )
+            {
+                BOOST_CHECK_SMALL( actual[c]( a, b ) - expected( c ), 2e-7 );
+                BOOST_CHECK_SMALL( actual[c]( a, b ) - actual[c]( b, a ), 2e-13 );
+            }
+        }
+}
 } // namespace
 
 BOOST_AUTO_TEST_SUITE( piola_transform_suite )
+
+BOOST_AUTO_TEST_CASE( cubic_full_hessian_chain_rule )
+{
+    for ( double orientation : { -1., 1. } )
+    {
+        checkCubicPiolaHessian<2, false>( orientation );
+        checkCubicPiolaHessian<2, true>( orientation );
+        checkCubicPiolaHessian<3, false>( orientation );
+        checkCubicPiolaHessian<3, true>( orientation );
+    }
+}
 
 /** Verify full-dimensional affine Piola identities. */
 BOOST_AUTO_TEST_CASE( affine_full_dimensional_identities )

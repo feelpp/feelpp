@@ -16,6 +16,7 @@
 #include <Eigen/Core>
 #include <Eigen/QR>
 
+#include <array>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -490,6 +491,192 @@ template <typename JacobianDerived, typename InverseDerived, typename Scalar,
                     referenceDerivativeValue / integrationJacobian;
             }
     }
+    return result;
+}
+
+/**
+ * @brief Complete second-order chain rule for a full-dimensional Piola field.
+ *
+ * Cache the value map A and its first/second reference derivatives once per
+ * geometry point, then reuse them for every basis function. A is K/J for
+ * H(div), or K^{-T} for H(curl). Third derivatives of F differentiate K twice.
+ * The returned Hessians use (component, physical derivative, physical derivative).
+ */
+template <typename Scalar, int Dim, bool Contravariant>
+class PiolaHessianTransform
+{
+    static_assert( Dim == 2 || Dim == 3 );
+    using matrix_type = Eigen::Matrix<Scalar, Dim, Dim>;
+    using vector_type = Eigen::Matrix<Scalar, Dim, 1>;
+
+  public:
+    template <typename JacobianDerived, typename InverseDerived,
+              typename HessianAccessor, typename ThirdDerivativeAccessor>
+    PiolaHessianTransform(
+        Eigen::MatrixBase<JacobianDerived> const& K,
+        Eigen::MatrixBase<InverseDerived> const& B, Scalar const& J,
+        HessianAccessor&& mappingHessian, ThirdDerivativeAccessor&& mappingThirdDerivative )
+        : M_B( B )
+    {
+        if ( K.rows() != Dim || K.cols() != Dim )
+            throw std::invalid_argument( "Piola Hessians require a full-dimensional geometry" );
+        std::array<matrix_type, Dim> inverseDerivatives;
+        vector_type logJacobianGradient;
+        for ( int a = 0; a < Dim; ++a )
+        {
+            for ( int component = 0; component < Dim; ++component )
+                for ( int direction = 0; direction < Dim; ++direction )
+                    M_Kderivatives[a]( component, direction ) = mappingHessian( component, direction, a );
+            inverseDerivatives[a] = -B * M_Kderivatives[a].transpose() * B;
+            logJacobianGradient( a ) = ( B.transpose() * M_Kderivatives[a] ).trace();
+        }
+        if constexpr ( Contravariant )
+            M_valueTransform = K / J;
+        else
+            M_valueTransform = B;
+        for ( int a = 0; a < Dim; ++a )
+        {
+            if constexpr ( Contravariant )
+                M_first[a] = ( M_Kderivatives[a] - logJacobianGradient( a ) * K ) / J;
+            else
+                M_first[a] = inverseDerivatives[a];
+            for ( int b = 0; b < Dim; ++b )
+            {
+                matrix_type secondK;
+                for ( int component = 0; component < Dim; ++component )
+                    for ( int direction = 0; direction < Dim; ++direction )
+                        secondK( component, direction ) = mappingThirdDerivative( component, direction, a, b );
+                if constexpr ( Contravariant )
+                {
+                    Scalar const secondLogJacobian =
+                        ( inverseDerivatives[b].transpose() * M_Kderivatives[a] + B.transpose() * secondK ).trace();
+                    M_second[a * Dim + b] =
+                        ( secondK - logJacobianGradient( a ) * M_Kderivatives[b] -
+                          logJacobianGradient( b ) * M_Kderivatives[a] +
+                          ( logJacobianGradient( a ) * logJacobianGradient( b ) - secondLogJacobian ) * K ) /
+                        J;
+                }
+                else
+                    M_second[a * Dim + b] =
+                        -inverseDerivatives[b] * M_Kderivatives[a].transpose() * B -
+                        B * secondK.transpose() * B - B * M_Kderivatives[a].transpose() * inverseDerivatives[b];
+            }
+        }
+    }
+
+    template <typename ValueAccessor, typename GradientAccessor, typename HessianAccessor>
+    [[nodiscard]] std::array<matrix_type, Dim> apply(
+        ValueAccessor&& value, GradientAccessor&& gradient, HessianAccessor&& hessian ) const
+    {
+        vector_type referenceValue;
+        matrix_type referenceGradient;
+        for ( int component = 0; component < Dim; ++component )
+        {
+            referenceValue( component ) = value( component );
+            for ( int a = 0; a < Dim; ++a )
+                referenceGradient( component, a ) = gradient( component, a );
+        }
+        matrix_type mappedReferenceGradient;
+        for ( int a = 0; a < Dim; ++a )
+            mappedReferenceGradient.col( a ) = M_first[a] * referenceValue + M_valueTransform * referenceGradient.col( a );
+        matrix_type const physicalGradient = mappedReferenceGradient * M_B.transpose();
+        std::array<matrix_type, Dim> referenceHessians;
+        for ( int a = 0; a < Dim; ++a )
+            for ( int b = 0; b < Dim; ++b )
+            {
+                vector_type referenceSecond;
+                for ( int component = 0; component < Dim; ++component )
+                    referenceSecond( component ) = hessian( component, a, b );
+                vector_type const mappedSecond =
+                    M_second[a * Dim + b] * referenceValue +
+                    M_first[a] * referenceGradient.col( b ) + M_first[b] * referenceGradient.col( a ) +
+                    M_valueTransform * referenceSecond;
+                for ( int component = 0; component < Dim; ++component )
+                    referenceHessians[component]( a, b ) = mappedSecond( component ) -
+                                                           ( physicalGradient.row( component ) * M_Kderivatives[b].col( a ) )( 0, 0 );
+            }
+        std::array<matrix_type, Dim> result;
+        for ( int component = 0; component < Dim; ++component )
+            result[component] = M_B * referenceHessians[component] * M_B.transpose();
+        return result;
+    }
+
+  private:
+    matrix_type M_B, M_valueTransform;
+    std::array<matrix_type, Dim> M_Kderivatives, M_first;
+    std::array<matrix_type, Dim * Dim> M_second;
+};
+
+/**
+ * @brief Differentiate the commuting H(div) identity div(v) = divHat(vHat)/J.
+ *
+ * Only first derivatives of the Jacobian are required, even on curved cells.
+ * The returned vector is expressed in physical derivative directions.
+ */
+template<typename InverseDerived, typename Scalar, typename HessianAccessor,
+         typename ReferenceScalar, typename GradientDerived>
+[[nodiscard]] auto mappedContravariantDivergenceGradient(
+    Eigen::MatrixBase<InverseDerived> const& inverseJacobianTranspose,
+    Scalar const& integrationJacobian, HessianAccessor&& mappingHessian,
+    ReferenceScalar const& referenceDivergence,
+    Eigen::MatrixBase<GradientDerived> const& referenceDivergenceGradient )
+{
+    auto referenceDerivative = referenceDivergenceGradient.eval();
+    for ( int derivative = 0; derivative < inverseJacobianTranspose.cols(); ++derivative )
+    {
+        Scalar logarithmicJacobianDerivative = 0;
+        for ( int component = 0; component < inverseJacobianTranspose.rows(); ++component )
+            for ( int direction = 0; direction < inverseJacobianTranspose.cols(); ++direction )
+                logarithmicJacobianDerivative +=
+                    inverseJacobianTranspose( component, direction ) *
+                    mappingHessian( component, direction, derivative );
+        referenceDerivative( derivative ) -= referenceDivergence * logarithmicJacobianDerivative;
+    }
+    return ( inverseJacobianTranspose * referenceDerivative / integrationJacobian ).eval();
+}
+
+/** @brief Physical curl-curl of a covariant Piola field on a 2D cell. */
+template<typename InverseDerived, typename Scalar, typename HessianAccessor,
+         typename ReferenceScalar, typename GradientDerived>
+[[nodiscard]] auto mappedCovariantCurlCurl2D(
+    Eigen::MatrixBase<InverseDerived> const& inverseJacobianTranspose,
+    Scalar const& integrationJacobian, HessianAccessor&& mappingHessian,
+    ReferenceScalar const& referenceCurl,
+    Eigen::MatrixBase<GradientDerived> const& referenceCurlGradient )
+{
+    auto const gradient = mappedContravariantDivergenceGradient(
+        inverseJacobianTranspose, integrationJacobian,
+        std::forward<HessianAccessor>( mappingHessian ), referenceCurl,
+        referenceCurlGradient );
+    Eigen::Matrix<typename InverseDerived::Scalar, 2, 1> result;
+    result << gradient( 1 ), -gradient( 0 );
+    return result;
+}
+
+/**
+ * @brief Physical curl-curl of a covariant Piola field on a 3D cell.
+ *
+ * Its first curl is a contravariant Piola field. Differentiating that field
+ * needs the geometry Hessian, rather than the third geometry derivatives of
+ * a full Hessian of the original covariant field.
+ */
+template<typename JacobianDerived, typename InverseDerived, typename Scalar,
+         typename HessianAccessor, typename VectorDerived, typename GradientDerived>
+[[nodiscard]] auto mappedCovariantCurlCurl3D(
+    Eigen::MatrixBase<JacobianDerived> const& jacobian,
+    Eigen::MatrixBase<InverseDerived> const& inverseJacobianTranspose,
+    Scalar const& integrationJacobian, HessianAccessor&& mappingHessian,
+    Eigen::MatrixBase<VectorDerived> const& referenceCurl,
+    Eigen::MatrixBase<GradientDerived> const& referenceCurlGradient )
+{
+    auto const gradient = contravariantPiolaGradient(
+        jacobian, inverseJacobianTranspose, integrationJacobian,
+        std::forward<HessianAccessor>( mappingHessian ), referenceCurl,
+        referenceCurlGradient );
+    Eigen::Matrix<typename JacobianDerived::Scalar, 3, 1> result;
+    result << gradient( 2, 1 ) - gradient( 1, 2 ),
+              gradient( 0, 2 ) - gradient( 2, 0 ),
+              gradient( 1, 0 ) - gradient( 0, 1 );
     return result;
 }
 

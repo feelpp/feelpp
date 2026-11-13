@@ -1,15 +1,10 @@
 import feelpp.core as fppc
 from feelpp.toolboxes.core import *
 has_electric = False
-_electrics = None
 _electrics_dynamic = None
 try:
     from ._electric import *
 
-    _electrics={
-        'electric(2,1)':Electric_2DP1,
-        'electric(3,1)':Electric_3DP1,
-    }
     _electrics_dynamic={
         2: Electric_2DDynamic,
         3: Electric_3DDynamic,
@@ -33,18 +28,13 @@ def electric(dim=2, orderPotential=1, orderGeometry=1, worldComm=None, keyword="
     """
     if not has_electric:
         raise Exception('Electric toolbox is not enabled in Feel++')
+    for value in (orderPotential, orderGeometry):
+        if not isinstance(value, int) or not 1 <= value <= 65535:
+            raise ValueError("Electric orders must be integers between 1 and 65535")
     if worldComm is None:
         worldComm = fppc.Environment.worldCommPtr()
     if modelRep is None:
         modelRep = ModelBaseRepository()
-
-    if orderPotential == 1 and orderGeometry == 1:
-        key = 'electric(' + str(dim) + ',1)'
-        if key in _electrics:
-            return _electrics[key]( prefix=prefix, keyword=keyword, worldComm=worldComm, subprefix=subprefix, modelRep=modelRep )
-
-    if orderGeometry != 1:
-        raise RuntimeError('Electric solver currently supports only geometry order 1')
 
     if dim not in _electrics_dynamic:
         raise RuntimeError('Electric solver electric(' + str(dim) + ',' + str(orderPotential) + ')/G' + str(orderGeometry) + ' not existing')

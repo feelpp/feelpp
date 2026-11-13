@@ -152,6 +152,9 @@ macro( genLibHeat )
       CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heat/heatconfig.h.in
       )
   endif()
+  if ( HEAT_ORDERPOLY STREQUAL "Dynamic" AND HEAT_ORDERGEO STREQUAL "Dynamic" )
+    set_target_properties(${HEAT_LIB_NAME} PROPERTIES OUTPUT_NAME "feelpp_toolbox_heat_lib_${HEAT_DIM}d")
+  endif()
 endmacro(genLibHeat)
 
 
@@ -203,6 +206,9 @@ macro( genLibElectric )
       FILES_SOURCES ${ELECTRIC_CODEGEN_SOURCES}
       CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electric/electricconfig.h.in
       )
+  endif()
+  if ( ELECTRIC_ORDERPOLY STREQUAL "Dynamic" AND ELECTRIC_ORDERGEO STREQUAL "Dynamic" )
+    set_target_properties(${ELECTRIC_LIB_NAME} PROPERTIES OUTPUT_NAME "feelpp_toolbox_electric_lib_${ELECTRIC_DIM}d")
   endif()
 endmacro(genLibElectric)
 
@@ -930,6 +936,9 @@ macro( genLibThermoElectric )
       )
   endif()
 
+  if ( THERMOELECTRIC_T_ORDER STREQUAL "Dynamic" AND THERMOELECTRIC_P_ORDER STREQUAL "Dynamic" AND THERMOELECTRIC_ORDERGEO STREQUAL "Dynamic" )
+    set_target_properties(${THERMOELECTRIC_LIB_NAME} PROPERTIES OUTPUT_NAME "feelpp_toolbox_thermoelectric_lib_${THERMOELECTRIC_DIM}d")
+  endif()
 endmacro(genLibThermoElectric)
 
 #############################################################################

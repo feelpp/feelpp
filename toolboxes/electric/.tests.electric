@@ -2,3 +2,15 @@ busbar_2d --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/busbar/2d.cfg --direct
 busbar_3d --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/busbar/3d.cfg --directory=toolboxes/testsuite/electric/busbar/3d
 quarter-turn_2d --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/quarter-turn/2d.cfg --directory=toolboxes/testsuite/electric/quarter-turn/2d
 quarter-turn_3d --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/quarter-turn/3d.cfg --directory=toolboxes/testsuite/electric/quarter-turn/3d
+busbar_2d_P1G3 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/busbar/2d.cfg --case.discretization=P1G3 --directory=toolboxes/testsuite/electric/busbar/2d/P1G3
+busbar_2d_P2G1 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/busbar/2d.cfg --case.discretization=P2G1 --directory=toolboxes/testsuite/electric/busbar/2d/P2G1
+busbar_2d_P3G2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/busbar/2d.cfg --case.discretization=P3G2 --directory=toolboxes/testsuite/electric/busbar/2d/P3G2
+busbar_2d_P2G3 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/busbar/2d.cfg --case.discretization=P2G3 --directory=toolboxes/testsuite/electric/busbar/2d/P2G3
+busbar_2d_P4G3 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/busbar/2d.cfg --case.discretization=P4G3 --directory=toolboxes/testsuite/electric/busbar/2d/P4G3
+busbar_2d_P5G1 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/busbar/2d.cfg --case.discretization=P5G1 --directory=toolboxes/testsuite/electric/busbar/2d/P5G1
+busbar_3d_P1G3 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/busbar/3d.cfg --case.discretization=P1G3 --directory=toolboxes/testsuite/electric/busbar/3d/P1G3
+busbar_3d_P2G1 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/busbar/3d.cfg --case.discretization=P2G1 --directory=toolboxes/testsuite/electric/busbar/3d/P2G1
+busbar_3d_P3G2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/busbar/3d.cfg --case.discretization=P3G2 --directory=toolboxes/testsuite/electric/busbar/3d/P3G2
+busbar_3d_P2G3 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/busbar/3d.cfg --case.discretization=P2G3 --directory=toolboxes/testsuite/electric/busbar/3d/P2G3
+busbar_3d_P4G3 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/busbar/3d.cfg --case.discretization=P4G3 --electric.gmsh.hsize=0.25 --directory=toolboxes/testsuite/electric/busbar/3d/h0.25/P4G3
+busbar_3d_P5G1 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/busbar/3d.cfg --case.discretization=P5G1 --electric.gmsh.hsize=0.25 --directory=toolboxes/testsuite/electric/busbar/3d/h0.25/P5G1

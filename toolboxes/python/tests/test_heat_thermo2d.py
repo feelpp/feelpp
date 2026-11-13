@@ -10,5 +10,5 @@ heat_thermo2d_cases = [
 
 
 @pytest.mark.parametrize("casefile,dim,order", heat_thermo2d_cases)
-def test_heat_thermo2d(casefile, dim, order):
-    run_heat_case(casefile, dim, order)
+def test_heat_thermo2d(casefile, dim, order, case_repository):
+    run_heat_case(casefile, dim, order, repository=case_repository)

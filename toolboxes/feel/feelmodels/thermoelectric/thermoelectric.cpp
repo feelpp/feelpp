@@ -1,30 +1,9 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-  This file is part of the Feel library
-
-  Author(s): Vincent Chabannes <vincent.chabannes@feelpp.org>
-       Date: 2016-12-12
-
-  Copyright (C) 2016 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-/**
-   \file thermoelectric.cpp
-   \author Vincent Chabannes <vincent.chabannes@feelpp.org>
-   \date 2016-12-12
+/*
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2016-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
 #include <feel/feelmodels/thermoelectric/thermoelectric.hpp>
@@ -42,12 +21,20 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::ThermoElectric( std::string const& prefix,
                                                     std::string const& keyword,
                                                     worldcomm_ptr_t const& worldComm,
                                                     std::string const& subPrefix,
-                                                    ModelBaseRepository const& modelRep )
+                                                    ModelBaseRepository const& modelRep,
+                                                    RuntimeOrder temperatureOrder,
+                                                    RuntimeOrder potentialOrder,
+                                                    RuntimeOrder geometryOrder )
     :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
     ModelPhysics<mesh_type::nDim>( "thermo-electric" ),
-    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep )
+    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep ),
+    M_runtimeOrderTemperature( validatedOrder<typename heat_model_type::basis_temperature_type>(temperatureOrder) ),
+    M_runtimeOrderPotential( validatedOrder<typename electric_model_type::basis_electricpotential_type>(potentialOrder) ),
+    M_runtimeOrderGeo( validatedOrder<typename heat_model_type::convex_type>(geometryOrder) )
 {
+    if ( temperatureOrder.value < 1 || potentialOrder.value < 1 || geometryOrder.value < 1 )
+        throw std::invalid_argument("Thermoelectric FE and geometry orders must be positive");
     this->log("ThermoElectric","constructor", "start" );
 
     std::string nameFileConstructor = this->scalabilityPath() + "/" + this->scalabilityFilename() + ".ThermoElectricConstructor.data";
@@ -93,7 +80,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initMesh()
         super_type::super_model_meshes_type::setup( this->modelProperties().jsonData().at("Meshes"), {this->keyword()} );
     if ( this->doRestart() )
         super_type::super_model_meshes_type::setupRestart( this->keyword() );
-    super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
+    super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword(), M_runtimeOrderGeo );
 
     CHECK( this->mesh() ) << "mesh generation fail";
 
@@ -165,12 +152,13 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updatePhysics( typename super_physics_type::
     if ( !M_heatModel )
     {
         M_heatModel = std::make_shared<heat_model_type>(prefixvm(this->prefix(),"heat"), "heat", this->worldCommPtr(),
-                                                        this->subPrefix(), this->repository() );
+                                                        this->subPrefix(), this->repository(), ModelBaseCommandLineOptions{},
+                                                        M_runtimeOrderTemperature, M_runtimeOrderGeo );
     }
     if ( !M_electricModel )
     {
         M_electricModel = std::make_shared<electric_model_type>(prefixvm(this->prefix(),"electric"), "electric", this->worldCommPtr(),
-                                                                this->subPrefix(), this->repository() );
+                                                                this->subPrefix(), this->repository(), M_runtimeOrderPotential, M_runtimeOrderGeo );
     }
 
     physicsTree.addChild( M_heatModel, models );

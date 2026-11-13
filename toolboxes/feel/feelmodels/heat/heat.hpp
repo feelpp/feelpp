@@ -1,32 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-  This file is part of the Feel library
-
-  Author(s): Vincent Chabannes <vincent.chabannes@feelpp.org>
-       Date: 2014-06-04
-
-  Copyright (C) 2014 Université Joseph Fourier (Grenoble I)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-/**
-   \file heat.hpp
-   \author Vincent Chabannes <vincent.chabannes@feelpp.org>
-   \date 2014-06-04
+/*
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2014-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
  */
-
 
 #ifndef FEELPP_TOOLBOXES_HEAT_HPP
 #define FEELPP_TOOLBOXES_HEAT_HPP 1
@@ -83,13 +62,13 @@ class Heat : public ModelNumerical,
         // mesh
         typedef ConvexType convex_type;
         static inline const uint16_type nDim = convex_type::nDim;
-        static inline const uint16_type nOrderGeo = convex_type::nOrder;
+        static constexpr int nOrderGeo = convex_type::is_order_dynamic ? Dynamic : convex_type::nOrder;
         static inline const uint16_type nRealDim = convex_type::nRealDim;
         typedef Mesh<convex_type> mesh_type;
         typedef std::shared_ptr<mesh_type> mesh_ptrtype;
         // basis
-        static inline const uint16_type nOrderTemperature = BasisTemperatureType::nOrder;
-        static inline const uint16_type nOrderPoly = nOrderTemperature;
+        static constexpr int nOrderTemperature = BasisTemperatureType::is_order_dynamic ? Dynamic : BasisTemperatureType::nOrder;
+        static constexpr int nOrderPoly = nOrderTemperature;
         typedef BasisTemperatureType basis_temperature_type;
         // function space temperature
         typedef FunctionSpace<mesh_type, bases<basis_temperature_type> > space_temperature_type;
@@ -123,7 +102,9 @@ class Heat : public ModelNumerical,
                 worldcomm_ptr_t worldcomm = args.get_else(_worldcomm,Environment::worldCommPtr());
                 auto && repository = args.get_else(_repository,ModelBaseRepository{});
                 auto && vm = args.get_else(_vm, create_program_options( prefix ) );
-                return std::make_shared<self_type>( prefix, keyword, worldcomm, "", repository, ModelBaseCommandLineOptions{vm} );
+                auto polynomialOrder = args.get_else(_runtime_order, RuntimeOrder{ basis_temperature_type::is_order_dynamic ? 1 : nOrderTemperature });
+                auto geometryOrder = args.get_else(_order, RuntimeOrder{ convex_type::is_order_dynamic ? 1 : nOrderGeo });
+                return std::make_shared<self_type>( prefix, keyword, worldcomm, "", repository, ModelBaseCommandLineOptions{vm}, polynomialOrder, geometryOrder );
             }
 
         static Feel::po::options_description create_program_options( std::string const& prefix = "heat" ) { return heat_options( prefix );}
@@ -133,7 +114,12 @@ class Heat : public ModelNumerical,
               worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
               std::string const& subPrefix  = "",
               ModelBaseRepository const& modelRep = ModelBaseRepository(),
-              ModelBaseCommandLineOptions const& modelOptions = ModelBaseCommandLineOptions{} );
+              ModelBaseCommandLineOptions const& modelOptions = ModelBaseCommandLineOptions{},
+              RuntimeOrder polynomialOrder = RuntimeOrder{ basis_temperature_type::is_order_dynamic ? 1 : nOrderTemperature },
+              RuntimeOrder geometryOrder = RuntimeOrder{ convex_type::is_order_dynamic ? 1 : nOrderGeo } );
+
+        uint16_type orderTemperature() const { return M_runtimeOrderTemperature.value; }
+        uint16_type orderGeometry() const { return M_runtimeOrderGeo.value; }
 
         std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
 
@@ -468,6 +454,8 @@ class Heat : public ModelNumerical,
             }
 
     protected :
+        RuntimeOrder M_runtimeOrderTemperature;
+        RuntimeOrder M_runtimeOrderGeo;
 
         Range<mesh_type,MESH_ELEMENTS> M_rangeMeshElements;
 

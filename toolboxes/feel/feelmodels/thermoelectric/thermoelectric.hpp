@@ -1,30 +1,10 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-  This file is part of the Feel library
-
-  Author(s): Vincent Chabannes <vincent.chabannes@feelpp.org>
-       Date: 2016-12-12
-
-  Copyright (C) 2016 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-/**
-   \file thermoelectric.hpp
-   \author Vincent Chabannes <vincent.chabannes@feelpp.org>
-   \date 2016-12-12
+/*
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2016-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
 #ifndef FEELPP_TOOLBOXES_THERMOELECTRIC_HPP
@@ -65,7 +45,7 @@ public:
     typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
 
     // exporter
-    typedef Exporter<mesh_type,mesh_type::nOrder> export_type;
+    typedef Exporter<mesh_type,mesh_type::is_order_dynamic ? Dynamic : mesh_type::nOrder> export_type;
     typedef std::shared_ptr<export_type> export_ptrtype;
 
     //___________________________________________________________________________________//
@@ -74,7 +54,10 @@ public:
                     std::string const& keyword = "thermoelectric",
                     worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
                     std::string const& subPrefix = "",
-                    ModelBaseRepository const& modelRep = ModelBaseRepository() );
+                    ModelBaseRepository const& modelRep = ModelBaseRepository(),
+                    RuntimeOrder temperatureOrder = RuntimeOrder{ heat_model_type::basis_temperature_type::is_order_dynamic ? 1 : heat_model_type::nOrderTemperature },
+                    RuntimeOrder potentialOrder = RuntimeOrder{ electric_model_type::basis_electricpotential_type::is_order_dynamic ? 1 : electric_model_type::nOrderPolyElectricPotential },
+                    RuntimeOrder geometryOrder = RuntimeOrder{ mesh_type::is_order_dynamic ? 1 : mesh_type::nOrder } );
 
     std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
 
@@ -231,6 +214,9 @@ public :
         }
 
 private :
+    RuntimeOrder M_runtimeOrderTemperature;
+    RuntimeOrder M_runtimeOrderPotential;
+    RuntimeOrder M_runtimeOrderGeo;
     heat_model_ptrtype M_heatModel;
     electric_model_ptrtype M_electricModel;
 

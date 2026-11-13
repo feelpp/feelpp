@@ -1,8 +1,7 @@
 /*
  * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
- * SPDX-FileCopyrightText: 2006,2007 Université Joseph Fourier (Grenoble I)
- * SPDX-FileCopyrightText: 2010-2016 University of Strasbourg
+ * SPDX-FileCopyrightText: 2005-2026 University of Strasbourg
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 /**
@@ -14,6 +13,7 @@
 #define __FEELPP_VF_OPERATORS_HPP 1
 
 #include <feel/feelpoly/quadmapped.hpp>
+#include <feel/feelpoly/polynomialbasis.hpp>
 
 # include <boost/preprocessor/comparison/less.hpp>
 # include <boost/preprocessor/logical/and.hpp>
@@ -114,7 +114,7 @@ Eigen::Map<const Eigen::Matrix<ValueType,ShapeM*ShapeP,ShapeN>>  convertEigenMat
 # /* List of applicative operators. */
 # define VF_OPERATORS \
    BOOST_PP_TUPLE_TO_LIST( \
-      16, \
+      18, \
       (                                                                 \
        ( OpId   , id   , id   , 0, 0, 0, 0          , RankSame,false, 0, 1 ), \
        ( OpN    , normal    , normalComponent    , 1, 0, 0, vm::NORMAL_COMPONENT|vm::KB|vm::NORMAL , RankDown,false, 0, 1 ), \
@@ -131,6 +131,8 @@ Eigen::Map<const Eigen::Matrix<ValueType,ShapeM*ShapeP,ShapeN>>  convertEigenMat
        ( OpCurlZ, curlz, curlz, 1, 1, 2, vm::CURL|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
        ( OpHess , hess , hess,  0, 0, 0, vm::KB|vm::HESSIAN|vm::SECOND_DERIVATIVE , RankUp2,false,-2,1 ), \
        ( OpLap  , laplacian, laplacian,  0, 0, 0, vm::KB|vm::LAPLACIAN|vm::SECOND_DERIVATIVE , RankSame,false,-2,1 ), \
+       ( OpGradDiv, graddiv, graddiv, 1, 0, 0, vm::JACOBIAN|vm::KB|vm::GRADDIV, RankSame,false,-2,1 ), \
+       ( OpCurlCurl, curlcurl, curlcurl, 1, 0, 0, vm::JACOBIAN|vm::KB|vm::CURLCURL, RankSame,false,-2,1 ), \
        ( OpTrace  , trace, trace,  0, 0, 0, vm::TRACE , Rank0,false,0,1 ) \
                                                                         ) \
    ) \
@@ -317,7 +319,9 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                           typename mpl::if_<mpl::equal_to<mpl::int_<return_value_type::rank>, \
                                                                           mpl::int_<1> >, \
                                                             mpl::identity<Shape<TheDim, Vectorial, VF_OPERATOR_TRANSPOSE(O)> >, \
-                                                            mpl::identity<Shape<TheDim, Tensor2, false> > >::type>::type::type shape_type; \
+                                                            mpl::identity<std::conditional_t<(return_value_type::rank == 3 && rank == 1), \
+                                                                ShapeGeneric<TheDim,TheDim*TheDim,TheDim>, \
+                                                                Shape<TheDim, Tensor2, false>>> >::type>::type::type shape_type; \
                 using type = shape_type;                                \
             };                                                          \
             using evaluate_type = Eigen::Matrix<value_type,             \
@@ -342,12 +346,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 operator()( TheExpr... e) { return *this; }             \
                                                                         \
             uint16_type polynomialOrder() const {                       \
-                using _basis_type = typename element_type::functionspace_type::basis_type; \
-                int baseOrder;                                          \
-                if constexpr ( _basis_type::is_order_dynamic )          \
-                    baseOrder = this->e().functionSpace()->order(); \
-                else                                                    \
-                    baseOrder = _basis_type::nOrder;                    \
+                int baseOrder = Feel::detail::polynomialOrder( *this->e().functionSpace()->fe() ); \
                 /* Differentiating Qk retains degree k in untouched coordinates. */ \
                 if constexpr ( geoelement_type::is_hypercube && functionspace_type::nDim > 1 && VF_OPERATOR_DIFFORDERIM(O) < 0 ) \
                     return baseOrder;                                   \
@@ -355,7 +354,11 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 return (imorder_test<0)?0:imorder_test;                 \
             }                                                           \
                                                                         \
-            bool isPolynomial() const { return true; }                  \
+            bool isPolynomial() const {                               \
+                if constexpr ( is_hdiv_conforming || is_hcurl_conforming || vm::has_graddiv_v<context> || vm::has_curlcurl_v<context> ) \
+                    return geoelement_type::is_simplex && this->e().functionSpace()->mesh()->order() == 1; \
+                return true;                                           \
+            }                                                          \
                                                                         \
             element_type const& e() const { return M_v; }              \
             bool useInterpWithConfLoc() const { return M_useInterpWithConfLoc; } \

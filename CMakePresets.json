@@ -36,6 +36,17 @@
          "name": "doxygen"
       },
       {
+         "configurePreset": "toolbox-dynamic",
+         "jobs": 20,
+         "name": "toolbox-dynamic",
+         "targets": [
+            "feelpp",
+            "feelpp_toolbox_heat",
+            "feelpp_toolbox_electric",
+            "feelpp_toolbox_thermoelectric"
+         ]
+      },
+      {
          "configurePreset": "release-cpp20-cmake",
          "jobs": 25,
          "name": "release-cpp20-cmake"
@@ -648,6 +659,9 @@
          "name": "release-clang-spack-cpu-openmpi"
       },
       {
+         "cacheVariables": {
+            "FEELPP_ENABLE_SIMPLE_WEB_SERVER": "OFF"
+         },
          "inherits": [
             "release-clang-spack"
          ],
@@ -808,6 +822,7 @@
             "FEELPP_ENABLE_MOR": "OFF",
             "FEELPP_ENABLE_PYTHON": "ON",
             "FEELPP_ENABLE_QUICKSTART": "OFF",
+            "FEELPP_ENABLE_SIMPLE_WEB_SERVER": "OFF",
             "FEELPP_ENABLE_TESTS": "OFF",
             "FEELPP_ENABLE_TOOLBOXES": "OFF",
             "FEELPP_USE_EXTERNAL_CLN": "ON"
@@ -902,6 +917,42 @@
             "feelpp"
          ],
          "name": "feelpp-spack-mpich"
+      },
+      {
+         "binaryDir": "${sourceDir}/build/toolbox-dynamic",
+         "cacheVariables": {
+            "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/toolbox-dynamic",
+            "FEELPP_ENABLE_ASCIIDOCTOR": "OFF",
+            "FEELPP_ENABLE_BENCHMARKS": "OFF",
+            "FEELPP_ENABLE_DOCUMENTATION": "OFF",
+            "FEELPP_ENABLE_FEELPP_PYTHON": "OFF",
+            "FEELPP_ENABLE_MOR": "OFF",
+            "FEELPP_ENABLE_PYTHON": "OFF",
+            "FEELPP_ENABLE_PYTHON_WRAPPING": "OFF",
+            "FEELPP_ENABLE_QUICKSTART": "OFF",
+            "FEELPP_ENABLE_RESEARCH": "OFF",
+            "FEELPP_ENABLE_TESTS": "OFF",
+            "FEELPP_ENABLE_TOOLBOXES": "ON",
+            "FEELPP_TOOLBOXES_ENABLE": "OFF",
+            "FEELPP_TOOLBOXES_ENABLE_ADVECTION": "OFF",
+            "FEELPP_TOOLBOXES_ENABLE_CFPDE": "OFF",
+            "FEELPP_TOOLBOXES_ENABLE_ELECTRIC": "ON",
+            "FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS": "OFF",
+            "FEELPP_TOOLBOXES_ENABLE_FSI": "OFF",
+            "FEELPP_TOOLBOXES_ENABLE_HDG": "OFF",
+            "FEELPP_TOOLBOXES_ENABLE_HEAT": "ON",
+            "FEELPP_TOOLBOXES_ENABLE_LEVELSET": "OFF",
+            "FEELPP_TOOLBOXES_ENABLE_MAXWELL": "OFF",
+            "FEELPP_TOOLBOXES_ENABLE_MESHALE": "OFF",
+            "FEELPP_TOOLBOXES_ENABLE_MULTIFLUID": "OFF",
+            "FEELPP_TOOLBOXES_ENABLE_PYTHON": "OFF",
+            "FEELPP_TOOLBOXES_ENABLE_SOLIDMECHANICS": "OFF",
+            "FEELPP_TOOLBOXES_ENABLE_THERMOELECTRIC": "ON"
+         },
+         "description": "Build Feel++ and the dynamic heat, electric and thermoelectric C++ toolboxes",
+         "displayName": "Dynamic heat, electric and thermoelectric",
+         "inherits": "default",
+         "name": "toolbox-dynamic"
       },
       {
          "description": "Build only the Feel++ library Component and install in /usr/local",

@@ -3,27 +3,23 @@ import feelpp.core as fppc
 from feelpp.toolboxes.core import *
 
 has_heat = False
-_heats = None
+_heats_dynamic = None
 try:
     from ._heat import *
 
-    _heats={
-        'heat(2,1)':Heat_2DP1,
-        'heat(2,2)':Heat_2DP2,
-        'heat(3,1)':Heat_3DP1,
-        'heat(3,2)':Heat_3DP2,
-    }
+    _heats_dynamic = {2: Heat_2DDynamic, 3: Heat_3DDynamic}
     has_heat = True
 except ImportError as e:
     print('Import feelpp.toolboxes.heat failed: Feel++ Toolbox Heat is not available')
     pass  # module doesn't exist, deal with it.
 
 
-def heat(dim=2, order=1, worldComm=None, keyword="heat", prefix="heat", subprefix="", modelRep=None,verbose=0):
+def heat(dim=2, order=1, worldComm=None, keyword="heat", prefix="heat", subprefix="", modelRep=None,verbose=0,orderGeometry=1):
     """create a heat toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
     order -- the polynomial order for the temperature (default: 1)
+    orderGeometry -- the geometry order (default: 1)
     worldComm -- the parallel communicator for the mesh (default: fppc.Environment::worldCommPtr())
     keyword -- the json keyword for the toolbox (default: heat)
     prefix -- the prefix for the toolbox command line and .cfg options (default: heat)
@@ -31,13 +27,17 @@ def heat(dim=2, order=1, worldComm=None, keyword="heat", prefix="heat", subprefi
     """
     if not has_heat:
         raise Exception('Heat toolbox is not enabled in Feel++')
+    for value in (order, orderGeometry):
+        if not isinstance(value, int) or not 1 <= value <= 65535:
+            raise ValueError("Heat orders must be integers between 1 and 65535")
     if worldComm is None:
         worldComm = fppc.Environment.worldCommPtr()
     key='heat('+str(dim)+','+str(order)+')'
     if worldComm.isMasterRank() and verbose > 0:
         print(f"Toolbox {key} created.")
-    if key not in _heats:
-        raise RuntimeError('Heat solver '+key+' not existing')
     if modelRep is None:
         modelRep = ModelBaseRepository()
-    return _heats[key](prefix=prefix, keyword=keyword, worldComm=worldComm, subprefix=subprefix, modelRep=modelRep)
+    if dim not in _heats_dynamic:
+        raise RuntimeError('Heat solver '+key+' not existing')
+    return _heats_dynamic[dim](prefix=prefix, keyword=keyword, worldComm=worldComm,
+                               subprefix=subprefix, modelRep=modelRep, order=order, orderGeometry=orderGeometry)
