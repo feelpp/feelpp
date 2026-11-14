@@ -73,9 +73,10 @@ For the MPICH core, dispatch with `targets=spack:mpich`, `only=feelpp`, and
 `spack_components=true`. The MPICH target has no full, Testsuite, Quickstart,
 Toolboxes, or MOR image jobs.
 
-The OpenMPI 5 full and core presets disable Simple-Web-Server, as does the
-Resolute package build. The bundled server requires a compiled Boost.System
-library that is absent from the environment's Boost 1.90 installation.
+The OpenMPI 5 full and core presets and the MPICH core preset disable
+Simple-Web-Server, as does the Resolute package build. The bundled server
+requires a compiled Boost.System library that is absent from these Spack
+environments' Boost 1.90 installations.
 The bundled EigenRand 0.6.0.rc2 supports the environment's Eigen 5 as well as
 Eigen 3.3.4 and later. Its test is registered when the integration is available.
 
