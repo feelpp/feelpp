@@ -1,29 +1,17 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim: set syntax=cpp fenc=utf-8 ft=tcl et sw=4 ts=4 sts=4
-
-  This file is part of the Feel library
-
-  Author(s): Thomas Lantz
-       Date: 2015-04-27
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+/*
+ * SPDX-FileCopyrightText: 2015-2026 Feel++ Consortium
+ * SPDX-FileContributor: Thomas Lantz
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/** @file test_integrateQuadra.cpp
+ * @brief Data-driven quadrature and projection checks sharing one suite-owned mesh.
+ */
 /// [all]
 
 #define BOOST_TEST_MODULE test_integrateQuadra
 #include <boost/test/data/test_case.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/format.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/testsuite.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
@@ -37,9 +25,12 @@
 #include <feel/feelpoly/multiscalequadrature.hpp>
 #include <feel/feelvf/ginac.hpp>
 #include <feel/feelfilters/exporter.hpp>
+#include <memory>
+#include <stdexcept>
 
 using namespace Feel;
 
+/** @brief Describe the quadrature test and retain its original authorship. */
 inline
 AboutData
 makeAbout()
@@ -57,36 +48,69 @@ makeAbout()
 
 namespace bdata = boost::unit_test::data;
 
+/** @brief Own the common mesh for one suite, within the Feel++ environment lifetime. */
+class QuadratureMeshFixture
+{
+public:
+    /** Reference quadrilateral mesh used by every expression dataset. */
+    using MeshType = Mesh<Hypercube<2>>;
+    /** Owning mesh handle; data fixtures retain it only during their test case. */
+    using MeshPtr = typename MeshType::mesh_ptrtype;
+
+    /** @brief Prepare this test's expression directory and generate the mesh once. */
+    QuadratureMeshFixture()
+    {
+        // Preserve CTest's distinct serial/MPI repositories, including --rm cleanup.
+        if ( Feel::Environment::isMasterRank() )
+            fs::create_directories( fs::path( Feel::Environment::exprRepository() ) );
+        Feel::Environment::worldComm().barrier();
+        M_mesh = createGMSHMesh( _mesh=new MeshType,
+                                _desc=domain( _name="polymere", _xmax=1, _ymax=1 ) );
+        s_mesh = M_mesh;
+    }
+
+    /** @brief Release the suite owner before the global Feel++ environment tears down. */
+    ~QuadratureMeshFixture() = default;
+
+    /** @brief Acquire the active suite mesh without giving a global variable ownership. */
+    static MeshPtr sharedMesh()
+    {
+        auto mesh = s_mesh.lock();
+        if ( !mesh ) throw std::logic_error( "quadrature mesh suite fixture is not active" );
+        return mesh;
+    }
+
+private:
+    /** Sole mesh owner across datasets; destroyed with this suite fixture. */
+    MeshPtr M_mesh;
+    /** Non-owning access for data fixtures; safe after the Feel++ environment shuts down. */
+    inline static std::weak_ptr<MeshType> s_mesh;
+};
+
+/** @brief Give each expression case access to the suite-owned mesh. */
 class IntegrateQuadraFixture
 {
 public:
-    using mesh_type = Mesh<Hypercube<2>>;
-    using mesh_ptrtype = typename mesh_type::mesh_ptrtype;
+    /** @brief Retain the mesh for the current case, preserving independent expression state. */
+    IntegrateQuadraFixture() : mesh( QuadratureMeshFixture::sharedMesh() ) {}
 
-    IntegrateQuadraFixture()
-        : mesh( createGMSHMesh( _mesh=new mesh_type,
-                                 _desc=domain( _name="polymere", _xmax=1, _ymax=1 ) ) )
-    {
-        // Ensure repository exists for GiNaC-generated sources
-        Feel::Environment::changeRepository( _directory=boost::format( "test_integrateQuadra" ), _subdir=false );
-        const auto repoDir = Feel::Environment::repository().directory();
-        fs::create_directories( repoDir / "exprs" );
-        fs::create_directories( fs::path( Feel::Environment::exprRepository() ) );
-    }
-
-    mesh_ptrtype mesh;
+    /** Mesh shared across cases; each projection still owns its function-space state. */
+    QuadratureMeshFixture::MeshPtr mesh;
 };
 
 namespace
 {
+/** Relative tolerance for the default/multiscale quadrature comparison. */
 constexpr double kTolerancePct = 5.0;
 
+/** Independent polynomial and transcendental integrands. */
 const std::vector<std::string> kRunExprs = {
     "x:x:y",
     "x+y:x:y",
     "cos(x)*sin(y):x:y",
     "y*exp(x):x:y"};
 
+/** Projection datasets covering polynomial and transcendental behavior. */
 const std::vector<std::string> kResolExprs = {
     "sin(x):x:y",
     "x+y:x:y",
@@ -95,9 +119,10 @@ const std::vector<std::string> kResolExprs = {
 } // namespace
 
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() )
-BOOST_AUTO_TEST_SUITE( integrQuadra_suite )
+BOOST_AUTO_TEST_SUITE( integrQuadraSuite, *boost::unit_test::fixture<QuadratureMeshFixture>() )
 
-BOOST_DATA_TEST_CASE_F( IntegrateQuadraFixture, integrals_match_default_and_multiscale,
+/** @test Default and multiscale rules agree on volume and boundary integrals. */
+BOOST_DATA_TEST_CASE_F( IntegrateQuadraFixture, integralsMatchDefaultAndMultiscale,
                         bdata::make( kRunExprs ), exprString )
 {
     auto g = expr( exprString );
@@ -121,7 +146,8 @@ BOOST_DATA_TEST_CASE_F( IntegrateQuadraFixture, integrals_match_default_and_mult
     }
 }
 
-BOOST_DATA_TEST_CASE_F( IntegrateQuadraFixture, projection_matches_quadrature,
+/** @test Projection and quadrature produce the same L2 approximation. */
+BOOST_DATA_TEST_CASE_F( IntegrateQuadraFixture, projectionMatchesQuadrature,
                         bdata::make( kResolExprs ), exprString )
 {
     auto Vh = Pch<1>( mesh );

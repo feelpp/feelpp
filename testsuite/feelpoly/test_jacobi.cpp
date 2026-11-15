@@ -127,7 +127,7 @@ void checkDubiner( unsigned degree )
 BOOST_AUTO_TEST_SUITE( jacobi )
 
 /** @test Scalar/batch Jacobi values and derivatives match the independent oracle. */
-BOOST_DATA_TEST_CASE( batch_and_runtime_jacobi,
+BOOST_DATA_TEST_CASE( batchAndRuntimeJacobi,
     bdata::make( degrees ) * ( bdata::make( alpha ) ^ bdata::make( beta ) ) * bdata::make( batchSizes ),
     degree, a, b, batchSize )
 {
@@ -163,7 +163,7 @@ BOOST_DATA_TEST_CASE( batch_and_runtime_jacobi,
 using static_orders = boost::mp11::mp_list_c<int, 0, 1, 2, 3, 5, 10>;
 
 /** @test Static Jacobi instantiations share scalar value/derivative assertions. */
-BOOST_AUTO_TEST_CASE_TEMPLATE( static_jacobi, Order, static_orders )
+BOOST_AUTO_TEST_CASE_TEMPLATE( staticJacobi, Order, static_orders )
 {
     for ( std::size_t parameter = 0; parameter < alpha.size(); ++parameter )
         for ( double x : samples )
@@ -172,8 +172,187 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( static_jacobi, Order, static_orders )
                              Order::value, alpha[parameter], beta[parameter], x );
 }
 
+/** @test Native Eigen batches retain static degree and share the runtime recurrence. */
+BOOST_AUTO_TEST_CASE_TEMPLATE( eigenJacobiStaticRuntime, Order, static_orders )
+{
+    constexpr int degree = Order::value;
+    JacobiPolynomial<degree> fixed{ 0.25, 0.75 };
+    JacobiPolynomial<Dynamic> runtime{ RuntimeOrder{ degree }, 0.25, 0.75 };
+    Eigen::Matrix<double, 7, 1> points;
+    for ( int q = 0; q < 7; ++q ) points( q ) = samples[q];
+    auto values = fixed.values( points );
+    auto derivatives = runtime.derivatives( points );
+    auto seconds = runtime.derivatives<2>( points );
+    static_assert( decltype( values )::rowsAtCompileTime == degree + 1 );
+    static_assert( decltype( values )::colsAtCompileTime == 7 );
+    static_assert( decltype( values )::usesInlineStorage );
+    static_assert( decltype( derivatives )::rowsAtCompileTime == Dynamic );
+    static_assert( decltype( derivatives )::colsAtCompileTime == 7 );
+    static_assert( !decltype( derivatives )::usesInlineStorage );
+    for ( int q = 0; q < 7; ++q )
+        for ( int n = 0; n <= degree; ++n )
+        {
+            auto expected = polynomial_test::jacobi( n, 0.25, 0.75, points( q ) );
+            checkNear( values.matrix()( n, q ), expected.value );
+            checkNear( derivatives.matrix()( n, q ), expected.gradient[0] );
+            checkNear( seconds.matrix()( n, q ), expected.hessian[0] );
+        }
+    for ( int q = 0; q < 7; ++q )
+        checkNear( fixed.template derivative<2>( points( q ) ),
+                   polynomial_test::jacobi( degree, 0.25, 0.75, points( q ) ).hessian[0] );
+    auto const* coefficients = values.matrix().data();
+    fixed.valuesInto( values, points );
+    BOOST_CHECK( values.matrix().data() == coefficients );
+    fixed.derivativesInto( values, points );
+    BOOST_CHECK( values.matrix().data() == coefficients );
+    BOOST_CHECK_SMALL( ( values.matrix() - derivatives.matrix() ).norm(), 1e-12 );
+    Eigen::RowVectorXd empty( 0 );
+    auto noSamples = fixed.values( empty );
+    BOOST_CHECK_EQUAL( noSamples.rows(), degree + 1 );
+    BOOST_CHECK_EQUAL( noSamples.cols(), 0 );
+}
+
+/** @test Strided coordinates and aliased rows are evaluated before output replacement. */
+BOOST_AUTO_TEST_CASE( eigenJacobiStridesAndAliasing )
+{
+    JacobiPolynomial<Dynamic> polynomial{ RuntimeOrder{ 5 }, 0.25, 0.75 };
+    Eigen::Matrix<double, 3, 7, Eigen::ColMajor> coordinates =
+        Eigen::Matrix<double, 3, 7, Eigen::ColMajor>::Zero();
+    for ( int q = 0; q < 7; ++q ) coordinates( 1, q ) = samples[q];
+    auto values = polynomial.values( coordinates.row( 1 ) );
+    auto expected = values.matrix().eval();
+    values.matrix().row( 0 ) = coordinates.row( 1 );
+    polynomial.valuesInto( values, values.matrix().row( 0 ) );
+    BOOST_CHECK_SMALL( ( values.matrix() - expected ).norm(), 1e-12 );
+    auto expressionValues = polynomial.values( ( 2. * coordinates.row( 1 ) ).eval() / 2. );
+    BOOST_CHECK_SMALL( ( expressionValues.matrix() - expected ).norm(), 1e-12 );
+    BOOST_CHECK_THROW( (void)polynomial.values( Eigen::MatrixXd::Zero( 2, 3 ) ), std::invalid_argument );
+    ublas::vector<double> legacyPoints( 1 );
+    BOOST_CHECK_THROW( (void)JacobiBatchEvaluation( -1, 0., 0., legacyPoints ), std::invalid_argument );
+}
+
+/** @test Mixed compile-time vector axes preserve orientation and snapshot aliased input. */
+BOOST_AUTO_TEST_CASE( mixedExtentJacobiViews )
+{
+    JacobiPolynomial<3> polynomial;
+    Eigen::RowVector3d points;
+    points << -.7, -.2, .3;
+    auto table = polynomial.values( points );
+    auto expected = table.matrix().eval();
+    table.matrix().row( 0 ) = points;
+    polynomial.valuesInto( table, table.matrix().topRows( 1 ) );
+    BOOST_CHECK_SMALL( ( table.matrix() - expected ).norm(), 1e-12 );
+    Eigen::Matrix<double, 3, Eigen::Dynamic> columns( 3, 2 );
+    columns.col( 0 ) = points.transpose();
+    auto columnValues = polynomial.values( columns.leftCols( 1 ) );
+    static_assert( decltype( columnValues )::colsAtCompileTime == 3 );
+    BOOST_CHECK_SMALL( ( columnValues.matrix() - expected ).norm(), 1e-12 );
+}
+
+/** @test Caller-owned destinations preserve strided aliases, derivative zeros and shape checks. */
+BOOST_AUTO_TEST_CASE_TEMPLATE( borrowedPolynomialDestinations, Order, static_orders )
+{
+    constexpr int degree = Order::value;
+    Eigen::RowVector3d points;
+    points << -.7, -.2, .3;
+    auto checkValues = [&]( auto const& kernel )
+    {
+        auto expected = kernel.values( points );
+        Eigen::Matrix<double, Dynamic, Dynamic, Eigen::RowMajor> storage( degree + 1, 11 );
+        storage.setConstant( -99. );
+        auto output = storage.block( 0, 2, degree + 1, 3 );
+        int const aliasRow = degree > 1 ? degree - 1 : 0;
+        output.row( aliasRow ) = points;
+        kernel.valuesInto( output, output.row( aliasRow ) );
+        BOOST_CHECK_SMALL( ( output - expected.matrix() ).norm(), 1e-12 );
+        BOOST_CHECK_EQUAL( storage( 0, 0 ), -99. );
+        BOOST_CHECK_EQUAL( storage( degree, 10 ), -99. );
+        auto wrong = storage.topRows( degree );
+        BOOST_CHECK_THROW( kernel.valuesInto( wrong, points ), std::invalid_argument );
+    };
+    JacobiPolynomial<degree> polynomial{ .25, .75 };
+    checkValues( polynomial );
+    checkValues( ScalingPowers<degree>{} );
+    Eigen::MatrixXd derivatives = Eigen::MatrixXd::Constant( degree + 1, 3, -99. );
+    polynomial.template derivativesInto<2>( derivatives, points );
+    auto expected = polynomial.template derivatives<2>( points );
+    BOOST_CHECK_SMALL( ( derivatives - expected.matrix() ).norm(), 1e-12 );
+    BOOST_CHECK_SMALL( derivatives.topRows( std::min( degree + 1, 2 ) ).norm(), 1e-30 );
+}
+
+/** @test Static/runtime scaling tables use one recurrence for all batch sizes. */
+BOOST_AUTO_TEST_CASE_TEMPLATE( scalingPowersStaticRuntime, Order, static_orders )
+{
+    ScalingPowers<Order::value> fixed;
+    ScalingPowers<Dynamic> runtime{ RuntimeOrder{ Order::value } };
+    for ( auto size : batchSizes )
+    {
+        Eigen::RowVectorXd points( size );
+        for ( unsigned q = 0; q < size; ++q ) points( q ) = samples[q];
+        auto values = fixed.values( points );
+        auto dynamicValues = runtime.values( points );
+        for ( int n = 0; n <= Order::value; ++n )
+            for ( unsigned q = 0; q < size; ++q )
+                BOOST_CHECK_SMALL( values.matrix()( n, q ) - std::pow( ( 1. - points( q ) ) / 2., n ), 1e-13 );
+        BOOST_CHECK_SMALL( ( values.matrix() - dynamicValues.matrix() ).norm(), 1e-13 );
+        if ( size != 0 )
+        {
+            auto expected = values.matrix().eval();
+            values.matrix().row( 0 ) = points;
+            fixed.valuesInto( values, values.matrix().row( 0 ) );
+            BOOST_CHECK_SMALL( ( values.matrix() - expected ).norm(), 1e-13 );
+        }
+    }
+}
+
+/** Triangle/tetrahedron coordinate-map datasets. */
+using coordinateDimensions = boost::mp11::mp_list_c<int, 2, 3>;
+
+/** @test Coordinate maps preserve fixed spatial/sample extents and legacy limits. */
+BOOST_AUTO_TEST_CASE_TEMPLATE( simplexCoordinateMaps, Dimension, coordinateDimensions )
+{
+    constexpr int dim = Dimension::value;
+    Eigen::Matrix<double, dim, 3> collapsed = Eigen::Matrix<double, dim, 3>::Zero();
+    for ( int d = 0; d < dim; ++d )
+    {
+        collapsed( d, 1 ) = -0.7 + 0.2 * d;
+        collapsed( d, 2 ) = 0.1 + 0.2 * d;
+    }
+    auto cartesian = SimplexCoordinates<dim>::toCartesian( collapsed );
+    auto restored = SimplexCoordinates<dim>::toCollapsed( cartesian.matrix() );
+    static_assert( decltype( cartesian )::rowsAtCompileTime == dim );
+    static_assert( decltype( cartesian )::colsAtCompileTime == 3 );
+    BOOST_CHECK_SMALL( ( restored.matrix() - collapsed ).norm(), 1e-13 );
+    BOOST_CHECK_EQUAL( cartesian.matrix()( 0, 0 ), dim == 2 ? -.5 : -.75 );
+    BOOST_CHECK_EQUAL( cartesian.matrix()( dim - 1, 0 ), 0. );
+    Eigen::Matrix<double, dim, 1> vertex = Eigen::Matrix<double, dim, 1>::Constant( -1. );
+    vertex( dim - 1 ) = 1.;
+    auto representative = SimplexCoordinates<dim>::toCollapsed( vertex );
+    static_assert( decltype( representative )::usesInlineStorage );
+    BOOST_CHECK_EQUAL( representative.matrix()( 0, 0 ), dim == 2 ? -1. : 1. );
+    if constexpr ( dim == 3 ) BOOST_CHECK_EQUAL( representative.matrix()( 1, 0 ), -1. );
+    BOOST_CHECK_EQUAL( representative.matrix()( dim - 1, 0 ), 1. );
+    constexpr TheShape shape = dim == 2 ? TRIANGLE : TETRAHEDRON;
+    typename node<double>::type legacy( dim );
+    eigenMap( legacy ) = vertex;
+    details::CollapsedCoordinates<shape> map;
+    details::CollapsedCoordinates<shape> constructed( legacy );
+    BOOST_CHECK_SMALL( ( eigenMap( map( legacy ) ) - representative.matrix().col( 0 ) ).norm(), 1e-13 );
+    BOOST_CHECK_SMALL( ( eigenMap( constructed() ) - eigenMap( map() ) ).norm(), 1e-13 );
+    for ( int count : { 0, 1, 3 } )
+    {
+        typename matrix_node<double>::type batch( dim, count );
+        eigenMap( batch ) = cartesian.matrix().leftCols( count );
+        details::CollapsedPointCoordinates<shape> batchMap;
+        auto expected = SimplexCoordinates<dim>::toCollapsed( eigenMap( batch ) );
+        BOOST_CHECK_SMALL( ( eigenMap( batchMap( batch ) ) - expected.matrix() ).norm(), 1e-13 );
+        auto aliasedExpected = SimplexCoordinates<dim>::toCollapsed( eigenMap( batchMap() ) );
+        BOOST_CHECK_SMALL( ( eigenMap( batchMap( batchMap() ) ) - aliasedExpected.matrix() ).norm(), 1e-13 );
+    }
+}
+
 /** @test Simplex values/gradients agree for each degree and normalization policy. */
-BOOST_DATA_TEST_CASE( dubiner_against_polynomial_reference,
+BOOST_DATA_TEST_CASE( dubinerAgainstPolynomialReference,
     bdata::make( dimensions ) * bdata::make( simplexDegrees ) * bdata::make( normalization ),
     dimension, degree, normalized )
 {
@@ -187,7 +366,7 @@ BOOST_DATA_TEST_CASE( dubiner_against_polynomial_reference,
 }
 
 /** @test Higher-degree triangular modes remain accurate at boundary limits. */
-BOOST_DATA_TEST_CASE( high_degree_triangle_reference,
+BOOST_DATA_TEST_CASE( highDegreeTriangleReference,
     bdata::make( std::array<unsigned, 2>{ 8, 10 } ) * bdata::make( normalization ), degree, normalized )
 {
     if ( normalized )
@@ -197,7 +376,7 @@ BOOST_DATA_TEST_CASE( high_degree_triangle_reference,
 }
 
 /** @test Low-degree simplex Hessians match product-rule reference derivatives. */
-BOOST_DATA_TEST_CASE( simplex_hessians_against_polynomial_reference,
+BOOST_DATA_TEST_CASE( simplexHessiansAgainstPolynomialReference,
     bdata::make( dimensions ) * bdata::make( std::array<unsigned, 4>{ 0, 1, 2, 3 } ),
     dimension, degree )
 {

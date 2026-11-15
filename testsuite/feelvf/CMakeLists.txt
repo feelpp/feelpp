@@ -8,6 +8,9 @@ set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testvf")
 
 set(FEELPP_VF_TEST_TARGETS)
 
+feelpp_add_test( mixedassembly SRCS testmixedassembly.cpp )
+list(APPEND FEELPP_VF_TEST_TARGETS ${targetname})
+
 set(FEELPP_VF_SIMPLE_TESTS
     symbolic_ad_expr
     vf_operators

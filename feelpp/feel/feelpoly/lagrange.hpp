@@ -26,6 +26,8 @@
 #include <feel/feelpoly/meta.hpp>
 #include <feel/feelpoly/equispaced.hpp>
 #include <feel/feelpoly/fekete.hpp>
+#include <feel/feelpoly/recursivelgl.hpp>
+#include <feel/feelpoly/nodaltransform.hpp>
 
 #include <feel/feelpoly/dualbasis.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
@@ -51,10 +53,9 @@ namespace fem
 namespace details
 {
 /** @brief Point-set families that accept a runtime degree and expose entity coordinates. */
-template<template<class, int, class> class PointSetT, typename ConvexType, typename ValueType>
+template <template <class, int, class> class PointSetT, typename ConvexType, typename ValueType>
 concept RuntimePointSet = requires( RuntimeOrder ro,
-                                    PointSetT<ConvexType, Dynamic, ValueType> dyn_pset )
-{
+                                    PointSetT<ConvexType, Dynamic, ValueType> dyn_pset ) {
     { PointSetT<ConvexType, Dynamic, ValueType>( ro ) };
     { dyn_pset.order() } -> std::convertible_to<uint16_type>;
     { dyn_pset.nPoints() } -> std::convertible_to<uint32_type>;
@@ -62,21 +63,29 @@ concept RuntimePointSet = requires( RuntimeOrder ro,
     dyn_pset.pointsBySubEntity( uint16_type{}, uint16_type{}, uint16_type{} );
 };
 
+/** @brief A selected point family must implement the primal's actual order policy.
+ * @note Unsupported runtime families are rejected; select PointSetEquiSpaced
+ * explicitly when an equispaced compatibility construction is intended.
+ */
+template <typename Basis, template <class, int, class> class PointSetType>
+concept CompatibleLagrangePointSet = orderSpecification<Basis>() != Dynamic ||
+                                     RuntimePointSet<PointSetType, typename Basis::convex_type, typename Basis::value_type>;
+
 /**
  * @brief Nodal dual owning interpolation points with the primal order policy.
  * @tparam Basis Primal polynomial space supplying the effective expansion degree.
  * @tparam PointSetType Interpolation-node family used to construct the functionals.
  */
-template<typename Basis, template<class, int, class> class PointSetType>
+template <typename Basis, template <class, int, class> class PointSetType>
+    requires CompatibleLagrangePointSet<Basis, PointSetType>
 class LagrangeDual
-    :
-public DualBasis<Basis>
+    : public DualBasis<Basis>
 {
     typedef DualBasis<Basis> super;
-public:
 
+  public:
     inline static const uint16_type nDim = super::nDim;
-    inline static const uint16_type nOrder= super::nOrder;
+    inline static const uint16_type nOrder = super::nOrder;
 
     typedef typename super::primal_space_type primal_space_type;
     typedef typename primal_space_type::value_type value_type;
@@ -87,14 +96,17 @@ public:
     typedef typename reference_convex_type::node_type node_type;
 
     /** Requested interpolation-node policy with the primal order specification. */
-    using requested_pointset_type=PointSetType<convex_type,super::order_spec,value_type>;
-    /** Owned point set, retaining the established equispaced fallback when necessary. */
-    using pointset_type=mp::mp_if_c<super::is_order_dynamic &&
-        !RuntimePointSet<PointSetType,convex_type,value_type>,
-        PointSetEquiSpaced<convex_type,Dynamic,value_type>,requested_pointset_type>;
+    using requested_pointset_type = PointSetType<convex_type, super::order_spec, value_type>;
+    /** Owned point set; an explicit request always retains its selected family. */
+    using pointset_type = requested_pointset_type;
 
-    template< template<class, int, class> class TestPointSetType >
-    static constexpr bool is_pointset_v = std::is_base_of_v<TestPointSetType<convex_type, super::order_spec, value_type>,pointset_type >;
+    /** Runtime scalar family identifies the modal mathematics across facade/component policies. */
+    using CanonicalPrimal = typename primal_space_type::component_basis_type::template ChangeOrder<Dynamic>::type;
+    /** Immutable reference owner shared by equivalent effective degrees and exact coordinates. */
+    using ReferenceData = ::Feel::detail::LagrangeReferenceData<CanonicalPrimal>;
+
+    template <template <class, int, class> class TestPointSetType>
+    static constexpr bool is_pointset_v = std::is_base_of_v<TestPointSetType<convex_type, super::order_spec, value_type>, pointset_type>;
     inline static const uint16_type numPoints = reference_convex_type::numPoints;
     inline static const uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;
     inline static const uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
@@ -135,7 +147,7 @@ public:
         M_pts( d.M_pts ),
         M_points_face( d.M_points_face ),
         M_points_by_subentity( d.M_points_by_subentity ),
-        M_fset( d.M_fset ),
+        M_referenceData( d.M_referenceData ),
         M_pset( d.M_pset )
         {}
 
@@ -158,7 +170,6 @@ public:
         M_eid( M_convex_ref.topologicalDimension()+1 ),
         M_pts( pts.points() ),
         M_points_face( nFacesInConvex ),
-        M_fset( primal ),
         M_pset( std::move(pts) )
     {
         if(M_pts.size2()!=primal.localDof())
@@ -176,7 +187,14 @@ public:
             }
         }
 
-        M_fset.setFunctionalSet( functional::makePointEvaluationFunctionals( primal, M_pts ) );
+        // Evaluate the common scalar modal basis once, only when exact reference data are absent.
+        using ModalBasis = typename primal_space_type::basis_type;
+        M_referenceData = ::Feel::detail::LagrangeReferenceCache<CanonicalPrimal>::get(
+            RuntimeOrder{ primal.order() }, eigenMap( M_pts ), [&]
+            {
+                auto modal = ModalBasis::template values<super::order_spec>( M_pts, RuntimeOrder{ primal.order() } );
+                return modal.matrix().eval();
+            } );
     }
 
     ~LagrangeDual() = default;
@@ -237,11 +255,70 @@ public:
             return M_points_by_subentity.at( 0 ).at( vertex );
         }
 
+    /** @brief Apply component point evaluations to any primal coefficient representation. */
     matrix_type operator()( primal_space_type const& pset ) const
     {
-        return M_fset( pset );
+        auto const& scalar = M_referenceData->transform.vandermonde();
+        auto dual = componentDiagonalMatrix( scalar );
+        decltype(auto) primal = primal_space_type::polyset_type::toMatrix( pset.coefficients() );
+        if ( dual.cols() != primal.cols() )
+            throw std::invalid_argument( "Lagrange dual and primal expansion dimensions disagree" );
+        return ::Feel::detail::materializePolynomialMatrix<matrix_type>( dual * primal.transpose() );
     }
+
+    /** @brief Retain immutable nodal reference data independently of this dual's lifetime. */
+    [[nodiscard]] std::shared_ptr<ReferenceData const> nodalTransform() const noexcept
+    {
+        return M_referenceData;
+    }
+
+    /** @brief Whether direct canonical coefficients preserve the supplied primal's Ciarlet problem.
+     * @note Modified primals use the generic checked solve, including its singularity diagnostics.
+     */
+    [[nodiscard]] bool hasCanonicalPrimal() const
+    {
+        auto coefficients = this->primalSpace().coefficients();
+        Eigen::Index const modes = M_referenceData->transform.coefficients().cols();
+        constexpr int components = primal_space_type::nComponents;
+        if ( coefficients.rows() != modes * components * components || coefficients.cols() != modes )
+            return false;
+        for ( Eigen::Index row = 0; row < coefficients.rows(); ++row )
+            for ( Eigen::Index column = 0; column < coefficients.cols(); ++column )
+            {
+                Eigen::Index const function = row / components;
+                bool const diagonal = function / modes == row % components && function % modes == column;
+                if ( coefficients( row, column ) != value_type( diagonal ) )
+                    return false;
+            }
+        return true;
+    }
+
+    /** @brief Return canonical nodal coefficients using the established component packing.
+     * @note Static modal columns survive the shared dynamic reference owner. Function rows
+     * remain independent of field components, order policy and sample-point columns.
+     */
+    [[nodiscard]] auto nodalCoefficients() const
+    {
+        auto const packed = componentDiagonalMatrix( M_referenceData->transform.coefficients() );
+        auto const interleaved = primal_space_type::polyset_type::toType( packed );
+        constexpr int columns = ::Feel::detail::polynomialCoefficientExtent<primal_space_type, super::order_spec>();
+        using Result = typename ::Feel::detail::EigenMatrixBuffer<value_type, Dynamic, columns>::matrix_type;
+        return Result( interleaved );
+    }
+
 private:
+
+    /** @brief Replicate one scalar node/mode matrix in component-major function order. */
+    template <typename Derived>
+    [[nodiscard]] static auto componentDiagonalMatrix( Eigen::MatrixBase<Derived> const& scalar )
+    {
+        constexpr int components = primal_space_type::nComponents;
+        using Matrix = typename ::Feel::detail::NodalPolynomialTransform<value_type>::Matrix;
+        Matrix result = Matrix::Zero( scalar.rows() * components, scalar.cols() * components );
+        for ( int component = 0; component < components; ++component )
+            result.block( component * scalar.rows(), component * scalar.cols(), scalar.rows(), scalar.cols() ) = scalar;
+        return result;
+    }
 
     /**
      * set the pointset at face \c f using points \c n
@@ -336,15 +413,16 @@ private:
     points_type M_pts;
     std::vector<points_type> M_points_face;
     std::vector<std::vector<points_type> > M_points_by_subentity;
-    FunctionalSet<primal_space_type> M_fset;
+    /** Scalar modal/nodal transform retained across copies and equivalent field/order policies. */
+    std::shared_ptr<ReferenceData const> M_referenceData;
     /** Interpolation nodes with the same static/runtime policy as the primal. */
     pointset_type M_pset;
-
 };
-}// details
+} // namespace details
 /// \endcond detail
 
-    class LagrangePolynomialSet {};
+class LagrangePolynomialSet
+{};
 /**
  * \class Lagrange
  * \brief Lagrange polynomial set

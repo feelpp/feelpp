@@ -60,12 +60,17 @@ public :
     /** @brief Construct the electrostatic point set from active coordinate tables.
      * @param interior Select interior-only nodes when nonzero.
      * @throws std::out_of_range If the requested interior coordinates are absent.
+     * @throws std::invalid_argument If a triangular interior table is requested on another cell.
      * @note Active triangular interior tables cover orders 3–7; lower orders
      * retain their existing base construction.
      */
     PointSetElectrostatic( int interior = 0 )
     {
-        if constexpr ( Order > 7 )
+        if constexpr ( Order > 2 && ( !Convex::is_simplex || Dim != 2 ) )
+        {
+            throw std::invalid_argument( "electrostatic interior tables require a triangle" );
+        }
+        else if constexpr ( Order > 7 )
         {
             throw std::out_of_range(
                 "PointSetElectrostatic: no interior coordinate table for order " +
@@ -77,7 +82,7 @@ public :
 
             points_type final_pts = G.points();
 
-            //Copies information about WarpBlend points
+            // Copies information about WarpBlend points
             this->setEid( G.getEid() );
             this->setPtE( G.getPtE() );
 
@@ -110,7 +115,6 @@ public :
 
                 else
                     final_pts = putInPointset ( final_pts, pts, G.interiorRangeById( 2, 0 ) );
-
             }
 
             this->setPoints( final_pts );

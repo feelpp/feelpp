@@ -253,14 +253,10 @@ update( geometric_mapping_context_ptrtype const& __gmc,
     }
 
     M_phi = M_pc.get()->phi();
-    M_gradphi = M_pc.get()->gradPtr();
+    M_gradphi = includes( M_pc.get()->requestedTables(), Evaluation::Gradients ) ? M_pc.get()->gradPtr() : nullptr;
     const uint16_type nDofsRuntime = this->nDofs();
     CHECK( M_phi.shape()[0] >= nDofsRuntime )
         << "invalid phi precompute size: phi rows=" << M_phi.shape()[0]
-        << " required dofs=" << nDofsRuntime;
-    CHECK( M_gradphi && M_gradphi->shape()[0] >= nDofsRuntime )
-        << "invalid grad precompute size: grad rows="
-        << ( M_gradphi ? M_gradphi->shape()[0] : 0 )
         << " required dofs=" << nDofsRuntime;
 
     update( __gmc );

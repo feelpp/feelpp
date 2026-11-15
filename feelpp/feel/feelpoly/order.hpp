@@ -17,6 +17,7 @@
 
 #include <cstddef>
 #include <limits>
+#include <numeric>
 #include <stdexcept>
 #include <type_traits>
 
@@ -320,14 +321,30 @@ makeOrderAware( RuntimeOrder order )
 
 namespace detail
 {
+/** @brief Multiply cardinalities only after checking the intermediate result.
+ * @throws std::length_error If the product exceeds `size_type`.
+ */
+[[nodiscard]] constexpr size_type checkedProduct( size_type left, size_type right )
+{
+    if ( right != 0 && left > std::numeric_limits<size_type>::max() / right )
+        throw std::length_error( "polynomial cardinality multiplication overflows" );
+    return left * right;
+}
+
+/** @brief Checked non-negative integer power, shared by both order modes. */
 constexpr size_type powInt( size_type base, int exp )
 {
+    if ( exp < 0 ) throw std::invalid_argument( "integer exponent must be non-negative" );
     size_type result = 1;
-    for ( int i = 0; i < exp; ++i )
-        result *= base;
+    for ( ; exp != 0; exp /= 2 )
+    {
+        if ( exp % 2 ) result = checkedProduct( result, base );
+        if ( exp > 1 ) base = checkedProduct( base, base );
+    }
     return result;
 }
 
+/** @brief Checked binomial coefficient, cancelling divisors before multiplication. */
 constexpr size_type binomial( int n, int k )
 {
     if ( k < 0 || k > n )
@@ -336,8 +353,31 @@ constexpr size_type binomial( int n, int k )
         k = n - k;
     size_type result = 1;
     for ( int i = 1; i <= k; ++i )
-        result = result * static_cast<size_type>( n - k + i ) / static_cast<size_type>( i );
+    {
+        auto numerator = static_cast<size_type>( n - k + i );
+        auto denominator = static_cast<size_type>( i );
+        auto const common = std::gcd( numerator, denominator );
+        numerator /= common;
+        denominator /= common;
+        // Integrality of the binomial recurrence makes the remaining divisor exact.
+        result = checkedProduct( result / denominator, numerator );
+    }
     return result;
+}
+
+/** Largest point/DoF cardinality addressable by the existing local-index API. */
+inline constexpr size_type maxLocalIndexCardinality =
+    std::numeric_limits<uint16_type>::max();
+
+/** @brief Narrow a count only after checking the local-index range.
+ * @throws std::length_error If `value` cannot be represented by `uint16_type`.
+ */
+[[nodiscard]] constexpr uint16_type checkedLocalIndexValue( size_type value )
+{
+    if ( value > maxLocalIndexCardinality )
+        throw std::length_error(
+            "Derived point/DoF count exceeds the uint16_type local-index limit" );
+    return static_cast<uint16_type>( value );
 }
 
 /** Shape selection for the shared nodal-cardinality kernel. */
@@ -357,18 +397,22 @@ enum class NodalCellKind
 template<NodalCellKind CellKind>
 struct NodalCardinality
 {
-    [[nodiscard]] static constexpr size_type total( int cellDim, int order ) noexcept
+    [[nodiscard]] static constexpr size_type total( int cellDim, int order )
     {
         if ( cellDim < 0 || order < 0 )
             return 0;
         if constexpr ( CellKind == NodalCellKind::Simplex )
+        {
+            if ( cellDim > std::numeric_limits<int>::max() - order )
+                throw std::length_error( "simplex degree plus dimension overflows" );
             return binomial( cellDim + order, cellDim );
+        }
         else
-            return powInt( static_cast<size_type>( order + 1 ), cellDim );
+            return powInt( static_cast<size_type>( order ) + 1, cellDim );
     }
 
     [[nodiscard]] static constexpr uint16_type onEntity(
-        int cellDim, int entityDim, int order ) noexcept
+        int cellDim, int entityDim, int order )
     {
         if ( cellDim < 0 || entityDim < 0 || entityDim > cellDim || order < 0 )
             return 0;
@@ -381,30 +425,30 @@ struct NodalCardinality
         {
             if ( order <= entityDim )
                 return 0;
-            return static_cast<uint16_type>( binomial( order - 1, entityDim ) );
+            return checkedLocalIndexValue( binomial( order - 1, entityDim ) );
         }
         else
         {
             if ( order < 2 )
                 return 0;
-            return static_cast<uint16_type>(
+            return checkedLocalIndexValue(
                 powInt( static_cast<size_type>( order - 1 ), entityDim ) );
         }
     }
 
-    [[nodiscard]] static constexpr uint16_type perVertex( int cellDim, int order ) noexcept
+    [[nodiscard]] static constexpr uint16_type perVertex( int cellDim, int order )
     {
         return onEntity( cellDim, 0, order );
     }
-    [[nodiscard]] static constexpr uint16_type perEdge( int cellDim, int order ) noexcept
+    [[nodiscard]] static constexpr uint16_type perEdge( int cellDim, int order )
     {
         return onEntity( cellDim, 1, order );
     }
-    [[nodiscard]] static constexpr uint16_type perFace( int cellDim, int order ) noexcept
+    [[nodiscard]] static constexpr uint16_type perFace( int cellDim, int order )
     {
         return onEntity( cellDim, 2, order );
     }
-    [[nodiscard]] static constexpr uint16_type perVolume( int cellDim, int order ) noexcept
+    [[nodiscard]] static constexpr uint16_type perVolume( int cellDim, int order )
     {
         return onEntity( cellDim, 3, order );
     }
@@ -412,24 +456,6 @@ struct NodalCardinality
 
 using SimplexCardinality = NodalCardinality<NodalCellKind::Simplex>;
 using HypercubeCardinality = NodalCardinality<NodalCellKind::Hypercube>;
-
-/** Largest point/DoF cardinality addressable by the local-index API. */
-inline constexpr size_type maxLocalIndexCardinality =
-    std::numeric_limits<uint16_type>::max();
-
-/**
- * @brief Narrow a derived count only after checking the local-index range.
- * @throws std::length_error when `value` cannot be represented by
- * `uint16_type`.
- */
-[[nodiscard]] constexpr uint16_type
-checkedLocalIndexValue( size_type value )
-{
-    if ( value > maxLocalIndexCardinality )
-        throw std::length_error(
-            "Derived point/DoF count exceeds the uint16_type local-index limit" );
-    return static_cast<uint16_type>( value );
-}
 
 /**
  * @brief Validate that a nodal order fits the local point/DoF index model.
@@ -440,7 +466,7 @@ validatedNodalOrder( int cellDim, RuntimeOrder order,
                      size_type components = 1 )
 {
     (void)checkedLocalIndexValue(
-        components * Cardinality::total( cellDim, order.value ) );
+        checkedProduct( components, Cardinality::total( cellDim, order.value ) ) );
     return order;
 }
 
@@ -461,73 +487,73 @@ constexpr size_type hypercubeDofStatic()
 }
 
 template <int Dim>
-constexpr size_type simplexDofDynamic( int order ) noexcept
+constexpr size_type simplexDofDynamic( int order )
 {
     return SimplexCardinality::total( Dim, order );
 }
 
 template <int Dim>
-constexpr size_type hypercubeDofDynamic( int order ) noexcept
+constexpr size_type hypercubeDofDynamic( int order )
 {
     return HypercubeCardinality::total( Dim, order );
 }
 
-constexpr size_type simplexTotal( uint16_type dim, uint16_type order ) noexcept
+constexpr size_type simplexTotal( uint16_type dim, uint16_type order )
 {
     return SimplexCardinality::total( dim, order );
 }
 
-constexpr uint16_type simplexPerVertex( uint16_type dim, uint16_type order ) noexcept
+constexpr uint16_type simplexPerVertex( uint16_type dim, uint16_type order )
 {
     return SimplexCardinality::perVertex( dim, order );
 }
 
-constexpr uint16_type simplexPerVertex( uint16_type order ) noexcept
+constexpr uint16_type simplexPerVertex( uint16_type order )
 {
     return SimplexCardinality::perVertex( 1, order );
 }
 
-constexpr uint16_type simplexPerEdge( uint16_type dim, uint16_type order ) noexcept
+constexpr uint16_type simplexPerEdge( uint16_type dim, uint16_type order )
 {
     return SimplexCardinality::perEdge( dim, order );
 }
 
-constexpr uint16_type simplexPerFace( uint16_type dim, uint16_type order ) noexcept
+constexpr uint16_type simplexPerFace( uint16_type dim, uint16_type order )
 {
     return SimplexCardinality::perFace( dim, order );
 }
 
-constexpr uint16_type simplexPerVolume( uint16_type dim, uint16_type order ) noexcept
+constexpr uint16_type simplexPerVolume( uint16_type dim, uint16_type order )
 {
     return SimplexCardinality::perVolume( dim, order );
 }
 
-constexpr size_type hypercubeTotal( uint16_type dim, uint16_type order ) noexcept
+constexpr size_type hypercubeTotal( uint16_type dim, uint16_type order )
 {
     return HypercubeCardinality::total( dim, order );
 }
 
-constexpr uint16_type hypercubePerVertex( uint16_type dim, uint16_type order ) noexcept
+constexpr uint16_type hypercubePerVertex( uint16_type dim, uint16_type order )
 {
     return HypercubeCardinality::perVertex( dim, order );
 }
 
-constexpr uint16_type hypercubePerVertex( uint16_type order ) noexcept
+constexpr uint16_type hypercubePerVertex( uint16_type order )
 {
     return HypercubeCardinality::perVertex( 1, order );
 }
 
-constexpr uint16_type hypercubePerEdge( uint16_type dim, uint16_type order ) noexcept
+constexpr uint16_type hypercubePerEdge( uint16_type dim, uint16_type order )
 {
     return HypercubeCardinality::perEdge( dim, order );
 }
 
-constexpr uint16_type hypercubePerFace( uint16_type dim, uint16_type order ) noexcept
+constexpr uint16_type hypercubePerFace( uint16_type dim, uint16_type order )
 {
     return HypercubeCardinality::perFace( dim, order );
 }
 
-constexpr uint16_type hypercubePerVolume( uint16_type dim, uint16_type order ) noexcept
+constexpr uint16_type hypercubePerVolume( uint16_type dim, uint16_type order )
 {
     return HypercubeCardinality::perVolume( dim, order );
 }
@@ -645,13 +671,13 @@ struct DofCalculator
         return ::Feel::detail::HypercubeCardinality::total( Dim, Order::value );
     }
 
-    static constexpr size_type simplex( int order ) noexcept
+    static constexpr size_type simplex( int order )
         requires( Order::is_dynamic )
     {
         return ::Feel::detail::SimplexCardinality::total( Dim, order );
     }
 
-    static constexpr size_type hypercube( int order ) noexcept
+    static constexpr size_type hypercube( int order )
         requires( Order::is_dynamic )
     {
         return ::Feel::detail::HypercubeCardinality::total( Dim, order );

@@ -1,6 +1,7 @@
 /*
  * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  * SPDX-FileContributor: Goncalo Pena <goncalo.pena@epfl.ch>
+ * SPDX-FileCopyrightText: 2026 University of Strasbourg
  *
  * SPDX-License-Identifier: LGPL-3.0-or-later
  */
@@ -24,24 +25,27 @@
 #include <feel/feelpoly/equispaced.hpp>
 #include <concepts>
 
-
 namespace Feel
 {
 
-template< class Convex,
+/** @brief Legacy explicit simplex warp-and-blend nodes with their historical ordering.
+ * @tparam Convex Simplex, or an equivalent one-dimensional segment.
+ * @tparam Order Static polynomial degree; runtime requests must use a runtime-capable policy.
+ * @tparam T Coordinate scalar type.
+ */
+template <class Convex,
           int Order,
-          typename T = double >
-class PointSetWarpBlend : public  PointSetInterpolation<Convex::nDim, Order, T, Simplex>
+          typename T = double>
+class PointSetWarpBlend : public PointSetInterpolation<Convex::nDim, Order, T, Simplex>
 {
 
-public :
-
+  public:
     typedef PointSetEquiSpaced<Convex, Order, T> super;
 
     typedef T value_type;
 
     static const uint32_type Dim = Convex::nDim;
-    static const uint16_type nPoints1D = Order+1;
+    static const uint16_type nPoints1D = Order + 1;
 
     typedef typename super::return_type return_type;
 
@@ -50,25 +54,32 @@ public :
     static const uint32_type topological_dimension = Convex::topological_dimension;
     static const uint32_type numPoints = super::numPoints;
 
-    typedef Reference<Convex, Dim, Convex::nOrder, /*Dim*/Convex::nRealDim, value_type> reference_convex_type;
+    typedef Reference<Convex, Dim, Convex::nOrder, /*Dim*/ Convex::nRealDim, value_type> reference_convex_type;
 
     typedef typename reference_convex_type::points_type points_type;
 
     reference_convex_type RefConv;
 
+    /** @brief Construct the existing tuned/asymptotic warp-and-blend distribution.
+     * @param interior Select cell-interior coordinates when nonzero.
+     * @throws std::invalid_argument If the cell is not a simplex or segment.
+     */
     PointSetWarpBlend( int interior = 0 )
     {
+        if constexpr ( !Convex::is_simplex && Dim != 1 )
+            throw std::invalid_argument( "warp-and-blend interpolation requires a simplex" );
+
         PointSetEquiSpaced<Convex, Order, T> G( interior );
 
         points_type final_pts = G.points();
 
-        //Copies information about EquiSpaced points
+        // Copies information about EquiSpaced points
         this->setEid( G.getEid() );
         this->setPtE( G.getPtE() );
 
         if ( Dim == 1 )
         {
-            PointSetGaussLobatto<Hypercube<1,1>, Order, value_type> gausslobatto( interior );
+            PointSetGaussLobatto<Hypercube<1, 1>, Order, value_type> gausslobatto( interior );
 
             final_pts = gausslobatto.points();
         }
@@ -522,5 +533,5 @@ private :
     }
 };
 
-} // Feel
+} // namespace Feel
 #endif /* __WarpBlend_H */

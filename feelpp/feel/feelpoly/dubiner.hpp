@@ -1,1162 +1,404 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-
-    SPDX-FileCopyrightText: 2007 Joseph Fourier University
-    SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
-
-    SPDX-License-Identifier: LGPL-3.0-or-later
-*/
-/**
-   \file dubiner.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-10-06
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileCopyrightText: 2007 Joseph Fourier University
+ * SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
+ * SPDX-License-Identifier: LGPL-3.0-or-later
  */
-#ifndef __Dubiner_H
-#define __Dubiner_H 1
-
-#include <vector>
-
-#include <boost/lambda/if.hpp>
-
+/** @file dubiner.hpp
+ * @brief Compatibility facade for regular-coordinate simplex modal tabulation.
+ */
+#ifndef FEELPP_FEELPOLY_DUBINER_HPP
+#define FEELPP_FEELPOLY_DUBINER_HPP 1
 #include <feel/feelmesh/refentity.hpp>
+#include <feel/feelmesh/pointset.hpp>
 #include <feel/feelalg/glas.hpp>
-#include <feel/feelalg/lu.hpp>
-#include <feel/feelpoly/expansions.hpp>
+#include <feel/feelpoly/polynomialcoefficients.hpp>
+#include <feel/feelpoly/referenceoperators.hpp>
+#include <feel/feelpoly/simplextabulation.hpp>
 #include <feel/feelpoly/meta.hpp>
 #include <feel/feelpoly/policy.hpp>
-#include <feel/feelmesh/pointset.hpp>
 #include <feel/feelpoly/equispaced.hpp>
 #include <feel/feelpoly/warpblend.hpp>
 #include <feel/feelpoly/expansiontypes.hpp>
+#include <array>
+#include <utility>
 
 namespace Feel
 {
-
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy,
-         typename T,
-         template<class> class StoragePolicy>
+namespace detail
+{
+/** Mathematical operator identity independent of a static facade's seed degree. */
+template <int Dimension, int RealDimension, typename T, bool Normalized, typename Matrix>
+struct DubinerOperatorFamily;
+} // namespace detail
+/** @brief Established simplex-basis facade, parameterized by its legacy storage policy. */
+template<uint16_type Dim, uint16_type RealDim, uint16_type Degree,
+         typename NormalizationPolicy, typename T, template<class> class StoragePolicy>
 class Dubiner;
 
-
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy = Normalized<true>,
-         typename T = double,
+/** @brief Geometry and compatibility-storage types for a Dubiner expansion. */
+template<uint16_type Dim, uint16_type RealDim, uint16_type Degree,
+         typename NormalizationPolicy = Normalized<true>, typename T = double,
          template<class> class StoragePolicy = StorageUBlas>
 struct DubinerTraits
 {
-    static inline const uint16_type nDim = Dim;
-    static inline const uint16_type nRealDim = RealDim;
-    static inline const uint16_type nOrder = Degree;
-    static inline const uint16_type nConvexOrderDiff = nDim+nOrder+1;
-    static inline const bool is_normalized = NormalizationPolicy::is_normalized;
-
-    /** @name Typedefs
-     */
-    //@{
-
-    /*
-     * numerical type
-     */
-    typedef T value_type;
-
-    template<uint16_type order, typename V = value_type>
+    /** Fixed topological dimension. */
+    static inline constexpr uint16_type nDim = Dim;
+    /** Fixed embedding dimension. */
+    static inline constexpr uint16_type nRealDim = RealDim;
+    /** Compile-time seed expansion degree. */
+    static inline constexpr uint16_type nOrder = Degree;
+    /** Interior interpolation lattice order used only by coefficient operators. */
+    static inline constexpr uint16_type nConvexOrderDiff = nDim + nOrder + 1;
+    /** Whether the modal convention is L2-orthonormal. */
+    static inline constexpr bool is_normalized = NormalizationPolicy::is_normalized;
+    /** Modal scalar type. */
+    using value_type = T;
+    /** @brief Simplex and reference geometry at a selected geometry order. */
+    template<uint16_type Order, typename V = value_type>
     struct Convex
     {
-        typedef Simplex<nDim, order, nDim/*nRealDim*/> type;
-        typedef Reference<Simplex<nDim, order, nDim/*nRealDim*/>, nDim, order, nDim/*nRealDim*/, V>  reference_type;
+        /** Topological reference simplex. */
+        using type = Simplex<nDim, Order, nDim>;
+        /** Reference geometry, independent of sampled modal storage. */
+        using reference_type = Reference<type, nDim, Order, nDim, V>;
     };
-
+    /** @brief Rebind the modal scalar while retaining geometry and storage policy. */
     template<typename NewT>
     struct ChangeValueType
     {
-        typedef Dubiner<Dim, RealDim, Degree, NormalizationPolicy, NewT, StoragePolicy> type;
-        typedef DubinerTraits<Dim, RealDim, Degree, NormalizationPolicy, NewT, StoragePolicy> traits_type;
+        /** Rebound basis facade. */
+        using type = Dubiner<Dim, RealDim, Degree, NormalizationPolicy, NewT, StoragePolicy>;
+        /** Rebound facade traits. */
+        using traits_type = DubinerTraits<Dim, RealDim, Degree, NormalizationPolicy, NewT, StoragePolicy>;
     };
-
+    /** @brief Rebind the compile-time expansion seed degree. */
     template<uint16_type NewOrder>
     struct ChangeOrder
     {
-        typedef Dubiner<Dim, RealDim, NewOrder, NormalizationPolicy, T, StoragePolicy> type;
-        typedef DubinerTraits<Dim, RealDim, NewOrder, NormalizationPolicy, T, StoragePolicy> traits_type;
+        /** Rebound basis facade. */
+        using type = Dubiner<Dim, RealDim, NewOrder, NormalizationPolicy, T, StoragePolicy>;
+        /** Rebound facade traits. */
+        using traits_type = DubinerTraits<Dim, RealDim, NewOrder, NormalizationPolicy, T, StoragePolicy>;
     };
-
-    /*
-     * Geometry where the polynomials are defined and constructed
-     */
-    typedef typename Convex<nOrder>::type convex_type;
-    typedef typename Convex<nOrder>::reference_type reference_convex_type;
-
-    typedef typename Convex<nConvexOrderDiff>::type diff_convex_type;
-    typedef typename Convex<nConvexOrderDiff>::reference_type diff_reference_convex_type;
-
+    /** Existing reference simplex type. */
+    using convex_type = typename Convex<nOrder>::type;
+    /** Existing reference geometry type. */
+    using reference_convex_type = typename Convex<nOrder>::reference_type;
+    /** Auxiliary geometry used only by lazy coefficient differentiation. */
+    using diff_convex_type = typename Convex<nConvexOrderDiff>::type;
+    /** Reference geometry associated with that auxiliary lattice. */
+    using diff_reference_convex_type = typename Convex<nConvexOrderDiff>::reference_type;
+    /** Existing interior-node policy, constructed only by an operator request. */
     using diff_pointset_type = if_t<nDim == 2,
-                                    PointSetWarpBlend<diff_convex_type, nConvexOrderDiff, value_type>,
-                                    PointSetEquiSpaced<diff_convex_type, nConvexOrderDiff, value_type>>;
+        PointSetWarpBlend<diff_convex_type, nConvexOrderDiff, value_type>,
+        PointSetEquiSpaced<diff_convex_type, nConvexOrderDiff, value_type>>;
+    /** Compatibility representation policy, separate from native numerical storage. */
+    using storage_policy = StoragePolicy<value_type>;
+    /** Owning compatibility result matrix. */
+    using matrix_type = typename storage_policy::matrix_type;
+    /** Compatibility direction collection. */
+    using vector_matrix_type = typename storage_policy::vector_matrix_type;
+    /** Compatibility point-batch matrix. */
+    using matrix_node_type = typename storage_policy::matrix_node_type;
+    /** Established point-batch argument representation. */
+    using points_type = typename storage_policy::points_type;
+    /** Established scalar-point argument representation. */
+    using node_type = typename storage_policy::node_type;
+};
 
-    /*
-     * storage policy
-     */
-    typedef StoragePolicy<value_type> storage_policy;
-    typedef typename storage_policy::matrix_type matrix_type;
-    typedef typename storage_policy::vector_matrix_type vector_matrix_type;
-    typedef typename storage_policy::matrix_node_type matrix_node_type;
-    typedef typename storage_policy::points_type points_type;
-    typedef typename storage_policy::node_type node_type;
-}; // class DubinerTraits
-
+/** @brief Established dispatch tag for simplex dimension and expansion degree. */
 template<int D, int O>
 struct DubinerTag
 {
-    static const int Dim = D;
-    static const int Order = O;
+    /** Reference dimension. */
+    static constexpr int Dim = D;
+    /** Expansion degree. */
+    static constexpr int Order = O;
 };
-/**
- * \class Dubiner
- * \brief Dubiner polynomial orthonormal basis
+
+/** @brief Degree-ordered Dubiner expansion with native regular-coordinate tabulation.
+ * @tparam Dim Reference dimension; native kernels cover one through three.
+ * @tparam RealDim Embedding dimension retained for existing FE descriptors.
+ * @tparam Degree Compile-time seed degree, independently of a requested runtime order.
+ * @tparam NormalizationPolicy Existing normalized or non-normalized convention.
+ * @tparam T Scalar type.
+ * @tparam StoragePolicy Representation used only at compatibility result boundaries.
  *
- * This class represents the Dubiner polynomials up to degree \c
- * Degree on a simplex in dimension \c Dim.
- *
- *
- * The dubiner polynomials in 1D, the segment \f$[-1;1]\f$ are defined
- * using Jacobi polynomials as follows:
- * \f$ \phi_i(x) = P_i^{0,0}(x) \f$
- *where \f$P_i^{0,0}(x)\f$ is the i-th Jacobi polynomial evaluated at
- * \f$x \in [-1;1]\f$ with weights \f$(0,0)\f$.
- *
- * \ingroup Polynomial
- * @author Christophe Prud'homme
- *
- * @see Robert C. Kirby Algorithm 839: FIAT - A New Paradigm for
- * Computing Finite Element Basis Functions, ACM Trans. Math. Software
- * Vol. 30 No. 4 pp 502-516
- *
- * @see M. Dubiner. Spectral methods on triangles and other
- * domains. J. Sci. Comput., 6:345–390, 1991.
- *
- * @see G.E. Karniadakis and S.J. Sherwin, ''Spectral/hp Element
- * Methods for CFD,'' Oxford University Press, March 1999.
- *
+ * Values, gradients and Hessians use the same division-free native recurrence.
+ * No auxiliary point set or factorization is constructed until d() is requested.
+ * Compile-time coefficient operators are immutable function-local data; their
+ * references survive copies and destruction of individual facade objects.
+ * @see https://doi.org/10.1145/1644001.1644006
  */
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy = Normalized<true>,
-         typename T = double,
+template<uint16_type Dim, uint16_type RealDim, uint16_type Degree,
+         typename NormalizationPolicy = Normalized<true>, typename T = double,
          template<class> class StoragePolicy = StorageUBlas>
 class Dubiner
-
 {
-
 public:
-    typedef DubinerTraits<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy> traits_type;
+    /** Geometry and compatibility-storage traits. */
+    using traits_type = DubinerTraits<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>;
+    /** Fixed reference dimension. */
+    static inline constexpr uint16_type nDim = traits_type::nDim;
+    /** Fixed embedding dimension. */
+    static inline constexpr uint16_type nRealDim = traits_type::nRealDim;
+    /** Compile-time expansion seed degree. */
+    static inline constexpr uint16_type nOrder = traits_type::nOrder;
+    /** Auxiliary interior lattice order for coefficient operators. */
+    static inline constexpr uint16_type nConvexOrderDiff = traits_type::nConvexOrderDiff;
+    /** Whether each mode is L2-normalized. */
+    static inline constexpr bool is_normalized = traits_type::is_normalized;
+    /** Established affine transformation contract. */
+    static inline constexpr bool isTransformationEquivalent = true;
+    /** Modal coefficients have no inter-element continuity. */
+    static inline constexpr bool isContinuous = false;
+    /** Established descriptor classification retained for compatibility. */
+    static inline constexpr bool is_product = true;
+    /** Modal continuity marker. */
+    using continuity_type = Discontinuous;
+    /** This facade type. */
+    using self_type = Dubiner;
+    /** The facade is its own expansion basis. */
+    using basis_type = self_type;
 
-    static inline const uint16_type nDim = traits_type::nDim;
-    static inline const uint16_type nRealDim = traits_type::nRealDim;
-    static inline const uint16_type nOrder = traits_type::nOrder;
-    static inline const uint16_type nConvexOrderDiff = traits_type::nConvexOrderDiff;
-    static inline const bool is_normalized = traits_type::is_normalized;
-    static inline const bool isTransformationEquivalent = true;
-    static inline const bool isContinuous = false;
-    static inline const bool is_product = true;
-    typedef Discontinuous continuity_type;
+    /** Native tabulation kernel with degree independent of this facade's seed. */
+    template <int OrderSpec>
+    using TabulationKernelFor = SimplexDubinerBasis<nDim, OrderSpec, T, is_normalized>;
+    /** Scalar type. */
+    using value_type = typename traits_type::value_type;
+    /** Existing convex descriptor. */
+    using convex_type = typename traits_type::convex_type;
+    /** Existing reference geometry. */
+    using reference_convex_type = typename traits_type::reference_convex_type;
+    /** Existing interior point policy, used lazily by d(). */
+    using diff_pointset_type = typename traits_type::diff_pointset_type;
+    /** Compatibility storage policy. */
+    using storage_policy = typename traits_type::storage_policy;
+    /** Owning compatibility matrix. */
+    using matrix_type = typename traits_type::matrix_type;
+    /** Compatibility direction collection. */
+    using vector_matrix_type = typename traits_type::vector_matrix_type;
+    /** Compatibility point matrix. */
+    using matrix_node_type = typename traits_type::matrix_node_type;
+    /** Existing point-batch argument type. */
+    using points_type = typename traits_type::points_type;
+    /** Existing single-point argument type. */
+    using node_type = typename traits_type::node_type;
 
-    /** @name Typedefs
-     */
-    //@{
-
-    typedef Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy> self_type;
-
-    /*
-     * for now can be used only as a basis but we might be interested
-     * to have then expressed in other basis like in the moment basis
-     */
-    typedef self_type basis_type;
-
-    typedef typename traits_type::value_type value_type;
-
-    /*
-     * Geometry where the polynomials are defined and constructed
-     */
-    typedef typename traits_type::convex_type convex_type;
-    typedef typename traits_type::reference_convex_type reference_convex_type;
-
-    typedef typename traits_type::diff_pointset_type diff_pointset_type;
-
-    /*
-     * storage policy
-     */
-    typedef typename traits_type::storage_policy storage_policy;
-    typedef typename traits_type::matrix_type matrix_type;
-    typedef typename traits_type::vector_matrix_type vector_matrix_type;
-    typedef typename traits_type::matrix_node_type matrix_node_type;
-    typedef typename traits_type::points_type points_type;
-    typedef typename traits_type::node_type node_type;
-
-    //@}
-
-    /** @name Constructors, destructor
-     */
-    //@{
-
-    Dubiner();
-    Dubiner( Dubiner const & d )
-        :
-        M_refconvex(),
-        M_pts( d.M_pts ),
-        M_D( d.M_D )
-    {
-
-    }
-    Dubiner( Dubiner && d ) = default;
-    
+    /** @brief Construct a stateless descriptor without geometry nodes or operator setup. */
+    constexpr Dubiner() = default;
+    /** @brief Copy the stateless descriptor; cached operators have independent ownership. */
+    Dubiner( Dubiner const& ) = default;
+    /** @brief Move the stateless descriptor. */
+    Dubiner( Dubiner&& ) = default;
+    /** @brief Assign an equivalent descriptor without changing operator references. */
+    Dubiner& operator=( Dubiner const& ) = default;
+    /** @brief Move an equivalent descriptor. */
+    Dubiner& operator=( Dubiner&& ) = default;
+    /** @brief Destroy the descriptor; cached operators retain independent lifetimes. */
     ~Dubiner() = default;
 
-    //@}
-
-    /** @name Operator overloads
-     */
-    //@{
-
-    self_type& operator=( self_type const& d )
+    /** @brief Evaluate the complete expansion at a single reference point. */
+    matrix_type operator()( node_type const& point ) const
     {
-        if ( this != &d )
+        if ( point.size() != nDim ) throw std::invalid_argument( "Dubiner point dimension mismatch" );
+        points_type points( nDim, 1 );
+        if constexpr ( EigenMatrix<points_type> ) points.col( 0 ) = point;
+        else eigenMap( points ).col( 0 ) = eigenMap( point );
+        return evaluate( points );
+    }
+    /** @brief Evaluate the complete expansion at a point batch. */
+    matrix_type operator()( points_type const& points ) const { return evaluate( points ); }
+    /** @brief Number of scalar modes at the compile-time seed degree. */
+    [[nodiscard]] size_type size() const { return ::Feel::detail::SimplexCardinality::total( nDim, nOrder ); }
+    /** @brief Compile-time seed expansion degree. */
+    [[nodiscard]] uint16_type degree() const noexcept { return nOrder; }
+    /** @brief Return this facade as its own expansion basis. */
+    [[nodiscard]] self_type const& basis() const noexcept { return *this; }
+    /** @brief Whether the expansion uses L2-normalized modes. */
+    [[nodiscard]] bool isNormalized() const noexcept { return is_normalized; }
+    /** @brief Established mathematical family name. */
+    [[nodiscard]] std::string familyName() const { return "dubiner"; }
+    /** @brief Identity coefficients in scalar mode space, independent of geometry nodes. */
+    [[nodiscard]] matrix_type coeff() const
+    {
+        auto const count = size();
+        if constexpr ( EigenMatrix<matrix_type> ) return matrix_type::Identity( count, count );
+        else return ublas::identity_matrix<value_type>( count, count );
+    }
+
+    /** @brief Evaluate compatibility values at the compile-time degree. */
+    [[nodiscard]] static matrix_type evaluate( points_type const& points )
+    { return evaluateWithOrder<nOrder>( points, RuntimeOrder{ nOrder } ); }
+    /** @brief Evaluate compatibility values at a requested runtime degree. */
+    [[nodiscard]] static matrix_type evaluate( points_type const& points, uint16_type order )
+    { return evaluateWithOrder<Dynamic>( points, RuntimeOrder{ order } ); }
+
+    /** @brief Evaluate native values at the compile-time degree. */
+    template<typename Points>
+    [[nodiscard]] static auto values( Points const& points ) requires( nDim > 0 )
+    { return values<nOrder>( points, RuntimeOrder{ nOrder } ); }
+    /** @brief Evaluate native values with a runtime expansion axis. */
+    template<typename Points>
+    [[nodiscard]] static auto values( Points const& points, RuntimeOrder order ) requires( nDim > 0 )
+    { return values<Dynamic>( points, order ); }
+    /** @brief Preserve an explicit static/runtime degree independently of the facade seed. */
+    template<int OrderSpec, typename Points>
+    [[nodiscard]] static auto values( Points const& points, RuntimeOrder order ) requires( nDim > 0 )
+    {
+        return ::Feel::detail::withEigenMatrix<value_type>( points, [&]( auto const& coordinates )
+        { return SimplexDubinerBasis<nDim, OrderSpec, value_type, is_normalized>{ order }.values( coordinates ); } );
+    }
+    /** @brief Evaluate native reference gradients at the compile-time degree. */
+    template<typename Points>
+    [[nodiscard]] static auto gradients( Points const& points ) requires( nDim > 0 )
+    { return gradients<nOrder>( points, RuntimeOrder{ nOrder } ); }
+    /** @brief Evaluate native reference gradients with runtime modal extents. */
+    template<typename Points>
+    [[nodiscard]] static auto gradients( Points const& points, RuntimeOrder order ) requires( nDim > 0 )
+    { return gradients<Dynamic>( points, order ); }
+    /** @brief Preserve explicit static/runtime order in the direct gradient recurrence. */
+    template<int OrderSpec, typename Points>
+    [[nodiscard]] static auto gradients( Points const& points, RuntimeOrder order ) requires( nDim > 0 )
+    {
+        return ::Feel::detail::withEigenMatrix<value_type>( points, [&]( auto const& coordinates )
+        { return SimplexDubinerBasis<nDim, OrderSpec, value_type, is_normalized>{ order }.gradients( coordinates ); } );
+    }
+    /** @brief Evaluate native reference Hessians at the compile-time degree. */
+    template<typename Points>
+    [[nodiscard]] static auto hessians( Points const& points ) requires( nDim > 0 )
+    { return hessians<nOrder>( points, RuntimeOrder{ nOrder } ); }
+    /** @brief Evaluate native reference Hessians at a runtime degree. */
+    template<typename Points>
+    [[nodiscard]] static auto hessians( Points const& points, RuntimeOrder order ) requires( nDim > 0 )
+    { return hessians<Dynamic>( points, order ); }
+    /** @brief Evaluate actual Hessians directly, without coefficient differentiation matrices. */
+    template<int OrderSpec, typename Points>
+    [[nodiscard]] static auto hessians( Points const& points, RuntimeOrder order ) requires( nDim > 0 )
+    {
+        return ::Feel::detail::withEigenMatrix<value_type>( points, [&]( auto const& coordinates )
+        { return SimplexDubinerBasis<nDim, OrderSpec, value_type, is_normalized>{ order }.hessians( coordinates ); } );
+    }
+
+    /** @brief Compatibility gradient collection evaluated by the regular recurrence. */
+    template<typename Derived>
+    [[nodiscard]] static vector_matrix_type derivate( ublas::matrix_expression<Derived> const& points )
+    { return derivativesWithOrder<nOrder>( points(), RuntimeOrder{ nOrder } ); }
+    /** @brief Compatibility gradients at the requested effective degree. */
+    template<typename Derived>
+    [[nodiscard]] static vector_matrix_type derivate( ublas::matrix_expression<Derived> const& points, uint16_type order )
+    { return derivativesWithOrder<Dynamic>( points(), RuntimeOrder{ order } ); }
+
+    /** @brief Borrow a thread-safe immutable coefficient operator, constructing it on first use. */
+    [[nodiscard]] matrix_type const& d( uint16_type direction ) const
+    {
+        if ( direction >= nDim ) throw std::out_of_range( "invalid Dubiner derivative direction" );
+        return differentiationOperators()[direction];
+    }
+    /** @brief Established spelling for borrowing a coefficient differentiation operator. */
+    [[nodiscard]] matrix_type const& derivate( uint16_type direction ) const { return d( direction ); }
+    /** @brief Own a coefficient operator at a requested degree.
+     * Interpolation/factorization is confined to this explicitly requested operator
+     * path. The owning compatibility result shares its construction with every direction.
+     */
+    [[nodiscard]] matrix_type d( uint16_type direction, uint16_type order ) const
+    {
+        if constexpr ( nDim == 0 ) throw std::out_of_range( "a point has no derivative directions" );
+        else
         {
-            M_pts = d.M_pts;
-            M_D = d.M_D;
+            if ( direction >= nDim ) throw std::out_of_range( "invalid Dubiner derivative direction" );
+            if ( order == nOrder ) return d( direction );
+            return referenceOperators( RuntimeOrder{ order } )->matrix( direction );
         }
-
-        return *this;
-    }
-    self_type& operator=( self_type && d ) = default;
-
-    //ublas::matrix_column<matrix_type const> operator()( node_type const& pt ) const
-    matrix_type operator()( node_type const& pt ) const
-    {
-        points_type pts( pt.size(), 1 );
-        ublas::column( pts, 0 ) = pt;
-        return evaluate( pts );
     }
 
-    matrix_type operator()( points_type const& pts ) const
+    /** Fixed-dimensional owned coefficient operators. */
+    using OperatorData = ::Feel::detail::ReferenceDerivativeOperators<matrix_type, nDim>;
+
+    /** @brief Retain every requested-order direction after one interpolation factorization. */
+    [[nodiscard]] static std::shared_ptr<OperatorData const> referenceOperators( RuntimeOrder degree )
     {
-        return evaluate( pts );
-    }
-
-    //@}
-
-    /** @name Accessors
-     */
-    //@{
-
-    /**
-     * Number of polynomials in set
-     */
-    size_type size() const
-    {
-        return convex_type::polyDims( nOrder );
-    }
-
-    /**
-     * \return the maximum degree of the Dubiner polynomial to be
-     * constructed
-     */
-    uint16_type degree() const
-    {
-        return nOrder;
-    }
-
-    /**
-     * \return self as a basis
-     */
-    self_type const& basis() const
-    {
-        return *this;
-    }
-
-    /**
-     * \return true if the Dubiner polynomials are normalized, false
-     * otherwise
-     */
-    bool isNormalized() const
-    {
-        return is_normalized;
-    }
-
-    /**
-     * \return the \c familyName()
-     */
-    std::string familyName() const
-    {
-        return "dubiner";
-    }
-
-    //@}
-
-    /** @name  Mutators
-     */
-    //@{
-
-
-    //@}
-
-    /** @name  Methods
-     */
-    //@{
-
-
-
-    /**
-     * Dubiner polynomials is an orthonormal basis, the coefficients
-     * of the polynomials of the basis are the canonical vectors and
-     * represented by the identity matrix (lines are polynomials and
-     * columns are the polynomial basis )
-     *
-     * This function is correct only if we use the Dubiner polynomials
-     * as a basis
-     */
-    matrix_type coeff() const
-    {
-#if 0
-        std::cout << "[Dubiner::coeff] coeff = "
-                  << ublas::identity_matrix<value_type>( reference_convex_type::polyDims( nOrder ), M_pts.size2() )
-                  << "\n";
-#endif
-        return ublas::identity_matrix<value_type>( reference_convex_type::polyDims( nOrder ), M_pts.size2() );
-    }
-
-
-    /**
-     * evaluate the Dubiner polynomials at a set of points \p __pts
-     *
-     * \arg __x is a set of points
-     */
-    static matrix_type evaluate( points_type const& __pts )
-    {
-        return evaluate( __pts, int_c<nDim>{} );
-    }
-
-    /**
-     * @brief Evaluate Dubiner polynomials up to given order
-     *
-     * For Dynamic order support: when order > nOrder (compile-time),
-     * falls back to runtime evaluation using dyna::JacobiBatchEvaluation.
-     *
-     * @param __pts Points to evaluate at
-     * @param order Polynomial order (can be > nOrder for dynamic case)
-     * @return Evaluation matrix
-     */
-    static matrix_type evaluate( points_type const& __pts, uint16_type order )
-    {
-        // For Dynamic order support: use runtime evaluation when order > nOrder
-        if ( order > nOrder )
+        if constexpr ( nDim == 0 )
+            return std::make_shared<OperatorData const>( OperatorData{ degree.value, {} } );
+        else
         {
-            return evaluateRuntime( __pts, order, int_c<nDim>{} );
+            degree = ::Feel::detail::validatedNodalOrder<::Feel::detail::SimplexCardinality>( nDim, degree );
+
+            // Keep the established static interpolation nodes and their numerical policy.
+            if ( degree.value == nOrder )
+            {
+                static auto const operators = []
+                {
+                    diff_pointset_type points( 1 );
+                    return std::make_shared<OperatorData const>( interpolateAtPoints<nOrder>(
+                        points.points(), RuntimeOrder{ nOrder } ) );
+                }();
+                return operators;
+            }
+
+            // Non-seed runtime orders share their existing equispaced interpolation policy.
+            using Family = ::Feel::detail::DubinerOperatorFamily<nDim, nRealDim, value_type, is_normalized, matrix_type>;
+            auto build = [degree]
+            {
+                using Cell = Simplex<nDim, 1, nDim>;
+                PointSetEquiSpaced<Cell, Dynamic, value_type> points{ degree };
+                return interpolateAtPoints<Dynamic>( points.points(), degree );
+            };
+            return ::Feel::detail::ReferenceOperatorCache<Family, OperatorData>::get( degree, build );
         }
-
-        // Static path: evaluate at compile-time order and truncate
-        auto full = evaluate( __pts );
-        const size_type nrows = convex_type::polyDims( order );
-        if ( nrows == full.size1() )
-            return full;
-        matrix_type out( nrows, full.size2() );
-        ublas::project( out, ublas::range( 0, nrows ), ublas::range( 0, full.size2() ) ) =
-            ublas::project( full, ublas::range( 0, nrows ), ublas::range( 0, full.size2() ) );
-        return out;
     }
 
-    template<typename AE>
-    static vector_matrix_type derivate( ublas::matrix_expression<AE>  const& __pts )
+  private:
+    /** @brief Use one numerical implementation for static and runtime point-selection policies. */
+    template <int OrderSpec, typename Points>
+    [[nodiscard]] static OperatorData interpolateAtPoints( Points const& points, RuntimeOrder degree )
     {
-        return derivate( __pts, int_c<nDim>{} );
+        auto values = self_type::values<OrderSpec>( points, degree );
+        auto gradients = self_type::gradients<OrderSpec>( points, degree );
+        return ::Feel::detail::interpolateReferenceOperators<nDim, matrix_type>(
+            degree, values, gradients, Feel::type_traits<value_type>::epsilon(), "Dubiner differentiation" );
     }
-
-    /**
-     * @brief Derivate Dubiner polynomials up to given order
-     *
-     * For Dynamic order support: when order > nOrder (compile-time),
-     * falls back to runtime derivation using dyna::JacobiBatchDerivation.
-     *
-     * @param __pts Points to evaluate at
-     * @param order Polynomial order (can be > nOrder for dynamic case)
-     * @return Vector of derivation matrices (one per spatial dimension)
-     */
-    template<typename AE>
-    static vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts, uint16_type order )
+    /** @brief Materialize only the requested compatibility value representation. */
+    template<int OrderSpec>
+    [[nodiscard]] static matrix_type evaluateWithOrder( points_type const& points, RuntimeOrder order )
     {
-        // For Dynamic order support: use runtime derivation when order > nOrder
-        if ( order > nOrder )
+        if constexpr ( nDim == 0 )
         {
-            return derivateRuntime( __pts, order, int_c<nDim>{} );
+            return ::Feel::detail::withEigenMatrix<value_type>( points, []( auto const& coordinates )
+            {
+                return ::Feel::detail::materializePolynomialMatrix<matrix_type>(
+                    Eigen::Matrix<value_type, 1, Eigen::Dynamic>::Ones( 1, coordinates.cols() ) );
+            } );
         }
-
-        // Static path: evaluate at compile-time order and truncate
-        auto full = derivate( __pts );
-        const size_type nrows = convex_type::polyDims( order );
-        if ( full.size() == 0 || nrows == full[0].size1() )
-            return full;
-        vector_matrix_type out( full.size() );
-        for ( size_type i = 0; i < full.size(); ++i )
+        else
         {
-            out[i].resize( nrows, full[i].size2() );
-            ublas::project( out[i], ublas::range( 0, nrows ), ublas::range( 0, full[i].size2() ) ) =
-                ublas::project( full[i], ublas::range( 0, nrows ), ublas::range( 0, full[i].size2() ) );
+            auto result = values<OrderSpec>( points, order );
+            return ::Feel::detail::materializePolynomialMatrix<matrix_type>( result.matrix() );
         }
-        return out;
     }
-
-    /**
-     * \brief derivatives of Dubiner polynomials
-     * the derivatives are computed at the nodes of the lattice
-     *
-     * \arg i index of the derivative (0 : x, 1 : y, 2 : z )
-     */
-    matrix_type const& d( uint16_type i ) const
+    /** @brief Adapt the direct gradient collection once at the compatibility boundary. */
+    template<int OrderSpec, typename Points>
+    [[nodiscard]] static vector_matrix_type derivativesWithOrder( Points const& points, RuntimeOrder order )
     {
-        return M_D[i];
-    }
-
-    /**
-     * @brief Compute derivation matrix at runtime for given order
-     *
-     * Used for dynamic polynomial order support. Computes the derivation
-     * matrix D_i such that d/dx_i f = D_i * f for polynomial coefficients f.
-     *
-     * @param i Derivative direction (0: x, 1: y, 2: z)
-     * @param order Polynomial order
-     * @return Derivation matrix of size (nBasis x nBasis) for the given order
-     */
-    matrix_type d( uint16_type i, uint16_type order ) const
-    {
-        // For compile-time order, just return precomputed matrix
-        if ( order == nOrder )
-            return M_D[i];
-
-        // Compute derivation matrix at runtime for given order
-        // Following the same algorithm as the constructor
-        // The pointset must have exactly nBasis points for the matrix to be square
-        // For Simplex in nDim dimensions: nBasis = (order+1)*(order+2)/2 for 2D, etc.
-        using diff_convex_type = Simplex<nDim, 1, nDim>;
-
-        // Use dynamic order pointset to get exactly nBasis points for the given order
-        // Use brace initialization to avoid most vexing parse
-        PointSetEquiSpaced<diff_convex_type, Dynamic, value_type> diff_pts_gen{ RuntimeOrder{ order } };
-        points_type diff_pts = diff_pts_gen.points();
-
-        // Evaluate basis at differentiation points - A should be square (nBasis x nBasis)
-        matrix_type A = evaluate( diff_pts, order );
-
-        // Invert A to get interpolation matrix
-        matrix_type D_mat = ublas::identity_matrix<value_type>( A.size1(), A.size2() );
-        LU<matrix_type> lu( A );
-        matrix_type C = lu.solve( D_mat );
-
-        // Compute derivatives at the points
-        vector_matrix_type d_vec = derivate( diff_pts, order );
-
-        // Derivation matrix: D_i = d_vec[i] * C
-        matrix_type result = ublas::prod( d_vec[i], C );
-        glas::clean( result );
+        vector_matrix_type result( nDim == 0 ? 1 : nDim );
+        if constexpr ( nDim == 0 )
+            result[0] = ::Feel::detail::materializePolynomialMatrix<matrix_type>(
+                Eigen::Matrix<value_type, 1, Eigen::Dynamic>::Zero( 1, points.size2() ) );
+        else
+        {
+            auto native = gradients<OrderSpec>( points, order );
+            for ( int d = 0; d < nDim; ++d )
+                result[d] = ::Feel::detail::materializePolynomialMatrix<matrix_type>( native[d].matrix() );
+        }
         return result;
     }
-
-    /**
-     * \brief derivatives of Dubiner polynomials
-     * the derivatives are computed at the nodes of the lattice
-     *
-     * \arg i index of the derivative (0 : x, 1 : y, 2 : z )
-     */
-    matrix_type const& derivate( uint16_type i ) const
+    /** @brief Construct every compile-time coefficient direction with one lazy factorization. */
+    [[nodiscard]] static std::array<matrix_type, nDim> const& differentiationOperators()
     {
-        return M_D[i];
+        static auto const operators = referenceOperators( RuntimeOrder{ nOrder } );
+        return operators->matrices;
     }
-
-    //@}
-
-private:
-private:
-
-
-    static matrix_type
-    evaluate( points_type const& __pts, int_c<0> )
-        {
-            matrix_type m(1,1);
-            m(0,0)=1;
-            return m;
-        }
-    /**
-     * Evaluation at a set of points of the expansion basis in 1D on
-     * the line
-     */
-    static matrix_type
-    evaluate( points_type const& __pts, int_c<1> )
-    {
-        // Delegate to unified implementation with compile-time order
-        return evaluateRuntime( __pts, nOrder, int_c<1>{} );
-    }
-
-    template<typename AE>
-    static vector_matrix_type
-    derivate( ublas::matrix_expression<AE> const& __pts, int_c<0> )
-        {
-            vector_matrix_type m(1);
-            m[0].resize(1,1);
-            m[0](0,0)=0;
-            return m;
-        }
-    /**
-     * derivation at a set of points of the expansion basis in 1D on
-     * the line
-     */
-    template<typename AE>
-    static vector_matrix_type
-    derivate( ublas::matrix_expression<AE> const& __pts, int_c<1> )
-    {
-        // Delegate to unified implementation with compile-time order
-        return derivateRuntime( __pts, nOrder, int_c<1>{} );
-    }
-
-    /**
-     * Evaluation at a set of points of the expansion basis in 2D on
-     * the triangle
-     */
-    static matrix_type evaluate( points_type const& __pts, int_c<2> );
-
-    /**
-     * derivation at a set of points of the expansion basis in 2D on
-     * the triangle
-     */
-    template<typename AE>
-    static vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts, int_c<2> );
-
-    /**
-     * Evaluation at a set of points of the expansion basis in 3D on
-     * the tetrahedron
-     */
-    static matrix_type evaluate( points_type const& __pts, int_c<3> );
-
-    /**
-     * derivation at a set of points of the expansion basis in 3D on
-     * the tetrahedron
-     */
-    template<typename AE>
-    static vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts, int_c<3> );
-
-    //
-    // Runtime evaluation methods for Dynamic order support
-    //
-
-    /**
-     * @brief Runtime evaluation in 0D (point)
-     */
-    static matrix_type evaluateRuntime( points_type const& __pts, uint16_type order, int_c<0> )
-    {
-        (void)order;
-        matrix_type m( 1, 1 );
-        m( 0, 0 ) = 1;
-        return m;
-    }
-
-    /**
-     * @brief Runtime evaluation in 1D (line)
-     */
-    static matrix_type evaluateRuntime( points_type const& __pts, uint16_type order, int_c<1> )
-    {
-        // Convert matrix_row to vector for JacobiBatchEvaluation
-        ublas::vector<value_type> pts( __pts.size2() );
-        for ( size_t i = 0; i < __pts.size2(); ++i )
-            pts( i ) = __pts( 0, i );
-
-        matrix_type m( dyna::JacobiBatchEvaluation( order, value_type( 0 ), value_type( 0 ), pts ) );
-
-        if ( is_normalized )
-        {
-            for ( uint16_type i = 0; i < m.size1(); ++i )
-                ublas::row( m, i ) *= math::sqrt( value_type( i ) + value_type( 0.5 ) );
-        }
-
-        return m;
-    }
-
-    /**
-     * @brief Runtime evaluation in 2D (triangle)
-     */
-    static matrix_type evaluateRuntime( points_type const& __pts, uint16_type order, int_c<2> );
-
-    /**
-     * @brief Runtime evaluation in 3D (tetrahedron)
-     */
-    static matrix_type evaluateRuntime( points_type const& __pts, uint16_type order, int_c<3> );
-
-    //
-    // Runtime derivation methods for Dynamic order support
-    //
-
-    /**
-     * @brief Runtime derivation in 0D (point)
-     */
-    template<typename AE>
-    static vector_matrix_type derivateRuntime( ublas::matrix_expression<AE> const& __pts,
-                                                uint16_type order, int_c<0> )
-    {
-        (void)order;
-        vector_matrix_type m( 1 );
-        m[0].resize( 1, 1 );
-        m[0]( 0, 0 ) = 0;
-        return m;
-    }
-
-    /**
-     * @brief Runtime derivation in 1D (line)
-     */
-    template<typename AE>
-    static vector_matrix_type derivateRuntime( ublas::matrix_expression<AE> const& __pts,
-                                                uint16_type order, int_c<1> )
-    {
-        vector_matrix_type D( 1 );
-        D[0].resize( order + 1, __pts().size2() );
-
-        // Copy matrix row to vector for JacobiBatchDerivation
-        ublas::vector<value_type> pts_vec( __pts().size2() );
-        for ( size_type k = 0; k < __pts().size2(); ++k )
-            pts_vec( k ) = __pts()( 0, k );
-
-        D[0] = dyna::JacobiBatchDerivation( order, value_type( 0 ), value_type( 0 ), pts_vec );
-
-        if ( is_normalized )
-            for ( uint16_type i = 0; i <= order; ++i )
-                ublas::row( D[0], i ) *= math::sqrt( value_type( i ) + value_type( 0.5 ) );
-
-        return D;
-    }
-
-    /**
-     * @brief Runtime derivation in 2D (triangle)
-     */
-    template<typename AE>
-    static vector_matrix_type derivateRuntime( ublas::matrix_expression<AE> const& __pts,
-                                                uint16_type order, int_c<2> );
-
-    /**
-     * @brief Runtime derivation in 3D (tetrahedron)
-     */
-    template<typename AE>
-    static vector_matrix_type derivateRuntime( ublas::matrix_expression<AE> const& __pts,
-                                                uint16_type order, int_c<3> );
-
-private:
-    reference_convex_type M_refconvex;
-    points_type M_pts;
-
-    /**
-     * Derivation matrix
-     * \note construct it only once per dubiner polynomials
-     */
-    std::vector<matrix_type> M_D;
-
-}; // class Dubiner
-
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy,
-         typename T,
-         template<class> class StoragePolicy>
-Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::Dubiner()
-    :
-    M_refconvex(),
-    M_pts( M_refconvex.makePoints( Dim, 0 ) ),
-    M_D( Dim )
-{
-    reference_convex_type refconvex;
-    // constructor pointset for differentiation only in
-    // the interior(1)
-    diff_pointset_type diff_pts( 1 );
-    matrix_type A( evaluate( diff_pts.points() ) );
-    
-    matrix_type D = ublas::identity_matrix<value_type>( A.size1(), A.size2()  );
-    LU<matrix_type> lu( A );
-    matrix_type C = lu.solve( D );
-    
-    vector_matrix_type d ( derivate( diff_pts.points() ) );
-    for ( size_type i = 0; i < d.size(); ++i )
-    {
-        M_D[i] = ublas::prod( d[i], C );
-        glas::clean( M_D[i] );
-    }
-    
-}
-
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy,
-         typename T,
-         template<class> class StoragePolicy>
-typename Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::matrix_type
-Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( points_type const& __pts, int_c<2> )
-{
-    // Delegate to unified implementation with compile-time order
-    return evaluateRuntime( __pts, nOrder, int_c<2>{} );
-}
-
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy,
-         typename T,
-         template<class> class StoragePolicy>
-template<typename AE>
-typename Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::vector_matrix_type
-Dubiner<Dim, RealDim,  Degree, NormalizationPolicy, T, StoragePolicy>::derivate( ublas::matrix_expression<AE> const& __pts, int_c<2> )
-{
-    // Delegate to unified implementation with compile-time order
-    return derivateRuntime( __pts, nOrder, int_c<2>{} );
-}
-
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy,
-         typename T,
-         template<class> class StoragePolicy>
-typename Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::matrix_type
-Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( points_type const& __pts, int_c<3> )
-{
-    // Delegate to unified implementation with compile-time order
-    return evaluateRuntime( __pts, nOrder, int_c<3>{} );
-}
-
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy,
-         typename T,
-         template<class> class StoragePolicy>
-template<typename AE>
-typename Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::vector_matrix_type
-Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivate( ublas::matrix_expression<AE> const& __pts, int_c<3> )
-{
-    // Delegate to unified implementation with compile-time order
-    return derivateRuntime( __pts, nOrder, int_c<3>{} );
-}
-
-//
-// Runtime evaluation implementations for Dynamic order support
-//
-
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy,
-         typename T,
-         template<class> class StoragePolicy>
-typename Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::matrix_type
-Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluateRuntime(
-    points_type const& __pts, uint16_type order, int_c<2> )
-{
-    // Number of DOFs for simplex of order 'order' in 2D: (order+1)(order+2)/2
-    const size_type ndof = ( order + 1 ) * ( order + 2 ) / 2;
-    matrix_type res( ndof, __pts.size2() );
-
-    Feel::details::etas<TRIANGLE, value_type> etas( __pts );
-    ublas::vector<value_type> eta1s = ublas::row( etas(), 0 );
-    ublas::vector<value_type> eta2s = ublas::row( etas(), 1 );
-
-    // Use runtime Jacobi evaluation
-    matrix_type as( dyna::JacobiBatchEvaluation( order, value_type( 0 ), value_type( 0 ), eta1s ) );
-    std::vector<matrix_type> bs( order + 1 );
-
-    for ( uint16_type i = 0; i <= order; ++i )
-    {
-        bs[i].resize( order - i + 1, eta2s.size() );
-        bs[i] = dyna::JacobiBatchEvaluation( order - i, value_type( 2 * i + 1 ), value_type( 0 ), eta2s );
-    }
-
-    // Use runtime scalings
-    matrix_type scalings = Feel::details::scalingsRuntime( order, eta2s );
-
-    for ( uint16_type cur = 0, k = 0; k <= order; ++k )
-    {
-        for ( uint16_type i = 0; i <= k; ++i, ++cur )
-        {
-            uint16_type ii = k - i;
-            uint16_type jj = i;
-
-            if ( is_normalized )
-            {
-                value_type normalization = math::sqrt( ( value_type( ii ) + value_type( 0.5 ) ) *
-                                                        ( value_type( ii + jj ) + value_type( 1 ) ) );
-
-                for ( uint16_type l = 0; l < as.size2(); ++l )
-                    res( cur, l ) = normalization * as( ii, l ) * scalings( ii, l ) * bs[ii]( jj, l );
-            }
-            else
-            {
-                for ( uint16_type l = 0; l < as.size2(); ++l )
-                    res( cur, l ) = as( ii, l ) * scalings( ii, l ) * bs[ii]( jj, l );
-            }
-        }
-    }
-
-    return res;
-}
-
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy,
-         typename T,
-         template<class> class StoragePolicy>
-typename Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::matrix_type
-Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluateRuntime(
-    points_type const& __pts, uint16_type order, int_c<3> )
-{
-    // Number of DOFs for simplex of order 'order' in 3D: (order+1)(order+2)(order+3)/6
-    const size_type ndof = ( order + 1 ) * ( order + 2 ) * ( order + 3 ) / 6;
-    matrix_type res( ndof, __pts.size2() );
-
-    DCHECK( __pts.size1() == 3 ) << "invalid space dimension for point set, should be 3, it is currently "
-                                  << __pts.size1();
-
-    Feel::details::etas<TETRAHEDRON, value_type> etas( __pts );
-    ublas::vector<value_type> eta1s = ublas::row( etas(), 0 );
-    ublas::vector<value_type> eta2s = ublas::row( etas(), 1 );
-    ublas::vector<value_type> eta3s = ublas::row( etas(), 2 );
-
-    // Use runtime Jacobi evaluation
-    matrix_type as( dyna::JacobiBatchEvaluation( order, value_type( 0 ), value_type( 0 ), eta1s ) );
-    std::vector<matrix_type> bs( order + 1 );
-    ublas::matrix<matrix_type> cs( order + 1, order + 1 );
-
-    for ( uint16_type i = 0; i <= order; ++i )
-    {
-        bs[i].resize( order - i + 1, eta2s.size() );
-        bs[i] = dyna::JacobiBatchEvaluation( order - i, value_type( 2 * i + 1 ), value_type( 0 ), eta2s );
-
-        for ( uint16_type j = 0; j <= order - i; ++j )
-        {
-            cs( i, j ).resize( order - i - j + 1, eta3s.size() );
-            cs( i, j ) = dyna::JacobiBatchEvaluation( order - i - j,
-                                                       value_type( 2 * ( i + j + 1 ) ), value_type( 0 ), eta3s );
-        }
-    }
-
-    // Use runtime scalings
-    matrix_type scalings2 = Feel::details::scalingsRuntime( order, eta2s );
-    matrix_type scalings3 = Feel::details::scalingsRuntime( order, eta3s );
-
-    for ( uint16_type cur = 0, k = 0; k <= order; ++k )
-    {
-        for ( uint16_type i = 0; i <= k; ++i )
-        {
-            for ( uint16_type j = 0; j <= k - i; ++j, ++cur )
-            {
-                uint16_type ii = k - i - j;
-                uint16_type jj = j;
-                uint16_type kk = i;
-
-                if ( is_normalized )
-                {
-                    value_type normalization = math::sqrt( ( value_type( ii ) + value_type( 0.5 ) ) *
-                                                            ( value_type( ii + jj ) + value_type( 1 ) ) *
-                                                            ( value_type( ii + jj + kk ) + value_type( 1.5 ) ) );
-
-                    for ( uint16_type l = 0; l < as.size2(); ++l )
-                        res( cur, l ) = normalization * ( as( ii, l ) *
-                                                           scalings2( ii, l ) * bs[ii]( jj, l ) *
-                                                           scalings3( ii + jj, l ) * cs( ii, jj )( kk, l ) );
-                }
-                else
-                {
-                    for ( uint16_type l = 0; l < as.size2(); ++l )
-                        res( cur, l ) = as( ii, l ) *
-                                        scalings2( ii, l ) * bs[ii]( jj, l ) *
-                                        scalings3( ii + jj, l ) * cs( ii, jj )( kk, l );
-                }
-            }
-        }
-    }
-
-    return res;
-}
-
-//
-// Runtime derivation implementations for Dynamic order support
-//
-
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy,
-         typename T,
-         template<class> class StoragePolicy>
-template<typename AE>
-typename Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::vector_matrix_type
-Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivateRuntime(
-    ublas::matrix_expression<AE> const& __pts, uint16_type order, int_c<2> )
-{
-    const size_type ndof = ( order + 1 ) * ( order + 2 ) / 2;
-    vector_matrix_type res( 2 );
-    res[0].resize( ndof, __pts().size2() );
-    res[1].resize( ndof, __pts().size2() );
-
-    Feel::details::etas<TRIANGLE, value_type> etas( __pts );
-    ublas::vector<value_type> eta1s = ublas::row( etas(), 0 );
-    ublas::vector<value_type> eta2s = ublas::row( etas(), 1 );
-
-    // Runtime Jacobi polynomials
-    matrix_type as( dyna::JacobiBatchEvaluation( order, value_type( 0 ), value_type( 0 ), eta1s ) );
-    matrix_type das( dyna::JacobiBatchDerivation( order, value_type( 0 ), value_type( 0 ), eta1s ) );
-    std::vector<matrix_type> bs( order + 1 );
-    std::vector<matrix_type> dbs( order + 1 );
-
-    for ( uint16_type i = 0; i <= order; ++i )
-    {
-        bs[i].resize( order - i + 1, eta2s.size() );
-        dbs[i].resize( order - i + 1, eta2s.size() );
-        bs[i] = dyna::JacobiBatchEvaluation( order - i, value_type( 2 * i + 1 ), value_type( 0 ), eta2s );
-        dbs[i] = dyna::JacobiBatchDerivation( order - i, value_type( 2 * i + 1 ), value_type( 0 ), eta2s );
-    }
-
-    matrix_type scalings = Feel::details::scalingsRuntime( order, eta2s );
-    ublas::vector<value_type> one( ublas::scalar_vector<value_type>( eta1s.size(), value_type( 1 ) ) );
-    ublas::vector<value_type> tmp( ublas::scalar_vector<value_type>( eta1s.size(), value_type( 1 ) ) );
-
-    for ( uint16_type k = 0, cur = 0; k <= order; ++k )
-    {
-        for ( uint16_type i = 0; i <= k; ++i, ++cur )
-        {
-            uint16_type ii = k - i;
-            uint16_type jj = i;
-
-            // x derivation
-            ublas::row( res[0], cur ) = ublas::element_prod( ublas::row( das, ii ),
-                                                              ublas::row( bs[ii], jj ) );
-
-            if ( ii > 0 )
-                ublas::row( res[0], cur ) = ublas::element_prod( ublas::row( res[0], cur ),
-                                                                  ublas::row( scalings, ii - 1 ) );
-
-            // y derivation
-            ublas::row( res[1], cur ) = ublas::element_prod( ublas::row( das, ii ),
-                                                              ublas::row( bs[ii], jj ) );
-            ublas::row( res[1], cur ) = value_type( 0.5 ) * ublas::element_prod( ublas::row( res[1], cur ),
-                                                                                   ( one + eta1s ) );
-
-            if ( ii > 0 )
-                ublas::row( res[1], cur ) = ublas::element_prod( ublas::row( res[1], cur ),
-                                                                  ublas::row( scalings, ii - 1 ) );
-
-            // derivate (1-x)^ii
-            tmp = ublas::element_prod( ublas::row( scalings, ii ),
-                                        ublas::row( dbs[ii], jj ) );
-
-            if ( ii > 0 )
-                tmp -= value_type( 0.5 ) * value_type( ii ) *
-                       ublas::element_prod( ublas::row( scalings, ii - 1 ),
-                                             ublas::row( bs[ii], jj ) );
-
-            // add contrib to y derivation
-            ublas::row( res[1], cur ) += ublas::element_prod( ublas::row( as, ii ), tmp );
-
-            // orthonormalize if required
-            if ( is_normalized )
-            {
-                value_type normalization = math::sqrt( ( value_type( ii ) + value_type( 0.5 ) ) *
-                                                        ( value_type( ii + jj ) + value_type( 1 ) ) );
-                ublas::row( res[0], cur ) *= normalization;
-                ublas::row( res[1], cur ) *= normalization;
-            }
-        }
-    }
-
-    return res;
-}
-
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy,
-         typename T,
-         template<class> class StoragePolicy>
-template<typename AE>
-typename Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::vector_matrix_type
-Dubiner<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivateRuntime(
-    ublas::matrix_expression<AE> const& __pts, uint16_type order, int_c<3> )
-{
-    const size_type ndof = ( order + 1 ) * ( order + 2 ) * ( order + 3 ) / 6;
-    vector_matrix_type res( 3 );
-    res[0].resize( ndof, __pts().size2() );
-    res[1].resize( ndof, __pts().size2() );
-    res[2].resize( ndof, __pts().size2() );
-
-    FEELPP_ASSERT( __pts().size1() == 3 )( __pts().size1() ).error( "invalid space dimension" );
-
-    Feel::details::etas<TETRAHEDRON, value_type> etas( __pts );
-    ublas::vector<value_type> eta1s = ublas::row( etas(), 0 );
-    ublas::vector<value_type> eta2s = ublas::row( etas(), 1 );
-    ublas::vector<value_type> eta3s = ublas::row( etas(), 2 );
-
-    matrix_type as( dyna::JacobiBatchEvaluation( order, value_type( 0 ), value_type( 0 ), eta1s ) );
-    matrix_type das( dyna::JacobiBatchDerivation( order, value_type( 0 ), value_type( 0 ), eta1s ) );
-    std::vector<matrix_type> bs( order + 1 );
-    std::vector<matrix_type> dbs( order + 1 );
-    ublas::matrix<matrix_type> cs( order + 1, order + 1 );
-    ublas::matrix<matrix_type> dcs( order + 1, order + 1 );
-
-    for ( uint16_type i = 0; i <= order; ++i )
-    {
-        bs[i].resize( order - i + 1, eta2s.size() );
-        dbs[i].resize( order - i + 1, eta2s.size() );
-        bs[i] = dyna::JacobiBatchEvaluation( order - i, value_type( 2 * i + 1 ), value_type( 0 ), eta2s );
-        dbs[i] = dyna::JacobiBatchDerivation( order - i, value_type( 2 * i + 1 ), value_type( 0 ), eta2s );
-
-        for ( uint16_type j = 0; j <= order - i; ++j )
-        {
-            cs( i, j ).resize( order - i - j + 1, eta3s.size() );
-            dcs( i, j ).resize( order - i - j + 1, eta3s.size() );
-            cs( i, j ) = dyna::JacobiBatchEvaluation( order - i - j,
-                                                       value_type( 2 * ( i + j + 1 ) ), value_type( 0 ), eta3s );
-            dcs( i, j ) = dyna::JacobiBatchDerivation( order - i - j,
-                                                        value_type( 2 * ( i + j + 1 ) ), value_type( 0 ), eta3s );
-        }
-    }
-
-    matrix_type scalings2 = Feel::details::scalingsRuntime( order, eta2s );
-    matrix_type scalings3 = Feel::details::scalingsRuntime( order, eta3s );
-
-    ublas::vector<value_type> one( ublas::scalar_vector<value_type>( eta1s.size(), value_type( 1 ) ) );
-    ublas::vector<value_type> tmp( ublas::scalar_vector<value_type>( eta1s.size(), value_type( 1 ) ) );
-
-    for ( uint16_type cur = 0, k = 0; k <= order; ++k )
-    {
-        for ( uint16_type i = 0; i <= k; ++i )
-        {
-            for ( uint16_type j = 0; j <= k - i; ++j, ++cur )
-            {
-                uint16_type ii = k - i - j;
-                uint16_type jj = j;
-                uint16_type kk = i;
-
-                // x derivation
-                ublas::row( res[0], cur ) = ublas::element_prod( ublas::row( das, ii ),
-                                                                  ublas::row( bs[ii], jj ) );
-                ublas::row( res[0], cur ) = ublas::element_prod( ublas::row( res[0], cur ),
-                                                                  ublas::row( cs( ii, jj ), kk ) );
-
-                if ( ii > 0 )
-                    ublas::row( res[0], cur ) = ublas::element_prod( ublas::row( res[0], cur ),
-                                                                      ublas::row( scalings2, ii - 1 ) );
-
-                if ( ii + jj > 0 )
-                    ublas::row( res[0], cur ) = ublas::element_prod( ublas::row( res[0], cur ),
-                                                                      ublas::row( scalings3, ii + jj - 1 ) );
-
-                // y derivation
-                ublas::row( res[1], cur ) = ublas::element_prod( ublas::row( das, ii ),
-                                                                  ublas::row( bs[ii], jj ) );
-                ublas::row( res[1], cur ) = ublas::element_prod( ublas::row( res[1], cur ),
-                                                                  ublas::row( cs( ii, jj ), kk ) );
-                ublas::row( res[1], cur ) = value_type( 0.5 ) * ublas::element_prod( ublas::row( res[1], cur ),
-                                                                                       ( one + eta1s ) );
-
-                if ( ii > 0 )
-                    ublas::row( res[1], cur ) = ublas::element_prod( ublas::row( res[1], cur ),
-                                                                      ublas::row( scalings2, ii - 1 ) );
-
-                if ( ii + jj > 0 )
-                    ublas::row( res[1], cur ) = ublas::element_prod( ublas::row( res[1], cur ),
-                                                                      ublas::row( scalings3, ii + jj - 1 ) );
-
-                // derivate (1-x)^ii for y
-                tmp = ublas::element_prod( ublas::row( scalings2, ii ),
-                                            ublas::row( dbs[ii], jj ) );
-
-                if ( ii > 0 )
-                    tmp -= value_type( 0.5 ) * value_type( ii ) *
-                           ublas::element_prod( ublas::row( scalings2, ii - 1 ),
-                                                 ublas::row( bs[ii], jj ) );
-
-                tmp = ublas::element_prod( tmp, ublas::row( as, ii ) );
-                tmp = ublas::element_prod( tmp, ublas::row( cs( ii, jj ), kk ) );
-
-                if ( ii + jj > 0 )
-                    tmp = ublas::element_prod( tmp, ublas::row( scalings3, ii + jj - 1 ) );
-
-                ublas::row( res[1], cur ) += tmp;
-
-                // z derivation
-                ublas::row( res[2], cur ) = ublas::element_prod( ublas::row( das, ii ),
-                                                                  ublas::row( bs[ii], jj ) );
-                ublas::row( res[2], cur ) = ublas::element_prod( ublas::row( res[2], cur ),
-                                                                  ublas::row( cs( ii, jj ), kk ) );
-                ublas::row( res[2], cur ) = value_type( 0.5 ) * ublas::element_prod( ublas::row( res[2], cur ),
-                                                                                       ( one + eta1s ) );
-
-                if ( ii > 0 )
-                    ublas::row( res[2], cur ) = ublas::element_prod( ublas::row( res[2], cur ),
-                                                                      ublas::row( scalings2, ii - 1 ) );
-
-                if ( ii + jj > 0 )
-                    ublas::row( res[2], cur ) = ublas::element_prod( ublas::row( res[2], cur ),
-                                                                      ublas::row( scalings3, ii + jj - 1 ) );
-
-                // derivate (1-x)^ii for z (same as y)
-                tmp = ublas::element_prod( ublas::row( scalings2, ii ),
-                                            ublas::row( dbs[ii], jj ) );
-
-                if ( ii > 0 )
-                    tmp -= value_type( 0.5 ) * value_type( ii ) *
-                           ublas::element_prod( ublas::row( scalings2, ii - 1 ),
-                                                 ublas::row( bs[ii], jj ) );
-
-                tmp = ublas::element_prod( tmp, ublas::row( as, ii ) );
-                tmp = ublas::element_prod( tmp, ublas::row( cs( ii, jj ), kk ) );
-                tmp = value_type( 0.5 ) * ublas::element_prod( tmp, ( one + eta2s ) );
-
-                if ( ii + jj > 0 )
-                    tmp = ublas::element_prod( tmp, ublas::row( scalings3, ii + jj - 1 ) );
-
-                ublas::row( res[2], cur ) += tmp;
-
-                // derivate scaling for z
-                tmp = ublas::element_prod( ublas::row( scalings3, ii + jj ),
-                                            ublas::row( dcs( ii, jj ), kk ) );
-
-                if ( ii + jj > 0 )
-                    tmp -= value_type( 0.5 ) * value_type( ii + jj ) *
-                           ublas::element_prod( ublas::row( cs( ii, jj ), kk ),
-                                                 ublas::row( scalings3, ii + jj - 1 ) );
-
-                tmp = ublas::element_prod( tmp, ublas::row( as, ii ) );
-                tmp = ublas::element_prod( tmp, ublas::row( bs[ii], jj ) );
-                tmp = ublas::element_prod( tmp, ublas::row( scalings2, ii ) );
-
-                ublas::row( res[2], cur ) += tmp;
-
-                if ( is_normalized )
-                {
-                    value_type normalization = math::sqrt( ( value_type( ii ) + value_type( 0.5 ) ) *
-                                                            ( value_type( ii + jj ) + value_type( 1 ) ) *
-                                                            ( value_type( ii + jj + kk ) + value_type( 1.5 ) ) );
-
-                    ublas::row( res[0], cur ) *= normalization;
-                    ublas::row( res[1], cur ) *= normalization;
-                    ublas::row( res[2], cur ) *= normalization;
-                }
-            }
-        }
-    }
-
-    return res;
-}
-
-}
-#endif /* __Dubiner_H */
+};
+} // namespace Feel
+#endif // FEELPP_FEELPOLY_DUBINER_HPP

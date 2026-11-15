@@ -5,32 +5,30 @@
 #pragma once
 
 #include <array>
+#include <feel/feelalg/eigenmap.hpp>
+#include <feel/feelpoly/order.hpp>
+#include <feel/feelpoly/tabulation.hpp>
 #include <memory>
 #include <mutex>
 #include <stdexcept>
-#include <feel/feelpoly/order.hpp>
 
 namespace Feel::detail
 {
-/** @brief Obtain the expansion degree, which may differ from a FE family index. */
-template<class Source>
-[[nodiscard]] uint16_type polynomialOrder( Source const& source )
-{
-    if constexpr ( requires { source.polynomialDegree(); } )
-        return source.polynomialDegree();
-    else if constexpr ( requires { source.order(); } )
-        return source.order();
-    else
-        return staticOrderValue<Source>();
-}
+/** @brief Modal descriptors exposing immutable all-direction requested-order ownership. */
+template <typename Basis>
+concept SharedReferenceOperators = requires( Basis const& basis ) {
+    basis.referenceOperators( RuntimeOrder{ 0 } );
+};
 
 /** @brief Storage-free derivative policy for a matching static basis. */
-template<class Basis, bool Cached>
-struct PolynomialDerivativeCache {};
+template <class Basis, bool Cached, bool Shared = SharedReferenceOperators<Basis>>
+struct PolynomialDerivativeCache
+{
+};
 
 /** @brief Shared, immutable-after-initialization operators for an effective order. */
-template<class Basis>
-struct PolynomialDerivativeCache<Basis, true>
+template <class Basis>
+struct PolynomialDerivativeCache<Basis, true, false>
 {
     /** @brief Operators initialized once per coordinate direction. */
     struct Operators
@@ -41,6 +39,22 @@ struct PolynomialDerivativeCache<Basis, true>
         std::array<typename Basis::matrix_type, Basis::nDim> matrices;
     };
     /** Copies share operators; changing order detaches this state. */
+    std::shared_ptr<Operators> operators = std::make_shared<Operators>();
+};
+
+/** @brief Retain one immutable all-direction handle without copying its coefficient matrices. */
+template <typename Basis>
+struct PolynomialDerivativeCache<Basis, true, true>
+{
+    /** Lazy ownership copied by polynomial value semantics and detached on order changes. */
+    struct Operators
+    {
+        /** Publish one complete reference handle exactly once for this effective order. */
+        std::once_flag ready;
+        /** Family-owned immutable matrices with lifetime independent of other requested orders. */
+        decltype( std::declval<Basis const&>().referenceOperators( RuntimeOrder{ 0 } ) ) reference;
+    };
+    /** Copies share first access and ownership; an order change creates a new state. */
     std::shared_ptr<Operators> operators = std::make_shared<Operators>();
 };
 
@@ -107,6 +121,77 @@ public:
         }
     }
 
+    /** @brief Consume modal values while their native or legacy owner is alive.
+     * @param basis Modal evaluator, possibly seeded at a different degree.
+     * @param points Column-oriented sample coordinates.
+     * @param operation Callable returning an owning result from a borrowed Eigen matrix.
+     * @note Static orders retain their extent even when the seed degree differs.
+     */
+    template<class Points, class Operation>
+    auto withValues( Basis const& basis, Points const& points, Operation&& operation ) const
+    {
+        if constexpr ( requires { basis.template values<OrderSpec>( points, RuntimeOrder{ this->order() } ); } )
+        {
+            auto values = basis.template values<OrderSpec>( points, RuntimeOrder{ this->order() } );
+            return operation( values.matrix() );
+        }
+        else
+        {
+            auto values = evaluate( basis, points );
+            return operation( eigenMap( values ) );
+        }
+    }
+
+    /** @brief Consume reference gradients without materializing native tables as legacy matrices.
+     * @param basis Modal evaluator, possibly seeded at a different degree.
+     * @param points Column-oriented sample coordinates.
+     * @param operation Callable receiving a direction and its borrowed Eigen table.
+     */
+    template<class Points, class Operation>
+    void forEachGradient( Basis const& basis, Points const& points, Operation&& operation ) const
+    {
+        if constexpr ( requires { basis.template gradients<OrderSpec>( points, RuntimeOrder{ this->order() } ); } )
+        {
+            auto gradients = basis.template gradients<OrderSpec>( points, RuntimeOrder{ this->order() } );
+            for ( int d = 0; d < Basis::nDim; ++d ) operation( d, gradients[d].matrix() );
+        }
+        else
+        {
+            auto gradients = derivate( basis, points );
+            for ( int d = 0; d < Basis::nDim; ++d ) operation( d, eigenMap( gradients[d] ) );
+        }
+    }
+
+    /** Whether this modal facade supplies direct, operator-free reference Hessians. */
+    template<class Points>
+    static constexpr bool hasDirectHessians = requires( Basis const& basis, Points const& points )
+    { basis.template hessians<OrderSpec>( points, RuntimeOrder{ 0 } ); };
+
+    /** @brief Select direct sampled Hessians except for measured low-order tensor operators. */
+    [[nodiscard]] bool useDirectHessians() const noexcept
+    {
+        // Linear tensor expansions favor the existing coefficient operators on warm calls.
+        if constexpr ( requires { Basis::convex_type::is_simplex; } )
+            return Basis::convex_type::is_simplex || this->order() != 1;
+        else
+            return true;
+    }
+
+    /** @brief Consume native Hessians while their owning tables remain alive.
+     * @param basis Modal facade supplying a direct second-derivative recurrence.
+     * @param points Column-oriented sample coordinates.
+     * @param operation Callable consuming (i,j,table); no coefficient operators are requested.
+     */
+    template<class Points, class Operation>
+        requires hasDirectHessians<Points>
+    void forEachHessian( Basis const& basis, Points const& points, Operation&& operation ) const
+    {
+        auto hessians = basis.template hessians<OrderSpec>( points, RuntimeOrder{ this->order() } );
+        for ( int i = 0; i < Basis::nDim; ++i )
+            for ( int j = 0; j < Basis::nDim; ++j )
+                operation( i, j, hessians[i * Basis::nDim + j].matrix() );
+    }
+
     /** @brief Return the owned differentiation operator in a coordinate direction. */
     typename Basis::matrix_type const& d( Basis const& basis, uint16_type direction ) const
     {
@@ -114,16 +199,28 @@ public:
             throw std::out_of_range("polynomial derivative direction is outside the reference dimension");
         if constexpr ( cached )
         {
-            std::call_once( this->operators->ready[direction], [&] {
-                if constexpr ( requires { basis.d( direction, this->order() ); } )
-                    this->operators->matrices[direction] = basis.d( direction, this->order() );
-                else
+            if constexpr ( SharedReferenceOperators<Basis> )
+            {
+                auto initialize = [&]
                 {
-                    validateSeed();
-                    this->operators->matrices[direction] = basis.d( direction );
-                }
-            } );
-            return this->operators->matrices[direction];
+                    this->operators->reference = basis.referenceOperators( RuntimeOrder{ this->order() } );
+                };
+                std::call_once( this->operators->ready, initialize );
+                return this->operators->reference->matrix( direction );
+            }
+            else
+            {
+                std::call_once( this->operators->ready[direction], [&] {
+                    if constexpr ( requires { basis.d( direction, this->order() ); } )
+                        this->operators->matrices[direction] = basis.d( direction, this->order() );
+                    else
+                    {
+                        validateSeed();
+                        this->operators->matrices[direction] = basis.d( direction );
+                    }
+                } );
+                return this->operators->matrices[direction];
+            }
         }
         else
             return basis.d( direction );
@@ -137,4 +234,4 @@ private:
                 throw std::invalid_argument("basis does not support the requested polynomial order");
     }
 };
-}
+} // namespace Feel::detail

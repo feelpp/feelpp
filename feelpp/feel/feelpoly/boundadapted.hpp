@@ -1,6 +1,7 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
     SPDX-FileContributor: Gilles Steiner <gilles.steiner@epfl.ch>
+    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
     SPDX-FileCopyrightText: 2005-2006 EPFL
     SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
@@ -142,6 +143,10 @@ class BoundaryAdapted : Basis<BoundaryAdaptedTag<Dim, Degree>, T>
     typedef Basis<BoundaryAdaptedTag<Dim, Degree>, T > super;
 
 public:
+    /** Lazy immutable coefficient operators inherited from the legacy descriptor contract. */
+    using super::d;
+    /** Expose direction access alongside the sampled derivative overloads below. */
+    using super::derivate;
     typedef BoundaryAdaptedTraits<Dim, Degree, T, StoragePolicy> traits_type;
 
     static inline const uint16_type nDim = traits_type::nDim;
@@ -378,7 +383,24 @@ public:
 
     //@}
 
-private:
+  private:
+    /** @brief Put the segment's endpoint modes first, independently of the sample count.
+     * @param modes Principal values or derivatives, with modes in rows and points in columns.
+     * @return The same mathematical rows in the boundary-adapted ordering.
+     */
+    static matrix_type reorderSegmentModes( matrix_type const& modes )
+    {
+        if ( modes.size1() < 2 )
+            throw std::invalid_argument( "boundary-adapted segments require two endpoint modes" );
+
+        // Apply one permutation to both values and sampled derivatives.
+        matrix_type result( modes.size1(), modes.size2() );
+        ublas::row( result, 0 ) = ublas::row( modes, 0 );
+        ublas::row( result, 1 ) = ublas::row( modes, modes.size1() - 1 );
+        for ( size_type mode = 1; mode < modes.size1() - 1; ++mode )
+            ublas::row( result, mode + 1 ) = ublas::row( modes, mode );
+        return result;
+    }
 
     /**
      * Evaluation at a set of points of the expansion basis in 1D
@@ -393,19 +415,7 @@ private:
     matrix_type
     evaluate( points_type const& __pts, int_c<1> ) const
     {
-        matrix_type E = M_pfunc.evaluate_1( ublas::row( __pts,0 ) );
-        matrix_type D;
-        D.resize( E.size1(), E.size2() );
-
-        ublas::row( D, 0 ) = ublas::row( E, 0 );
-        ublas::row( D, 1 ) = ublas::row( E, E.size2()-1 );
-
-        for ( unsigned int i=1; i < E.size2()-1 ; ++i )
-        {
-            ublas::row( D, i+1 ) = ublas::row( E, i );
-        }
-
-        return D;
+        return reorderSegmentModes( M_pfunc.evaluate_1( ublas::row( __pts, 0 ) ) );
     }
 
     /**
@@ -417,22 +427,9 @@ private:
     {
         FEELPP_ASSERT( __pts().size1() == 1 )( __pts().size1() )( __pts().size2() ).error( "invalid points" );
 
-        vector_matrix_type E( 1 );
-        E[0].resize( nOrder+1, __pts().size2() );
-        E[0] = M_pfunc.derivate_1( ublas::row( __pts(),0 ) );
-
-        vector_matrix_type D( 1 );
-        D[0].resize( nOrder+1, __pts().size2() );
-
-        ublas::row( D[0], 0 ) = ublas::row( E[0], 0 );
-        ublas::row( D[0], 1 ) = ublas::row( E[0], E[0].size2()-1 );
-
-        for ( unsigned int i=1; i < E[0].size2()-1 ; ++i )
-        {
-            ublas::row( D[0], i+1 ) = ublas::row( E[0], i );
-        }
-
-        return D;
+        vector_matrix_type result( 1 );
+        result[0] = reorderSegmentModes( M_pfunc.derivate_1( ublas::row( __pts(), 0 ) ) );
+        return result;
     }
 
     /**

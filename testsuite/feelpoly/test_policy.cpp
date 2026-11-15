@@ -1,26 +1,9 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2026-01-04
-
-  Copyright (C) 2026 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileCopyrightText: 2026 Feel++ Consortium
+ * SPDX-FileCopyrightText: 2026 University of Strasbourg
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 /**
    \file test_policy.cpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -38,6 +21,8 @@
 #include <boost/numeric/ublas/vector.hpp>
 
 #include <cstddef>
+#include <boost/mp11.hpp>
+#include <array>
 #include <type_traits>
 
 namespace ublas = boost::numeric::ublas;
@@ -47,48 +32,40 @@ FEELPP_ENVIRONMENT_NO_OPTIONS
 
 namespace
 {
+/** @brief Borrow either numerical representation without copying coefficients. */
 template<typename Matrix>
-void fill_ublas( Matrix& m )
+decltype(auto) matrixView( Matrix& matrix )
 {
-    double v = 1.0;
-    for ( std::size_t i = 0; i < m.size1(); ++i )
-        for ( std::size_t j = 0; j < m.size2(); ++j )
-            m( i, j ) = v++;
+    if constexpr ( EigenMatrix<Matrix> ) return ( matrix );
+    else return eigenMap( matrix );
 }
 
+/** @brief Fill either representation in the same mathematical row/column order. */
 template<typename Matrix>
-void check_ublas_equal( Matrix const& a, Matrix const& b )
+void fillMatrix( Matrix& matrix )
 {
-    BOOST_REQUIRE_EQUAL( a.size1(), b.size1() );
-    BOOST_REQUIRE_EQUAL( a.size2(), b.size2() );
-    for ( std::size_t i = 0; i < a.size1(); ++i )
-        for ( std::size_t j = 0; j < a.size2(); ++j )
-            BOOST_CHECK_EQUAL( a( i, j ), b( i, j ) );
+    auto&& view = matrixView( matrix );
+    typename std::remove_cvref_t<decltype( view )>::Scalar value = 1;
+    for ( Eigen::Index i = 0; i < view.rows(); ++i )
+        for ( Eigen::Index j = 0; j < view.cols(); ++j ) view( i, j ) = value++;
 }
 
-template<typename Matrix>
-void fill_eigen( Matrix& m )
-{
-    typename Matrix::Scalar v = 1;
-    for ( Eigen::Index i = 0; i < m.rows(); ++i )
-        for ( Eigen::Index j = 0; j < m.cols(); ++j )
-            m( i, j ) = v++;
-}
-
+/** @brief Share exact reshape/roundtrip assertions across both representations. */
 template<typename MatrixA, typename MatrixB>
-void check_eigen_equal( MatrixA const& a, MatrixB const& b )
+void checkMatricesEqual( MatrixA const& a, MatrixB const& b )
 {
-    BOOST_REQUIRE_EQUAL( a.rows(), b.rows() );
-    BOOST_REQUIRE_EQUAL( a.cols(), b.cols() );
-    for ( Eigen::Index i = 0; i < a.rows(); ++i )
-        for ( Eigen::Index j = 0; j < a.cols(); ++j )
-            BOOST_CHECK_EQUAL( a( i, j ), b( i, j ) );
+    auto&& left = matrixView( a );
+    auto&& right = matrixView( b );
+    BOOST_REQUIRE_EQUAL( left.rows(), right.rows() );
+    BOOST_REQUIRE_EQUAL( left.cols(), right.cols() );
+    for ( Eigen::Index i = 0; i < left.rows(); ++i )
+        for ( Eigen::Index j = 0; j < left.cols(); ++j ) BOOST_CHECK_EQUAL( left( i, j ), right( i, j ) );
 }
 } // namespace
 
-BOOST_AUTO_TEST_SUITE( policy_suite )
+BOOST_AUTO_TEST_SUITE( policyContracts )
 
-BOOST_AUTO_TEST_CASE( test_storage_eigen_types )
+BOOST_AUTO_TEST_CASE( storageEigenTypes )
 {
     using storage = StorageEigen<double>;
     static_assert( std::is_same_v<storage::matrix_type,
@@ -96,13 +73,13 @@ BOOST_AUTO_TEST_CASE( test_storage_eigen_types )
     static_assert( std::is_same_v<storage::vector_type,
                                   Eigen::Matrix<double, Eigen::Dynamic, 1>> );
     static_assert( std::is_same_v<storage::vector_matrix_type,
-                                  ublas::vector<storage::matrix_type>> );
+                                  std::vector<storage::matrix_type>> );
     static_assert( std::is_same_v<storage::node_type,
                                   Eigen::Matrix<double, Eigen::Dynamic, 1>> );
     BOOST_CHECK( true );
 }
 
-BOOST_AUTO_TEST_CASE( test_rank_helpers )
+BOOST_AUTO_TEST_CASE( rankHelpers )
 {
     static_assert( std::is_same_v<typename RankUp<Scalar<2>>::type, Vectorial<2>> );
     static_assert( std::is_same_v<typename RankUp2<Scalar<2>>::type, Tensor2<2>> );
@@ -113,79 +90,82 @@ BOOST_AUTO_TEST_CASE( test_rank_helpers )
     BOOST_CHECK( true );
 }
 
-BOOST_AUTO_TEST_CASE( test_scalar_to_matrix )
+BOOST_AUTO_TEST_CASE( scalarCoefficientIdentity )
 {
     ublas::matrix<double> u( 2, 2 );
-    fill_ublas( u );
+    fillMatrix( u );
     auto const& u_mat = Scalar<2>::toMatrix( u );
-    check_ublas_equal( u, u_mat );
+    checkMatricesEqual( u, u_mat );
     auto const& u_type = Scalar<2>::toType( u );
-    check_ublas_equal( u, u_type );
+    checkMatricesEqual( u, u_type );
 
     Eigen::Matrix<double, 2, 2> e;
-    fill_eigen( e );
+    fillMatrix( e );
     auto e_mat = Scalar<2>::toMatrix( e );
-    check_eigen_equal( e, e_mat );
+    checkMatricesEqual( e, e_mat );
     auto e_type = Scalar<2>::toType( e );
-    check_eigen_equal( e, e_type );
+    checkMatricesEqual( e, e_type );
 }
 
-BOOST_AUTO_TEST_CASE( test_vectorial_roundtrip_ublas )
+/** @test The same packing rule supports arbitrary polynomial counts in both representations. */
+using ComponentShapes = boost::mp11::mp_list<Vectorial<2>, Tensor2<2>, Tensor2Symm<2>>;
+BOOST_AUTO_TEST_CASE_TEMPLATE( componentCoefficientPacking, Shape, ComponentShapes )
 {
-    const std::size_t comp = Vectorial<2>::nComponents;
-    ublas::matrix<double> input( comp * 2, 3 );
-    fill_ublas( input );
-
-    auto reshaped = Vectorial<2>::toMatrix( input );
-    BOOST_CHECK_EQUAL( reshaped.size1(), input.size1() / comp );
-    BOOST_CHECK_EQUAL( reshaped.size2(), input.size2() * comp );
-
-    auto roundtrip = Vectorial<2>::toType( reshaped );
-    check_ublas_equal( input, roundtrip );
+    constexpr Eigen::Index components = Shape::nComponents;
+    for ( Eigen::Index functions : std::array<Eigen::Index, 4>{ 0, 1, 2, 7 } )
+        for ( Eigen::Index modes : std::array<Eigen::Index, 3>{ 0, 1, 3 } )
+        {
+            Eigen::MatrixXd native( components * functions, modes );
+            fillMatrix( native );
+            ublas::matrix<double> legacy( native.rows(), native.cols() );
+            eigenMap( legacy ) = native;
+            auto packed = Shape::toMatrix( native );
+            auto legacyPacked = Shape::toMatrix( legacy );
+            BOOST_REQUIRE_EQUAL( packed.rows(), functions );
+            BOOST_REQUIRE_EQUAL( packed.cols(), components * modes );
+            checkMatricesEqual( packed, legacyPacked );
+            for ( Eigen::Index function = 0; function < functions; ++function )
+                for ( Eigen::Index component = 0; component < components; ++component )
+                    for ( Eigen::Index mode = 0; mode < modes; ++mode )
+                        BOOST_CHECK_EQUAL( packed( function, component * modes + mode ),
+                                           native( function * components + component, mode ) );
+            checkMatricesEqual( Shape::toType( packed ), native );
+            checkMatricesEqual( Shape::toType( legacyPacked ), legacy );
+        }
+    Eigen::MatrixXd invalidRows = Eigen::MatrixXd::Zero( components + 1, 2 );
+    Eigen::MatrixXd invalidCols = Eigen::MatrixXd::Zero( 2, components + 1 );
+    BOOST_CHECK_THROW( (void)Shape::toMatrix( invalidRows ), std::invalid_argument );
+    BOOST_CHECK_THROW( (void)Shape::toType( invalidCols ), std::invalid_argument );
 }
 
-BOOST_AUTO_TEST_CASE( test_vectorial_roundtrip_eigen )
+/** @test Scalar identities borrow lvalues and own evaluated temporary expressions. */
+BOOST_AUTO_TEST_CASE( coefficientIdentityLifetimes )
 {
-    const Eigen::Index comp = static_cast<Eigen::Index>( Vectorial<2>::nComponents );
-    Eigen::MatrixXd input( comp * 2, 3 );
-    fill_eigen( input );
-
-    auto reshaped = Vectorial<2>::toMatrix( input );
-    BOOST_CHECK_EQUAL( reshaped.rows(), input.rows() / comp );
-    BOOST_CHECK_EQUAL( reshaped.cols(), input.cols() * comp );
-
-    auto roundtrip = Vectorial<2>::toType( reshaped );
-    check_eigen_equal( input, roundtrip );
+    Eigen::Matrix2d input = Eigen::Matrix2d::Identity();
+    static_assert( std::is_lvalue_reference_v<decltype( Scalar<2>::toMatrix( input ) )> );
+    auto temporary = Scalar<2>::toMatrix( input + input );
+    static_assert( decltype( temporary )::RowsAtCompileTime == 2 );
+    input.setZero();
+    BOOST_CHECK_EQUAL( temporary( 0, 0 ), 2. );
+    auto nested = Scalar<2>::toType( Eigen::Matrix2d::Identity() + Eigen::Matrix2d::Identity() );
+    BOOST_CHECK_EQUAL( nested( 1, 1 ), 2. );
+    static_assert( !std::is_reference_v<decltype( Scalar<2>::toMatrix( Eigen::Matrix2d{} ) )> );
+    auto const& ownedTemporary = Scalar<2>::toMatrix( Eigen::Matrix2d::Identity().eval() );
+    BOOST_CHECK_EQUAL( ownedTemporary( 0, 0 ), 1. );
 }
 
-BOOST_AUTO_TEST_CASE( test_tensor2_roundtrip_ublas )
+/** @test Component packing retains known axes independently of layout and allocation. */
+BOOST_AUTO_TEST_CASE( fixedComponentExtents )
 {
-    const std::size_t comp = Tensor2<2>::nComponents;
-    const std::size_t nCols = 1;
-    ublas::matrix<double> input( nCols * comp * comp, nCols );
-    fill_ublas( input );
-
-    auto reshaped = Tensor2<2>::toMatrix( input );
-    BOOST_CHECK_EQUAL( reshaped.size1(), input.size1() / comp );
-    BOOST_CHECK_EQUAL( reshaped.size2(), input.size2() * comp );
-
-    auto roundtrip = Tensor2<2>::toType( reshaped );
-    check_ublas_equal( input, roundtrip );
-}
-
-BOOST_AUTO_TEST_CASE( test_tensor2_roundtrip_eigen )
-{
-    const Eigen::Index comp = static_cast<Eigen::Index>( Tensor2<2>::nComponents );
-    const Eigen::Index nCols = 1;
-    Eigen::MatrixXd input( nCols * comp * comp, nCols );
-    fill_eigen( input );
-
-    auto reshaped = Tensor2<2>::toMatrix( input );
-    BOOST_CHECK_EQUAL( reshaped.rows(), input.rows() / comp );
-    BOOST_CHECK_EQUAL( reshaped.cols(), input.cols() * comp );
-
-    auto roundtrip = Tensor2<2>::toType( reshaped );
-    check_eigen_equal( input, roundtrip );
+    Eigen::Matrix<double, 8, 3> input;
+    fillMatrix( input );
+    auto vector = Vectorial<2>::toMatrix( input );
+    auto tensor = Tensor2<2>::toMatrix( input );
+    static_assert( decltype( vector )::RowsAtCompileTime == 4 );
+    static_assert( decltype( vector )::ColsAtCompileTime == 6 );
+    static_assert( decltype( tensor )::RowsAtCompileTime == 2 );
+    static_assert( decltype( tensor )::ColsAtCompileTime == 12 );
+    checkMatricesEqual( Tensor2<2>::toType( tensor ), input );
 }
 
 BOOST_AUTO_TEST_SUITE_END()

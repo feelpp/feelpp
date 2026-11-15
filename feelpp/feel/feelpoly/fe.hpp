@@ -13,6 +13,7 @@
 #include <limits>
 
 #include <feel/feelpoly/policy.hpp>
+#include <feel/feelpoly/polynomialsolve.hpp>
 #include <feel/feelpoly/referencedoflayout.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
 
@@ -113,46 +114,26 @@ public:
      */
     //@{
 
-    /** @brief Construct the Ciarlet basis by inverting the owned dual-on-primal matrix. */
+    /** @brief Construct Ciarlet basis coefficients by solving the dual-on-primal system. */
     FiniteElement( dual_space_type const& pdual )
-        :
-        super( pdual.primalSpace() ),
-        M_dual( pdual )
+        : super( pdual.primalSpace() ), M_dual( pdual )
     {
-        DVLOG(2) << "============================================================\n";
-        DVLOG(2) << "New FE \n";
-        ublas::matrix<value_type> A( M_dual( M_dual.primalSpace() ) );
-        if ( A.size1() != A.size2() )
-            throw std::invalid_argument("invalid Ciarlet triple: dual-on-primal matrix must be square");
-        //std::cout << "[FiniteElement] A = " << A << "\n";
-
-        ublas::matrix<value_type> D = ublas::identity_matrix<value_type>( A.size1(), A.size2() );
-        LU<ublas::matrix<value_type> > lu( A );
-        if ( !lu.isNonsingular() )
-            throw std::runtime_error("finite-element Vandermonde matrix is singular");
-        ublas::matrix<value_type> C = lu.solve( D );
-        //std::cout << "[FiniteElement] D = " << D << "\n";
-        //std::cout << "[FiniteElement] C = " << C << "\n";
-        DVLOG(2) << "is singular : " << lu.isNonsingular() << "\n"
-                      << "det(A) =  " << lu.det() << "\n";
-#if 0
-
-        if ( !lu.isNonsingular() )
+        // Nodal duals may supply checked canonical modal coefficients directly.
+        if constexpr ( requires { M_dual.hasCanonicalPrimal(); M_dual.nodalCoefficients(); } )
         {
-            std::cout << "A=" << A << "\n"
-                      << "D=" << D << "\n"
-                      << "C=" << C << "\n";
+            if ( M_dual.hasCanonicalPrimal() )
+            {
+                this->setCoefficient( M_dual.nodalCoefficients(), true );
+                return;
+            }
         }
 
-#endif
-
-        this->setCoefficient( ublas::trans( C ) );
-
-        //std::cout << "coeff = " << M_pset.coeff() << "\n";
-        //std::cout << "d_x = " << M_pset.derivate(0).coeff() << "\n";
-        //std::cout << "d_x = " << M_pset.derivate(0).coeff() << "\n";
-        //std::cout << "d_x = " << M_pset.derivate(0).coeff() << "\n";
-        DVLOG(2) << "============================================================\n";
+        // Moment duals and modified primals retain their existing Ciarlet solve.
+        auto dualValues = M_dual( M_dual.primalSpace() );
+        ::Feel::detail::PolynomialLuSolver<value_type> solver( eigenMap( dualValues ), "Ciarlet basis" );
+        using Matrix = typename ::Feel::detail::PolynomialLuSolver<value_type>::Matrix;
+        // These inverse coefficients are the required basis representation.
+        this->setCoefficient( solver.solve( Matrix::Identity( dualValues.size1(), dualValues.size2() ) ).transpose() );
     }
     FiniteElement( FiniteElement const& ) = default;
     FiniteElement( FiniteElement&& ) = default;

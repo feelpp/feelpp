@@ -1,27 +1,10 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-12-03
-
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2011-2016 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileCopyrightText: 2005-2006 EPFL
+ * SPDX-FileCopyrightText: 2011-2016 Feel++ Consortium
+ * SPDX-FileCopyrightText: 2026 University of Strasbourg
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 /**
    \file policy.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -32,6 +15,9 @@
 
 
 #include <Eigen/Core>
+#include <vector>
+#include <feel/feelpoly/eigenextent.hpp>
+#include <feel/feelpoly/componentlayout.hpp>
 
 // clang-format off
 #include <feel/feelcore/warnoff.hpp>
@@ -52,7 +38,15 @@ namespace ublas = boost::numeric::ublas;
 
 namespace fem
 {
-enum transformation_type { LINEAR, BILINEAR,  NONLINEAR };
+/** Mapping classification used by finite-element geometry. */
+enum TransformationType
+{
+    LINEAR,    ///< Affine geometry transformation.
+    BILINEAR,  ///< Tensor-product bilinear geometry transformation.
+    NONLINEAR  ///< General higher-order geometry transformation.
+};
+/** Compatibility spelling for the established geometry API. */
+using transformation_type = TransformationType;
 }
 
 
@@ -62,7 +56,7 @@ enum transformation_type { LINEAR, BILINEAR,  NONLINEAR };
  * \note \c Scalar can be seen as rank 0 tensor polynomials
  */
 template<uint16_type Dim>
-struct Scalar : public ScalarBase
+struct Scalar : public ScalarBase, public ::Feel::detail::IdentityCoefficientLayout
 {
     static constexpr uint16_type rank = 0;
     static constexpr uint16_type nDim = Dim;
@@ -78,36 +72,6 @@ struct Scalar : public ScalarBase
     static constexpr uint16_type nComponents3 = 1;
     static constexpr uint16_type nComponentsLast = 1;
 
-    template<typename T>
-    static
-    inline ublas::matrix<T> const&
-    toMatrix( ublas::matrix<T> const&  __c )
-    {
-        return __c;
-    }
-    template<typename T>
-    static
-    inline ublas::matrix<T> const&
-    toType( ublas::matrix<T> const&  __c )
-    {
-        return __c;
-    }
-    template<typename Derived>
-    requires EigenMatrix<Derived>
-    static
-    inline Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
-    toMatrix( Eigen::MatrixBase<Derived> const& __c )
-    {
-        return __c.eval();
-    }
-    template<typename Derived>
-    requires EigenMatrix<Derived>
-    static
-    inline Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
-    toType( Eigen::MatrixBase<Derived> const& __c )
-    {
-        return __c.eval();
-    }
 };
 
 
@@ -117,7 +81,7 @@ struct Scalar : public ScalarBase
  * \note \c Vectorial can be seen as rank 1 Tensor polynomials
  */
 template<uint16_type Dim>
-struct Vectorial : public VectorialBase
+struct Vectorial : public VectorialBase, public ::Feel::detail::ComponentCoefficientLayout<Dim>
 {
     static constexpr uint16_type rank = 1;
     static constexpr uint16_type nDim = Dim;
@@ -132,127 +96,7 @@ struct Vectorial : public VectorialBase
     static constexpr uint16_type nComponents2 = 1;
     static constexpr uint16_type nComponents3 = 1;
     static constexpr uint16_type nComponentsLast = nComponents1;
-    template<typename T>
-    static
-    ublas::matrix<T>
-    toMatrix( ublas::matrix<T> const&  __c )
-    {
-        typedef T value_type;
-        // reshape the coefficients in the vectorial case
-        const size_type nRows = __c.size1()/nComponents;
-        const size_type nCols = __c.size2();
-        ublas::matrix<T> __c_reshaped( ublas::zero_matrix<value_type>( nRows, nComponents*nCols ) );
 
-        for ( int c = 0; c < nComponents; ++c )
-        {
-            ublas::project( __c_reshaped,
-                            ublas::range( 0, nRows ),
-                            ublas::range( c*nCols, ( c+1 )*nCols ) ) = ublas::project( __c,
-                                    ublas::slice( c, nComponents, nRows ),
-                                    ublas::slice( 0, 1, nCols ) );
-        }
-
-        return __c_reshaped;
-    }
-
-    template<typename AE>
-    static
-    ublas::matrix<typename ublas::matrix_expression<AE>::value_type>
-    toType( ublas::matrix_expression<AE> const&  __c )
-    {
-        typedef typename ublas::matrix_expression<AE>::value_type value_type;
-
-        // reshape the coefficients in the vectorial case
-        const size_type nRows = __c().size1()*nComponents;
-        const size_type nCols = __c().size2()/nComponents;
-        ublas::matrix<value_type> __c_reshaped( ublas::zero_matrix<value_type>( nRows, nCols ) );
-
-        for ( int c = 0; c < nComponents; ++c )
-        {
-            ublas::project( __c_reshaped,
-                            ublas::slice( c, nComponents, nRows/nComponents ),
-                            ublas::slice( 0, 1, nCols ) ) = ublas::project( __c(),
-                                    ublas::range( 0, nRows/nComponents ),
-                                    ublas::range( c*nCols, ( c+1 )*nCols ) );
-        }
-
-        return __c_reshaped;
-    }
-
-    template<typename T>
-    static
-    ublas::matrix<T>
-    toType( ublas::matrix<T> const&  __c )
-    {
-        typedef T value_type;
-
-        // reshape the coefficients in the vectorial case
-        const size_type nRows = __c.size1()*nComponents;
-        const size_type nCols = __c.size2()/nComponents;
-        ublas::matrix<value_type> __c_reshaped( ublas::zero_matrix<value_type>( nRows, nCols ) );
-
-        for ( int c = 0; c < nComponents; ++c )
-        {
-            ublas::project( __c_reshaped,
-                            ublas::slice( c, nComponents, nRows/nComponents ),
-                            ublas::slice( 0, 1, nCols ) ) = ublas::project( __c,
-                                    ublas::range( 0, nRows/nComponents ),
-                                    ublas::range( c*nCols, ( c+1 )*nCols ) );
-        }
-
-        return __c_reshaped;
-    }
-    template<typename Derived>
-    requires EigenMatrix<Derived>
-    static
-    Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
-    toMatrix( Eigen::MatrixBase<Derived> const& __c )
-    {
-        using value_type = typename Derived::Scalar;
-        const Eigen::Index comp = static_cast<Eigen::Index>( nComponents );
-        const Eigen::Index nRows = __c.rows() / comp;
-        const Eigen::Index nCols = __c.cols();
-        Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> __c_reshaped(
-            nRows, comp * nCols );
-
-        for ( Eigen::Index c = 0; c < comp; ++c )
-        {
-            for ( Eigen::Index r = 0; r < nRows; ++r )
-            {
-                __c_reshaped.block( r, c * nCols, 1, nCols ) =
-                    __c.row( r * comp + c );
-            }
-        }
-
-        return __c_reshaped;
-    }
-
-    template<typename Derived>
-    requires EigenMatrix<Derived>
-    static
-    Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
-    toType( Eigen::MatrixBase<Derived> const& __c )
-    {
-        using value_type = typename Derived::Scalar;
-        const Eigen::Index comp = static_cast<Eigen::Index>( nComponents );
-        const Eigen::Index inRows = __c.rows();
-        const Eigen::Index inCols = __c.cols();
-        const Eigen::Index outRows = inRows * comp;
-        const Eigen::Index outCols = inCols / comp;
-        Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> __c_reshaped(
-            outRows, outCols );
-
-        for ( Eigen::Index c = 0; c < comp; ++c )
-        {
-            for ( Eigen::Index r = 0; r < inRows; ++r )
-            {
-                __c_reshaped.block( r * comp + c, 0, 1, outCols ) =
-                    __c.block( r, c * outCols, 1, outCols );
-            }
-        }
-
-        return __c_reshaped;
-    }
 };
 
 /**
@@ -262,7 +106,7 @@ struct Vectorial : public VectorialBase
 namespace detail
 {
 template<uint16_type N, uint16_type M>
-struct Field
+struct Field : public ::Feel::detail::IdentityCoefficientLayout
 {
     static constexpr uint16_type rank = ( M > 1 );
     static constexpr uint16_type nDim = N;
@@ -279,36 +123,6 @@ struct Field
     static constexpr uint16_type nComponents3 = 1;
     static constexpr uint16_type nComponentsLast = 1;
 
-    template<typename T>
-    static
-    inline ublas::matrix<T> const&
-    toMatrix( ublas::matrix<T> const&  __c )
-    {
-        return __c;
-    }
-    template<typename T>
-    static
-    inline ublas::matrix<T> const&
-    toType( ublas::matrix<T> const&  __c )
-    {
-        return __c;
-    }
-    template<typename Derived>
-    requires EigenMatrix<Derived>
-    static
-    inline Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
-    toMatrix( Eigen::MatrixBase<Derived> const& __c )
-    {
-        return __c.eval();
-    }
-    template<typename Derived>
-    requires EigenMatrix<Derived>
-    static
-    inline Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
-    toType( Eigen::MatrixBase<Derived> const& __c )
-    {
-        return __c.eval();
-    }
 };
 }
 
@@ -316,10 +130,13 @@ template<uint16_type M>
 struct Field
 {
     template <uint16_type Nvar>
-    struct apply
+    struct Apply
     {
         typedef detail::Field<Nvar,M> type;
     };
+    /** Compatibility spelling for existing template-policy clients. */
+    template<uint16_type Nvar> using apply = Apply<Nvar>;
+
 };
 
 /**
@@ -328,7 +145,7 @@ struct Field
  *
  */
 template<uint16_type Dim>
-struct Tensor2 : public Tensor2Base
+struct Tensor2 : public Tensor2Base, public ::Feel::detail::ComponentCoefficientLayout<Dim*Dim>
 {
     static constexpr uint16_type rank = 2;
     static constexpr uint16_type nDim = Dim;
@@ -344,139 +161,6 @@ struct Tensor2 : public Tensor2Base
     static constexpr uint16_type nComponents3 = 1;
     static constexpr uint16_type nComponentsLast = nComponents2;
 
-    template<typename T>
-    static
-    ublas::matrix<T>
-    toMatrix( ublas::matrix<T> const&  __c )
-    {
-        typedef T value_type;
-        // reshape the coefficients in the vectorial case
-        const size_type nRows = __c.size1();
-        const size_type nRows1= __c.size2()*nComponents;
-        const size_type nCols = __c.size2();
-        ublas::matrix<T> __c_reshaped( nRows/nComponents, nCols*nComponents );
-
-        //__c_reshaped = ublas::scalar_matrix<value_type>( nRows/nComponents, nCols*nComponents, -1 );
-        for ( int c1 = 0; c1 < nComponents; ++c1 )
-        {
-            uint16_type i1 = nRows1*c1;
-
-            for ( int c2 = 0; c2 < nComponents; ++c2 )
-            {
-                ublas::project( __c_reshaped,
-                                ublas::range( i1/nComponents, ( i1+nRows1 )/nComponents ),
-                                ublas::range( c2*nCols, ( c2+1 )*nCols ) ) =
-                    ublas::project( __c,
-                                    ublas::slice( i1+c2, nComponents, nRows1/nComponents ),
-                                    ublas::slice( 0, 1, nCols ) );
-            }
-        }
-
-        return __c_reshaped;
-    }
-
-    template<typename AE>
-    static
-    ublas::matrix<typename ublas::matrix_expression<AE>::value_type>
-    toType( ublas::matrix_expression<AE> const&  __c )
-    {
-
-    }
-
-    template<typename T>
-    static
-    ublas::matrix<T>
-    toType( ublas::matrix<T> const&  __c )
-    {
-        typedef T value_type;
-        // reshape the coefficients in the vectorial case
-        const size_type nRows = __c.size1()*nComponents;
-        const size_type nRows1= __c.size2();
-        const size_type nCols = __c.size2()/nComponents;
-        ublas::matrix<T> __c_reshaped( nRows, nCols );
-
-        //__c_reshaped = ublas::scalar_matrix<value_type>( nRows, nCols, -1 );
-        for ( int c1 = 0; c1 < nComponents; ++c1 )
-        {
-            uint16_type i1 = nRows1*c1;
-
-            for ( int c2 = 0; c2 < nComponents; ++c2 )
-            {
-                ublas::project( __c_reshaped,
-                                ublas::slice( i1+c2, nComponents, nRows1/nComponents ),
-                                ublas::slice( 0, 1, nCols ) ) = ublas::project( __c,
-                                        ublas::range( i1/nComponents, ( i1+nRows1 )/nComponents ),
-                                        ublas::range( c2*nCols, ( c2+1 )*nCols ) );
-            }
-        }
-
-        return __c_reshaped;
-    }
-    template<typename Derived>
-    requires EigenMatrix<Derived>
-    static
-    Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
-    toMatrix( Eigen::MatrixBase<Derived> const& __c )
-    {
-        using value_type = typename Derived::Scalar;
-        const Eigen::Index comp = static_cast<Eigen::Index>( nComponents );
-        const Eigen::Index nRows = __c.rows();
-        const Eigen::Index nCols = __c.cols();
-        const Eigen::Index nRows1 = nCols * comp;
-        Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> __c_reshaped(
-            nRows / comp, nCols * comp );
-
-        for ( Eigen::Index c1 = 0; c1 < comp; ++c1 )
-        {
-            const Eigen::Index i1 = nRows1 * c1;
-            for ( Eigen::Index c2 = 0; c2 < comp; ++c2 )
-            {
-                for ( Eigen::Index r = 0; r < nRows1 / comp; ++r )
-                {
-                    const Eigen::Index srcRow = i1 + c2 + r * comp;
-                    const Eigen::Index dstRow = i1 / comp + r;
-                    __c_reshaped.block( dstRow, c2 * nCols, 1, nCols ) =
-                        __c.row( srcRow );
-                }
-            }
-        }
-
-        return __c_reshaped;
-    }
-
-    template<typename Derived>
-    requires EigenMatrix<Derived>
-    static
-    Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
-    toType( Eigen::MatrixBase<Derived> const& __c )
-    {
-        using value_type = typename Derived::Scalar;
-        const Eigen::Index comp = static_cast<Eigen::Index>( nComponents );
-        const Eigen::Index inRows = __c.rows();
-        const Eigen::Index inCols = __c.cols();
-        const Eigen::Index outRows = inRows * comp;
-        const Eigen::Index nRows1 = inCols;
-        const Eigen::Index outCols = inCols / comp;
-        Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> __c_reshaped(
-            outRows, outCols );
-
-        for ( Eigen::Index c1 = 0; c1 < comp; ++c1 )
-        {
-            const Eigen::Index i1 = nRows1 * c1;
-            for ( Eigen::Index c2 = 0; c2 < comp; ++c2 )
-            {
-                for ( Eigen::Index r = 0; r < nRows1 / comp; ++r )
-                {
-                    const Eigen::Index srcRow = i1 / comp + r;
-                    const Eigen::Index dstRow = i1 + c2 + r * comp;
-                    __c_reshaped.block( dstRow, 0, 1, outCols ) =
-                        __c.block( srcRow, c2 * outCols, 1, outCols );
-                }
-            }
-        }
-
-        return __c_reshaped;
-    }
 };
 
 struct Tensor2SymmBase : Tensor2Base {};
@@ -487,7 +171,7 @@ struct Tensor2SymmBase : Tensor2Base {};
  *
  */
 template<uint16_type Dim>
-struct Tensor2Symm : public Tensor2SymmBase
+struct Tensor2Symm : public Tensor2SymmBase, public ::Feel::detail::ComponentCoefficientLayout<Dim*Dim>
 {
     static constexpr uint16_type rank = 2;
     static constexpr uint16_type nDim = Dim;
@@ -503,150 +187,19 @@ struct Tensor2Symm : public Tensor2SymmBase
     static constexpr uint16_type nComponents3 = 1;
     static constexpr uint16_type nComponentsLast = nComponents2;
 
-    template<typename T>
-    static
-    ublas::matrix<T>
-    toMatrix( ublas::matrix<T> const&  __c )
-    {
-        typedef T value_type;
-        // reshape the coefficients in the vectorial case
-        const size_type nRows = __c.size1();
-        const size_type nRows1= __c.size2()*nComponents;
-        const size_type nCols = __c.size2();
-        ublas::matrix<T> __c_reshaped( nRows/nComponents, nCols*nComponents );
-
-        //__c_reshaped = ublas::scalar_matrix<value_type>( nRows/nComponents, nCols*nComponents, -1 );
-        for ( int c1 = 0; c1 < nComponents; ++c1 )
-        {
-            uint16_type i1 = nRows1*c1;
-
-            for ( int c2 = 0; c2 < nComponents; ++c2 )
-            {
-                ublas::project( __c_reshaped,
-                                ublas::range( i1/nComponents, ( i1+nRows1 )/nComponents ),
-                                ublas::range( c2*nCols, ( c2+1 )*nCols ) ) =
-                    ublas::project( __c,
-                                    ublas::slice( i1+c2, nComponents, nRows1/nComponents ),
-                                    ublas::slice( 0, 1, nCols ) );
-            }
-        }
-
-        return __c_reshaped;
-    }
-
-    template<typename AE>
-    static
-    ublas::matrix<typename ublas::matrix_expression<AE>::value_type>
-    toType( ublas::matrix_expression<AE> const&  __c )
-    {
-
-    }
-
-    template<typename T>
-    static
-    ublas::matrix<T>
-    toType( ublas::matrix<T> const&  __c )
-    {
-        typedef T value_type;
-        // reshape the coefficients in the vectorial case
-        const size_type nRows = __c.size1()*nComponents;
-        const size_type nRows1= __c.size2();
-        const size_type nCols = __c.size2()/nComponents;
-        ublas::matrix<T> __c_reshaped( nRows, nCols );
-
-        //__c_reshaped = ublas::scalar_matrix<value_type>( nRows, nCols, -1 );
-        for ( int c1 = 0; c1 < nComponents; ++c1 )
-        {
-            uint16_type i1 = nRows1*c1;
-
-            for ( int c2 = 0; c2 < nComponents; ++c2 )
-            {
-                ublas::project( __c_reshaped,
-                                ublas::slice( i1+c2, nComponents, nRows1/nComponents ),
-                                ublas::slice( 0, 1, nCols ) ) = ublas::project( __c,
-                                        ublas::range( i1/nComponents, ( i1+nRows1 )/nComponents ),
-                                        ublas::range( c2*nCols, ( c2+1 )*nCols ) );
-            }
-        }
-
-        return __c_reshaped;
-    }
-    template<typename Derived>
-    requires EigenMatrix<Derived>
-    static
-    Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
-    toMatrix( Eigen::MatrixBase<Derived> const& __c )
-    {
-        using value_type = typename Derived::Scalar;
-        const Eigen::Index comp = static_cast<Eigen::Index>( nComponents );
-        const Eigen::Index nRows = __c.rows();
-        const Eigen::Index nCols = __c.cols();
-        const Eigen::Index nRows1 = nCols * comp;
-        Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> __c_reshaped(
-            nRows / comp, nCols * comp );
-
-        for ( Eigen::Index c1 = 0; c1 < comp; ++c1 )
-        {
-            const Eigen::Index i1 = nRows1 * c1;
-            for ( Eigen::Index c2 = 0; c2 < comp; ++c2 )
-            {
-                for ( Eigen::Index r = 0; r < nRows1 / comp; ++r )
-                {
-                    const Eigen::Index srcRow = i1 + c2 + r * comp;
-                    const Eigen::Index dstRow = i1 / comp + r;
-                    __c_reshaped.block( dstRow, c2 * nCols, 1, nCols ) =
-                        __c.row( srcRow );
-                }
-            }
-        }
-
-        return __c_reshaped;
-    }
-
-    template<typename Derived>
-    requires EigenMatrix<Derived>
-    static
-    Eigen::Matrix<typename Derived::Scalar, Eigen::Dynamic, Eigen::Dynamic>
-    toType( Eigen::MatrixBase<Derived> const& __c )
-    {
-        using value_type = typename Derived::Scalar;
-        const Eigen::Index comp = static_cast<Eigen::Index>( nComponents );
-        const Eigen::Index inRows = __c.rows();
-        const Eigen::Index inCols = __c.cols();
-        const Eigen::Index outRows = inRows * comp;
-        const Eigen::Index nRows1 = inCols;
-        const Eigen::Index outCols = inCols / comp;
-        Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> __c_reshaped(
-            outRows, outCols );
-
-        for ( Eigen::Index c1 = 0; c1 < comp; ++c1 )
-        {
-            const Eigen::Index i1 = nRows1 * c1;
-            for ( Eigen::Index c2 = 0; c2 < comp; ++c2 )
-            {
-                for ( Eigen::Index r = 0; r < nRows1 / comp; ++r )
-                {
-                    const Eigen::Index srcRow = i1 / comp + r;
-                    const Eigen::Index dstRow = i1 + c2 + r * comp;
-                    __c_reshaped.block( dstRow, 0, 1, outCols ) =
-                        __c.block( srcRow, c2 * outCols, 1, outCols );
-                }
-            }
-        }
-
-        return __c_reshaped;
-    }
 };
 
 /**
- * if T derives from a Tensor2SymmBase then is_symm is mpl::bool_<true>,
- * mpl::bool_<false> otherwise
+ * Identify policies derived from Tensor2SymmBase through a standard Boolean trait.
  */
 template<typename T>
-struct is_symm
+struct IsSymmetric
     : bool_c<std::is_base_of_v<Tensor2SymmBase,T>>
 {
 };
+
+/** Compatibility spelling for the established symmetry trait. */
+template<typename T> using is_symm = IsSymmetric<T>;
 
 /**
  * helper constant that is true if the T derives from Tensor2SymmBase, false
@@ -859,12 +412,19 @@ struct StorageEigen
 {
     using value_type = T;
     using vector_type = Eigen::Matrix<value_type, Eigen::Dynamic, 1>;
-    using matrix_type = Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic>;
-    using vector_matrix_type = ublas::vector<matrix_type>;
-    using vector_vector_matrix_type = ublas::vector<vector_matrix_type>;
+    using matrix_type = typename ::Feel::detail::EigenMatrixBuffer<value_type, Dynamic, Dynamic,
+        ::Feel::detail::defaultInlineMatrixBytes, Eigen::ColMajor>::matrix_type;
+    using vector_matrix_type = std::vector<matrix_type>;
+    using vector_vector_matrix_type = std::vector<vector_matrix_type>;
     using matrix_node_type = Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic>;
     using points_type = matrix_node_type;
     using node_type = Eigen::Matrix<value_type, Eigen::Dynamic, 1>;
+    /** Order-aware scalar-basis storage using the shared extent/allocation bridge.
+     * ExpansionOrderSpec is the modal expansion degree, including any family shift.
+     * Spatial dimension and cell identity are supplied by the layer owning them.
+     */
+    template<int Dim, int ExpansionOrderSpec, ::Feel::detail::NodalCellKind CellKind>
+    using ForBasis = ::Feel::detail::PolynomialStorage<value_type, Dim, ExpansionOrderSpec, CellKind>;
 };
 
 } // Feel

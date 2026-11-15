@@ -26,20 +26,22 @@
 
 #include <feel/feelalg/svd.hpp>
 
-#include <feel/feelpoly/dubiner.hpp>
-#include <feel/feelpoly/legendre.hpp>
 #include <feel/feelpoly/boundadapted.hpp>
-#include <feel/feelpoly/tensorisedboundadapted.hpp>
-#include <feel/feelpoly/polynomial.hpp>
-#include <feel/feelpoly/expansiontypes.hpp>
-#include <feel/feelpoly/quadmapped.hpp>
-#include <feel/feelpoly/hdivpolynomialset.hpp>
-#include <feel/feelpoly/hcurlpolynomialset.hpp>
-#include <feel/feelpoly/piolatransform.hpp>
-#include <feel/feelpoly/meta.hpp>
-#include <feel/feelpoly/polynomialbasis.hpp>
-#include <feel/feelpoly/traits.hpp>
 #include <feel/feelpoly/concepts.hpp>
+#include <feel/feelpoly/dubiner.hpp>
+#include <feel/feelpoly/expansiontypes.hpp>
+#include <feel/feelpoly/hcurlpolynomialset.hpp>
+#include <feel/feelpoly/hdivpolynomialset.hpp>
+#include <feel/feelpoly/legendre.hpp>
+#include <feel/feelpoly/meta.hpp>
+#include <feel/feelpoly/piolatransform.hpp>
+#include <feel/feelpoly/polynomial.hpp>
+#include <feel/feelpoly/polynomialbasis.hpp>
+#include <feel/feelpoly/polynomialcoefficients.hpp>
+#include <feel/feelpoly/precomputetabulation.hpp>
+#include <feel/feelpoly/quadmapped.hpp>
+#include <feel/feelpoly/tensorisedboundadapted.hpp>
+#include <feel/feelpoly/traits.hpp>
 
 namespace Feel
 {
@@ -126,6 +128,9 @@ public:
 
     typedef typename Poly::convex_type convex_type;
     typedef typename basis_type::matrix_type matrix_type;
+    /** Canonical Eigen coefficient owner, independent of the number of functions. */
+    using CoefficientStorage = ::Feel::detail::PolynomialCoefficientStorage<value_type,
+        ::Feel::detail::polynomialCoefficientExtent<Poly, OrderSpec>()>;
     typedef typename basis_type::points_type points_type;
 
     using gradient_polynomialset_type = if_t<is_scalar_polynomial<polyset_type>::value,
@@ -169,22 +174,22 @@ public:
     PolynomialSet( Source const& p )
         :
         M_basis( p.basis() ),
-        M_coeff( p.coeff() ),
+        M_coeff( ::Feel::detail::polynomialCoefficientStorageFrom<CoefficientStorage>( p ) ),
         M_fname( p.familyName() )
     {
         setOrderValue( ::Feel::detail::polynomialOrder( p ) );
     }
     /** @brief Construct from source-relative coefficients, or modal coefficients when as-is. */
-    template<class Source>
-        requires requires( Source const& p ) { p.basis(); p.coeff(); }
-    PolynomialSet( Source const& p, matrix_type const& c, bool __as_is = false )
+    template<class Source, typename Coefficients>
+        requires requires( Source const& p ) { p.basis(); p.coeff(); } &&
+                 ( EigenMatrix<Coefficients> || UBlasMatrix<Coefficients> )
+    PolynomialSet( Source const& p, Coefficients const& c, bool asIs = false )
         :
         M_basis( p.basis() ),
-        M_coeff( p.coeff() ),
+        M_coeff( ::Feel::detail::polynomialCoefficientStorageFrom<CoefficientStorage, polyset_type>( p, c, asIs ) ),
         M_fname( p.familyName() )
     {
         setOrderValue( ::Feel::detail::polynomialOrder( p ) );
-        setCoefficient( c, __as_is );
         //std::cout << "[PolynomialSet] dim = " << nDim << " order = " << nOrder << "\n";
         //std::cout << "[PolynomialSet] c = " << c << "\n";
         //std::cout << "[PolynomialSet] p.coeff = " << p.coeff() << "\n";
@@ -192,7 +197,9 @@ public:
     }
 
     /** @brief Construct from coefficients in the default modal expansion. */
-    PolynomialSet( matrix_type const& c, bool __as_is = false )
+    template<typename Coefficients>
+        requires ( EigenMatrix<Coefficients> || UBlasMatrix<Coefficients> )
+    PolynomialSet( Coefficients const& c, bool __as_is = false )
         :
         M_basis(),
         M_coeff( c ),
@@ -209,11 +216,7 @@ public:
 
     /** @brief Copy all value state, sharing immutable runtime derivative operators. */
     PolynomialSet( PolynomialSet const & p )
-        :
-        M_order( p.M_order ),
-        M_basis( p.M_basis ),
-        M_coeff( p.M_coeff ),
-        M_fname( p.M_fname )
+        : PolynomialSet( p, CoefficientStorage( p.M_coeff ) )
     {
         //std::cout << "[PolynomialSet::copy] dim = " << nDim << " order = " << nOrder << "\n";
         //std::cout << "[PolynomialSet::copy] p.coeff = " << p.coeff() << "\n";
@@ -258,29 +261,18 @@ public:
      */
     component_type operator[]( uint16_type i ) const
     {
-        static_assert( is_vectorial, "PolynomialSet::operator[] requires a vectorial polynomial set" );
-        if ( i >= nComponents )
-            throw std::out_of_range(
-                "PolynomialSet component index is outside the component range" );
-        const int nrows = M_coeff.size1()/nComponents;
-        const int ncols = M_coeff.size2();
-        return component_type( *this, ublas::project( M_coeff,
-                               ublas::slice( i, nComponents, nrows ),
-                               ublas::slice( 0, 1, ncols ) ), true );
+        static_assert( is_vectorial, "component extraction requires a vector polynomial set" );
+        return extractComponent( i );
     }
 
     /** @brief Extract one tensor entry for every function, preserving the expansion. */
     component_type operator()( uint16_type i, uint16_type j ) const
         {
-            static_assert( is_tensor2, "PolynomialSet::operator() requires a tensor2 polynomial set" );
-            if ( i >= nComponents1 || j >= nComponents2 )
-                throw std::out_of_range("tensor component index is outside the component range");
-            const int nrows = M_coeff.size1()/nComponents;
-            const int ncols = M_coeff.size2();
-            return component_type( *this, ublas::project( M_coeff,
-                                                           ublas::slice( nComponents2*i+j, nComponents, nrows ),
-                                                           ublas::slice( 0, 1, ncols ) ), true );
-        }
+        static_assert( is_tensor2, "tensor entry extraction requires a rank-two polynomial set" );
+        if ( i >= nComponents1 || j >= nComponents2 )
+            throw std::out_of_range( "tensor component index is outside the component range" );
+        return extractComponent( nComponents2 * i + j );
+    }
 
     //@}
 
@@ -321,7 +313,7 @@ public:
     {
         PolynomialSet<Poly, PolySetType, Dynamic> dynamic_set;
         dynamic_set.M_basis = M_basis;
-        dynamic_set.M_coeff = M_coeff;
+        dynamic_set.M_coeff.assign( M_coeff.matrix() );
         dynamic_set.M_fname = M_fname;
         dynamic_set.setOrder( order() );
         return dynamic_set;
@@ -336,19 +328,24 @@ public:
             return boost::none;
         PolynomialSet<Poly, PolySetType, N> static_set;
         static_set.M_basis = M_basis;
-        static_set.M_coeff = M_coeff;
+        static_set.M_coeff.assign( M_coeff.matrix() );
         static_set.M_fname = M_fname;
         return static_set;
     }
 
     /**
-     * \return coefficient of the polynomials of the polynomial set in
-     * the basis associated with Poly
+     * \return an owning legacy snapshot of coefficients in the expansion basis.
+     * @note Prefer coefficients() for a borrowed native Eigen view.
      */
-    matrix_type const&  coeff() const
+    matrix_type coeff() const
     {
-        return  M_coeff;
+        return M_coeff.template legacy<matrix_type>();
     }
+
+    /** @brief Borrow native coefficients C(component/function, mode) until this owner changes. */
+    [[nodiscard]] auto coefficients() const& { return M_coeff.matrix(); }
+    /** @brief Reject a coefficient view of a temporary polynomial set. */
+    auto coefficients() const&& = delete;
 
     /**
      * \return the basis associated with the polynomial set
@@ -387,7 +384,7 @@ public:
      */
     size_type polynomialDimension() const
     {
-        return M_coeff.size1()/nComponents;
+        return M_coeff.rows()/nComponents;
     }
 
     /**
@@ -395,7 +392,7 @@ public:
      */
     size_type polynomialDimensionPerComponent() const
     {
-        return M_coeff.size2();
+        return M_coeff.cols();
     }
 
     /**
@@ -403,7 +400,7 @@ public:
      */
     bool isZero() const
     {
-        return ublas::norm_frobenius( M_coeff ) < Feel::type_traits<value_type>::epsilon();
+        return M_coeff.matrix().norm() < Feel::type_traits<value_type>::epsilon();
     }
 
     /**
@@ -444,28 +441,13 @@ public:
      */
     void setCoefficient( matrix_type const& __c, bool __as_is = false )
     {
-        if ( is_scalar )
-        {
-            if ( !__as_is )
-                M_coeff = ublas::prod( __c, M_coeff );
-
-            else
-                M_coeff = __c;
-        }
-
-        else
-        {
-            if ( !__as_is )
-            {
-                auto m = polyset_type::toMatrix( M_coeff );
-                M_coeff = ublas::prod( __c, m );
-                M_coeff = polyset_type::toType( M_coeff );
-            }
-
-            else
-                M_coeff = __c;
-        }
+        setCoefficient( eigenMap( __c ), __as_is );
     }
+
+    /** @brief Compose or directly assign native Eigen coefficients with checked dimensions. */
+    template<typename Derived>
+    void setCoefficient( Eigen::MatrixBase<Derived> const& coefficients, bool asIs = false )
+    { M_coeff.template set<polyset_type>( coefficients, asIs ); }
 
     //@}
 
@@ -476,117 +458,51 @@ public:
     /**
      * Extract the polynomials whose indices are listed in \p list_p
      *
-     * \param list_p list of indices of polynomials to extract
+     * \param indices list of indices of polynomials to extract
      * \return the polynomial set extracted
      */
-    self_type polynomials( std::vector<int> const& list_p  ) const
+    self_type polynomials( std::vector<int> const& indices ) const
     {
-        size_type dim_p = this->polynomialDimension();
-        size_type new_dim_p = nComponents*list_p.size();
-        matrix_type coeff( nComponents*nComponents*list_p.size(), M_coeff.size2() );
-        int j = 0;
-        for( int i: list_p )
+        auto const dimension = polynomialDimension();
+        auto const blockSize = nComponents * indices.size();
+        Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> selected( nComponents * blockSize, M_coeff.cols() );
+        for ( std::size_t j = 0; j < indices.size(); ++j )
         {
-            if ( i < 0 || static_cast<size_type>(i) >= dim_p / nComponents )
-                throw std::out_of_range("polynomial block index is outside the set");
-            for ( int c = 0; c < nComponents; ++c )
-            {
-                ublas::project( coeff,
-                                ublas::range( c*new_dim_p+nComponents*j, c*new_dim_p+nComponents*j+nComponents ),
-                                ublas::range( 0, M_coeff.size2() ) ) =
-                                    ublas::project( M_coeff,
-                                                    ublas::range( c*dim_p+nComponents*i, c*dim_p+nComponents*i+nComponents ),
-                                                    ublas::range( 0, M_coeff.size2() ) );
-            }
-
-            ++j;
+            int const index = indices[j];
+            if ( index < 0 || static_cast<size_type>( index ) >= dimension / nComponents )
+                throw std::out_of_range( "polynomial block index is outside the set" );
+            for ( int component = 0; component < nComponents; ++component )
+                selected.middleRows( component * blockSize + nComponents * j, nComponents ) =
+                    M_coeff.matrix().middleRows( component * dimension + nComponents * index, nComponents );
         }
-        return self_type( *this, coeff, true );
+        return self_type( *this, selected, true );
     }
 
-    /**
-     * Extract the polynomials up to dimension \p dim
-     *
-     * \param dim_p polynomial dimension
-     * \return the polynomial set extracted
-     */
-    self_type polynomialsUpToDimension( int dim_p  ) const
+    /** @brief Extract the first count polynomial blocks using the shared range implementation. */
+    self_type polynomialsUpToDimension( int count ) const
     {
-        if ( dim_p < 0 || static_cast<size_type>(dim_p) > polynomialDimension() / nComponents )
-            throw std::out_of_range("polynomial block dimension is outside the set");
-        matrix_type coeff( nComponents*nComponents*dim_p, M_coeff.size2() );
-
-        for ( int c = 0; c < nComponents; ++c )
-        {
-            size_type nc = c*this->polynomialDimension();
-            ublas::project( coeff,
-                            ublas::range( c*nComponents*dim_p, ( c+1 )*nComponents*dim_p ),
-                            ublas::range( 0, M_coeff.size2() ) ) =
-                                ublas::project( M_coeff,
-                                                ublas::range( nc, nc+nComponents*dim_p ),
-                                                ublas::range( 0, M_coeff.size2() ) );
-        }
-
-        return self_type( *this, coeff, true );
+        if ( count < 0 || static_cast<size_type>( count ) > polynomialDimension() / nComponents )
+            throw std::out_of_range( "polynomial block dimension is outside the set" );
+        return polynomialsRange( 0, count );
     }
 
-    /**
-     * Extract the polynomials between dimension \p dim_bot up to dimension \p dim_top
-     *
-     * \param dim_bot polynomial dimension
-     * \param dim_top polynomial dimension
-     * \return the polynomial set extracted
-     */
-    self_type
-    polynomialsRange( uint16_type dim_bot, uint16_type dim_top  ) const
+    /** @brief Extract a half-open range of polynomial blocks, preserving component order. */
+    self_type polynomialsRange( int begin, int end ) const
     {
-        if ( dim_bot > dim_top || dim_top > polynomialDimension() / nComponents )
-            throw std::out_of_range("polynomial block range is outside the set");
-        uint16_type dim_p = dim_top-dim_bot;
-        matrix_type coeff( nComponents*nComponents*dim_p,
-                           M_coeff.size2() );
-
-        for ( int c = 0; c < nComponents; ++c )
-        {
-            size_type nc = c*this->polynomialDimension();
-            ublas::project( coeff,
-                            ublas::range( c*nComponents*dim_p, ( c+1 )*nComponents*dim_p ),
-                            ublas::range( 0, M_coeff.size2() ) ) =
-                                ublas::project( M_coeff,
-                                                ublas::range( nc+nComponents*dim_bot, nc+nComponents*dim_top ),
-                                                ublas::range( 0, M_coeff.size2() ) );
-        }
-
-        return self_type( *this, coeff, true );
+        if ( begin < 0 || begin > end || static_cast<size_type>( end ) > polynomialDimension() / nComponents )
+            throw std::out_of_range( "polynomial block range is outside the set" );
+        std::vector<int> indices( end - begin );
+        std::iota( indices.begin(), indices.end(), begin );
+        return polynomials( indices );
     }
 
-    /**
-     * Extract the \p i -th polynomial
-     *
-     * \param i index of the polynomial to extract
-     * \return the polynomial extracted
-     */
-    polynomial_type polynomial( uint16_type i  ) const
+    /** @brief Extract one polynomial as an owning value in the same expansion. */
+    polynomial_type polynomial( uint16_type i ) const
     {
-        if ( i >= this->polynomialDimension() )
-            throw std::out_of_range("polynomial index is outside the set");
-        matrix_type coeff( nComponents, M_coeff.size2() );
-        //for ( int c = 0; c < nComponents; ++c )
-        {
-            ublas::project( coeff,
-                            ublas::range( 0, nComponents ),
-                            ublas::range( 0, M_coeff.size2() ) ) =
-                                ublas::project( M_coeff,
-                                                //ublas::range( c*dim_p+nComponents*i, c*dim_p+nComponents*i+nComponents ),
-                                                ublas::range( nComponents*i, nComponents*( i+1 ) ),
-                                                ublas::range( 0, M_coeff.size2() ) );
-        }
-        polynomial_type result( *this, coeff, true );
-        if constexpr ( polynomial_type::is_order_dynamic )
-            result.setOrder( orderValue() );
-        return result;
+        if ( i >= polynomialDimension() )
+            throw std::out_of_range( "polynomial index is outside the set" );
+        return polynomial_type( *this, M_coeff.matrix().middleRows( nComponents * i, nComponents ), true );
     }
-
 
     /**
      * evaluate the i-th polynomial at node __pt
@@ -629,11 +545,52 @@ public:
     template<typename AE>
     matrix_type evaluate( ublas::matrix_expression<AE> const& __pts ) const
     {
-        matrix_type m = basisEvaluate( __pts );
-        if ( M_coeff.size2() != m.size1() )
-            throw std::invalid_argument(
-                "PolynomialSet coefficient and basis dimensions are incompatible" );
-        return ublas::prod( M_coeff, m );
+        return M_order.withValues( M_basis, __pts(), [&]( auto const& modal )
+        { return M_coeff.template multiplyAs<matrix_type>( modal ); } );
+    }
+
+    /** @brief Evaluate C Phi in Eigen storage; legacy points are borrowed by the modal boundary. */
+    template <typename Points>
+    [[nodiscard]] auto values( Points const& points ) const
+    {
+        return M_order.withValues( M_basis, points, [&]( auto const& modal )
+                                   { return M_coeff.multiply( modal ); } );
+    }
+
+    /** @brief Evaluate all reference gradient directions in fixed-dimensional standard storage. */
+    template <typename Points>
+    [[nodiscard]] auto gradients( Points const& points ) const
+    {
+        using Matrix = Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic>;
+        std::array<Matrix, nDim> result;
+        M_order.forEachGradient( M_basis, points, [&]( int direction, auto const& modal )
+                                 { result[direction] = M_coeff.multiply( modal ); } );
+        return result;
+    }
+
+    /** @brief Evaluate ordered second reference derivatives in direction-major storage. */
+    template <typename Points>
+    [[nodiscard]] auto hessians( Points const& points ) const
+    {
+        using Matrix = Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic>;
+        std::array<Matrix, nDim * nDim> result;
+        forEachHessian( points, [&]( int i, int j, auto const& expression )
+                        { result[i * nDim + j].noalias() = expression; } );
+        return result;
+    }
+
+    /** @brief Own requested reference tables from the common modal-to-nodal tabulator. */
+    template <Evaluation Request = Evaluation::All, typename Points>
+    [[nodiscard]] auto tabulate( Points const& points ) const
+    {
+        return ::Feel::tabulate<Request>( *this, points );
+    }
+
+    /** @brief Reuse caller-owned requested tables and modal recurrence storage. */
+    template <typename Points, typename Tables, typename Workspace>
+    void tabulateInto( Points const& points, Tables& output, Workspace& workspace ) const
+    {
+        ::Feel::tabulateInto( *this, points, output, workspace );
     }
 
     /**
@@ -665,82 +622,62 @@ public:
     /** @brief Return the mixed second differentiation operator at the effective degree. */
     matrix_type d( uint16_type i, uint16_type j ) const
     {
-        return ublas::prod( basisD( i ), basisD( j ) );
+        return ::Feel::detail::materializePolynomialMatrix<matrix_type>( eigenMap( basisD( i ) ) * eigenMap( basisD( j ) ) );
     }
 
     /**
      * \brief Derivate with respect to the l-th direction.
      *
-     * \return the polynomial set associated with the derivation in the l-direction
+     * \return the polynomial set associated with the derivation in the direction
+     * \note Copies retain the effective order and shared immutable operators.
      */
-    self_type derivate( uint16_type l ) const
+    self_type derivate( uint16_type direction ) const
     {
-        matrix_type coeff;
-        coeff = ublas::prod( M_coeff, basisD( l ) );
-
-        // Differentiation changes coefficients within the same expansion space;
-        // the copied policy retains the effective degree and owned operators.
-        self_type deriv( *this );
-        deriv.setCoefficient( coeff, true );
-        return deriv;
+        return self_type( *this, M_coeff.rightProduct( eigenMap( basisD( direction ) ) ) );
     }
 
     /** @brief Mathematical derivative in a reference coordinate direction. */
     self_type derivative( uint16_type direction ) const { return derivate( direction ); }
 
+    /** @brief Evaluate every reference gradient direction in owning legacy matrices. */
     template<typename AE>
     ublas::vector<matrix_type> derivate( ublas::matrix_expression<AE> const& pts ) const
     {
-        ublas::vector<matrix_type> der = basisDerivate( pts );
-        ublas::vector<matrix_type> res( nDim );
-
-        for ( uint16_type i = 0; i < nDim; ++i )
-        {
-            res[i].resize( M_coeff.size1(), pts().size2() );
-            ublas::axpy_prod( M_coeff, der[i], res[i] );
-        }
-
-        return res;
+        ublas::vector<matrix_type> result( nDim );
+        M_order.forEachGradient( M_basis, pts(), [&]( int direction, auto const& modal )
+        { result[direction] = M_coeff.template multiplyAs<matrix_type>( modal ); } );
+        return result;
     }
 
+    /** @brief Evaluate one reference gradient direction directly into its final matrix. */
     template<typename AE>
     matrix_type derivate( uint16_type i, ublas::matrix_expression<AE> const& pts ) const
     {
-        ublas::vector<matrix_type> der = basisDerivate( pts );
-        matrix_type res( M_coeff.size1(), pts().size2() );
-        ublas::axpy_prod( M_coeff, der[i], res );
-        return res;
+        if ( i >= nDim ) throw std::out_of_range( "invalid polynomial derivative direction" );
+        matrix_type result;
+        M_order.forEachGradient( M_basis, pts(), [&]( int direction, auto const& modal )
+        {
+            if ( direction == i ) result = M_coeff.template multiplyAs<matrix_type>( modal );
+        } );
+        return result;
     }
 
+    /** @brief Evaluate all ordered reference Hessians through the shared destination path. */
     template<typename AE>
     ublas::matrix<matrix_type> derivate2( ublas::matrix_expression<AE> const& pts ) const
         {
-            //std::cout << "[derivate2] M_coeff = " << M_coeff << "\n";
-            matrix_type eval = basisEvaluate( pts );
-
-            ublas::matrix<matrix_type> res( nDim, nDim );
-
-            for ( uint16_type i = 0; i < nDim; ++i )
-            {
-                for ( uint16_type j = 0; j < nDim; ++j )
-                {
-                    matrix_type di = basisD( i );
-                    matrix_type dj = basisD( j );
-                    matrix_type p1 = ublas::prod( M_coeff, di );
-                    matrix_type p2 = ublas::prod( p1, dj );
-                    res( i, j ) = ublas::prod( p2, eval );
-                }
-            }
-            return res;
-        }
+        ublas::matrix<matrix_type> result( nDim, nDim );
+        forEachHessian( pts(), [&]( int i, int j, auto const& expression )
+        { result( i, j ) = ::Feel::detail::materializePolynomialMatrix<matrix_type>( expression ); } );
+        return result;
+    }
+    /** @brief Evaluate an ordered second reference derivative with checked directions. */
     template<typename AE>
     matrix_type derivate( uint16_type i, uint16_type j, ublas::matrix_expression<AE> const& pts ) const
     {
-        //std::cout << "[derivate2] M_coeff = " << M_coeff << "\n";
-        matrix_type eval = basisEvaluate( pts );
-        matrix_type p1 = ublas::prod( M_coeff, basisD( i ) );
-        matrix_type p2 = ublas::prod( p1, basisD( j ) );
-        return ublas::prod( p2, eval );
+        if ( i >= nDim || j >= nDim ) throw std::out_of_range( "invalid polynomial Hessian direction" );
+        auto native = hessians( pts );
+        return ::Feel::detail::materializePolynomialMatrix<matrix_type>( native[i * nDim + j] );
     }
     /**
      * Gradient of the polynomial set
@@ -766,16 +703,27 @@ public:
     }
 
 private:
+    /** @brief Extract one interleaved component using the common coefficient indexing rule. */
+    component_type extractComponent( uint16_type index ) const
+    {
+        if ( index >= nComponents ) throw std::out_of_range( "polynomial component index is outside the component range" );
+        Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> selected( M_coeff.rows() / nComponents, M_coeff.cols() );
+        for ( Eigen::Index row = 0; row < selected.rows(); ++row )
+            selected.row( row ) = M_coeff.matrix().row( row * nComponents + index );
+        return component_type( *this, selected, true );
+    }
+
     /** @brief Assemble gradients in function/component/direction order. */
     gradient_polynomialset_type gradientCoefficients() const
     {
         static_assert( nDim == nRealDim, "reference gradient requires equal topological and real dimensions" );
-        matrix_type coefficients( M_coeff.size1() * nDim, M_coeff.size2() );
-        for ( uint16_type direction = 0; direction < nDim; ++direction )
-            ublas::project( coefficients,
-                            ublas::slice( direction, nDim, M_coeff.size1() ),
-                            ublas::slice( 0, 1, M_coeff.size2() ) ) =
-                ublas::prod( M_coeff, basisD( direction ) );
+        Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> coefficients( M_coeff.rows() * nDim, M_coeff.cols() );
+        for ( int direction = 0; direction < nDim; ++direction )
+        {
+            auto differentiated = M_coeff.multiply( eigenMap( basisD( direction ) ) );
+            for ( Eigen::Index row = 0; row < M_coeff.rows(); ++row )
+                coefficients.row( row * nDim + direction ) = differentiated.row( row );
+        }
         return gradient_polynomialset_type( *this, coefficients, true );
     }
 public:
@@ -787,7 +735,7 @@ public:
      */
     uint16_type nbDof() const
     {
-        return M_coeff.size1();
+        return M_coeff.rows();
     }
 
 
@@ -799,38 +747,13 @@ public:
      */
     void insert( self_type const& p, bool erase = false )
     {
-        if ( p.coeff().size2() != coeff().size2() )
-            throw std::invalid_argument(
-                "PolynomialSet insertion requires matching coefficient dimensions" );
-
-#if 0
-        std::cout << "coeff = " << M_coeff << "\n"
-                  << "p     = " << p.coeff() << "\n";
-#endif
-
-        if ( erase )
-        {
-            M_coeff = p.M_coeff;
-            //std::cout << "insert after erase ="  << M_coeff << "\n";
-            return;
-        }
-
-        matrix_type oldcoeff = M_coeff;
-        M_coeff.resize( M_coeff.size1() + p.coeff().size1(), p.coeff().size2(), false );
-
-
-        if ( oldcoeff.size1() > 0 )
-        {
-            ublas::project( M_coeff,
-                            ublas::range( 0, oldcoeff.size1() ),
-                            ublas::range( 0, oldcoeff.size2() ) ) = oldcoeff;
-        }
-
-        ublas::project( M_coeff,
-                        ublas::range( oldcoeff.size1(), oldcoeff.size1()+p.coeff().size1() ),
-                        ublas::range( 0, oldcoeff.size2() ) ) = p.coeff();
-        //std::cout << "insert ="  << M_coeff << "\n";
-
+        if ( M_coeff.cols() != p.M_coeff.cols() )
+            throw std::invalid_argument( "polynomial insertion requires matching expansion dimensions" );
+        if ( erase ) { M_coeff = p.M_coeff; return; }
+        Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> combined( M_coeff.rows() + p.M_coeff.rows(), M_coeff.cols() );
+        combined.topRows( M_coeff.rows() ) = M_coeff.matrix();
+        combined.bottomRows( p.M_coeff.rows() ) = p.M_coeff.matrix();
+        M_coeff.assign( combined );
     }
 
     //!
@@ -840,25 +763,21 @@ public:
     //!
     matrix_type firstMoments()
         {
-            matrix_type _m( M_coeff.size1(), 1 );
-            points_type p( nDim, 1 );
-            Eigen::Map<Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>> pMap( p.data().begin(), p.size1(), p.size2() );
-            pMap.setZero();
-            // we want to retrieve the constant polynomial value, we do not care
-            // about the point at which we evaluate the basis
-            auto b = basisEvaluate( p );
-            // the first column is the mean value when rescaled by the value of
-            // the first polynomial (constant) in the primal basis
-            ublas::column(_m,0)=ublas::column( M_coeff, 0 )/b(0,0);
-            return _m;
-        }
+        points_type points( nDim, 1 );
+        eigenMap( points ).setZero();
+        auto modal = basisEvaluate( points );
+        return ::Feel::detail::materializePolynomialMatrix<matrix_type>( M_coeff.matrix().col( 0 ) / modal( 0, 0 ) );
+    }
 
     //@}
 
 
     /******************************************************/
-    /**
-     * \class PreCompute
+
+    /** @brief Requested reference tabulation adapted to existing FE/geometry layouts.
+     * Native column-major tables are canonical owners. Compatibility tensors
+     * use function/component/direction indexing without re-evaluating the basis.
+     * Updates reuse storage; borrowed native views expire on update or destruction.
      */
     class PreCompute
     {
@@ -887,6 +806,8 @@ public:
         static constexpr int h_comp1=(rank==2)?nComponents1:(rank==1)?nComponents1:nDim;
         static constexpr int h_comp2=(rank==2)?nComponents2:(rank==1)?nDim:nDim;
         static constexpr int h_comp3=(rank==2)?nDim:(rank==1)?nDim:1;
+
+        /** Existing compatibility Hessian tensor type; full matrix-valued Hessians use hessianEigen(). */
         typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<h_comp1,h_comp2,h_comp3>> h_type;
         typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> mean_value_type;
         typedef boost::multi_array<id_type,2> functionvalue_type;
@@ -898,30 +819,29 @@ public:
         using hessian_component_matrices_type =
             std::array<derivative_matrix_type, nDim * nDim>;
 
-        PreCompute()  = default;
+        /** @brief Construct empty reference precomputation state. */
+        PreCompute() = default;
 
         /**
          * precompute values of basis functions given by __ref_ele at
          * points \c __pts
          */
         PreCompute( reference_element_ptrtype const& __ref_ele,
-                    matrix_node_t_type const& __pts )
-            :
-            M_ref_ele( __ref_ele ),
-            M_nodes( __pts ),
-            M_mean(__ref_ele->nbDof()),
-            M_phi(boost::extents[__ref_ele->nbDof()][__pts.size2()]),
-            M_phi_eigen( __ref_ele->nbDof(), __pts.size2() ),
-            M_grad(boost::extents[__ref_ele->nbDof()][__pts.size2()]),
-            M_hessian(boost::extents[__ref_ele->nbDof()][__pts.size2()])
+                    matrix_node_t_type const& __pts, Evaluation request = Evaluation::All )
+            : M_ref_ele( __ref_ele ),
+              M_nodes( __pts ),
+              M_mean( __ref_ele->nbDof() ),
+              M_reference( RuntimeOrder{ ::Feel::detail::polynomialOrder( *__ref_ele ) } )
         {
+            // First moments depend on the reference element, independently of sample points.
             auto fm = __ref_ele->firstMoments();
             for( int i = 0; i < __ref_ele->nbDof(); ++i )
             {
                 M_mean[i] = fm(i,0);
             }
-            init( M_ref_ele, __pts, rank_t<rank>() );
-            initPhiEigen( M_ref_ele, __pts );
+
+            // Populate requested native tables and existing FE compatibility tensors.
+            initialize( request );
         }
 
         /** copy constructor (deep copy) */
@@ -933,13 +853,23 @@ public:
         /** copy operator (deep copy) */
         PreCompute& operator=( PreCompute const& __pc ) = default;
 
+        /** @brief Reuse owners and recurrence storage with the current request. */
         void update( matrix_node_t_type const& __pts )
         {
-            M_nodes = __pts;
-            init( M_ref_ele, __pts, rank_t<rank>() );
-            initPhiEigen( M_ref_ele, __pts );
-            M_derivative_eigen_current = false;
+            update( __pts, M_reference.request() );
         }
+
+        /** @brief Change evaluation points and requested groups; unrequested access throws. */
+        void update( matrix_node_t_type const& points, Evaluation request )
+        {
+            if ( points.size1() != nDim || !::Feel::detail::validEvaluation( request ) )
+                throw std::invalid_argument( "invalid precompute coordinates or request" );
+            M_nodes = points;
+            initialize( request );
+        }
+
+        /** @brief Active reference-table request. */
+        [[nodiscard]] Evaluation requestedTables() const noexcept { return M_reference.request(); }
 
         //! \return the finite element
         reference_element_ptrtype fePtr() { return M_ref_ele; }
@@ -1014,17 +944,23 @@ public:
          */
         functionvalue_type const& phi() const
         {
+            M_reference.require( Evaluation::Values );
             return M_phi;
         }
 
-        functionvalue_type const*  phiPtr() const
-            {
-                return &M_phi;
-            }
-        eigen_matrix_xx_col_type<value_type> const& phiEigen() const
-            {
-                return M_phi_eigen;
-            }        
+        /** @brief Borrow the requested legacy value collection until update or destruction. */
+        functionvalue_type const* phiPtr() const
+        {
+            M_reference.require( Evaluation::Values );
+            return &M_phi;
+        }
+
+        /** @brief Borrow canonical values with interleaved component rows and sample columns. */
+        [[nodiscard]] eigen_matrix_xx_col_type<value_type> const& phiEigen() const
+        {
+            M_reference.require( Evaluation::Values );
+            return M_reference.tables().values().matrixStorage();
+        }
         /**
          * Returns the value of the q-th node of the i-th basis
          * functions.
@@ -1033,41 +969,55 @@ public:
         {
             return phi( i, c1, c2, q, rank_t<rank>() );
         }
+        /** @brief Read one requested scalar reference value. */
         value_type phi( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, rank_t<0> ) const
-            {
-                return *M_phi[i][q].data();
-            }
+        {
+            M_reference.require( Evaluation::Values );
+            return *M_phi[i][q].data();
+        }
+        /** @brief Read one requested vector-component reference value. */
         value_type phi( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, rank_t<1> ) const
-            {
-                return *(M_phi[i][q].data()+c1);
-            }
+        {
+            M_reference.require( Evaluation::Values );
+            return *( M_phi[i][q].data() + c1 );
+        }
+        /** @brief Read one requested matrix-component reference value. */
         value_type phi( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, rank_t<2> ) const
-            {
-                return M_phi[i][q]( c1,c2 );
-            }
+        {
+            M_reference.require( Evaluation::Values );
+            return M_phi[i][q]( c1, c2 );
+        }
+        /** @brief Borrow one requested legacy value until update or destruction. */
         id_type const& phi( uint16_type i, uint16_type q ) const
         {
-            DCHECK( q < nComputedNodes() ) << "invalid node index q=" << q << " nComputedNodes="<< nComputedNodes();
+            M_reference.require( Evaluation::Values );
+            DCHECK( q < nComputedNodes() ) << "invalid node index q=" << q << " nComputedNodes=" << nComputedNodes();
             DCHECK( i < M_ref_ele->nbDof() ) << "invalid dof index i=" << i << " ndof =" << M_ref_ele->nbDof();
 
             return M_phi[i][q];
         }
+        /** @brief Borrow mutable legacy value storage using the existing compatibility API. */
         id_type& phi( uint16_type i, uint16_type q )
         {
-            DCHECK( q < nComputedNodes() ) << "invalid node index q=" << q << " nComputedNodes="<< nComputedNodes();
+            M_reference.require( Evaluation::Values );
+            DCHECK( q < nComputedNodes() ) << "invalid node index q=" << q << " nComputedNodes=" << nComputedNodes();
             DCHECK( i < M_ref_ele->nbDof() ) << "invalid dof index i=" << i << " ndof =" << M_ref_ele->nbDof();
 
             return M_phi[i][q];
         }
 
+        /** @brief Borrow the requested legacy reference-gradient collection. */
         grad_type const& grad() const
         {
+            M_reference.require( Evaluation::Gradients );
             return M_grad;
         }
+        /** @brief Borrow the requested legacy reference-gradient collection by pointer. */
         grad_type const* gradPtr() const
-            {
-                return &M_grad;
-            }
+        {
+            M_reference.require( Evaluation::Gradients );
+            return &M_grad;
+        }
 
         /**
          * @brief Return one reference-gradient component for all basis
@@ -1076,14 +1026,13 @@ public:
          * @return column-major matrix with shape `(nDof,nPoints)`
          * @throws std::out_of_range if @p direction is invalid
          */
-        derivative_matrix_type const& gradientEigen( uint16_type direction ) const
-            requires( rank == 0 )
+        [[nodiscard]] derivative_matrix_type const& gradientEigen( uint16_type direction ) const
         {
             if ( direction >= nDim )
                 throw std::out_of_range(
                     "PolynomialSet gradient direction is outside the reference dimension" );
-            this->ensureDerivativeEigen();
-            return M_gradient_eigen[direction];
+            M_reference.require( Evaluation::Gradients );
+            return M_reference.tables().gradient( direction ).matrixStorage();
         }
 
         /**
@@ -1094,398 +1043,222 @@ public:
          * @return column-major matrix with shape `(nDof,nPoints)`
          * @throws std::out_of_range if either direction is invalid
          */
-        derivative_matrix_type const& hessianEigen(
+        [[nodiscard]] derivative_matrix_type const& hessianEigen(
             uint16_type firstDirection, uint16_type secondDirection ) const
-            requires( rank == 0 )
         {
             if ( firstDirection >= nDim || secondDirection >= nDim )
                 throw std::out_of_range(
                     "PolynomialSet Hessian direction is outside the reference dimension" );
-            this->ensureDerivativeEigen();
-            return M_hessian_eigen[firstDirection * nDim + secondDirection];
+            M_reference.require( Evaluation::Hessians );
+            return M_reference.tables().hessian( firstDirection, secondDirection ).matrixStorage();
         }
 
+        /** @brief Read one requested scalar/vector reference-gradient entry. */
         value_type grad( size_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return M_grad[i][q]( c1,c2,0 );
+            M_reference.require( Evaluation::Gradients );
+            return M_grad[i][q]( c1, c2, 0 );
         }
 
-        // gradient of matricial basis function
+        /** @brief Read one requested matrix-component reference-gradient entry. */
         value_type grad( size_type i, uint16_type c1, uint16_type c2, uint16_type c3, uint16_type q ) const
-            {
-                return M_grad[i][q]( c1,c2, c3 );
-            }
+        {
+            M_reference.require( Evaluation::Gradients );
+            return M_grad[i][q]( c1, c2, c3 );
+        }
 
+        /** @brief Borrow the requested legacy reference-Hessian collection. */
         hessian_type const& hessian() const
         {
+            M_reference.require( Evaluation::Hessians );
             return M_hessian;
         }
+        /** @brief Borrow one requested legacy Hessian tensor. */
         h_type const& hessian( uint16_type i, uint16_type q ) const
-            {
-                return M_hessian[i][q];
-            }
-        // hessian of scalar basis function
+        {
+            M_reference.require( Evaluation::Hessians );
+            return M_hessian[i][q];
+        }
+        /** @brief Read one requested scalar reference-Hessian entry. */
         value_type hessian( size_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return M_hessian[i][q]( c1,c2,0 );
+            M_reference.require( Evaluation::Hessians );
+            return M_hessian[i][q]( c1, c2, 0 );
         }
-        // hessian of scalar basis function
+        /** @brief Borrow one requested legacy Hessian using a dof-sized index. */
         h_type const& hessian( size_type i, uint16_type q ) const
-            {
-                return M_hessian[i][q];
-            }
-        // hessian of vectorial basis function
+        {
+            M_reference.require( Evaluation::Hessians );
+            return M_hessian[i][q];
+        }
+        /** @brief Read one requested vector-component reference-Hessian entry. */
         value_type hessian( size_type i, uint16_type c1, uint16_type c2, uint16_type c3, uint16_type q ) const
-            {
-                return M_hessian[i][q]( c1,c2,c3 );
-            }
+        {
+            M_reference.require( Evaluation::Hessians );
+            return M_hessian[i][q]( c1, c2, c3 );
+        }
 
+        /** @brief Reference Hessian of one matrix-valued function component. */
+        value_type hessian( size_type function, uint16_type c1, uint16_type c2,
+                            uint16_type first, uint16_type second, uint16_type point ) const
+            requires( rank == 2 )
+        {
+            M_reference.require( Evaluation::Hessians );
+            return hessianEigen( first, second )( function * nComponents + c1 * nComponents2 + c2, point );
+        }
+
+        /** @brief Log requested legacy values using their function/sample shape. */
         void print()
-            {
-                typedef typename grad_type::index index;
-                const index I = M_ref_ele->nbDof();
-                const index Q = M_nodes.size2();
-
-                LOG(INFO) << "Precompute nodes : " << M_nodes;
-                for ( index i = 0; i < I; ++i )
-                {
-                    for ( index q = 0; q < Q; ++q )
-                        LOG(INFO) << "Precompute phi[" << i << ", " << q << "]= " << M_phi[i][q](0,0);
-                }
-            }
-    private:
-
-        void initPhiEigen( reference_element_ptrtype const& M_ref_ele,
-                           matrix_node_t_type const& __pts )
-            {
-                if constexpr ( rank == 0  )
-                {
-                    if ( __pts.size2() != M_phi_eigen.cols() )
-                        M_phi_eigen.resize( M_ref_ele->nbDof(), __pts.size2() );
-
-                    for ( int q = 0; q < __pts.size2(); ++q )
-                    {
-                        for ( int i = 0; i < M_ref_ele->nbDof(); ++i )
-                        {
-                            M_phi_eigen( i, q ) = M_phi[i][q]( 0,0 );
-                        }
-                    }
-                }
-            }
-
-        /**
-         * @brief Build component-major derivative tables used by batched
-         * geometry evaluation.
-         *
-         * These tables are computed with the reference precomputation and are
-         * therefore reused by every physical element sharing it.
-         */
-        void ensureDerivativeEigen() const
         {
-            if constexpr ( rank == 0 )
-            {
-                if ( M_derivative_eigen_current )
-                    return;
-                auto const dofCount = M_ref_ele->nbDof();
-                auto const pointCount = M_nodes.size2();
-                for ( auto& component : M_gradient_eigen )
-                    component.resize( dofCount, pointCount );
-                for ( auto& component : M_hessian_eigen )
-                    component.resize( dofCount, pointCount );
-
-                for ( int q = 0; q < pointCount; ++q )
-                {
-                    for ( int i = 0; i < dofCount; ++i )
-                    {
-                        for ( int first = 0; first < nDim; ++first )
-                        {
-                            M_gradient_eigen[first]( i, q ) =
-                                M_grad[i][q]( 0, first, 0 );
-                            for ( int second = 0; second < nDim; ++second )
-                                M_hessian_eigen[first * nDim + second]( i, q ) =
-                                    M_hessian[i][q]( first, second, 0 );
-                        }
-                    }
-                }
-                M_derivative_eigen_current = true;
-            }
-        }
-        void
-        init( reference_element_ptrtype const& M_ref_ele,
-              matrix_node_t_type const& __pts,
-              rank_t<0> )
-        {
-#if 1
-            M_phi.resize( boost::extents[M_ref_ele->nbDof()][__pts.size2()] );
-            M_grad.resize( boost::extents[M_ref_ele->nbDof()][__pts.size2()] );
-            M_hessian.resize( boost::extents[M_ref_ele->nbDof()][__pts.size2()] );
-#endif
-            id_type i_phi;
-            std::fill( M_phi.data(), M_phi.data()+M_phi.num_elements(), i_phi.constant(0.));
-            g_type i_grad;
-            std::fill( M_grad.data(), M_grad.data()+M_grad.num_elements(), i_grad.constant(0.));
-            h_type i_hessian;
-            std::fill( M_hessian.data(), M_hessian.data()+M_hessian.num_elements(), i_hessian.constant(0.));
-
-            matrix_type phiv = M_ref_ele->evaluate( __pts );
-            ublas::vector<matrix_type> __grad( M_ref_ele->derivate( __pts ) );
-            ublas::matrix<matrix_type> __hess( M_ref_ele->derivate2( __pts ) );
-
+            M_reference.require( Evaluation::Values );
             typedef typename grad_type::index index;
-            const index I = M_ref_ele->nbDof();
-            const index Q = __pts.size2();
-            CHECK( phiv.size1() >= I && phiv.size2() >= Q )
-                << "invalid phi size in precompute: phi=(" << phiv.size1() << "," << phiv.size2()
-                << ") expected at least (" << I << "," << Q << ")";
-            for ( index j = 0; j < nDim; ++j )
-            {
-                CHECK( __grad[j].size1() >= I && __grad[j].size2() >= Q )
-                    << "invalid grad size in precompute dir=" << j
-                    << " grad=(" << __grad[j].size1() << "," << __grad[j].size2()
-                    << ") expected at least (" << I << "," << Q << ")";
-            }
+            const index I = M_phi.shape()[0];
+            const index Q = M_nodes.size2();
 
+            LOG( INFO ) << "Precompute nodes : " << M_nodes;
             for ( index i = 0; i < I; ++i )
             {
                 for ( index q = 0; q < Q; ++q )
-                {
-                    M_phi[i][q]( 0,0 ) = phiv( i, q );
-                }
-
-                for ( index q = 0; q < Q; ++q )
-                    for ( index j = 0; j < nDim; ++j )
-                        M_grad[i][q]( 0,j, 0 ) = __grad[j]( i, q );
-
-                for ( index q = 0; q < Q; ++q )
-                    for ( index j = 0; j < nDim; ++j )
-                        for ( index k = j; k < nDim; ++k )
-                        {
-                            //value_type t = __hessian( nDim*nDim*I*( nDim*k+j )+nDim*nDim*i+nDim*j+k, q );
-                            value_type t = __hess(j,k)( i, q );
-                            M_hessian[i][q]( j,k,0 ) = t;
-                            M_hessian[i][q]( k,j,0 ) = t;
-                        }
+                    LOG( INFO ) << "Precompute phi[" << i << ", " << q << "]= " << M_phi[i][q]( 0, 0 );
             }
-
         }
-        void
-        init( reference_element_ptrtype const& M_ref_ele,
-              matrix_node_t_type const& __pts,
-              rank_t<1> )
+
+      private:
+        /** @brief Compute selected native tables once and fill compatibility tensors. */
+        void initialize( Evaluation request )
         {
-            typedef typename grad_type::index index;
-#if 0
-            std::cout << "family = " << M_ref_ele->familyName() << std::endl;
-            std::cout << "is_product = " << reference_element_type::is_product << std::endl;
-            std::cout << "nbDof = " << M_ref_ele->nbDof() << std::endl;
-#endif
-            const index I = ( reference_element_type::is_product?M_ref_ele->nbDof()/nRealDim/nRealDim:M_ref_ele->nbDof()/nRealDim );
-            //std::cout << "I = " << I << std::endl;
-            //std::cout << "nbDof = " << M_ref_ele->nbDof() << std::endl;
+            // Preserve the scalar, vector and matrix compatibility layout contracts.
+            static_assert( rank <= 2, "legacy precompute tensors support scalar, vector and matrix fields" );
+            static_assert( nComponents == nComponents1 * nComponents2 );
 
-            const index Q = __pts.size2();
-            //std::cout << "Q = " << I << std::endl;
-
-            const int ncdof= ( reference_element_type::is_product?nRealDim:1 );
-            int nldof= ( reference_element_type::is_product?I*nRealDim:I );
-            //std::cout << "ncdof = " << ncdof << ", nldof = " << nldof << "\n";
-            M_phi.resize( boost::extents[nldof][__pts.size2()] );
-            M_grad.resize( boost::extents[nldof][__pts.size2()] );
-            M_hessian.resize( boost::extents[nldof][__pts.size2()] );
-
-            id_type i_phi;
-            std::fill( M_phi.data(), M_phi.data()+M_phi.num_elements(), i_phi.constant(0.));
-            g_type i_grad;
-            std::fill( M_grad.data(), M_grad.data()+M_grad.num_elements(), i_grad.constant(0.));
-            h_type i_hessian;
-            std::fill( M_hessian.data(), M_hessian.data()+M_hessian.num_elements(), i_hessian.constant(0.));
-
-
-            matrix_type phiv = M_ref_ele->evaluate( __pts );
-            ublas::vector<matrix_type> __grad( M_ref_ele->derivate( __pts ) );
-            ublas::matrix<matrix_type> __hess( M_ref_ele->derivate2( __pts ) );
-
-            for ( index i = 0; i < I; ++i )
+            if ( !M_ref_ele || M_nodes.size1() != nDim )
             {
+                throw std::invalid_argument( "invalid reference precompute source or coordinate dimension" );
+            }
 
-                for ( index c1 = 0; c1 < ncdof; ++c1 )
+            // Evaluate the requested mathematical tables once through the common tabulator.
+            M_reference.compute( *M_ref_ele, M_nodes, request );
+            auto const functions = M_ref_ele->nbDof() / nComponents;
+            auto const points = M_nodes.size2();
+
+            // Keep compatibility allocations stable when the request and shape are unchanged.
+            auto resize = [&]( auto& array, Evaluation group )
+            {
+                auto const rows = includes( request, group ) ? functions : 0;
+                auto const cols = includes( request, group ) ? points : 0;
+
+                if ( array.shape()[0] != rows || array.shape()[1] != cols )
                 {
-                    for ( index q = 0; q < Q; ++q )
-                        for ( index j = 0; j < nRealDim; ++j )
-                            M_phi[I*c1+i][q]( j,0 ) = phiv( nldof*c1+nRealDim*i+j, q );
+                    array.resize( boost::extents[rows][cols] );
+                }
+            };
 
-                    //M_phi[I*c1+i][q](j,0) = phiv( nDim*I*c1+nDim*i+j, q );
+            resize( M_phi, Evaluation::Values );
+            resize( M_grad, Evaluation::Gradients );
+            resize( M_hessian, Evaluation::Hessians );
 
-                    for ( index q = 0; q < Q; ++q )
-                        for ( index j = 0; j < nComponents1; ++j )
-                            for ( index l = 0; l < nDim; ++l )
-                            {
-                                //M_grad[I*c1+i][j](l,q) = __grad[l]( nDim*I*c1+nDim*i+j, q );
-                                M_grad[I*c1+i][q]( j,l,0 ) = __grad[l]( nldof*c1+nRealDim*i+j, q );
-                                //M_grad[I*c1+i][j][nDim-1][q] = __grad[l]( nldof*c1+nDim*i+j, q );
-                                //std::cout << "grad(" << i << "," << c1 << "," << j << "," << l << "," << q << ")=" <<  M_grad[I*c1+i][j](l,q) << "\n";
-                            }
-
-                    for ( index q = 0; q < Q; ++q )
-                        for ( index l = 0; l < nComponents1; ++l )
-                            for ( index j = 0; j < nDim; ++j )
-                                for ( index k = j; k < nDim; ++k )
-                                {
-                                    value_type t = __hess(j,k)( nldof*c1+nRealDim*i+l,q);
-                                    M_hessian[I*c1+i][q]( l,j,k ) = t;
-                                    M_hessian[I*c1+i][q]( l,k,j ) = t;
-                                }
-
-
+            // Keep the legacy rank-three placeholder defined for matrix-valued fields.
+            if constexpr ( rank == 2 )
+            {
+                // The retained rank-three compatibility type has no second
+                // derivative axis for a matrix field. Complete derivatives live
+                // in canonical hessianEigen(i,j) tables and the six-index accessor.
+                for ( std::size_t entry = 0; entry < M_hessian.num_elements(); ++entry )
+                {
+                    M_hessian.data()[entry].setZero();
                 }
             }
-        }
 
-        void
-        init( reference_element_ptrtype const& M_ref_ele,
-              matrix_node_t_type const& __pts,
-              rank_t<2> )
+            // Dispatch once, then pack all field ranks with the same component-row rule.
+            auto packSelected = [&]( auto selection )
             {
-                typedef typename grad_type::index index;
-#if 0
-                std::cout << "family = " << M_ref_ele->familyName() << std::endl;
-                std::cout << "is_product = " << reference_element_type::is_product << std::endl;
-                std::cout << "nbDof = " << M_ref_ele->nbDof() << std::endl;
-#endif
-                const index I = ( reference_element_type::is_product?M_ref_ele->nbDof()/nComponents/nComponents:M_ref_ele->nbDof() );
-                //std::cout << "I = " << I << std::endl;
-                //std::cout << "nbDof = " << M_ref_ele->nbDof() << std::endl;
+                constexpr auto selected = decltype( selection )::value;
 
-                const index Q = __pts.size2();
-                //std::cout << "Q = " << I << std::endl;
-
-                const int nc1dof= ( reference_element_type::is_product?nComponents1:1 );
-                const int nc2dof= ( reference_element_type::is_product?nComponents2:1 );
-                int nldof= ( reference_element_type::is_product?I*nComponents:I );
-                //std::cout << " nldof = " << nldof << " I=" << I << " nc1dof=" << nc1dof << " nc2dof=" << nc2dof << std::endl;
-                M_phi.resize( boost::extents[nldof][__pts.size2()] );
-                M_grad.resize( boost::extents[nldof][__pts.size2()] );
-                id_type i_phi;
-                std::fill( M_phi.data(), M_phi.data()+M_phi.num_elements(), i_phi.constant(0.));
-                g_type i_grad;
-                std::fill( M_grad.data(), M_grad.data()+M_grad.num_elements(), i_grad.constant(0.));
-
-                matrix_type phiv = M_ref_ele->evaluate( __pts );
-                ublas::vector<matrix_type> __grad( M_ref_ele->derivate( __pts ) );
-
-                for ( index i = 0; i < I; ++i )
+                for ( std::size_t function = 0; function < functions; ++function )
                 {
-                    for ( index c1 = 0; c1 < nc1dof; ++c1 )
+                    for ( std::size_t point = 0; point < points; ++point )
                     {
-                        // symmetric case
-                        //if ( is_symm_v<polyset_type> )
-                        if ( 0 )
+                        for ( int component = 0; component < nComponents; ++component )
                         {
-                            for ( index c2 = 0; c2 < c1; ++c2 )
+                            int const c1 = component / nComponents2;
+                            int const c2 = component % nComponents2;
+                            auto const row = function * nComponents + component;
+
+                            // Pack values into the existing function/component representation.
+                            if constexpr ( includes( selected, Evaluation::Values ) )
                             {
-                                int II = i + c2*I+nc2dof*c1*I;
-                                int JJ = i + c1*I+nc2dof*c2*I;
-                                for ( index q = 0; q < Q; ++q )
-                                {
-                                    for ( index j = 0; j < nDim; ++j )
-                                    {
-                                        for ( index k = 0; k < nDim; ++k )
-                                        {
-                                            M_phi[II][q]( j,k ) = phiv( I*nComponents*(nComponents2*c1+c2)+nComponents*i+nDim*j+k, q );
-                                            M_phi[JJ][q]( j,k ) = M_phi[II][q]( j,k );
-                                        }
-                                        //M_phi[II][q]( j,j ) = phiv( I*nComponents*(nComponents2*c1+c2)+nComponents*i+nDim*j+j, q );
-                                        //M_phi[JJ][q]( j,j ) = M_phi[II][q]( j,j ) ;//phiv( I*nComponents*(nComponents2*c2+c1)+nComponents*i+nDim*j+j, q );
-                                    }
-                                }
-
-                                for ( index q = 0; q < Q; ++q )
-                                    for ( index j = 0; j < nDim; ++j )
-                                    {
-                                        for ( index k = 0; k < nc1dof; ++k )
-                                        {
-                                            for ( index l = 0; l < k; ++l )
-                                            {
-                                                M_grad[II][q]( k,l,j ) = __grad[j]( I*nComponents*(nComponents2*c1+c2)+nComponents*i+nDim*k+l, q );
-                                                M_grad[II][q]( l,k,j  ) = M_grad[II][q]( k,l,j );
-                                                M_grad[JJ][q]( k,l,j ) = __grad[j]( I*nComponents*(nComponents2*c2+c1)+nComponents*i+nDim*k+l, q );
-                                                M_grad[JJ][q]( l,k,j ) = M_grad[JJ][q]( k,l,j );
-                                            }
-                                            M_grad[II][q]( k,k,j ) = __grad[j]( I*nComponents*(nComponents2*c1+c2)+nComponents*i+nDim*k+k, q );
-                                            M_grad[JJ][q]( k,k,j ) = __grad[j]( I*nComponents*(nComponents2*c2+c1)+nComponents*i+nDim*k+k, q );
-                                        }
-                                    }
-                            }
-                            int KK = i + c1*I+nc2dof*c1*I;
-                            for ( index q = 0; q < Q; ++q )
-                            {
-                                for ( index j = 0; j < nDim; ++j )
-                                {
-                                    for ( index k = 0; k < nDim; ++k )
-                                    {
-                                        M_phi[KK][q]( j,k ) = phiv( I*nComponents*(nComponents2*c1+c1)+nComponents*i+nDim*j+k, q );
-                                        //M_phi[KK][q]( k,j ) = M_phi[KK][q]( j,k );
-
-                                    }
-                                    //M_phi[KK][q]( j,j ) = phiv( I*nComponents*(nComponents2*c1+c1)+nComponents*i+nDim*j+j, q );
-                                }
-
-                                for ( index j = 0; j < nDim; ++j )
-                                    {
-                                        for ( index k = 0; k < nc1dof; ++k )
-                                        {
-                                            for ( index l = 0; l < k; ++l )
-                                            {
-                                                M_grad[KK][q]( k,l,j ) = __grad[j]( I*nComponents*(nComponents2*c1+c1)+nComponents*i+nDim*k+l, q );
-                                                M_grad[KK][q]( l,k,j ) = M_grad[KK][q]( k,l,j );
-                                            }
-                                            M_grad[KK][q]( k,k,j ) = __grad[j]( I*nComponents*(nComponents2*c1+c1)+nComponents*i+nDim*k+k, q );
-                                        }
-                                    }
+                                M_phi[function][point]( c1, c2 ) = M_reference.tables().values().matrix()( row, point );
                             }
 
-                        }
-                        else
-                        {
-                            for ( index c2 = 0; c2 < nc2dof; ++c2 )
+                            // Place the reference direction on the legacy rank-dependent axis.
+                            if constexpr ( includes( selected, Evaluation::Gradients ) )
                             {
-                                int II = i + c2*I+nc2dof*c1*I;
-                                for ( index q = 0; q < Q; ++q )
+                                for ( int direction = 0; direction < nDim; ++direction )
                                 {
-                                    for ( index j = 0; j < nDim; ++j )
-                                        for ( index k = 0; k < nDim; ++k )
-                                            M_phi[II][q]( j,k ) = phiv( I*nComponents*(nComponents2*c1+c2)+nComponents*i+nDim*j+k, q );
-                                    //std::cout << "phi[" << II << "(" << i << ",c2=" << c2 << ", " << I << "," << nc2dof << ",c1=" << c1 << ")[" << q << "]=" << M_phi[II][q] << std::endl;
+                                    auto const value = M_reference.tables().gradient( direction ).matrix()( row, point );
 
-                                    for ( index j = 0; j < nDim; ++j )
+                                    if constexpr ( rank == 0 )
                                     {
-                                        for ( index k = 0; k < nc1dof; ++k )
-                                        {
-                                            for ( index l = 0; l < nc2dof; ++l )
-                                            {
-                                                M_grad[II][q]( k,l,j ) = __grad[j]( I*nComponents*(nComponents2*c1+c2)+nComponents*i+nDim*k+l, q );
+                                        M_grad[function][point]( 0, direction, 0 ) = value;
+                                    }
+                                    else if constexpr ( rank == 1 )
+                                    {
+                                        M_grad[function][point]( c1, direction, 0 ) = value;
+                                    }
+                                    else
+                                    {
+                                        M_grad[function][point]( c1, c2, direction ) = value;
+                                    }
+                                }
+                            }
 
-                                            }
+                            // Scalar/vector tensors retain both ordered derivative axes.
+                            if constexpr ( includes( selected, Evaluation::Hessians ) && rank < 2 )
+                            {
+                                for ( int first = 0; first < nDim; ++first )
+                                {
+                                    for ( int second = 0; second < nDim; ++second )
+                                    {
+                                        auto const value = M_reference.tables().hessian( first, second ).matrix()( row, point );
+
+                                        if constexpr ( rank == 0 )
+                                        {
+                                            M_hessian[function][point]( first, second, 0 ) = value;
+                                        }
+                                        else
+                                        {
+                                            M_hessian[function][point]( c1, first, second ) = value;
                                         }
                                     }
                                 }
                             }
                         }
                     }
-                }
-            }
-    private:
+                } };
 
-        reference_element_ptrtype M_ref_ele;
-        matrix_node_t_type M_nodes;
-        mean_value_type M_mean;
-        functionvalue_type M_phi;
-        eigen_matrix_xx_col_type<value_type> M_phi_eigen;
-        grad_type M_grad;
-        hessian_type M_hessian;
-        mutable gradient_component_matrices_type M_gradient_eigen;
-        mutable hessian_component_matrices_type M_hessian_eigen;
-        mutable bool M_derivative_eigen_current = false;
+            ::Feel::withEvaluationRequest( request, packSelected );
+        }
+
+      /** Shared immutable source of modal coefficients and effective degree. */
+      reference_element_ptrtype M_ref_ele;
+
+      /** Owned reference coordinates, independent of caller lifetime. */
+      matrix_node_t_type M_nodes;
+
+      /** Existing first-moment contract, independent of the point batch. */
+      mean_value_type M_mean;
+
+      /** Existing function/component tensors consumed by FE contexts. */
+      functionvalue_type M_phi;
+
+      /** Existing function/component/direction gradient tensors. */
+      grad_type M_grad;
+
+      /** Existing Hessian tensors, including both matrix-component axes. */
+      hessian_type M_hessian;
+
+      /** Sole native owners and reusable modal recurrence state. */
+      ::Feel::detail::PrecomputeTabulationState<reference_element_type> M_reference;
     }; /** class PreCompute **/
 
     typedef PreCompute precompute_type;
@@ -1494,13 +1267,25 @@ public:
     precompute_ptrtype
     preCompute( self_ptrtype p, points_type const& P )
     {
-        return std::make_shared<PreCompute>( p, P );
+        return preCompute( p, P, Evaluation::All );
+    }
+
+    /** @brief Construct only the requested reference tables through the existing factory. */
+    precompute_ptrtype preCompute( self_ptrtype p, points_type const& points, Evaluation request )
+    {
+        return std::make_shared<PreCompute>( p, points, request );
     }
 
     precompute_ptrtype
     preCompute( points_type const& P )
     {
         return std::make_shared<PreCompute>( super_enable_shared_from_this::shared_from_this(), P );
+    }
+
+    /** @brief Select reference derivative groups while retaining shared source ownership. */
+    precompute_ptrtype preCompute( points_type const& points, Evaluation request )
+    {
+        return preCompute( super_enable_shared_from_this::shared_from_this(), points, request );
     }
 
     typedef std::vector<std::map<typename convex_type::permutation_type, precompute_ptrtype> > faces_precompute_type;
@@ -1528,6 +1313,10 @@ public:
         return geopc;
     }
 
+    /** @brief Precompute caller-supplied reference face points for every orientation.
+     * A generator accepting (face,permutation) supplies oriented coordinates;
+     * the existing one-argument form supplies permutation-independent coordinates.
+     */
     template <typename FacePointGenT>
     std::vector<std::map<typename convex_type::permutation_type, precompute_ptrtype> >
     preComputeOnFaces( self_ptrtype p, FacePointGenT const& P )
@@ -1545,7 +1334,10 @@ public:
             for ( permutation_type __p( permutation_type::IDENTITY );
                     __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
             {
-                geopc[__f][__p] = precompute_ptrtype(  new precompute_type( p, P(__f) ) );
+                if constexpr ( requires { P( __f, __p ); } )
+                    geopc[__f][__p] = std::make_shared<precompute_type>( p, P( __f, __p ) );
+                else
+                    geopc[__f][__p] = std::make_shared<precompute_type>( p, P( __f ) );
             }
         }
 
@@ -1573,18 +1365,42 @@ public:
         return geopc;
     }
 
+    /** @brief Precompute oriented edge samples with the established result-map type.
+     * A two-argument generator supplies each orientation explicitly. For the
+     * legacy ordered one-argument point batch, reversal uses the same column
+     * permutation as QuadMapped. The legacy undefined key aliases identity.
+     */
     template<typename PAtEdges>
     std::vector<std::map<typename convex_type::permutation_type, precompute_ptrtype>>
     preComputeOnEdges( self_ptrtype gm, PAtEdges const& p )
     {
-        typedef typename convex_type::permutation_type permutation_type;
-        std::vector<std::map<permutation_type, precompute_ptrtype> > __geopc( convex_type::numEdges );
-        for ( uint16_type __f = 0; __f < convex_type::numEdges; ++__f )
+        using Permutation = typename convex_type::permutation_type;
+        using EdgePermutation = typename convex_type::edge_permutation_type;
+        std::vector<std::map<Permutation, precompute_ptrtype>> result( convex_type::numEdges );
+
+        // Build each oriented reference batch using the caller's established map type.
+        for ( uint16_type edge = 0; edge < convex_type::numEdges; ++edge )
         {
-            __geopc[__f][permutation_type::NO_PERMUTATION] = std::make_shared<precompute_type>(  gm, p(__f) );
-            __geopc[__f][permutation_type::REVERSE_PERMUTATION] = std::make_shared<precompute_type>(  gm, p( __f ) );
+            for ( EdgePermutation orientation{ EdgePermutation::IDENTITY };
+                  orientation < EdgePermutation{ EdgePermutation::N_PERMUTATIONS }; ++orientation )
+            {
+                auto const key = Permutation{ orientation.value() };
+
+                // Explicit generators own their orientation; legacy batches reverse columns.
+                if constexpr ( requires { p( edge, orientation ); } )
+                    result[edge][key] = std::make_shared<precompute_type>( gm, p( edge, orientation ) );
+                else
+                {
+                    points_type points( p( edge ) );
+                    if ( orientation.value() != EdgePermutation::IDENTITY ) eigenMap( points ).rowwise().reverseInPlace();
+                    result[edge][key] = std::make_shared<precompute_type>( gm, points );
+                }
+            }
+
+            // Preserve the historical undefined-key lookup as an identity alias.
+            result[edge][Permutation{ Permutation::NO_PERMUTATION }] = result[edge].at( Permutation{ EdgePermutation::IDENTITY } );
         }
-        return __geopc;
+        return result;
     }
 
     template<size_type context_v, typename Basis_t, typename Geo_t, typename ElementType, size_type context_g = context_v, int SubEntityCoDim = 0>
@@ -1697,33 +1513,31 @@ public:
             Eigen::Map<quadrature_batch_table_type const, Eigen::Unaligned,
                        Eigen::OuterStride<>>;
 
-
         Context( reference_element_ptrtype const& __RefEle,
                  geometric_mapping_context_ptrtype const& __gmc,
                  precompute_ptrtype const& __pc )
-            :
-            M_pc( __pc ),
-            M_npoints( 0/*__pc->nPoints()*/ ),
+            : M_pc( __pc ),
+              M_npoints( 0 /*__pc->nPoints()*/ ),
 
-            M_ipt( 0 ),
-            M_ref_ele( __RefEle ),
+              M_ipt( 0 ),
+              M_ref_ele( __RefEle ),
 
-            M_gmc( __gmc ),
-            M_dofs( nDofs() ),
-            M_phi( __pc->phi() ),
-            M_gradphi( __pc->gradPtr() ),
-            M_normal_component(),
-            M_trace(),
-            M_dn(),
-            M_grad(),
-            M_symm_grad(),
-            M_dx(),
-            M_dy(),
-            M_dz(),
-            M_id_batch(),
-            M_grad_batch(),
-            M_div_batch(),
-            M_curl_batch()
+              M_gmc( __gmc ),
+              M_dofs( nDofs() ),
+              M_phi( __pc->phi() ),
+              M_gradphi( includes( __pc->requestedTables(), Evaluation::Gradients ) ? __pc->gradPtr() : nullptr ),
+              M_normal_component(),
+              M_trace(),
+              M_dn(),
+              M_grad(),
+              M_symm_grad(),
+              M_dx(),
+              M_dy(),
+              M_dz(),
+              M_id_batch(),
+              M_grad_batch(),
+              M_div_batch(),
+              M_curl_batch()
         {
             std::iota( M_dofs.begin(), M_dofs.end(), 0 );
 
@@ -1799,6 +1613,7 @@ public:
 
         void update( geometric_mapping_context_ptrtype const& __gmc )
         {
+            validateReferenceGradients( __gmc->dynamicContext() );
             this->invalidateQuadratureBatchTables();
             //M_phi = M_pc->get()->phi();
             //M_gradphi = M_pc->get()->grad();
@@ -2843,6 +2658,50 @@ public:
             M_curl_batch_valid = true;
         }
     private:
+      /** @brief Whether the active evaluator needs reference first derivatives.
+       * Curved-map Hessians also require gradients for the existing chain rule.
+       */
+      [[nodiscard]] bool needsReferenceGradients( size_type dynamicFlags ) const
+      {
+          // First-order physical operators consume the reference gradients directly.
+          bool needed = vm::has_grad_v<context> || vm::has_first_derivative_v<context> ||
+                        vm::has_div_v<context> || vm::has_curl_v<context> ||
+                        vm::has_symm_v<context> || vm::has_first_derivative_normal_v<context>;
+
+          // Curved-map second derivatives also need gradients for the chain rule.
+          if constexpr ( second_derivative_require_grad )
+          {
+              needed = needed || vm::has_hessian_v<context> ||
+                       vm::has_second_derivative_v<context> || vm::has_laplacian_v<context>;
+          }
+
+          // Runtime evaluator flags supplement the compile-time operator selection.
+          if constexpr ( vm::has_dynamic_basis_function_v<context> )
+          {
+              auto const flags = dynamicFlags;
+              needed = needed || hasGRAD( flags ) || hasFIRST_DERIVATIVE( flags ) ||
+                       hasDIV( flags ) || hasCURL( flags ) || hasSYMM( flags ) ||
+                       hasFIRST_DERIVATIVE_NORMAL( flags );
+
+              if constexpr ( second_derivative_require_grad )
+              {
+                  needed = needed || hasHESSIAN( flags ) ||
+                           hasSECOND_DERIVATIVE( flags ) || hasLAPLACIAN( flags );
+              }
+          }
+
+          return needed;
+      }
+
+      /** @brief Reject an insufficient request before a physical derivative reads its tables. */
+      void validateReferenceGradients( size_type dynamicFlags ) const
+      {
+          if ( needsReferenceGradients( dynamicFlags ) &&
+               ( !M_gradphi || M_gradphi->shape()[0] < this->nDofs() ) )
+          {
+              throw std::invalid_argument( "reference gradients were not requested for this FE context" );
+          }
+      }
 
         boost::optional<precompute_ptrtype> M_pc;
         uint16_type M_npoints;
@@ -2924,6 +2783,43 @@ public:
     }
 
 protected:
+    /** @brief Consume each C partial_i partial_j Phi expression while its operands are alive.
+     * @param points Column-oriented sample coordinates.
+     * @param operation Callable consuming direction indices and an ephemeral product expression.
+     * @note Direct modal Hessians avoid coefficient operators where available.
+     * Native and legacy results share this path and differ only in their destination.
+     */
+    template<typename Points, typename Operation>
+    void forEachHessian( Points const& points, Operation&& operation ) const
+    {
+        // Keep the existing coefficient-operator implementation in one callable.
+        auto withOperators = [&]
+        {
+            M_order.withValues( M_basis, points, [&]( auto const& modal )
+            {
+                for ( int i = 0; i < nDim; ++i )
+                {
+                    auto differentiated = M_coeff.multiply( eigenMap( basisD( i ) ) );
+                    for ( int j = 0; j < nDim; ++j )
+                        operation( i, j, differentiated * eigenMap( basisD( j ) ) * modal );
+                }
+            } );
+        };
+
+        // The common order policy selects the measured sampled-Hessian backend.
+        if constexpr ( order_storage_type::template hasDirectHessians<Points> )
+        {
+            if ( M_order.useDirectHessians() )
+            {
+                M_order.forEachHessian( M_basis, points, [&]( int i, int j, auto const& modal )
+                                        { operation( i, j, M_coeff.matrix() * modal ); } );
+                return;
+            }
+        }
+
+        withOperators();
+    }
+
     /** @brief Evaluate modal derivatives at the effective order. */
     template<typename AE>
     ublas::vector<matrix_type> basisDerivate( ublas::matrix_expression<AE> const& pts ) const
@@ -2954,10 +2850,16 @@ protected:
 
 
 private:
+    /** @brief Retain basis/order state while adopting independently owned coefficients. */
+    PolynomialSet( self_type const& source, CoefficientStorage&& coefficients )
+        : M_order( source.M_order ), M_basis( source.M_basis ),
+          M_coeff( std::move( coefficients ) ), M_fname( source.M_fname ) {}
+
     /** Order policy and owned differentiation operators. */
     [[no_unique_address]] order_storage_type M_order{};
     basis_type M_basis;
-    matrix_type M_coeff;
+    /** Sole owning coefficient representation; legacy access returns an owning copy. */
+    CoefficientStorage M_coeff;
     std::string M_fname;
 };
 
