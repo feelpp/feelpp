@@ -372,7 +372,7 @@ template<typename Buffer, std::size_t Count>
 
 /** @brief Order/cardinality policy for scalar polynomial storage.
  * @tparam T Scalar type.
- * @tparam Dim Fixed reference dimension, one to three.
+ * @tparam Dim Fixed reference dimension, zero to three (zero denotes a point).
  * @tparam OrderSpec Static expansion degree or `Dynamic`.
  * @tparam CellKind Simplex total degree or hypercube tensor-product degree.
  * @tparam InlineBytes Aggregate budget for each direction collection.
@@ -386,7 +386,7 @@ template <typename T, int Dim, int OrderSpec, NodalCellKind CellKind,
           typename DegreePolicy = OrderBase<OrderSpec>>
 class PolynomialStorage : public DegreePolicy
 {
-    static_assert( Dim >= 1 && Dim <= 3 );
+    static_assert( Dim >= 0 && Dim <= 3 );
     static_assert( OrderSpec == Dynamic || OrderSpec <= std::numeric_limits<uint16_type>::max() );
     using super = DegreePolicy;
 
@@ -428,12 +428,12 @@ class PolynomialStorage : public DegreePolicy
     using Operator = EigenMatrixBuffer<T, basisExtent, basisExtent, InlineBytes>;
     /** Gradient workspace, sharing its aggregate inline budget among directions. */
     template<int Samples = Dynamic>
-    using GradientFor = std::array<EigenMatrixBuffer<T, basisExtent, Samples, InlineBytes / Dim>, Dim>;
+    using GradientFor = std::array<EigenMatrixBuffer<T, basisExtent, Samples, ( Dim > 0 ? InlineBytes / Dim : 0 )>, Dim>;
     /** Gradient workspace with runtime sample count. */
     using Gradient = GradientFor<>;
     /** Hessian workspace indexed by i*Dim+j, with a bounded aggregate inline budget. */
     template<int Samples = Dynamic>
-    using HessianFor = std::array<EigenMatrixBuffer<T, basisExtent, Samples, InlineBytes / ( Dim * Dim )>, Dim * Dim>;
+    using HessianFor = std::array<EigenMatrixBuffer<T, basisExtent, Samples, ( Dim > 0 ? InlineBytes / ( Dim * Dim ) : 0 )>, Dim * Dim>;
     /** Hessian workspace with runtime sample count. */
     using Hessian = HessianFor<>;
 

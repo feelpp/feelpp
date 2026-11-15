@@ -36,7 +36,7 @@ BOOST_AUTO_TEST_CASE( column_major_matrix_view )
     static_assert( !UblasDenseVector<matrix_type> );
 
     matrix_type matrix( 2, 3 );
-    static_assert( noexcept( eigenMap( matrix ) ) );
+    static_assert( !noexcept( eigenMap( matrix ) ) );
     for ( std::size_t j = 0; j < matrix.size2(); ++j )
         for ( std::size_t i = 0; i < matrix.size1(); ++i )
             matrix( i, j ) = 10.0 * j + i;

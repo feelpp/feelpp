@@ -118,6 +118,7 @@ template<int Rows, int Cols, UblasDenseMatrix Matrix>
  * @tparam Storage contiguous uBLAS storage type
  * @param matrix owning uBLAS matrix
  * @return mutable Eigen view with matching dimensions and layout
+ * @throws std::length_error If a matrix dimension exceeds Eigen::Index.
  */
 template <typename T, typename Layout, typename Storage>
     requires std::same_as<Layout, ublas::row_major> ||

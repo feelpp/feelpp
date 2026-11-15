@@ -34,6 +34,7 @@ struct StorageCase
     /** @brief Independent low-degree dimension formula used by these datasets. */
     static constexpr Eigen::Index expectedCount( int p )
     {
+        if constexpr ( Dim == 0 ) return 1;
         if constexpr ( Kind == NodalCellKind::Hypercube )
         {
             if constexpr ( Dim == 1 ) return p + 1;
@@ -49,10 +50,11 @@ struct StorageCase
     }
 };
 
-/** Six dimension/cell combinations exercise one shared test implementation. */
+/** Point entities and higher-dimensional cells share the same factory checks. */
 using StorageCases = boost::mp11::mp_list<
-    StorageCase<1, NodalCellKind::Simplex>, StorageCase<2, NodalCellKind::Simplex>,
-    StorageCase<3, NodalCellKind::Simplex>, StorageCase<1, NodalCellKind::Hypercube>,
+    StorageCase<0, NodalCellKind::Simplex>, StorageCase<1, NodalCellKind::Simplex>,
+    StorageCase<2, NodalCellKind::Simplex>, StorageCase<3, NodalCellKind::Simplex>,
+    StorageCase<0, NodalCellKind::Hypercube>, StorageCase<1, NodalCellKind::Hypercube>,
     StorageCase<2, NodalCellKind::Hypercube>, StorageCase<3, NodalCellKind::Hypercube>>;
 
 /** Inline, heap-backed and independently dynamic axes share one shape contract. */
@@ -134,7 +136,8 @@ void checkFactories()
     BOOST_CHECK_THROW( (void)wrongOrder.convertValues( runtime, runtime.makeValues( 1 ) ), std::invalid_argument );
     auto destination = runtime.makeValues( 1 );
     auto wrongValues = wrongOrder.makeValues( 1 );
-    BOOST_CHECK_THROW( destination = wrongValues, std::invalid_argument );
+    if constexpr ( Case::expectedCount( P + 1 ) != count )
+        BOOST_CHECK_THROW( destination = wrongValues, std::invalid_argument );
     BOOST_CHECK_THROW( (void)runtime.makeValues( -1 ), std::invalid_argument );
     BOOST_CHECK_THROW( (void)runtime.makeCoefficients( -1 ), std::invalid_argument );
     BOOST_CHECK_THROW( (void)fixed.valuesFrom( Eigen::MatrixXd::Zero( count + 1, 1 ) ), std::invalid_argument );
