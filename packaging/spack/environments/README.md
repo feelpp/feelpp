@@ -17,6 +17,12 @@ Environment status:
 - `cpu/openmpi5/`
   - portable OpenMPI 5 validation environment for Gaya and LUMI-C
   - enables UCX and OFI while keeping CXI/site externals out of the manifest
+- `cpu/openmpi5-kokkos/`
+  - OpenMPI 5 dependency baseline with Kokkos 5.1.0 Serial/OpenMP
+  - independent view and local lockfile; no GPU runtime dependency
+- `hybrid/kokkos-rocm/`
+  - the same OpenMPI 5 baseline with Kokkos 5.1.0 Serial/OpenMP/HIP
+  - GPU architecture and ROCm site policy are supplied separately
 - `cpu/mpich/`
   - MPICH 3.4.3 with CH3 for Feel++ core images and LUMI host-MPI binding
   - details and verified local spec are in `cpu/mpich/README.md`
