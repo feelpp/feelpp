@@ -154,6 +154,9 @@
 /* Define to 1 if you have the <sys/types.h> header file. */
 #cmakedefine FEELPP_HAS_SYS_TYPES_H
 
+/* Define to 1 if Kokkos integration targets are available. */
+#cmakedefine FEELPP_HAS_KOKKOS 1
+
 /* Define to 1 if you have harts. */
 #cmakedefine FEELPP_HAS_HARTS
 

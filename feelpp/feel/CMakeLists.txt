@@ -72,6 +72,14 @@ IF ( FEELPP_ENABLE_JSON_DIAGNOSTICS )
   target_compile_definitions( feelpp PUBLIC  FEELPP_ENABLE_JSON_DIAGNOSTICS=1 )
 ENDIF()
 
+if(FEELPP_HAS_KOKKOS)
+  add_library(feelpp_kokkos INTERFACE)
+  add_library(Feelpp::feelpp_kokkos ALIAS feelpp_kokkos)
+  target_link_libraries(feelpp_kokkos INTERFACE
+    Feelpp::feelpp Kokkos::kokkos Kokkos::kokkoskernels)
+  install(TARGETS feelpp_kokkos EXPORT FeelppTargets COMPONENT Devel)
+endif()
+
 IF (FEELPP_HAS_LIBDL)
   target_link_libraries( feelpp PRIVATE ${DL_LIBRARY} )
 endif()

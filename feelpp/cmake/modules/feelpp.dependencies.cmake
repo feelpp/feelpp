@@ -268,6 +268,8 @@ else()
 endif()
 
 
+include(feelpp.kokkos)
+
 # only activate OpenMP for gcc
 # (clang support should be ok by 3.5)
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
