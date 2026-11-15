@@ -9,6 +9,8 @@
 #define BOOST_TEST_MODULE feelsystem_orders
 #include <feel/feelcore/testsuite.hpp>
 #include <feel/feeldiscr/pch.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
 #include <feel/feelfilters/unitsquare.hpp>
 #include <feel/feelsystem/system.hpp>
 
@@ -51,14 +53,34 @@ void checkProblem( SpacePtr const& Xh )
     matrixDelta->close();
     BOOST_CHECK_SMALL( matrixDelta->linftyNorm(), 1e-10 );
 }
+template <typename MeshPtr>
+void checkFiniteElementOrders( MeshPtr const& mesh )
+{
+    using namespace Feel;
+    BOOST_CHECK_EQUAL( mesh->geometryOrder(), 1 );
+    checkProblem( Pch<1>( mesh ) );
+    checkProblem( Pch<2>( mesh ) );
+    for ( uint16_type order : { 1, 2 } )
+    {
+        BOOST_TEST_CONTEXT( "runtime FE order " << order )
+        checkProblem( Pch<Dynamic>( mesh, RuntimeOrder{ order } ) );
+    }
+}
 } // namespace
 
 BOOST_AUTO_TEST_CASE( static_and_dynamic_orders_support_stored_problems )
 {
+    checkFiniteElementOrders( Feel::unitSquare( 0.4 ) );
+}
+
+BOOST_AUTO_TEST_CASE( dynamic_geometry_supports_static_and_dynamic_fe_orders )
+{
     using namespace Feel;
-    auto mesh = unitSquare( 0.4 );
-    checkProblem( Pch<1>( mesh ) );
-    checkProblem( Pch<2>( mesh ) );
-    for ( uint16_type order : { 1, 2 } )
-        checkProblem( Pch<Dynamic>( mesh, RuntimeOrder{ order } ) );
+    auto mesh = createGMSHMesh(
+        _mesh = new Mesh<Simplex<2, Dynamic>>( RuntimeOrder{ 1 } ),
+        _desc = domain( _name = "problem_orders_square", _shape = "hypercube",
+                        _dim = 2, _h = 0.4, _xmin = 0., _xmax = 1.,
+                        _ymin = 0., _ymax = 1. ),
+        _force_rebuild = true, _straighten = false );
+    checkFiniteElementOrders( mesh );
 }

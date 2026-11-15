@@ -36,6 +36,7 @@ makeOptions()
 {
     Feel::po::options_description options( "FeelSystem lifetime test options" );
     options.add( Feel::backend_options( "lifetime-linear-temporary" ) )
+        .add( Feel::backend_options( "lifetime-independent" ) )
         .add( Feel::backend_options( "lifetime-boundary" ) )
         .add( Feel::backend_options( "lifetime-evolution" ) )
         .add( Feel::backend_options( "lifetime-nonlinear" ) )
@@ -187,6 +188,81 @@ BOOST_AUTO_TEST_CASE( temporary_forms_and_constraint_callback_solve_manufactured
     BOOST_CHECK_SMALL( normL2( _range = elements( mesh ),
                                _expr = u2 - exact ),
                        1e-8 );
+}
+
+BOOST_AUTO_TEST_CASE( systems_preserve_algebra_until_explicit_reassembly )
+{
+    using namespace Feel;
+    using namespace Feel::vf;
+
+    auto mesh = unitSquare( 0.4 );
+    auto Xh = Pch<1>( mesh );
+    auto u = trial( Xh );
+    auto v = test( Xh );
+    auto rho = expr( "rho:rho" );
+    auto problem = linearProblem( _space = Xh, _name = "lifetime-independent" )
+        .setParameterValue( "rho", 1.0 )
+        .reaction( _range = elements( mesh ), _expr = rho * u * v )
+        .rhs( _range = elements( mesh ), _expr = v );
+
+    auto first = problem.assemble();
+    auto second = problem.assemble();
+    BOOST_CHECK( first.matrixPtr() != second.matrixPtr() );
+    BOOST_CHECK( first.rhsPtr() != second.rhsPtr() );
+    auto matrixAtOne = first.matrixPtr()->clone();
+    auto rhsAtOne = cloneVectorWithValues( first.rhsPtr() );
+    BOOST_REQUIRE_GT( matrixAtOne->linftyNorm(), 0.0 );
+    BOOST_REQUIRE_GT( rhsAtOne->linftyNorm(), 0.0 );
+    checkMatrixClose( second.matrixPtr(), matrixAtOne );
+    checkVectorClose( second.rhsPtr(), rhsAtOne );
+
+    auto firstSolution = Xh->element( "first-solution" );
+    auto firstResult = first.solve( _solution = firstSolution );
+    BOOST_REQUIRE( firstResult.converged );
+    BOOST_CHECK_SMALL( normL2( _range = elements( mesh ),
+                               _expr = idv( firstSolution ) - cst( 1.0 ) ),
+                       1e-8 );
+
+    // Shared parameter bindings are read on assembly, not on an already assembled solve.
+    problem.setParameterValue( "rho", 2.0 );
+    checkMatrixClose( first.matrixPtr(), matrixAtOne );
+    checkMatrixClose( second.matrixPtr(), matrixAtOne );
+    second.assemble();
+    auto matrixAtTwo = matrixAtOne->clone();
+    matrixAtTwo->addMatrix( 1.0, matrixAtOne );
+    matrixAtTwo->close();
+    checkMatrixClose( second.matrixPtr(), matrixAtTwo );
+    checkMatrixClose( first.matrixPtr(), matrixAtOne );
+    checkVectorClose( first.rhsPtr(), rhsAtOne );
+    checkVectorClose( second.rhsPtr(), rhsAtOne );
+
+    auto secondSolution = Xh->element( "second-solution" );
+    auto secondResult = second.solve( _solution = secondSolution );
+    BOOST_REQUIRE( secondResult.converged );
+    BOOST_CHECK_SMALL( normL2( _range = elements( mesh ),
+                               _expr = idv( secondSolution ) - cst( 0.5 ) ),
+                       1e-8 );
+    BOOST_CHECK_SMALL( normL2( _range = elements( mesh ),
+                               _expr = idv( firstSolution ) - cst( 1.0 ) ),
+                       1e-8 );
+
+    // Mutating another System's storage must not change the first System's algebra.
+    second.matrixPtr()->zero();
+    second.matrixPtr()->close();
+    second.rhsPtr()->zero();
+    second.rhsPtr()->close();
+    checkMatrixClose( first.matrixPtr(), matrixAtOne );
+    checkVectorClose( first.rhsPtr(), rhsAtOne );
+    auto replaySolution = Xh->element( "replay-solution" );
+    firstResult = first.solve( _solution = replaySolution );
+    BOOST_REQUIRE( firstResult.converged );
+    BOOST_CHECK_SMALL( normL2( _range = elements( mesh ),
+                               _expr = idv( replaySolution ) - cst( 1.0 ) ),
+                       1e-8 );
+
+    first.assemble();
+    checkMatrixClose( first.matrixPtr(), matrixAtTwo );
+    checkVectorClose( first.rhsPtr(), rhsAtOne );
 }
 
 BOOST_AUTO_TEST_CASE( boundary_sugar_and_parameter_updates_solve_manufactured_natural_problem )

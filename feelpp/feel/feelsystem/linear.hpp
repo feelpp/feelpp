@@ -35,10 +35,13 @@ namespace Feel::systems
 /**
  * @brief Stateful assembled form of a stationary linear problem.
  *
- * `LinearSystem` owns the backend, sparse matrix, rhs vector, and active
- * constrained algebraic pair produced by a `LinearProblemLike` descriptor. The
- * descriptor remains immutable and can be assembled into multiple systems with
- * different backend prefixes or explicit backend instances.
+ * `LinearSystem` retains a backend and owns the sparse matrix, rhs vector, and active
+ * constrained algebraic pair produced by a `LinearProblemLike` descriptor.
+ * Independently constructed systems allocate separate algebra on assembly. The descriptor
+ * is copied, retaining shared expression and parameter bindings; `assemble()`
+ * reads their current values. The primary matrix and rhs keep their assembled
+ * values until explicit reassembly. Backend prefixes or instances can be selected
+ * independently for each system.
  *
  * @tparam ProblemType Problem descriptor satisfying `LinearProblemLike`.
  */
