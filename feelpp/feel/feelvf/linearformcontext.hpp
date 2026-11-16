@@ -72,7 +72,8 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
     M_test_dof( __form.functionSpace()->dof().get() ),
     M_lb( __form.blockList() ),
 
-    M_test_pc( new test_precompute_type( M_form.testFiniteElement<UseMortar>(), im2.points() ) ),
+    // The integration range can have a different reference dimension from the test space.
+    M_test_pc( new test_precompute_type( M_form.testFiniteElement<UseMortar>(), fusion::at_key<gmc<0> >( _gmcTest )->pc()->nodes() ) ),
     M_test_pc_face( precomputeTestBasisAtPoints( im2 ) ),
 
     M_gmc( _gmcTest ),

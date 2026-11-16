@@ -99,9 +99,10 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     M_test_dof( __form.testSpace()->dof().get() ),
     M_trial_dof( __form.trialSpace()->dof().get() ),
 
-    M_test_pc( new test_precompute_type( M_form.testFiniteElement<UseMortarTest>(), im2.points() ) ),
+    // Mixed-dimensional forms need independent test and trial reference coordinates.
+    M_test_pc( new test_precompute_type( M_form.testFiniteElement<UseMortarTest>(), fusion::at_key<gmc<0> >( _gmcTest )->pc()->nodes() ) ),
     M_test_pc_face( precomputeTestBasisAtPoints( im2 ) ),
-    M_trial_pc( new trial_precompute_type( M_form.trialFiniteElement<UseMortarTrial>(), im2.points() ) ),
+    M_trial_pc( new trial_precompute_type( M_form.trialFiniteElement<UseMortarTrial>(), fusion::at_key<gmc<0> >( _gmcTrial )->pc()->nodes() ) ),
     M_trial_pc_face( precomputeTrialBasisAtPoints( im2 ) ),
 
     M_test_gmc( _gmcTest ),
