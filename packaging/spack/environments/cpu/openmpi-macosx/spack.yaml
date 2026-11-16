@@ -75,6 +75,7 @@ spack:
   - hwloc
   - openblas@0.3.32+fortran+shared threads=openmp
   - cln
+  - ginac
   - eigen
   - fftw precision=float,double,long_double +mpi
   - glpk

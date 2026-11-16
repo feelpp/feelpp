@@ -503,6 +503,7 @@
             "FEELPP_ENABLE_VTK": "OFF",
             "FEELPP_USE_EXTERNAL_CLN": "ON",
             "FEELPP_USE_EXTERNAL_EIGEN3": "ON",
+            "FEELPP_USE_EXTERNAL_GINAC": "ON",
             "PYBIND11_FINDPYTHON": "ON",
             "USE_VTK": "OFF"
          },

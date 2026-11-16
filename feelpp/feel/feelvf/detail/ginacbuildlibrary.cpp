@@ -1,26 +1,7 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-
-
-  This file is part of the Feel library
-
-  Author(s): Vincent Chabannes <vincent.chabannes@feelpp.org>
-       Date: 2014-10-09
-
-  Copyright (C) 2014-2016 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+// SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+// SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+// SPDX-FileCopyrightText: 2014-2026 University of Strasbourg
+// SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include <feel/feelvf/detail/ginacbuildlibrary.hpp>
 
@@ -37,6 +18,7 @@ namespace detail
 {
 namespace
 {
+/** Hash an expression description deterministically for persistent cache keys. */
 std::string
 ginacExprDescHash( std::string const& exprDesc )
 {
@@ -52,12 +34,13 @@ ginacExprDescHash( std::string const& exprDesc )
     return ostr.str();
 }
 
-bool
-endsWith( std::string const& value, std::string const& suffix )
+/** Test whether a cache stem already carries the requested expression hash. */
+bool endsWith( std::string const& value, std::string const& suffix )
 {
     return value.size() >= suffix.size() && value.compare( value.size() - suffix.size(), suffix.size(), suffix ) == 0;
 }
 
+/** Add the expression hash to explicit filenames that are not yet addressed by content. */
 std::string
 ginacExprFileName( std::string const& filename, std::string const& exprDesc )
 {
@@ -73,15 +56,14 @@ ginacExprFileName( std::string const& filename, std::string const& exprDesc )
 
     return ( filenamePath.parent_path() / fs::path( stem + "." + exprHash ) ).string();
 }
-}
+} // namespace
 
 FEELPP_EXPORT
 void ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::string const& exprDesc, std::string const& filename,
                         WorldComm const& world,
                         std::shared_ptr<GiNaC::FUNCP_CUBA>& cfun )
 {
-    // register the GinacExprManager into Feel::Environment so that it gets the
-    // GinacExprManager is cleared up when the Environment is deleted
+    // Clear callbacks and filename associations before Environment unloads the modules.
     static bool observed = false;
     if ( !observed )
     {
@@ -104,18 +86,18 @@ void ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::st
         fs::path filename_p = fs::path( filename );
         fs::path filename_parent_p = filename_p.parent_path();
         std::string filenameForCompile = filename;
-        if ( !filename.empty() && !fs::path(filename).is_absolute() && ( filename_parent_p != Environment::exprRepository() ) )
-            filenameForCompile = (fs::path(Environment::exprRepository()) / filename_p).string();
+        if ( !filename.empty() && !fs::path( filename ).is_absolute() && ( filename_parent_p != Environment::exprRepository() ) )
+            filenameForCompile = ( fs::path( Environment::exprRepository() ) / filename_p ).string();
 
         filenameForCompile = ginacExprFileName( filenameForCompile, exprDesc );
         std::string filenameDescExpr = filenameForCompile.empty() ? std::string() : filenameForCompile + ".desc";
         std::string filenameWithSuffix = filenameForCompile.empty() ? std::string() : filenameForCompile + ".so";
-        DVLOG(2) << "filename: " << filename << std::endl;
-        DVLOG(2) << "filenameForCompile: " << filenameForCompile << std::endl;
-        DVLOG(2) << "filenameWithSuffix: " << filenameWithSuffix << std::endl;
+        DVLOG( 2 ) << "filename: " << filename << std::endl;
+        DVLOG( 2 ) << "filenameForCompile: " << filenameForCompile << std::endl;
+        DVLOG( 2 ) << "filenameWithSuffix: " << filenameWithSuffix << std::endl;
 
-        DVLOG( 2 ) << "GiNaC::compile_ex with filename " << filenameForCompile << "\n";
-        GiNaC::compile_ex( exprs, syml, *cfun, filenameForCompile, !exprDesc.empty(), world.localComm() );
+        DVLOG( 2 ) << "Feel++ expression compilation with filename " << filenameForCompile << "\n";
+        Feel::detail::ginacjit::compile_ex( exprs, syml, *cfun, filenameForCompile, !exprDesc.empty(), world.localComm() );
 
         hasLinked = true;
         if ( !filename.empty() )
@@ -150,7 +132,7 @@ ginacGetDefaultFileName( std::string const& exprDesc, std::string const& dirLibE
             if ( fsdir.is_absolute() )
                 res = ( fsdir / defaultFileNameUsed ).string();
             else
-                res = (fs::path(Environment::exprRepository()) / fsdir / defaultFileNameUsed ).string();
+                res = ( fs::path( Environment::exprRepository() ) / fsdir / defaultFileNameUsed ).string();
         }
         GinacExprManagerDefaultFileName::instance().operator[]( managerKey ) = res;
     }

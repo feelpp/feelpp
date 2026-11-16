@@ -215,6 +215,16 @@ endif()
 
 message(STATUS "------------------------------------------------------------")
 message(STATUS "Configuring Ginac")
+set(_feelpp_external_default OFF)
+if(DEFINED ENV{SPACK_ENV})
+  set(_feelpp_external_default ON)
+endif()
+option(FEELPP_USE_EXTERNAL_GINAC "Use the provisioned GiNaC package" ${_feelpp_external_default})
+if(FEELPP_USE_EXTERNAL_GINAC)
+  pkg_check_modules(GINAC REQUIRED IMPORTED_TARGET GLOBAL ginac>=1.8)
+  target_link_libraries(feelpp_contrib INTERFACE PkgConfig::GINAC)
+  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_GINAC FEELPP_HAS_EXTERNAL_GINAC HAVE_LIBDL)
+else()
 add_subdirectory(ginac)
 #
 # cln and ginac
@@ -238,6 +248,7 @@ target_include_directories( feelpp_contrib BEFORE
   )
 set(DL_LIBS ${CMAKE_DL_LIBS})
 target_link_libraries(feelpp_contrib INTERFACE feelpp_ginac)
+endif()
 
 
 message(STATUS "------------------------------------------------------------")

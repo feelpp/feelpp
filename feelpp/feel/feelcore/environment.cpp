@@ -79,6 +79,7 @@ extern "C"
 #endif
 
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelvf/detail/ginacjit.hpp>
 
 #if FEELPP_HAS_PETSC
 #include <feel/feelcore/feelpetsc.hpp>
@@ -94,10 +95,6 @@ extern "C"
 
 
 
-namespace GiNaC
-{
-extern void cleanup_ex( bool verbose );
-}
 namespace detail
 {
 void DebugWait(int rank)
@@ -901,7 +898,7 @@ Environment::~Environment()
     S_paths.clear();
 
     VLOG( 2 ) << "[~Environment] cleaning up global excompiler\n";
-    GiNaC::cleanup_ex( false );
+    Feel::detail::ginacjit::cleanup_ex( false );
 
     VLOG( 2 ) << "[~Environment] finalizing slepc,petsc and mpi\n";
 #if defined ( FEELPP_HAS_PETSC_H )

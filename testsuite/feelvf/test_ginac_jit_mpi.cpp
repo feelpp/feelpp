@@ -1,4 +1,6 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- */
+// SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+// SPDX-FileCopyrightText: 2026 University of Strasbourg
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
 #define BOOST_TEST_MODULE ginac jit mpi testsuite
 
@@ -58,7 +60,7 @@ GiNaC::ex trackedExpression( GiNaC::ex const& value )
         GiNaC::function_options( "jit_source_writer", 1 ).print_func<GiNaC::print_csrc_double>( countSourcePrints ) );
     return GiNaC::function( serial, value );
 }
-}
+} // namespace
 
 BOOST_AUTO_TEST_SUITE( ginac_jit_mpi )
 
@@ -89,15 +91,15 @@ BOOST_AUTO_TEST_CASE( only_group_master_generates_source_for_each_overload )
     sourcePrints = 0;
 
     GiNaC::FUNCP_1P one = nullptr;
-    GiNaC::compile_ex( trackedExpression( x + color + 1 ), x, one, stem + "-one", comm );
+    Feel::detail::ginacjit::compile_ex( trackedExpression( x + color + 1 ), x, one, stem + "-one", comm );
     BOOST_CHECK_CLOSE( one( 3.0 ), 4.0 + color, 1e-12 );
 
     GiNaC::FUNCP_2P two = nullptr;
-    GiNaC::compile_ex( trackedExpression( x + y + color ), x, y, two, stem + "-two", comm );
+    Feel::detail::ginacjit::compile_ex( trackedExpression( x + y + color ), x, y, two, stem + "-two", comm );
     BOOST_CHECK_CLOSE( two( 3.0, 4.0 ), 7.0 + color, 1e-12 );
 
     GiNaC::FUNCP_CUBA cuba = nullptr;
-    GiNaC::compile_ex( GiNaC::lst{ trackedExpression( x + y + color ) }, GiNaC::lst{ x, y }, cuba, stem + "-cuba", true, comm );
+    Feel::detail::ginacjit::compile_ex( GiNaC::lst{ trackedExpression( x + y + color ) }, GiNaC::lst{ x, y }, cuba, stem + "-cuba", true, comm );
     int n = 2, nf = 1;
     double args[] = { 3.0, 4.0 }, result = 0;
     cuba( &n, args, &nf, &result );
@@ -129,7 +131,7 @@ BOOST_AUTO_TEST_CASE( temporary_expression_is_built_on_ensemble_worldcomm )
     auto [color, w, wglob] = Feel::Environment::worldCommPtr()->split( nsplit );
     GiNaC::symbol x( "x" );
     GiNaC::FUNCP_CUBA fp = nullptr;
-    GiNaC::compile_ex( GiNaC::lst{ x + color + 1 }, GiNaC::lst{ x }, fp, "", false, w->localComm() );
+    Feel::detail::ginacjit::compile_ex( GiNaC::lst{ x + color + 1 }, GiNaC::lst{ x }, fp, "", false, w->localComm() );
     int n = 1;
     double xval = 3, result = 0;
     fp( &n, &xval, &n, &result );
@@ -147,17 +149,19 @@ BOOST_AUTO_TEST_CASE( compiler_and_filesystem_errors_reach_every_group_rank )
     GiNaC::FUNCP_CUBA fp = nullptr;
 
     BOOST_CHECK_EXCEPTION(
-        GiNaC::compile_ex( GiNaC::lst{ invalid }, GiNaC::lst{ x }, fp, stem, true, comm ),
+        Feel::detail::ginacjit::compile_ex( GiNaC::lst{ invalid }, GiNaC::lst{ x }, fp, stem, true, comm ),
         std::runtime_error,
-        []( std::runtime_error const& e ) { return std::string( e.what() ).find( "compile_src_file" ) != std::string::npos; } );
+        []( std::runtime_error const& e )
+        { return std::string( e.what() ).find( "compile_src_file" ) != std::string::npos; } );
 
     if ( comm.rank() == 0 )
         fs::create_directory( stem + "-locked.lock" );
     comm.barrier();
     BOOST_CHECK_EXCEPTION(
-        GiNaC::compile_ex( GiNaC::lst{ x }, GiNaC::lst{ x }, fp, stem + "-locked", true, comm ),
+        Feel::detail::ginacjit::compile_ex( GiNaC::lst{ x }, GiNaC::lst{ x }, fp, stem + "-locked", true, comm ),
         std::runtime_error,
-        []( std::runtime_error const& e ) { return std::string( e.what() ).find( "lock file" ) != std::string::npos; } );
+        []( std::runtime_error const& e )
+        { return std::string( e.what() ).find( "lock file" ) != std::string::npos; } );
 
     if ( comm.rank() == 0 )
     {
@@ -166,7 +170,7 @@ BOOST_AUTO_TEST_CASE( compiler_and_filesystem_errors_reach_every_group_rank )
     }
     comm.barrier();
     BOOST_CHECK_THROW(
-        GiNaC::compile_ex( GiNaC::lst{ x }, GiNaC::lst{ x }, fp, stem + "-parent/expression", true, comm ),
+        Feel::detail::ginacjit::compile_ex( GiNaC::lst{ x }, GiNaC::lst{ x }, fp, stem + "-parent/expression", true, comm ),
         std::runtime_error );
 }
 
