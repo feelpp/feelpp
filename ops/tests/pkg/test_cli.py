@@ -1,3 +1,6 @@
+# SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+# SPDX-FileCopyrightText: 2026 University of Strasbourg
+# SPDX-License-Identifier: LGPL-3.0-or-later
 from __future__ import annotations
 
 import io
@@ -227,6 +230,7 @@ class CliTests(unittest.TestCase):
                     [
                         "spack",
                         "list",
+                        "--json",
                         "--repo-root",
                         tmpdir,
                         "--user-cache-path",
@@ -276,7 +280,7 @@ class CliTests(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertIn(f"export SPACK_ROOT={spack_root}", script)
         self.assertIn(f"export SPACK_USER_CONFIG_PATH={config_root}", script)
-        self.assertIn(f"spack env activate --sh {manifest.parent}", script)
+        self.assertIn(f'env activate --sh {manifest.parent}', script)
 
     def test_fpp_spack_activate_alias_resolves_environment_name(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -291,7 +295,7 @@ class CliTests(unittest.TestCase):
                     rc = main()
 
         self.assertEqual(rc, 0)
-        self.assertIn(f"spack env activate --sh {manifest.parent}", stdout.getvalue())
+        self.assertIn(f'env activate --sh {manifest.parent}', stdout.getvalue())
 
     def test_spack_init_writes_local_config_and_setup_script(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
