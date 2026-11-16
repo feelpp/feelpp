@@ -76,6 +76,7 @@ spack:
   - openblas@0.3.32+fortran+shared threads=openmp
   - cln
   - ginac
+  - feelpp.parmmg@1.5.0 +shared
   - eigen
   - fftw precision=float,double,long_double +mpi
   - glpk
@@ -92,7 +93,7 @@ spack:
   view: $user_cache_path/views/feelpp/cpu-openmpi-macosx
 
   concretizer:
-    unify: when_possible
+    unify: true
 
   repos:
     # Repository-owned local overrides to unblock shared environment installs.

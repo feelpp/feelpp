@@ -504,6 +504,8 @@
             "FEELPP_USE_EXTERNAL_CLN": "ON",
             "FEELPP_USE_EXTERNAL_EIGEN3": "ON",
             "FEELPP_USE_EXTERNAL_GINAC": "ON",
+            "FEELPP_USE_EXTERNAL_MMG": "ON",
+            "FEELPP_USE_EXTERNAL_PARMMG": "ON",
             "PYBIND11_FINDPYTHON": "ON",
             "USE_VTK": "OFF"
          },
