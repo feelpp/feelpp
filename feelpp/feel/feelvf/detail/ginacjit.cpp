@@ -642,7 +642,7 @@ static void compile_on_master( const boost::mpi::communicator& world, const std:
 
 void compile_ex( const ex& expr, const symbol& sym, FUNCP_1P& fp, const std::string filename )
 {
-    compile_ex( expr, sym, fp, filename, boost::mpi::communicator() );
+    Feel::detail::ginacjit::compile_ex( expr, sym, fp, filename, boost::mpi::communicator() );
 }
 
 void compile_ex( const ex& expr, const symbol& sym, FUNCP_1P& fp, const std::string filename, const boost::mpi::communicator& world )
@@ -687,7 +687,7 @@ void compile_ex( const ex& expr, const symbol& sym, FUNCP_1P& fp, const std::str
 
 void compile_ex( const ex& expr, const symbol& sym1, const symbol& sym2, FUNCP_2P& fp, const std::string filename )
 {
-    compile_ex( expr, sym1, sym2, fp, filename, boost::mpi::communicator() );
+    Feel::detail::ginacjit::compile_ex( expr, sym1, sym2, fp, filename, boost::mpi::communicator() );
 }
 
 void compile_ex( const ex& expr, const symbol& sym1, const symbol& sym2, FUNCP_2P& fp, const std::string filename, const boost::mpi::communicator& world )
@@ -732,7 +732,7 @@ void compile_ex( const ex& expr, const symbol& sym1, const symbol& sym2, FUNCP_2
 
 void compile_ex( const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::string filename, bool filename_is_content_addressed )
 {
-    compile_ex( exprs, syms, fp, filename, filename_is_content_addressed, boost::mpi::communicator() );
+    Feel::detail::ginacjit::compile_ex( exprs, syms, fp, filename, filename_is_content_addressed, boost::mpi::communicator() );
 }
 
 void compile_ex( const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::string filename, bool filename_is_content_addressed, const boost::mpi::communicator& world )
