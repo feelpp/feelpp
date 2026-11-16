@@ -95,6 +95,8 @@ if ( Python3_Interpreter_FOUND )
   )
 endif()
 
+add_subdirectory(feelkokkos)
+
 foreach( testdir core stats python math alg mesh poly filters material models interpolation integration discr ts vf leaks opt ls system pde fit fmi event viewfactor)
   add_custom_target( test${testdir} )
   add_subdirectory( feel${testdir} )

@@ -79,6 +79,7 @@ extern "C"
 #endif
 
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/environmentruntime.hpp>
 #include <feel/feelvf/detail/ginacjit.hpp>
 
 #if FEELPP_HAS_PETSC
@@ -436,6 +437,32 @@ Environment::initPetsc( int * argc, char *** argv )
 #endif // FEELPP_HAS_PETSC_H
 
 // Constructor
+namespace
+{
+/** Factories selected before Environment construction, without core execution dependencies. */
+std::vector<std::pair<std::string, EnvironmentRuntimeFactory>>& runtimeFactories()
+{
+    static std::vector<std::pair<std::string, EnvironmentRuntimeFactory>> factories;
+    return factories;
+}
+/// Leases initialized and released by Environment.
+std::vector<std::shared_ptr<void>> environmentRuntimeLeases;
+/// Reject late registration and initialization after teardown.
+bool environmentRuntimesStarted = false;
+}
+
+void registerEnvironmentRuntime( std::string name, EnvironmentRuntimeFactory factory )
+{
+    if ( name.empty() || !factory )
+        throw std::invalid_argument( "Execution runtime registration is empty" );
+    if ( environmentRuntimesStarted )
+        throw std::logic_error( "Register execution runtimes before Environment construction" );
+    for ( auto const& entry : runtimeFactories() )
+        if ( entry.first == name )
+            throw std::logic_error( "Execution runtime is already registered" );
+    runtimeFactories().emplace_back( std::move( name ), std::move( factory ) );
+}
+
 Environment::Environment( int argc, char** argv,
                           mpi::threading::level lvl,
                           po::options_description const& desc,
@@ -728,6 +755,14 @@ Environment::Environment( int argc, char** argv,
 
     Environment::journalCheckpoint();
 
+    // Construct execution services after MPI, options and solver setup.
+    // Local leases unwind safely while MPI lives if a factory fails.
+    environmentRuntimesStarted = true;
+    std::vector<std::shared_ptr<void>> runtimeLeases;
+    for ( auto const& entry : runtimeFactories() )
+        runtimeLeases.push_back( entry.second() );
+    environmentRuntimeLeases = std::move( runtimeLeases );
+
     //::detail::DebugWait( worldComm().globalRank() );
 }
 void
@@ -875,6 +910,7 @@ Environment::~Environment()
 
     Environment::clearSomeMemory();
 
+
 #if defined(FEELPP_HAS_PYTHON)
     if ( S_init_python )
         py::finalize_interpreter();
@@ -899,6 +935,9 @@ Environment::~Environment()
 
     VLOG( 2 ) << "[~Environment] cleaning up global excompiler\n";
     Feel::detail::ginacjit::cleanup_ex( false );
+
+    // Numerical/Python cleanup is complete; release services before PETSc and MPI.
+    environmentRuntimeLeases.clear();
 
     VLOG( 2 ) << "[~Environment] finalizing slepc,petsc and mpi\n";
 #if defined ( FEELPP_HAS_PETSC_H )

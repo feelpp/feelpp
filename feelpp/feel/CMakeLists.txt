@@ -72,11 +72,16 @@ IF ( FEELPP_ENABLE_JSON_DIAGNOSTICS )
   target_compile_definitions( feelpp PUBLIC  FEELPP_ENABLE_JSON_DIAGNOSTICS=1 )
 ENDIF()
 
+add_library(feelpp_kokkos_runtime SHARED feelcore/kokkosruntime.cpp)
+add_library(Feelpp::feelpp_kokkos_runtime ALIAS feelpp_kokkos_runtime)
+target_link_libraries(feelpp_kokkos_runtime PUBLIC Feelpp::feelpp)
+
 if(FEELPP_HAS_KOKKOS)
+  target_link_libraries(feelpp_kokkos_runtime PRIVATE Kokkos::kokkos)
   add_library(feelpp_kokkos INTERFACE)
   add_library(Feelpp::feelpp_kokkos ALIAS feelpp_kokkos)
   target_link_libraries(feelpp_kokkos INTERFACE
-    Feelpp::feelpp Kokkos::kokkos Kokkos::kokkoskernels)
+    Feelpp::feelpp_kokkos_runtime Kokkos::kokkos Kokkos::kokkoskernels)
   install(TARGETS feelpp_kokkos EXPORT FeelppTargets COMPONENT Devel)
 endif()
 
@@ -320,6 +325,10 @@ endif()
 
 #target_link_libraries(feelpp ${FEELPP_LIBRARIES})
 include(GNUInstallDirs)
+install(TARGETS feelpp_kokkos_runtime EXPORT FeelppTargets
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Libs
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT Libs
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Libs)
 # Install feelpp
 install(TARGETS feelpp EXPORT FeelppTargets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Libs
