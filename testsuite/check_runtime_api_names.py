@@ -19,10 +19,12 @@ HEADER_SUFFIXES = {".h", ".hh", ".hpp", ".hxx"}
 CALLABLE = re.compile(r"\b([A-Za-z_][A-Za-z0-9_]*)\s*(?=\()")
 
 # These names describe distinct runtime-sized algorithms, runtime capability
-# queries, or the validated construction tag. They are not alternate semantic
-# accessors for order, cardinality, or DOF topology.
+# queries, execution runtime lifecycles, or the validated construction tag.
+# They are not alternate semantic accessors for order, cardinality, or DOF topology.
 ALLOWED_RUNTIME_CALLABLES: dict[str, frozenset[str] | None] = {
     "RuntimeOrder": None,
+    # Scoped leases manage Kokkos initialization and finalization, not FE order.
+    "KokkosRuntime": frozenset({"feelpp/feel/feelcore/kokkosruntime.hpp"}),
     "basisDerivateRuntimeLowOrderDispatch": frozenset(
         {"feelpp/feel/feelpoly/orthonormalpolynomialset.hpp"}
     ),
@@ -40,6 +42,10 @@ ALLOWED_RUNTIME_CALLABLES: dict[str, frozenset[str] | None] = {
     ),
     "petscHasHpddmRuntime": frozenset(
         {"feelpp/feel/feelalg/petschpddm.hpp"}
+    ),
+    # Register an execution runtime lease factory with Environment's lifecycle.
+    "registerEnvironmentRuntime": frozenset(
+        {"feelpp/feel/feelcore/environmentruntime.hpp"}
     ),
     "scalingsRuntime": frozenset(
         {
