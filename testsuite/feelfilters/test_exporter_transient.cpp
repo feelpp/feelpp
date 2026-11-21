@@ -16,6 +16,7 @@
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/domain.hpp>
+#include <feel/feelfilters/unitcube.hpp>
 #include <feel/feelfilters/unitsquare.hpp>
 #include <feel/feelmesh/meshmover.hpp>
 #include <feel/feelvf/norml2.hpp>
@@ -227,6 +228,71 @@ BOOST_AUTO_TEST_CASE( runtime_geometry_exports )
         e->add( "vector_field", vectorField );
         BOOST_CHECK_NO_THROW( e->save() );
     }
+}
+
+/** @brief Vertex snapshots keep the CG P2 values and do not alias their source. */
+BOOST_AUTO_TEST_CASE( continuous_lagrange_vertex_snapshots )
+{
+    auto mesh = unitCube( 0.25 );
+    auto e = exporter( _mesh=mesh, _name="continuous_lagrange_vertex_snapshots", _geo="static" );
+    auto first = e->step( 0. );
+    auto second = e->step( 1. );
+    auto const range = elements( mesh );
+    auto q = cst( 1. ) + Px()*Px() + 2*Py()*Py() + 3*Pz()*Pz();
+
+    auto check = [&]( std::string const &name, auto space, auto const &expr,
+                      std::vector<std::vector<double>> const &factors ) {
+        auto field = space->element();
+        field.on( _range=range, _expr=expr, _close=true );
+        auto cache = first->fieldSet()->spaceCache();
+        auto const previousMaps = cache->vertexDofMaps.size();
+        first->add( name, field );
+        BOOST_REQUIRE_EQUAL( cache->vertexDofMaps.size(), previousMaps + 1 );
+        BOOST_CHECK( cache->vertexDofMaps.back().usable );
+        field.scale( 2. );
+        second->add( name, field );
+        BOOST_CHECK_EQUAL( second->fieldSet()->spaceCache()->vertexDofMaps.size(),
+                           previousMaps + 1 );
+        field.zero();
+
+        for ( auto const &step : { first, second } )
+        {
+            auto const &rows = step->fieldSet()->nodal( name ).second;
+            BOOST_REQUIRE_EQUAL( rows.size(), factors.size() );
+            auto const &dof = rows[0][0]->functionSpace()->dof();
+            double const scale = step == first ? 1. : 2.;
+            double maxError = 0.;
+            for ( auto const &wrapped : range )
+            {
+                auto const &elt = unwrap_ref( wrapped );
+                auto const &indices = dof->localToGlobalIndices( elt.id() );
+                for ( uint16_type v = 0; v < elt.numVertices; ++v )
+                {
+                    auto const &p = elt.point( v ).node();
+                    auto const id = indices( dof->localDofId( v ) );
+                    double const base = scale * ( 1. + p(0)*p(0) + 2*p(1)*p(1) + 3*p(2)*p(2) );
+                    for ( std::size_t row = 0; row < factors.size(); ++row )
+                        for ( std::size_t col = 0; col < factors[row].size(); ++col )
+                            maxError = std::max( maxError, std::abs( rows[row][col]->globalValue( id ) -
+                                                                    factors[row][col]*base ) );
+                }
+            }
+            BOOST_CHECK_SMALL( maxError, 1e-10 );
+        }
+    };
+
+    // Hold spaces across both steps; distinct components detect ordering errors.
+    auto scalar = Pch<2>( mesh );
+    auto vector = Pchv<2>( mesh );
+    auto symmetric = Pchms<2>( mesh );
+    auto tensor = Pchm<2>( mesh );
+    check( "scalar", scalar, q, {{1.}} );
+    check( "vector", vector, vec( q, 2*q, 3*q ), {{1.}, {2.}, {3.}} );
+    check( "symmetric", symmetric, mat<3,3>( q, 2*q, 3*q, 2*q, 4*q, 5*q, 3*q, 5*q, 6*q ),
+           {{1.}, {2., 4.}, {3., 5., 6.}} );
+    check( "tensor", tensor, mat<3,3>( q, 2*q, 3*q, 4*q, 5*q, 6*q, 7*q, 8*q, 9*q ),
+           {{1., 2., 3.}, {4., 5., 6.}, {7., 8., 9.}} );
+    e->save();
 }
 
 //! \brief Separate field residency from scheduling, publication and legacy archives.
