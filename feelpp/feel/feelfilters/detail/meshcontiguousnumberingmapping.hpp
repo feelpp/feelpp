@@ -325,19 +325,14 @@ MeshContiguousNumberingMapping<MeshType,StorageNodeValueType>::updateForUse( Mes
             {
                 auto & dataToSendInPart = dataToSendStep1b[rankRecv][partId];
                 dataToSendInPart.reserve( partData.size() );
-                auto itFind = M_pointIdToContiguous.find( partId );
-                if ( itFind != M_pointIdToContiguous.end() )
-                {
-                    auto const& pointIdToContiguous = itFind->second;
-                    for ( auto const& pointId : partData )
-                        dataToSendInPart.push_back( pointIdToContiguous.find( pointId ) != pointIdToContiguous.end() );
-                }
-                else
-                {
-                    // no part, so no points
-                    for ( auto const& pointId : partData )
-                        dataToSendInPart.push_back( false );
-                }
+                auto const numbered = M_pointIdToContiguous.find( partId );
+                auto const pending = dataPointsInterProcessRequest.find( partId );
+                // Shared points in this part stay pending until a writer is
+                // selected below. Membership is not limited to numbered points.
+                for ( auto const pointId : partData )
+                    dataToSendInPart.push_back(
+                        ( numbered != M_pointIdToContiguous.end() && numbered->second.contains( pointId ) ) ||
+                        ( pending != dataPointsInterProcessRequest.end() && pending->second.contains( pointId ) ) );
             }
         }
         // step 1b : send/recv
