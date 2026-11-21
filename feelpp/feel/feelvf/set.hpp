@@ -1,26 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2013-2016 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2013-12-03
-
-  Copyright (C) 2013-2016 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file on.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -212,7 +197,10 @@ ElementOnExpr<ElementRange, Elem, OnExpr>::apply()
 
         fe_type const* __fe = M_u.functionSpace()->fe().get();
 
-        gm_ptrtype __gm( new gm_type );
+        auto __gm =
+            M_u.functionSpace()->mesh()->gm();
+        CHECK( __gm )
+            << "Dirichlet interpolation requires a geometric mapping";
 
 
         //
@@ -232,7 +220,9 @@ ElementOnExpr<ElementRange, Elem, OnExpr>::apply()
             {
                 __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
                 //DVLOG(2) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
-                FEELPP_ASSERT( __geopc[__f][__p]->nPoints() ).error( "invalid number of points" );
+                CHECK_GT(
+                    __geopc[__f][__p]->nPoints(), 0 )
+                    << "invalid number of geometric precompute points";
             }
         }
 
@@ -243,19 +233,19 @@ ElementOnExpr<ElementRange, Elem, OnExpr>::apply()
         //t_expr_type expr( M_expr, mapgmc );
 
 
-        DVLOG(2)  << "face_type::numVertices = " << face_type::numVertices << ", fe_type::nDofPerVertex = " << fe_type::nDofPerVertex << "\n"
-                  << "face_type::numEdges = " << face_type::numEdges << ", fe_type::nDofPerEdge = " << fe_type::nDofPerEdge << "\n"
-                  << "face_type::numFaces = " << face_type::numFaces << ", fe_type::nDofPerFace = " << fe_type::nDofPerFace << "\n";
+        DVLOG(2)  << "face_type::numVertices = " << face_type::numVertices << ", dofPerVertex = " << __fe->dofPerVertex() << "\n"
+                  << "face_type::numEdges = " << face_type::numEdges << ", dofPerEdge = " << __fe->dofPerEdge() << "\n"
+                  << "face_type::numFaces = " << face_type::numFaces << ", dofPerFace = " << __fe->dofPerFace() << "\n";
 
         size_type nbFaceDof = invalid_v<size_type>;
 
         if ( !fe_type::is_modal )
-            nbFaceDof = ( face_type::numVertices * fe_type::nDofPerVertex +
-                          face_type::numEdges * fe_type::nDofPerEdge +
-                          face_type::numFaces * fe_type::nDofPerFace );
+            nbFaceDof = ( face_type::numVertices * __fe->dofPerVertex() +
+                          face_type::numEdges * __fe->dofPerEdge() +
+                          face_type::numFaces * __fe->dofPerFace() );
 
         else
-            nbFaceDof = face_type::numVertices * fe_type::nDofPerVertex;
+            nbFaceDof = face_type::numVertices * __fe->dofPerVertex();
 
         DVLOG(2)  << "nbFaceDof = " << nbFaceDof << "\n";
         //const size_type nbFaceDof = __fe->boundaryFE()->points().size2();

@@ -14,7 +14,7 @@
 
 using namespace Feel;
 
-template <int OrderLagP1,template<class, uint16_type, class> class PointSetType,typename MeshType>
+template <int OrderLagP1,template<class, int, class> class PointSetType,typename MeshType>
 void run_test_oplagp1( std::shared_ptr<MeshType> meshBase )
 {
     auto VhBase = Pch<OrderLagP1,double,PointSetType>( meshBase );

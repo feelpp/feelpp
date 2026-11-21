@@ -1,75 +1,69 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@imag.fr>
+ *
+ * SPDX-FileCopyrightText: 2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2008-02-01
-
-  Copyright (C) 2008-2012 Universite Joseph Fourier (Grenoble I)
-  Copyright (C) 2010-2016 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
-   \file operatorinterpolation.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \author Chabannes Vincent <vincent.chabannes@imag.fr>
-   \date 2008-02-01
+ * @file operatorinterpolation.hpp
+ * @brief Matrix interpolation operators between finite-element spaces.
  */
 #ifndef FEELPP_DISCR_OPERATORINTERPOLATION_H
 #define FEELPP_DISCR_OPERATORINTERPOLATION_H 1
 
 #include <feel/feeldiscr/operatorlinear.hpp>
 
+#include <feel/feeldiscr/concepts.hpp>
 #include <feel/feeldiscr/stencil.hpp>
+
+#include <stdexcept>
+#include <type_traits>
 
 namespace Feel
 {
-using conforming_t = mpl::bool_<true>;
-using nonconforming_t = mpl::bool_<false>;
-//extern constexpr conforming_t conforming;
-//extern constexpr nonconforming_t nonconforming;
+/** Tag selecting conforming localization for an interpolation operator. */
+using conforming_t = std::true_type;
+/** Tag selecting nonconforming localization for an interpolation operator. */
+using nonconforming_t = std::false_type;
+/** Whether an interpolation localization tag requests conforming treatment. */
 template<typename C>
-constexpr bool is_conforming = C::value;
+inline constexpr bool is_conforming = std::remove_cvref_t<C>::value;
 
+/** Mathematical operand evaluated before applying the image dual basis. */
 enum class interpolation_operand_type { ID = 0, GRADIENT, CURL, DIV, EXPR };
 
+/** Write the mathematical interpolation operand name. */
 inline std::ostream&
 operator<<( std::ostream& os, interpolation_operand_type const& o )
 {
-    if ( o == interpolation_operand_type::ID )
-        os << "ID";
-    if ( o == interpolation_operand_type::GRADIENT )
-        os << "GRADIENT";
-    if ( o == interpolation_operand_type::CURL )
-        os << "CURL";
-    if ( o == interpolation_operand_type::DIV )
-        os << "DIV";
-    if ( o == interpolation_operand_type::EXPR )
-        os << "EXPR";
+    switch ( o )
+    {
+    case interpolation_operand_type::ID: os << "ID"; break;
+    case interpolation_operand_type::GRADIENT: os << "GRADIENT"; break;
+    case interpolation_operand_type::CURL: os << "CURL"; break;
+    case interpolation_operand_type::DIV: os << "DIV"; break;
+    case interpolation_operand_type::EXPR: os << "EXPR"; break;
+    }
     return os;
 }
 
 
+/**
+ * @brief Common localization policy state for interpolation operators.
+ *
+ * @tparam C whether localization is conforming
+ * @tparam O mathematical operand evaluated by the operator
+ */
 template<bool C, interpolation_operand_type O>
 class InterpolationTypeBaseBase
 {
 public :
     static constexpr bool is_conforming = C;
     static constexpr interpolation_operand_type interpolation_operand = O;
-    using operand_t = mpl::int_<static_cast<int>( interpolation_operand )>;
+    using operand_t = std::integral_constant<int, static_cast<int>( interpolation_operand )>;
 
     constexpr InterpolationTypeBaseBase()
         :
@@ -95,12 +89,18 @@ public :
     InterpolationTypeBaseBase& operator=( InterpolationTypeBaseBase const& a) = default;
     InterpolationTypeBaseBase& operator=( InterpolationTypeBaseBase && a) = default;
 
+    /** Whether point localization may communicate with neighboring ranks. */
     constexpr bool searchWithCommunication() const noexcept { return M_searchWithCommunication; }
+    /** Whether vector/tensor components share one physical localization point. */
     constexpr bool componentsAreSamePoint() const noexcept { return M_componentsAreSamePoint; }
+    /** Whether localization is restricted to the domain boundary. */
     constexpr bool onlyLocalizeOnBoundary() const noexcept { return M_onlyLocalizeOnBoundary; }
+    /** Number of candidate neighbors inspected by the localization kd-tree. */
     constexpr int nbNearNeighborInKdTree() const noexcept { return M_nbNearNeighborInKdTree; }
 
+    /** Return the compile-time localization conformity policy. */
     static constexpr bool isConforming() noexcept { return is_conforming; }
+    /** Return the compile-time mathematical operand. */
     static constexpr interpolation_operand_type interpolationOperand() noexcept { return interpolation_operand; }
 
 private :
@@ -112,6 +112,9 @@ private :
 };
 
 
+/**
+ * @brief Operand policy mapping FE elements to Feel++ variational expressions.
+ */
 template<bool C, interpolation_operand_type O >
 class InterpolationTypeBase : public InterpolationTypeBaseBase<C,O>
 {
@@ -119,11 +122,11 @@ class InterpolationTypeBase : public InterpolationTypeBaseBase<C,O>
 public :
     static constexpr bool is_conforming = super_type::is_conforming;
     static constexpr interpolation_operand_type interpolation_operand = super_type::interpolation_operand;
-    using operand_t = typename super_type::operand_t; //mpl::int_<static_cast<int>( interpolation_operand )>;
-    using id_t = mpl::int_<static_cast<int>( interpolation_operand_type::ID )>;
-    using gradient_t = mpl::int_<static_cast<int>( interpolation_operand_type::GRADIENT )>;
-    using curl_t = mpl::int_<static_cast<int>( interpolation_operand_type::CURL )>;
-    using div_t = mpl::int_<static_cast<int>( interpolation_operand_type::DIV )>;
+    using operand_t = typename super_type::operand_t;
+    using id_t = std::integral_constant<int, static_cast<int>( interpolation_operand_type::ID )>;
+    using gradient_t = std::integral_constant<int, static_cast<int>( interpolation_operand_type::GRADIENT )>;
+    using curl_t = std::integral_constant<int, static_cast<int>( interpolation_operand_type::CURL )>;
+    using div_t = std::integral_constant<int, static_cast<int>( interpolation_operand_type::DIV )>;
 
     constexpr InterpolationTypeBase() = default;
     constexpr InterpolationTypeBase( bool useComm,
@@ -140,14 +143,29 @@ public :
     InterpolationTypeBase& operator=( InterpolationTypeBase const& a) = default;
     InterpolationTypeBase& operator=( InterpolationTypeBase && a) = default;
 
+    /** Return true when the operand is any first differential operator. */
     static constexpr bool requiresDerivatives() noexcept
-        {
-            return interpolation_operand == interpolation_operand_type::GRADIENT ||
-                interpolation_operand == interpolation_operand_type::CURL ||
-                interpolation_operand == interpolation_operand_type::DIV;
-        }
+    {
+        return interpolation_operand == interpolation_operand_type::GRADIENT ||
+               interpolation_operand == interpolation_operand_type::CURL ||
+               interpolation_operand == interpolation_operand_type::DIV;
+    }
+
+    /** Return true only when the complete physical gradient is requested. */
+    static constexpr bool requiresFullGradient() noexcept
+    {
+        return interpolation_operand == interpolation_operand_type::GRADIENT;
+    }
+
+    /** Return true for direct mapped de Rham differential operators. */
+    static constexpr bool requiresMappedDifferentialOperator() noexcept
+    {
+        return interpolation_operand == interpolation_operand_type::CURL ||
+               interpolation_operand == interpolation_operand_type::DIV;
+    }
 
     template<typename Elt>
+    /** Build the variational expression selected by this operand policy. */
     static constexpr decltype(auto) operand( Elt&& e )
         {
             return operand( std::forward<Elt>(e), operand_t() );
@@ -181,6 +199,7 @@ private:
      int M_nbNearNeighborInKdTree;*/
 };
 
+/** Identity interpolation with nonconforming point localization. */
 struct InterpolationNonConforming : public InterpolationTypeBase<false,interpolation_operand_type::ID>
 {
     using super = InterpolationTypeBase<false,interpolation_operand_type::ID>;
@@ -208,6 +227,7 @@ struct InterpolationNonConforming : public InterpolationTypeBase<false,interpola
     InterpolationNonConforming& operator=( InterpolationNonConforming const& ) = default;
 };
 using InterpolationNonConforme = InterpolationNonConforming;
+/** Identity interpolation with conforming point localization. */
 struct InterpolationConforming : public InterpolationTypeBase<true,interpolation_operand_type::ID>
 {
     using super = InterpolationTypeBase<true,interpolation_operand_type::ID>;
@@ -238,10 +258,11 @@ struct InterpolationConforming : public InterpolationTypeBase<true,interpolation
 using InterpolationConforme = InterpolationConforming;
 
 template<typename C>
-using InterpolationID = typename mpl::if_<C,
-                                          mpl::identity<InterpolationConforming>,
-                                          mpl::identity<InterpolationNonConforming>>::type::type;
+using InterpolationID = std::conditional_t<is_conforming<C>,
+                                            InterpolationConforming,
+                                            InterpolationNonConforming>;
 
+/** Gradient interpolation policy. */
 template<typename C>
 struct InterpolationGradient : public InterpolationTypeBase<is_conforming<C>,interpolation_operand_type::GRADIENT>
 {
@@ -261,6 +282,7 @@ struct InterpolationGradient : public InterpolationTypeBase<is_conforming<C>,int
     InterpolationGradient& operator=( InterpolationGradient const& ) = default;
 };
 
+/** Curl interpolation policy. */
 template<typename C>
 struct InterpolationCurl : public InterpolationTypeBase<is_conforming<C>,interpolation_operand_type::CURL>
 {
@@ -279,6 +301,7 @@ struct InterpolationCurl : public InterpolationTypeBase<is_conforming<C>,interpo
     InterpolationCurl& operator=( InterpolationCurl const& ) = default;
 };
 
+/** Divergence interpolation policy. */
 template<typename C>
 struct InterpolationDiv : public InterpolationTypeBase<is_conforming<C>,interpolation_operand_type::DIV>
 {
@@ -297,6 +320,7 @@ struct InterpolationDiv : public InterpolationTypeBase<is_conforming<C>,interpol
     InterpolationDiv& operator=( InterpolationDiv const& ) = default;
 };
 
+/** Explicit-expression interpolation policy. */
 template<typename ExprType,typename C>
 struct InterpolationExpr : public InterpolationTypeBaseBase<is_conforming<C>,interpolation_operand_type::EXPR>
 {
@@ -327,6 +351,7 @@ private :
     expr_type M_expr;
 };
 
+/** Construct an identity interpolation policy. */
 template<typename C, typename ...Args>
 InterpolationID<C>
 makeInterpolation( C&& c, Args&&... args )
@@ -334,6 +359,7 @@ makeInterpolation( C&& c, Args&&... args )
     return InterpolationID<C>( std::forward<C>(c), std::forward<Args>(args)... );
 }
 
+/** Construct a gradient interpolation policy. */
 template<typename C, typename ...Args>
 InterpolationGradient<C>
 makeGradientInterpolation( C&& c, Args&&... args )
@@ -341,6 +367,7 @@ makeGradientInterpolation( C&& c, Args&&... args )
     return InterpolationGradient<C>( std::forward<C>(c), std::forward<Args>(args)... );
 }
 
+/** Construct a curl interpolation policy. */
 template<typename C, typename ...Args>
 InterpolationCurl<C>
 makeCurlInterpolation( C&& c, Args&&... args )
@@ -348,6 +375,7 @@ makeCurlInterpolation( C&& c, Args&&... args )
     return InterpolationCurl<C>( std::forward<C>(c), std::forward<Args>(args)... );
 }
 
+/** Construct a divergence interpolation policy. */
 template<typename C, typename ...Args>
 InterpolationDiv<C>
 makeDivInterpolation( C&& c, Args&&... args )
@@ -355,6 +383,7 @@ makeDivInterpolation( C&& c, Args&&... args )
     return InterpolationDiv<C>( std::forward<C>(c), std::forward<Args>(args)... );
 }
 
+/** Construct an explicit-expression interpolation policy. */
 template<typename ExprType, typename C, typename ...Args>
 InterpolationExpr<ExprType,C>
 makeExprInterpolation( ExprType const& expr, C&& c, Args&&... args )
@@ -402,6 +431,40 @@ private :
 namespace detail
 {
 
+/** Return the actual per-component local cardinality of a finite element. */
+template<typename FiniteElementPtr>
+[[nodiscard]] int
+localDofPerComponent( FiniteElementPtr const& finiteElement )
+{
+    using finite_element_type = std::remove_cvref_t<decltype( *finiteElement )>;
+    static_assert( HasDofTopology<finite_element_type> );
+    return static_cast<int>( finiteElement->localDof() );
+}
+
+/**
+ * @brief Evaluate one local functional and map its basis rows to canonical DoFs.
+ *
+ * This is the pointwise counterpart of transforming an interpolation matrix.
+ * Keeping it here avoids repeating sign-only orientation logic throughout the
+ * related- and unrelated-mesh interpolation implementations.
+ */
+template<typename ValueType, typename DofTableType, typename Evaluator>
+[[nodiscard]] Eigen::Matrix<ValueType, Eigen::Dynamic, 1>
+canonicalLocalFunctionalValues( DofTableType const& dof,
+                                typename DofTableType::size_type elementId,
+                                Evaluator&& evaluator )
+{
+    Eigen::Matrix<ValueType, Eigen::Dynamic, 1> values =
+        Eigen::Matrix<ValueType, Eigen::Dynamic, 1>::Zero( dof.nLocalDof() );
+    for ( auto const& localDof : dof.localDof( elementId ) )
+    {
+        const uint16_type localId = localDof.first.localDof();
+        values( localId ) = std::forward<Evaluator>( evaluator )( localId );
+    }
+    dof.mapLocalLinearFormToCanonicalDofs( elementId, values );
+    return values;
+}
+
 
 
 template <typename DomainSpaceType, typename ImageSpaceType, typename ExprType,int DomainEvalOnSubEntityCoDim/*=0*/>
@@ -430,11 +493,18 @@ struct PrecomputeDomainBasisFunction
     typedef typename domain_gm_type::precompute_ptrtype domain_geopc_ptrtype;
     using image_geopc_type = typename image_gm_type::precompute_type;
 
-    static const size_type context2 = (is_hdiv_conforming_v<image_fe_type> || is_hcurl_conforming_v<image_fe_type> )?
+    // The domain FE determines how the basis operand is mapped. The image FE
+    // determines which physical dual-functional directions (normal/tangent)
+    // are needed. A related-mesh local pairing shares one geometry context,
+    // so its mask is the union of both capability requirements.
+    static constexpr size_type context2 =
+        ( is_hdiv_conforming_v<fe_type> || is_hcurl_conforming_v<fe_type> ||
+          is_hdiv_conforming_v<image_fe_type> ||
+          is_hcurl_conforming_v<image_fe_type> ) ?
         expression_type::context|vm::JACOBIAN|vm::KB :
         expression_type::context;
     // static const size_type context = ( DomainSpaceType::nDim == ImageSpaceType::nDim )? context2 : context2|vm::POINT;
-    static const size_type context = context2|vm::POINT;//|vm::KB|vm::GRAD; // TOD REVERT
+    static constexpr size_type context = context2|vm::POINT;
     typedef typename domain_gm_type::template Context<domain_geoelement_type,DomainEvalOnSubEntityCoDim> domain_gmc_type;
     typedef std::shared_ptr<domain_gmc_type> domain_gmc_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, domain_gmc_ptrtype> > map_gmc_type;
@@ -465,8 +535,7 @@ struct PrecomputeDomainBasisFunction
 
     domain_gmc_ptrtype & gmc() { return M_gmc; }
 
-    template <typename InterpOnType>
-        requires (InterpOnType::onEntity() == ElementsType::MESH_ELEMENTS)
+    template <InterpolationOnElements InterpOnType>
     void update( InterpOnType const& interpOnElts )
         {
             auto const& interpOnElt = interpOnElts.elements().front();
@@ -497,8 +566,8 @@ struct PrecomputeDomainBasisFunction
         }
 
 
-    template <typename InterpOnType>
-        requires (InterpOnType::onEntity() == ElementsType::MESH_FACES) && (DomainSpaceType::nDim == ImageSpaceType::nDim)
+    template <InterpolationOnFaces InterpOnType>
+        requires (DomainSpaceType::nDim == ImageSpaceType::nDim)
     void update( InterpOnType const& interpOnFaceFull )
         {
             auto const& interpOnFace = interpOnFaceFull.elements().front();
@@ -573,8 +642,8 @@ struct PrecomputeDomainBasisFunction
             }
         }
 
-    template <typename InterpOnType>//typename ImageEltType,
-        requires (InterpOnType::onEntity() == ElementsType::MESH_FACES) && (DomainSpaceType::nDim == (ImageSpaceType::nDim+1))
+    template <InterpolationOnFaces InterpOnType>//typename ImageEltType,
+        requires (DomainSpaceType::nDim == (ImageSpaceType::nDim+1))
     void update( InterpOnType const& interpOnFaceFull )//, ImageEltType const& imageElt, uint16_type imageLocDof, size_type imageGlobDof, uint16_type comp )
         {
             auto const& interpOnFace = interpOnFaceFull.elements().front();
@@ -590,7 +659,8 @@ struct PrecomputeDomainBasisFunction
             auto const& elt = interpOnFace.element();
             M_gmc->template update<context>( elt, __face_id );
 
-            std::vector<uint16_type> mapImageChangeDimFaceDofPointToImageDofPoint( M_gmc->nPoints()/*image_fe_changedim_type::nLocalDof*/, invalid_v<uint16_type> );
+            std::vector<uint16_type> mapImageChangeDimFaceDofPointToImageDofPoint(
+                M_gmc->nPoints(), invalid_v<uint16_type> );
             upMatchingDofPoints( M_gmc, M_gmcImageElt, mapImageChangeDimFaceDofPointToImageDofPoint );
 
 
@@ -619,9 +689,7 @@ struct PrecomputeDomainBasisFunction
         }
 
 private :
-    //template <typename MeshEntityType,std::enable_if_t< std::is_same_v<MeshEntityType,typename domain_mesh_type::element_type>, bool> = true >
-    template <typename InterpOnType>
-        requires (InterpOnType::onEntity() == ElementsType::MESH_ELEMENTS)
+    template <InterpolationOnElements InterpOnType>
     void init( InterpOnType const& interpFromElt )//MeshEntityType const& elt )
         {
             if ( M_tensorExpr )
@@ -646,8 +714,7 @@ private :
                 this->initCommon( interpFromElt, M_XhImage->fe() );
             }
         }
-    template <typename InterpOnType,typename TheImageFeType>
-        requires (InterpOnType::onEntity() == ElementsType::MESH_ELEMENTS)
+    template <InterpolationOnElements InterpOnType,typename TheImageFeType>
     void initCommon( InterpOnType const& interpFromElt, std::shared_ptr<TheImageFeType> image_fe )
         {
             auto const& elt = interpFromElt.element();
@@ -667,16 +734,22 @@ private :
             map_fec_type mapfec( fusion::make_pair<vf::detail::gmc<0>>( M_fec ) );
             M_tensorExpr = std::make_shared<t_expr_type>( M_expr, mapgmc, mapfec );
 
-            using shape = typename t_expr_type::shape;
-            M_IhLoc = Eigen::MatrixXd::Zero( fe_type::is_product ? fe_type::nComponents * fe_type::nLocalDof : fe_type::nLocalDof,
-                                             image_fe_type::is_product ? image_fe_type::nComponents * image_fe_type::nLocalDof : image_fe_type::nLocalDof );
+            const int domainLocalDofPerComp = Feel::detail::localDofPerComponent( M_XhDomain->fe() );
+            // Storage columns must match the image FE dof indexing used in
+            // interpolateBasisFunction(..., mapExprPointToDofPoint), which
+            // targets the full image FE local dof numbering.
+            const int imageLocalDofPerComp = Feel::detail::localDofPerComponent( M_XhImage->fe() );
+            const int nRows = fe_type::is_product ? fe_type::nComponents * domainLocalDofPerComp
+                                                  : domainLocalDofPerComp;
+            const int nCols = image_fe_type::is_product ? image_fe_type::nComponents * imageLocalDofPerComp
+                                                        : imageLocalDofPerComp;
+            M_IhLoc = Eigen::MatrixXd::Zero( nRows, nCols );
 #if 0
             image_fe->interpolateBasisFunction( *M_tensorExpr, M_IhLoc );
 #endif
         }
 
-    template <typename InterpOnType>
-        requires (InterpOnType::onEntity() == ElementsType::MESH_FACES)
+    template <InterpolationOnFaces InterpOnType>
     void init( InterpOnType const& interpOnFace )
         {
             auto image_fe = M_XhImage->fe();
@@ -700,8 +773,7 @@ private :
             }
         }
 
-    template <typename InterpOnType,typename TheImageFeType>
-        requires (InterpOnType::onEntity() == ElementsType::MESH_FACES)
+    template <InterpolationOnFaces InterpOnType,typename TheImageFeType>
     void initCommon( InterpOnType const& interpOnFace, std::shared_ptr<TheImageFeType> image_fe )
         {
             domain_gm_ptrtype domain_gm = M_XhDomain->gm();
@@ -758,9 +830,16 @@ private :
             //t_expr_type texpr( M_expr, mapgmc, mapfec );
             M_tensorExpr = std::make_shared<t_expr_type>( M_expr, mapgmc, mapfec );
 
-            using shape = typename t_expr_type::shape;
-            M_IhLoc = Eigen::MatrixXd::Zero( fe_type::is_product ? fe_type::nComponents * fe_type::nLocalDof : fe_type::nLocalDof,
-                                             image_fe_type::is_product ? image_fe_type::nComponents * image_fe_type::nLocalDof : image_fe_type::nLocalDof );
+            const int domainLocalDofPerComp = Feel::detail::localDofPerComponent( M_XhDomain->fe() );
+            // Storage columns must match the image FE dof indexing used in
+            // interpolateBasisFunction(..., mapExprPointToDofPoint), which
+            // targets the full image FE local dof numbering.
+            const int imageLocalDofPerComp = Feel::detail::localDofPerComponent( M_XhImage->fe() );
+            const int nRows = fe_type::is_product ? fe_type::nComponents * domainLocalDofPerComp
+                                                  : domainLocalDofPerComp;
+            const int nCols = image_fe_type::is_product ? image_fe_type::nComponents * imageLocalDofPerComp
+                                                        : imageLocalDofPerComp;
+            M_IhLoc = Eigen::MatrixXd::Zero( nRows, nCols );
 #if 0
             M_XhImage->fe()->interpolateBasisFunction( *M_tensorExpr, M_IhLoc );
 #endif
@@ -791,6 +870,206 @@ precomputeDomainBasisFunction( std::shared_ptr<DomainSpaceType> const& domainSpa
     typedef PrecomputeDomainBasisFunction<DomainSpaceType,ImageSpaceType,ExprType,DomainEvalOnSubEntityCoDim> res_type;
     return std::make_shared<res_type>( domainSpace, imageSpace, expr );
 }
+
+/**
+ * @brief Evaluate a mapped domain-basis operand at localized reference points.
+ *
+ * Unlike the related-mesh precompute, the reference points are supplied by a
+ * physical-point localization result. The evaluator nevertheless constructs
+ * the same Geomap, FE, and variational-expression contexts, so Piola values
+ * and direct differential operators are evaluated in physical coordinates.
+ */
+template<typename DomainSpaceType, typename ExprType>
+class LocalizedDomainBasisEvaluation
+{
+public:
+    using domain_space_ptrtype = std::shared_ptr<DomainSpaceType>;
+    using domain_mesh_type = typename DomainSpaceType::mesh_type;
+    using domain_element_type = typename domain_mesh_type::element_type;
+    using domain_fe_type = typename DomainSpaceType::basis_type;
+    using domain_gm_type = typename domain_element_type::gm_type;
+    using domain_gmc_type = typename domain_gm_type::template Context<domain_element_type,0>;
+    using domain_gmc_ptrtype = std::shared_ptr<domain_gmc_type>;
+    using domain_fec_type = typename domain_fe_type::template Context<
+        ( ExprType::context |
+          ( ( is_hdiv_conforming_v<domain_fe_type> ||
+              is_hcurl_conforming_v<domain_fe_type> )
+                ? ( vm::JACOBIAN | vm::KB )
+                : 0 ) |
+          vm::POINT ),
+        domain_fe_type, domain_gm_type, domain_element_type, 0,
+        domain_gmc_type::subEntityCoDim>;
+    using domain_fec_ptrtype = std::shared_ptr<domain_fec_type>;
+    using map_gmc_type = fusion::map<
+        fusion::pair<vf::detail::gmc<0>, domain_gmc_ptrtype>>;
+    using map_fec_type = fusion::map<
+        fusion::pair<vf::detail::gmc<0>, domain_fec_ptrtype>>;
+    using tensor_type = typename ExprType::template tensor<map_gmc_type,map_fec_type>;
+    using points_type = typename domain_fe_type::points_type;
+
+    static constexpr size_type context =
+        ExprType::context |
+        ( ( is_hdiv_conforming_v<domain_fe_type> ||
+            is_hcurl_conforming_v<domain_fe_type> )
+              ? ( vm::JACOBIAN | vm::KB )
+              : 0 ) |
+        vm::POINT;
+
+    /** Construct a localized evaluator for one domain space and operand. */
+    LocalizedDomainBasisEvaluation( domain_space_ptrtype domainSpace,
+                                    ExprType const& expression )
+        : M_domainSpace( std::move( domainSpace ) ),
+          M_expression( expression )
+    {}
+
+    /** Rebuild the pointwise contexts for one localized domain element. */
+    void update( domain_element_type const& element, points_type const& referencePoints )
+    {
+        auto gm = M_domainSpace->gm();
+        auto geopc = gm->preCompute( gm, referencePoints );
+        auto fepc = M_domainSpace->fe()->preCompute(
+            M_domainSpace->fe(), referencePoints );
+        M_gmc = gm->template context<context>( element, geopc );
+        M_fec = std::make_shared<domain_fec_type>(
+            M_domainSpace->fe(), M_gmc, fepc );
+        map_gmc_type mapgmcContext(
+            fusion::make_pair<vf::detail::gmc<0>>( M_gmc ) );
+        map_fec_type mapfecContext(
+            fusion::make_pair<vf::detail::gmc<0>>( M_fec ) );
+        M_tensor = std::make_shared<tensor_type>(
+            M_expression, mapgmcContext, mapfecContext );
+        M_tensor->update( mapgmcContext, mapfecContext );
+    }
+
+    /**
+     * Evaluate one flattened local domain basis function and output component.
+     */
+    [[nodiscard]] auto value( uint16_type localDof,
+                              uint16_type outputComponent,
+                              uint16_type point = 0 ) const
+    {
+        constexpr uint16_type nRows = tensor_type::shape::M;
+        constexpr uint16_type nCols = tensor_type::shape::N;
+        if ( outputComponent >= nRows*nCols )
+            throw std::out_of_range(
+                "localized interpolation output component exceeds expression shape" );
+        const uint16_type c1 = outputComponent / nCols;
+        const uint16_type c2 = outputComponent % nCols;
+        return M_tensor->evaliq( localDof, c1, c2, point );
+    }
+
+    /** Evaluate one local basis row and tensor component. */
+    [[nodiscard]] auto value( uint16_type localDof, uint16_type c1,
+                              uint16_type c2, uint16_type point ) const
+    {
+        return M_tensor->evaliq( localDof, c1, c2, point );
+    }
+
+private:
+    domain_space_ptrtype M_domainSpace;
+    ExprType const& M_expression;
+    domain_gmc_ptrtype M_gmc;
+    domain_fec_ptrtype M_fec;
+    std::shared_ptr<tensor_type> M_tensor;
+};
+
+/**
+ * @brief Runtime sample table consumed by an image FE dual basis.
+ *
+ * Values come from localized domain FE contexts, while `geom()` deliberately
+ * returns the image geometry: the former defines the mapped field and the
+ * latter defines the mathematical image functional.
+ *
+ * @tparam ShapeType tensor shape of the sampled operand
+ * @tparam GeometryContextType image geometric context defining the functional
+ * @tparam ValueType sampled scalar type
+ * @tparam TestBasisType domain basis whose rows are being sampled
+ */
+template<typename ShapeType, typename GeometryContextType, typename ValueType,
+         typename TestBasisType>
+class LocalizedBasisSampleTable
+{
+public:
+    using shape = ShapeType;
+    using gmc_type = GeometryContextType;
+    using value_type = ValueType;
+    /** Expression metadata required by finite-element face interpolators. */
+    struct ExpressionTraits
+    {
+        using test_basis = TestBasisType;
+    };
+    using expr_type = ExpressionTraits;
+
+    LocalizedBasisSampleTable( std::shared_ptr<gmc_type> geometry,
+                               uint16_type rows, uint16_type points )
+        : M_geometry( std::move( geometry ) ), M_rows( rows ),
+          M_points( points ),
+          M_values( static_cast<size_type>( rows ) * shape::M * shape::N *
+                    points, value_type{} )
+    {}
+
+    /** Return the image geometry defining dual directions and measures. */
+    [[nodiscard]] std::shared_ptr<gmc_type> const& geom() const
+    {
+        return M_geometry;
+    }
+
+    /** Return the complete image functional sample count. */
+    [[nodiscard]] uint16_type nPoints() const noexcept { return M_points; }
+
+    /** Store one localized domain basis value. */
+    value_type& value( uint16_type row, uint16_type c1, uint16_type c2,
+                       uint16_type point )
+    {
+        return M_values[index( row, c1, c2, point )];
+    }
+
+    /** Evaluate one domain basis row as required by image FE dual kernels. */
+    [[nodiscard]] value_type evaliq( uint16_type row, uint16_type c1,
+                                     uint16_type c2,
+                                     uint16_type point ) const
+    {
+        return M_values[index( row, c1, c2, point )];
+    }
+
+private:
+    [[nodiscard]] size_type index( uint16_type row, uint16_type c1,
+                                   uint16_type c2,
+                                   uint16_type point ) const
+    {
+        return ( ( static_cast<size_type>( row ) * shape::M + c1 ) *
+                     shape::N +
+                 c2 ) *
+                   M_points +
+               point;
+    }
+
+    std::shared_ptr<gmc_type> M_geometry;
+    uint16_type M_rows;
+    uint16_type M_points;
+    std::vector<value_type> M_values;
+};
+
+/** Named MPI payload returned by a domain localization rank. */
+template<typename NodeType, typename ValueType>
+struct localized_basis_response
+{
+    std::vector<NodeType> reference_points;
+    std::vector<bool> found;
+    std::vector<int> element_ids;
+    std::vector<std::vector<int>> process_dofs;
+    std::vector<std::vector<int>> cluster_dofs;
+    std::vector<NodeType> extrapolation_barycenters;
+    std::vector<std::vector<ValueType>> basis_values;
+
+    /** Serialize the distributed localized FE evaluation result. */
+    template<typename Archive>
+    void serialize( Archive& archive, unsigned int )
+    {
+        archive & reference_points & found & element_ids & process_dofs &
+            cluster_dofs & extrapolation_barycenters & basis_values;
+    }
+};
 
 
 
@@ -973,8 +1252,8 @@ private :
      * - domain and image meshes haves same dimension
      * - interpolation on mesh element (belong to image mesh)
      */
-    template <int ApplyType, typename MeshEntityType>
-        requires (ApplyType == 0) && std::is_same_v<MeshEntityType,typename image_mesh_type::element_type>
+    template <int ApplyType, MeshEntityElement<image_mesh_type> MeshEntityType>
+        requires (ApplyType == 0)
     auto apply( MeshEntityType const& imageElt, image_vector_mesh_element_type const& imageElts ) const
         {
             std::vector<ReturnFromElements> res;
@@ -989,7 +1268,7 @@ private :
             std::optional<typename domain_vector_mesh_element_type::value_type> domainElt;
             if ( M_isSameMesh )
             {
-                if constexpr ( std::is_same_v<typename domain_mesh_type::element_type,typename image_mesh_type::element_type> )
+                if constexpr ( MeshEntityElement<typename image_mesh_type::element_type, domain_mesh_type> )
                     domainElt = imageEltWrap;
                 else
                     CHECK( false ) << "should not go here";
@@ -1035,8 +1314,8 @@ private :
      * - domain and image meshes haves same dimension
      * - interpolation on mesh face (belong to image mesh)
      */
-    template <int ApplyType, typename MeshEntityType>
-        requires (ApplyType == 0) && std::is_same_v<MeshEntityType,typename image_mesh_type::face_type>
+    template <int ApplyType, MeshEntityFace<image_mesh_type> MeshEntityType>
+        requires (ApplyType == 0)
     auto apply( MeshEntityType const& imageFace, image_vector_mesh_element_type const& imageElts ) const
         {
             std::vector<ReturnFromFaces> res;
@@ -1141,8 +1420,8 @@ private :
      * - domain dim = image dim + 1
      * - interpolation on mesh element (belong to image mesh)
      */
-    template <int ApplyType, typename MeshEntityType>
-        requires (ApplyType == 1) && std::is_same_v<MeshEntityType,typename image_mesh_type::element_type>
+    template <int ApplyType, MeshEntityElement<image_mesh_type> MeshEntityType>
+        requires (ApplyType == 1)
     auto apply( MeshEntityType const& imageElt, image_vector_mesh_element_type const& imageElts ) const
         {
             std::vector<ReturnFromFaces> res;
@@ -1193,8 +1472,8 @@ private :
      * - domain dim = image dim - 1
      * - interpolation on mesh element (belong to image mesh)
      */
-    template <int ApplyType, typename MeshEntityType>
-        requires (ApplyType == -1) && std::is_same_v<MeshEntityType,typename image_mesh_type::face_type>
+    template <int ApplyType, MeshEntityFace<image_mesh_type> MeshEntityType>
+        requires (ApplyType == -1)
     auto apply( MeshEntityType const& imageFace, image_vector_mesh_element_type const& imageElts ) const
         {
             std::vector<ReturnFromElements> res;
@@ -1231,8 +1510,8 @@ private :
      * - domain dim = image dim - 1
      * - interpolation on mesh element (belong to image mesh)
      */
-    template <int ApplyType, typename MeshEntityType>
-        requires (ApplyType == -1) && std::is_same_v<MeshEntityType,typename image_mesh_type::element_type>
+    template <int ApplyType, MeshEntityElement<image_mesh_type> MeshEntityType>
+        requires (ApplyType == -1)
     auto apply( MeshEntityType const& imageElt, image_vector_mesh_element_type const& imageElts ) const
         {
             std::vector<ReturnFromElements> res;
@@ -1246,7 +1525,7 @@ private :
      * - interpolation on mesh element (belong to image mesh)
      */
     template <int ApplyType, typename MeshEntityType>
-        requires (ApplyType == -2) /*&& std::is_same_v<MeshEntityType,typename image_mesh_type::face_type>*/
+        requires (ApplyType == -2)
     auto apply( MeshEntityType const& imageFace, image_vector_mesh_element_type const& imageElts ) const
         {
             std::vector<ReturnFromElements> res;
@@ -1448,11 +1727,15 @@ public:
     typedef IteratorRange range_iterator;
 
 
-    static inline const uint16_type nLocalDofInDualImageElt = mpl::if_< mpl::equal_to< idim_type ,mpl::size_t<MESH_ELEMENTS> >,
-                             mpl::int_< image_basis_type::nLocalDof > ,
-                             mpl::int_< image_mesh_type::face_type::numVertices*dual_image_space_type::fe_type::nDofPerVertex +
-                             image_mesh_type::face_type::numEdges*dual_image_space_type::fe_type::nDofPerEdge +
-                             image_mesh_type::face_type::numFaces*dual_image_space_type::fe_type::nDofPerFace > >::type::value;
+    /** Return the effective per-component DoF count of one ranged image entity. */
+    [[nodiscard]] uint16_type imageEntityLocalDofCount() const
+    {
+        auto const& imageFe = *this->dualImageSpace()->fe();
+        if constexpr ( idim_type::value == MESH_ELEMENTS )
+            return imageFe.localDofCount( true );
+        else
+            return imageFe.localDofCountOnFacet( 0, true );
+    }
 
     // type conforme or non conforme
     using interpolation_type = std::remove_reference_t<std::remove_const_t<InterpType>>;
@@ -1569,6 +1852,7 @@ private:
 
     void updateSameMesh();
     void updateNoRelationMesh();
+    void updateNoRelationMeshMoments();
     void updateNoRelationMeshMPI();
     void updateNoRelationMeshMPI_run(bool buildNonZeroMatrix=true);
 
@@ -1712,12 +1996,42 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
         return;
     }
 
+    const bool meshesAreRelated =
+        this->dualImageSpace()->mesh()->isRelatedTo( this->domainSpace()->mesh() );
+
+    if ( !meshesAreRelated )
+    {
+        const bool distributedLocalization =
+            this->dualImageSpace()->worldCommPtr()->localSize() > 1 ||
+            this->domainSpace()->worldCommPtr()->localSize() > 1;
+        if ( distributedLocalization )
+        {
+            if constexpr ( is_hdiv_conforming_v<domain_basis_type> ||
+                           is_hcurl_conforming_v<domain_basis_type> ||
+                           interpolation_type::interpolation_operand !=
+                               interpolation_operand_type::ID )
+            {
+                throw std::logic_error(
+                    "Distributed OperatorInterpolation on unrelated meshes "
+                    "does not yet support mapped H(div)/H(curl) or "
+                    "differential operands" );
+            }
+            if constexpr ( !is_lagrange_polynomialset_v<image_basis_type> )
+            {
+                throw std::logic_error(
+                    "Distributed OperatorInterpolation on unrelated meshes "
+                    "requires point-functional image FEs; distributed moment "
+                    "sample transport is not available" );
+            }
+        }
+    }
+
     // if same mesh but not same function space (e.g. different polynomial
     // order, different basis) or if the image of domain mesh are related to
     // each other through an extraction (one of them is the sub mesh of the
     // other)
-    VLOG(1) << "OperatorInterpolation: is image related to domain : " << this->dualImageSpace()->mesh()->isRelatedTo( this->domainSpace()->mesh() ) ;
-    if ( this->dualImageSpace()->mesh()->isRelatedTo( this->domainSpace()->mesh() ) /*&&
+    VLOG(1) << "OperatorInterpolation: is image related to domain : " << meshesAreRelated;
+    if ( meshesAreRelated /*&&
                                                                                       boost::is_same<domain_mesh_type,image_mesh_type>::type::value*/ )
     {
         VLOG(1) << "OperatorInterpolation: use same mesh\n";
@@ -1750,6 +2064,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     bool meshAreRelated = this->dualImageSpace()->mesh()->isRelatedTo( this->domainSpace()->mesh() );
 
     auto const& imagedof = this->dualImageSpace()->dof();
+    auto const& imagefe = *this->dualImageSpace()->fe();
 
     std::map< rank_type, std::vector< size_type > > dataToSend, dataToRecv;
     // // init container used in send/recv
@@ -1777,31 +2092,37 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                     continue;
             }
 
-            for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
+            for( auto const& ldof : imagedof->localDof( theImageElt ) )
             {
-                for ( uint16_type comp = 0; comp < image_basis_type::nComponents; ++comp )
+                size_type igp = invalid_v<size_type>;
+                uint16_type iloc = invalid_v<uint16_type>;
+                if constexpr ( idim_type::value == MESH_FACES )
                 {
-                    uint16_type compDofTableImage = (image_basis_type::is_product)? comp : 0;
-                    auto thedofImage = imagedof->localToGlobal( theImageElt, iloc, compDofTableImage );
-                    size_type igp = thedofImage.index();
+                    igp = ldof.index();
+                    iloc = ldof.localDof();
+                    const uint16_type compFromFaceDof = static_cast<uint16_type>( ldof.localDofInFace() / imagedof->nLocalDofOnFace( true ) );
+                    if ( imagefe.component( iloc ) != compFromFaceDof )
+                        iloc = imagedof->localDofId( imagefe.dofParent( iloc ), compFromFaceDof );
+                }
+                else
+                {
+                    igp = ldof.second.index();
+                    iloc = ldof.first.localDof();
+                }
+                const uint16_type comp = imagefe.component( iloc );
+                if ( !dof_done[igp].insert( comp ).second )
+                    continue;
 
-                    if ( ( image_basis_type::is_product && dof_done[igp].empty() ) ||
-                         ( !image_basis_type::is_product && dof_done[igp].find( comp ) == dof_done[igp].end() ) )
-                    {
-                        if ( imagedof->dofGlobalProcessIsGhost( igp ) )
-                        {
-                            const size_type igc = imagedof->mapGlobalProcessToGlobalCluster()[igp];
-                            const rank_type theproc = imagedof->procOnGlobalCluster( igc );
-                            dataToSend[theproc].push_back( igc );
-
-                            dof_done[igp].insert( comp );
-                        }
-                        else if ( imagedof->activeDofSharedOnCluster().find( igp ) != imagedof->activeDofSharedOnCluster().end() )
-                        {
-                            activeDofSharedPresentInRange.insert(igp);
-                        }
-                    } // dof_done
-                } // comp
+                if ( imagedof->dofGlobalProcessIsGhost( igp ) )
+                {
+                    const size_type igc = imagedof->mapGlobalProcessToGlobalCluster()[igp];
+                    const rank_type theproc = imagedof->procOnGlobalCluster( igc );
+                    dataToSend[theproc].push_back( igc );
+                }
+                else if ( imagedof->activeDofSharedOnCluster().find( igp ) != imagedof->activeDofSharedOnCluster().end() )
+                {
+                    activeDofSharedPresentInRange.insert(igp);
+                }
             }
         }
     }
@@ -1912,12 +2233,12 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 #if 0
     std::cout << "Interpolation operator (Basis info) \n"
               << "  domain_basis_type::nDof         : " << domain_basis_type::nDof << "\n"
-              << "  domain_basis_type::nLocalDof    : " << domain_basis_type::nLocalDof << "\n"
+              << "  domain local DoFs               : " << domainfe.localDof() << "\n"
               << "  domain_basis_type::nComponents  : " << domain_basis_type::nComponents << "\n"
               << "  domain_basis_type::nComponents1 : " << domain_basis_type::nComponents1 << "\n"
               << "  domain_basis_type::is_product   : " << domain_basis_type::is_product << "\n"
               << "  image_basis_type::nDof          : " << image_basis_type::nDof << "\n"
-              << "  image_basis_type::nLocalDof     : " << image_basis_type::nLocalDof << "\n"
+              << "  image local DoFs                : " << imagefe.localDof() << "\n"
               << "  image_basis_type::nComponents   : " << image_basis_type::nComponents << "\n"
               << "  image_basis_type::nComponents1  : " << image_basis_type::nComponents1 << "\n"
               << "  image_basis_type::is_product    : " << image_basis_type::is_product << "\n"
@@ -1925,6 +2246,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 #endif
     auto const& imagedof = this->dualImageSpace()->dof();
     auto const& domaindof = this->domainSpace()->dof();
+    auto const& imagefe = *this->dualImageSpace()->fe();
+    auto const& domainfe = *this->domainSpace()->fe();
 
     bool needToUpdateGraph = true;
     bool needToCopyMatrix = false;
@@ -2029,7 +2352,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                 if ( domains_eid_set.size() == 0 )
                     continue;
 
-                for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
+                for ( uint16_type iloc = 0;
+                      iloc < this->imageEntityLocalDofCount(); ++iloc )
                 {
                     int nc = (image_basis_type::is_product)? image_basis_type::nComponents : 1;
                     for ( uint16_type comp = 0; comp < nc; ++comp )
@@ -2060,17 +2384,20 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                             for ( auto const& domain_eid : domains_eid_set )
                             {
 
-                                auto const& s = domaindof->localToGlobalSigns( domain_eid );
-
                                 uint16_type ilocprime = invalid_v<uint16_type>;
+                                auto canonicalIhLoc = IhLoc;
 
                                 if ( opToApply == OpToApplyEnum::ASSEMBLY_MATRIX )
                                 {
                                     ilocprime = MlocEvalBasisNEW->update( this->domainSpace()->mesh()->element( domain_eid ),  theImageElt, iloc, i,comp );
                                     IhLoc = MlocEvalBasisNEW->interpolant();
+                                    canonicalIhLoc = IhLoc;
+                                    domaindof->mapLocalLinearFormToCanonicalDofs(
+                                        domain_eid, canonicalIhLoc );
                                 }
 
-                                for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                                for ( uint16_type jloc = 0;
+                                      jloc < domainfe.localDof(); ++jloc )
                                 {
                                     uint16_type nCompDomain = (domain_basis_type::is_product)?domain_basis_type::nComponents:1;
                                     for(int cdomain = 0;cdomain < nCompDomain;++cdomain )
@@ -2091,8 +2418,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                         }
                                         else if ( opToApply == OpToApplyEnum::ASSEMBLY_MATRIX )
                                         {
-                                            const value_type val = s(jloc)*IhLoc( cdomain*domain_basis_type::nLocalDof+jloc,
-                                                                                  ilocprime );
+                                            const value_type val = canonicalIhLoc(
+                                                cdomain*domainfe.localDof()+jloc,
+                                                ilocprime );
 #if 0
                                             this->matPtr()->set( i,j,val );
 #else
@@ -2142,21 +2470,19 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                         if constexpr ( idim_type::value == MESH_FACES )
                         {
                             i = ldof.index();
-                            iloc = ldof.localDof(); // WRONG HERE IN VECTORIAL, SEE FIX BELOW
-                            //comp = ldof.first.component( image_basis_type::nLocalDof ); // TODO
-
-                            uint16_type ccc = ldof.localDofInFace()/nLocalDofInDualImageElt;//image_basis_type::nLocalEdgeDof;
-                            iloc = ldof.localDof()+ccc*image_basis_type::nLocalDof;
+                            iloc = ldof.localDof();
+                            const uint16_type compFromFaceDof = static_cast<uint16_type>( ldof.localDofInFace() / imagedof->nLocalDofOnFace( true ) );
+                            if ( imagefe.component( iloc ) != compFromFaceDof )
+                                iloc = imagedof->localDofId( imagefe.dofParent( iloc ), compFromFaceDof );
                         }
                         else
                         {
                             i = ldof.second.index();
                             iloc = ldof.first.localDof();
-                            //comp = ldof.first.component( image_basis_type::nLocalDof ); // TODO
                         }
-                        uint16_type comp = iloc/image_basis_type::nLocalDof;
+                        const uint16_type comp = imagefe.component( iloc );
 
-                        if ( dof_done[i].empty() )
+                        if ( dof_done[i].insert( comp ).second )
                         {
                             const auto ig1 = imagedof->mapGlobalProcessToGlobalCluster()[i];
                             const auto theproc = imagedof->procOnGlobalCluster( ig1 );
@@ -2177,17 +2503,20 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                             for ( auto const& domain_elt : domains_eid_set.elements() )
                             {
                                 index_type domain_eid = domain_elt.element().id();
-                                auto const& s = domaindof->localToGlobalSigns( domain_eid );
+                                auto canonicalIhLoc = IhLoc;
+                                if ( opToApply == OpToApplyEnum::ASSEMBLY_MATRIX )
+                                    domaindof->mapLocalLinearFormToCanonicalDofs(
+                                        domain_eid, canonicalIhLoc );
                                 for( auto const& ldof_domain : domaindof->localDof( domain_eid ) )
                                 {
                                     index_type j = ldof_domain.second.index();
                                     uint16_type jloc = ldof_domain.first.localDof();
-                                    uint16_type cdomain = ldof_domain.first.component( domain_basis_type::nLocalDof );
+                                    uint16_type cdomain = domainfe.component( jloc );
 
-                                    if ( domain_basis_type::is_product &&
+                                    if ( M_interptype.interpolationOperand() == interpolation_operand_type::ID &&
+                                         domain_basis_type::is_product &&
                                          image_basis_type::is_product &&
-                                         ( M_interptype.interpolationOperand() == interpolation_operand_type::ID )
-                                         && cdomain != comp ) continue;
+                                         cdomain != comp ) continue;
 
                                     if ( opToApply == OpToApplyEnum::BUILD_GRAPH )
                                     {
@@ -2197,14 +2526,13 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                     }
                                     else if ( opToApply == OpToApplyEnum::ASSEMBLY_MATRIX )
                                     {
-                                        const value_type val = s(jloc)*IhLoc( jloc,iloc );
+                                        const value_type val = canonicalIhLoc( jloc,iloc );
                                         this->matPtr()->set( dofIdToContainerIdRow[i], dofIdToContainerIdCol[j], val );
                                     }
                                 }
                                 //break;/////WARING ONLY FOR CONTINUE!!!!
                             }  // for ( auto const& domain_elt : domains_eid_set.elements() )
 
-                            dof_done[i].insert( comp );
                         } // if ( !dof_done[i] )
                     } // for( auto const& ldof : imagedof->localDof( theImageElt ) )
                 } /// for ( auto const& domains_eid_set : meshEntitiesImageToDomain )
@@ -2230,149 +2558,358 @@ template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRang
 void
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::updateNoRelationMesh()
 {
+    if constexpr ( !is_lagrange_polynomialset_v<image_basis_type> )
+    {
+        this->updateNoRelationMeshMoments();
+        return;
+    }
+
     DVLOG(2) << "[interpolate] different meshes\n";
-    //std::cout << "OperatorInterpolation::updateNoRelationMesh start " << std::endl;
-
-    const size_type proc_id = this->dualImageSpace()->mesh()->worldCommPtr()->localRank();
-    const size_type n1_dof_on_proc = this->dualImageSpace()->nLocalDof();
-    const size_type firstrow_dof_on_proc = this->dualImageSpace()->dof()->firstDof( proc_id );
-    const size_type lastrow_dof_on_proc = this->dualImageSpace()->dof()->lastDof( proc_id );
-    const size_type firstcol_dof_on_proc = this->domainSpace()->dof()->firstDof( proc_id );
-    const size_type lastcol_dof_on_proc = this->domainSpace()->dof()->lastDof( proc_id );
-#if 0
-    graph_ptrtype sparsity_graph( new graph_type( n1_dof_on_proc,
-                                                  firstrow_dof_on_proc, lastrow_dof_on_proc,
-                                                  firstcol_dof_on_proc, lastcol_dof_on_proc,
-                                                  this->dualImageSpace()->mesh()->worldCommPtr()->subWorldCommSeq() ) );
-#else
     graph_ptrtype sparsity_graph( new graph_type( this->dualImageSpace()->dof(), this->domainSpace()->dof() ) );
-#endif
+    auto const& imagedof = this->dualImageSpace()->dof();
+    auto const& domaindof = this->domainSpace()->dof();
+    auto const& imagefe = *this->dualImageSpace()->fe();
+    auto const& domainfe = *this->domainSpace()->fe();
 
-    auto const* imagedof = this->dualImageSpace()->dof().get();
-    auto const* domaindof = this->domainSpace()->dof().get();
-    auto const* domainbasis = this->domainSpace()->basis().get();
-
-    //-----------------------------------------
-    //init the localization tool
-    //auto locTool = this->domainSpace()->mesh()->tool_localization();
     auto locTool = support(this->domainSpace())->tool_localization();
     if ( this->interpolationType().onlyLocalizeOnBoundary() )
         locTool->updateForUseBoundaryFaces();
     else
         locTool->updateForUse();
-    // kdtree parameter
     locTool->kdtree()->nbNearNeighbor(this->interpolationType().nbNearNeighborInKdTree());
-#if 0
-    bool notUseOptLocTest = domain_mesh_type::nDim!=domain_mesh_type::nRealDim;
-#else
-    bool notUseOptLocTest = true;
-#endif
-    //if (notUseOptLocTest) locTool->kdtree()->nbNearNeighbor(domain_mesh_type::element_type::numPoints);
 
-    //locTool->kdtree()->nbNearNeighbor(3);
-    //locTool->kdtree()->nbNearNeighbor(this->domainSpace()->mesh()->numElements());
-    //locTool->setExtrapolation(false);
-
-    //-----------------------------------------
-    // useful data
     matrix_node_type ptsReal( image_mesh_type::nRealDim, 1 );
-    matrix_node_type ptsRef( domain_mesh_type::nDim , 1 );
-    typename Localization<domain_mesh_type>::container_search_iterator_type itanal,itanal_end;
-    typename Localization<domain_mesh_type>::container_output_iterator_type itL,itL_end;
-    matrix_node_type MlocEval( domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1 );
+    typename domain_basis_type::points_type ptsRef( domain_mesh_type::nDim, 1 );
+
+    auto domainElement = this->domainSpace()->element();
+    auto expression = M_interptype.operand( domainElement );
+    Feel::detail::LocalizedDomainBasisEvaluation<domain_space_type,
+                                                  decltype( expression )>
+        localizedEvaluation( this->domainSpace(), expression );
 
     std::vector<bool> dof_done( this->dualImageSpace()->nLocalDof(), false );
     std::vector< std::list<std::pair<size_type,double> > > memory_valueInMatrix( this->dualImageSpace()->nLocalDof() );
 
-    //-----------------------------------------
-    size_type eltIdLocalised = invalid_v<size_type>;
-
-    // for each element in range
-    auto itListRange = M_listRange.begin();
-    auto const enListRange = M_listRange.end();
-    for ( ; itListRange!=enListRange ; ++itListRange)
+    for ( auto& imageRange : M_listRange )
     {
-        //iterator_type it, en;
-        //boost::tie( boost::tuples::ignore, it, en ) = *itListRange;
-        //for ( ; it != en; ++ it )
-        for( auto const& theImageEltWrap : *itListRange )
+        for( auto const& imageEntityWrap : imageRange )
         {
-            //auto const& theImageElt = boost::unwrap_ref(*it);
-            auto const& theImageElt = boost::unwrap_ref(theImageEltWrap);
-            for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
+            auto const& imageEntity = boost::unwrap_ref( imageEntityWrap );
+            for ( auto const& imageLocalDof : imagedof->localDof( imageEntity ) )
+            {
+                index_type i = invalid_v<index_type>;
+                uint16_type iloc = invalid_v<uint16_type>;
+                if constexpr ( idim_type::value == MESH_FACES )
                 {
-                    for ( uint16_type comp = 0; comp < image_basis_type::nComponents; ++comp )
-                        {
-                            const size_type gdof = imagedof->localToGlobal( theImageElt, iloc, comp ).index();
-                            if (!dof_done[gdof])
-                                {
-                                    //------------------------
-                                    // get the graph row
-                                    const auto ig1 = imagedof->mapGlobalProcessToGlobalCluster()[gdof];
-                                    const auto theproc = imagedof->procOnGlobalCluster( ig1 );
-                                    auto& row = sparsity_graph->row(ig1);
-                                    row.template get<0>() = theproc;
-                                    row.template get<1>() = gdof;
-                                    //------------------------
-                                    // the dof point
-                                    ublas::column(ptsReal,0 ) = boost::get<0>(imagedof->dofPoint(gdof));
-                                    //------------------------
-                                    // localisation process
-                                    //if (notUseOptLocTest) eltIdLocalised=invalid_v<size_type>;
-                                    auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,theImageElt.vertices()/*theImageElt.G()*/,mpl::int_<interpolation_type::isConforming()>());
-                                    for ( bool hasFindPtLocalised : resLocalisation.template get<0>()  )
-                                         LOG_IF(ERROR, !hasFindPtLocalised ) << "OperatorInterpolation::updateNoRelationMesh : point localisation fail!\n";
-                                    if ( !notUseOptLocTest )
-                                        eltIdLocalised = resLocalisation.template get<1>();
-                                    //------------------------
-                                    // for each localised points
-                                    itanal = locTool->result_analysis_begin();
-                                    itanal_end = locTool->result_analysis_end();
-                                    for ( ;itanal!=itanal_end;++itanal)
-                                        {
-                                            itL=itanal->second.begin();
-                                            ublas::column( ptsRef, 0 ) = boost::get<1>( *itL );
+                    i = imageLocalDof.index();
+                    iloc = imageLocalDof.localDof();
+                    const uint16_type faceComponent = static_cast<uint16_type>(
+                        imageLocalDof.localDofInFace() /
+                        imagedof->nLocalDofOnFace( true ) );
+                    if ( imagefe.component( iloc ) != faceComponent )
+                        iloc = imagedof->localDofId(
+                            imagefe.dofParent( iloc ), faceComponent );
+                }
+                else
+                {
+                    i = imageLocalDof.second.index();
+                    iloc = imageLocalDof.first.localDof();
+                }
 
-                                            MlocEval = domainbasis->evaluate( ptsRef );
+                if ( dof_done[i] )
+                    continue;
+                dof_done[i] = true;
 
-                                            for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
-                                                {
-                                                    //get global dof
-                                                    size_type j =  domaindof->localToGlobal( itanal->first,jloc,comp ).index();
-                                                    value_type v = MlocEval( domain_basis_type::nComponents1*jloc
-                                                                             + comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof
-                                                                             + comp,
-                                                                             0 );
-                                                    row.template get<2>().insert( domaindof->mapGlobalProcessToGlobalCluster()[j] );
-                                                    memory_valueInMatrix[gdof].push_back( std::make_pair( j,v ) );
-                                                }
-                                        }
-                                    dof_done[gdof]=true;
-                                } // if (!dof_done[gdof])
-                        } //  for ( uint16_type comp = 0; comp < image_basis_type::nComponents; ++comp )
-                } // for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
-        } // for( ; it != en; ++ it )
-    } // for ( ; itListRange!=enListRange ; ++itListRange)
+                const uint16_type outputComponent = imagefe.component( iloc );
+                const auto ig1 = imagedof->mapGlobalProcessToGlobalCluster()[i];
+                const auto owner = imagedof->procOnGlobalCluster( ig1 );
+                auto& row = sparsity_graph->row( ig1 );
+                row.template get<0>() = owner;
+                row.template get<1>() = i;
 
+                ublas::column( ptsReal, 0 ) =
+                    imagedof->dofPoint( i ).template get<0>();
+                size_type localizedElement = invalid_v<size_type>;
+                auto localization = locTool->localize(
+                    ptsReal, localizedElement, imageEntity.vertices(),
+                    std::bool_constant<interpolation_type::isConforming()>{} );
+                for ( bool found : localization.found )
+                    if ( !found )
+                        throw std::runtime_error(
+                            "OperatorInterpolation could not localize an image DoF point" );
 
-    //-----------------------------------------
-    // compute graph
-    sparsity_graph->close(); //sparsity_graph->printPython("mygraphpython.py");
-    //-----------------------------------------
-    // create matrix
+                for ( auto const& [domainElementId, localizedPoints] :
+                      locTool->resultAnalysis() )
+                {
+                    if ( localizedPoints.empty() )
+                        continue;
+                    ublas::column( ptsRef, 0 ) =
+                        boost::get<1>( *localizedPoints.begin() );
+                    localizedEvaluation.update(
+                        this->domainSpace()->mesh()->element( domainElementId ),
+                        ptsRef );
+
+                    auto const canonicalValues =
+                        Feel::detail::canonicalLocalFunctionalValues<value_type>(
+                            *domaindof, domainElementId,
+                            [&]( uint16_type localDof )
+                            {
+                                return localizedEvaluation.value(
+                                    localDof, outputComponent );
+                            } );
+                    for ( auto const& domainLocalDof :
+                          domaindof->localDof( domainElementId ) )
+                    {
+                        const auto j = domainLocalDof.second.index();
+                        const uint16_type jloc = domainLocalDof.first.localDof();
+                        if ( interpolation_type::interpolation_operand ==
+                                 interpolation_operand_type::ID &&
+                             domain_basis_type::is_product &&
+                             domainfe.component( jloc ) != outputComponent )
+                            continue;
+
+                        const value_type value = canonicalValues( jloc );
+                        row.template get<2>().insert(
+                            domaindof->mapGlobalProcessToGlobalCluster()[j] );
+                        memory_valueInMatrix[i].push_back(
+                            std::make_pair( j, value ) );
+                    }
+                }
+            }
+        }
+    }
+
+    sparsity_graph->close();
     this->matPtr() = this->backend()->newMatrix( this->domainSpace()->dofOnOff(),
                                                  this->dualImageSpace()->dofOn(),
                                                  sparsity_graph );
-    //-----------------------------------------
-    // assemble matrix
-    for (size_type idx_i=0 ; idx_i<this->dualImageSpace()->nLocalDof() ;++idx_i)
-        {
-            for (auto it_j=memory_valueInMatrix[idx_i].begin(),en_j=memory_valueInMatrix[idx_i].end() ; it_j!=en_j ; ++it_j)
-                {
-                    this->matPtr()->set(idx_i,it_j->first,it_j->second);
-                }
-        }
+    for ( size_type i = 0; i < this->dualImageSpace()->nLocalDof(); ++i )
+        for ( auto const& [j, value] : memory_valueInMatrix[i] )
+            this->matPtr()->set( i, j, value );
+}
 
+template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
+void
+OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::updateNoRelationMeshMoments()
+{
+    graph_ptrtype sparsityGraph(
+        new graph_type( this->dualImageSpace()->dof(),
+                        this->domainSpace()->dof() ) );
+    auto const& imageDof = this->dualImageSpace()->dof();
+    auto const& domainDof = this->domainSpace()->dof();
+    auto const& imageFe = *this->dualImageSpace()->fe();
+    const uint16_type domainRows = static_cast<uint16_type>(
+        Feel::detail::localDofPerComponent( this->domainSpace()->fe() ) *
+        ( domain_basis_type::is_product ? domain_basis_type::nComponents : 1 ) );
+    const uint16_type imageColumns = static_cast<uint16_type>(
+        Feel::detail::localDofPerComponent( this->dualImageSpace()->fe() ) *
+        ( image_basis_type::is_product ? image_basis_type::nComponents : 1 ) );
+
+    auto localization = support( this->domainSpace() )->tool_localization();
+    if ( this->interpolationType().onlyLocalizeOnBoundary() )
+        localization->updateForUseBoundaryFaces();
+    else
+        localization->updateForUse();
+    localization->kdtree()->nbNearNeighbor(
+        this->interpolationType().nbNearNeighborInKdTree() );
+
+    auto domainElement = this->domainSpace()->element();
+    auto operand = M_interptype.operand( domainElement );
+    using localized_evaluator_type =
+        Feel::detail::LocalizedDomainBasisEvaluation<domain_space_type,
+                                                       decltype( operand )>;
+    localized_evaluator_type localizedEvaluation( this->domainSpace(), operand );
+    using operand_shape = typename localized_evaluator_type::tensor_type::shape;
+    using image_gm_type = typename image_mesh_type::gm_type;
+    static constexpr int imageSubEntityCoDim =
+        idim_type::value == MESH_FACES ? 1 : 0;
+    using image_gmc_type = typename image_gm_type::template Context<
+        typename image_mesh_type::element_type, imageSubEntityCoDim>;
+    using image_precompute_ptrtype =
+        typename image_gm_type::precompute_ptrtype;
+    using image_face_permutation_type =
+        typename image_mesh_type::element_type::template PermutationSubEntity<1>;
+    static constexpr size_type imageContext =
+        vm::POINT | vm::JACOBIAN | vm::KB;
+
+    std::vector<std::map<image_face_permutation_type,
+                         image_precompute_ptrtype>>
+        imageFacePrecomputes;
+    if constexpr ( idim_type::value == MESH_FACES )
+    {
+        imageFacePrecomputes.resize(
+            image_mesh_type::element_type::numTopologicalFaces );
+        for ( uint16_type face = 0;
+              face < image_mesh_type::element_type::numTopologicalFaces;
+              ++face )
+        {
+            for ( image_face_permutation_type permutation(
+                      image_face_permutation_type::IDENTITY );
+                  permutation <
+                      image_face_permutation_type(
+                          image_face_permutation_type::N_PERMUTATIONS );
+                  ++permutation )
+            {
+                imageFacePrecomputes[face][permutation] =
+                    this->dualImageSpace()->gm()->preCompute(
+                        this->dualImageSpace()->gm(),
+                        imageFe.points( face ) );
+            }
+        }
+    }
+
+    std::vector<bool> imageDofDone(
+        this->dualImageSpace()->nLocalDof(), false );
+    std::vector<std::map<size_type,value_type>> matrixValues(
+        this->dualImageSpace()->nLocalDof() );
+    matrix_node_type physicalPoint( image_mesh_type::nRealDim, 1 );
+    typename domain_basis_type::points_type referencePoint(
+        domain_mesh_type::nDim, 1 );
+
+    for ( auto& imageRange : M_listRange )
+    {
+        for ( auto const& imageEntityWrap : imageRange )
+        {
+            auto const& imageEntity = boost::unwrap_ref( imageEntityWrap );
+            const uint16_type imageFaceId = [&]()
+            {
+                if constexpr ( idim_type::value == MESH_FACES )
+                {
+                    CHECK( imageEntity.isConnectedTo0() )
+                        << "OperatorInterpolation requires a parent element "
+                           "for an image face";
+                    return static_cast<uint16_type>(
+                        imageEntity.idInElement0() );
+                }
+                else
+                    return invalid_v<uint16_type>;
+            }();
+            auto const imageReferencePoints = [&]()
+            {
+                if constexpr ( idim_type::value == MESH_FACES )
+                    return imageFe.points( imageFaceId );
+                else
+                    return imageFe.dual().points();
+            }();
+            std::shared_ptr<image_gmc_type> imageGeometry;
+            if constexpr ( idim_type::value == MESH_FACES )
+            {
+                imageGeometry =
+                    this->dualImageSpace()->gm()
+                        ->template context<imageContext>(
+                            imageEntity.element( 0 ),
+                            imageFacePrecomputes, imageFaceId );
+            }
+            else
+            {
+                auto imagePrecompute =
+                    this->dualImageSpace()->gm()->preCompute(
+                        this->dualImageSpace()->gm(),
+                        imageReferencePoints );
+                imageGeometry =
+                    this->dualImageSpace()->gm()
+                        ->template context<imageContext>(
+                            imageEntity, imagePrecompute );
+            }
+            const uint16_type pointCount = static_cast<uint16_type>(
+                imageReferencePoints.size2() );
+
+            using sample_table_type = Feel::detail::LocalizedBasisSampleTable<
+                operand_shape, image_gmc_type, value_type,
+                domain_basis_type>;
+            std::map<size_type, sample_table_type> samplesByDomainElement;
+
+            for ( uint16_type point = 0; point < pointCount; ++point )
+            {
+                ublas::column( physicalPoint, 0 ) = imageGeometry->xReal( point );
+                size_type localizedElement = invalid_v<size_type>;
+                auto result = localization->localize(
+                    physicalPoint, localizedElement, imageEntity.vertices(),
+                    std::bool_constant<interpolation_type::isConforming()>{} );
+                if ( !result.found[0] )
+                    throw std::runtime_error(
+                        "OperatorInterpolation could not localize an image functional sample" );
+
+                auto const& analysis = localization->resultAnalysis();
+                auto selected = std::find_if(
+                    analysis.begin(), analysis.end(),
+                    []( auto const& entry ) { return !entry.second.empty(); } );
+                if ( selected == analysis.end() )
+                    throw std::runtime_error(
+                        "OperatorInterpolation localization returned no reference sample" );
+
+                const size_type domainElementId = selected->first;
+                ublas::column( referencePoint, 0 ) =
+                    boost::get<1>( *selected->second.begin() );
+                localizedEvaluation.update(
+                    this->domainSpace()->mesh()->element( domainElementId ),
+                    referencePoint );
+                auto [sampleIt, inserted] = samplesByDomainElement.try_emplace(
+                    domainElementId, imageGeometry, domainRows, pointCount );
+                auto& samples = sampleIt->second;
+                for ( uint16_type row = 0; row < domainRows; ++row )
+                    for ( uint16_type c1 = 0; c1 < operand_shape::M; ++c1 )
+                        for ( uint16_type c2 = 0; c2 < operand_shape::N; ++c2 )
+                            samples.value( row, c1, c2, point ) =
+                                localizedEvaluation.value( row, c1, c2, 0 );
+            }
+
+            for ( auto& [domainElementId, samples] : samplesByDomainElement )
+            {
+                Eigen::MatrixXd localMatrix = Eigen::MatrixXd::Zero(
+                    domainRows, imageColumns );
+                imageFe.interpolateBasisFunction( samples, localMatrix );
+                domainDof->mapLocalLinearFormToCanonicalDofs(
+                    domainElementId, localMatrix );
+
+                for ( auto const& imageLocalDof :
+                      imageDof->localDof( imageEntity.id() ) )
+                {
+                    const auto imageGlobalDof = imageLocalDof.second.index();
+                    const uint16_type imageLocalId =
+                        imageLocalDof.first.localDof();
+                    if ( imageDofDone[imageGlobalDof] )
+                        continue;
+
+                    const auto imageClusterDof =
+                        imageDof->mapGlobalProcessToGlobalCluster()[imageGlobalDof];
+                    auto& graphRow = sparsityGraph->row( imageClusterDof );
+                    graphRow.template get<0>() =
+                        imageDof->procOnGlobalCluster( imageClusterDof );
+                    graphRow.template get<1>() = imageGlobalDof;
+
+                    for ( auto const& domainLocalDof :
+                          domainDof->localDof( domainElementId ) )
+                    {
+                        const auto domainGlobalDof =
+                            domainLocalDof.second.index();
+                        const uint16_type domainLocalId =
+                            domainLocalDof.first.localDof();
+                        const value_type coefficient =
+                            localMatrix( domainLocalId, imageLocalId );
+                        if ( coefficient == value_type{} )
+                            continue;
+                        graphRow.template get<2>().insert(
+                            domainDof->mapGlobalProcessToGlobalCluster()[domainGlobalDof] );
+                        matrixValues[imageGlobalDof][domainGlobalDof] +=
+                            coefficient;
+                    }
+                }
+            }
+
+            for ( auto const& imageLocalDof :
+                  imageDof->localDof( imageEntity.id() ) )
+                imageDofDone[imageLocalDof.second.index()] = true;
+        }
+    }
+
+    sparsityGraph->close();
+    this->matPtr() = this->backend()->newMatrix(
+        this->domainSpace()->dofOnOff(), this->dualImageSpace()->dofOn(),
+        sparsityGraph );
+    for ( size_type row = 0; row < matrixValues.size(); ++row )
+        for ( auto const& [column, value] : matrixValues[row] )
+            this->matPtr()->set( row, column, value );
 }
 
 //-----------------------------------------------------------------------------------------------------------------//
@@ -2750,7 +3287,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
            auto const* domaindof = this->domainSpace()->dof().get();
            auto const* domainbasis = this->domainSpace()->basis().get();
            matrix_node_type ptsRef( domain_mesh_type::nRealDim , 1 );
-           matrix_node_type MlocEval(domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1);
+           const uint16_type domainLocalDof = domainbasis->localDof();
+           matrix_node_type MlocEval(
+               domainLocalDof*domain_basis_type::nComponents1, 1 );
 
            // analysis result
            auto it_extrap = dof_extrapolationData.begin();
@@ -2794,7 +3333,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                    //auto const en_jdof = it_proc->template get<3>().end();
                                    auto const comp = it_proc->template get<4>();
                                    auto const vec_jloc = it_proc->template get<3>();
-                                   for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                                   for ( uint16_type jloc = 0; jloc < domainLocalDof; ++jloc )
                                        //for (uint16_type jloc=0 ; it_jdof != en_jdof ; ++it_jdof,++jloc)
                                        {
                                            //const size_type j_gdof=it_jdof->first;
@@ -2804,7 +3343,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                            row.template get<2>().insert(j_gdofGlobalCluster);//domaindof->mapGlobalProcessToGlobalCluster()[j_gdof]);
                                            // get value
                                            value_type v = MlocEval( domain_basis_type::nComponents1*jloc +
-                                                                    comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof +
+                                                                    comp*domain_basis_type::nComponents1*domainLocalDof +
                                                                     comp, 0 );
                                            // save value
                                            memory_valueInMatrix[gdof].push_back(boost::make_tuple(procExtrapoled,j_gdof,v));
@@ -2946,7 +3485,7 @@ OperatorInterpolation<DomainSpaceType,
 
     auto const* imagedof = this->dualImageSpace()->dof().get();
     auto const* domaindof = this->domainSpace()->dof().get();
-    auto const* domainbasis = this->domainSpace()->basis().get();
+    auto const& domainfe = *this->domainSpace()->fe();
 
     //auto locTool = this->domainSpace()->mesh()->tool_localization();
     auto locTool = support(this->domainSpace())->tool_localization();
@@ -2955,8 +3494,13 @@ OperatorInterpolation<DomainSpaceType,
 
     matrix_node_type ptsReal( image_mesh_type::nRealDim, 1 );
     matrix_node_type ptsRef( domain_mesh_type::nDim , 1 );
-    matrix_node_type MlocEval(domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1);
     matrix_node_type verticesOfEltSearched;
+
+    auto domainElement = this->domainSpace()->element();
+    auto operand = M_interptype.operand( domainElement );
+    Feel::detail::LocalizedDomainBasisEvaluation<domain_space_type,
+                                                  decltype( operand )>
+        localizedEvaluation( this->domainSpace(), operand );
 
     size_type eltIdLocalised = invalid_v<size_type>;
 
@@ -2979,9 +3523,10 @@ OperatorInterpolation<DomainSpaceType,
 
                     // localisation process
                     if (notUseOptLocTest) eltIdLocalised=invalid_v<size_type>;
-                    auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,verticesOfEltSearched,
-                                                                 mpl::int_<interpolation_type::isConforming()>());
-                    if (!resLocalisation.template get<0>()[0]) // not find
+                    auto resLocalisation = locTool->localize(
+                        ptsReal, eltIdLocalised, verticesOfEltSearched,
+                        std::bool_constant<interpolation_type::isConforming()>{} );
+                    if ( !resLocalisation.found[0] ) // not find
                         {
                             for ( uint16_type comp = 0;comp < image_basis_type::nComponents;++comp )
                                 {
@@ -2992,7 +3537,7 @@ OperatorInterpolation<DomainSpaceType,
                         }
                     else // point found
                         {
-                            eltIdLocalised = resLocalisation.template get<1>();
+                            eltIdLocalised = resLocalisation.lastElementId;
 
                             if (extrapolation_mode)
                                 {
@@ -3009,12 +3554,13 @@ OperatorInterpolation<DomainSpaceType,
                                     /**/                              bary(0) /= verticesExtrapoled.size2();
                                     if (verticesExtrapoled.size1()>1) bary(1) /= verticesExtrapoled.size2();
                                     if (verticesExtrapoled.size1()>2) bary(2) /= verticesExtrapoled.size2();
-                                    typename image_mesh_type::node_type theRefPtExtrap = locTool->result_analysis().begin()->second.begin()->template get<1>();
-                                    std::vector<std::pair<size_type,size_type> > j_gdofs(domain_basis_type::nLocalDof);
+                                    typename image_mesh_type::node_type theRefPtExtrap = locTool->resultAnalysis().begin()->second.begin()->template get<1>();
+                                    const uint16_type domainLocalDof = domainfe.localDof();
+                                    std::vector<std::pair<size_type,size_type> > j_gdofs(domainLocalDof);
                                     for ( uint16_type comp = 0;comp < image_basis_type::nComponents;++comp )
                                         {
                                             const auto gdof = memmapGdof[proc_id][k+comp];
-                                            for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                                            for ( uint16_type jloc = 0; jloc < domainLocalDof; ++jloc )
                                                 {
                                                     const size_type j_gdof =  domaindof->localToGlobal( eltIdLocalised,jloc,comp ).index();
                                                     j_gdofs[jloc]=std::make_pair(j_gdof,domaindof->mapGlobalProcessToGlobalCluster()[j_gdof]);
@@ -3034,24 +3580,31 @@ OperatorInterpolation<DomainSpaceType,
                                             row.template get<0>() = theproc;
                                             row.template get<1>() = ig1 - imagedof->firstDofGlobalCluster(theproc);
                                             // for each localised points
-                                            auto itanal = locTool->result_analysis().begin();//  result_analysis_begin();
-                                            auto const itanal_end = locTool->result_analysis().end();//result_analysis_end();
+                                            auto itanal = locTool->resultAnalysis().begin();
+                                            auto const itanal_end = locTool->resultAnalysis().end();
                                             for ( ;itanal!=itanal_end;++itanal)
                                                 {
                                                     const auto itL=itanal->second.begin();
                                                     ublas::column( ptsRef, 0 ) = boost::get<1>(*itL);
-                                                    // evaluate basis functions for this point
-                                                    MlocEval = domainbasis->evaluate( ptsRef );
-                                                    for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                                                    localizedEvaluation.update(
+                                                        this->domainSpace()->mesh()->element( itanal->first ), ptsRef );
+                                                    auto const canonicalValues =
+                                                        Feel::detail::canonicalLocalFunctionalValues<value_type>(
+                                                            *domaindof, itanal->first,
+                                                            [&]( uint16_type localDof )
+                                                            {
+                                                                return localizedEvaluation.value(
+                                                                    localDof, comp );
+                                                            } );
+                                                    for ( auto const& localDof : domaindof->localDof( itanal->first ) )
                                                         {
+                                                            const uint16_type jloc = localDof.first.localDof();
                                                             //get global dof
-                                                            const size_type j_gdof =  domaindof->localToGlobal( itanal->first,jloc,comp ).index();
+                                                            const size_type j_gdof = localDof.second.index();
                                                             // up graph
                                                             row.template get<2>().insert(domaindof->mapGlobalProcessToGlobalCluster()[j_gdof]);
                                                             // get value
-                                                            const value_type v = MlocEval( domain_basis_type::nComponents1*jloc +
-                                                                                           comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof +
-                                                                                           comp, 0 );
+                                                            const value_type v = canonicalValues( jloc );
                                                             // save value
                                                             memory_valueInMatrix[gdof].push_back(boost::make_tuple(proc_id,j_gdof,v));
                                                             memory_col_globalProcessToGlobalCluster[proc_id][j_gdof]=domaindof->mapGlobalProcessToGlobalCluster()[j_gdof];
@@ -3083,15 +3636,17 @@ OperatorInterpolation<DomainSpaceType,
 
                     // localisation process
                     if (notUseOptLocTest) eltIdLocalised=invalid_v<size_type>;
-                    auto resLocalisation = locTool->run_analysis(ptsReal, eltIdLocalised, verticesOfEltSearched, mpl::int_<interpolation_type::isConforming()>());
-                    if (!resLocalisation.template get<0>()[0]) // not find
+                    auto resLocalisation = locTool->localize(
+                        ptsReal, eltIdLocalised, verticesOfEltSearched,
+                        std::bool_constant<interpolation_type::isConforming()>{} );
+                    if ( !resLocalisation.found[0] ) // not find
                         {
                             memory_localisationFail.push_back(boost::make_tuple(gdof,comp) );
                             dof_searchWithProc[gdof].insert(proc_id);
                         }
                     else // point found
                         {
-                            eltIdLocalised = resLocalisation.template get<1>();
+                            eltIdLocalised = resLocalisation.lastElementId;
                             if (extrapolation_mode)
                                 {
                                     auto const& eltExtrapoled = this->domainSpace()->mesh()->element(eltIdLocalised);
@@ -3107,9 +3662,10 @@ OperatorInterpolation<DomainSpaceType,
                                     /**/                              bary(0) /= verticesExtrapoled.size2();
                                     if (verticesExtrapoled.size1()>1) bary(1) /= verticesExtrapoled.size2();
                                     if (verticesExtrapoled.size1()>2) bary(2) /= verticesExtrapoled.size2();
-                                    typename image_mesh_type::node_type theRefPtExtrap = locTool->result_analysis().begin()->second.begin()->template get<1>();
-                                    std::vector<std::pair<size_type,size_type> > j_gdofs(domain_basis_type::nLocalDof);
-                                    for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                                    typename image_mesh_type::node_type theRefPtExtrap = locTool->resultAnalysis().begin()->second.begin()->template get<1>();
+                                    const uint16_type domainLocalDof = domainfe.localDof();
+                                    std::vector<std::pair<size_type,size_type> > j_gdofs(domainLocalDof);
+                                    for ( uint16_type jloc = 0; jloc < domainLocalDof; ++jloc )
                                         {
                                             const size_type j_gdof =  domaindof->localToGlobal( eltIdLocalised,jloc,comp ).index();
                                             j_gdofs[jloc]=std::make_pair(j_gdof,domaindof->mapGlobalProcessToGlobalCluster()[j_gdof]);
@@ -3125,24 +3681,31 @@ OperatorInterpolation<DomainSpaceType,
                                     row.template get<0>() = theproc;
                                     row.template get<1>() = ig1 - imagedof->firstDofGlobalCluster(theproc);
                                     // for each localised points
-                                    auto itanal = locTool->result_analysis().begin();//  result_analysis_begin();
-                                    auto const itanal_end = locTool->result_analysis().end();//result_analysis_end();
+                                    auto itanal = locTool->resultAnalysis().begin();
+                                    auto const itanal_end = locTool->resultAnalysis().end();
                                     for ( ;itanal!=itanal_end;++itanal)
                                         {
                                             const auto itL=itanal->second.begin();
                                             ublas::column( ptsRef, 0 ) = boost::get<1>(*itL);
-                                            // evaluate basis functions for this point
-                                            MlocEval = domainbasis->evaluate( ptsRef );
-                                            for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                                            localizedEvaluation.update(
+                                                this->domainSpace()->mesh()->element( itanal->first ), ptsRef );
+                                            auto const canonicalValues =
+                                                Feel::detail::canonicalLocalFunctionalValues<value_type>(
+                                                    *domaindof, itanal->first,
+                                                    [&]( uint16_type localDof )
+                                                    {
+                                                        return localizedEvaluation.value(
+                                                            localDof, comp );
+                                                    } );
+                                            for ( auto const& localDof : domaindof->localDof( itanal->first ) )
                                                 {
+                                                    const uint16_type jloc = localDof.first.localDof();
                                                     //get global dof
-                                                    const size_type j_gdof =  domaindof->localToGlobal( itanal->first,jloc,comp ).index();
+                                                    const size_type j_gdof = localDof.second.index();
                                                     // up graph
                                                     row.template get<2>().insert(domaindof->mapGlobalProcessToGlobalCluster()[j_gdof]);
                                                     // get value
-                                                    const value_type v = MlocEval( domain_basis_type::nComponents1*jloc +
-                                                                                   comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof +
-                                                                                   comp, 0 );
+                                                    const value_type v = canonicalValues( jloc );
                                                     // save value
                                                     memory_valueInMatrix[gdof].push_back(boost::make_tuple(proc_id,j_gdof,v));
                                                     memory_col_globalProcessToGlobalCluster[proc_id][j_gdof]=domaindof->mapGlobalProcessToGlobalCluster()[j_gdof];
@@ -3198,7 +3761,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
 
     matrix_node_type ptsReal( image_mesh_type::nRealDim, 1 );
     matrix_node_type ptsRef( domain_mesh_type::nDim , 1 );
-    matrix_node_type MlocEval(domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1);
+    const uint16_type domainLocalDof = domainbasis->localDof();
+    matrix_node_type MlocEval(
+        domainLocalDof*domain_basis_type::nComponents1, 1 );
     matrix_node_type verticesOfEltSearched;
 
     // random (just to start)
@@ -3412,10 +3977,13 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                                                 verticesOfEltSearched = eltRandom.vertices();
                                             // search process
                                             if (notUseOptLocTest) eltIdLocalised=invalid_v<size_type>;
-                                            auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,verticesOfEltSearched,mpl::int_<interpolation_type::value>());
-                                            if (resLocalisation.template get<0>()[0]) // is find
+                                            auto resLocalisation = locTool->localize(
+                                                ptsReal, eltIdLocalised,
+                                                verticesOfEltSearched,
+                                                std::bool_constant<interpolation_type::isConforming()>{} );
+                                            if ( resLocalisation.found[0] ) // is find
                                                 {
-                                                    eltIdLocalised = resLocalisation.template get<1>();
+                                                    eltIdLocalised = resLocalisation.lastElementId;
                                                     //-------------------------------------------------------------------------
                                                     if (!this->interpolationType().componentsAreSamePoint() )// all component
                                                     //-------------------------------------------------------------------------
@@ -3433,9 +4001,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                                                                     pointsRefFinded[k] = boost::get<1>(*itL);
                                                                 }
                                                             // get global process dof and global cluster dof : column data map
-                                                            pointsDofsColFinded[k].resize(domain_basis_type::nLocalDof);
-                                                            pointsDofsGlobalClusterColFinded[k].resize(domain_basis_type::nLocalDof);
-                                                            for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                                                            pointsDofsColFinded[k].resize(domainLocalDof);
+                                                            pointsDofsGlobalClusterColFinded[k].resize(domainLocalDof);
+                                                            for ( uint16_type jloc = 0; jloc < domainLocalDof; ++jloc )
                                                                 {
                                                                     const auto j_gdof = domaindof->localToGlobal( eltIdLocalised,jloc,comp ).index();
                                                                     pointsDofsColFinded[k][jloc] = j_gdof;
@@ -3471,9 +4039,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                                                                     // get point in reference element
                                                                     pointsRefFinded[k+comp] = ptRefFinded;
 
-                                                                    pointsDofsColFinded[k+comp].resize(domain_basis_type::nLocalDof);
-                                                                    pointsDofsGlobalClusterColFinded[k+comp].resize(domain_basis_type::nLocalDof);
-                                                                    for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                                                                    pointsDofsColFinded[k+comp].resize(domainLocalDof);
+                                                                    pointsDofsGlobalClusterColFinded[k+comp].resize(domainLocalDof);
+                                                                    for ( uint16_type jloc = 0; jloc < domainLocalDof; ++jloc )
                                                                         {
                                                                             const auto j_gdof = domaindof->localToGlobal( eltIdLocalised,jloc,comp ).index();
                                                                             pointsDofsColFinded[k+comp][jloc] = j_gdof;
@@ -3564,8 +4132,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                                                             auto const bary = pointsBaryFinded[k];
                                                             auto const theRefPtExtrap = pointsRefFinded[k];
                                                             const auto comp = memmapComp[rankLocalization][k];
-                                                            std::vector<std::pair<size_type,size_type> > j_gdofs(domain_basis_type::nLocalDof);
-                                                            for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                                                            std::vector<std::pair<size_type,size_type> > j_gdofs(domainLocalDof);
+                                                            for ( uint16_type jloc = 0; jloc < domainLocalDof; ++jloc )
                                                                 {
                                                                     const size_type j_gdof =  pointsDofsColFinded[k][jloc];
                                                                     const size_type j_gdof_gc = pointsDofsGlobalClusterColFinded[k][jloc];
@@ -3588,7 +4156,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                                                             row.template get<0>() = theproc;
                                                             row.template get<1>() = ig1 - imagedof->firstDofGlobalCluster(theproc);
 
-                                                            for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                                                            for ( uint16_type jloc = 0; jloc < domainLocalDof; ++jloc )
                                                                 {
                                                                     //get global process dof
                                                                     const size_type j_gdof =  pointsDofsColFinded[k][jloc];
@@ -3598,7 +4166,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                                                                     row.template get<2>().insert(j_gdof_gc);
                                                                     // get value
                                                                     const auto v = MlocEval( domain_basis_type::nComponents1*jloc +
-                                                                                             comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof +
+                                                                                             comp*domain_basis_type::nComponents1*domainLocalDof +
                                                                                              comp, 0 );
 #if 1
                                                                     // save value
@@ -3643,7 +4211,6 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
 
     auto const* imagedof = this->dualImageSpace()->dof().get();
     auto const* domaindof = this->domainSpace()->dof().get();
-    auto const* domainbasis = this->domainSpace()->basis().get();
 
     const size_type proc_id = this->dualImageSpace()->worldCommPtr()/*worldsComm()[0]*/->localRank();
     const size_type proc_id_image = this->dualImageSpace()->mesh()->worldCommPtr()->localRank();
@@ -3662,8 +4229,13 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
 
     matrix_node_type ptsReal( image_mesh_type::nRealDim, 1 );
     matrix_node_type ptsRef( domain_mesh_type::nDim , 1 );
-    matrix_node_type MlocEval(domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1);
     matrix_node_type verticesOfEltSearched;
+
+    auto domainElement = this->domainSpace()->element();
+    auto operand = M_interptype.operand( domainElement );
+    Feel::detail::LocalizedDomainBasisEvaluation<domain_space_type,
+                                                  decltype( operand )>
+        localizedEvaluation( this->domainSpace(), operand );
 
     size_type eltIdLocalised = invalid_v<size_type>;
 
@@ -3729,12 +4301,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                                       std::vector< std::vector<typename image_mesh_type::node_type > >
                                       > > dataToRecv, dataToSend;
 
-    std::map<rank_type, boost::tuple< std::vector<typename image_mesh_type::node_type>,
-                                      std::vector<bool>,
-                                      std::vector<int>,
-                                      std::vector<std::vector<int> >,
-                                      std::vector<std::vector<int> >,
-                                      std::vector<typename image_mesh_type::node_type> > > dataReRecv, dataReSend;
+    using localized_response_type = Feel::detail::localized_basis_response<
+        typename image_mesh_type::node_type, value_type>;
+    std::map<rank_type, localized_response_type> dataReRecv, dataReSend;
 
 
     // compute number of request isend/irecv
@@ -3796,17 +4365,19 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
 
         // init container
         dataReSend[theproc];
-        auto & pointsRefFinded = dataReSend[theproc].template get<0>();
-        auto & pointsRefIsFinded = dataReSend[theproc].template get<1>();
-        auto & pointsIdEltFinded = dataReSend[theproc].template get<2>();
-        auto & pointsDofsColFinded = dataReSend[theproc].template get<3>();
-        auto & pointsDofsGlobalClusterColFinded = dataReSend[theproc].template get<4>();
-        auto & pointsBaryFinded = dataReSend[theproc].template get<5>();
+        auto & pointsRefFinded = dataReSend[theproc].reference_points;
+        auto & pointsRefIsFinded = dataReSend[theproc].found;
+        auto & pointsIdEltFinded = dataReSend[theproc].element_ids;
+        auto & pointsDofsColFinded = dataReSend[theproc].process_dofs;
+        auto & pointsDofsGlobalClusterColFinded = dataReSend[theproc].cluster_dofs;
+        auto & pointsBaryFinded = dataReSend[theproc].extrapolation_barycenters;
+        auto & pointBasisValues = dataReSend[theproc].basis_values;
         pointsRefFinded.resize(nDataRecv);
         pointsRefIsFinded.resize(nDataRecv);std::fill(pointsRefIsFinded.begin(),pointsRefIsFinded.end(),false);
         pointsIdEltFinded.resize(nDataRecv);
         pointsDofsColFinded.resize(nDataRecv,std::vector<int>(1,0));
         pointsDofsGlobalClusterColFinded.resize(nDataRecv,std::vector<int>(1,0));
+        pointBasisValues.resize(nDataRecv);
         if (extrapolation_mode) pointsBaryFinded.resize(nDataRecv);
         else pointsBaryFinded.clear();
 
@@ -3826,10 +4397,12 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
 
             // search process
             if (notUseOptLocTest) eltIdLocalised=invalid_v<size_type>;
-            auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,verticesOfEltSearched,mpl::int_<interpolation_type::isConforming()>());
-            if (resLocalisation.template get<0>()[0]) // is find
+            auto resLocalisation = locTool->localize(
+                ptsReal, eltIdLocalised, verticesOfEltSearched,
+                std::bool_constant<interpolation_type::isConforming()>{} );
+            if ( resLocalisation.found[0] ) // is find
             {
-                eltIdLocalised = resLocalisation.template get<1>();
+                eltIdLocalised = resLocalisation.lastElementId;
                 //-------------------------------------------------------------------------
                 if (!this->interpolationType().componentsAreSamePoint() )// all component
                     //-------------------------------------------------------------------------
@@ -3845,14 +4418,34 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                         auto const itL=itanal->second.begin();
                         pointsRefFinded[k] = boost::get<1>(*itL);
                     }
-                    // get global process dof and global cluster dof : column data map
-                    pointsDofsColFinded[k].resize(domain_basis_type::nLocalDof);
-                    pointsDofsGlobalClusterColFinded[k].resize(domain_basis_type::nLocalDof);
-                    for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                    ublas::column( ptsRef, 0 ) = pointsRefFinded[k];
+                    localizedEvaluation.update(
+                        this->domainSpace()->mesh()->element( eltIdLocalised ),
+                        ptsRef );
+                    auto const canonicalValues =
+                        Feel::detail::canonicalLocalFunctionalValues<value_type>(
+                            *domaindof, eltIdLocalised,
+                            [&]( uint16_type localDof )
+                            {
+                                return localizedEvaluation.value(
+                                    localDof, comp );
+                            } );
+                    auto localDofs = domaindof->localDof( eltIdLocalised );
+                    const size_type localDofCount =
+                        std::distance( localDofs.first, localDofs.second );
+                    pointsDofsColFinded[k].resize( localDofCount );
+                    pointsDofsGlobalClusterColFinded[k].resize( localDofCount );
+                    pointBasisValues[k].resize( localDofCount );
+                    size_type localIndex = 0;
+                    for ( auto const& localDof : localDofs )
                     {
-                        const auto j_gdof = domaindof->localToGlobal( eltIdLocalised,jloc,comp ).index();
-                        pointsDofsColFinded[k][jloc] = j_gdof;
-                        pointsDofsGlobalClusterColFinded[k][jloc] = domaindof->mapGlobalProcessToGlobalCluster()[j_gdof];
+                        const auto j_gdof = localDof.second.index();
+                        const uint16_type jloc = localDof.first.localDof();
+                        pointsDofsColFinded[k][localIndex] = j_gdof;
+                        pointsDofsGlobalClusterColFinded[k][localIndex] =
+                            domaindof->mapGlobalProcessToGlobalCluster()[j_gdof];
+                        pointBasisValues[k][localIndex] = canonicalValues( jloc );
+                        ++localIndex;
                     }
                     if (extrapolation_mode)
                     {
@@ -3884,13 +4477,35 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                         // get point in reference element
                         pointsRefFinded[k+comp] = ptRefFinded;
 
-                        pointsDofsColFinded[k+comp].resize(domain_basis_type::nLocalDof);
-                        pointsDofsGlobalClusterColFinded[k+comp].resize(domain_basis_type::nLocalDof);
-                        for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                        ublas::column( ptsRef, 0 ) = ptRefFinded;
+                        localizedEvaluation.update(
+                            this->domainSpace()->mesh()->element( eltIdLocalised ),
+                            ptsRef );
+                        auto const canonicalValues =
+                            Feel::detail::canonicalLocalFunctionalValues<value_type>(
+                                *domaindof, eltIdLocalised,
+                                [&]( uint16_type localDof )
+                                {
+                                    return localizedEvaluation.value(
+                                        localDof, comp );
+                                } );
+                        auto localDofs = domaindof->localDof( eltIdLocalised );
+                        const size_type localDofCount =
+                            std::distance( localDofs.first, localDofs.second );
+                        pointsDofsColFinded[k+comp].resize( localDofCount );
+                        pointsDofsGlobalClusterColFinded[k+comp].resize( localDofCount );
+                        pointBasisValues[k+comp].resize( localDofCount );
+                        size_type localIndex = 0;
+                        for ( auto const& localDof : localDofs )
                         {
-                            const auto j_gdof = domaindof->localToGlobal( eltIdLocalised,jloc,comp ).index();
-                            pointsDofsColFinded[k+comp][jloc] = j_gdof;
-                            pointsDofsGlobalClusterColFinded[k+comp][jloc] = domaindof->mapGlobalProcessToGlobalCluster()[j_gdof];
+                            const auto j_gdof = localDof.second.index();
+                            const uint16_type jloc = localDof.first.localDof();
+                            pointsDofsColFinded[k+comp][localIndex] = j_gdof;
+                            pointsDofsGlobalClusterColFinded[k+comp][localIndex] =
+                                domaindof->mapGlobalProcessToGlobalCluster()[j_gdof];
+                            pointBasisValues[k+comp][localIndex] =
+                                canonicalValues( jloc );
+                            ++localIndex;
                         }
                     }
 
@@ -3948,12 +4563,13 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
     {
         rank_type theproc = dataToTreatFinalBase.first;
         auto const& dataToTreat = dataToTreatFinalBase.second;
-        auto const& dataPointsRefFinded = dataToTreat.template get<0>();
-        auto const& dataPointsRefIsFinded = dataToTreat.template get<1>();
-        auto const& dataPointsIdEltFinded = dataToTreat.template get<2>();
-        auto const& dataPointsDofsColFinded = dataToTreat.template get<3>();
-        auto const& dataPointsDofsGlobalClusterColFinded  = dataToTreat.template get<4>();
-        auto const& dataPointsBaryFinded = dataToTreat.template get<5>();
+        auto const& dataPointsRefFinded = dataToTreat.reference_points;
+        auto const& dataPointsRefIsFinded = dataToTreat.found;
+        auto const& dataPointsIdEltFinded = dataToTreat.element_ids;
+        auto const& dataPointsDofsColFinded = dataToTreat.process_dofs;
+        auto const& dataPointsDofsGlobalClusterColFinded = dataToTreat.cluster_dofs;
+        auto const& dataPointsBaryFinded = dataToTreat.extrapolation_barycenters;
+        auto const& dataPointBasisValues = dataToTreat.basis_values;
 
         //const int rankRecv=rankLocalization;
         for ( int k=0;k<dataPointsRefFinded.size();++k)
@@ -3975,8 +4591,10 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                         auto const bary = dataPointsBaryFinded[k];
                         auto const theRefPtExtrap = dataPointsRefFinded[k];
                         const auto comp = memmapComp[theproc][k];
-                        std::vector<std::pair<size_type,size_type> > j_gdofs(domain_basis_type::nLocalDof);
-                        for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                        const uint16_type domainLocalDof =
+                            this->domainSpace()->fe()->localDof();
+                        std::vector<std::pair<size_type,size_type> > j_gdofs(domainLocalDof);
+                        for ( uint16_type jloc = 0; jloc < domainLocalDof; ++jloc )
                         {
                             const size_type j_gdof =  dataPointsDofsColFinded[k][jloc];
                             const size_type j_gdof_gc = dataPointsDofsGlobalClusterColFinded[k][jloc];
@@ -3986,10 +4604,6 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                     }
                     else
                     {
-                        ublas::column( ptsRef, 0 ) = dataPointsRefFinded[k];
-                        //evalute point on the reference element
-                        MlocEval = domainbasis->evaluate( ptsRef );
-
                         const auto comp = memmapComp[theproc][k];
                         const size_type myidElt = dataPointsIdEltFinded[k];
                         const auto ig1 = imagedof->mapGlobalProcessToGlobalCluster()[i_gdof];
@@ -3999,7 +4613,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                         row.template get<0>() = theRealProc;
                         row.template get<1>() = ig1 - imagedof->firstDofGlobalCluster(theRealProc);
 
-                        for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
+                        for ( size_type jloc = 0;
+                              jloc < dataPointsDofsColFinded[k].size(); ++jloc )
                         {
                             //get global process dof
                             const size_type j_gdof =  dataPointsDofsColFinded[k][jloc];
@@ -4008,9 +4623,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                             // up graph
                             row.template get<2>().insert(j_gdof_gc);
                             // get value
-                            const auto v = MlocEval( domain_basis_type::nComponents1*jloc +
-                                                     comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof +
-                                                     comp, 0 );
+                            const auto v = dataPointBasisValues[k][jloc];
 
                             // save value
                             memory_valueInMatrix[i_gdof].push_back(boost::make_tuple(theproc,j_gdof,v));
@@ -4096,7 +4709,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
             {
                 //auto const& theImageElt = boost::unwrap_ref(*it);
                 auto const& theImageElt = boost::unwrap_ref(theImageEltWrap);
-                for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
+                for ( uint16_type iloc = 0;
+                      iloc < this->imageEntityLocalDofCount(); ++iloc )
                 {
                     for ( uint16_type comp = 0;comp < image_basis_type::nComponents;++comp )
                     {

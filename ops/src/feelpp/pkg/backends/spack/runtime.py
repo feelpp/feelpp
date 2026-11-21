@@ -1,3 +1,6 @@
+# SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+# SPDX-FileCopyrightText: 2026 University of Strasbourg
+# SPDX-License-Identifier: LGPL-3.0-or-later
 from __future__ import annotations
 
 import hashlib
@@ -88,6 +91,9 @@ def resolve_spack_root(repo_root: Path, raw: str | None = None) -> Path:
     explicit = raw or os.getenv("FEELPP_SPACK_ROOT") or os.getenv("SPACK_ROOT")
     if explicit:
         return Path(explicit).expanduser().resolve()
+    installed = shutil.which("spack")
+    if installed:
+        return Path(installed).resolve().parent.parent
     return (resolve_user_cache_path(repo_root) / "spack").resolve()
 
 

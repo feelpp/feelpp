@@ -1,28 +1,13 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2007-2012 Universite Joseph Fourier (Grenoble I)
+ * SPDX-FileCopyrightText: 2011-2016 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2004-11-09
-
-  Copyright (C) 2004 EPFL
-  Copyright (C) 2007-2012 Universite Joseph Fourier (Grenoble I)
-  Copyright (C) 2011-2016 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file Exporter.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -31,11 +16,19 @@
 #ifndef FEELPP_FILTERS_EXPORTER_H
 #define FEELPP_FILTERS_EXPORTER_H
 
+#include <filesystem>
+
+#include <boost/format.hpp>
+
+#include <feel/options.hpp>
+#include <feel/feelcore/commobject.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/feelmacros.hpp>
+#include <feel/feelcore/feeltypes.hpp>
 #include <typeinfo>
 #include <cmath>
 #include <iomanip>
 #include <limits>
-#include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/visitor.hpp>
 #include <feel/feelcore/factory.hpp>
 #include <feel/feelcore/singleton.hpp>
@@ -173,25 +166,24 @@ public:
      * of the \p exportername and using \p prefix for the prefix of the data
      * files.
      */
-    static std::shared_ptr<Exporter<MeshType,N> > New( std::string const& exportername,
-                                                         std::string prefix,
-                                                         worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    [[nodiscard]] static std::shared_ptr<Exporter<MeshType,N> > New( std::string const& exportername,
+                                                                      std::string prefix,
+                                                                      worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     /**
      * Static function instantiating from the Exporter Factory an exporter out
      * of the variables_map \p vm and using \p prefix for the prefix of the data
      * files.
      */
-    static std::shared_ptr<Exporter<MeshType,N> > New( po::variables_map const& vm = Environment::vm(),
-                                                         std::string prefix = Environment::about().appName(),
-                                                         worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() ) FEELPP_DEPRECATED;
-
+    [[nodiscard]] static std::shared_ptr<Exporter<MeshType,N> > New( po::variables_map const& vm = Environment::vm(),
+                                                                      std::string prefix = Environment::about().appName(),
+                                                                      worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() ) FEELPP_DEPRECATED;
     /**
      * Static function instantiating from the Exporter Factory an exporter using
      * \p prefix for the prefix of the data files.
      */
-    static std::shared_ptr<Exporter<MeshType,N> > New( std::string prefix,
-                                                         worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    [[nodiscard]] static std::shared_ptr<Exporter<MeshType,N> > New( std::string prefix,
+                                                                      worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     //@}
 
@@ -319,8 +311,8 @@ public:
         std::string error;
         try
         {
-            fs::create_directories( path );
-            if ( !fs::is_directory( path ) )
+            std::filesystem::create_directories( path );
+            if ( !std::filesystem::is_directory( path ) )
                 error = "not a directory: " + path;
         }
         catch ( std::exception const& e ) { error = e.what(); }
@@ -439,7 +431,7 @@ public:
         }
 
     void
-    setMesh( mesh_ptrtype mesh, ExporterGeometry exgeo = EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY )
+    setMesh( mesh_ptrtype mesh, ExporterGeometry exgeo = EXPORTER_GEOMETRY_STATIC )
         {
             if (hasStaticFields() && (mesh!=M_staticMesh || exgeo!=M_ex_geometry))
                 throw std::logic_error("cannot replace dataset mesh or geometry policy");
@@ -456,8 +448,8 @@ public:
      * @param cst Compatibility flag: must be true; use step(t)->add for temporal scalars.
      */
     template<typename T>
-    void add(std::string const& name,T const& u,bool cst=true,
-             typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr)
+        requires std::is_floating_point_v<T>
+    void add(std::string const& name,T const& u,bool cst=true)
     {
         std::ostringstream schema;
         schema << "scalar:" << std::setprecision(std::numeric_limits<T>::max_digits10) << u;
@@ -483,8 +475,8 @@ public:
      * changes require a new exporter. See step(t)->add for transient fields.
      */
     template<typename F>
-    void add(std::string const& name,F const& u,typename step_type::variant_representation_arg_type reps="",
-             typename std::enable_if<is_functionspace_element_v<decay_type<Feel::remove_shared_ptr_type<std::remove_pointer_t<F>>>>>::type* = nullptr)
+        requires is_functionspace_element_v<decay_type<Feel::remove_shared_ptr_type<std::remove_pointer_t<F>>>>
+    void add(std::string const& name,F const& u,typename step_type::variant_representation_arg_type reps="")
     {
         std::string error;
         if constexpr (is_ptr_or_shared_ptr<F>::value)
@@ -501,8 +493,9 @@ public:
      * @param reps Nodal/element representation(s), as for Step::add.
      */
     template<typename ExprT>
-    void add(std::string const& name,ExprT const& expr,typename step_type::variant_representation_arg_type reps="",
-             typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT>>* = nullptr)
+        requires std::is_base_of_v<ExprBase,ExprT>
+    void
+    add( std::string const& name, ExprT const& expr, typename step_type::variant_representation_arg_type reps = "" )
     {
         registerDatasetField(name,reps,typeid(ExprT).name(),"",
                              [&](auto& fields) { fields.add(sanitize(name),expr,reps); });
@@ -514,10 +507,10 @@ public:
      * @param rangeElt Element/boundary range belonging to the exporter mesh.
      * @param reps Nodal/element representation(s), as for Step::add.
      */
-    template<typename ExprT,typename EltWrapperT=Range<mesh_type,MESH_ELEMENTS>>
-    void add(std::string const& name,ExprT const& expr,EltWrapperT const& rangeElt,
-             typename step_type::variant_representation_arg_type reps="",
-             typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> && is_filter_v<EltWrapperT>>* = nullptr)
+    template<typename ExprT, typename EltWrapperT = Range<mesh_type,MESH_ELEMENTS>>
+        requires ( std::is_base_of_v<ExprBase,ExprT> && is_filter_v<EltWrapperT> )
+    void
+    add( std::string const& name, ExprT const& expr, EltWrapperT const& rangeElt, typename step_type::variant_representation_arg_type reps = "" )
     {
         std::string error=rangeElt.mesh()==M_mesh.get() ? "" : "expression range must use the exporter mesh";
         registerDatasetField(name,reps,typeid(ExprT).name(),error,
@@ -543,13 +536,12 @@ public:
     /**
      * @return the step shared_ptr at time \p time
      */
-    step_ptrtype step( double time )
+    [[nodiscard]] step_ptrtype step( double time )
     {
         CHECK( !M_ts_set.empty() ) << "timeset is empty";
         return this->step( time, M_ts_set.size() -1 );
     }
-
-    step_ptrtype step( double time, int s )
+    [[nodiscard]] step_ptrtype step( double time, int s )
     {
         M_staticOnlyAdapter=false;
         CHECK( s >= 0 && s < M_ts_set.size() ) << "invalid timeset index " << s;
@@ -634,7 +626,7 @@ public:
                 step->setState(STEP_ON_DISK);
                 step->cleanup();
             }
-            ts->save((fs::path(this->path())/(ts->name()+".timeset")).string(),this->worldComm());
+            ts->save((std::filesystem::path(this->path())/(ts->name()+".timeset")).string(),this->worldComm());
         }
         if (hasStaticFields() && M_staticWritten) writeStaticFieldGuard();
     }
@@ -657,7 +649,7 @@ public:
         for ( ; __ts_it != __ts_en ; ++__ts_it )
         {
             auto filename = this->path()+"/"+(*__ts_it)->name()+".timeset";
-            if ( !fs::exists( filename ) )
+            if ( !std::filesystem::exists( filename ) )
                 return;
             ( *__ts_it )->load( filename,__time );
             M_hasSaved=true;
@@ -871,9 +863,11 @@ auto exporter( Ts && ... v )
 
     std::string const& name = args.get_else_invocable(_name,[](){ return Environment::about().appName(); } );
     std::string const& geo = args.get_else_invocable(_geo, [](){ return soption(_name="exporter.geometry"); } );
-    auto && path = args.get_else_invocable(_path, [&name](){ return std::string((fs::path(Environment::exportsRepository())/fs::path(soption("exporter.format"))/name).string()); } );
+    auto && path = args.get_else_invocable(_path, [&name](){ return std::string((std::filesystem::path(Environment::exportsRepository())/std::filesystem::path(soption("exporter.format"))/name).string()); } );
 
-    using exporter_type = Exporter<mesh_type,mesh_type::nOrder>;
+    static constexpr int exporterOrder =
+        mesh_type::is_order_dynamic ? Dynamic : mesh_type::nOrder;
+    using exporter_type = Exporter<mesh_type, exporterOrder>;
 
     auto e =  exporter_type::New( name,mesh->worldCommPtr() );
     e->setPrefix( name );

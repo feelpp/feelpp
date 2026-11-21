@@ -1,27 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2006-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2006-01-14
-
-  Copyright (C) 2006 EPFL
-  Copyright (C) 2008, 2009 Université de Grenoble 1 (Joseph Fourier)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file raviartthomas.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -29,6 +13,8 @@
  */
 #ifndef __RaviartThomas_H
 #define __RaviartThomas_H 1
+
+#include <array>
 
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/assign/std/vector.hpp> // for 'operator+=()'
@@ -58,13 +44,15 @@
 #include <feel/feelpoly/polynomialset.hpp>
 #include <feel/feelpoly/functionalset.hpp>
 #include <feel/feelpoly/operations.hpp>
-#include <feel/feelpoly/functionals.hpp>
-#include <feel/feelpoly/functionals2.hpp>
 #include <feel/feelpoly/pointsetquadrature.hpp>
+#include <feel/feeldiscr/doflayout.hpp>
 #include <feel/feelpoly/fe.hpp>
 #include <feel/feelpoly/hdivpolynomialset.hpp>
-
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelpoly/hdivinterpolation.hpp>
+#include <feel/feelpoly/hdivfunctionals.hpp>
+#include <feel/feelpoly/meta.hpp>
+#include <feel/feelpoly/order.hpp>
+#include <feel/feelpoly/fefamilyshell.hpp>
 
 namespace Feel
 {
@@ -98,6 +86,139 @@ struct times_x
     int M_c;
 };
 
+template<uint16_type Dim, uint16_type InternalOrder>
+struct RaviartThomasSimplexDofLayout
+{
+    static_assert( Dim == 2 || Dim == 3,
+                   "Raviart-Thomas simplex layout is implemented for 2D triangles and 3D tetrahedra." );
+    static_assert( InternalOrder > 0,
+                   "Feel++ RaviartThomas<O> uses internal polynomial order O+1; the internal order must be positive." );
+
+    static constexpr uint16_type publicOrder = static_cast<uint16_type>( InternalOrder - 1 );
+    static constexpr uint16_type facetDof = ( Dim == 2 )
+                                                ? InternalOrder
+                                                : static_cast<uint16_type>( InternalOrder * ( InternalOrder + 1 ) / 2 );
+    static constexpr uint16_type totalDof = ( Dim == 2 )
+                                                ? static_cast<uint16_type>( InternalOrder * ( InternalOrder + 2 ) )
+                                                : static_cast<uint16_type>( InternalOrder * ( InternalOrder + 1 ) * ( InternalOrder + 3 ) / 2 );
+    static constexpr uint16_type interiorDof = ( Dim == 2 )
+                                                   ? static_cast<uint16_type>( InternalOrder * ( InternalOrder - 1 ) )
+                                                   : static_cast<uint16_type>( InternalOrder * ( InternalOrder + 1 ) * ( InternalOrder - 1 ) / 2 );
+};
+
+[[nodiscard]] constexpr uint16_type
+raviartThomasSimplexInternalOrder( uint16_type publicOrder )
+{
+    return checkedLocalIndexValue(
+        static_cast<size_type>( publicOrder ) + 1 );
+}
+
+[[nodiscard]] constexpr size_type
+raviartThomasSimplexTotalDofSize( uint16_type dim,
+                                  uint16_type publicOrder ) noexcept
+{
+    const size_type internalOrder =
+        static_cast<size_type>( publicOrder ) + 1;
+    return ( dim == 2 )
+               ? internalOrder * ( internalOrder + 2 )
+               : internalOrder * ( internalOrder + 1 ) *
+                     ( internalOrder + 3 ) / 2;
+}
+
+[[nodiscard]] constexpr RuntimeOrder
+validatedRaviartThomasSimplexOrder( uint16_type dim,
+                                    RuntimeOrder publicOrder )
+{
+    (void)checkedLocalIndexValue(
+        static_cast<size_type>( publicOrder.value ) + 1 );
+    (void)checkedLocalIndexValue(
+        raviartThomasSimplexTotalDofSize( dim, publicOrder.value ) );
+    return publicOrder;
+}
+
+[[nodiscard]] constexpr uint16_type
+raviartThomasSimplexFacetDof( uint16_type dim, uint16_type publicOrder )
+{
+    const size_type internalOrder =
+        static_cast<size_type>( publicOrder ) + 1;
+    return checkedLocalIndexValue(
+        ( dim == 2 )
+            ? internalOrder
+            : internalOrder * ( internalOrder + 1 ) / 2 );
+}
+
+[[nodiscard]] constexpr uint16_type
+raviartThomasSimplexTotalDof( uint16_type dim, uint16_type publicOrder )
+{
+    return checkedLocalIndexValue(
+        raviartThomasSimplexTotalDofSize( dim, publicOrder ) );
+}
+
+[[nodiscard]] constexpr uint16_type
+raviartThomasSimplexInteriorDof( uint16_type dim, uint16_type publicOrder )
+{
+    const size_type internalOrder =
+        static_cast<size_type>( publicOrder ) + 1;
+    return checkedLocalIndexValue(
+        ( dim == 2 )
+            ? internalOrder * ( internalOrder - 1 )
+            : internalOrder * ( internalOrder + 1 ) *
+                  ( internalOrder - 1 ) / 2 );
+}
+
+/**
+ * @brief Construct RT primal coefficients for static or runtime-order storage.
+ *
+ * The storage types are policy parameters; `(P_k)^d + x P_k^hom` is built by
+ * this single mathematical implementation for both public FE forms.
+ */
+template<uint16_type Dim, typename AmbientVector, typename AmbientScalar,
+         typename VectorPolynomialSet, typename ScalarPolynomialSet>
+[[nodiscard]] auto
+buildRaviartThomasPrimalCoefficients( AmbientVector const& ambientVector,
+                                      AmbientScalar const& ambientScalar,
+                                      uint16_type publicOrder )
+{
+    using value_type = typename AmbientVector::value_type;
+    using convex_type = typename AmbientVector::convex_type;
+    using scalar_polynomial_type = typename ScalarPolynomialSet::polynomial_type;
+    const uint16_type internalOrder = raviartThomasSimplexInternalOrder( publicOrder );
+    const uint16_type dimPk = convex_type::polyDims( publicOrder );
+    const uint16_type dimPkm1 = publicOrder == 0
+        ? 0 : convex_type::polyDims( publicOrder-1 );
+
+    VectorPolynomialSet pkVector = polynomialSetFrom<VectorPolynomialSet>(
+        ambientVector.polynomialsUpToDimension( dimPk ), internalOrder );
+    ScalarPolynomialSet pkScalar = polynomialSetFrom<ScalarPolynomialSet>(
+        ambientScalar.polynomialsUpToDimension( dimPk ), internalOrder );
+
+    IMGeneral<Dim, value_type, Simplex> quadrature(
+        static_cast<uint16_type>( 2*internalOrder ) );
+    ublas::matrix<value_type> enrichmentCoefficients(
+        Dim*( dimPk-dimPkm1 ), pkScalar.coeff().size2() );
+    for ( int scalar = dimPkm1, candidate = 0;
+          scalar < dimPk; ++scalar, ++candidate )
+        for ( int component = 0; component < Dim; ++component )
+        {
+            times_x<scalar_polynomial_type> product(
+                pkScalar.polynomial( scalar ), component );
+            ublas::row( enrichmentCoefficients, candidate*Dim+component ) =
+                ublas::row( Feel::project(
+                    ambientScalar, product, quadrature ).coeff(), 0 );
+        }
+
+    VectorPolynomialSet enrichment(
+        typename AmbientVector::basis_type(), enrichmentCoefficients, true );
+    if constexpr ( requires( VectorPolynomialSet& p ) {
+                       p.setOrder( internalOrder );
+                   } )
+        enrichment.setOrder( internalOrder );
+    auto result = unite( pkVector, enrichment );
+    CHECK_EQ( result.polynomialDimension(),
+              raviartThomasSimplexTotalDof( Dim, publicOrder ) );
+    return result.coeff();
+}
+
 #if 0
 template< class T >
 struct extract_all_poly_indices
@@ -120,7 +241,7 @@ struct extract_all_poly_indices
 template<uint16_type N,
          uint16_type O,
          typename T = double,
-         template<uint16_type, uint16_type, uint16_type> class Convex = Simplex,
+         template<int, int, int> class Convex = Simplex,
          uint16_type TheTAG = 0>
 class RaviartThomasPolynomialSet
     :
@@ -148,6 +269,9 @@ public:
     typedef typename super::matrix_type matrix_type;
     typedef typename super::points_type points_type;
 
+    static_assert( convex_type::is_simplex,
+                   "RaviartThomasPolynomialSet currently implements the simplex RT space only." );
+
     static inline const uint16_type nDim = super::nDim;
     static inline const uint16_type nOrder = super::nOrder;
     static inline const uint16_type nComponents = super::nComponents;
@@ -156,57 +280,90 @@ public:
         :
         super()
     {
-        uint16_type dim_Pkp1 = convex_type::polyDims( nOrder );
-        uint16_type dim_Pk = convex_type::polyDims( nOrder-1 );
-        uint16_type dim_Pkm1 = ( nOrder==1 )?0:convex_type::polyDims( nOrder-2 );
-#if 0
-        VLOG(1) << "[RTPset] dim_Pkp1 = " << dim_Pkp1 << "\n";
-        VLOG(1) << "[RTPset] dim_Pk   = " << dim_Pk << "\n";
-        VLOG(1) << "[RTPset] dim_Pkm1 = " << dim_Pkm1 << "\n";
-#endif
-        // (P_k)^d
-        Pkp1_v_type Pkp1_v;
-        vectorial_polynomialset_type Pk_v( Pkp1_v.polynomialsUpToDimension( dim_Pk ) );
-#if 0
-        VLOG(1) << "[RTPset] Pk_v =" << Pk_v.coeff() << "\n";
-#endif
-        // P_k
-        Pkp1_s_type Pkp1;
-        scalar_polynomialset_type Pk ( Pkp1.polynomialsUpToDimension( dim_Pk ) );
-#if 0
-        VLOG(1) << "[RTPset] Pk =" << Pk.coeff() << "\n";
-        VLOG(1) << "[RTPset] Pk(0) =" << Pk.polynomial( 0 ).coefficients() << "\n";
-#endif
-
-        // x P_k \ P_{k-1}
-        IMGeneral<convex_type::nDim, value_type> im( 2*nOrder );
-        //VLOG(1) << "[RTPset] im.points() = " << im.points() << std::endl;
-        ublas::matrix<value_type> xPkc( nComponents*( dim_Pk-dim_Pkm1 ),Pk.coeff().size2() );
-
-        //VLOG(1) << "[RTPset] before xPkc = " << xPkc << "\n";
-        for ( int l = dim_Pkm1, i = 0; l < dim_Pk; ++l, ++i )
-        {
-            for ( int j = 0; j < convex_type::nDim; ++j )
-            {
-                Feel::detail::times_x<scalar_polynomial_type> xp( Pk.polynomial( l ), j );
-                ublas::row( xPkc,i*nComponents+j )=
-                    ublas::row( Feel::project( Pkp1,
-                                               xp,
-                                               im ).coeff(), 0 );
-            }
-        }
-
-
-        //VLOG(1) << "[RTPset] after xPkc = " << xPkc << "\n";
-        vectorial_polynomialset_type xPk( typename super::basis_type(), xPkc, true );
-        //VLOG(1) << "[RTPset] here 1\n";
-        // (P_k)^d + x P_k
-        //VLOG(1) << "[RTPset] RT Poly coeff = " << unite( Pk_v, xPk ).coeff() << "\n";
-        this->setCoefficient( unite( Pk_v, xPk ).coeff(), true );
-        //VLOG(1) << "[RTPset] here 2\n";
+        Pkp1_v_type ambientVector;
+        Pkp1_s_type ambientScalar;
+        this->setCoefficient(
+            Feel::detail::buildRaviartThomasPrimalCoefficients<
+                N, Pkp1_v_type, Pkp1_s_type,
+                vectorial_polynomialset_type, scalar_polynomialset_type>(
+                    ambientVector, ambientScalar, O ), true );
     }
 
 
+};
+
+template<uint16_type N,
+         typename T = double,
+         template<int, int, int> class Convex = Simplex,
+         uint16_type TheTAG = 0>
+class RaviartThomasDynamicPolynomialSet
+    :
+    public Feel::detail::OrthonormalPolynomialSet<N, Dynamic, N, Vectorial, T, TheTAG, Convex>
+{
+    using super = Feel::detail::OrthonormalPolynomialSet<N, Dynamic, N, Vectorial, T, TheTAG, Convex>;
+
+public:
+    using Pkp1_v_type = Feel::detail::OrthonormalPolynomialSet<N, Dynamic, N, Vectorial, T, TheTAG, Convex>;
+    using Pkp1_s_type = Feel::detail::OrthonormalPolynomialSet<N, Dynamic, N, Scalar, T, TheTAG, Convex>;
+    using vectorial_polynomialset_type = PolynomialSet<typename super::basis_type, Vectorial, Dynamic>;
+    using vectorial_polynomial_type = typename vectorial_polynomialset_type::polynomial_type;
+    using scalar_polynomialset_type = PolynomialSet<typename super::basis_type, Scalar, Dynamic>;
+    using scalar_polynomial_type = typename scalar_polynomialset_type::polynomial_type;
+
+    using value_type = typename super::value_type;
+    using convex_type = typename super::convex_type;
+    using matrix_type = typename super::matrix_type;
+    using points_type = typename super::points_type;
+
+    static_assert( convex_type::is_simplex,
+                   "RaviartThomasDynamicPolynomialSet currently implements the simplex RT space only." );
+
+    static inline const uint16_type nDim = super::nDim;
+    static inline const int nOrder = Dynamic;
+    static inline const uint16_type nComponents = super::nComponents;
+    static inline const bool is_product = false;
+
+    RaviartThomasDynamicPolynomialSet()
+        :
+        RaviartThomasDynamicPolynomialSet( RuntimeOrder{ 0 } )
+    {}
+
+    explicit RaviartThomasDynamicPolynomialSet( RuntimeOrder publicOrder )
+        :
+        super( RuntimeOrder{
+            Feel::detail::raviartThomasSimplexInternalOrder(
+                Feel::detail::validatedRaviartThomasSimplexOrder(
+                    N, publicOrder ).value ) } )
+    {
+        build( publicOrder.value );
+    }
+
+    [[nodiscard]] uint16_type publicOrder() const noexcept
+    {
+        return M_publicOrder;
+    }
+
+    [[nodiscard]] uint16_type internalOrder() const noexcept
+    {
+        return Feel::detail::raviartThomasSimplexInternalOrder( M_publicOrder );
+    }
+
+private:
+    void build( uint16_type publicOrder )
+    {
+        M_publicOrder = publicOrder;
+        const uint16_type internalOrder = Feel::detail::raviartThomasSimplexInternalOrder( publicOrder );
+        Pkp1_v_type ambientVector( RuntimeOrder{ internalOrder } );
+        Pkp1_s_type ambientScalar( RuntimeOrder{ internalOrder } );
+        this->setCoefficient(
+            Feel::detail::buildRaviartThomasPrimalCoefficients<
+                N, Pkp1_v_type, Pkp1_s_type,
+                vectorial_polynomialset_type, scalar_polynomialset_type>(
+                    ambientVector, ambientScalar, publicOrder ), true );
+    }
+
+private:
+    uint16_type M_publicOrder = 0;
 };
 
 namespace fem
@@ -218,7 +375,7 @@ namespace detail
 
 
 template<typename Basis,
-         template<class, uint16_type, class> class PointSetType>
+         template<class, int, class> class PointSetType>
 class RaviartThomasDual
     :
 public DualBasis<Basis>
@@ -228,6 +385,7 @@ public:
 
     static inline const uint16_type nDim = super::nDim;
     static inline const uint16_type nOrder= super::nOrder;
+    using dof_layout = Feel::detail::RaviartThomasSimplexDofLayout<nDim, nOrder>;
 
     typedef typename super::primal_space_type primal_space_type;
     typedef typename primal_space_type::value_type value_type;
@@ -244,14 +402,14 @@ public:
     typedef PointSetType<convex_type, nOrder, value_type> pointset_type;
 
     static inline const uint16_type nbPtsPerVertex = 0;
-    static constexpr uint16_type nbPtsPerEdge = (nDim==2)?reference_convex_type::nbPtsPerEdge:0;
-    static constexpr uint16_type nbPtsPerFace2d = (nOrder)*(nOrder+2)-reference_convex_type::numEdges*nbPtsPerEdge;
-    static constexpr uint16_type nbPtsPerFace3d = reference_convex_type::nbPtsPerFace;
+    static constexpr uint16_type nbPtsPerEdge = (nDim==2)?dof_layout::facetDof:0;
+    static constexpr uint16_type nbPtsPerFace2d = (nDim==2)?dof_layout::interiorDof:0;
+    static constexpr uint16_type nbPtsPerFace3d = (nDim==3)?dof_layout::facetDof:0;
     static constexpr uint16_type nbPtsPerFace =(nDim==3)?nbPtsPerFace3d:nbPtsPerFace2d;
-    static constexpr uint16_type nbInteriorMoments3d = (nOrder)*(nOrder+1)*(nOrder+3)/2-reference_convex_type::numTopologicalFaces*nbPtsPerFace3d;
+    static constexpr uint16_type nbInteriorMoments3d = (nDim==3)?dof_layout::interiorDof:0;
     static constexpr uint16_type nbPtsPerVolume = (nDim==3)?nbInteriorMoments3d:0;
-    static constexpr uint16_type numPoints2d = (nOrder)*(nOrder+2);
-    static constexpr uint16_type numPoints3d = (nOrder)*(nOrder+1)*(nOrder+3)/2;
+    static constexpr uint16_type numPoints2d = (nDim==2)?dof_layout::totalDof:0;
+    static constexpr uint16_type numPoints3d = (nDim==3)?dof_layout::totalDof:0;
     static constexpr uint16_type numPoints = (nDim==2)?numPoints2d:numPoints3d;
 
     /** Number of degrees of freedom per vertex */
@@ -273,108 +431,33 @@ public:
         :
         super( primal ),
         M_convex_ref(),
-        M_eid( M_convex_ref.topologicalDimension()+1 ),
         M_pts( nDim, numPoints ),
         M_pts_per_face( convex_type::numTopologicalFaces ),
         M_fset( primal )
     {
-#if 1
-        VLOG(1) << "Raviart-Thomas finite element(dual): \n";
-        VLOG(1) << " o- dim   = " << nDim << "\n";
-        VLOG(1) << " o- order = " << nOrder << "\n";
-        VLOG(1) << " o- numPoints      = " << numPoints << "\n";
-        VLOG(1) << " o- nbPtsPerVertex = " << ( int )nbPtsPerVertex << "\n";
-        VLOG(1) << " o- nbPtsPerEdge   = " << ( int )nbPtsPerEdge << "\n";
-        VLOG(1) << " o- nbPtsPerFace   = " << ( int )nbPtsPerFace << "\n";
-        VLOG(1) << " o- nbPtsPerVolume = " << ( int )nbPtsPerVolume << "\n";
-        VLOG(1) << " o- nLocalDof      = " << nLocalDof << "\n";
-#endif
-
-        // loop on each entity forming the convex of topological
-        // dimension nDim-1 ( the faces)
-        for ( int p = 0, e = M_convex_ref.entityRange( nDim-1 ).begin();
-                e < M_convex_ref.entityRange( nDim-1 ).end();
-                ++e )
-        {
-            points_type Gt ( M_convex_ref.makePoints( nDim-1, e ) );
-            M_pts_per_face[e] =  Gt ;
-
-            if ( Gt.size2() )
+        const uint16_type interiorDof = nDim == 2
+            ? nDofPerFace : nDofPerVolume;
+        auto functionals = Feel::detail::buildHDivSimplexFunctionals(
+            primal, M_convex_ref,
+            nDim == 2 ? nDofPerEdge : nDofPerFace,
+            interiorDof, nLocalDof,
+            static_cast<uint16_type>( 2*( nOrder+1 ) ),
+            M_pts, M_pts_per_face,
+            [this]( uint16_type facet )
+            { return M_convex_ref.makePoints( nDim-1, facet ); },
+            []()
             {
-                //VLOG(1) << "Gt = " << Gt << "\n";
-                //VLOG(1) << "p = " << p << "\n";
-                ublas::subrange( M_pts, 0, nDim, p, p+Gt.size2() ) = Gt;
-                //for ( size_type j = 0; j < Gt.size2(); ++j )
-                //M_eid[d].push_back( p+j );
-                p+=Gt.size2();
-            }
-        }
-
-        //VLOG(1) << "[RT Dual] done 1\n";
-        // compute  \f$ \ell_e( U ) = (U * n[e]) (edge_pts(e)) \f$
-        typedef Functional<primal_space_type> functional_type;
-        std::vector<functional_type> fset;
-
-        // jacobian of the transformation from reference face to the face in the
-        // reference element
-        std::vector<double> j;
-        if ( nDim == 2 )
-            j = {2.8284271247461903,2.0,2.0};
-
-        if ( nDim == 3 )
-            j = {3.464101615137754, 2, 2, 2};
-
-        //for( int k = 0; k < nDim; ++k )
-        {
-            // loopover the each edge entities and add the corresponding functionals
-            for ( int e = M_convex_ref.entityRange( nDim-1 ).begin();
-                    e < M_convex_ref.entityRange( nDim-1 ).end();
-                    ++e )
+                Pkp1_v_type ambient;
+                const uint16_type dimension = convex_type::polyDims( nOrder-2 );
+                return Feel::detail::polynomialSetFrom<vectorial_polynomialset_type>(
+                    ambient.polynomialsUpToDimension( dimension ), nOrder );
+            },
+            [&primal]( auto const& polynomial )
             {
-                typedef Feel::functional::DirectionalComponentPointsEvaluation<primal_space_type> dcpe_type;
-                node_type dir( nDim );
-                em_node_type<value_type> edir( dir.data().begin(), dir.size() );
-                edir = M_convex_ref.normal( e )*j[e];
-                //dcpe_type __dcpe( primal, 1, dir, pts_per_face[e] );
-                dcpe_type __dcpe( primal, dir, M_pts_per_face[e] );
-                std::copy( __dcpe.begin(), __dcpe.end(), std::back_inserter( fset ) );
-            }
-        }
-
-        //VLOG(1) << "[RT Dual] done 2" << std::endl;
-        if ( nOrder-1 > 0 )
-        {
-            // we need more equations : add interior moment
-            // indeed the space is orthogonal to Pk-1
-            uint16_type dim_Pkp1 = convex_type::polyDims( nOrder );
-            uint16_type dim_Pk = convex_type::polyDims( nOrder-1 );
-            uint16_type dim_Pm1 = convex_type::polyDims( nOrder-2 );
-
-            Pkp1_v_type Pkp1;
-
-            vectorial_polynomialset_type Pkm1 ( Pkp1.polynomialsUpToDimension( dim_Pm1 ) );
-
-            //VLOG(1) << "Pkm1 = " << Pkm1.coeff() << "\n";
-            //VLOG(1) << "Primal = " << primal.coeff() << "\n";
-            if ( nDim == 2 )
-                CHECK( Pkm1.polynomialDimension() == nbPtsPerFace )
-                    << "Invalid number of interior moments in 2D "
-                    << " Pkm1.dim = " << Pkm1.polynomialDimension()
-                    << " nbPtsPerFace = " << nbPtsPerFace;
-            for ( int i = 0; i < Pkm1.polynomialDimension(); ++i )
-            {
-                typedef functional::IntegralMoment<primal_space_type, vectorial_polynomialset_type> fim_type;
-                //typedef functional::IntegralMoment<Pkp1_v_type, vectorial_polynomialset_type> fim_type;
-                //VLOG(1) << "P(" << i << ")=" << Pkm1.polynomial( i ).coeff() << "\n";
-                fset.push_back( fim_type( primal, Pkm1.polynomial( i ) ) );
-            }
-        }
-
-        //VLOG(1) << "[RT Dual] done 3, n fset = " << fset.size() << std::endl;
-        M_fset.setFunctionalSet( fset );
-        //        VLOG(1) << "[RT DUAL matrix] mat = " << M_fset.rep() << "\n";
-        //VLOG(1) << "[RT Dual] done 4\n";
-
+                return Feel::detail::makeHDivIntegralMomentFunctional(
+                    primal, polynomial, static_cast<uint16_type>( nOrder+1 ) );
+            } );
+        M_fset.setFunctionalSet( functionals );
     }
 
     /**
@@ -419,12 +502,140 @@ private:
 
 private:
     reference_convex_type M_convex_ref;
-    std::vector<std::vector<uint16_type> > M_eid;
     points_type M_pts;
     std::vector<points_type> M_pts_per_face;
     FunctionalSet<primal_space_type> M_fset;
 
 
+};
+
+template<typename Basis,
+         template<class, int, class> class PointSetType>
+class RaviartThomasDynamicDual
+    :
+public DualBasis<Basis>
+{
+    using super = DualBasis<Basis>;
+
+public:
+    static inline const uint16_type nDim = super::nDim;
+    static inline const int nOrder = Dynamic;
+
+    using primal_space_type = typename super::primal_space_type;
+    using value_type = typename primal_space_type::value_type;
+    using points_type = typename primal_space_type::points_type;
+    using matrix_type = typename primal_space_type::matrix_type;
+    using convex_type = Simplex<nDim, 1, nDim>;
+    using reference_convex_type = Reference<convex_type, nDim, 1, nDim, value_type>;
+    using node_type = typename reference_convex_type::node_type;
+    using Pkp1_v_type = typename primal_space_type::Pkp1_v_type;
+    using vectorial_polynomialset_type = typename primal_space_type::vectorial_polynomialset_type;
+    using pointset_type = PointSetType<convex_type, Dynamic, value_type>;
+
+    static inline const uint16_type nbPtsPerVertex = 0;
+    static constexpr uint16_type nbPtsPerEdge = ( nDim == 2 ) ? 1 : 0;
+    static constexpr uint16_type nbPtsPerFace2d = 0;
+    static constexpr uint16_type nbPtsPerFace3d = ( nDim == 3 ) ? 1 : 0;
+    static constexpr uint16_type nbPtsPerFace = ( nDim == 3 ) ? nbPtsPerFace3d : nbPtsPerFace2d;
+    static constexpr uint16_type nbPtsPerVolume = 0;
+    static constexpr uint16_type numPoints = convex_type::numTopologicalFaces;
+
+    static inline const uint16_type nDofPerVertex = 0;
+    static inline const uint16_type nDofPerEdge = nbPtsPerEdge;
+    static inline const uint16_type nDofPerFace = nbPtsPerFace;
+    static inline const uint16_type nDofPerVolume = nbPtsPerVolume;
+    static inline const uint16_type nLocalDof = numPoints;
+
+    RaviartThomasDynamicDual( primal_space_type const& primal )
+        :
+        super( primal ),
+        M_publicOrder( primal.publicOrder() ),
+        M_internalOrder( Feel::detail::raviartThomasSimplexInternalOrder( M_publicOrder ) ),
+        M_convex_ref(),
+        M_pts( nDim, Feel::detail::raviartThomasSimplexTotalDof( nDim, M_publicOrder ) ),
+        M_pts_per_face( convex_type::numTopologicalFaces ),
+        M_fset( primal )
+    {
+        const uint16_type nFacetDof = facetDof();
+        pointset_type facetPoints( RuntimeOrder{ static_cast<uint16_type>( nDim + M_internalOrder - 1 ) } );
+        auto functionals = Feel::detail::buildHDivSimplexFunctionals(
+            primal, M_convex_ref, nFacetDof, interiorDof(), localDof(),
+            static_cast<uint16_type>( 2*( M_internalOrder+1 ) ),
+            M_pts, M_pts_per_face,
+            [&facetPoints]( uint16_type facet )
+            { return facetPoints.pointsBySubEntity( nDim-1, facet ); },
+            [this]()
+            {
+                Pkp1_v_type ambient( RuntimeOrder{ M_internalOrder } );
+                const uint16_type dimension = convex_type::polyDims(
+                    static_cast<uint16_type>( M_internalOrder-2 ) );
+                return Feel::detail::polynomialSetFrom<vectorial_polynomialset_type>(
+                    ambient.polynomialsUpToDimension( dimension ), M_internalOrder );
+            },
+            [&primal, this]( auto const& polynomial )
+            {
+                return Feel::detail::makeHDivIntegralMomentFunctional(
+                    primal, polynomial,
+                    static_cast<uint16_type>( M_internalOrder+1 ) );
+            } );
+        M_fset.setFunctionalSet( functionals );
+    }
+
+    [[nodiscard]] uint16_type publicOrder() const noexcept
+    {
+        return M_publicOrder;
+    }
+
+    [[nodiscard]] uint16_type internalOrder() const noexcept
+    {
+        return M_internalOrder;
+    }
+
+    [[nodiscard]] uint16_type facetDof() const noexcept
+    {
+        return Feel::detail::raviartThomasSimplexFacetDof( nDim, M_publicOrder );
+    }
+
+    [[nodiscard]] uint16_type interiorDof() const noexcept
+    {
+        return Feel::detail::raviartThomasSimplexInteriorDof( nDim, M_publicOrder );
+    }
+
+    [[nodiscard]] uint16_type localDof() const noexcept
+    {
+        return Feel::detail::raviartThomasSimplexTotalDof( nDim, M_publicOrder );
+    }
+
+    points_type const& points() const
+    {
+        return M_pts;
+    }
+
+    matrix_type operator()( primal_space_type const& pset ) const
+    {
+        return M_fset( pset );
+    }
+
+    points_type const& points( uint16_type f ) const
+    {
+        return M_pts_per_face[f];
+    }
+    ublas::matrix_column<points_type const> point( uint16_type f, uint32_type __i ) const
+    {
+        return ublas::column( M_pts_per_face[f], __i );
+    }
+    ublas::matrix_column<points_type> point( uint16_type f, uint32_type __i )
+    {
+        return ublas::column( M_pts_per_face[f], __i );
+    }
+
+private:
+    uint16_type M_publicOrder = 0;
+    uint16_type M_internalOrder = 1;
+    reference_convex_type M_convex_ref;
+    points_type M_pts;
+    std::vector<points_type> M_pts_per_face;
+    FunctionalSet<primal_space_type> M_fset;
 };
 }// detail
 
@@ -440,7 +651,7 @@ private:
 template<uint16_type N,
          uint16_type O,
          typename T = double,
-         template<uint16_type, uint16_type, uint16_type> class Convex = Simplex,
+         template<int, int, int> class Convex = Simplex,
          uint16_type TheTAG=0 >
 class RaviartThomas
     :
@@ -472,6 +683,8 @@ public:
     typedef typename super::value_type value_type;
     typedef typename super::primal_space_type primal_space_type;
     typedef typename super::dual_space_type dual_space_type;
+    typedef typename primal_space_type::Pkp1_v_type Pkp1_v_type;
+    typedef typename primal_space_type::vectorial_polynomialset_type vectorial_polynomialset_type;
 
     /**
      * Polynomial Set type: scalar or vectorial
@@ -484,6 +697,8 @@ public:
 
 
     typedef typename dual_space_type::convex_type convex_type;
+    static_assert( convex_type::is_simplex,
+                   "RaviartThomas finite elements are implemented on simplices only; hypercube H(div) requires a tensor-product implementation." );
     typedef typename dual_space_type::pointset_type pointset_type;
     typedef typename dual_space_type::reference_convex_type reference_convex_type;
     typedef typename reference_convex_type::node_type node_type;
@@ -491,6 +706,7 @@ public:
     typedef typename convex_type::topological_face_type face_type;
 
     static inline const uint16_type nOrder =  dual_space_type::nOrder;
+    static inline const uint16_type nPublicOrder = O;
     static inline const uint16_type nbPtsPerVertex = 0;
     static inline const uint16_type nbPtsPerEdge = dual_space_type::nbPtsPerEdge;
     static inline const uint16_type nbPtsPerFace = dual_space_type::nbPtsPerFace;
@@ -597,9 +813,43 @@ public:
             return localDofId;
         }
 
+    bool dofHasRepresentativePoint( uint16_type localDofId ) const override
+        {
+            (void)localDofId;
+            return false;
+        }
+
+    uint16_type dofFunctionalKind( uint16_type localDofId ) const override
+        {
+            auto const attachment = this->dofAttachment( localDofId );
+            if ( !attachment.isValid() )
+                return static_cast<uint16_type>( DofFunctionalKind::Other );
+            if ( static_cast<uint16_type>( attachment.entityDim ) == nDim )
+                return static_cast<uint16_type>( DofFunctionalKind::InteriorMoment );
+            return static_cast<uint16_type>( DofFunctionalKind::NormalMoment );
+        }
+
+    typename super::DofAttachment dofAttachment( uint16_type localDofId ) const override
+        {
+            return simplexDofAttachment<typename super::DofAttachment>(
+                this->dofParent( localDofId ), nDim,
+                reference_convex_type::numVertices,
+                reference_convex_type::numEdges,
+                reference_convex_type::numFaces,
+                nDofPerVertex, nDofPerEdge, nDofPerFace, nDofPerVolume,
+                this->dofType( localDofId ) );
+        }
+
+    template<typename ElementType>
+    [[nodiscard]] DofTransform dofTransform( ElementType const& element, uint16_type localDofId ) const
+    {
+        return finiteElementEntityOrientationTransform( *this, element, localDofId );
+    }
+
     //! \return the type of a local dof
     uint16_type dofType( uint16_type localDofId ) const override
         {
+            // Keep legacy functional kind value for compatibility.
             return 1;
         }
 
@@ -636,24 +886,24 @@ public:
     interpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
         {
             Ihloc.setZero();
-            auto g=expr.geom();
 
-            for( int f = 0; f < convex_type::numTopologicalFaces; ++f )
+            const uint16_type nFacetDof = ( nDim == 2 ) ? nDofPerEdge : nDofPerFace;
+            Feel::detail::interpolateHDivFacetDofs(
+                expr, Ihloc, convex_type::numTopologicalFaces, nFacetDof, n );
+
+            if constexpr ( nOrder > 1 )
             {
-                if( g->faceId() == invalid_uint16_type_value)
-                    expr.geom()->faceNormal(  f, n, true );
-                else
-                    expr.geom()->faceNormal(  g->faceId(), n, true );
+                static const uint16_type momentOrder = nOrder - 2;
+                const uint16_type dimPm1 = convex_type::polyDims( momentOrder );
+                Pkp1_v_type Pkp1;
+                vectorial_polynomialset_type Pkm1( Pkp1.polynomialsUpToDimension( dimPm1 ) );
 
-                auto nLocalDof = (nDim==2) ? nDofPerEdge : nDofPerFace;
-                for ( int l = 0; l < nLocalDof; ++l )
-                {
-                    int q = (nDim == 2) ? f*nDofPerEdge+l : f*nDofPerFace+l;
-                    for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                        Ihloc(q) += expr.evalq( c1, 0, q )*n(c1);
-
-
-                }
+                const uint16_type nInternalDof = ( nDim == 2 ) ? nDofPerFace : nDofPerVolume;
+                IM<nDim, 2*( nOrder + 1 ), value_type, Simplex> im;
+                const int firstInternalDof = convex_type::numTopologicalFaces * nFacetDof;
+                Feel::detail::interpolateHDivInteriorMomentDofs(
+                    expr, Ihloc, Pkm1, im, firstInternalDof,
+                    nInternalDof, nComponents );
             }
         }
     local_interpolant_type
@@ -665,70 +915,21 @@ public:
     void
     faceInterpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
         {
-            auto g = expr.geom();
             Ihloc.setZero();
 
-            int f=0;
-            {
-                if( g->faceId() == invalid_uint16_type_value)
-                    expr.geom()->faceNormal(  f, n, true );
-                else
-                    expr.geom()->faceNormal(  g->faceId(), n, true );
-
-                auto nLocalDof = (nDim==2) ? nDofPerEdge : nDofPerFace;
-                for ( int l = 0; l < nLocalDof; ++l )
-                {
-                    int q = (nDim == 2) ? f*nDofPerEdge+l : f*nDofPerFace+l;
-                    for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                    {
-                        Ihloc(q) += expr.evalq( c1, 0, q )*n(c1);
-                    }
-
-                }
-            }
+            const uint16_type nLocalDof = (nDim==2) ? nDofPerEdge : nDofPerFace;
+            Feel::detail::interpolateHDivFacetDofs(
+                expr, Ihloc, 1, nLocalDof, n );
         }
 
-    using apply_curl_t = mpl::bool_<true>;
-    using apply_id_t = mpl::bool_<false>;
+    using apply_curl_t = bool_c<true>;
+    using apply_id_t = bool_c<false>;
 
     template<typename ExprType>
     void
     interpolateBasisFunction( ExprType& expr, local_interpolants_type& Ihloc ) const
     {
-        using shape = typename std::decay_t<ExprType>::shape;
-        using expr_basis_t = typename std::decay_t<ExprType>::expr_type::test_basis;
-
-        Ihloc.setZero();
-        auto g=expr.geom();
-
-        for( int f = 0; f < convex_type::numTopologicalFaces; ++f )
-        {
-            if( g->faceId() == invalid_uint16_type_value)
-                expr.geom()->faceNormal( f, n, true );
-            else
-                expr.geom()->faceNormal( g->faceId(), n, true );
-
-            auto nLocalDof = (nDim==2) ? nDofPerEdge : nDofPerFace;
-            for ( int l = 0; l < nLocalDof; ++l )
-            {
-                int q = (nDim == 2) ? f*nDofPerEdge+l : f*nDofPerFace+l;
-                for( int i = 0; i < expr_basis_t::nLocalDof; ++i )
-                {
-                    int ncomp= ( expr_basis_t::is_product?expr_basis_t::nComponents1:1 );
-
-                    for ( uint16_type c = 0; c < ncomp; ++c )
-                    {
-                        uint16_type I = expr_basis_t::nLocalDof*c + i;
-
-                        for( int c1 = 0; c1 < ExprType::shape::M; ++c1 )
-                        {
-                            Ihloc(I,q) += expr.evaliq( I, c1, 0, q )*n(c1);
-                        }
-                    }
-                }
-            }
-        }
-
+        Feel::detail::interpolateBasisFunctionRows( *this, expr, Ihloc );
     }
 
     template<typename ExprType>
@@ -885,22 +1086,368 @@ private:
 
 };
 
-} // fem
-template<uint16_type Order,
+template<uint16_type N,
+         typename T = double,
+         template<int, int, int> class Convex = Simplex,
          uint16_type TheTAG=0 >
-class RaviartThomas
+class RaviartThomasDynamicSimplex
+    :
+public FiniteElement<RaviartThomasDynamicPolynomialSet<N, T, Convex, TheTAG>,
+    fem::detail::RaviartThomasDynamicDual,
+    PointSetEquiSpaced >,
+public HDivPolynomialSet,
+public std::enable_shared_from_this<RaviartThomasDynamicSimplex<N,T,Convex,TheTAG> >
+{
+    using super = FiniteElement<RaviartThomasDynamicPolynomialSet<N, T, Convex, TheTAG>,
+            fem::detail::RaviartThomasDynamicDual,
+            PointSetEquiSpaced >;
+
+public:
+    BOOST_STATIC_ASSERT( N > 1 );
+
+    static inline const uint16_type nDim = N;
+    static inline const bool isTransformationEquivalent = true;
+    static inline const bool isContinuous = true;
+    using continuity_type = Continuous;
+    static const uint16_type TAG = TheTAG;
+
+    using value_type = typename super::value_type;
+    using primal_space_type = typename super::primal_space_type;
+    using dual_space_type = typename super::dual_space_type;
+    using Pkp1_v_type = typename primal_space_type::Pkp1_v_type;
+    using vectorial_polynomialset_type = typename primal_space_type::vectorial_polynomialset_type;
+    using polyset_type = typename super::polyset_type;
+
+    static inline const bool is_order_static = false;
+    static inline const bool is_order_dynamic = true;
+    static constexpr int nOrder_v = Dynamic;
+
+    static inline const bool is_vectorial = polyset_type::is_vectorial;
+    static inline const bool is_scalar = polyset_type::is_scalar;
+    static inline const uint16_type nComponents = polyset_type::nComponents;
+    static inline const bool is_product = false;
+
+    using convex_type = typename dual_space_type::convex_type;
+    static_assert( convex_type::is_simplex,
+                   "RaviartThomas dynamic finite elements are implemented on simplices only." );
+    using pointset_type = typename dual_space_type::pointset_type;
+    using reference_convex_type = typename dual_space_type::reference_convex_type;
+    using node_type = typename reference_convex_type::node_type;
+    using points_type = typename reference_convex_type::points_type;
+    using face_type = typename convex_type::topological_face_type;
+
+    static inline const int nOrder = Dynamic;
+    static inline const uint16_type nPublicOrder = 0;
+    static inline const uint16_type nbPtsPerVertex = 0;
+    static inline const uint16_type nbPtsPerEdge = dual_space_type::nbPtsPerEdge;
+    static inline const uint16_type nbPtsPerFace = dual_space_type::nbPtsPerFace;
+    static inline const uint16_type nbPtsPerVolume = dual_space_type::nbPtsPerVolume;
+    static inline const uint16_type numPoints = dual_space_type::numPoints;
+
+    static inline const uint16_type nLocalDof = dual_space_type::nLocalDof;
+    static inline const uint16_type nDofPerVertex = dual_space_type::nDofPerVertex;
+    static inline const uint16_type nDofPerEdge = dual_space_type::nDofPerEdge;
+    static inline const uint16_type nDofPerFace = dual_space_type::nDofPerFace;
+    static inline const uint16_type nDofPerVolume = dual_space_type::nDofPerVolume;
+    static inline const uint16_type nLocalFaceDof = ( face_type::numVertices * nDofPerVertex +
+                                               face_type::numEdges * nDofPerEdge +
+                                               face_type::numFaces * nDofPerFace );
+
+    RaviartThomasDynamicSimplex()
+        :
+        RaviartThomasDynamicSimplex( RuntimeOrder{ 0 } )
+    {}
+
+    explicit RaviartThomasDynamicSimplex( RuntimeOrder order )
+        :
+        super( dual_space_type( primal_space_type( order ) ) ),
+        M_publicOrder( order.value ),
+        M_refconvex()
+    {}
+
+    template<int subN>
+    struct SubSpace
+    {
+        using type = RaviartThomasDynamicSimplex<N-1, T, Convex, TheTAG>;
+    };
+
+    struct SSpace
+    {
+        using type = RaviartThomasDynamicSimplex<N, T, Convex, TheTAG>;
+    };
+
+    template<uint16_type NewDim>
+    struct ChangeDim
+    {
+        using type = RaviartThomasDynamicSimplex<NewDim, T, Convex, TheTAG>;
+    };
+
+    RaviartThomasDynamicSimplex( RaviartThomasDynamicSimplex const& cr )
+        :
+        super( cr ),
+        M_publicOrder( cr.M_publicOrder ),
+        M_refconvex()
+    {}
+    ~RaviartThomasDynamicSimplex() override {}
+
+    reference_convex_type const& referenceConvex() const
+    {
+        return M_refconvex;
+    }
+
+    std::string familyName() const override
+    {
+        return "raviartthomas";
+    }
+
+    [[nodiscard]] uint16_type order() const noexcept
+    {
+        return M_publicOrder;
+    }
+
+    [[nodiscard]] uint16_type internalOrder() const noexcept
+    {
+        return Feel::detail::raviartThomasSimplexInternalOrder( M_publicOrder );
+    }
+
+    [[nodiscard]] uint16_type localDof() const noexcept
+    {
+        return Feel::detail::raviartThomasSimplexTotalDof( nDim, M_publicOrder );
+    }
+
+    uint16_type localDofPerComponent() const override
+    {
+        return localDof();
+    }
+
+    uint16_type localDofCount( bool perComponent = false ) const override
+    {
+        (void)perComponent;
+        return localDof();
+    }
+
+    [[nodiscard]] uint16_type dofPerVertex() const noexcept
+    {
+        return 0;
+    }
+
+    [[nodiscard]] uint16_type dofPerEdge() const noexcept
+    {
+        return ( nDim == 2 ) ? Feel::detail::raviartThomasSimplexFacetDof( nDim, M_publicOrder ) : 0;
+    }
+
+    [[nodiscard]] uint16_type dofPerFace() const noexcept
+    {
+        if constexpr ( nDim == 2 )
+            return Feel::detail::raviartThomasSimplexInteriorDof( nDim, M_publicOrder );
+        else
+            return Feel::detail::raviartThomasSimplexFacetDof( nDim, M_publicOrder );
+    }
+
+    [[nodiscard]] uint16_type dofPerVolume() const noexcept
+    {
+        return ( nDim == 3 ) ? Feel::detail::raviartThomasSimplexInteriorDof( nDim, M_publicOrder ) : 0;
+    }
+
+    [[nodiscard]] uint16_type localFacetDof() const noexcept
+    {
+        return Feel::detail::raviartThomasSimplexFacetDof( nDim, M_publicOrder );
+    }
+
+    uint16_type component( uint16_type /*localDofId*/ ) const override
+    {
+        return 0;
+    }
+
+    uint16_type dofParent( uint16_type localDofId ) const override
+    {
+        return localDofId;
+    }
+
+    bool dofHasRepresentativePoint( uint16_type localDofId ) const override
+    {
+        (void)localDofId;
+        return false;
+    }
+
+    uint16_type dofFunctionalKind( uint16_type localDofId ) const override
+    {
+        auto const attachment = this->dofAttachment( localDofId );
+        if ( !attachment.isValid() )
+            return static_cast<uint16_type>( DofFunctionalKind::Other );
+        if ( static_cast<uint16_type>( attachment.entityDim ) == nDim )
+            return static_cast<uint16_type>( DofFunctionalKind::InteriorMoment );
+        return static_cast<uint16_type>( DofFunctionalKind::NormalMoment );
+    }
+
+    typename super::DofAttachment dofAttachment( uint16_type localDofId ) const override
+    {
+        return simplexDofAttachment<typename super::DofAttachment>(
+            this->dofParent( localDofId ), nDim,
+            reference_convex_type::numVertices,
+            reference_convex_type::numEdges,
+            reference_convex_type::numFaces,
+            dofPerVertex(), dofPerEdge(), dofPerFace(), dofPerVolume(),
+            this->dofType( localDofId ) );
+    }
+
+    template<typename ElementType>
+    [[nodiscard]] DofTransform dofTransform( ElementType const& element, uint16_type localDofId ) const
+    {
+        return finiteElementEntityOrientationTransform( *this, element, localDofId );
+    }
+
+    uint16_type dofType( uint16_type /*localDofId*/ ) const override
+    {
+        return 1;
+    }
+
+    using local_interpolant_type = Eigen::VectorXd;
+    local_interpolant_type localInterpolant( int n = 1 ) const
+    {
+        return local_interpolant_type::Zero( n*localDof() );
+    }
+
+    using local_interpolants_type = Eigen::MatrixXd;
+    local_interpolants_type localInterpolants( int p, int n = 1 ) const
+    {
+        return local_interpolants_type::Zero( n*localDof(), p );
+    }
+
+    template<typename ExprType>
+    void interpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
+    {
+        Ihloc.setZero();
+
+        const uint16_type nFacetDof = localFacetDof();
+        Feel::detail::interpolateHDivFacetDofs(
+            expr, Ihloc, convex_type::numTopologicalFaces, nFacetDof, n );
+
+        if ( internalOrder() > 1 )
+        {
+            const uint16_type momentOrder = static_cast<uint16_type>( internalOrder() - 2 );
+            const uint16_type dimPm1 = convex_type::polyDims( momentOrder );
+            Pkp1_v_type Pkp1( RuntimeOrder{ internalOrder() } );
+            vectorial_polynomialset_type Pkm1 =
+                Feel::detail::polynomialSetFrom<vectorial_polynomialset_type>( Pkp1.polynomialsUpToDimension( dimPm1 ),
+                                                                               internalOrder() );
+
+            const uint16_type nInternalDof = ( nDim == 2 ) ? dofPerFace() : dofPerVolume();
+            IMGeneral<nDim, value_type, Simplex> im( static_cast<uint16_type>( 2*( internalOrder() + 1 ) ) );
+            const int firstInternalDof = convex_type::numTopologicalFaces * nFacetDof;
+            Feel::detail::interpolateHDivInteriorMomentDofs(
+                expr, Ihloc, Pkm1, im, firstInternalDof,
+                nInternalDof, nComponents );
+        }
+    }
+
+    /** Apply all runtime RT dual functionals to domain test-basis rows. */
+    template<typename ExprType>
+        requires ( std::remove_cvref_t<ExprType>::gmc_type::subEntityCoDim == 0 )
+    void interpolateBasisFunction( ExprType&& expression,
+                                   local_interpolants_type& localMatrix ) const
+    {
+        Feel::detail::interpolateBasisFunctionRows(
+            *this, expression, localMatrix );
+    }
+
+    local_interpolant_type faceLocalInterpolant() const
+    {
+        return local_interpolant_type::Zero( localFacetDof(), 1 );
+    }
+
+    template<typename ExprType>
+    void faceInterpolate( ExprType& expr, local_interpolant_type& Ihloc ) const
+    {
+        Ihloc.setZero();
+
+        const uint16_type nLocalDof = localFacetDof();
+        Feel::detail::interpolateHDivFacetDofs(
+            expr, Ihloc, 1, nLocalDof, n );
+    }
+
+    using apply_curl_t = bool_c<true>;
+    using apply_id_t = bool_c<false>;
+
+    template<typename ExprType>
+    static auto isomorphism( ExprType& expr ) -> decltype( expr )
+    {
+        return expr;
+    }
+
+protected:
+    uint16_type M_publicOrder = 0;
+    reference_convex_type M_refconvex;
+    mutable ublas::vector<value_type> n{ nDim };
+};
+
+namespace detail
+{
+template<int Order, uint16_type Dim, typename T,
+         template<int, int, int> class Convex, uint16_type Tag>
+struct RaviartThomasBackend
+{
+    using type = RaviartThomas<Dim, static_cast<uint16_type>( Order ), T, Convex, Tag>;
+};
+
+template<uint16_type Dim, typename T,
+         template<int, int, int> class Convex, uint16_type Tag>
+struct RaviartThomasBackend<Dynamic, Dim, T, Convex, Tag>
+{
+    using type = RaviartThomasDynamicSimplex<Dim, T, Convex, Tag>;
+};
+} // namespace detail
+
+/**
+ * @brief Unified public RT finite-element shell for static and runtime order.
+ * @tparam Dim reference-cell dimension
+ * @tparam Order public static order or `Dynamic`
+ * @tparam T scalar type
+ * @tparam Convex reference-cell family
+ * @tparam Tag compatibility family tag
+ */
+template<uint16_type Dim, int Order, typename T = double,
+         template<int, int, int> class Convex = Simplex, uint16_type Tag = 0>
+class RaviartThomasElement :
+    public detail::RaviartThomasBackend<Order, Dim, T, Convex, Tag>::type
+{
+    using super = typename detail::RaviartThomasBackend<Order, Dim, T, Convex, Tag>::type;
+
+public:
+    using super::super;
+    RaviartThomasElement() = default;
+
+    /** @return public RT family order, distinct from the internal polynomial degree. */
+    [[nodiscard]] uint16_type order() const noexcept
+    {
+        if constexpr ( Order == Dynamic )
+            return super::order();
+        else
+            return static_cast<uint16_type>( Order );
+    }
+};
+
+} // fem
+template<int Order,
+         uint16_type TheTAG=0 >
+class RaviartThomas : public FiniteElementFamilyDescriptor<Order, TheTAG>
 {
 public:
+    using descriptor_base = FiniteElementFamilyDescriptor<Order, TheTAG>;
+    static constexpr bool is_order_static = descriptor_base::is_order_static;
+    static constexpr bool is_order_dynamic = descriptor_base::is_order_dynamic;
+    static constexpr int nOrder_v = Order;
+
     template<uint16_type N,
              uint16_type R = N,
              typename T = double,
              typename Convex = Simplex<N> >
     struct apply
     {
-        typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
-                mpl::identity<fem::RaviartThomas<N,Order,T,Simplex,TheTAG> >,
-                mpl::identity<fem::RaviartThomas<N,Order,T,Hypercube,TheTAG> > >::type::type result_type;
-        typedef result_type type;
+        static_assert( Convex::is_simplex,
+                       "RaviartThomas hypercube support is not implemented in feelpoly; use simplex RT or add a tensor-product H(div) implementation first." );
+        using result_type = fem::RaviartThomasElement<N, Order, T, Simplex, TheTAG>;
+        using type = result_type;
     };
 
     template<uint16_type TheNewTAG>
@@ -910,8 +1457,6 @@ public:
     };
 
     typedef Lagrange<Order,Scalar> component_basis_type;
-
-    static const uint16_type TAG = TheTAG;
 
 };
 

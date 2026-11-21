@@ -33,7 +33,7 @@
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/fsfunctional.hpp>
 
-#include <feel/feelvf/form.hpp>
+#include <feel/feelvf/forms.hpp>
 
 namespace Feel
 {

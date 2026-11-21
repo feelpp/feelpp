@@ -1,26 +1,8 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+// SPDX-FileCopyrightText: 2005-2006 EPFL
+// SPDX-FileCopyrightText: 2026 University of Strasbourg
+// SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-10-10
-
-  Copyright (C) 2005,2006 EPFL
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file dualbasis.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -28,6 +10,8 @@
  */
 #ifndef __DualBasis_H
 #define __DualBasis_H 1
+
+#include <feel/feelpoly/order.hpp>
 
 namespace Feel
 {
@@ -60,7 +44,14 @@ public:
     */
     //@{
     static inline const uint16_type nDim = primal_space_type::nDim;
-    static inline const uint16_type nOrder = primal_space_type::nOrder;
+    /** Authoritative primal expansion order specification. */
+    static constexpr int order_spec = orderSpecification<Primal>();
+    /** Whether the primal carries runtime order. */
+    static constexpr bool is_order_dynamic = order_spec == Dynamic;
+    /** Whether the primal degree is fixed in its type. */
+    static constexpr bool is_order_static = !is_order_dynamic;
+    /** Legacy static geometry extent; runtime construction uses explicit order. */
+    static constexpr uint16_type nOrder = is_order_dynamic ? 1 : order_spec;
     //@}
     /** @name Constructors, destructor
      */

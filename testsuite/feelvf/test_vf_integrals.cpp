@@ -1,25 +1,8 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
  
- This file is part of the Feel++ library
- 
- Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
- Date: 16 juin 2015
- 
- Copyright (C) 2015 Feel++ Consortium
- 
- This library is free software; you can redistribute it and/or
- modify it under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation; either
- version 2.1 of the License, or (at your option) any later version.
- 
- This library is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
- 
- You should have received a copy of the GNU Lesser General Public
- License along with this library; if not, write to the Free Software
- Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ SPDX-FileCopyrightText: 2015-2026 University of Strasbourg
+ SPDX-License-Identifier: LGPL-3.0-or-later
  */
 #define BOOST_TEST_MODULE test_integrals
 #include <feel/feelcore/testsuite.hpp>
@@ -35,6 +18,7 @@
 #include <feel/feelvf/form.hpp>
 #include <feel/feelvf/operators.hpp>
 #include <feel/feelvf/operations.hpp>
+#include <feel/feelvf/inner.hpp>
 #include <feel/feelvf/ginac.hpp>
 #include <feel/feelvf/norm2.hpp>
 #include <feel/feelvf/on.hpp>
@@ -43,6 +27,7 @@
 #include <feel/feelvf/geometricdata.hpp>
 #include <feel/feelvf/cross.hpp>
 #include <feel/feelvf/print.hpp>
+#include <list>
 
 /** use Feel namespace */
 using namespace Feel;
@@ -159,5 +144,46 @@ BOOST_AUTO_TEST_CASE( test_3 )
 }
 
 
-BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_CASE( runtime_geometry_quadrature )
+{
+    // Integrate a known degree-six moment with automatic runtime-geometry
+    // quadrature, including face, range-list and empty-range paths.
+    for ( int order : { 1, 2 } )
+    {
+        auto mesh = createGMSHMesh(
+            _mesh = new Mesh<Simplex<2, Dynamic>>( RuntimeOrder{order} ),
+            _desc = domain( _name="quadrature_square_g" + std::to_string( order ),
+                            _shape="hypercube", _dim=2, _h=0.4,
+                            _xmin=0., _xmax=1., _ymin=0., _ymax=1. ),
+            _force_rebuild=true, _straighten=false );
+        auto range = elements( mesh );
+        auto moment = Px()*Px()*Px()*Px()*Px()*Px();
+        BOOST_CHECK_SMALL( integrate( _range=range, _expr=moment ).evaluate()(0,0) - 1./7., 1e-12 );
+        BOOST_CHECK_SMALL( integrate( _range=boundaryfaces( mesh ), _expr=moment ).evaluate()(0,0)
+                              - 9./7., 1e-12 );
+        std::list<decltype(range)> ranges{range};
+        BOOST_CHECK_SMALL( integrate( _range=ranges, _expr=moment ).evaluate()(0,0) - 1./7., 1e-12 );
+        BOOST_CHECK_SMALL( integrate( _range=range, _expr=moment, _quad=_Q<12>() ).evaluate()(0,0)
+                              - 1./7., 1e-12 );
+        auto emptyRange = markedelements( mesh, "absent-marker" );
+        BOOST_CHECK_SMALL( integrate( _range=emptyRange, _expr=moment ).evaluate()(0,0), 1e-12 );
+    }
+}
 
+BOOST_AUTO_TEST_CASE( tensor_product_derivative_quadrature )
+{
+    auto mesh = createGMSHMesh(
+        _mesh = new Mesh<Hypercube<2, Dynamic>>( RuntimeOrder{1} ),
+        _desc = domain( _name="quadrature_tensor_square", _convex="Hypercube",
+                        _shape="hypercube", _dim=2, _h=0.4,
+                        _xmin=0., _xmax=1., _ymin=0., _ymax=1. ),
+        _force_rebuild=true );
+    auto space = Pch<Dynamic>( mesh, RuntimeOrder{2} );
+    auto u = space->element();
+    u.on( _range=elements(mesh), _expr=Px()*Px()*Py()*Py() );
+    // grad(x^2 y^2) has degree two in the undifferentiated coordinate.
+    auto energy = integrate( _range=elements(mesh), _expr=inner(gradv(u)) ).evaluate()(0,0);
+    BOOST_CHECK_SMALL( energy - 8./15., 1e-12 );
+}
+
+BOOST_AUTO_TEST_SUITE_END()

@@ -955,7 +955,12 @@ public:
                         M_x[comp.second] = M_gmc->xReal( q )[comp.first];
                     // is it called for updates on faces? need to check that...
                     for ( auto const& comp : exprExpanded.indexSymbolN() )
-                        M_x[comp.second] = M_gmc->unitNormal( q )[comp.first-3];
+                    {
+                        if constexpr ( requires { M_gmc->unitNormal( q ); } )
+                            M_x[comp.second] = M_gmc->unitNormal( q )[comp.first-3];
+                        else
+                            CHECK( false ) << "normal symbols require a geometry context with a unique normal";
+                    }
 
                     // copy from subtensors
                     if constexpr ( TheExprExpandedType::nSymbolsExpr>0 )
@@ -1031,7 +1036,12 @@ public:
                         M_x[comp.second] = M_gmc->xReal( q )[comp.first];
                     // is it called for updates on faces? need to check that...
                     for ( auto const& comp : M_expr/*exprExpanded*/.indexSymbolN() )
-                        M_x[comp.second] = M_gmc->unitNormal( q )[comp.first-3];
+                    {
+                        if constexpr ( requires { M_gmc->unitNormal( q ); } )
+                            M_x[comp.second] = M_gmc->unitNormal( q )[comp.first-3];
+                        else
+                            CHECK( false ) << "normal symbols require a geometry context with a unique normal";
+                    }
 
                     // copy from subtensors
                     if ( hasSE ) //constexpr ( TheExprExpandedType::nSymbolsExpr>0 )

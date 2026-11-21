@@ -30,8 +30,15 @@
 #include <stdexcept>
 #include <string>
 #include <functional>
+#include <sstream>
 
-#include <feel/feelcore/feel.hpp>
+#include <feel/feelconfig.h>
+#include <feel/feelcore/feelmacros.hpp>
+#if defined(FEELPP_HAS_SPDLOG)
+#include <feel/feelcore/logger.hpp>
+#else
+#include <glog/logging.h>
+#endif
 #include <feel/feelcore/typeinfo.hpp>
 
 namespace Feel
@@ -197,7 +204,7 @@ private:
   \author Christophe Prud'homme
 */
 template <class AbstractProduct,
-          class ProductCreator = boost::function<std::unique_ptr<AbstractProduct> ( const AbstractProduct* )>,
+          class ProductCreator = std::function<std::unique_ptr<AbstractProduct> ( const AbstractProduct* )>,
           template<typename, class> class FactoryErrorPolicy = FactoryDefaultError
           >
 class FactoryClone

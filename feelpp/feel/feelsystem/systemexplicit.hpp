@@ -1,35 +1,21 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@cemosis.fr>
+ *
+ * SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2009-01-04
-
-  Copyright (C) 2009 Universit� Joseph Fourier (Grenoble I)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file systemexplicit.hpp
+   \brief Legacy explicit system compatibility wrapper.
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-01-04
  */
 #ifndef __SystemExplicit_H
 #define __SystemExplicit_H 1
 
-#include <feel/feelsystem/system.hpp>
+#include <feel/feelsystem/systemlegacy.hpp>
 
 namespace Feel
 {
@@ -38,11 +24,12 @@ namespace Feel
  * \brief describes an explicit system
  *
  * @author Christophe Prud'homme
- * @see
+ * @see Feel::System
  */
 template<typename SpaceType>
 class SystemExplicit : public System<SpaceType>
 {
+    /** @brief Base legacy system type. */
     typedef System<SpaceType> super;
 public:
 
@@ -51,6 +38,7 @@ public:
      */
     //@{
 
+    /** @brief Topological dimension inherited from the function space. */
     static inline const uint16_type Dim = super::Dim;
 
     //@}
@@ -59,11 +47,16 @@ public:
      */
     //@{
 
+    /** @brief Self type. */
     typedef SystemExplicit<SpaceType> system_type;
 
+    /** @brief Scalar value type. */
     typedef typename super::value_type value_type;
+    /** @brief Function-space type. */
     typedef typename super::functionspace_type functionspace_type;
+    /** @brief Legacy function-space argument type. */
     typedef typename super::functionspace_type functionspace_ptrtype;
+    /** @brief Finite-element field type. */
     typedef typename super::element_type element_type;
     //@}
 
@@ -71,8 +64,11 @@ public:
      */
     //@{
 
+    /** @brief Construct from a function space and variables map. */
     SystemExplicit( functionspace_ptrtype Xh, po::variables_map const& vm ) : super( Xh, vm ) {}
+    /** @brief Copy constructor. */
     SystemExplicit( SystemExplicit const & se ) : super( se ) {}
+    /** @brief Destructor. */
     ~SystemExplicit() {}
 
     //@}

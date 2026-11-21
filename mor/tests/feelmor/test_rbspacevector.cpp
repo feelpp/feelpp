@@ -104,6 +104,13 @@ public :
 
         ctxrb.update();
 
+        for ( auto const& [pointId, context] : ctxrb )
+        {
+            auto const& element = std::get<0>( context )->gmContext()->element();
+            for ( uint16_type p = 0; p < element.nPoints(); ++p )
+                BOOST_CHECK_EQUAL( element.point( p ).id(), element.pointIds()[p] );
+        }
+
         auto u = RbSpace->element();
         auto u_ptr = RbSpace->elementPtr();
 

@@ -25,7 +25,9 @@
    \file meshfromgeoentity.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-12-24
- */
+*/
+
+#include <type_traits>
 
 namespace Feel {
 
@@ -46,10 +48,9 @@ struct meshFromGeoEntity
     // >::type _type;
 
     typedef typename _type::GeoShape GeoShape;
-    typedef typename mpl::if_< mpl::bool_<GeoShape::is_simplex>,
-                               mpl::identity< Mesh< Simplex< GeoShape::nDim,GeoShape::nOrder,GeoShape::nRealDim> > >,
-                               mpl::identity< Mesh< Hypercube< GeoShape::nDim,GeoShape::nOrder,GeoShape::nRealDim> > >
-                               >::type::type type;
+    using type = std::conditional_t<GeoShape::is_simplex,
+                                    Mesh<Simplex<GeoShape::nDim, GeoShape::nOrder, GeoShape::nRealDim>>,
+                                    Mesh<Hypercube<GeoShape::nDim, GeoShape::nOrder, GeoShape::nRealDim>>>;
 
     typedef PointSet<GeoShape, typename type::value_type> pointset_type;
 };

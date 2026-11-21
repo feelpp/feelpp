@@ -1,26 +1,8 @@
 /*
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-01-12
-
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2006-2012 Universite Joseph Fourier
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileCopyrightText: 2006-2012 Universite Joseph Fourier
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 //! \file exportfieldset.hpp
 //! \brief Time-neutral export fields shared by exporters and temporal steps.
 //!
@@ -35,6 +17,9 @@
 #include <algorithm>
 #include <cstdint>
 #include <initializer_list>
+#include <algorithm>
+#include <array>
+#include <iterator>
 #include <map>
 #include <memory>
 #include <optional>
@@ -63,7 +48,8 @@
 
 #include <feel/feeldiscr/elementdiv.hpp>
 #include <feel/feelmesh/filters.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/fieldops.hpp>
+#include <feel/feelvf/projectors.hpp>
 
 namespace Feel
 {
@@ -83,7 +69,14 @@ template <typename MeshType, int N = 1> class ExportFieldSet
     using size_type = typename mesh_type::size_type;
 
     using scalar_p0_space_type = Pdh_type<MeshType, 0>;
-    using scalar_p1_space_type = Pch_type<MeshType, N /*1*/>;
+    // Exporters address nodal values by geometric point index. Geometry uses
+    // equispaced nodes, whereas the default Fekete nodes differ above G2.
+    // Retain the existing static G1/G2 types, whose nodes coincide, so their
+    // managed conversion spaces can still be shared with application spaces.
+    using scalar_p1_space_type = std::conditional_t<
+        ( N == Dynamic || N > 2 ),
+        Pch_type<MeshType, N, double, PointSetEquiSpaced>,
+        Pch_type<MeshType, N>>;
     using scalar_p0_space_ptrtype = std::shared_ptr<scalar_p0_space_type>;
     using scalar_p1_space_ptrtype = std::shared_ptr<scalar_p1_space_type>;
 
@@ -119,8 +112,19 @@ template <typename MeshType, int N = 1> class ExportFieldSet
     //! Local references avoid repeated manager lookups within a sequence or snapshot.
     struct SpaceCache
     {
+        struct VertexDofMap
+        {
+            std::weak_ptr<void const> source;
+            std::weak_ptr<void const> target;
+            uint64_type meshRevision;
+            // Indexed by owned target DoF, then export component.
+            std::vector<size_type> sourceIds;
+            bool usable = false;
+        };
+
         scalar_p0_space_ptrtype M_p0; //!< Element conversion space.
         scalar_p1_space_ptrtype M_p1; //!< Nodal conversion space.
+        std::vector<VertexDofMap> vertexDofMaps; //!< CG Lagrange to linear nodal layouts.
     };
 
     //! \brief Construct empty field storage with an optional shared conversion cache.
@@ -379,6 +383,18 @@ template <typename MeshType, int N = 1> class ExportFieldSet
 
         tic();
         auto &fieldsMap = this->fields<isNodal>();
+        if constexpr ( isNodal && !isElementToNodal )
+        {
+            if ( addLinearVertexSnapshot( name, func, scalarSpace, fieldsMap[filename] ) )
+            {
+                markModified();
+                showMe( "ExportFieldSet::add" );
+                toc( fmt::format( "ExportFieldSet::add functionspace element {}", name ),
+                     Environment::logVerbosityLevel() > 0 );
+                return;
+            }
+        }
+
         std::vector<ComponentType> mapIndicesToComponent = { ComponentType::X, ComponentType::Y,
                                                              ComponentType::Z };
 
@@ -810,6 +826,140 @@ template <typename MeshType, int N = 1> class ExportFieldSet
     }
 
   private:
+    //! \brief Capture continuous Lagrange vertex coefficients without evaluating basis functions.
+    //! Only locally owned source coefficients are read, so no assumption about
+    //! the freshness of the caller's ghost values is needed.
+    template <typename FunctionType>
+    bool addLinearVertexSnapshot( std::string const &name, FunctionType const &func,
+                                  scalar_p1_space_ptrtype const &target, nodal_field_type &field )
+    {
+        using space_type = typename FunctionType::functionspace_type;
+        if constexpr ( !FunctionType::is_continuous || FunctionType::is_mortar ||
+                       !is_lagrange_polynomialset_v<typename space_type::basis_type> ||
+                       !std::is_same_v<typename FunctionType::mesh_type, mesh_type> ||
+                       !( FunctionType::is_scalar || FunctionType::is_vectorial ||
+                          FunctionType::is_tensor2 || FunctionType::is_tensor2symm ) )
+            return false;
+        else
+        {
+            auto const &mesh = M_mesh.value();
+            if ( mesh->order() != 1 || target->order() != 1 || func.functionSpace()->order() < 1 )
+                return false;
+            auto const &source = func.functionSpace();
+            auto const &sourceDofs = source->dof();
+            auto const &targetDofs = target->dof();
+            auto const &comm = targetDofs->worldComm().localComm();
+
+            constexpr uint16_type nComponents = FunctionType::nRealComponents;
+            constexpr uint16_type nRows = FunctionType::is_scalar ? 1 : FunctionType::nComponents1;
+            constexpr uint16_type nColumns = FunctionType::is_scalar || FunctionType::is_vectorial
+                                                ? 1 : FunctionType::nComponents2;
+            auto componentCount = []( uint16_type row ) {
+                return FunctionType::is_tensor2symm ? row + 1 : nColumns;
+            };
+
+            auto meshRevision = mesh->functionSpaceStructuralRevision();
+            auto &maps = M_spaceCache->vertexDofMaps;
+            auto sameLayout = [&]( auto const &entry ) {
+                return entry.meshRevision == meshRevision && entry.source.lock() == sourceDofs &&
+                       entry.target.lock() == targetDofs;
+            };
+            auto entry = std::find_if( maps.begin(), maps.end(), sameLayout );
+
+            // A local layout miss or incompatibility must take the same
+            // collective branch on all ranks (including ranks with no cells).
+            enum : int { Ready, Build, Fallback };
+            int state = entry == maps.end() ? Build : entry->usable ? Ready : Fallback;
+            int relation = MPI_UNEQUAL;
+            MPI_Comm_compare( sourceDofs->worldComm().localComm(), comm, &relation );
+            if ( ( relation != MPI_IDENT && relation != MPI_CONGRUENT ) ||
+                 source->mesh() != mesh || target->mesh() != mesh || mesh->isPeriodic() ||
+                 !support( source )->isFullSupport() || !support( target )->isFullSupport() ||
+                 source->fe()->dofPerVertex() != 1 || func.start() != 0 )
+                state = Fallback;
+            boost::mpi::all_reduce( comm, boost::mpi::inplace( state ), boost::mpi::maximum<int>() );
+            if ( state == Fallback )
+                return false;
+
+            auto const nOwned = targetDofs->nLocalDofWithoutGhost();
+            if ( state == Build )
+            {
+                using map_type = typename SpaceCache::VertexDofMap;
+                map_type mapping{ sourceDofs, targetDofs, meshRevision, {}, false };
+                std::vector<size_type> ids( std::size_t( nOwned ) * nComponents,
+                                            invalid_v<size_type> );
+                auto const nSourceOwned = sourceDofs->nLocalDofWithoutGhost();
+
+                for ( auto const &wrapped : elements( mesh ) )
+                {
+                    auto const &elt = unwrap_ref( wrapped );
+                    auto const &to = targetDofs->localToGlobalIndices( elt.id() );
+                    auto const &from = sourceDofs->localToGlobalIndices( elt.id() );
+                    for ( uint16_type vertex = 0; vertex < elt.numVertices; ++vertex )
+                    {
+                        auto const targetId = to( targetDofs->localDofId( vertex ) );
+                        auto const offset = std::size_t( targetId ) * nComponents;
+                        if ( targetId >= nOwned || ids[offset] != invalid_v<size_type> )
+                            continue;
+
+                        uint16_type c = 0;
+                        for ( uint16_type row = 0; row < nRows; ++row )
+                            for ( uint16_type col = 0; col < componentCount( row ); ++col )
+                                ids[offset + c++] = from( sourceDofs->localDofId( vertex, row * nColumns + col ) );
+                    }
+                }
+                // Fall back if some owned target vertex has no representative
+                // on this rank or its source coefficient is not owned here.
+                int incomplete = std::any_of( ids.begin(), ids.end(),
+                                              [=]( size_type id ) { return id >= nSourceOwned; } );
+                boost::mpi::all_reduce( comm, boost::mpi::inplace( incomplete ), boost::mpi::maximum<int>() );
+                mapping.usable = !incomplete;
+                if ( !incomplete )
+                    mapping.sourceIds = std::move( ids );
+
+                std::erase_if( maps, [&]( auto const &old ) {
+                    return sameLayout( old ) || old.meshRevision != meshRevision ||
+                           old.target.expired() || old.source.expired();
+                } );
+                maps.push_back( std::move( mapping ) );
+                entry = std::prev( maps.end() );
+                if ( incomplete )
+                    return false;
+            }
+
+            if constexpr ( FunctionType::is_scalar )
+                field.first = FunctionSpaceType::SCALAR;
+            else if constexpr ( FunctionType::is_vectorial )
+                field.first = FunctionSpaceType::VECTORIAL;
+            else if constexpr ( FunctionType::is_tensor2symm )
+                field.first = FunctionSpaceType::TENSOR2_SYMM;
+            else
+                field.first = FunctionSpaceType::TENSOR2;
+
+            // Each step owns its buffers even when it reuses the index map.
+            field.second.resize( nRows );
+            std::array<nodal_scalar_type *, nComponents> buffers;
+            uint16_type c = 0;
+            for ( uint16_type row = 0; row < nRows; ++row )
+            {
+                field.second[row].resize( componentCount( row ) );
+                for ( auto &component : field.second[row] )
+                {
+                    component = target->elementPtr( name, func.description() );
+                    buffers[c++] = component.get();
+                }
+            }
+            auto const &ids = entry->sourceIds;
+            for ( size_type i = 0; i < nOwned; ++i )
+                for ( uint16_type c = 0; c < nComponents; ++c )
+                    ( *buffers[c] )( i ) = func.globalValue( ids[std::size_t( i ) * nComponents + c] );
+
+            for ( auto *component : buffers )
+                sync( *component, "=" );
+            return true;
+        }
+    }
+
     //! \brief Record a successful geometry/field registration.
     //! Owners compare revisions to detect changes after publishing their data.
     void markModified()
@@ -843,6 +993,15 @@ template <typename MeshType, int N = 1> class ExportFieldSet
     scalarFunctionSpace( FunctionType const &func = std::nullopt,
                          typename std::enable_if<isNodal>::type * = nullptr )
     {
+        auto makeSpace = [&]() {
+            if constexpr ( N == Dynamic )
+                return Pch<N, double, PointSetEquiSpaced>(
+                    M_mesh.value(), RuntimeOrder{ M_mesh.value()->order() } );
+            else if constexpr ( N > 2 )
+                return Pch<N, double, PointSetEquiSpaced>( M_mesh.value() );
+            else
+                return Pch<N>( M_mesh.value() );
+        };
         auto &sharedSpace = M_spaceCache->M_p1;
         if ( !sharedSpace )
         {
@@ -850,16 +1009,17 @@ template <typename MeshType, int N = 1> class ExportFieldSet
                 if constexpr ( std::is_same_v<scalar_p1_space_type,
                                               typename FunctionType::functionspace_type> )
                     if ( func.mesh() == M_mesh &&
+                         ( N != Dynamic || func.functionSpace()->order() == M_mesh.value()->order() ) &&
                          !func.functionSpace()->dof()->hasDofTableExtended() &&
                          support( func.functionSpace() )->isFullSupport() )
                         sharedSpace = func.functionSpace();
             if ( !sharedSpace )
-                sharedSpace = Pch<N>( M_mesh.value() );
+                sharedSpace = makeSpace();
         }
         if ( M_mesh.value() == sharedSpace->mesh() )
             M_scalarP1 = sharedSpace;
         else if ( !M_scalarP1 || M_mesh.value() != M_scalarP1->mesh() )
-            M_scalarP1 = Pch<N>( M_mesh.value() );
+            M_scalarP1 = makeSpace();
         return M_scalarP1;
     }
 

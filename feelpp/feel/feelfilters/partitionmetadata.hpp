@@ -105,7 +105,7 @@ template <typename Value>
 class PartitionMetadataReader : public nl::json_sax<nl::json>
 {
     /** @brief Identifies the metadata object currently being parsed. */
-    enum class State { Root, Mesh, Partition, Physicals, Fragmentation, Codimension, Physical, Fragment, Ignore };
+    enum class State { Root, Mesh, Geometry, Partition, Physicals, Fragmentation, Codimension, Physical, Fragment, Ignore };
 
     /** @brief Tracks the state and key of one nested JSON object or array. */
     struct Frame
@@ -144,6 +144,8 @@ public:
     std::optional<std::string> M_h5Filename;
     /** @brief Declared number of partitions, when present. */
     std::optional<int> M_partitions;
+    /** @brief Bounded geometry record; unrelated extension data remains streamed. */
+    std::optional<nl::json> M_geometry;
     /** @brief True when the metadata explicitly contains fragment mappings. */
     bool M_hasFragmentation = false;
     /** @brief Marker tables indexed by mesh codimension. */
@@ -195,8 +197,16 @@ private:
         case State::Mesh:
             if ( frame.key == "h5" )
                 M_h5Filename = value.template get<std::string>();
-            else if ( frame.key == "partition" || frame.key == "physicals" || frame.key == "fragmentation" )
+            else if ( frame.key == "partition" || frame.key == "physicals" || frame.key == "fragmentation" || frame.key == "geometry" )
                 require( false );
+            break;
+        case State::Geometry:
+            if ( frame.key == "order" || frame.key == "cell_kind" || frame.key == "representation" )
+            {
+                require( value.is_number_integer() && value >= 0 &&
+                         value <= ( frame.key == "order" ? 65535 : 255 ) );
+                (*M_geometry)[frame.key] = value;
+            }
             break;
         case State::Partition:
             if ( frame.key == "n" )
@@ -253,6 +263,12 @@ private:
                     require( false );
                 if ( parent.key == "partition" )
                     next.state = State::Partition;
+                else if ( parent.key == "geometry" )
+                {
+                    require( !M_geometry );
+                    next.state = State::Geometry;
+                    M_geometry = nl::json::object();
+                }
                 else if ( parent.key == "physicals" )
                     next.state = State::Physicals;
                 else if ( parent.key == "fragmentation" )
@@ -284,6 +300,8 @@ private:
                 M_values.clear();
             }
             else if ( parent.state == State::Physical || parent.state == State::Fragment ||
+                      ( parent.state == State::Geometry &&
+                        ( parent.key == "order" || parent.key == "cell_kind" || parent.key == "representation" ) ) ||
                       ( parent.state == State::Partition && parent.key == "n" ) )
                 require( false );
         }
@@ -294,6 +312,9 @@ private:
     bool end()
     {
         auto const& frame = M_stack.back();
+        if ( frame.state == State::Geometry )
+            require( M_geometry->contains( "order" ) && M_geometry->contains( "cell_kind" ) &&
+                     M_geometry->contains( "representation" ) );
         if ( frame.state == State::Physical )
         {
             require( M_values.size() == 2 );

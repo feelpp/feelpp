@@ -47,7 +47,7 @@ auto dim_t = hana::unpack( hana::make_range( hana::int_c<Dmin>, hana::int_c<Dmax
  */
 template <int Omin = 0, int Omax = FEELPP_INSTANTIATION_ORDER_MAX>
     requires (Omin >= 0 && Omax <= 3 && Omin <= Omax)
-auto order_t = hana::unpack( hana::make_range( hana::int_c<Omin>, hana::int_c<Omax + 1> ), hana::make_tuple );
+auto poly_order_t = hana::unpack( hana::make_range( hana::int_c<Omin>, hana::int_c<Omax + 1> ), hana::make_tuple );
 
 /**
  * @brief Continuous Lagrange Function space identifier collection generator
@@ -58,7 +58,7 @@ auto order_t = hana::unpack( hana::make_range( hana::int_c<Omin>, hana::int_c<Om
  * @tparam Omax maximal polynomial order
  */
 template <int Dmin = 2, int Dmax = 3, int Omin = 1, int Omax = FEELPP_INSTANTIATION_ORDER_MAX>
-auto Pc_t = hana::transform( hana::cartesian_product( hana::make_tuple( dim_t<Dmin, Dmax>, order_t<Omin, Omax> ) ), []( auto x )
+auto Pc_t = hana::transform( hana::cartesian_product( hana::make_tuple( dim_t<Dmin, Dmax>, poly_order_t<Omin, Omax> ) ), []( auto x )
                               { return hana::append( x, fmt::format( FMT_COMPILE( "P{}" ), std::decay_t<decltype( hana::at_c<1>( x ) )>::value ) ); } );
 
 /**
@@ -70,7 +70,7 @@ auto Pc_t = hana::transform( hana::cartesian_product( hana::make_tuple( dim_t<Dm
  * @tparam Omax maximal polynomial order
  */
 template <int Dmin = 2, int Dmax = 3, int Omin = 1, int Omax = FEELPP_INSTANTIATION_ORDER_MAX>
-auto Pd_t = hana::transform( hana::cartesian_product( hana::make_tuple( dim_t<Dmin, Dmax>, order_t<Omin, Omax> ) ), []( auto x )
+auto Pd_t = hana::transform( hana::cartesian_product( hana::make_tuple( dim_t<Dmin, Dmax>, poly_order_t<Omin, Omax> ) ), []( auto x )
                               { return hana::append( x, fmt::format( FMT_COMPILE( "Pd{}" ), std::decay_t<decltype( hana::at_c<1>( x ) )>::value ) ); } );
 
 } // namespace Feel

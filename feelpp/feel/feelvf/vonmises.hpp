@@ -227,7 +227,7 @@ class VonMises : public ExprDynamicBase
 /**
  * \brief compute the VonMises yield criterion
  */
-template <VfExpr ExprT>
+template <VfExprConcept ExprT>
 inline Expr<VonMises<ExprT>>
 vonmises( ExprT v )
 {

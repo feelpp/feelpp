@@ -1,28 +1,13 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2006-2011 Université Joseph Fourier (Grenoble I)
+ * SPDX-FileCopyrightText: 2011-2016 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-01-18
-
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2006-2011 Université Joseph Fourier (Grenoble I)
-  Copyright (C) 2011-2016 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file linearform.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -131,7 +116,10 @@ public:
     typename finite_element<space_type,UseMortar>::ptrtype
     testFiniteElement() const
     {
-        return std::make_shared<typename finite_element<space_type,UseMortar>::type>();
+        if constexpr ( UseMortar && space_type::is_mortar )
+            return std::make_shared<typename finite_element<space_type,UseMortar>::type>();
+        else
+            return M_X->fe();
     }
 
     //@}
@@ -281,13 +269,15 @@ public:
         //typedef boost::multi_array<value_type, rep_shape> local_vector_type;
         typedef typename space_type::dof_type test_dof_type;
         static const int nDofPerElementTest = space_type::dof_type::nDofPerElement;
-        typedef Eigen::Matrix<value_type, nDofPerElementTest, 1> local_vector_type;
-        typedef Eigen::Matrix<value_type, 2*nDofPerElementTest, 1> local2_vector_type;
-        typedef Eigen::Matrix<int, nDofPerElementTest, 1> local_row_type;
-        typedef Eigen::Matrix<int, 2*nDofPerElementTest, 1> local2_row_type;
+        // Use dynamic-size types to support runtime/dynamic polynomial orders
+        // When nOrder == Dynamic (-1), the actual DOF count is determined at runtime
+        typedef Eigen::Matrix<value_type, Eigen::Dynamic, 1> local_vector_type;
+        typedef Eigen::Matrix<value_type, Eigen::Dynamic, 1> local2_vector_type;
+        typedef Eigen::Matrix<int, Eigen::Dynamic, 1> local_row_type;
+        typedef Eigen::Matrix<int, Eigen::Dynamic, 1> local2_row_type;
 
-        typedef Eigen::Matrix<value_type, nDofPerElementTest-1, 1> mortar_local_vector_type;
-        typedef Eigen::Matrix<int, nDofPerElementTest-1, 1> mortar_local_row_type;
+        typedef Eigen::Matrix<value_type, Eigen::Dynamic, 1> mortar_local_vector_type;
+        typedef Eigen::Matrix<int, Eigen::Dynamic, 1> mortar_local_row_type;
 
     public:
 
@@ -908,8 +898,13 @@ public:
      */
     //@{
 
-    // close vector
-    void close() { M_F->close(); }
+    /**
+     * @brief Close the assembled vector.
+     */
+    void close()
+    {
+        M_F->close();
+    }
 
     /**
      * Set the function space from which the linear form takes its
@@ -973,6 +968,8 @@ public:
         M_F->addVector( i, n, v, K, K2 );
     }
 
+
+
     /**
      * set value \p v at position (\p i) of the vector
      * associated with the linear form
@@ -1013,6 +1010,7 @@ private:
     value_type M_threshold;
 
     std::vector<size_type> const* M_dofIdToContainerId;
+
 
 };
 

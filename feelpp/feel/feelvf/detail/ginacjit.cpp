@@ -1,0 +1,887 @@
+// SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+// SPDX-FileCopyrightText: 1999-2011 Johannes Gutenberg University Mainz, Germany
+// SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
+// SPDX-License-Identifier: GPL-2.0-or-later
+/** @file ginacjit.cpp
+ *
+ * Compile symbolic expressions into CPU callbacks and coordinate module reuse
+ * across the supplied MPI communicator.
+ */
+
+#include <feel/feelvf/detail/ginacjit.hpp>
+#include <feel/feelvf/ginacjitconfig.hpp>
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <boost/filesystem.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/mpi.hpp>
+
+#include <ginac/ex.h>
+#include <ginac/lst.h>
+#include <ginac/operators.h>
+#include <ginac/relational.h>
+#include <ginac/symbol.h>
+
+#ifdef HAVE_LIBDL
+#include <dlfcn.h>
+#endif // def HAVE_LIBDL
+#include <cerrno>
+#include <chrono>
+#include <cstdint>
+#include <cstring>
+#include <fcntl.h>
+#include <fstream>
+#include <functional>
+#include <ios>
+#include <limits>
+#include <memory>
+#include <random>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <sys/file.h>
+#include <sys/stat.h>
+#include <thread>
+#include <unistd.h>
+#include <vector>
+
+namespace Feel::detail::ginacjit
+{
+using namespace GiNaC;
+
+#ifdef HAVE_LIBDL
+
+/**
+ * RAII class for file locking to prevent concurrent compilation.
+ * Uses flock() for advisory locking across processes.
+ */
+class FileLock
+{
+  public:
+    /** Acquire the process lock, failing after the timeout. */
+    explicit FileLock( const std::string& lockfile, int timeout_ms = 30000 )
+        : fd_( -1 ), locked_( false ), lockfile_( lockfile )
+    {
+        fd_ = open( lockfile.c_str(), O_CREAT | O_RDWR, 0666 );
+        if ( fd_ == -1 )
+        {
+            throw std::runtime_error( "could not open lock file " + lockfile + ": " + std::string( strerror( errno ) ) );
+        }
+
+        // Try to acquire lock with timeout
+        auto start = std::chrono::steady_clock::now();
+        std::random_device rd;
+        std::mt19937 gen( rd() );
+        std::uniform_int_distribution<> dist( 10, 100 );
+
+        while ( true )
+        {
+            if ( flock( fd_, LOCK_EX | LOCK_NB ) == 0 )
+            {
+                locked_ = true;
+                return;
+            }
+            int lock_error = errno;
+            if ( lock_error != EWOULDBLOCK && lock_error != EAGAIN && lock_error != EINTR )
+            {
+                close( fd_ );
+                fd_ = -1;
+                throw std::runtime_error( "could not lock file " + lockfile + ": " + std::string( strerror( lock_error ) ) );
+            }
+
+            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                               std::chrono::steady_clock::now() - start )
+                               .count();
+            if ( elapsed >= timeout_ms )
+            {
+                // Never write shared files without holding the lock.
+                close( fd_ );
+                fd_ = -1;
+                throw std::runtime_error( "timed out waiting for lock file " + lockfile );
+            }
+
+            // Sleep with jitter to avoid thundering herd
+            std::this_thread::sleep_for( std::chrono::milliseconds( dist( gen ) ) );
+        }
+    }
+
+    /** Release the advisory lock and file descriptor. */
+    ~FileLock()
+    {
+        if ( fd_ != -1 )
+        {
+            if ( locked_ )
+            {
+                flock( fd_, LOCK_UN );
+            }
+            close( fd_ );
+        }
+    }
+
+    /** Whether this guard acquired the lock. */
+    bool is_locked() const { return locked_; }
+
+    /** Lock ownership cannot be copied. */
+    FileLock( const FileLock& ) = delete;
+    /** Lock ownership cannot be reassigned. */
+    FileLock& operator=( const FileLock& ) = delete;
+
+  private:
+    int fd_;      ///< Open lock descriptor, or -1 after failure.
+    bool locked_; ///< Whether the lock is owned.
+
+    std::string lockfile_; ///< Path used in diagnostics.
+};
+
+/**
+ * Check if a .so file exists and is valid (non-empty, readable).
+ */
+inline bool so_file_ready( const std::string& filename )
+{
+    namespace fs = boost::filesystem;
+    fs::path so_path( filename + ".so" );
+
+    if ( !fs::exists( so_path ) )
+    {
+        return false;
+    }
+
+    // Check file is non-empty and at least a few seconds old
+    // (to avoid reading a partially written file)
+    try
+    {
+        auto size = fs::file_size( so_path );
+        if ( size == 0 )
+        {
+            return false;
+        }
+
+        auto mtime = fs::last_write_time( so_path );
+        auto now = std::time( nullptr );
+        // If file is very recent (< 1 second), wait a bit
+        if ( now - mtime < 1 )
+        {
+            std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
+        }
+        return true;
+    }
+    catch ( ... )
+    {
+        return false;
+    }
+}
+
+/** Hash source contents for persistent cache identity. */
+inline std::uint64_t fnv1a_hash_file( const std::string& filename )
+{
+    std::ifstream ifs( filename.c_str(), std::ios::binary );
+    if ( !ifs )
+    {
+        throw std::runtime_error( "could not open source code file " + filename + " for hashing" );
+    }
+
+    std::uint64_t hash = 14695981039346656037ULL;
+    char buffer[4096];
+    while ( ifs )
+    {
+        ifs.read( buffer, sizeof( buffer ) );
+        std::streamsize count = ifs.gcount();
+        for ( std::streamsize i = 0; i < count; ++i )
+        {
+            hash ^= static_cast<unsigned char>( buffer[i] );
+            hash *= 1099511628211ULL;
+        }
+    }
+    return hash;
+}
+
+/** Encode a source hash as a filename component. */
+inline std::string source_hash( const std::string& filename )
+{
+    std::ostringstream ostr;
+    ostr << std::hex << fnv1a_hash_file( filename );
+    return ostr.str();
+}
+
+/** Locate the sidecar recording the latest source hash. */
+inline std::string source_hash_filename( const std::string& filename )
+{
+    return filename + ".hash";
+}
+
+/** Select the immutable path for one source-content hash. */
+inline std::string hashed_source_filename( const std::string& filename, const std::string& hash )
+{
+    return filename + "." + hash;
+}
+
+/** Copy source to its immutable compilation path. */
+inline void copy_source_file( const std::string& source_filename, const std::string& target_filename )
+{
+    std::ifstream ifs( source_filename.c_str(), std::ios::binary );
+    if ( !ifs )
+    {
+        throw std::runtime_error( "could not open source code file " + source_filename + " for copying" );
+    }
+    std::ofstream ofs( target_filename.c_str(), std::ios::binary | std::ios::trunc );
+    if ( !ofs )
+    {
+        throw std::runtime_error( "could not create source code file " + target_filename + " for compilation" );
+    }
+    ofs << ifs.rdbuf();
+}
+
+/** Atomically publish the source hash after compilation. */
+inline void write_source_hash_file( const std::string& filename, const std::string& hash )
+{
+    std::string hash_filename = source_hash_filename( filename );
+    std::string tmp_hash_filename = hash_filename + ".tmp." + std::to_string( getpid() );
+    std::ofstream ofs( tmp_hash_filename.c_str(), std::ios::out | std::ios::trunc );
+    if ( !ofs )
+    {
+        throw std::runtime_error( "could not create source hash file " + tmp_hash_filename );
+    }
+    ofs << hash << std::endl;
+    ofs.close();
+    if ( rename( tmp_hash_filename.c_str(), hash_filename.c_str() ) == -1 )
+    {
+        throw std::runtime_error( "could not update source hash file " + hash_filename + ": " + std::string( strerror( errno ) ) );
+    }
+}
+
+/** Atomically select the latest compiled module. */
+inline void update_latest_module_link( const std::string& filename, const std::string& compiled_filename )
+{
+    if ( filename == compiled_filename )
+    {
+        return;
+    }
+
+    std::string latest_module = filename + ".so";
+    std::string compiled_module = compiled_filename + ".so";
+    std::string tmp_link = latest_module + ".tmp." + std::to_string( getpid() );
+
+    remove( tmp_link.c_str() );
+    if ( symlink( compiled_module.c_str(), tmp_link.c_str() ) == -1 )
+    {
+        throw std::runtime_error( "could not create module link " + tmp_link + ": " + std::string( strerror( errno ) ) );
+    }
+    if ( rename( tmp_link.c_str(), latest_module.c_str() ) == -1 )
+    {
+        remove( tmp_link.c_str() );
+        throw std::runtime_error( "could not update module link " + latest_module + ": " + std::string( strerror( errno ) ) );
+    }
+}
+
+/**
+ * Manage loaded modules and their temporary files for all compile/link overloads.
+ * Environment releases these modules before execution-runtime and MPI teardown.
+ * The process-lifetime instance also provides fallback cleanup on destruction.
+ */
+class excompiler
+{
+    /**
+     * Holds all necessary information about opened modules.
+     */
+    struct filedesc
+    {
+        void* module;     ///< Handle returned by the dynamic loader.
+        std::string name; /**< filename with .so suffix */
+        bool clean_up;    /**< if true, source and so-file will be deleted */
+
+        /** Construct an unloaded temporary module record. */
+        filedesc()
+            : module( 0 ), name(), clean_up( true ) {}
+    };
+
+    std::vector<filedesc> filelist; /**< List of all opened modules */
+
+  public:
+    /**
+     * Complete clean-up of opened modules is done on destruction.
+     */
+    ~excompiler()
+    {
+        clean_up();
+    }
+
+    /**
+     * Adds a new module to the list.
+     */
+    void add_opened_module( void* module, const std::string& name, bool clean_up )
+    {
+        filedesc fd;
+        fd.module = module;
+        fd.name = name;
+        fd.clean_up = clean_up;
+        filelist.push_back( fd );
+    }
+
+    /** Release all modules and adapter-owned temporary artifacts. */
+    void clean_up( bool verbose = false )
+    {
+        for ( std::vector<filedesc>::iterator it = filelist.begin(); it != filelist.end(); ++it )
+        {
+            if ( verbose && it->clean_up )
+                std::cout << "removing " << it->name << " module" << it->module << "...\n";
+            clean_up( it );
+        }
+        filelist.clear();
+    }
+
+    /**
+     * Closes a module and deletes the so-file if the associated clean-up flag is true.
+     */
+    void clean_up( std::vector<filedesc>::iterator it )
+    {
+        dlclose( it->module );
+        char* err = dlerror();
+        if ( err )
+        {
+            std::cerr << "error in dlclosing module : " << it->module << " : " << err << "\n";
+        }
+        if ( it->clean_up )
+        {
+            namespace fs = boost::filesystem;
+            if ( fs::exists( fs::path( it->name ) ) )
+            {
+                int ok = remove( it->name.c_str() );
+                if ( ok == -1 )
+                    std::cerr << "removing " << it->name << " failed\n";
+            }
+        }
+    }
+
+    /**
+     * Creates a new C source file and adds a standard header. If filename is
+     * empty, a unique random name is produced and used.
+     *
+     * For user-provided filenames, use as-is to enable caching of compiled
+     * expressions. Race conditions are handled by file locking.
+     */
+    void create_src_file( std::string& filename, std::ofstream& ofs )
+    {
+        if ( filename.empty() )
+        {
+            // Generate unique temporary filename
+            char* new_filename = new char[17];
+            strcpy( new_filename, "./GiNaCXXXXXX" );
+            int fd = mkstemp( new_filename );
+            if ( fd == -1 )
+            {
+                delete[] new_filename;
+                throw std::runtime_error( "mkstemp failed: " + std::string( strerror( errno ) ) );
+            }
+            close( fd ); // Close the fd, we'll reopen with ofstream
+
+            filename = std::string( new_filename );
+            ofs.open( filename.c_str(), std::ios::out | std::ios::trunc );
+            delete[] new_filename;
+        }
+        else
+        {
+            // User-provided filename: use as-is for caching.
+            ofs.open( filename.c_str(), std::ios::out | std::ios::trunc );
+        }
+        if ( !ofs )
+        {
+            using namespace std::string_literals;
+            throw std::runtime_error( "could not create source code file "s + filename + " for compilation" );
+        }
+
+        ofs << "#include <ginacmath.hpp> " << std::endl;
+        ofs << "#if !defined( pi )\n"
+            << "#define pi " << std::setprecision( std::numeric_limits<long double>::digits10 + 1 ) << M_PI << std::endl
+            << "#endif // pi\n";
+        ofs << "#if !defined( Pi )\n"
+            << "#define Pi " << M_PI << std::endl
+            << "#endif // Pi\n";
+        ofs << std::endl;
+    }
+
+    /** Remove generated source only when the adapter owns it. */
+    void remove_src_file( std::string filename, bool clean_up )
+    {
+        if ( clean_up )
+        {
+            int e = remove( filename.c_str() );
+            if ( e == -1 )
+                std::cerr << "Error removing file : " << filename << std::endl;
+        }
+    }
+
+    /**
+     * Calls Feel++'s compiler helper to compile the generated C++
+     * source file into a loadable module. On demand the source file is
+     * deleted.
+     *
+     * Uses file locking to prevent concurrent compilation of the same file
+     * by different processes.
+     */
+    std::string compile_src_file( const std::string filename, bool clean_up, bool lock_file = true, bool filename_is_content_addressed = false )
+    {
+        namespace fs = boost::filesystem;
+        std::string lock_filename = filename + ".lock";
+        std::unique_ptr<FileLock> lock;
+
+        // Acquire exclusive lock before compilation
+        if ( lock_file )
+        {
+            lock.reset( new FileLock( lock_filename ) );
+        }
+
+        std::string compile_filename = filename;
+        std::string hash;
+        if ( !clean_up )
+        {
+            if ( filename_is_content_addressed )
+            {
+                if ( so_file_ready( compile_filename ) )
+                {
+                    return compile_filename;
+                }
+            }
+            else
+            {
+                hash = source_hash( filename );
+                compile_filename = hashed_source_filename( filename, hash );
+                if ( so_file_ready( compile_filename ) )
+                {
+                    write_source_hash_file( filename, hash );
+                    update_latest_module_link( filename, compile_filename );
+                    return compile_filename;
+                }
+                copy_source_file( filename, compile_filename );
+            }
+        }
+
+        auto remove_lock_file = [&lock_filename, clean_up, lock_file]()
+        {
+            if ( clean_up && lock_file )
+            {
+                remove( lock_filename.c_str() );
+            }
+        };
+        auto compile_with = [this, &filename, &compile_filename, &hash, clean_up, filename_is_content_addressed, &remove_lock_file]( const std::string& excompiler_path )
+        {
+            std::string strcompile = excompiler_path + " " + compile_filename;
+            int status = system( strcompile.c_str() );
+            if ( status )
+            {
+                std::ostringstream ostr;
+                ostr << "Feel++ expression compiler::compile_src_file " << compile_filename << " fails (" << WEXITSTATUS( status ) << ")\n";
+                throw std::runtime_error( ostr.str() );
+            }
+            if ( !clean_up )
+            {
+                if ( !filename_is_content_addressed )
+                {
+                    write_source_hash_file( filename, hash );
+                    update_latest_module_link( filename, compile_filename );
+                    remove( compile_filename.c_str() );
+                }
+            }
+            else
+            {
+                remove_src_file( filename, clean_up );
+            }
+            remove_lock_file();
+        };
+
+        std::string firstPathToTry = configuredCompiler;
+
+        const char* pathFromEnv = getenv( "FEELPP_EXPRESSION_COMPILER_PATH" );
+        if ( pathFromEnv != NULL && pathFromEnv[0] != '\0' )
+            firstPathToTry = pathFromEnv;
+
+        if ( fs::exists( fs::path( firstPathToTry ) ) )
+        {
+            compile_with( firstPathToTry );
+            return compile_filename;
+        }
+        else
+        {
+
+            // Installed consumers use the Feel++ helper, independently of GiNaC's tools.
+            std::vector<std::string> paths = { installedCompilerDirectory, "/usr/bin/", "/usr/local/bin", "/opt/local/bin" };
+            std::vector<std::string> names = { "feelpp_excompiler" };
+            for ( auto p : paths )
+            {
+                for ( auto n : names )
+                {
+                    fs::path exc = fs::path( p ) / fs::path( n );
+                    if ( fs::exists( exc ) )
+                    {
+                        compile_with( exc.string() );
+                        return compile_filename;
+                    }
+                }
+            }
+            std::ostringstream ostr;
+            ostr << "Feel++ expression compiler::compile_src_file " << filename << " WAS NOT COMPILED\n";
+            throw std::runtime_error( ostr.str() );
+        }
+    }
+
+    /**
+     * Links a so-file whose filename is given.
+     * Includes retry logic with exponential backoff to handle race conditions
+     * where another process may still be compiling the .so file.
+     */
+    void* link_so_file( const std::string filename, bool clean_up )
+    {
+        void* module = nullptr;
+        const int max_retries = 10;
+        int retry_delay_ms = 50;
+        std::string last_error;
+
+        for ( int attempt = 0; attempt < max_retries; ++attempt )
+        {
+            // Clear any previous error
+            dlerror();
+
+            module = dlopen( filename.c_str(), RTLD_NOW );
+            if ( module != nullptr )
+            {
+                break;
+            }
+
+            // Capture error message
+            char* err = dlerror();
+            if ( err )
+            {
+                last_error = err;
+            }
+            else
+            {
+                last_error = "unknown error";
+            }
+
+            // Check if file exists - if not, no point retrying
+            namespace fs = boost::filesystem;
+            if ( !fs::exists( fs::path( filename ) ) )
+            {
+                break;
+            }
+
+            // Wait with exponential backoff + jitter before retry
+            std::random_device rd;
+            std::mt19937 gen( rd() );
+            std::uniform_int_distribution<> jitter( 0, retry_delay_ms / 2 );
+            std::this_thread::sleep_for(
+                std::chrono::milliseconds( retry_delay_ms + jitter( gen ) ) );
+            retry_delay_ms = std::min( retry_delay_ms * 2, 2000 );
+        }
+
+        if ( module == nullptr )
+        {
+            using namespace std::string_literals;
+            throw std::runtime_error( "excompiler::link_so_file: could not open compiled module "s + filename + " after " + std::to_string( max_retries ) + " attempts. Last error: " + last_error );
+        }
+
+        add_opened_module( module, filename, clean_up );
+
+        return dlsym( module, "compiled_ex" );
+    }
+
+    /**
+     * Removes a modules from the module list. Performs a clean-up before that.
+     * Every module with the given name will be affected.
+     */
+    void unlink( const std::string filename )
+    {
+        for ( std::vector<filedesc>::iterator it = filelist.begin(); it != filelist.end(); )
+        {
+            if ( it->name == filename )
+            {
+                clean_up( it );
+                it = filelist.erase( it );
+            }
+            else
+            {
+                ++it;
+            }
+        }
+    }
+};
+
+/** Process-local module owner, released by Environment before runtime teardown. */
+static excompiler global_excompiler;
+
+// Broadcasting the outcome also makes followers wait for the writer. In
+// particular, a compiler or filesystem error must not strand them in a barrier.
+template <typename Compile>
+static void compile_on_master( const boost::mpi::communicator& world, const std::string& filename, Compile compile )
+{
+    std::string error;
+    if ( world.rank() == 0 )
+    {
+        try
+        {
+            boost::filesystem::path parent = boost::filesystem::path( filename ).parent_path();
+            if ( !parent.empty() )
+                boost::filesystem::create_directories( parent );
+            compile();
+        }
+        catch ( const std::exception& e )
+        {
+            error = std::string( "Feel++ expression compiler: " ) + e.what();
+        }
+        catch ( ... )
+        {
+            error = "Feel++ expression compiler: unknown compilation error";
+        }
+    }
+    boost::mpi::broadcast( world, error, 0 );
+    if ( !error.empty() )
+        throw std::runtime_error( error );
+}
+
+void compile_ex( const ex& expr, const symbol& sym, FUNCP_1P& fp, const std::string filename )
+{
+    Feel::detail::ginacjit::compile_ex( expr, sym, fp, filename, boost::mpi::communicator() );
+}
+
+void compile_ex( const ex& expr, const symbol& sym, FUNCP_1P& fp, const std::string filename, const boost::mpi::communicator& world )
+{
+    std::string unique_filename = filename;
+
+    auto generateSource = [&]()
+    {
+        symbol x( "x" );
+        ex expr_with_x = expr.subs( lst{ sym == x } );
+        std::ofstream ofs;
+        std::unique_ptr<FileLock> source_lock;
+        if ( !filename.empty() )
+        {
+            source_lock.reset( new FileLock( unique_filename + ".lock" ) );
+        }
+        global_excompiler.create_src_file( unique_filename, ofs );
+
+        ofs << "extern \"C\" double compiled_ex(double x)" << std::endl;
+        ofs << "{" << std::endl;
+        ofs << "double res = ";
+        expr_with_x.print( GiNaC::print_csrc_double( ofs ) );
+        ofs << ";" << std::endl;
+        ofs << "return(res); " << std::endl;
+        ofs << "}" << std::endl;
+
+        ofs.close();
+
+        unique_filename = global_excompiler.compile_src_file( unique_filename, filename.empty(), filename.empty() );
+    };
+
+    compile_on_master( world, filename, generateSource );
+    if ( filename.empty() )
+        boost::mpi::broadcast( world, unique_filename, 0 );
+    else
+        unique_filename = filename;
+
+    // This is not standard compliant! ... no conversion between
+    // pointer-to-functions and pointer-to-objects ...
+    fp = (FUNCP_1P)global_excompiler.link_so_file( unique_filename + ".so", filename.empty() && world.rank() == 0 );
+}
+
+void compile_ex( const ex& expr, const symbol& sym1, const symbol& sym2, FUNCP_2P& fp, const std::string filename )
+{
+    Feel::detail::ginacjit::compile_ex( expr, sym1, sym2, fp, filename, boost::mpi::communicator() );
+}
+
+void compile_ex( const ex& expr, const symbol& sym1, const symbol& sym2, FUNCP_2P& fp, const std::string filename, const boost::mpi::communicator& world )
+{
+    std::string unique_filename = filename;
+
+    auto generateSource = [&]()
+    {
+        symbol x( "x" ), y( "y" );
+        ex expr_with_xy = expr.subs( lst{ sym1 == x, sym2 == y } );
+        std::ofstream ofs;
+        std::unique_ptr<FileLock> source_lock;
+        if ( !filename.empty() )
+        {
+            source_lock.reset( new FileLock( unique_filename + ".lock" ) );
+        }
+        global_excompiler.create_src_file( unique_filename, ofs );
+
+        ofs << "extern \"C\" double compiled_ex(double x, double y)" << std::endl;
+        ofs << "{" << std::endl;
+        ofs << "double res = ";
+        expr_with_xy.print( GiNaC::print_csrc_double( ofs ) );
+        ofs << ";" << std::endl;
+        ofs << "return(res); " << std::endl;
+        ofs << "}" << std::endl;
+
+        ofs.close();
+
+        unique_filename = global_excompiler.compile_src_file( unique_filename, filename.empty(), filename.empty() );
+    };
+
+    compile_on_master( world, filename, generateSource );
+    if ( filename.empty() )
+        boost::mpi::broadcast( world, unique_filename, 0 );
+    else
+        unique_filename = filename;
+
+    // This is not standard compliant! ... no conversion between
+    // pointer-to-functions and pointer-to-objects ...
+    fp = (FUNCP_2P)global_excompiler.link_so_file( unique_filename + ".so", filename.empty() && world.rank() == 0 );
+}
+
+void compile_ex( const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::string filename, bool filename_is_content_addressed )
+{
+    Feel::detail::ginacjit::compile_ex( exprs, syms, fp, filename, filename_is_content_addressed, boost::mpi::communicator() );
+}
+
+void compile_ex( const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::string filename, bool filename_is_content_addressed, const boost::mpi::communicator& world )
+{
+    std::string unique_filename = filename;
+
+    auto generateSource = [&]()
+    {
+        lst replacements;
+        for ( std::size_t count = 0; count < syms.nops(); ++count )
+        {
+            std::ostringstream s;
+            s << "a[" << count << "]";
+            replacements.append( syms.op( count ) == symbol( s.str() ) );
+        }
+
+        std::vector<ex> expr_with_cname;
+        for ( std::size_t count = 0; count < exprs.nops(); ++count )
+        {
+            expr_with_cname.push_back( exprs.op( count ).subs( replacements ) );
+        }
+
+        std::ofstream ofs;
+        std::unique_ptr<FileLock> source_lock;
+        if ( !filename.empty() )
+        {
+            source_lock.reset( new FileLock( unique_filename + ".lock" ) );
+        }
+        global_excompiler.create_src_file( unique_filename, ofs );
+
+        ofs << "extern \"C\" void compiled_ex(const int* an, const double a[], const int* fn, double f[])" << std::endl;
+        ofs << "{" << std::endl;
+        for ( std::size_t count = 0; count < exprs.nops(); ++count )
+        {
+            ofs << "f[" << count << "] = ";
+            expr_with_cname[count].print( GiNaC::print_csrc_double( ofs ) );
+            ofs << ";" << std::endl;
+        }
+        ofs << "}" << std::endl;
+
+        ofs.close();
+
+        unique_filename = global_excompiler.compile_src_file( unique_filename, filename.empty(), filename.empty(), filename_is_content_addressed );
+    };
+
+    compile_on_master( world, filename, generateSource );
+    if ( filename.empty() )
+        boost::mpi::broadcast( world, unique_filename, 0 );
+    else
+        unique_filename = filename;
+
+    // This is not standard compliant! ... no conversion between
+    // pointer-to-functions and pointer-to-objects ...
+    fp = (FUNCP_CUBA)global_excompiler.link_so_file( unique_filename + ".so", filename.empty() && world.rank() == 0 );
+}
+
+void link_ex( const std::string filename, FUNCP_1P& fp )
+{
+    // This is not standard compliant! ... no conversion between
+    // pointer-to-functions and pointer-to-objects ...
+    fp = (FUNCP_1P)global_excompiler.link_so_file( filename, false );
+}
+
+void link_ex( const std::string filename, FUNCP_2P& fp )
+{
+    // This is not standard compliant! ... no conversion between
+    // pointer-to-functions and pointer-to-objects ...
+    fp = (FUNCP_2P)global_excompiler.link_so_file( filename, false );
+}
+
+void link_ex( const std::string filename, FUNCP_CUBA& fp )
+{
+    // This is not standard compliant! ... no conversion between
+    // pointer-to-functions and pointer-to-objects ...
+    fp = (FUNCP_CUBA)global_excompiler.link_so_file( filename, false );
+}
+
+void unlink_ex( const std::string filename )
+{
+    global_excompiler.unlink( filename );
+}
+
+void cleanup_ex( bool verbose = false )
+{
+    global_excompiler.clean_up( verbose );
+}
+
+#else  // def HAVE_LIBDL
+
+/*
+ * In case no working libdl has been found by configure, the following function
+ * stubs preserve the interface. Every function just raises an exception.
+ */
+
+void compile_ex( const ex& expr, const symbol& sym, FUNCP_1P& fp, const std::string filename )
+{
+    throw std::runtime_error( "compile_ex has been disabled because of missing libdl!" );
+}
+
+void compile_ex( const ex& expr, const symbol& sym, FUNCP_1P& fp, const std::string filename, const boost::mpi::communicator& world )
+{
+    throw std::runtime_error( "compile_ex has been disabled because of missing libdl!" );
+}
+
+void compile_ex( const ex& expr, const symbol& sym1, const symbol& sym2, FUNCP_2P& fp, const std::string filename )
+{
+    throw std::runtime_error( "compile_ex has been disabled because of missing libdl!" );
+}
+
+void compile_ex( const ex& expr, const symbol& sym1, const symbol& sym2, FUNCP_2P& fp, const std::string filename, const boost::mpi::communicator& world )
+{
+    throw std::runtime_error( "compile_ex has been disabled because of missing libdl!" );
+}
+
+void compile_ex( const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::string filename, bool filename_is_content_addressed )
+{
+    throw std::runtime_error( "compile_ex has been disabled because of missing libdl!" );
+}
+
+void compile_ex( const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::string filename, bool filename_is_content_addressed, const boost::mpi::communicator& world )
+{
+    throw std::runtime_error( "compile_ex has been disabled because of missing libdl!" );
+}
+
+void link_ex( const std::string filename, FUNCP_1P& fp )
+{
+    throw std::runtime_error( "link_ex has been disabled because of missing libdl!" );
+}
+
+void link_ex( const std::string filename, FUNCP_2P& fp )
+{
+    throw std::runtime_error( "link_ex has been disabled because of missing libdl!" );
+}
+
+void link_ex( const std::string filename, FUNCP_CUBA& fp )
+{
+    throw std::runtime_error( "link_ex has been disabled because of missing libdl!" );
+}
+
+void unlink_ex( const std::string filename )
+{
+    throw std::runtime_error( "unlink_ex has been disabled because of missing libdl!" );
+}
+
+void cleanup_ex( bool verbose = false )
+{
+    throw std::runtime_error( "unlink_ex has been disabled because of missing libdl!" );
+}
+#endif // def HAVE_LIBDL
+
+} // namespace Feel::detail::ginacjit
+extern template GiNaC::registered_class_info GiNaC::container<std::list>::reg_info;

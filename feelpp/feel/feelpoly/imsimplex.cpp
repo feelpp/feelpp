@@ -26,6 +26,7 @@
 #include <boost/preprocessor/repetition/for.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>
 #include <feel/feelpoly/imfactory.hpp>
+#include <feel/feelpoly/jacobi.hpp>
 
 
 namespace Feel
@@ -37,6 +38,42 @@ namespace Feel
  */
 namespace detail
 {
+
+// Collapsed-cube Gauss-Jacobi rules avoid the large alternating weights of
+// the high-order economical tetrahedral tables. Each one-dimensional rule
+// integrates degree 2*n-1, including the collapse Jacobian in its weight.
+template<typename T>
+class IMTetrahedronGauss
+{
+public:
+    explicit IMTetrahedronGauss( uint16_type order ) : M_order( order ) {}
+
+    std::unique_ptr<IMBase<T>> operator()() const
+    {
+        int const n = ( M_order + 2 ) / 2;
+        // Generate in double precision before narrowing float tables.
+        ublas::vector<double> x(n), y(n), z(n), wx(n), wy(n), wz(n);
+        Feel::details::dyna::gaussjacobi<double>( n, wx, x, 0., 0. );
+        Feel::details::dyna::gaussjacobi<double>( n, wy, y, 1., 0. );
+        Feel::details::dyna::gaussjacobi<double>( n, wz, z, 2., 0. );
+        auto p = std::make_unique<IMBase<T>>( 3, M_order, n*n*n );
+        p->q.reserve( 4*n*n*n );
+        for ( int k = 0; k < n; ++k )
+            for ( int j = 0; j < n; ++j )
+                for ( int i = 0; i < n; ++i )
+                {
+                    p->q.push_back( (1.+x(i))*(1.-y(j))*(1.-z(k))/4.-1. );
+                    p->q.push_back( (1.+y(j))*(1.-z(k))/2.-1. );
+                    p->q.push_back( z(k) );
+                    p->q.push_back( wx(i)*wy(j)*wz(k)/8. );
+                }
+        p->setDefined();
+        return p;
+    }
+
+private:
+    uint16_type M_order;
+};
 
 /**
  * \internal
@@ -8382,18 +8419,18 @@ const bool im36simplex = IMFactory<double>::instance().registerProduct( "im(3,6,
 const bool im37simplex = IMFactory<double>::instance().registerProduct( "im(3,7,simplex)", Feel::detail::IMTetrahedra< 7 ,double>() );
 const bool im38simplex = IMFactory<double>::instance().registerProduct( "im(3,8,simplex)", Feel::detail::IMTetrahedra< 8 ,double>() );
 const bool im39simplex = IMFactory<double>::instance().registerProduct( "im(3,9,simplex)", Feel::detail::IMTetrahedra< 9 ,double>() );
-const bool im310simplex = IMFactory<double>::instance().registerProduct( "im(3,10,simplex)", Feel::detail::IMTetrahedra< 10 ,double>() );
-const bool im311simplex = IMFactory<double>::instance().registerProduct( "im(3,11,simplex)", Feel::detail::IMTetrahedra< 11 ,double>() );
-const bool im312simplex = IMFactory<double>::instance().registerProduct( "im(3,12,simplex)", Feel::detail::IMTetrahedra< 12 ,double>() );
-const bool im313simplex = IMFactory<double>::instance().registerProduct( "im(3,13,simplex)", Feel::detail::IMTetrahedra< 13 ,double>() );
-const bool im314simplex = IMFactory<double>::instance().registerProduct( "im(3,14,simplex)", Feel::detail::IMTetrahedra< 14 ,double>() );
-const bool im315simplex = IMFactory<double>::instance().registerProduct( "im(3,15,simplex)", Feel::detail::IMTetrahedra< 15 ,double>() );
-const bool im316simplex = IMFactory<double>::instance().registerProduct( "im(3,16,simplex)", Feel::detail::IMTetrahedra< 16 ,double>() );
-const bool im317simplex = IMFactory<double>::instance().registerProduct( "im(3,17,simplex)", Feel::detail::IMTetrahedra< 17 ,double>() );
-const bool im318simplex = IMFactory<double>::instance().registerProduct( "im(3,18,simplex)", Feel::detail::IMTetrahedra< 18 ,double>() );
-const bool im319simplex = IMFactory<double>::instance().registerProduct( "im(3,19,simplex)", Feel::detail::IMTetrahedra< 19 ,double>() );
-const bool im320simplex = IMFactory<double>::instance().registerProduct( "im(3,20,simplex)", Feel::detail::IMTetrahedra< 20 ,double>() );
-const bool im321simplex = IMFactory<double>::instance().registerProduct( "im(3,21,simplex)", Feel::detail::IMTetrahedra< 21 ,double>() );
+const bool im310simplex = IMFactory<double>::instance().registerProduct( "im(3,10,simplex)", Feel::detail::IMTetrahedronGauss<double>( 10 ) );
+const bool im311simplex = IMFactory<double>::instance().registerProduct( "im(3,11,simplex)", Feel::detail::IMTetrahedronGauss<double>( 11 ) );
+const bool im312simplex = IMFactory<double>::instance().registerProduct( "im(3,12,simplex)", Feel::detail::IMTetrahedronGauss<double>( 12 ) );
+const bool im313simplex = IMFactory<double>::instance().registerProduct( "im(3,13,simplex)", Feel::detail::IMTetrahedronGauss<double>( 13 ) );
+const bool im314simplex = IMFactory<double>::instance().registerProduct( "im(3,14,simplex)", Feel::detail::IMTetrahedronGauss<double>( 14 ) );
+const bool im315simplex = IMFactory<double>::instance().registerProduct( "im(3,15,simplex)", Feel::detail::IMTetrahedronGauss<double>( 15 ) );
+const bool im316simplex = IMFactory<double>::instance().registerProduct( "im(3,16,simplex)", Feel::detail::IMTetrahedronGauss<double>( 16 ) );
+const bool im317simplex = IMFactory<double>::instance().registerProduct( "im(3,17,simplex)", Feel::detail::IMTetrahedronGauss<double>( 17 ) );
+const bool im318simplex = IMFactory<double>::instance().registerProduct( "im(3,18,simplex)", Feel::detail::IMTetrahedronGauss<double>( 18 ) );
+const bool im319simplex = IMFactory<double>::instance().registerProduct( "im(3,19,simplex)", Feel::detail::IMTetrahedronGauss<double>( 19 ) );
+const bool im320simplex = IMFactory<double>::instance().registerProduct( "im(3,20,simplex)", Feel::detail::IMTetrahedronGauss<double>( 20 ) );
+const bool im321simplex = IMFactory<double>::instance().registerProduct( "im(3,21,simplex)", Feel::detail::IMTetrahedronGauss<double>( 21 ) );
 const bool imMaxOrder3simplex = IMMaxOrderFactory<double>::instance().insert( std::pair< std::string, IMMaxOrder<double> >( "im(3,simplex)",21 ) ).second;
 
 const bool im20simplexf = IMFactory<float>::instance().registerProduct( "im(2,0,simplex)", Feel::detail::IMTriangle< 0 ,float>() );
@@ -8430,18 +8467,18 @@ const bool im36simplexf = IMFactory<float>::instance().registerProduct( "im(3,6,
 const bool im37simplexf = IMFactory<float>::instance().registerProduct( "im(3,7,simplex)", Feel::detail::IMTetrahedra< 7 ,float>() );
 const bool im38simplexf = IMFactory<float>::instance().registerProduct( "im(3,8,simplex)", Feel::detail::IMTetrahedra< 8 ,float>() );
 const bool im39simplexf = IMFactory<float>::instance().registerProduct( "im(3,9,simplex)", Feel::detail::IMTetrahedra< 9 ,float>() );
-const bool im310simplexf = IMFactory<float>::instance().registerProduct( "im(3,10,simplex)", Feel::detail::IMTetrahedra< 10 ,float>() );
-const bool im311simplexf = IMFactory<float>::instance().registerProduct( "im(3,11,simplex)", Feel::detail::IMTetrahedra< 11 ,float>() );
-const bool im312simplexf = IMFactory<float>::instance().registerProduct( "im(3,12,simplex)", Feel::detail::IMTetrahedra< 12 ,float>() );
-const bool im313simplexf = IMFactory<float>::instance().registerProduct( "im(3,13,simplex)", Feel::detail::IMTetrahedra< 13 ,float>() );
-const bool im314simplexf = IMFactory<float>::instance().registerProduct( "im(3,14,simplex)", Feel::detail::IMTetrahedra< 14 ,float>() );
-const bool im315simplexf = IMFactory<float>::instance().registerProduct( "im(3,15,simplex)", Feel::detail::IMTetrahedra< 15 ,float>() );
-const bool im316simplexf = IMFactory<float>::instance().registerProduct( "im(3,16,simplex)", Feel::detail::IMTetrahedra< 16 ,float>() );
-const bool im317simplexf = IMFactory<float>::instance().registerProduct( "im(3,17,simplex)", Feel::detail::IMTetrahedra< 17 ,float>() );
-const bool im318simplexf = IMFactory<float>::instance().registerProduct( "im(3,18,simplex)", Feel::detail::IMTetrahedra< 18 ,float>() );
-const bool im319simplexf = IMFactory<float>::instance().registerProduct( "im(3,19,simplex)", Feel::detail::IMTetrahedra< 19 ,float>() );
-const bool im320simplexf = IMFactory<float>::instance().registerProduct( "im(3,20,simplex)", Feel::detail::IMTetrahedra< 20 ,float>() );
-const bool im321simplexf = IMFactory<float>::instance().registerProduct( "im(3,21,simplex)", Feel::detail::IMTetrahedra< 21 ,float>() );
+const bool im310simplexf = IMFactory<float>::instance().registerProduct( "im(3,10,simplex)", Feel::detail::IMTetrahedronGauss<float>( 10 ) );
+const bool im311simplexf = IMFactory<float>::instance().registerProduct( "im(3,11,simplex)", Feel::detail::IMTetrahedronGauss<float>( 11 ) );
+const bool im312simplexf = IMFactory<float>::instance().registerProduct( "im(3,12,simplex)", Feel::detail::IMTetrahedronGauss<float>( 12 ) );
+const bool im313simplexf = IMFactory<float>::instance().registerProduct( "im(3,13,simplex)", Feel::detail::IMTetrahedronGauss<float>( 13 ) );
+const bool im314simplexf = IMFactory<float>::instance().registerProduct( "im(3,14,simplex)", Feel::detail::IMTetrahedronGauss<float>( 14 ) );
+const bool im315simplexf = IMFactory<float>::instance().registerProduct( "im(3,15,simplex)", Feel::detail::IMTetrahedronGauss<float>( 15 ) );
+const bool im316simplexf = IMFactory<float>::instance().registerProduct( "im(3,16,simplex)", Feel::detail::IMTetrahedronGauss<float>( 16 ) );
+const bool im317simplexf = IMFactory<float>::instance().registerProduct( "im(3,17,simplex)", Feel::detail::IMTetrahedronGauss<float>( 17 ) );
+const bool im318simplexf = IMFactory<float>::instance().registerProduct( "im(3,18,simplex)", Feel::detail::IMTetrahedronGauss<float>( 18 ) );
+const bool im319simplexf = IMFactory<float>::instance().registerProduct( "im(3,19,simplex)", Feel::detail::IMTetrahedronGauss<float>( 19 ) );
+const bool im320simplexf = IMFactory<float>::instance().registerProduct( "im(3,20,simplex)", Feel::detail::IMTetrahedronGauss<float>( 20 ) );
+const bool im321simplexf = IMFactory<float>::instance().registerProduct( "im(3,21,simplex)", Feel::detail::IMTetrahedronGauss<float>( 21 ) );
 const bool imMaxOrder3simplexf = IMMaxOrderFactory<float>::instance().insert( std::pair< std::string, IMMaxOrder<float> >( "im(3,simplex)",21 ) ).second;
 
 } // Feel

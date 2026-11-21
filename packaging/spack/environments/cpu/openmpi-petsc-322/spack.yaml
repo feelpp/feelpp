@@ -30,6 +30,7 @@ spack:
   - "hwloc"
   - "cln"
   - "ginac"
+  - "feelpp.parmmg@1.5.0 +shared"
   - "eigen"
   - "gmsh@4.13.1 +opencascade+mmg~fltk"
   - "py-gmsh@4.13.1"
@@ -45,7 +46,7 @@ spack:
   view: $user_cache_path/views/feelpp/cpu-openmpi-petsc-322
 
   concretizer:
-    unify: when_possible
+    unify: true
 
   repos:
     feelpp: ${FEELPP_REPO_ROOT}/packaging/spack/repo/spack_repo/feelpp

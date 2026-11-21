@@ -1,4 +1,10 @@
-//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2026-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 #ifndef FEELPP_QUICKSTART_QS_SHELL_BENCHMARK_FRAMEWORK_HPP
 #define FEELPP_QUICKSTART_QS_SHELL_BENCHMARK_FRAMEWORK_HPP 1
 
@@ -19,7 +25,7 @@
 namespace Feel::Quickstart::ShellBenchmark
 {
 using json = nl::json;
-using mesh_type = Mesh<Hypercube<3>>;
+using mesh_type = Mesh<Hypercube<3,Dynamic>>;
 using mesh_ptrtype = std::shared_ptr<mesh_type>;
 using shell_vec = Eigen::Matrix<double, 3, 1>;
 using shell_voigt = Eigen::Matrix<double, 6, 1>;

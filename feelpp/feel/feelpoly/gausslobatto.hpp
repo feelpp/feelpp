@@ -1,27 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2012-2017 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2006-03-06
-
-  Copyright (C) 2006 EPFL
-  Copyright (C) 2012-2017 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file gausslobatto.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -64,7 +48,7 @@ namespace ublas = boost::numeric::ublas;
 
 
 template<class Convex, typename T, typename IndexT> class PointSetQuadrature;
-template<int Dim, int Order, int RealDim, template<uint16_type,uint16_type,uint16_type> class Entity, typename T> struct GT_Lagrange;
+template<int Dim, int Order, int RealDim, template<int,int,int> class Entity, typename T> struct GT_Lagrange;
 
 /*!
  * \class GaussLobatto
@@ -370,7 +354,7 @@ public :
  * @see
  */
 template< class Convex,
-          uint16_type Order,
+          int Order,
           typename T = double >
 class PointSetGaussLobatto : public PointSetInterpolation<Convex::nDim, Order, T, Hypercube>
 {
@@ -383,7 +367,8 @@ public:
     typedef T value_type;
 
     static inline const uint32_type Dim = Convex::nDim;
-    static inline const uint32_type nPoints = Order+1;
+    // Do not hide PointSet::nPoints(), which reports the stored cardinality.
+    static inline const uint32_type nPoints1D = Order+1;
     static inline const uint32_type topological_dimension = Convex::topological_dimension;
     static inline const uint32_type nRealDim = Convex::nRealDim;
 

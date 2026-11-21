@@ -1,26 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2013-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2013-10-23
-
-  Copyright (C) 2013-2016 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file doflocal.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -28,6 +13,8 @@
  */
 #ifndef FEELPP_DofFromMortar_H
 #define FEELPP_DofFromMortar_H 1
+
+#include <feel/feeldiscr/doflayout.hpp>
 
 namespace Feel
 {
@@ -62,7 +49,6 @@ class DofFromMortar
     typedef typename element_type::face_permutation_type face_permutation_type;
     using size_type = typename mesh_type::size_type;
     using mesh_marker_type = typename doftable_type::mesh_marker_type;
-    static inline const uint16_type nOrder = mortar_fe_type::nOrder;
     static inline const uint16_type nDim = mesh_type::nDim;
     static inline const uint16_type nRealDim = mesh_type::nRealDim;
     static inline const uint16_type Shape = mesh_type::Shape;
@@ -80,9 +66,8 @@ class DofFromMortar
     static inline const bool is_modal = mortar_fe_type::is_modal;
     static inline const bool is_product = mortar_fe_type::is_product;
 
-    static inline const bool is_p0_continuous = ( ( nOrder == 0 ) && is_continuous );
-
-    static inline const uint16_type nDofPerElement = mpl::if_<mpl::bool_<is_product>, mpl::int_<mortar_fe_type::nLocalDof * nComponents1>, mpl::int_<mortar_fe_type::nLocalDof>>::type::value;
+    static inline const uint16_type nDofPerElement =
+        finiteElementFixedLocalDofCountOrZero<mortar_fe_type>( nComponents1 );
 
     //@}
 
@@ -167,10 +152,10 @@ class DofFromMortar
         index_type n = elt.neighbor( 0 );
         if ( n != invalid_v<index_type> )
         {
-            size_type gDof = M_doftable->mesh()->element( n ).point( 1 ).id() * fe_type::nDofPerVertex;
+            size_type gDof = M_doftable->mesh()->element( n ).point( 1 ).id() * M_fe.dofPerVertex();
             DVLOG( 2 ) << "inserting vertex dof " << gDof << "," << next_free_dof << "," << ie;
             M_doftable->insertDof( ie, lc++, 0, std::make_tuple( 0, gDof ), processor, next_free_dof, 1, false, global_shift, markerPt0 );
-            gDof = ( elt.point( 1 ).id() ) * mortar_fe_type::nDofPerVertex;
+            gDof = ( elt.point( 1 ).id() ) * M_mortar_fe.dofPerVertex();
             M_doftable->insertDof( ie, lc++, 1, std::make_tuple( 0, gDof ),
                                    processor, next_free_dof, 1, false, global_shift, markerPt1 );
             DVLOG( 2 ) << "inserting vertex dof " << gDof << "," << next_free_dof << "," << ie;
@@ -180,12 +165,12 @@ class DofFromMortar
             n = elt.neighbor( 1 );
             CHECK( n != invalid_v<index_type> ) << "the element should be connected to at least one other element, it is not the case";
 
-            size_type gDof = ( elt.point( 0 ).id() ) * mortar_fe_type::nDofPerVertex;
+            size_type gDof = ( elt.point( 0 ).id() ) * M_mortar_fe.dofPerVertex();
             DVLOG( 2 ) << "inserting vertex dof " << gDof << "," << next_free_dof << "," << ie;
             M_doftable->insertDof( ie, lc++, 0, std::make_tuple( 0, gDof ),
                                    processor, next_free_dof, 1, false, global_shift, markerPt0 );
 
-            gDof = M_doftable->mesh()->element( n ).point( 0 ).id() * fe_type::nDofPerVertex;
+            gDof = M_doftable->mesh()->element( n ).point( 0 ).id() * M_fe.dofPerVertex();
             DVLOG( 2 ) << "inserting vertex dof " << gDof << "," << next_free_dof << "," << ie;
             M_doftable->insertDof( ie, lc++, 1, std::make_tuple( 0, gDof ), processor, next_free_dof, 1, false, global_shift, markerPt1 );
         }
@@ -200,7 +185,6 @@ class DofFromMortar
     void addEdgeDof( element_type const& elt, rank_type processor, size_type& next_free_dof,
                      ref_shift_type& shifts )
     {
-        //static const bool cond = mortar_fe_type::nDofPerEdge > 0 && mortar_fe_type::nOrder > 1;
         return addEdgeDof( elt,
                            processor,
                            next_free_dof,
@@ -222,23 +206,24 @@ class DofFromMortar
         uint16_type lc = local_shift;
         mesh_marker_type const& markerElt = elt.hasMarker() ? elt.marker() : M_emptyMarker;
 
-        DVLOG( 2 ) << "adding mortar dof on edge " << mortar_fe_type::nDofPerEdge << " nOrder = " << nOrder;
-        for ( uint16_type l = 0; l < mortar_fe_type::nDofPerEdge; ++l, ++lc )
+        uint16_type const mortarDofPerEdge = M_mortar_fe.dofPerEdge();
+        DVLOG( 2 ) << "adding mortar dof on edge " << mortarDofPerEdge
+                   << " order = " << M_mortar_fe.order();
+        for ( uint16_type l = 0; l < mortarDofPerEdge; ++l, ++lc )
         {
-            //size_type gDof = ie * mortar_fe_type::nDofPerEdge + l;
-            size_type gDof = ie * fe_type::nDofPerEdge + l;
-            if ( nOrder == 0 ) //is_p0_continuous )
+            size_type gDof = ie * M_fe.dofPerEdge() + l;
+            if ( M_mortar_fe.order() == 0 )
             {
                 index_type n = elt.neighbor( 0 );
                 if ( n != invalid_v<index_type> )
                 {
-                    gDof = M_doftable->mesh()->element( n ).point( 1 ).id() * fe_type::nDofPerVertex;
+                    gDof = M_doftable->mesh()->element( n ).point( 1 ).id() * M_fe.dofPerVertex();
                 }
                 else
                 {
                     n = elt.neighbor( 1 );
                     CHECK( n != invalid_v<index_type> ) << "the element should be connected to at least one other element, it is not the case";
-                    gDof = M_doftable->mesh()->element( n ).point( 0 ).id() * fe_type::nDofPerVertex;
+                    gDof = M_doftable->mesh()->element( n ).point( 0 ).id() * M_fe.dofPerVertex();
                 }
                 DVLOG( 2 ) << "inserting dof " << gDof << "," << next_free_dof << "," << ie;
                 M_doftable->insertDof( ie, lc, l, std::make_tuple( 0, gDof ), processor, next_free_dof, 1, false, global_shift, markerElt );
@@ -269,13 +254,14 @@ class DofFromMortar
 
         /** The boundary dofs are constructed in the same way if the basis is modal **/
 
+        uint16_type const mortarDofPerEdge = M_mortar_fe.dofPerEdge();
         for ( uint16_type i = 0; i < element_type::numEdges; ++i )
         {
             mesh_marker_type const& markerEdge = elt.edge( i ).hasMarker() ? elt.edge( i ).marker() : M_emptyMarker;
 
-            for ( uint16_type l = 0; l < mortar_fe_type::nDofPerEdge; ++l, ++lc )
+            for ( uint16_type l = 0; l < mortarDofPerEdge; ++l, ++lc )
             {
-                size_type gDof = elt.edge( i ).id() * mortar_fe_type::nDofPerEdge;
+                size_type gDof = elt.edge( i ).id() * mortarDofPerEdge;
                 int32_type sign = 1;
 
                 if ( elt.edgePermutation( i ).value() == edge_permutation_type::IDENTITY )
@@ -294,7 +280,7 @@ class DofFromMortar
                     }
 
                     else
-                        gDof += mortar_fe_type::nDofPerEdge - 1 - l;
+                        gDof += mortarDofPerEdge - 1 - l;
                 }
 
                 else
@@ -324,12 +310,13 @@ class DofFromMortar
         index_type ie = elt.id();
         uint16_type lc = local_shift;
 
+        uint16_type const mortarDofPerEdge = M_mortar_fe.dofPerEdge();
         for ( uint16_type i = 0; i < element_type::numEdges; ++i )
         {
             mesh_marker_type const& markerEdge = elt.edge( i ).hasMarker() ? elt.edge( i ).marker() : M_emptyMarker;
-            for ( uint16_type l = 0; l < mortar_fe_type::nDofPerEdge; ++l, ++lc )
+            for ( uint16_type l = 0; l < mortarDofPerEdge; ++l, ++lc )
             {
-                size_type gDof = elt.edge( i ).id() * mortar_fe_type::nDofPerEdge;
+                size_type gDof = elt.edge( i ).id() * mortarDofPerEdge;
 
                 int32_type sign = 1;
 
@@ -349,7 +336,7 @@ class DofFromMortar
                     }
 
                     else
-                        gDof += mortar_fe_type::nDofPerEdge - 1 - l;
+                        gDof += mortarDofPerEdge - 1 - l;
                 }
 
                 else
@@ -369,7 +356,12 @@ class DofFromMortar
     void addFaceDof( element_type const& elt, rank_type processor, size_type& next_free_dof,
                      ref_shift_type& shifts )
     {
-        return addFaceDof( elt, processor, next_free_dof, shifts, mpl::int_<mortar_fe_type::nDim>(), mpl::bool_<( mortar_fe_type::nDofPerFace > 0 )>() );
+        if constexpr ( mortar_fe_type::nDim == 2 )
+            return addFaceDof( elt, processor, next_free_dof, shifts,
+                               mpl::int_<2>(), mpl::bool_<true>() );
+        else if constexpr ( mortar_fe_type::nDim == 3 )
+            return addFaceDof( elt, processor, next_free_dof, shifts,
+                               mpl::int_<3>(), mpl::bool_<true>() );
     }
     void addFaceDof( element_type const& /*M*/, rank_type /*processor*/, size_type& /*next_free_dof*/,
                      ref_shift_type& /*shifts*/, mpl::int_<1>, mpl::bool_<false> )
@@ -388,9 +380,11 @@ class DofFromMortar
         uint16_type lc = local_shift;
         mesh_marker_type const& markerElt = elt.hasMarker() ? elt.marker() : M_emptyMarker;
 
-        for ( uint16_type l = 0; l < mortar_fe_type::nDofPerFace; ++l, ++lc )
+        uint16_type const mortarDofPerFace = M_mortar_fe.dofPerFace();
+        bool const isP0Continuous = M_mortar_fe.order() == 0 && is_continuous;
+        for ( uint16_type l = 0; l < mortarDofPerFace; ++l, ++lc )
         {
-            const size_type gDof = is_p0_continuous ? l : ie * mortar_fe_type::nDofPerFace + l;
+            const size_type gDof = isP0Continuous ? l : ie * mortarDofPerFace + l;
             M_doftable->insertDof( ie, lc, l, std::make_tuple( 2, gDof ), processor, next_free_dof, 1, false, global_shift, markerElt );
         }
 
@@ -413,6 +407,7 @@ class DofFromMortar
 
         uint16_type lc = local_shift;
 
+        uint16_type const mortarDofPerFace = M_mortar_fe.dofPerFace();
         for ( uint16_type i = 0; i < element_type::numFaces; ++i )
         {
             face_permutation_type permutation = elt.facePermutation( i );
@@ -425,9 +420,9 @@ class DofFromMortar
             uint16_type q = 0;
 
             // MaxOrder = Order - 2
-            int MaxOrder = int( ( 3 + std::sqrt( 1 + 8 * mortar_fe_type::nDofPerFace ) ) / 2 ) - 2;
+            int MaxOrder = int( ( 3 + std::sqrt( 1 + 8 * mortarDofPerFace ) ) / 2 ) - 2;
 
-            for ( uint16_type l = 0; l < mortar_fe_type::nDofPerFace; ++l, ++lc )
+            for ( uint16_type l = 0; l < mortarDofPerFace; ++l, ++lc )
             {
 
                 // TODO: orient the dof indices such
@@ -435,7 +430,7 @@ class DofFromMortar
                 // dof of the connected faces. There
                 // are a priori many permutations of
                 // the dof face indices
-                size_type gDof = elt.face( i ).id() * mortar_fe_type::nDofPerFace;
+                size_type gDof = elt.face( i ).id() * mortarDofPerFace;
                 int32_type sign = 1;
 
                 q = q + 1;
@@ -450,7 +445,7 @@ class DofFromMortar
                 if ( !mortar_fe_type::is_modal )
                 {
                     // no need of permutation is identity or only one dof on face
-                    if ( permutation == face_permutation_type( 1 ) || mortar_fe_type::nDofPerFace == 1 )
+                    if ( permutation == face_permutation_type( 1 ) || mortarDofPerFace == 1 )
                         gDof += l;
 
                     else
@@ -484,7 +479,8 @@ class DofFromMortar
     void addVolumeDof( element_type const& elt, rank_type processor, size_type& next_free_dof,
                        ref_shift_type& shifts )
     {
-        return addVolumeDof( elt, processor, next_free_dof, shifts, mpl::bool_<( mortar_fe_type::nDofPerVolume > 0 )>() );
+        return addVolumeDof( elt, processor, next_free_dof, shifts,
+                             mpl::bool_<true>() );
     }
     void addVolumeDof( element_type const& /*M*/, rank_type /*processor*/, size_type& /*next_free_dof*/,
                        ref_shift_type& /*shifts*/, mpl::bool_<false> )
@@ -500,9 +496,11 @@ class DofFromMortar
         uint16_type lc = local_shift;
         mesh_marker_type const& markerElt = elt.hasMarker() ? elt.marker() : M_emptyMarker;
 
-        for ( uint16_type l = 0; l < mortar_fe_type::nDofPerVolume; ++l, ++lc )
+        uint16_type const mortarDofPerVolume = M_mortar_fe.dofPerVolume();
+        bool const isP0Continuous = M_mortar_fe.order() == 0 && is_continuous;
+        for ( uint16_type l = 0; l < mortarDofPerVolume; ++l, ++lc )
         {
-            const size_type gDof = is_p0_continuous ? l : ie * mortar_fe_type::nDofPerVolume + l;
+            const size_type gDof = isP0Continuous ? l : ie * mortarDofPerVolume + l;
             M_doftable->insertDof( ie, lc, l, std::make_tuple( 3, gDof ), processor, next_free_dof, 1, false, global_shift, markerElt );
         }
 
@@ -549,11 +547,11 @@ void DofFromMortar<DofTableType, MortarFEType, FEType>::add( element_type const&
        elements from lowest dimension (vertex) to
        highest dimension (element)
     */
-    if constexpr ( mortar_fe_type::nDofPerVertex > 0 )
+    if ( M_mortar_fe.dofPerVertex() > 0 )
         addVertexDof( elt, processor, next_free_dof, shifts );
-    if constexpr ( mortar_fe_type::nDofPerEdge > 0 )
+    if ( M_mortar_fe.dofPerEdge() > 0 )
         addEdgeDof( elt, processor, next_free_dof, shifts );
-    if constexpr ( mortar_fe_type::nDofPerFace > 0 )
+    if ( M_mortar_fe.dofPerFace() > 0 )
         addFaceDof( elt, processor, next_free_dof, shifts );
 }
 } // namespace Feel

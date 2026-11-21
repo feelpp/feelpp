@@ -51,6 +51,7 @@ if (FEELPP_DISABLE_COMPILE_FAILURE )
 endif()
 message(STATUS "[feelpp/testsuite] disable compile failure: ${FEELPP_DISABLE_COMPILE_FAILURE}")
 
+add_subdirectory(modelcore)
 
 
 # Only add test subdirectories for enabled toolboxes

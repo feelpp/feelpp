@@ -114,7 +114,7 @@ public:
     typedef Periodic<> periodic_type;
 
 
-    typedef FunctionSpace<mesh_type, temp_basis_type, Periodicity<Periodic<> > > temp_functionspace_type;
+    typedef FunctionSpace<mesh_type, temp_basis_type, value_type> temp_functionspace_type;
     typedef std::shared_ptr<temp_functionspace_type> temp_functionspace_ptrtype;
     typedef typename temp_functionspace_type::element_type temp_element_type;
     typedef std::shared_ptr<temp_element_type> temp_element_ptrtype;

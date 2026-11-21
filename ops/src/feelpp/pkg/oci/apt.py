@@ -11,7 +11,7 @@ from .catalog import ImageTarget, list_image_targets
 from .bake_permissions import fs_read_allow_flags, required_fs_read_paths_from_bake_payload
 from .cmake_presets import resolve_cmake_preset
 from .common import (
-    branch_tag_suffix,
+    branch_image_tag,
     default_bake_target_name,
     oci_image_ref,
 )
@@ -129,19 +129,19 @@ def _component_set(component_set_name: str | None, repo_root: Path) -> list[str]
 
 
 def _builder_tag(target: ImageTarget, *, branch: str) -> str:
-    return f"{target.oci_dist}{branch_tag_suffix(branch)}-dev"
+    return branch_image_tag(target.oci_dist, branch=branch, suffix="-dev")
 
 
 def _runtime_tag(target: ImageTarget, *, branch: str) -> str:
-    return f"{target.oci_dist}{branch_tag_suffix(branch)}"
+    return branch_image_tag(target.oci_dist, branch=branch)
 
 
 def _full_builder_tag(target: ImageTarget, *, branch: str) -> str:
-    return f"{target.oci_dist}{branch_tag_suffix(branch)}-full-dev"
+    return branch_image_tag(target.oci_dist, branch=branch, suffix="-full-dev")
 
 
 def _full_runtime_tag(target: ImageTarget, *, branch: str) -> str:
-    return f"{target.oci_dist}{branch_tag_suffix(branch)}-full"
+    return branch_image_tag(target.oci_dist, branch=branch, suffix="-full")
 
 
 def _environment_image_ref(

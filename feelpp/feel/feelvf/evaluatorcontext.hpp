@@ -1,26 +1,13 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ * SPDX-FileContributor: Stephane Veys <stephane.veys@gmail.com>
+ *
+ * SPDX-FileCopyrightText: 2013-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-2.1-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2012-03-20
-
-  Copyright (C) 2013-2016 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file evaluator.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -32,6 +19,7 @@
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelcore/commobject.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelvf/field.hpp>
 #include <feel/feelvf/projectors.hpp>
 
 namespace Feel
@@ -499,7 +487,7 @@ auto evaluateFromContext( Ts && ... v )
 {
     auto args = NA::make_arguments( std::forward<Ts>(v)... );
     auto && context = args.get(_context);
-    auto && expr = args.get(_expr);
+    auto expr = Feel::vf::toValueExpression( args.get(_expr) );
     auto && context2 = args.get_else(_context2,context.functionSpace()->context());
     int max_points_used = args.get_else(_max_points_used,-1);
     auto && points_used = args.get_else(_points_used,std::nullopt );
@@ -523,5 +511,3 @@ auto evaluateFromContext( Ts && ... v )
 
 
 #endif /* __FEELPP_EVALUATORS_H */
-
-

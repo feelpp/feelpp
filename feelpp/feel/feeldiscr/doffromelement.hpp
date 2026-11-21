@@ -1,36 +1,29 @@
-//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-//!
-//! This file is part of the Feel++ library
-//!
-//! This library is free software; you can redistribute it and/or
-//! modify it under the terms of the GNU Lesser General Public
-//! License as published by the Free Software Foundation; either
-//! version 2.1 of the License, or (at your option) any later version.
-//!
-//! This library is distributed in the hope that it will be useful,
-//! but WITHOUT ANY WARRANTY; without even the implied warranty of
-//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//! Lesser General Public License for more details.
-//!
-//! You should have received a copy of the GNU Lesser General Public
-//! License along with this library; if not, write to the Free Software
-//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-//!
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2013-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
 //! @file
 //! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 //! @date 23 Mar 2013
-//! @copyright 2013-2017 Feel++ Consortium
-//!
+
 #ifndef FEELPP_DOFFROMELEMENT_HPP
 #define FEELPP_DOFFROMELEMENT_HPP 1
 
 #include <feel/feeldiscr/dof.hpp>
+#include <feel/feeldiscr/doflayout.hpp>
 #include <feel/feeldiscr/traits.hpp>
 #include <feel/feelpoly/hcurlpolynomialset.hpp>
 #include <feel/feelpoly/hdivpolynomialset.hpp>
 #include <feel/feelpoly/policy.hpp>
+#include <feel/feelpoly/order.hpp>
 
 #include <feel/feelmesh/marker.hpp>
+#include <algorithm>
+#include <vector>
 
 namespace Feel
 {
@@ -86,16 +79,13 @@ class DofFromElement
     static inline const bool is_modal = fe_type::is_modal;
     static inline const bool is_product = fe_type::is_product;
 
+    //! @brief True if polynomial order is determined at runtime
+    static constexpr bool is_order_dynamic = orderIsDynamic<fe_type>;
+
     static inline const bool is_p0_continuous = ( ( nOrder == 0 ) && is_continuous );
 
-    static constexpr int numberOfDofPerElement()
-    {
-        if constexpr ( is_product )
-            return fe_type::nLocalDof * nComponents;
-        else
-            return fe_type::nLocalDof;
-    }
-    static inline const uint16_type nDofPerElement = numberOfDofPerElement();
+    static inline const uint16_type nDofPerElement =
+        finiteElementFixedLocalDofCountOrZero<fe_type>();
 
     //@}
 
@@ -146,6 +136,292 @@ class DofFromElement
     fe_type const& M_fe;
     mesh_marker_type M_emptyMarker;
 
+    struct DofInsertEntry
+    {
+        uint16_type localDof = 0;
+        uint16_type localEntity = 0;
+        uint16_type entityDim = 0;
+        size_type globalDof = 0;
+        DofKey<size_type> key;
+        DofFunctionalKind functional = DofFunctionalKind::Other;
+        uint16_type parentLocalDof = 0;
+        uint16_type component = 0;
+        uint16_type componentStride = 1;
+        int32_type sign = 1;
+        bool hasTransform = false;
+        DofTransform transform;
+        bool hasLocGlobSign = false;
+        int32_type locGlobSign = 1;
+        mesh_marker_type marker;
+    };
+
+    [[nodiscard]] size_type canonicalPointId( size_type id ) const
+    {
+        auto* mesh = M_doftable->mesh();
+        return mesh ? mesh->canonicalPointId( id ) : id;
+    }
+    [[nodiscard]] size_type canonicalEdgeId( size_type id ) const
+    {
+        auto* mesh = M_doftable->mesh();
+        return mesh ? mesh->canonicalEdgeId( id ) : id;
+    }
+    [[nodiscard]] size_type canonicalFaceId( size_type id ) const
+    {
+        auto* mesh = M_doftable->mesh();
+        return mesh ? mesh->canonicalFaceId( id ) : id;
+    }
+    [[nodiscard]] bool isP0Continuous() const noexcept
+    {
+        if constexpr ( !is_continuous )
+            return false;
+        else
+            return M_fe.order() == 0;
+    }
+    [[nodiscard]] static constexpr uint16_type feFamilyTag() noexcept
+    {
+        if constexpr ( requires { fe_type::TAG; } )
+            return fe_type::TAG;
+        else
+            return 0;
+    }
+
+    bool addDofUsingFiniteElementLayout( element_type const& __elt,
+                                         rank_type processor,
+                                         size_type& next_free_dof,
+                                         size_type shift )
+    {
+        if constexpr ( !FiniteElementDofLayoutProvider<fe_type> )
+            return false;
+
+        if constexpr ( fe_type::is_modal )
+            return false;
+
+        if constexpr ( is_tensor2symm )
+            return false;
+
+        const uint16_type nLocalDof = finiteElementLocalDofCount( M_fe );
+        if ( nLocalDof == 0 )
+            return false;
+
+        const uint16_type nLocalDofPerComponent = M_fe.localDofPerComponent();
+        const uint16_type componentStride = nLocalDofPerComponent > 0
+            ? static_cast<uint16_type>( nLocalDof / nLocalDofPerComponent )
+            : 1;
+
+        const uint16_type nDofPerVertex = M_fe.dofPerVertex();
+        const uint16_type nDofPerEdge = M_fe.dofPerEdge();
+        const uint16_type nDofPerFace = M_fe.dofPerFace();
+        const uint16_type nDofPerVolume = M_fe.dofPerVolume();
+
+        std::vector<DofInsertEntry> entries;
+        entries.reserve( nLocalDof );
+
+        for ( uint16_type localDof = 0; localDof < nLocalDof; ++localDof )
+        {
+            auto const layout = M_fe.localDofLayout( localDof );
+            auto const& attachment = layout.attachment;
+
+            if ( !attachment.isValid() )
+                return false;
+
+            DofInsertEntry entry;
+            entry.localDof = layout.localDofId;
+            entry.parentLocalDof = layout.parentLocalDofId;
+            entry.component = layout.component;
+            entry.componentStride = componentStride;
+            if ( entry.localDof != M_doftable->localDofId( layout.parentLocalDofId, layout.component ) )
+                return false;
+            entry.entityDim = static_cast<uint16_type>( attachment.entityDim );
+            entry.functional = finiteElementDofFunctionalKind( M_fe, localDof );
+            if constexpr ( ( is_hdiv_conforming_v<fe_type> || is_hcurl_conforming_v<fe_type> ) &&
+                           FiniteElementDofTransformProvider<fe_type, element_type> )
+            {
+                entry.transform = M_fe.dofTransform( __elt, layout.localDofId );
+                entry.hasTransform = true;
+                entry.sign = doftable_type::dofTransformSignProjection( entry.transform );
+                entry.hasLocGlobSign = true;
+                entry.locGlobSign = entry.sign;
+            }
+
+            auto setKey = [&entry,&layout]( uint16_type topologicalDim,
+                                            size_type canonicalEntityId,
+                                            uint16_type ordinal )
+            {
+                entry.key = DofKey<size_type>{
+                    .topologicalDim = static_cast<uint8_type>( topologicalDim ),
+                    .canonicalEntityId = canonicalEntityId,
+                    .ordinal = ordinal,
+                    .component = static_cast<uint16_type>( layout.component ),
+                    .familyTag = feFamilyTag(),
+                    .variant = static_cast<uint16_type>( layout.attachment.kind )
+                };
+                entry.entityDim = static_cast<uint16_type>( entry.key.topologicalDim );
+            };
+
+            switch ( attachment.entityDim )
+            {
+            case 0:
+            {
+                if ( nDofPerVertex == 0 || attachment.entityId >= element_type::numVertices ||
+                     attachment.ordinal >= nDofPerVertex )
+                    return false;
+
+                auto const& point = __elt.point( attachment.entityId );
+                entry.localEntity = attachment.entityId;
+                setKey( 0, this->canonicalPointId( point.id() ), attachment.ordinal );
+                entry.globalDof = entry.key.canonicalEntityId * nDofPerVertex + entry.key.ordinal;
+                entry.marker = point.hasMarker() ? point.marker() : M_emptyMarker;
+                break;
+            }
+            case 1:
+            {
+                if ( nDofPerEdge == 0 || attachment.ordinal >= nDofPerEdge )
+                    return false;
+
+                if constexpr ( nDim == 1 )
+                {
+                    entry.localEntity = attachment.ordinal;
+                    setKey( 1, this->isP0Continuous() ? 0 : __elt.id(), attachment.ordinal );
+                    entry.globalDof = entry.key.canonicalEntityId * nDofPerEdge + entry.key.ordinal;
+                    entry.marker = __elt.hasMarker() ? __elt.marker() : M_emptyMarker;
+                }
+                else
+                {
+                    if ( attachment.entityId >= element_type::numEdges )
+                        return false;
+
+                    entry.localEntity = attachment.entityId;
+                    auto const canonicalEntityId = this->canonicalEdgeId( __elt.edge( attachment.entityId ).id() );
+                    entry.marker = __elt.edge( attachment.entityId ).hasMarker() ? __elt.edge( attachment.entityId ).marker() : M_emptyMarker;
+
+                    if constexpr ( FiniteElementDofTransformProvider<fe_type, element_type> )
+                    {
+                        setKey( 1, canonicalEntityId, entry.transform.mapOrdinal( attachment.ordinal ) );
+                    }
+                    else if ( __elt.edgePermutation( attachment.entityId ).value() == edge_permutation_type::IDENTITY )
+                    {
+                        setKey( 1, canonicalEntityId, attachment.ordinal );
+                        if constexpr ( ( is_hdiv_conforming_v<fe_type> || is_hcurl_conforming_v<fe_type> ) &&
+                                       !FiniteElementDofTransformProvider<fe_type, element_type> )
+                        {
+                            entry.hasLocGlobSign = true;
+                            entry.locGlobSign = 1;
+                        }
+                    }
+                    else if ( __elt.edgePermutation( attachment.entityId ).value() == edge_permutation_type::REVERSE_PERMUTATION )
+                    {
+                        setKey( 1, canonicalEntityId, static_cast<uint16_type>( nDofPerEdge - 1 - attachment.ordinal ) );
+                        if constexpr ( ( is_hdiv_conforming_v<fe_type> || is_hcurl_conforming_v<fe_type> ) &&
+                                       !FiniteElementDofTransformProvider<fe_type, element_type> )
+                        {
+                            entry.sign = -1;
+                            entry.hasLocGlobSign = true;
+                            entry.locGlobSign = -1;
+                        }
+                    }
+                    else
+                        return false;
+
+                    entry.globalDof = entry.key.canonicalEntityId * nDofPerEdge + entry.key.ordinal;
+                }
+                break;
+            }
+            case 2:
+            {
+                if ( nDofPerFace == 0 || attachment.ordinal >= nDofPerFace )
+                    return false;
+
+                if constexpr ( nDim == 2 )
+                {
+                    entry.localEntity = attachment.ordinal;
+                    setKey( 2, this->isP0Continuous() ? 0 : __elt.id(), attachment.ordinal );
+                    entry.globalDof = entry.key.canonicalEntityId * nDofPerFace + entry.key.ordinal;
+                    entry.marker = __elt.hasMarker() ? __elt.marker() : M_emptyMarker;
+                }
+                else if constexpr ( nDim == 3 )
+                {
+                    if ( attachment.entityId >= element_type::numFaces )
+                        return false;
+
+                    face_permutation_type permutation = __elt.facePermutation( attachment.entityId );
+                    if ( permutation == face_permutation_type( 0 ) )
+                        return false;
+
+                    entry.localEntity = attachment.entityId;
+                    auto const canonicalEntityId = this->canonicalFaceId( __elt.face( attachment.entityId ).id() );
+                    entry.marker = __elt.face( attachment.entityId ).hasMarker() ? __elt.face( attachment.entityId ).marker() : M_emptyMarker;
+
+                    if constexpr ( FiniteElementDofTransformProvider<fe_type, element_type> )
+                        setKey( 2, canonicalEntityId, entry.transform.mapOrdinal( attachment.ordinal ) );
+                    else if ( nDofPerFace == 1 || permutation == face_permutation_type( face_permutation_type::IDENTITY ) )
+                        setKey( 2, canonicalEntityId, attachment.ordinal );
+                    else
+                    {
+                        if ( !M_doftable->hasValidFacePermutation( permutation, nDofPerFace ) )
+                            return false;
+                        auto const& perm = M_doftable->facePermutationVector( permutation, nDofPerFace );
+                        setKey( 2, canonicalEntityId, static_cast<uint16_type>( perm( attachment.ordinal ) ) );
+                    }
+                    entry.globalDof = entry.key.canonicalEntityId * nDofPerFace + entry.key.ordinal;
+
+                    if constexpr ( ( is_hdiv_conforming_v<fe_type> || is_hcurl_conforming_v<fe_type> ) &&
+                                   !FiniteElementDofTransformProvider<fe_type, element_type> )
+                    {
+                        entry.hasLocGlobSign = true;
+                        entry.locGlobSign = ( __elt.face( attachment.entityId ).ad_first() == __elt.id() ) ? 1 : -1;
+                    }
+                }
+                else
+                    return false;
+                break;
+            }
+            case 3:
+            {
+                if ( nDofPerVolume == 0 || attachment.ordinal >= nDofPerVolume )
+                    return false;
+
+                entry.localEntity = attachment.ordinal;
+                setKey( 3, this->isP0Continuous() ? 0 : __elt.id(), attachment.ordinal );
+                entry.globalDof = entry.key.canonicalEntityId * nDofPerVolume + entry.key.ordinal;
+                entry.marker = __elt.hasMarker() ? __elt.marker() : M_emptyMarker;
+                break;
+            }
+            default:
+                return false;
+            }
+
+            entries.push_back( std::move( entry ) );
+        }
+
+        if ( componentStride > 1 )
+        {
+            std::stable_sort( entries.begin(), entries.end(),
+                              []( DofInsertEntry const& a, DofInsertEntry const& b )
+                              {
+                                  return std::tie( a.parentLocalDof, a.component ) <
+                                         std::tie( b.parentLocalDof, b.component );
+                              } );
+        }
+
+        const size_type ie = __elt.id();
+        for ( auto const& entry : entries )
+        {
+            DCHECK( entry.key.isValid() )
+                << "invalid descriptor-backed dof key for element " << ie
+                << " local dof " << entry.localDof;
+            M_doftable->insertFlatDof( ie, entry.localDof, entry.localEntity,
+                                       std::make_tuple( entry.entityDim, entry.globalDof ),
+                                       entry.component, entry.componentStride,
+                                       processor, next_free_dof, entry.sign, false, shift, entry.marker );
+            if ( entry.hasTransform )
+                M_doftable->setLocalToGlobalTransform( ie, entry.localDof, entry.transform );
+            else if ( entry.hasLocGlobSign )
+                M_doftable->setLocalToGlobalSign( ie, entry.localDof, entry.locGlobSign );
+        }
+
+        return true;
+    }
+
   private:
     //! default constructor
     DofFromElement();
@@ -163,328 +439,351 @@ class DofFromElement
     void addVertexDof( element_type const& __elt, rank_type processor, size_type& next_free_dof,
                        ref_shift_type& shifts )
     {
-        if constexpr ( fe_type::nDofPerVertex > 0 )
+        // Early return if no vertex DOFs
+        if constexpr ( !is_order_dynamic && fe_type::nDofPerVertex == 0 )
+            return;
+
+        // Runtime check for dynamic order
+        const uint16_type nDofPerVertex = M_fe.dofPerVertex();
+        if ( nDofPerVertex == 0 )
+            return;
+
+        auto& [local_shift, global_shift] = shifts;
+
+        size_type ie = __elt.id();
+
+        uint16_type lc = local_shift;
+
+        for ( uint16_type i = 0; i < element_type::numVertices; ++i )
         {
-            auto& [local_shift, global_shift] = shifts;
-
-            size_type ie = __elt.id();
-
-            uint16_type lc = local_shift;
-
-            for ( uint16_type i = 0; i < element_type::numVertices; ++i )
+            auto const& thepoint = __elt.point( i );
+            mesh_marker_type const& pointMarker = thepoint.hasMarker() ? thepoint.marker() : M_emptyMarker;
+            for ( uint16_type l = 0; l < nDofPerVertex; ++l, ++lc )
             {
-                auto const& thepoint = __elt.point( i );
-                mesh_marker_type const& pointMarker = thepoint.hasMarker() ? thepoint.marker() : M_emptyMarker;
-                for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l, ++lc )
-                {
-                    //const size_type gDof = global_shift + ( __elt.point( i ).id() ) * fe_type::nDofPerVertex + l;
-                    const size_type gDof = ( thepoint.id() ) * fe_type::nDofPerVertex + l;
-                    M_doftable->insertDof( ie, lc, i, std::make_tuple( 0, gDof ),
-                                           processor, next_free_dof, 1, false, global_shift, pointMarker );
-                }
+                const size_type gDof = this->canonicalPointId( thepoint.id() ) * nDofPerVertex + l;
+                M_doftable->insertDof( ie, lc, i, std::make_tuple( 0, gDof ),
+                                       processor, next_free_dof, 1, false, global_shift, pointMarker );
             }
+        }
 
-            // update shifts
-            local_shift = lc;
+        // update shifts
+        local_shift = lc;
 
 #if !defined( NDEBUG )
-            DVLOG( 4 ) << "[Dof::updateVolumeDof(addVertexDof] vertex proc" << processor << " next_free_dof = " << next_free_dof << "\n";
+        DVLOG( 4 ) << "[Dof::updateVolumeDof(addVertexDof] vertex proc" << processor << " next_free_dof = " << next_free_dof << "\n";
 #endif
-        }
     }
     void addEdgeDof( element_type const& __elt, rank_type processor, size_type& next_free_dof,
                      ref_shift_type& shifts )
     {
-        if constexpr ( fe_type::nDofPerEdge > 0 )
+        // Early return if no edge DOFs
+        if constexpr ( !is_order_dynamic && fe_type::nDofPerEdge == 0 )
+            return;
+
+        // Runtime check for dynamic order
+        const uint16_type nDofPerEdge = M_fe.dofPerEdge();
+        if ( nDofPerEdge == 0 )
+            return;
+
+        if constexpr ( nDim == 1 )
         {
-            if constexpr ( nDim == 1 )
-            {
-                auto& [local_shift, global_shift] = shifts;
-
-                size_type ie = __elt.id();
-                uint16_type lc = local_shift;
-                mesh_marker_type const& eltMarker = __elt.hasMarker() ? __elt.marker() : M_emptyMarker;
-
-                for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l, ++lc )
-                {
-                    const size_type gDof = is_p0_continuous ? l : ie * fe_type::nDofPerEdge + l;
-                    M_doftable->insertDof( ie, lc, l, std::make_tuple( 1, gDof ), processor, next_free_dof, 1, false, global_shift, eltMarker );
-                }
-
-                // update shifts
-                local_shift = lc;
-#if !defined( NDEBUG )
-                DVLOG( 4 ) << "[Dof::addEdgeDof(1)] element proc" << processor << " next_free_dof = " << next_free_dof << "\n";
-#endif
-            }
-            else if constexpr ( nDim == 2 )
-            {
-                auto& [local_shift, global_shift] = shifts;
-
-                size_type ie = __elt.id();
-                uint16_type lc = local_shift;
-
-                /** The boundary dofs are constructed in the same way if the basis is modal **/
-
-                for ( uint16_type i = 0; i < element_type::numEdges; ++i )
-                {
-                    mesh_marker_type const& edgeMarker = __elt.edge( i ).hasMarker() ? __elt.edge( i ).marker() : M_emptyMarker;
-
-                    for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l, ++lc )
-                    {
-                        size_type gDof = __elt.edge( i ).id() * fe_type::nDofPerEdge;
-                        int32_type sign = 1;
-
-                        if ( __elt.edgePermutation( i ).value() == edge_permutation_type::IDENTITY )
-                        {
-                            gDof += l; // both nodal and modal case
-                            if ( is_hdiv_conforming<fe_type>::value || is_hcurl_conforming<fe_type>::value )
-                            {
-
-                                M_doftable->M_locglob_signs[ie][lc] = 1;
-                            }
-                        }
-
-                        else if ( __elt.edgePermutation( i ).value() == edge_permutation_type::REVERSE_PERMUTATION )
-                        {
-
-                            if ( fe_type::is_modal )
-                            {
-                                //only half of the modes (odd polynomial order) are negative.
-                                sign = ( l % 2 ) ? ( -1 ) : ( 1 );
-                                gDof += l;
-                            }
-                            else
-                                gDof += fe_type::nDofPerEdge - 1 - l;
-                            if ( is_hdiv_conforming<fe_type>::value || is_hcurl_conforming<fe_type>::value )
-                            {
-                                sign = -1;
-                                M_doftable->M_locglob_signs[ie][lc] = -1;
-                            }
-                        }
-
-                        else
-                            FEELPP_ASSERT( 0 ).error( "invalid edge permutation" );
-
-                        M_doftable->insertDof( ie, lc, i, std::make_tuple( 1, gDof ), processor, next_free_dof, sign, false, global_shift, edgeMarker );
-                    }
-                }
-
-                // update shifts
-                local_shift = lc;
-#if !defined( NDEBUG )
-                DVLOG( 4 ) << "[Dof::addEdgeDof] edge proc" << processor << " next_free_dof = " << next_free_dof << "\n";
-#endif
-            }
-            else if constexpr ( nDim == 3 )
-            {
-                auto& [local_shift, global_shift] = shifts;
-
-                size_type ie = __elt.id();
-                uint16_type lc = local_shift;
-
-                for ( uint16_type i = 0; i < element_type::numEdges; ++i )
-                {
-                    mesh_marker_type const& edgeMarker = __elt.edge( i ).hasMarker() ? __elt.edge( i ).marker() : M_emptyMarker;
-                    for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l, ++lc )
-                    {
-                        size_type gDof = __elt.edge( i ).id() * fe_type::nDofPerEdge;
-
-                        int32_type sign = 1;
-
-                        if ( __elt.edgePermutation( i ).value() == edge_permutation_type::IDENTITY )
-                        {
-                            gDof += l; // both nodal and modal case
-                            if ( is_hcurl_conforming<fe_type>::value )
-                            {
-                                M_doftable->M_locglob_signs[ie][lc] = 1;
-                            }
-                        }
-
-                        else if ( __elt.edgePermutation( i ).value() == edge_permutation_type::REVERSE_PERMUTATION )
-                        {
-
-                            if constexpr ( fe_type::is_modal )
-                                {
-                                    //only half of the modes (odd polynomial order) are negative.
-                                    sign = ( l % 2 ) ? ( -1 ) : ( 1 );
-                                    gDof += l;
-                                }
-                            else
-                                gDof += fe_type::nDofPerEdge - 1 - l;
-                            if constexpr ( is_hcurl_conforming_v<fe_type> )
-                            {
-                                sign = -1;
-                                M_doftable->M_locglob_signs[ie][lc] = -1;
-                            }
-                        }
-
-                        else
-                            FEELPP_ASSERT( 0 ).error( "invalid edge permutation" );
-
-                        M_doftable->insertDof( ie, lc, i, std::make_tuple( 1, gDof ), processor, next_free_dof, sign, false, global_shift, edgeMarker );
-                    }
-                }
-
-                // update shifts
-                local_shift = lc;
-#if !defined( NDEBUG )
-                DVLOG( 4 ) << "[Dof::addEdgeDof] edge proc" << processor << " next_free_dof = " << next_free_dof << "\n";
-#endif
-            } // 3D
-        }     // dof > 0
-    }         // addEdgeDof
-    void addFaceDof( element_type const& __elt, rank_type processor, size_type& next_free_dof,
-                     ref_shift_type& shifts )
-    {
-        if constexpr ( fe_type::nDofPerFace > 0 )
-        {
-            if constexpr ( nDim == 2 )
-            {
-                auto& [local_shift, global_shift] = shifts;
-
-                size_type ie = __elt.id();
-                uint16_type lc = local_shift;
-                mesh_marker_type const& eltMarker = __elt.hasMarker() ? __elt.marker() : M_emptyMarker;
-
-                for ( uint16_type l = 0; l < fe_type::nDofPerFace; ++l, ++lc )
-                {
-                    const size_type gDof = is_p0_continuous ? l : ie * fe_type::nDofPerFace + l;
-                    M_doftable->insertDof( ie, lc, l, std::make_tuple( 2, gDof ), processor, next_free_dof, 1, false, global_shift, eltMarker );
-                }
-
-                // update shifts
-                local_shift = lc;
-#if !defined( NDEBUG )
-                DVLOG( 4 ) << "[Dof::addFaceDof(2,true)] face proc" << processor << " next_free_dof = " << next_free_dof << "\n";
-#endif
-            }
-            else if constexpr ( nDim == 3 )
-            {
-                auto& [local_shift, global_shift] = shifts;
-
-                size_type ie = __elt.id();
-
-                uint16_type lc = local_shift;
-
-                for ( uint16_type i = 0; i < element_type::numFaces; ++i )
-                {
-                    face_permutation_type permutation = __elt.facePermutation( i );
-                    mesh_marker_type const& faceMarker = __elt.face( i ).hasMarker() ? __elt.face( i ).marker() : M_emptyMarker;
-
-                    DCHECK( permutation != face_permutation_type( 0 ) ) << "invalid face permutation";
-
-                    // Polynomial order in each direction
-                    uint16_type p = 1;
-                    uint16_type q = 0;
-
-                    // MaxOrder = Order - 2
-                    int MaxOrder = int( ( 3 + std::sqrt( 1 + 8 * fe_type::nDofPerFace ) ) / 2 ) - 2;
-
-                    for ( uint16_type l = 0; l < fe_type::nDofPerFace; ++l, ++lc )
-                    {
-
-                        // TODO: orient the dof indices such
-                        // that they match properly the faces
-                        // dof of the connected faces. There
-                        // are a priori many permutations of
-                        // the dof face indices
-                        size_type gDof = __elt.face( i ).id() * fe_type::nDofPerFace;
-                        int32_type sign = 1;
-
-                        q = q + 1;
-
-                        if ( q > MaxOrder )
-                        {
-                            q = 1;
-                            p = p + 1;
-                            MaxOrder = MaxOrder - 1;
-                        }
-
-                        if constexpr ( !fe_type::is_modal )
-                        {
-                            if constexpr ( is_hdiv_conforming_v<fe_type> || is_hcurl_conforming_v<fe_type> )
-                            {
-                                if constexpr ( fe_type::nDofPerFace == 1 )
-                                    gDof += l;
-                                else
-                                    gDof += M_doftable->vector_permutation[permutation][l];
-
-                                /*
-                                         if (permutation  == face_permutation_type( 1 ))
-                                         M_doftable->M_locglob_signs[ie][l] = 1;
-                                         else
-                                         {
-                                         sign=-1;
-                                         M_doftable->M_locglob_signs[ie][l] = -1;
-                                         }*/
-                                if ( __elt.face( i ).ad_first() == __elt.id() )
-                                    M_doftable->M_locglob_signs[ie][lc] = 1;
-                                else
-                                    M_doftable->M_locglob_signs[ie][lc] = -1;
-
-                                //std::cout << "e=" << __elt.id() << " l=" << lc << " sign =" << M_doftable->M_locglob_signs[ie][lc] << "\n";
-                            }
-                            else
-                            {
-                                // no need of permutation is identity or only one dof on face
-                                if ( permutation == face_permutation_type( 1 ) || fe_type::nDofPerFace == 1 )
-                                    gDof += l;
-                                else
-                                    gDof += M_doftable->vector_permutation[permutation][l];
-                            }
-                        }
-
-                        else
-                        {
-                            gDof += l;
-
-                            if ( permutation == face_permutation_type( 2 ) )
-                            {
-                                // Reverse sign if polynomial order in
-                                // eta_1 direction is odd
-
-                                if ( p % 2 == 0 )
-                                    sign = -1;
-                            }
-                        }
-
-                        M_doftable->insertDof( ie, lc, i, std::make_tuple( 2, gDof ), processor, next_free_dof, sign, false, global_shift, faceMarker );
-                    }
-                }
-
-                // update shifts
-                local_shift = lc;
-#if !defined( NDEBUG )
-                DVLOG( 4 ) << "[Dof::addFaceDof<3>] face proc" << processor << " next_free_dof = " << next_free_dof << "\n";
-#endif
-            }
-        }
-    }
-    void addVolumeDof( element_type const& __elt, rank_type processor, size_type& next_free_dof,
-                       ref_shift_type& shifts )
-    {
-        if constexpr ( fe_type::nDofPerVolume > 0 )
-        {
-            BOOST_STATIC_ASSERT( element_type::numVolumes );
             auto& [local_shift, global_shift] = shifts;
 
             size_type ie = __elt.id();
             uint16_type lc = local_shift;
             mesh_marker_type const& eltMarker = __elt.hasMarker() ? __elt.marker() : M_emptyMarker;
 
-            for ( uint16_type l = 0; l < fe_type::nDofPerVolume; ++l, ++lc )
+            for ( uint16_type l = 0; l < nDofPerEdge; ++l, ++lc )
             {
-                const size_type gDof = is_p0_continuous ? l : ie * fe_type::nDofPerVolume + l;
-                M_doftable->insertDof( ie, lc, l, std::make_tuple( 3, gDof ), processor, next_free_dof, 1, false, global_shift, eltMarker );
+                const size_type gDof = this->isP0Continuous() ? l : ie * nDofPerEdge + l;
+                M_doftable->insertDof( ie, lc, l, std::make_tuple( 1, gDof ), processor, next_free_dof, 1, false, global_shift, eltMarker );
             }
 
             // update shifts
             local_shift = lc;
 #if !defined( NDEBUG )
-            DVLOG( 4 ) << "[Dof::updateVolumeDof(<2>)] element proc" << processor << " next_free_dof = " << next_free_dof << "\n";
+            DVLOG( 4 ) << "[Dof::addEdgeDof(1)] element proc" << processor << " next_free_dof = " << next_free_dof << "\n";
 #endif
         }
+        else if constexpr ( nDim == 2 )
+        {
+            auto& [local_shift, global_shift] = shifts;
+
+            size_type ie = __elt.id();
+            uint16_type lc = local_shift;
+
+            /** The boundary dofs are constructed in the same way if the basis is modal **/
+
+            for ( uint16_type i = 0; i < element_type::numEdges; ++i )
+            {
+                mesh_marker_type const& edgeMarker = __elt.edge( i ).hasMarker() ? __elt.edge( i ).marker() : M_emptyMarker;
+
+                for ( uint16_type l = 0; l < nDofPerEdge; ++l, ++lc )
+                {
+                    size_type gDof = this->canonicalEdgeId( __elt.edge( i ).id() ) * nDofPerEdge;
+                    int32_type sign = 1;
+
+                    if ( __elt.edgePermutation( i ).value() == edge_permutation_type::IDENTITY )
+                    {
+                        gDof += l; // both nodal and modal case
+                        if ( is_hdiv_conforming<fe_type>::value || is_hcurl_conforming<fe_type>::value )
+                        {
+
+                            M_doftable->setLocalToGlobalSign( ie, lc, 1 );
+                        }
+                    }
+
+                    else if ( __elt.edgePermutation( i ).value() == edge_permutation_type::REVERSE_PERMUTATION )
+                    {
+
+                        if ( fe_type::is_modal )
+                        {
+                            //only half of the modes (odd polynomial order) are negative.
+                            sign = ( l % 2 ) ? ( -1 ) : ( 1 );
+                            gDof += l;
+                        }
+                        else
+                            gDof += nDofPerEdge - 1 - l;
+                        if ( is_hdiv_conforming<fe_type>::value || is_hcurl_conforming<fe_type>::value )
+                        {
+                            sign = -1;
+                            M_doftable->setLocalToGlobalSign( ie, lc, -1 );
+                        }
+                    }
+
+                    else
+                        FEELPP_ASSERT( 0 ).error( "invalid edge permutation" );
+
+                    M_doftable->insertDof( ie, lc, i, std::make_tuple( 1, gDof ), processor, next_free_dof, sign, false, global_shift, edgeMarker );
+                }
+            }
+
+            // update shifts
+            local_shift = lc;
+#if !defined( NDEBUG )
+            DVLOG( 4 ) << "[Dof::addEdgeDof] edge proc" << processor << " next_free_dof = " << next_free_dof << "\n";
+#endif
+        }
+        else if constexpr ( nDim == 3 )
+        {
+            auto& [local_shift, global_shift] = shifts;
+
+            size_type ie = __elt.id();
+            uint16_type lc = local_shift;
+
+            for ( uint16_type i = 0; i < element_type::numEdges; ++i )
+            {
+                mesh_marker_type const& edgeMarker = __elt.edge( i ).hasMarker() ? __elt.edge( i ).marker() : M_emptyMarker;
+                for ( uint16_type l = 0; l < nDofPerEdge; ++l, ++lc )
+                {
+                    size_type gDof = this->canonicalEdgeId( __elt.edge( i ).id() ) * nDofPerEdge;
+
+                    int32_type sign = 1;
+
+                    if ( __elt.edgePermutation( i ).value() == edge_permutation_type::IDENTITY )
+                    {
+                        gDof += l; // both nodal and modal case
+                        if ( is_hcurl_conforming<fe_type>::value )
+                        {
+                            M_doftable->setLocalToGlobalSign( ie, lc, 1 );
+                        }
+                    }
+
+                    else if ( __elt.edgePermutation( i ).value() == edge_permutation_type::REVERSE_PERMUTATION )
+                    {
+
+                        if constexpr ( fe_type::is_modal )
+                            {
+                                //only half of the modes (odd polynomial order) are negative.
+                                sign = ( l % 2 ) ? ( -1 ) : ( 1 );
+                                gDof += l;
+                            }
+                        else
+                            gDof += nDofPerEdge - 1 - l;
+                        if constexpr ( is_hcurl_conforming_v<fe_type> )
+                        {
+                            sign = -1;
+                            M_doftable->setLocalToGlobalSign( ie, lc, -1 );
+                        }
+                    }
+
+                    else
+                        FEELPP_ASSERT( 0 ).error( "invalid edge permutation" );
+
+                    M_doftable->insertDof( ie, lc, i, std::make_tuple( 1, gDof ), processor, next_free_dof, sign, false, global_shift, edgeMarker );
+                }
+            }
+
+            // update shifts
+            local_shift = lc;
+#if !defined( NDEBUG )
+            DVLOG( 4 ) << "[Dof::addEdgeDof] edge proc" << processor << " next_free_dof = " << next_free_dof << "\n";
+#endif
+        } // 3D
+    }         // addEdgeDof
+    void addFaceDof( element_type const& __elt, rank_type processor, size_type& next_free_dof,
+                     ref_shift_type& shifts )
+    {
+        // Early return if no face DOFs
+        if constexpr ( !is_order_dynamic && fe_type::nDofPerFace == 0 )
+            return;
+
+        // Runtime check for dynamic order
+        const uint16_type nDofPerFace = M_fe.dofPerFace();
+        if ( nDofPerFace == 0 )
+            return;
+
+        if constexpr ( nDim == 2 )
+        {
+            auto& [local_shift, global_shift] = shifts;
+
+            size_type ie = __elt.id();
+            uint16_type lc = local_shift;
+            mesh_marker_type const& eltMarker = __elt.hasMarker() ? __elt.marker() : M_emptyMarker;
+
+            for ( uint16_type l = 0; l < nDofPerFace; ++l, ++lc )
+            {
+                const size_type gDof = this->isP0Continuous() ? l : ie * nDofPerFace + l;
+                M_doftable->insertDof( ie, lc, l, std::make_tuple( 2, gDof ), processor, next_free_dof, 1, false, global_shift, eltMarker );
+            }
+
+            // update shifts
+            local_shift = lc;
+#if !defined( NDEBUG )
+            DVLOG( 4 ) << "[Dof::addFaceDof(2,true)] face proc" << processor << " next_free_dof = " << next_free_dof << "\n";
+#endif
+        }
+        else if constexpr ( nDim == 3 )
+        {
+            auto& [local_shift, global_shift] = shifts;
+
+            size_type ie = __elt.id();
+
+            uint16_type lc = local_shift;
+
+            for ( uint16_type i = 0; i < element_type::numFaces; ++i )
+            {
+                face_permutation_type permutation = __elt.facePermutation( i );
+                mesh_marker_type const& faceMarker = __elt.face( i ).hasMarker() ? __elt.face( i ).marker() : M_emptyMarker;
+
+                DCHECK( permutation != face_permutation_type( 0 ) ) << "invalid face permutation";
+
+                // Polynomial order in each direction
+                uint16_type p = 1;
+                uint16_type q = 0;
+
+                // MaxOrder = Order - 2
+                int MaxOrder = int( ( 3 + std::sqrt( 1 + 8 * nDofPerFace ) ) / 2 ) - 2;
+
+                for ( uint16_type l = 0; l < nDofPerFace; ++l, ++lc )
+                {
+
+                    // TODO: orient the dof indices such
+                    // that they match properly the faces
+                    // dof of the connected faces. There
+                    // are a priori many permutations of
+                    // the dof face indices
+                    size_type gDof = this->canonicalFaceId( __elt.face( i ).id() ) * nDofPerFace;
+                    int32_type sign = 1;
+
+                    q = q + 1;
+
+                    if ( q > MaxOrder )
+                    {
+                        q = 1;
+                        p = p + 1;
+                        MaxOrder = MaxOrder - 1;
+                    }
+
+                    if constexpr ( !fe_type::is_modal )
+                    {
+                        if constexpr ( is_hdiv_conforming_v<fe_type> || is_hcurl_conforming_v<fe_type> )
+                        {
+                            // no need of permutation if identity or only one dof on face
+                            if ( nDofPerFace == 1 || permutation == face_permutation_type( face_permutation_type::IDENTITY ) )
+                                gDof += l;
+                            else
+                            {
+                                auto const& perm = M_doftable->facePermutationVector( permutation, nDofPerFace );
+                                gDof += perm( l );
+                            }
+
+                            if ( __elt.face( i ).ad_first() == __elt.id() )
+                                M_doftable->setLocalToGlobalSign( ie, lc, 1 );
+                            else
+                                M_doftable->setLocalToGlobalSign( ie, lc, -1 );
+                        }
+                        else
+                        {
+                            // no need of permutation if identity or only one dof on face
+                            if ( nDofPerFace == 1 || permutation == face_permutation_type( face_permutation_type::IDENTITY ) )
+                                gDof += l;
+                            else
+                            {
+                                auto const& perm = M_doftable->facePermutationVector( permutation, nDofPerFace );
+                                gDof += perm( l );
+                            }
+                        }
+                    }
+
+                    else
+                    {
+                        gDof += l;
+
+                        if ( permutation == face_permutation_type( 2 ) )
+                        {
+                            // Reverse sign if polynomial order in
+                            // eta_1 direction is odd
+
+                            if ( p % 2 == 0 )
+                                sign = -1;
+                        }
+                    }
+
+                    M_doftable->insertDof( ie, lc, i, std::make_tuple( 2, gDof ), processor, next_free_dof, sign, false, global_shift, faceMarker );
+                }
+            }
+
+            // update shifts
+            local_shift = lc;
+#if !defined( NDEBUG )
+            DVLOG( 4 ) << "[Dof::addFaceDof<3>] face proc" << processor << " next_free_dof = " << next_free_dof << "\n";
+#endif
+        }
+    }
+    void addVolumeDof( element_type const& __elt, rank_type processor, size_type& next_free_dof,
+                       ref_shift_type& shifts )
+    {
+        // Early return if no volume DOFs (compile-time check for static order)
+        if constexpr ( !is_order_dynamic && fe_type::nDofPerVolume == 0 )
+            return;
+
+        // For elements that don't have volumes (like 2D triangles), skip
+        if constexpr ( element_type::numVolumes == 0 )
+            return;
+
+        // Runtime check for dynamic order
+        const uint16_type nDofPerVolume = M_fe.dofPerVolume();
+        if ( nDofPerVolume == 0 )
+            return;
+
+        auto& [local_shift, global_shift] = shifts;
+
+        size_type ie = __elt.id();
+        uint16_type lc = local_shift;
+        mesh_marker_type const& eltMarker = __elt.hasMarker() ? __elt.marker() : M_emptyMarker;
+
+        for ( uint16_type l = 0; l < nDofPerVolume; ++l, ++lc )
+        {
+            const size_type gDof = this->isP0Continuous() ? l : ie * nDofPerVolume + l;
+            M_doftable->insertDof( ie, lc, l, std::make_tuple( 3, gDof ), processor, next_free_dof, 1, false, global_shift, eltMarker );
+        }
+
+        // update shifts
+        local_shift = lc;
+#if !defined( NDEBUG )
+        DVLOG( 4 ) << "[Dof::updateVolumeDof(<2>)] element proc" << processor << " next_free_dof = " << next_free_dof << "\n";
+#endif
     }
 };
 
@@ -508,6 +807,8 @@ void DofFromElement<DofTableType, FEType>::add( element_type const& __elt,
      */
     if constexpr ( is_continuous || is_discontinuous_locally )
     {
+        if ( this->addDofUsingFiniteElementLayout( __elt, processor, next_free_dof, shift ) )
+            return;
 
         /* idem as above but for local element
            numbering except that it is
@@ -535,6 +836,7 @@ void DofFromElement<DofTableType, FEType>::add( element_type const& __elt,
         size_type ie = __elt.id();
 
         const int ncdof = is_product ? nComponents : 1;
+        const uint16_type nLocalDof = M_fe.localDof();
 
         for ( uint16_type l = 0; l < nldof; ++l )
         {
@@ -544,12 +846,12 @@ void DofFromElement<DofTableType, FEType>::add( element_type const& __elt,
                 {
                     for ( int c2 = 0; c2 < c1; ++c2, ++next_free_dof )
                     {
-                        M_doftable->M_el_l2g.insert( dof_relation( localdof_type( ie, fe_type::nLocalDof * ( nComponents1 * c1 + c2 ) + l ),
+                        M_doftable->M_el_l2g.insert( dof_relation( localdof_type( ie, nLocalDof * ( nComponents1 * c1 + c2 ) + l ),
                                                                    Dof( ( M_doftable->dofIndex( next_free_dof ) ), 1, false ) ) );
-                        M_doftable->M_el_l2g.insert( dof_relation( localdof_type( ie, fe_type::nLocalDof * ( nComponents1 * c2 + c1 ) + l ),
+                        M_doftable->M_el_l2g.insert( dof_relation( localdof_type( ie, nLocalDof * ( nComponents1 * c2 + c1 ) + l ),
                                                                    Dof( ( M_doftable->dofIndex( next_free_dof ) ), 1, false ) ) );
                     }
-                    M_doftable->M_el_l2g.insert( dof_relation( localdof_type( ie, fe_type::nLocalDof * ( nComponents1 * c1 + c1 ) + l ),
+                    M_doftable->M_el_l2g.insert( dof_relation( localdof_type( ie, nLocalDof * ( nComponents1 * c1 + c1 ) + l ),
                                                                Dof( ( M_doftable->dofIndex( next_free_dof ) ), 1, false ) ) );
                     ++next_free_dof;
                 }
@@ -558,7 +860,7 @@ void DofFromElement<DofTableType, FEType>::add( element_type const& __elt,
             {
                 for ( int c = 0; c < ncdof; ++c, ++next_free_dof )
                 {
-                    M_doftable->M_el_l2g.insert( dof_relation( localdof_type( ie, fe_type::nLocalDof * c + l ),
+                    M_doftable->M_el_l2g.insert( dof_relation( localdof_type( ie, nLocalDof * c + l ),
                                                                Dof( ( M_doftable->dofIndex( next_free_dof ) ), 1, false ) ) );
                 }
             }

@@ -124,6 +124,37 @@ void addGinacMatrix( py::module& m )
            fmt::format( "create an {}x{}D expression out of a string", M, N ).c_str() );
 }
 
+template<int Dim, int Order>
+void defVonMises( py::module& m )
+{
+    using namespace Feel;
+    using namespace Feel::vf;
+    using mesh_t = Mesh<Simplex<Dim, 1>>;
+
+    m.def( "vonmises", []( Pchv_element_t<mesh_t, Order> const& d, nl::json const& model )
+           {
+               auto Xh = [&]()
+               {
+                   if constexpr ( Order == Dynamic )
+                       return Pch<Dynamic>( d.functionSpace()->mesh(), RuntimeOrder{ static_cast<int>( d.functionSpace()->order() ) } );
+                   else
+                       return Pch<Order>( d.functionSpace()->mesh(), RuntimeOrder{ static_cast<int>( d.functionSpace()->order() ) } );
+               }();
+               auto r = Xh->element();
+               if ( model["/model/type"_json_pointer] == "linear-elasticity" )
+               {
+                   double mu = model["/model/parameters/mu"_json_pointer];
+                   double lambda = model["/model/parameters/lambda"_json_pointer];
+
+                   auto def = ( gradv( d ) + trans( gradv( d ) ) ) / 2;
+                   r.on( _range=elements( d.functionSpace()->mesh() ), _expr=vonmises( 2 * mu * def + lambda * divv( d ) * eye<Dim, Dim>() ) );
+               }
+
+               return r;
+           },
+           "compute von mises stress", py::arg( "displacement" ), py::arg( "model" ) );
+}
+
 PYBIND11_MODULE(_vf, m )
 {
     if (import_mpi4py()<0) return ;
@@ -144,24 +175,11 @@ PYBIND11_MODULE(_vf, m )
                        {
                             constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
                             constexpr int _order = std::decay_t<decltype(hana::at_c<1>(d))>::value;
-                            using mesh_t = Mesh<Simplex<_dim, 1>>;
-                            using mesh_ptr_t = std::shared_ptr<mesh_t>;
-
-                            m.def( "vonmises", []( Pchv_element_t<mesh_t, 1> const& d, nl::json const& model )
-                                   {
-                                        auto Xh = Pch<_order>(d.functionSpace()->mesh());
-                                        auto r = Xh->element();
-                                        if ( model["/model/type"_json_pointer] == "linear-elasticity" )
-                                        {
-                                            double mu = model["/model/parameters/mu"_json_pointer];
-                                            double lambda = model["/model/parameters/lambda"_json_pointer];
-
-                                            auto def = (gradv(d)+trans(gradv(d)))/2;
-                                            r.on( _range=elements(d.functionSpace()->mesh()), _expr=vonmises( 2*mu*def+lambda*divv(d)*eye<_dim,_dim>() ) );
-                                        }
-
-                                        return r;
-                                    },
-                                    "compute von mises stress", py::arg( "displacement" ), py::arg( "model" ) );
+                            defVonMises<_dim, _order>( m );
                         } );
+    hana::for_each( dimt, [&m]( auto const& d )
+                    {
+                        constexpr int _dim = std::decay_t<decltype(d)>::value;
+                        defVonMises<_dim, Dynamic>( m );
+                    } );
 }

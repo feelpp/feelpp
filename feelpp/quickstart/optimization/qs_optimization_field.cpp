@@ -7,13 +7,15 @@
     SPDX-License-Identifier: LGPL-3.0-or-later
 */
 
+#include "../discretization.hpp"
 #include <cmath>
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelopt/solveroptimizationfield.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <feel/feelfilters/unitsquare.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
 #include <feel/feelvf/vf.hpp>
 
 /**
@@ -32,14 +34,23 @@ int main( int argc, char** argv )
     using namespace Feel;
     using Feel::cout;
 
+    po::options_description options( "Field optimization" );
+    options.add_options()
+            ( "order", po::value<int>()->default_value( 1 ), "approximation order" )
+            ( "geometry.order", po::value<int>()->default_value( 1 ), "mesh geometric transformation order" );
+
     Environment environment(
-        _argc = argc, _argv = argv,
+        _argc = argc, _argv = argv, _desc = options,
         _about = about( _name = "qs_optimization_field",
                         _author = "Feel++ Consortium",
                         _email = "feelpp-devel@feelpp.org" ) );
 
-    auto mesh = unitSquare();
-    auto Xh = Pch<1>( mesh );
+    auto mesh = createGMSHMesh(
+        _mesh = new Mesh<Simplex<2, Dynamic>>( quickstart::geometryOrder() ),
+        _desc = domain( _name="square", _shape="hypercube", _dim=2,
+                        _h=doption( "gmsh.hsize" ) ) );
+    quickstart::checkMeshOrder( mesh );
+    auto Xh = Pch<Dynamic>( mesh, quickstart::checkedOrder( "order" ) );
     auto control = Xh->element( "control" );
     auto target = Xh->element( expr( "1+x+y:x:y" ), "target" );
     auto trial = Xh->element( "u" );

@@ -30,9 +30,13 @@
 #define FEELPP_THCH_HPP 1
 
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pchv.hpp>
+#include <feel/feeldiscr/productfunctionspaces.hpp>
 
 namespace Feel {
 
+#if FEELPP_ENABLE_LEGACY_COMPOSITE_FUNCTIONSPACE
 namespace meta {
 template<int Order,typename MeshType>
 struct THch
@@ -40,7 +44,6 @@ struct THch
     typedef FunctionSpace<MeshType,
                           bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>,
                           double,
-                          Periodicity <NoPeriodicity,NoPeriodicity>,
                           mortars<NoMortar,NoMortar> > type;
     typedef std::shared_ptr<type> ptrtype;
 };
@@ -57,7 +60,6 @@ template<int Order,typename MeshType>
 using THch_type = FunctionSpace<MeshType,
                                 bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>,
                                 double,
-                                Periodicity <NoPeriodicity,NoPeriodicity>,
                                 mortars<NoMortar,NoMortar> >;
 /**
  * Define the shared_ptr type for Taylor-Hood space
@@ -69,7 +71,6 @@ template<int Order,typename MeshType>
 using THch_ptrtype = std::shared_ptr<FunctionSpace<MeshType,
                                                      bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>,
                                                      double,
-                                                     Periodicity <NoPeriodicity,NoPeriodicity>,
                                                      mortars<NoMortar,NoMortar> >>;
 template<int Order,typename MeshType>
 using THch_velocity_space_t = typename THch_type<Order,MeshType>::template sub_functionspace_type<0>;
@@ -87,7 +88,28 @@ template<int Order,typename MeshType>
 using THch_velocity_space_ptr_t = typename THch_type<Order,MeshType>::template sub_functionspace_ptrtype<0>;
 template<int Order,typename MeshType>
 using THch_pressure_space_ptr_t = typename THch_type<Order,MeshType>::template sub_functionspace_ptrtype<1>;
+#endif // FEELPP_ENABLE_LEGACY_COMPOSITE_FUNCTIONSPACE
 
+template<int Order,typename MeshType>
+using THch_product_velocity_space_ptr_t = Pchv_ptrtype<MeshType,Order+1>;
+
+template<int Order,typename MeshType>
+using THch_product_pressure_space_ptr_t = Pch_ptrtype<MeshType,Order>;
+
+template<int Order,typename MeshType>
+using THch_product_type = product_function_spaces_t<THch_product_velocity_space_ptr_t<Order,MeshType>,
+                                                    THch_product_pressure_space_ptr_t<Order,MeshType>>;
+
+template<int Order,typename MeshType>
+using THch_product_ptrtype = std::shared_ptr<THch_product_type<Order,MeshType>>;
+
+template<int Order,typename MeshType>
+using THchProduct_type = THch_product_type<Order,MeshType>;
+
+template<int Order,typename MeshType>
+using THchProduct_ptrtype = THch_product_ptrtype<Order,MeshType>;
+
+#if FEELPP_ENABLE_LEGACY_COMPOSITE_FUNCTIONSPACE
 /**
    Given a \p mesh and polynomial order \f$k\f$(template argument), build a
    product function space of \f$[P_{k+1}]^d \times P_{k}]\f$ where $d$ is the
@@ -109,6 +131,18 @@ THch( std::shared_ptr<MeshType> mesh,
     return THch_type<Order,MeshType>::New( _mesh=mesh,
                                            _worldscomm=makeWorldsComm( 2,mesh->worldComm() ),
                                            _extended_doftable=dte );
+}
+#endif // FEELPP_ENABLE_LEGACY_COMPOSITE_FUNCTIONSPACE
+
+template<int Order,typename MeshType>
+inline
+THch_product_ptrtype<Order,MeshType>
+THchProduct( std::shared_ptr<MeshType> mesh,
+             std::vector<DofTableExtendedType> dte = std::vector<DofTableExtendedType>( 2,DofTableExtendedType::DEFAULT ) )
+{
+    CHECK( dte.size() == 2 ) << " vector activation for extended dof table must be equal to 2 but here " << dte.size();
+    return productFunctionSpacesPtr( Pchv<Order+1>( mesh, dte[0] ),
+                                     Pch<Order>( mesh, dte[1] ) );
 }
 
 

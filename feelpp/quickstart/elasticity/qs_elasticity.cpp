@@ -1,4 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:set fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4*/
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2017-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/checker.hpp>
@@ -9,6 +16,7 @@
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feelalg/petschpddm.hpp>
 #include <feel/feelvf/vf.hpp>
+#include "../discretization.hpp"
 #include "nullspace-rigidbody.hpp"
 #include "qs_elasticity_case.hpp"
 #include "qs_elasticity_checks.hpp"
@@ -44,6 +52,9 @@ int main(int argc, char**argv )
     {
         po::options_description laplacianoptions( "Elasticity options" );
         qsecase::addOptions( laplacianoptions );
+        laplacianoptions.add_options()
+            ( "order", po::value<int>()->default_value( FEELPP_ORDER ), "approximation order" )
+            ( "geometry.order", po::value<int>()->default_value( FEELPP_ORDER ), "mesh geometric transformation order" );
 
         Environment env( _argc=argc, _argv=argv,
                     _desc=laplacianoptions,
@@ -63,13 +74,14 @@ int main(int argc, char**argv )
 
         tic();
 #if FEELPP_HYPERCUBE == 1
-        using mesh_type = Mesh<Hypercube<FEELPP_DIM,FEELPP_ORDER>>;
+        using mesh_type = Mesh<Hypercube<FEELPP_DIM,Dynamic>>;
 #else
-        using mesh_type = Mesh<Simplex<FEELPP_DIM,FEELPP_ORDER>>;
+        using mesh_type = Mesh<Simplex<FEELPP_DIM,Dynamic>>;
 #endif
         auto mesh = caseConfig.meshFilename.empty()
-            ? loadMesh(_mesh=new mesh_type)
-            : loadMesh(_mesh=new mesh_type, _filename=caseConfig.meshFilename);
+            ? loadMesh(_mesh=new mesh_type( quickstart::geometryOrder() ))
+            : loadMesh(_mesh=new mesh_type( quickstart::geometryOrder() ), _filename=caseConfig.meshFilename);
+        quickstart::checkMeshOrder( mesh );
         if ( caseConfig.expectedElements )
         {
             auto const nElements = nelements( elements( mesh ), true );
@@ -81,7 +93,7 @@ int main(int argc, char**argv )
         toc("loadMesh");
 
         tic();
-        auto Vh = Pchv<FEELPP_ORDER>( mesh );
+        auto Vh = Pchv<Dynamic>( mesh, quickstart::checkedOrder( "order" ) );
         toc("Vh");
 
         auto u = Vh->element("u");

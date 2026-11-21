@@ -474,7 +474,7 @@ BOOST_AUTO_TEST_CASE( test_hexaedron )
     hexa.update();
     std::cout << "[hexa] barycenter = " << hexa.barycenter() << "\n";
     BOOST_CHECK_SMALL( ublas::norm_2( hexa.barycenter()-G1 ), 1e-14 );
-    BOOST_CHECK_CLOSE( hexa.measure(), (5./2.), 1e-14 );
+    BOOST_CHECK_CLOSE_FRACTION( hexa.measure(), (5./2.), 1e-14 );
 
     // check normals
     auto allnormals = hexa.normals();

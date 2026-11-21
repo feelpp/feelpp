@@ -1,330 +1,101 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-10-12
-
-  Copyright (C) 2005,2006 EPFL
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-/**
-   \file test_lag.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-10-12
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileCopyrightText: 2005-2006 EPFL
+ * SPDX-FileCopyrightText: 2026 University of Strasbourg
+ * SPDX-License-Identifier: LGPL-3.0-or-later
  */
-#define BOOST_TEST_MODULE lagrange polynomials test
-// Boost.Test
-#define USE_TEST 1
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
+
+#define BOOST_TEST_MODULE test_lag
+#include <feel/feelcore/testsuite.hpp>
+#include <boost/test/data/test_case.hpp>
+#include <boost/mp11/algorithm.hpp>
 
 #include "testlagrange.hpp"
 
-#if 1
+#include <array>
+#include <type_traits>
+
+using namespace Feel;
+namespace bdata = boost::unit_test::data;
+
+FEELPP_ENVIRONMENT_NO_OPTIONS
+
+namespace
+{
+/** Reference dimensions included in the ordinary nodal-identity dataset. */
+constexpr std::array<unsigned, 3> dimensions{ 1, 2, 3 };
+/** Static degrees exercised for scalar and vector-valued elements. */
+constexpr std::array<unsigned, 3> orders{ 1, 2, 3 };
+/** Boolean choices reused for cell-family and scalar/vector datasets. */
+constexpr std::array<bool, 2> alternatives{ false, true };
+
+/** @brief Dispatch dataset values to one shared typed Lagrange assertion helper.
+ * @tparam MaxDimension Largest dimension instantiated by this bounded dataset.
+ * @tparam Orders MP11 list of the selected compile-time degrees.
+ * @tparam IncludeVectorial Whether vector-valued element types are instantiated.
+ * @param dimension Reference dimension, in `[1, MaxDimension]`.
+ * @param orderIndex Index into Orders, rather than a polynomial degree.
+ * @param tensorProduct Select a hypercube instead of a simplex.
+ * @param vectorial Select a vector-valued instead of scalar Lagrange basis.
+ */
+template<unsigned MaxDimension, typename Orders, bool IncludeVectorial>
+void checkConfiguration( unsigned dimension, unsigned orderIndex, bool tensorProduct, bool vectorial )
+{
+    BOOST_REQUIRE_GE( dimension, 1 );
+    BOOST_REQUIRE_LE( dimension, MaxDimension );
+    BOOST_REQUIRE_LT( orderIndex, boost::mp11::mp_size<Orders>::value );
+    boost::mp11::mp_with_index<MaxDimension>( dimension - 1, [&]( auto dimensionTag )
+    {
+        constexpr unsigned Dim = decltype( dimensionTag )::value + 1;
+        boost::mp11::mp_with_index<boost::mp11::mp_size<Orders>::value>( orderIndex, [&]( auto orderTag )
+        {
+            constexpr unsigned Order = boost::mp11::mp_at_c<Orders, decltype( orderTag )::value>::value;
+            unsigned const index = IncludeVectorial ? 2 * tensorProduct + vectorial : tensorProduct;
+            boost::mp11::mp_with_index<IncludeVectorial ? 4 : 2>( index, [&]( auto configurationTag )
+            {
+                constexpr unsigned configuration = decltype( configurationTag )::value *
+                                                   ( IncludeVectorial ? 1 : 2 );
+                using cell_type = std::conditional_t<( configuration & 2 ) != 0,
+                                                      Hypercube<Dim>, Simplex<Dim>>;
+                using family_type = std::conditional_t<( configuration & 1 ) != 0,
+                    Lagrange<Order, Vectorial>, Lagrange<Order, Scalar>>;
+                using fe_type = typename family_type::template apply<Dim, Dim, double, cell_type>::type;
+                // Match the existing high-order static/runtime parity tolerances.
+                TestLagrange<fe_type>{ Order >= 5 ? 1e-8 : 1e-11 }();
+            } );
+        } );
+    } );
+}
+} // namespace
+
 BOOST_AUTO_TEST_SUITE( lagrange_testsuite )
 
-BOOST_AUTO_TEST_SUITE( lagrange_1d_simplex_testsuite )
-
-BOOST_AUTO_TEST_CASE( lag11scr64s )
+/** @test Low-order scalar/vector Lagrange bases interpolate and differentiate. */
+BOOST_DATA_TEST_CASE( nodal_identity_and_differentiation,
+    bdata::make( dimensions ) * bdata::make( orders ) *
+    bdata::make( alternatives ) * bdata::make( alternatives ),
+    dimension, order, tensorProduct, vectorial )
 {
-    TestLagrange<fem::Lagrange<1, 1, 1, Scalar, Continuous, real64_type, Simplex> > t;
-    t();
-}
-BOOST_AUTO_TEST_CASE( lag12scr64s )
-{
-    TestLagrange<fem::Lagrange<1, 1, 2, Scalar, Continuous, real64_type, Simplex> > t;
-    t();
-}
-BOOST_AUTO_TEST_CASE( lag15scr64s )
-{
-    TestLagrange<fem::Lagrange<1, 1, 5, Scalar, Continuous, real64_type, Simplex> > t;
-    t();
-}
-BOOST_AUTO_TEST_CASE( lag110scr64s )
-{
-    TestLagrange<fem::Lagrange<1, 1, 10, Scalar, Continuous, real64_type, Simplex> > t;
-    t();
+    using order_types = boost::mp11::mp_list_c<unsigned, 1, 2, 3>;
+    checkConfiguration<3, order_types, true>( dimension, order - 1, tensorProduct, vectorial );
 }
 
-BOOST_AUTO_TEST_SUITE_END() // lagrange_1d_simplex_testsuite
-
-
-BOOST_AUTO_TEST_SUITE( lagrange_2d_simplex_testsuite )
-
-BOOST_AUTO_TEST_CASE( lag21scr64s )
+/** @test Degree-five/ten scalar bases retain nodal identity in one/two dimensions. */
+BOOST_DATA_TEST_CASE( high_order_scalar_identity_and_differentiation,
+    bdata::make( std::array<unsigned, 2>{ 1, 2 } ) *
+    bdata::make( std::array<unsigned, 2>{ 5, 10 } ) * bdata::make( alternatives ),
+    dimension, order, tensorProduct )
 {
-    TestLagrange<fem::Lagrange<2, 2, 1, Scalar, Continuous, real64_type, Simplex> > t;
-    t();
-}
-BOOST_AUTO_TEST_CASE( lag21ver64s )
-{
-    TestLagrange<fem::Lagrange<2, 2, 1, Vectorial, Continuous, real64_type, Simplex> > t;
-    t();
-}
-BOOST_AUTO_TEST_CASE( lag22scr64s )
-{
-    TestLagrange<fem::Lagrange<2, 2, 2, Scalar, Continuous, real64_type, Simplex> > t;
-    t();
-}
-BOOST_AUTO_TEST_CASE( lag25scr64s )
-{
-    TestLagrange<fem::Lagrange<2, 2, 5, Scalar, Continuous, real64_type, Simplex> > t;
-    t();
-}
-#if defined( NDEBUG )
-BOOST_AUTO_TEST_CASE( lag210scr64s )
-{
-    TestLagrange<fem::Lagrange<2, 2, 10, Scalar, Continuous, real64_type, Simplex> > t;
-    t();
-}
-#endif
-
-BOOST_AUTO_TEST_SUITE_END() // lagrange_2d_simplex_testsuite
-
-BOOST_AUTO_TEST_SUITE( lagrange_3d_simplex_testsuite )
-
-BOOST_AUTO_TEST_CASE( lag31scr64s )
-{
-    TestLagrange<fem::Lagrange<3, 3, 1, Scalar, Continuous, real64_type, Simplex> > t;
-    t();
-}
-BOOST_AUTO_TEST_CASE( lag32scr64s )
-{
-    TestLagrange<fem::Lagrange<3, 3, 2, Scalar, Continuous, real64_type, Simplex> > t;
-    t();
-}
-BOOST_AUTO_TEST_CASE( lag35scr64s )
-{
-    TestLagrange<fem::Lagrange<3, 3, 5, Scalar, Continuous, real64_type, Simplex> > t;
-    t();
-}
-#if defined( NDEBUG )
-BOOST_AUTO_TEST_CASE( lag310scr64s )
-{
-    TestLagrange<fem::Lagrange<3, 3, 10, Scalar, Continuous, real64_type, Simplex> > t( 1e-9 );
-    t();
-}
-#endif
-BOOST_AUTO_TEST_SUITE_END() // lagrange_3d_simplex_testsuite
-
-BOOST_AUTO_TEST_SUITE( lagrange_1d_hypercube_testsuite )
-
-BOOST_AUTO_TEST_CASE( lag11scr64s )
-{
-    TestLagrange<fem::Lagrange<1, 1, 1, Scalar, Continuous, real64_type, Hypercube> > t;
-    t();
-}
-BOOST_AUTO_TEST_CASE( lag12scr64s )
-{
-    TestLagrange<fem::Lagrange<1, 1, 2, Scalar, Continuous, real64_type, Hypercube> > t;
-    t();
-}
-BOOST_AUTO_TEST_CASE( lag15scr64s )
-{
-    TestLagrange<fem::Lagrange<1, 1, 5, Scalar, Continuous, real64_type, Hypercube> > t;
-    t();
-}
-BOOST_AUTO_TEST_CASE( lag110scr64s )
-{
-    TestLagrange<fem::Lagrange<1, 1, 10, Scalar, Continuous, real64_type, Hypercube> > t;
-    t();
+    using order_types = boost::mp11::mp_list_c<unsigned, 5, 10>;
+    checkConfiguration<2, order_types, false>( dimension, order == 5 ? 0 : 1, tensorProduct, false );
 }
 
-BOOST_AUTO_TEST_SUITE_END() // lagrange_1d_hypercube_testsuite
-
-
-BOOST_AUTO_TEST_SUITE( lagrange_2d_hypercube_testsuite )
-
-BOOST_AUTO_TEST_CASE( lag21scr64s )
+/** @test Degree-five tetrahedron and hexahedron bases share the same assertions. */
+BOOST_DATA_TEST_CASE( degree_five_3d_scalar_identity_and_differentiation,
+    bdata::make( alternatives ), tensorProduct )
 {
-    TestLagrange<fem::Lagrange<2, 2,1, Scalar, Continuous, real64_type, Hypercube> > t;
-    t();
+    using order_types = boost::mp11::mp_list_c<unsigned, 5>;
+    checkConfiguration<3, order_types, false>( 3, 0, tensorProduct, false );
 }
-BOOST_AUTO_TEST_CASE( lag22scr64s )
-{
-    TestLagrange<fem::Lagrange<2, 2,2, Scalar, Continuous, real64_type, Hypercube> > t;
-    t();
-}
-BOOST_AUTO_TEST_CASE( lag25scr64s )
-{
-    TestLagrange<fem::Lagrange<2, 2,5, Scalar, Continuous, real64_type, Hypercube> > t;
-    t();
-}
-#if defined( NDEBUG )
-BOOST_AUTO_TEST_CASE( lag210scr64s )
-{
-    TestLagrange<fem::Lagrange<2, 2,10, Scalar, Continuous, real64_type, Hypercube> > t;
-    t();
-}
-#endif
-
-BOOST_AUTO_TEST_SUITE_END() // lagrange_2d_hypercube_testsuite
-
-BOOST_AUTO_TEST_SUITE( lagrange_3d_hypercube_testsuite )
-
-BOOST_AUTO_TEST_CASE( lag31scr64s )
-{
-    TestLagrange<fem::Lagrange<3, 3, 1, Scalar, Continuous, real64_type, Hypercube> > t;
-    t();
-}
-BOOST_AUTO_TEST_CASE( lag32scr64s )
-{
-    TestLagrange<fem::Lagrange<3, 3, 2, Scalar, Continuous, real64_type, Hypercube> > t;
-    t();
-}
-BOOST_AUTO_TEST_CASE( lag35scr64s )
-{
-    TestLagrange<fem::Lagrange<3, 3, 5, Scalar, Continuous, real64_type, Hypercube> > t;
-    t();
-}
-#if defined( NDEBUG )
-BOOST_AUTO_TEST_CASE( lag310scr64s )
-{
-    TestLagrange<fem::Lagrange<3, 3, 7, Scalar, Continuous, real64_type, Hypercube> > t;
-    t();
-}
-#endif
-BOOST_AUTO_TEST_SUITE_END() // lagrange_3d_hypercube_testsuite
-
 
 BOOST_AUTO_TEST_SUITE_END()
-#else
-
-
-#if defined( USE_TEST )
-void test_scalar_continuous_simplex( test_suite* test )
-{
-#if USE_TEST
-    // 1D simplex
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<1, 1, 1, Scalar, Continuous, real64_type, Simplex> >() ) ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<1, 1, 2, Scalar, Continuous, real64_type, Simplex> >() ) ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<1, 1, 3, Scalar, Continuous, real64_type, Simplex> >() ) ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<1, 1, 4, Scalar, Continuous, real64_type, Simplex> >() ) ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<1, 1, 10, Scalar, Continuous, real64_type, Simplex> >() ) ) );
-
-    // 2D simplex
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2, 2, 1, Scalar, Continuous, real64_type, Simplex> >() )  ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2, 2, 2, Scalar, Continuous, real64_type, Simplex> >() )  ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2, 2, 10, Scalar, Continuous, real64_type, Simplex> >() )  ) );
-
-    // 3D simplex
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 3, 1, Scalar, Continuous, real64_type, Simplex> >() )  ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 3, 2, Scalar, Continuous, real64_type, Simplex> >() )  ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 3, 3, Scalar, Continuous, real64_type, Simplex> >() )  ) );
-#else
-
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 3, 3, Scalar, Continuous, qd_real, Simplex> >() )  ) );
-
-#endif
-}
-
-void test_scalar_continuous_simplex_product( test_suite* test )
-{
-#if USE_TEST
-    // 1D simplex
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<1, 1, 1, Scalar, Continuous, real64_type, Hypercube> >() ) ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<1, 1, 2, Scalar, Continuous, real64_type, Hypercube> >() ) ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<1, 1, 10, Scalar, Continuous, real64_type, Hypercube> >() ) ) );
-
-    // 2D simplex
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2, 2, 1, Scalar, Continuous, real64_type, Hypercube> >() )  ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2, 2, 2, Scalar, Continuous, real64_type, Hypercube> >() )  ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<2, 2, 10, Scalar, Continuous, real64_type, Hypercube> >() )  ) );
-
-    // 3D simplex
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 3, 1, Scalar, Continuous, real64_type, Hypercube> >() )  ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 3, 2, Scalar, Continuous, real64_type, Hypercube> >() )  ) );
-    test->add( BOOST_TEST_CASE( ( TestLagrange<fem::Lagrange<3, 3, 3, Scalar, Continuous, real64_type, Hypercube> >() )  ) );
-
-
-#endif
-}
-
-test_suite*
-init_unit_test_suite( int argc, char* argv[] )
-{
-#if defined( FEELPP_HAS_QD_QD_H )
-    unsigned int old_cw;
-    fpu_fix_start( &old_cw );
-#endif
-
-    test_suite* test = BOOST_TEST_SUITE( "Finite element test suite" );
-
-
-    test_scalar_continuous_simplex( test );
-    //test_scalar_continuous_simplex_product( test );
-
-
-
-    return test;
-}
-#else
-int main( int argc, char* argv[] )
-{
-#if 0
-    TestLagrange<fem::Lagrange<2, 2, 1, Scalar, Continuous, real64_type, Simplex> >();
-    TestLagrange<fem::Lagrange<2, 2, 2, Scalar, Continuous, real64_type, Simplex> >();
-    TestLagrange<fem::Lagrange<2, 2, 10, Scalar, Continuous, real64_type, Simplex> >();
-
-    TestLagrange<fem::Lagrange<3, 3, 1, Scalar, Continuous, real64_type, Simplex> >();
-    TestLagrange<fem::Lagrange<3, 3, 2, Scalar, Continuous, real64_type, Simplex> >();
-    TestLagrange<fem::Lagrange<3, 3, 3, Scalar, Continuous, real64_type, Simplex> >();
-#endif
-
-#if 0
-    // 1D simplex
-    ( ( ( TestLagrange<fem::Lagrange<1, 1, 1, Scalar, Continuous, real64_type, Hypercube> >() ) ) );
-    ( ( ( TestLagrange<fem::Lagrange<1, 1, 2, Scalar, Continuous, real64_type, Hypercube> >() ) ) );
-    ( ( ( TestLagrange<fem::Lagrange<1, 1,10, Scalar, Continuous, real64_type, Hypercube> >() ) ) );
-
-    // 2D simplex
-    ( ( ( TestLagrange<fem::Lagrange<2, 2, 1, Scalar, Continuous, real64_type, Hypercube> >() )  ) );
-    ( ( ( TestLagrange<fem::Lagrange<2, 2, 2, Scalar, Continuous, real64_type, Hypercube> >() )  ) );
-    ( ( ( TestLagrange<fem::Lagrange<2, 2,10, Scalar, Continuous, real64_type, Hypercube> >() )  ) );
-
-    // 3D simplex
-    ( ( ( TestLagrange<fem::Lagrange<3, 3, 1, Scalar, Continuous, real64_type, Hypercube> >() )  ) );
-    ( ( ( TestLagrange<fem::Lagrange<3, 3, 2, Scalar, Continuous, real64_type, Hypercube> >() )  ) );
-    ( ( ( TestLagrange<fem::Lagrange<3, 3, 3, Scalar, Continuous, real64_type, Hypercube> >() )  ) );
-#else
-#if defined( FEELPP_HAS_QD_QD_H )
-
-    unsigned int old_cw;
-    fpu_fix_start( &old_cw );
-
-    {
-        TestLagrange<fem::Lagrange<2, 2, 1, Scalar, Continuous, qd_real, Simplex> > a;
-        a();
-    }
-    {
-        TestLagrange<fem::Lagrange<2, 2, 3, Scalar, Continuous, dd_real, Simplex> > a;
-        a();
-    }
-    {
-        TestLagrange<fem::Lagrange<3, 3, 1, Scalar, Continuous, qd_real, Simplex> > a;
-        a();
-    }
-
-    fpu_fix_end( &old_cw );
-
-#endif /* FEELPP_HAS_QD_QD_H  */
-
-#endif
-}
-
-#endif
-#endif // 0

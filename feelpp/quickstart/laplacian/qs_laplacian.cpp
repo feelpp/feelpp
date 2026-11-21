@@ -1,27 +1,10 @@
-//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-//!
-//! This file is part of the Feel++ library
-//!
-//! This library is free software; you can redistribute it and/or
-//! modify it under the terms of the GNU Lesser General Public
-//! License as published by the Free Software Foundation; either
-//! version 2.1 of the License, or (at your option) any later version.
-//!
-//! This library is distributed in the hope that it will be useful,
-//! but WITHOUT ANY WARRANTY; without even the implied warranty of
-//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//! Lesser General Public License for more details.
-//!
-//! You should have received a copy of the GNU Lesser General Public
-//! License along with this library; if not, write to the Free Software
-//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-//!
-//! @file
-//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-//! @date 10 Apr 2017
-//! @copyright 2017-2026 University of Strasbourg
-//!
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileCopyrightText: 2013-2026 University of Strasbourg
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 // tag::global[]
+#include "../discretization.hpp"
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/checker.hpp>
 #include <feel/feeldiscr/pch.hpp>
@@ -31,39 +14,41 @@
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelcore/table.hpp>
 #include <feel/feelpython/pyexpr.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/vf_dsl.hpp>
 #include <feel/feelvf/print.hpp>
 #include <feel/feelpde/cg_laplacian.hpp>
 
 using namespace Feel;
 
-template<int Dim, int Order>
-int cg_laplacian_app()
+template<int Dim>
+int cg_laplacian_app( RuntimeOrder runtimeOrder )
 {
     using Feel::cout;
     // tag::mesh_space[]
     tic();
 #if FEELPP_HYPERCUBE == 1
-    using mesh_t = Mesh<Hypercube<FEELPP_DIM, 1>>;
-    auto mesh = loadMesh( _mesh = new mesh_t );
+    using mesh_t = Mesh<Hypercube<FEELPP_DIM, Dynamic>>;
+    auto mesh = loadMesh( _mesh = new mesh_t( quickstart::geometryOrder() ) );
+    quickstart::checkMeshOrder( mesh );
 #else
-    using mesh_t = Mesh<Simplex<Dim, 1>>;
-    auto mesh = loadMesh( _mesh = new mesh_t );
+    using mesh_t = Mesh<Simplex<Dim, Dynamic>>;
+    auto mesh = loadMesh( _mesh = new mesh_t( quickstart::geometryOrder() ) );
+    quickstart::checkMeshOrder( mesh );
 #endif
     toc( "loadMesh" );
 
     tic();
-    Pch_ptrtype<mesh_t,Order> Vh;
+    Pch_ptrtype<mesh_t,Dynamic> Vh;
     if ( Environment::vm().count("marker.name") )
-        Vh = Pch<Order>( mesh, markedelements(mesh, soption("marker.name") ) );
+        Vh = Pch<Dynamic>( mesh, markedelements(mesh, soption("marker.name") ), runtimeOrder );
     else if ( Environment::vm().count("marker.levelset") )
-        Vh = Pch<Order>( mesh, elements(mesh, expr(soption("marker.levelset")) ) );
+        Vh = Pch<Dynamic>( mesh, elements(mesh, vf::expr(soption("marker.levelset")) ), runtimeOrder );
     else
-        Vh = Pch<Order>( mesh );
+        Vh = Pch<Dynamic>( mesh, runtimeOrder );
 
-    Feel::cout << fmt::format( "MESH_STATS elements={} points={} dofs={} order={} mpi_ranks={}\n",
+    Feel::cout << fmt::format( "MESH_STATS elements={} points={} dofs={} order={} geometry_order={} mpi_ranks={}\n",
                               mesh->numGlobalElements(), mesh->numGlobalPoints(), Vh->nDof(),
-                              Order, Environment::worldComm().globalSize() );
+                              runtimeOrder.value, mesh->order(), Environment::worldComm().globalSize() );
 
     std::map<std::string,std::string> inputs{{"dim",std::to_string(dimension(mesh))},
                                             {"k",soption("k")},{"r_1",soption("r_1")},{"u",""},{"un",soption("un")},{"f",soption("f")},{"g",soption("g")},{"r_2",soption("r_2")}};
@@ -92,14 +77,14 @@ int cg_laplacian_app()
 
     std::string p_exact_str = locals.at("p");
     std::string u_exact_str = locals.at("u");
-    auto p_exact = expr( p_exact_str );
-    auto u_exact = expr<FEELPP_DIM,1>( u_exact_str );
-    auto k = expr( locals.at("k") );
-    auto un = expr( locals.at("un") );
-    auto f = expr( locals.at("f") );
-    auto g = expr( locals.at("g") );
-    auto r_1 = expr( locals.at("r_1") );
-    auto r_2 = expr( locals.at("r_2") );
+    auto p_exact = vf::expr( p_exact_str );
+    auto u_exact = vf::expr<FEELPP_DIM,1>( u_exact_str );
+    auto k = vf::expr( locals.at("k") );
+    auto un = vf::expr( locals.at("un") );
+    auto f = vf::expr( locals.at("f") );
+    auto g = vf::expr( locals.at("g") );
+    auto r_1 = vf::expr( locals.at("r_1") );
+    auto r_2 = vf::expr( locals.at("r_2") );
     Table summary;
     summary.add_row({"Solving -div(( k grad p ) = f with the following boundary conditions"});
     summary(0,0).format().setFontAlign(Font::Align::center);
@@ -161,7 +146,7 @@ int cg_laplacian_app()
         if ( opt_u )
         {
             e->add( "p", *opt_u );
-            e->add( "u", -k * gradv( *opt_u ), elements( support( Vh ) ), "element" );
+            e->add( "u", -k * vf::gradv( *opt_u ), elements( support( Vh ) ), "element" );
         }
         e->add( "k", k );
         e->add( "f", f );
@@ -198,6 +183,8 @@ int main( int argc, char** argv )
         po::options_description laplacianoptions( "Laplacian options" );
 
         laplacianoptions.add_options()
+            ( "order", po::value<int>(), "approximation order (alias for case.discretization=Pk)" )
+            ( "geometry.order", po::value<int>()->default_value( 1 ), "mesh geometric transformation order" )
             ( "no-solve", po::value<bool>()->default_value( false ), "No solve" )
             ( "no-export", po::value<bool>()->default_value( false )->implicit_value( true ), "No export" )
             ( "weakbc", po::value<bool>()->default_value( false ), "Weak Dirichlet conditions" )
@@ -219,12 +206,7 @@ int main( int argc, char** argv )
                                          _email = "feelpp-devel@feelpp.org" ) );
 
         // end::env[]
-        if ( soption( "case.discretization" ) == "P1" )
-            return cg_laplacian_app<FEELPP_DIM,1>();
-        if ( soption( "case.discretization" ) == "P2" )
-            return cg_laplacian_app<FEELPP_DIM,2>();
-        if ( soption( "case.discretization" ) == "P3" )
-            return cg_laplacian_app<FEELPP_DIM,3>();
+        return cg_laplacian_app<FEELPP_DIM>( quickstart::lagrangeOrder() );
     }
     catch(...)
     {

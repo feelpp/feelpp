@@ -1,28 +1,14 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2005,2006 EPFL
+ * SPDX-FileCopyrightText: 2007-2011 Université Joseph Fourier (Grenoble I)
+ * SPDX-FileCopyrightText: 2011-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-06-01
-
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2007-2011 Université Joseph Fourier (Grenoble I)
-  Copyright (C) 2011-2014 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file operations.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -404,7 +390,7 @@
         template<typename Func>                                         \
             static inline const bool has_trial_basis = L_type::template HasTrialFunction<Func>::result|R_type::template HasTrialFunction<Func>::result; \
         using test_basis = std::conditional_t<std::is_null_pointer_v<typename L_type::test_basis>, typename R_type::test_basis, typename L_type::test_basis>; \
-        using trial_basis = std::nullptr_t;                             \
+        using trial_basis = std::conditional_t<std::is_null_pointer_v<typename L_type::trial_basis>, typename R_type::trial_basis, typename L_type::trial_basis>;                             \
                                                                         \
         using value_type = std::conditional_t<( sizeof( value_left_type ) > sizeof( value_right_type ) ), value_left_type, value_right_type>; \
         using evaluate_type = Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic >; \
@@ -851,7 +837,7 @@ BOOST_PP_LIST_FOR_EACH_PRODUCT( VF_BINARY_ARRAY_OP, 3, ( VF_APPLICATIVE_BINARY_O
 template <typename LeftExprT, typename RightExprT>
 class vf_hadamard;
 
-template <VfExpr LeftExprT, VfExpr RightExprT>
+template <VfExprConcept LeftExprT, VfExprConcept RightExprT>
     requires ComponentwiseCompatibleExpr<Expr<LeftExprT>, Expr<RightExprT>>
 [[nodiscard]] inline Expr<vf_hadamard<LeftExprT, RightExprT>>
 hadamard( Expr<LeftExprT> const& left, Expr<RightExprT> const& right );
@@ -1170,7 +1156,7 @@ private:
     right_expression_type M_right;
 };
 
-template <VfExpr LeftExprT, VfExpr RightExprT>
+template <VfExprConcept LeftExprT, VfExprConcept RightExprT>
     requires ComponentwiseCompatibleExpr<Expr<LeftExprT>, Expr<RightExprT>>
 [[nodiscard]] inline Expr<vf_hadamard<LeftExprT, RightExprT>>
 hadamard( Expr<LeftExprT> const& left, Expr<RightExprT> const& right )

@@ -1,0 +1,4 @@
+smoke --directory=qs_sys/linear
+fe-p2 --order=2 --directory=qs_sys/linear_p2
+geometry-g2 --geometry.order=2 --directory=qs_sys/linear_g2
+fe-p2-geometry-g2 --order=2 --geometry.order=2 --directory=qs_sys/linear_p2_g2

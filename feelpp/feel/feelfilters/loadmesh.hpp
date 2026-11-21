@@ -1,26 +1,12 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim: set ft=cpp fenc=utf-8 sw=4 ts=4 sts=4 tw=80 et cin cino=N-s:
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2013-2016 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-   This file is part of the Feel library
-
-   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   Date: 2013-12-24
-
-   Copyright (C) 2013-2016 Feel++ Consortium
-
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 2.1 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
   \file loadmesh.hpp
   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -33,6 +19,7 @@
 
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/loadgmshmesh.hpp>
+#include <feel/feelfilters/concepts.hpp>
 
 #if defined(FEELPP_HAS_GMSH_H)
 #include <feel/feelfilters/geo.hpp>
@@ -82,7 +69,7 @@ using args_loadMesh_type = NA::arguments<
     typename na::verbose::template required_as_t<int>
     >;
 
-template <typename MeshType>
+template <FiltersMeshConcept MeshType>
 std::shared_ptr<MeshType>
 loadMeshImpl( args_loadMesh_type<MeshType> && args )
 {
@@ -141,10 +128,17 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
                 _mesh_ptrtype m( mesh );
                 m->setWorldComm( worldcomm );
                 m->loadHDF5( json_fname, update, scale );
-                if constexpr ( _mesh_type::nOrder > 1 )
+                if ( straighten )
                 {
-                    if ( straighten )
+                    if constexpr ( _mesh_type::is_order_dynamic )
+                    {
+                        if ( m->order() > 1 )
+                            return straightenMesh( m, worldcomm->subWorldCommPtr() );
+                    }
+                    else if constexpr ( _mesh_type::nOrder > 1 )
+                    {
                         return straightenMesh( m, worldcomm->subWorldCommPtr() );
+                    }
                 }
                 return m;
             }
@@ -253,7 +247,12 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
         {
             if ( worldcomm->isMasterRank() )
             {
-                _mesh_ptrtype _meshSeq = std::make_shared<_mesh_type>( Environment::worldCommSeqPtr() );
+                _mesh_ptrtype _meshSeq = [&]() {
+                    if constexpr ( _mesh_type::is_order_dynamic )
+                        return std::make_shared<_mesh_type>( RuntimeOrder{ m->order() }, "", Environment::worldCommSeqPtr() );
+                    else
+                        return std::make_shared<_mesh_type>( Environment::worldCommSeqPtr() );
+                }();
                 size_type updateSeq = MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES|MESH_GEOMAP_NOT_CACHED;
                 if ( true ) // TODO: only required if partitioning has constraints
                     updateSeq |= MESH_UPDATE_FACES_MINIMAL;
@@ -279,10 +278,17 @@ loadMeshImpl( args_loadMesh_type<MeshType> && args )
             mpi::broadcast( worldcomm->globalComm(), fnamePartitioned, worldcomm->masterRank() );
             m->loadHDF5( fnamePartitioned, update, scale );
         }
-        if constexpr ( _mesh_type::nOrder > 1 )
+        if ( straighten )
         {
-            if ( straighten )
+            if constexpr ( _mesh_type::is_order_dynamic )
+            {
+                if ( m->order() > 1 )
+                    return straightenMesh( m, worldcomm->subWorldCommPtr() );
+            }
+            else if constexpr ( _mesh_type::nOrder > 1 )
+            {
                 return straightenMesh( m, worldcomm->subWorldCommPtr() );
+            }
         }
         return m;
     }
@@ -407,6 +413,7 @@ loadMesh( Ts && ... v )
                                                           NA::make_default_argument_invocable( _verbose, [&prefix,&vm](){ return ioption(_prefix=prefix,_name="gmsh.verbosity",_vm=vm); } )
                                                           );
     using mesh_type = Feel::remove_shared_ptr_type<std::remove_pointer_t<std::decay_t<decltype(mesh)>>>;
+    static_assert( FiltersMeshConcept<mesh_type>, "loadMesh requires a mesh-like type." );
 
     return loadMeshImpl<mesh_type>( std::move( args ) );
 }

@@ -1,3 +1,5 @@
+// SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+// SPDX-FileCopyrightText: 2026 University of Strasbourg
 // SPDX-License-Identifier: LGPL-3.0-or-later
 /** @file test_exporter_transient.cpp
  * @brief EnSight temporal metadata, immutable snapshots and lifecycle regression tests.
@@ -14,8 +16,10 @@
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/domain.hpp>
+#include <feel/feelfilters/unitcube.hpp>
 #include <feel/feelfilters/unitsquare.hpp>
 #include <feel/feelmesh/meshmover.hpp>
+#include <feel/feelvf/norml2.hpp>
 
 using namespace Feel;
 FEELPP_ENVIRONMENT_NO_OPTIONS
@@ -142,6 +146,153 @@ BOOST_AUTO_TEST_CASE( managed_conversion_spaces )
                         _order = 2, _h = 0.25 ) );
     checkManagedConversionSpaces( quadratic );
 #endif
+}
+
+//! Runtime FE order must not let a quadratic input replace the linear export space.
+BOOST_AUTO_TEST_CASE( runtime_export_conversion_order )
+{
+    ManagerConfigScope config( true );
+    auto mesh = unitSquare( 0.25 );
+    auto quadratic = Pch<Dynamic>( mesh, RuntimeOrder{2} );
+    auto field = quadratic->element();
+    field.on( _range=elements( mesh ), _expr=cst( 3. ) );
+    using mesh_type = typename decltype( mesh )::element_type;
+    Feel::detail::ExportFieldSet<mesh_type, Dynamic> fields;
+    fields.setMesh( mesh );
+    fields.add( "quadratic", field );
+    auto const& output = fields.beginNodal()->second.second[0][0];
+    BOOST_CHECK_EQUAL( output->functionSpace()->order(), 1 );
+    BOOST_CHECK( static_cast<void const*>( output->functionSpace().get() ) !=
+                 static_cast<void const*>( quadratic.get() ) );
+    BOOST_CHECK_CLOSE( output->min(), 3., 1e-8 );
+    BOOST_CHECK_CLOSE( output->max(), 3., 1e-8 );
+}
+
+//! An explicit static export order remains independent of the mesh order.
+BOOST_AUTO_TEST_CASE( static_export_conversion_order )
+{
+    auto mesh = unitSquare( 0.5 );
+    using mesh_type = typename decltype( mesh )::element_type;
+    Feel::detail::ExportFieldSet<mesh_type, 3> fields;
+    fields.setMesh( mesh );
+    BOOST_REQUIRE_NO_THROW( fields.add( "affine", Px() + 2*Py() + cst( 3. ) ) );
+    auto const& output = fields.beginNodal()->second.second[0][0];
+    BOOST_CHECK_EQUAL( mesh->order(), 1 );
+    BOOST_CHECK_EQUAL( output->functionSpace()->order(), 3 );
+}
+
+//! Exercise EnSight output and geometry-indexed fields for runtime G1--G3.
+BOOST_AUTO_TEST_CASE( runtime_geometry_exports )
+{
+    ManagerConfigScope config( true );
+    for ( int order : { 1, 2, 3 } )
+    {
+        auto name = "runtime_conversion_g" + std::to_string( order );
+        auto mesh = createGMSHMesh(
+            _mesh = new Mesh<Simplex<2, Dynamic>>( RuntimeOrder{order} ),
+            _desc = domain( _name=name, _shape="hypercube", _dim=2, _order=order, _h=0.5 ) );
+        auto space = Pch<Dynamic>( mesh, RuntimeOrder{order == 1 ? 2 : order} );
+        auto field = space->element();
+        field.on( _range=elements( mesh ), _expr=Px() + 2*Py() + cst( 3. ) );
+        auto e = exporter( _mesh=mesh, _name=name, _geo="static" );
+        e->add( "field", field );
+        auto const& output = e->staticFields()->beginNodal()->second.second[0][0];
+        BOOST_CHECK_EQUAL( output->functionSpace()->order(), order );
+        // Backends associate local nodal coefficients with geometry point IDs.
+        // Fekete/WarpBlend nodes differ from geometry's equispaced nodes at G3;
+        // a constant field would hide that mismatch.
+        auto const& dof = output->functionSpace()->dof();
+        for ( auto const& wrappedElement : elements( mesh ) )
+        {
+            auto const& element = unwrap_ref( wrappedElement );
+            auto const& localToGlobal = dof->localToGlobalIndices( element.id() );
+            for ( uint16_type p = 0; p < element.nPoints(); ++p )
+            {
+                auto const& point = element.point( p ).node();
+                double const expected = point( 0 ) + 2*point( 1 ) + 3.;
+                auto const id = localToGlobal( dof->localDofId( p, 0 ) );
+                BOOST_CHECK_SMALL( output->globalValue( id ) - expected, 1e-10 );
+            }
+        }
+        // Component extraction must keep the vector's runtime FE order. A
+        // default scalar P0 component corrupts indexing and MPI ghost maps.
+        auto vectorSpace = Pchv<Dynamic>( mesh, RuntimeOrder{order == 1 ? 2 : order} );
+        auto vectorField = vectorSpace->element();
+        vectorField.on( _range=elements( mesh ), _expr=vec( Px()+2*Py()+cst(3.), 2*Px()-Py() ) );
+        auto x = vectorField.comp( Component::X );
+        auto y = vectorField.comp( Component::Y );
+        BOOST_CHECK_EQUAL( x.functionSpace()->order(), vectorSpace->order() );
+        BOOST_CHECK_EQUAL( x.functionSpace()->nDof(), vectorSpace->nDofPerComponent() );
+        BOOST_CHECK_SMALL( normL2( _range=elements( mesh ), _expr=idv(x)-(Px()+2*Py()+cst(3.)) ), 1e-10 );
+        BOOST_CHECK_SMALL( normL2( _range=elements( mesh ), _expr=idv(y)-(2*Px()-Py()) ), 1e-10 );
+        e->add( "vector_field", vectorField );
+        BOOST_CHECK_NO_THROW( e->save() );
+    }
+}
+
+/** @brief Vertex snapshots keep the CG P2 values and do not alias their source. */
+BOOST_AUTO_TEST_CASE( continuous_lagrange_vertex_snapshots )
+{
+    auto mesh = unitCube( 0.25 );
+    auto e = exporter( _mesh=mesh, _name="continuous_lagrange_vertex_snapshots", _geo="static" );
+    auto first = e->step( 0. );
+    auto second = e->step( 1. );
+    auto const range = elements( mesh );
+    auto q = cst( 1. ) + Px()*Px() + 2*Py()*Py() + 3*Pz()*Pz();
+
+    auto check = [&]( std::string const &name, auto space, auto const &expr,
+                      std::vector<std::vector<double>> const &factors ) {
+        auto field = space->element();
+        field.on( _range=range, _expr=expr, _close=true );
+        auto cache = first->fieldSet()->spaceCache();
+        auto const previousMaps = cache->vertexDofMaps.size();
+        first->add( name, field );
+        BOOST_REQUIRE_EQUAL( cache->vertexDofMaps.size(), previousMaps + 1 );
+        BOOST_CHECK( cache->vertexDofMaps.back().usable );
+        field.scale( 2. );
+        second->add( name, field );
+        BOOST_CHECK_EQUAL( second->fieldSet()->spaceCache()->vertexDofMaps.size(),
+                           previousMaps + 1 );
+        field.zero();
+
+        for ( auto const &step : { first, second } )
+        {
+            auto const &rows = step->fieldSet()->nodal( name ).second;
+            BOOST_REQUIRE_EQUAL( rows.size(), factors.size() );
+            auto const &dof = rows[0][0]->functionSpace()->dof();
+            double const scale = step == first ? 1. : 2.;
+            double maxError = 0.;
+            for ( auto const &wrapped : range )
+            {
+                auto const &elt = unwrap_ref( wrapped );
+                auto const &indices = dof->localToGlobalIndices( elt.id() );
+                for ( uint16_type v = 0; v < elt.numVertices; ++v )
+                {
+                    auto const &p = elt.point( v ).node();
+                    auto const id = indices( dof->localDofId( v ) );
+                    double const base = scale * ( 1. + p(0)*p(0) + 2*p(1)*p(1) + 3*p(2)*p(2) );
+                    for ( std::size_t row = 0; row < factors.size(); ++row )
+                        for ( std::size_t col = 0; col < factors[row].size(); ++col )
+                            maxError = std::max( maxError, std::abs( rows[row][col]->globalValue( id ) -
+                                                                    factors[row][col]*base ) );
+                }
+            }
+            BOOST_CHECK_SMALL( maxError, 1e-10 );
+        }
+    };
+
+    // Hold spaces across both steps; distinct components detect ordering errors.
+    auto scalar = Pch<2>( mesh );
+    auto vector = Pchv<2>( mesh );
+    auto symmetric = Pchms<2>( mesh );
+    auto tensor = Pchm<2>( mesh );
+    check( "scalar", scalar, q, {{1.}} );
+    check( "vector", vector, vec( q, 2*q, 3*q ), {{1.}, {2.}, {3.}} );
+    check( "symmetric", symmetric, mat<3,3>( q, 2*q, 3*q, 2*q, 4*q, 5*q, 3*q, 5*q, 6*q ),
+           {{1.}, {2., 4.}, {3., 5., 6.}} );
+    check( "tensor", tensor, mat<3,3>( q, 2*q, 3*q, 4*q, 5*q, 6*q, 7*q, 8*q, 9*q ),
+           {{1., 2., 3.}, {4., 5., 6.}, {7., 8., 9.}} );
+    e->save();
 }
 
 //! \brief Separate field residency from scheduling, publication and legacy archives.

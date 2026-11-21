@@ -22,6 +22,8 @@
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #include <sstream>
+#include <array>
+#include <type_traits>
 
 // Boost.Test
 // make sure that the init_unit_test function is defined by UTF
@@ -29,12 +31,13 @@
 // give a name to the testsuite
 #define BOOST_TEST_MODULE mesh filter testsuite
 #include <feel/feelcore/testsuite.hpp>
-#include <boost/mpl/list.hpp>
+#include <boost/test/data/test_case.hpp>
 
 #include <feel/feelcore/feel.hpp>
 
 
 using boost::unit_test::test_suite;
+namespace bdata = boost::unit_test::data;
 
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/mesh.hpp>
@@ -76,7 +79,7 @@ makeAbout()
 }
 
 
-template<int Dim, template <uint16_type,uint16_type,uint16_type> class Entity = Simplex>
+template<int Dim, template <int,int,int> class Entity = Simplex>
 void
 checkCreateGmshMesh( std::string const& shape, std::string const& convex = "Simplex" )
 {
@@ -112,12 +115,19 @@ FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 BOOST_AUTO_TEST_SUITE( armsuite )
 
 
-    //typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
-typedef boost::mpl::list<boost::mpl::int_<3> > dim_types;
-
-BOOST_AUTO_TEST_CASE_TEMPLATE( gmshsimplex, T, dim_types )
+BOOST_DATA_TEST_CASE( gmshsimplex, bdata::make( std::array<int,1>{ { 3 } } ), dim )
 {
-    checkCreateGmshMesh<T::value>( "simplex" );
+    BOOST_TEST_CONTEXT( "shape=simplex dim=" << dim )
+    {
+        switch ( dim )
+        {
+        case 3:
+            checkCreateGmshMesh<3>( "simplex" );
+            break;
+        default:
+            BOOST_FAIL( "Unsupported dimension " << dim );
+        }
+    }
 }
 
 

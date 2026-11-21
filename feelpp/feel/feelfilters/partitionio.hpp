@@ -1,12 +1,12 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-     SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-     SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
-
-    SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
-
-     SPDX-License-Identifier: LGPL-3.0-or-later
-*/
 #ifndef FEELPP_FILTERS_PARTITIONIO_H
 #define FEELPP_FILTERS_PARTITIONIO_H
 
@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <array>
+#include <type_traits>
 #include <unordered_map>
 
 #include <feel/feelcore/hdf5.hpp>
@@ -359,6 +360,14 @@ void PartitionIO<MeshType>::writeMetaData (mesh_ptrtype meshParts)
     fs::path p(M_filename);
     ptMesh["h5"] = p.stem().string()+".h5";
     ptMesh["partition"]["n"] = meshParts->numberOfPartitions();
+    ptMesh["geometry"]["order"] =
+        meshParts->order();
+    ptMesh["geometry"]["cell_kind"] =
+        static_cast<std::uint8_t>(
+            mesh_type::geometry_descriptor_type::cellKind );
+    ptMesh["geometry"]["representation"] =
+        static_cast<std::uint8_t>(
+            meshParts->geometryRepresentation() );
 
     nl::json j_physicals;
     for( auto const& m : meshParts->markerNames() )
@@ -476,6 +485,37 @@ void PartitionIO<MeshType>::readMetaData( mesh_ptrtype meshParts )
             meshParts->addMarkerName( std::make_pair( name, std::vector<size_type>{ size_type( id ), size_type( dimension ) } ) );
         } );
     metadata.read( input );
+    if ( metadata.M_geometry.has_value() )
+    {
+        auto const& geometryMetadata =
+            *metadata.M_geometry;
+        auto const archivedOrder =
+            geometryMetadata.at( "order" )
+                .template get<uint16_type>();
+        auto const archivedCellKind =
+            geometryMetadata.at( "cell_kind" )
+                .template get<std::uint8_t>();
+        auto const archivedRepresentation =
+            geometryMetadata.at( "representation" )
+                .template get<std::uint8_t>();
+
+        if ( archivedCellKind !=
+             static_cast<std::uint8_t>(
+                 mesh_type::geometry_descriptor_type::cellKind ) )
+            throw std::runtime_error(
+                "Partition archive geometry cell kind does not match the mesh type" );
+        auto const restoredRepresentation =
+            static_cast<geometry::GeometryRepresentationKind>(
+                archivedRepresentation );
+        if ( !geometry::isValidGeometryRepresentation(
+                 restoredRepresentation ) )
+            throw std::runtime_error(
+                "Partition archive contains an unsupported geometry representation" );
+
+        meshParts->restoreGeometryDescriptor(
+            RuntimeOrder{ archivedOrder }, restoredRepresentation );
+    }
+
     if ( metadata.M_h5Filename )
     {
         fs::path filename( M_filename );
@@ -715,8 +755,9 @@ void PartitionIO<MeshType>::writePoints( double scale )
 template<typename MeshType>
 void PartitionIO<MeshType>::writeElements()
 {
-    //int nVal = 2 + element_type::numPoints;// id+marker+ points
-    int nVal = 1 + element_type::numPoints;// marker+ points
+    auto const elementPointCount =
+        M_meshPartsOut->makeElement().nPoints();
+    int nVal = 1 + elementPointCount;// marker+ points
 
     hsize_t globalDims[2];
     globalDims[0] = 1;
@@ -759,7 +800,7 @@ void PartitionIO<MeshType>::writeElements()
                 //M_uintBuffer[currentBufferIndex++] = theelt.id();
                 auto const& markerElt = (theelt.hasMarker())? theelt.marker() : emptyMarker;
                 M_uintBuffer[currentBufferIndex++] = mapMarkerToFragmentId_elements.at(markerElt);
-                for (size_type k = 0; k < element_type::numPoints; ++k)
+                for (size_type k = 0; k < theelt.nPoints(); ++k)
                 {
                     M_uintBuffer[currentBufferIndex++] = theelt.point(k).id();
                 }
@@ -772,7 +813,7 @@ void PartitionIO<MeshType>::writeElements()
                 //M_uintBuffer[currentBufferIndex++] = theghostelt.id();
                 auto const& markerGhostElt = (theghostelt.hasMarker())? theghostelt.marker() : emptyMarker;
                 M_uintBuffer[currentBufferIndex++] = mapMarkerToFragmentId_elements.at( markerGhostElt );
-                for (size_type k = 0; k < element_type::numPoints; ++k)
+                for (size_type k = 0; k < theghostelt.nPoints(); ++k)
                 {
                     M_uintBuffer[currentBufferIndex++] = theghostelt.point(k).id();
                 }
@@ -843,112 +884,57 @@ namespace detail
 template<typename MeshPartType>
 void updateMarkedSubEntitiesBuffer( MeshPartType const& meshPartSet,
                                     std::map<ElementsType,std::map<typename MeshPartType::mesh_type::element_type::marker_type,int>> const& mapMarkerToFragmentId,
-                                    rank_type partId, std::vector<unsigned int> & buffer, mpl::int_<1> /**/ )
-{
-    size_type currentBufferIndex = 0;
-
-    auto const& mapMarkerToFragmentId_points = mapMarkerToFragmentId.at(ElementsType::MESH_POINTS);
-    auto point_it = meshPartSet.beginMarkedPoint( partId );
-    auto point_en = meshPartSet.endMarkedPoint( partId );
-    for( ; point_it != point_en; ++point_it )
-    {
-        auto const& thepoint = boost::unwrap_ref(*point_it);
-        CHECK( thepoint.hasMarker() ) << "not a marked point";
-        auto const& markerPoint = thepoint.marker();
-        buffer[currentBufferIndex++] = mapMarkerToFragmentId_points.at(markerPoint);
-        buffer[currentBufferIndex++] = thepoint.id();
-    }
-}
-template<typename MeshPartType>
-void updateMarkedSubEntitiesBuffer( MeshPartType const& meshPartSet,
-                                    std::map<ElementsType,std::map<typename MeshPartType::mesh_type::element_type::marker_type,int>> const& mapMarkerToFragmentId,
-                                    rank_type partId, std::vector<unsigned int> & buffer, mpl::int_<2> /**/ )
-{
-    size_type currentBufferIndex = 0;
-
-    auto const& mapMarkerToFragmentId_faces = mapMarkerToFragmentId.at(ElementsType::MESH_FACES);
-    auto face_it = meshPartSet.beginMarkedFace( partId );
-    auto face_en = meshPartSet.endMarkedFace( partId );
-    for( ; face_it != face_en; ++face_it )
-    {
-        auto const& theface = boost::unwrap_ref(*face_it);
-        CHECK( theface.hasMarker() ) << "not a marked face";
-        auto const& markerFace = theface.marker();
-        buffer[currentBufferIndex++] = mapMarkerToFragmentId_faces.at(markerFace);
-        for ( uint16_type vLocId = 0; vLocId < MeshPartType::mesh_type::face_type::numPoints ; ++vLocId )
-        {
-            buffer[currentBufferIndex++] = theface.point( vLocId ).id();
-        }
-    }
-
-    auto const& mapMarkerToFragmentId_points = mapMarkerToFragmentId.at(ElementsType::MESH_POINTS);
-    auto point_it = meshPartSet.beginMarkedPoint( partId );
-    auto point_en = meshPartSet.endMarkedPoint( partId );
-    for( ; point_it != point_en; ++point_it )
-    {
-        auto const& thepoint = boost::unwrap_ref(*point_it);
-        CHECK( thepoint.hasMarker() ) << "not a marked point";
-        auto const& markerPoint = thepoint.marker();
-        buffer[currentBufferIndex++] = mapMarkerToFragmentId_points.at(markerPoint);
-        buffer[currentBufferIndex++] = thepoint.id();
-    }
-}
-template<typename MeshPartType>
-void updateMarkedSubEntitiesBuffer( MeshPartType const& meshPartSet,
-                                    std::map<ElementsType,std::map<typename MeshPartType::mesh_type::element_type::marker_type,int>> const& mapMarkerToFragmentId,
-                                    rank_type partId, std::vector<unsigned int> & buffer, mpl::int_<3> /**/ )
-{
-    size_type currentBufferIndex = 0;
-
-    auto const& mapMarkerToFragmentId_faces = mapMarkerToFragmentId.at(ElementsType::MESH_FACES);
-    auto face_it = meshPartSet.beginMarkedFace( partId );
-    auto face_en = meshPartSet.endMarkedFace( partId );
-    for( ; face_it != face_en; ++face_it )
-    {
-        auto const& theface = boost::unwrap_ref(*face_it);
-        CHECK( theface.hasMarker() ) << "not a marked face";
-        auto const& markerFace = theface.marker();
-        buffer[currentBufferIndex++] = mapMarkerToFragmentId_faces.at(markerFace);
-        for ( uint16_type vLocId = 0; vLocId < MeshPartType::mesh_type::face_type::numPoints ; ++vLocId )
-        {
-            buffer[currentBufferIndex++] = theface.point( vLocId ).id();
-        }
-    }
-
-    auto const& mapMarkerToFragmentId_edges = mapMarkerToFragmentId.at(ElementsType::MESH_EDGES);
-    auto edge_it = meshPartSet.beginMarkedEdge( partId );
-    auto edge_en = meshPartSet.endMarkedEdge( partId );
-    for( ; edge_it != edge_en; ++edge_it )
-    {
-        auto const& theedge = boost::unwrap_ref(*edge_it);
-        CHECK( theedge.hasMarker() ) << "not a marked edge";
-        auto const& markerEdge = theedge.marker();
-        buffer[currentBufferIndex++] = mapMarkerToFragmentId_edges.at(markerEdge);
-        for ( uint16_type vLocId = 0; vLocId < MeshPartType::mesh_type::edge_type::numPoints ; ++vLocId )
-        {
-            buffer[currentBufferIndex++] = theedge.point( vLocId ).id();
-        }
-    }
-
-    auto const& mapMarkerToFragmentId_points = mapMarkerToFragmentId.at(ElementsType::MESH_POINTS);
-    auto point_it = meshPartSet.beginMarkedPoint( partId );
-    auto point_en = meshPartSet.endMarkedPoint( partId );
-    for( ; point_it != point_en; ++point_it )
-    {
-        auto const& thepoint = boost::unwrap_ref(*point_it);
-        CHECK( thepoint.hasMarker() ) << "not a marked point";
-        auto const& markerPoint = thepoint.marker();
-        buffer[currentBufferIndex++] = mapMarkerToFragmentId_points.at(markerPoint);
-        buffer[currentBufferIndex++] = thepoint.id();
-    }
-}
-
-template<typename MeshPartType>
-void updateMarkedSubEntitiesBuffer( MeshPartType const& meshPartSet,
-                                    std::map<ElementsType,std::map<typename MeshPartType::mesh_type::element_type::marker_type,int>> const& mapMarkerToFragmentId,
                                     rank_type partId, std::vector<unsigned int> & buffer )
 {
-    updateMarkedSubEntitiesBuffer( meshPartSet,mapMarkerToFragmentId, partId,buffer, mpl::int_<MeshPartType::mesh_type::nDim>() );
+    size_type currentBufferIndex = 0;
+
+    if constexpr ( MeshPartType::mesh_type::nDim >= 2 )
+    {
+        auto const& mapMarkerToFragmentId_faces = mapMarkerToFragmentId.at( ElementsType::MESH_FACES );
+        auto face_it = meshPartSet.beginMarkedFace( partId );
+        auto face_en = meshPartSet.endMarkedFace( partId );
+        for ( ; face_it != face_en; ++face_it )
+        {
+            auto const& theface = boost::unwrap_ref( *face_it );
+            CHECK( theface.hasMarker() ) << "not a marked face";
+            auto const& markerFace = theface.marker();
+            buffer[currentBufferIndex++] = mapMarkerToFragmentId_faces.at( markerFace );
+            for ( size_type vLocId = 0;
+                  vLocId < theface.nPoints();
+                  ++vLocId )
+                buffer[currentBufferIndex++] = theface.point( vLocId ).id();
+        }
+    }
+
+    if constexpr ( MeshPartType::mesh_type::nDim == 3 )
+    {
+        auto const& mapMarkerToFragmentId_edges = mapMarkerToFragmentId.at( ElementsType::MESH_EDGES );
+        auto edge_it = meshPartSet.beginMarkedEdge( partId );
+        auto edge_en = meshPartSet.endMarkedEdge( partId );
+        for ( ; edge_it != edge_en; ++edge_it )
+        {
+            auto const& theedge = boost::unwrap_ref( *edge_it );
+            CHECK( theedge.hasMarker() ) << "not a marked edge";
+            auto const& markerEdge = theedge.marker();
+            buffer[currentBufferIndex++] = mapMarkerToFragmentId_edges.at( markerEdge );
+            for ( size_type vLocId = 0;
+                  vLocId < theedge.nPoints();
+                  ++vLocId )
+                buffer[currentBufferIndex++] = theedge.point( vLocId ).id();
+        }
+    }
+
+    auto const& mapMarkerToFragmentId_points = mapMarkerToFragmentId.at( ElementsType::MESH_POINTS );
+    auto point_it = meshPartSet.beginMarkedPoint( partId );
+    auto point_en = meshPartSet.endMarkedPoint( partId );
+    for ( ; point_it != point_en; ++point_it )
+    {
+        auto const& thepoint = boost::unwrap_ref( *point_it );
+        CHECK( thepoint.hasMarker() ) << "not a marked point";
+        auto const& markerPoint = thepoint.marker();
+        buffer[currentBufferIndex++] = mapMarkerToFragmentId_points.at( markerPoint );
+        buffer[currentBufferIndex++] = thepoint.id();
+    }
 }
 
 } // namespace detail
@@ -956,8 +942,10 @@ void updateMarkedSubEntitiesBuffer( MeshPartType const& meshPartSet,
 template<typename MeshType>
 void PartitionIO<MeshType>::writeMarkedSubEntities()
 {
-    int nValFace = 1 + face_type::numPoints;// (marker,ptId1,ptId2,...)
-    int nValEdge = 1 + edge_type::numPoints;// (marker,ptId1,ptId2,...)
+    int nValFace =
+        1 + M_meshPartsOut->makeFace().nPoints();
+    int nValEdge =
+        1 + M_meshPartsOut->makeEdge().nPoints();
     int nValPoint = 1 + 1;// (marker,ptId1)
 
     hsize_t globalDims[2];
@@ -1183,8 +1171,9 @@ void PartitionIO<MeshType>::readElements( std::vector<rank_type> const& partIds,
     rank_type processId = M_meshPartIn->worldComm().localRank();
     bool isSeq = M_meshPartIn->worldComm().localSize() == 1;
 
-    //int nVal = 2 + element_type::numPoints;// id+marker+ points
-    int nVal = 1 + element_type::numPoints;// marker+ points
+    auto const elementPointCount =
+        M_meshPartIn->makeElement().nPoints();
+    int nVal = 1 + elementPointCount;// marker+ points
 
     hsize_t globalDims[2];
     hsize_t localDims[2];
@@ -1235,7 +1224,7 @@ void PartitionIO<MeshType>::readElements( std::vector<rank_type> const& partIds,
 
             size_type nActiveElement = M_numLocalElements[partId]-M_numLocalGhostElements[partId];
             mapGhostHdf5IdToFeelId[partId].resize( M_numLocalGhostElements[partId] );
-            element_type e;
+            auto e = M_meshPartIn->makeElement();
 
             size_type currentBufferIndex = 0;
             for (size_type j = 0; j < M_numLocalElements[partId]; ++j)
@@ -1255,7 +1244,8 @@ void PartitionIO<MeshType>::readElements( std::vector<rank_type> const& partIds,
                 e.setMarker( marker );
                 e.setProcessId( processId/*partId*/ );// update correctlty for ghost cell in read_ghost
 
-                for ( uint16_type k = 0; k < element_type::numPoints; ++k)
+                for ( size_type k = 0;
+                      k < e.nPoints(); ++k)
                 {
                     size_type ptId = M_uintBuffer[ currentBufferIndex++];
                     DCHECK( M_meshPartIn->hasPoint( ptId ) ) << "point id " << ptId << " not present in mesh";
@@ -1362,117 +1352,62 @@ namespace detail
 template<typename MeshType>
 void updateMarkedSubEntitiesMesh( std::vector<unsigned int> const& buffer, std::tuple<size_type,size_type,size_type> const& numLocalSubEntities,
                                   std::map<ElementsType,PartitionMarkerTable<flag_type>> const& mapFragmentIdToMarker,
-                                  MeshType & mesh,
-                                  mpl::int_<1> /**/ )
-{
-    size_type numLocalMarkedPoints = std::get<2>( numLocalSubEntities );
-    size_type currentBufferIndex = 0;
-
-    auto const& mapFragmentIdToMarker_points = mapFragmentIdToMarker.at(ElementsType::MESH_POINTS);
-    for (size_type j = 0; j < numLocalMarkedPoints; ++j)
-    {
-        int fragId = buffer[currentBufferIndex++];
-        auto const& marker = mapFragmentIdToMarker_points.at( fragId );
-        size_type id = buffer[currentBufferIndex++];
-        auto itpt = mesh.pointIterator( id );
-        CHECK( itpt != mesh.endPoint() ) << "point id " << id << " does not find in mesh";
-        itpt->second.setMarker( marker );
-    }
-}
-template<typename MeshType>
-void updateMarkedSubEntitiesMesh( std::vector<unsigned int> const& buffer, std::tuple<size_type,size_type,size_type> const& numLocalSubEntities,
-                                  std::map<ElementsType,PartitionMarkerTable<flag_type>> const& mapFragmentIdToMarker,
-                                  MeshType & mesh,
-                                  mpl::int_<2> /**/ )
-{
-    rank_type rank = mesh.worldComm().localRank();
-    size_type numLocalMarkedFaces = std::get<0>( numLocalSubEntities );
-    size_type numLocalMarkedPoints = std::get<2>( numLocalSubEntities );
-    size_type currentBufferIndex = 0;
-
-    auto const& mapFragmentIdToMarker_faces = mapFragmentIdToMarker.at(ElementsType::MESH_FACES);
-    typename MeshType::face_type newFace;
-    for (size_type j = 0; j < numLocalMarkedFaces; ++j)
-    {
-        int fragId = buffer[currentBufferIndex++];
-        auto const& marker = mapFragmentIdToMarker_faces.at( fragId );
-        newFace.setId( mesh.numFaces() );
-        newFace.setProcessIdInPartition( rank );
-        newFace.setMarker( marker );
-        for ( uint16_type vLocId = 0; vLocId < MeshType::face_type::numPoints ; ++vLocId )
-            newFace.setPoint( vLocId, mesh.point( buffer[ currentBufferIndex++ ]) );
-        mesh.addFace( newFace );
-    }
-
-    auto const& mapFragmentIdToMarker_points = mapFragmentIdToMarker.at(ElementsType::MESH_POINTS);
-    for (size_type j = 0; j < numLocalMarkedPoints; ++j)
-    {
-        int fragId = buffer[currentBufferIndex++];
-        auto const& marker = mapFragmentIdToMarker_points.at( fragId );
-        size_type id = buffer[currentBufferIndex++];
-        auto itpt = mesh.pointIterator( id );
-        CHECK( itpt != mesh.endPoint() ) << "point id " << id << " does not find in mesh";
-        itpt->second.setMarker( marker );
-    }
-}
-template<typename MeshType>
-void updateMarkedSubEntitiesMesh( std::vector<unsigned int> const& buffer, std::tuple<size_type,size_type,size_type> const& numLocalSubEntities,
-                                  std::map<ElementsType,PartitionMarkerTable<flag_type>> const& mapFragmentIdToMarker,
-                                  MeshType & mesh,
-                                  mpl::int_<3> /**/ )
-{
-    rank_type rank = mesh.worldComm().localRank();
-    size_type numLocalMarkedFaces = std::get<0>( numLocalSubEntities );
-    size_type numLocalMarkedEdges = std::get<1>( numLocalSubEntities );
-    size_type numLocalMarkedPoints = std::get<2>( numLocalSubEntities );
-    size_type currentBufferIndex = 0;
-
-    auto const& mapFragmentIdToMarker_faces = mapFragmentIdToMarker.at(ElementsType::MESH_FACES);
-    typename MeshType::face_type newFace;
-    for (size_type j = 0; j < numLocalMarkedFaces; ++j)
-    {
-        int fragId = buffer[currentBufferIndex++];
-        auto const& marker = mapFragmentIdToMarker_faces.at( fragId );
-        newFace.setId( mesh.numFaces() );
-        newFace.setProcessIdInPartition( rank );
-        newFace.setMarker( marker );
-        for ( uint16_type vLocId = 0; vLocId < MeshType::face_type::numPoints ; ++vLocId )
-            newFace.setPoint( vLocId, mesh.point( buffer[ currentBufferIndex++ ]) );
-        mesh.addFace( newFace );
-    }
-
-    auto const& mapFragmentIdToMarker_edges = mapFragmentIdToMarker.at(ElementsType::MESH_EDGES);
-    typename MeshType::edge_type newEdge;
-    for (size_type j = 0; j < numLocalMarkedEdges; ++j)
-    {
-        int fragId = buffer[currentBufferIndex++];
-        auto const& marker = mapFragmentIdToMarker_edges.at( fragId );
-        newEdge.setId( mesh.numEdges() );
-        newEdge.setProcessIdInPartition( rank );
-        newEdge.setMarker( marker );
-        for ( uint16_type vLocId = 0; vLocId < MeshType::edge_type::numPoints ; ++vLocId )
-            newEdge.setPoint( vLocId, mesh.point( buffer[ currentBufferIndex++ ]) );
-        mesh.addEdge( newEdge );
-    }
-
-    auto const& mapFragmentIdToMarker_points = mapFragmentIdToMarker.at(ElementsType::MESH_POINTS);
-    for (size_type j = 0; j < numLocalMarkedPoints; ++j)
-    {
-        int fragId = buffer[currentBufferIndex++];
-        auto const& marker = mapFragmentIdToMarker_points.at( fragId );
-        size_type id = buffer[currentBufferIndex++];
-        auto itpt = mesh.pointIterator( id );
-        CHECK( itpt != mesh.endPoint() ) << "point id " << id << " does not find in mesh";
-        itpt->second.setMarker( marker );
-    }
-
-}
-template<typename MeshType>
-void updateMarkedSubEntitiesMesh( std::vector<unsigned int> const& buffer, std::tuple<size_type,size_type,size_type> const& numLocalSubEntities,
-                                  std::map<ElementsType,PartitionMarkerTable<flag_type>> const& mapFragmentIdToMarker,
                                   MeshType & mesh )
 {
-    updateMarkedSubEntitiesMesh( buffer, numLocalSubEntities, mapFragmentIdToMarker, mesh, mpl::int_<MeshType::nDim>() );
+    size_type currentBufferIndex = 0;
+
+    if constexpr ( MeshType::nDim >= 2 )
+    {
+        rank_type rank = mesh.worldComm().localRank();
+        size_type numLocalMarkedFaces = std::get<0>( numLocalSubEntities );
+        auto const& mapFragmentIdToMarker_faces = mapFragmentIdToMarker.at( ElementsType::MESH_FACES );
+        auto newFace = mesh.makeFace();
+        for ( size_type j = 0; j < numLocalMarkedFaces; ++j )
+        {
+            int fragId = buffer[currentBufferIndex++];
+            auto const& marker = mapFragmentIdToMarker_faces.at( fragId );
+            newFace.setId( mesh.numFaces() );
+            newFace.setProcessIdInPartition( rank );
+            newFace.setMarker( marker );
+            for ( size_type vLocId = 0;
+                  vLocId < newFace.nPoints();
+                  ++vLocId )
+                newFace.setPoint( vLocId, mesh.point( buffer[currentBufferIndex++] ) );
+            mesh.addFace( newFace );
+        }
+
+        if constexpr ( MeshType::nDim == 3 )
+        {
+            size_type numLocalMarkedEdges = std::get<1>( numLocalSubEntities );
+            auto const& mapFragmentIdToMarker_edges = mapFragmentIdToMarker.at( ElementsType::MESH_EDGES );
+            auto newEdge = mesh.makeEdge();
+            for ( size_type j = 0; j < numLocalMarkedEdges; ++j )
+            {
+                int fragId = buffer[currentBufferIndex++];
+                auto const& marker = mapFragmentIdToMarker_edges.at( fragId );
+                newEdge.setId( mesh.numEdges() );
+                newEdge.setProcessIdInPartition( rank );
+                newEdge.setMarker( marker );
+                for ( size_type vLocId = 0;
+                      vLocId < newEdge.nPoints();
+                      ++vLocId )
+                    newEdge.setPoint( vLocId, mesh.point( buffer[currentBufferIndex++] ) );
+                mesh.addEdge( newEdge );
+            }
+        }
+    }
+
+    size_type numLocalMarkedPoints = std::get<2>( numLocalSubEntities );
+    auto const& mapFragmentIdToMarker_points = mapFragmentIdToMarker.at( ElementsType::MESH_POINTS );
+    for ( size_type j = 0; j < numLocalMarkedPoints; ++j )
+    {
+        int fragId = buffer[currentBufferIndex++];
+        auto const& marker = mapFragmentIdToMarker_points.at( fragId );
+        size_type id = buffer[currentBufferIndex++];
+        auto itpt = mesh.pointIterator( id );
+        CHECK( itpt != mesh.endPoint() ) << "point id " << id << " does not find in mesh";
+        itpt->second.setMarker( marker );
+    }
 }
 
 } // namespace detail
@@ -1484,8 +1419,10 @@ void PartitionIO<MeshType>::readMarkedSubEntities( std::vector<rank_type> const&
         return;
     //rank_type partId = M_meshPartIn->worldComm().localRank();
 
-    int nValFace = 1 + face_type::numPoints;//(marker,ptId1,ptId2,...)
-    int nValEdge = 1 + edge_type::numPoints;// (marker,ptId1,ptId2,...)
+    int nValFace =
+        1 + M_meshPartIn->makeFace().nPoints();
+    int nValEdge =
+        1 + M_meshPartIn->makeEdge().nPoints();
     int nValPoint = 1 + 1;// (marker,ptId)
 
     hsize_t globalDims[2];
@@ -1549,7 +1486,9 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep1()
     for ( ; ghostelt_it != ghostelt_en ; ++ghostelt_it )
     {
         auto const& ghostelt = boost::unwrap_ref( *ghostelt_it );
-        for ( uint16_type vLocId = 0 ; vLocId < mesh_type::element_type::numPoints; ++vLocId )
+        for ( size_type vLocId = 0;
+              vLocId < ghostelt.nPoints();
+              ++vLocId )
         {
             size_type vId = ghostelt.point( vLocId ).id();
             pointsToNeihborPart[vId].insert( ghostelt.processId() );
@@ -1565,7 +1504,9 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep1()
     {
         auto const& elt = boost::unwrap_ref( *elt_it );
         auto & eltModified = M_meshPartIn->elementIterator( elt.id() )->second;
-        for ( uint16_type vLocId = 0 ; vLocId < mesh_type::element_type::numPoints; ++vLocId )
+        for ( size_type vLocId = 0;
+              vLocId < elt.nPoints();
+              ++vLocId )
         {
             auto const& thepoint = elt.point( vLocId );
             size_type vId = thepoint.id();
@@ -1583,7 +1524,9 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep1()
     for ( ; elt_it != elt_en ; ++elt_it )
     {
         auto const& elt = boost::unwrap_ref( *elt_it );
-        for ( uint16_type vLocId = 0 ; vLocId < mesh_type::element_type::numPoints; ++vLocId )
+        for ( size_type vLocId = 0;
+              vLocId < elt.nPoints();
+              ++vLocId )
         {
             auto const& thepoint = elt.point( vLocId );
             size_type vId = thepoint.id();
@@ -1596,7 +1539,9 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep1()
     for ( ; ghostelt_it != ghostelt_en ; ++ghostelt_it )
     {
         auto const& ghostelt = boost::unwrap_ref( *ghostelt_it );
-        for ( uint16_type vLocId = 0 ; vLocId < mesh_type::element_type::numPoints; ++vLocId )
+        for ( size_type vLocId = 0;
+              vLocId < ghostelt.nPoints();
+              ++vLocId )
         {
             auto const& thepoint = ghostelt.point( vLocId );
             if ( thepoint.processId() == ghostPointPidDetection )
@@ -1629,7 +1574,9 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
     {
         auto const& ghostelt = boost::unwrap_ref( *ghostelt_it );
         const rank_type pid = ghostelt.processId();
-        for ( uint16_type vLocId = 0 ; vLocId < mesh_type::element_type::numPoints; ++vLocId )
+        for ( size_type vLocId = 0;
+              vLocId < ghostelt.nPoints();
+              ++vLocId )
             dataToSend[pid].push_back( ghostelt.point( vLocId ).id() );
         memoryMsgToSend[pid].push_back( ghostelt.id() );
     }
@@ -1705,7 +1652,17 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
     // build map which allow to identify element from point ids (only for elt which touch the interprocess part)
     // TODO: by using a gloabl element numbering over all partititons/process, we can reduce this kind of code
     tic();
-    using element_key_type = std::array<size_type, mesh_type::element_type::numPoints>;
+    using element_key_type = std::conditional_t<
+        mesh_type::is_order_dynamic, std::vector<size_type>,
+        std::array<size_type, mesh_type::element_type::numPoints>>;
+    auto const elementPointCount = M_meshPartIn->makeElement().nPoints();
+    auto makeElementKey = [elementPointCount]()
+    {
+        element_key_type key{};
+        if constexpr ( mesh_type::is_order_dynamic )
+            key.resize( elementPointCount );
+        return key;
+    };
     /** @brief Hash the sorted point IDs identifying one active element. */
     struct ElementKeyHash
     {
@@ -1727,8 +1684,10 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
         if ( elt.numberOfNeighborPartitions() < 1 )
             continue;
 #endif
-        element_key_type ptIds;
-        for ( uint16_type vLocId = 0 ; vLocId < mesh_type::element_type::numPoints; ++vLocId )
+        auto ptIds = makeElementKey();
+        for ( size_type vLocId = 0;
+              vLocId < elt.nPoints();
+              ++vLocId )
             ptIds[vLocId] = elt.point( vLocId ).id();
         std::sort( ptIds.begin(), ptIds.end() );
         mapPointIdsToEltId[ptIds] = elt.id();
@@ -1744,12 +1703,15 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
     for ( auto const& [neighborRank,currentData] : dataToRecv )
     {
         // WARNING : only done for element of same type (i.e. numPoints)
-        const int nDataRecv = currentData.size()/mesh_type::element_type::numPoints;
+        const int nDataRecv =
+            currentData.size() / elementPointCount;
         dataToReSend[neighborRank].reserve( nDataRecv );
-        for  ( auto it = currentData.begin(); it != currentData.end() ;it+=mesh_type::element_type::numPoints )
+        for ( auto it = currentData.begin();
+              it != currentData.end();
+              it += elementPointCount )
         {
-            element_key_type ptIdsInEltSet;
-            std::copy( it, it+mesh_type::element_type::numPoints, ptIdsInEltSet.begin() );
+            auto ptIdsInEltSet = makeElementKey();
+            std::copy( it, it + elementPointCount, ptIdsInEltSet.begin() );
             std::sort( ptIdsInEltSet.begin(), ptIdsInEltSet.end() );
             auto itFindElt = mapPointIdsToEltId.find( ptIdsInEltSet );
             CHECK( itFindElt != mapPointIdsToEltId.end() ) << "element not find from point ids";

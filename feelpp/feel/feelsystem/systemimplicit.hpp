@@ -1,28 +1,14 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@cemosis.fr>
+ *
+ * SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2009-01-04
-
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file systemimplicit.hpp
+   \brief Legacy implicit system compatibility wrapper.
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-01-04
  */
@@ -39,11 +25,12 @@ namespace Feel
  * \brief describes an implicit system
  *
  * @author Christophe Prud'homme
- * @see
+ * @see Feel::SystemExplicit
  */
 template<typename SpaceType>
 class SystemImplicit : SystemExplicit<SpaceType>
 {
+    /** @brief Base legacy explicit system type. */
     typedef SystemExplicit<SpaceType> super;
 public:
 
@@ -59,21 +46,32 @@ public:
      */
     //@{
 
+    /** @brief Self type. */
     typedef SystemImplicit<SpaceType> system_type;
 
+    /** @brief Scalar value type. */
     typedef typename super::value_type value_type;
+    /** @brief Function-space type. */
     typedef typename super::functionspace_type functionspace_type;
+    /** @brief Legacy function-space argument type. */
     typedef typename super::functionspace_type functionspace_ptrtype;
+    /** @brief Finite-element field type. */
     typedef typename super::element_type element_type;
 
+    /** @brief Backend type used by the legacy implicit system. */
     typedef Backend<value_type> backend_type;
+    /** @brief Shared backend pointer type. */
     typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     /*matrix*/
+    /** @brief Sparse matrix type. */
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
+    /** @brief Sparse matrix pointer type. */
     typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     /* vector */
+    /** @brief Vector type. */
     typedef typename backend_type::vector_type vector_type;
+    /** @brief Vector pointer type. */
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
 
@@ -83,6 +81,7 @@ public:
      */
     //@{
 
+    /** @brief Construct from a function space and variables map. */
     SystemImplicit( functionspace_ptrtype const& Xh, po::variables_map const& vm );
 
     //! copy constructor
@@ -151,6 +150,7 @@ public:
 
 protected:
 
+    /** @brief Backend used by derived legacy systems. */
     backend_ptrtype M_backend;
 
 

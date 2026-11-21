@@ -1,43 +1,29 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileCopyrightText: 2006 EPFL
+ * SPDX-FileCopyrightText: 2007 Université Joseph Fourier Grenoble 1
+ * SPDX-FileCopyrightText: 2026 University of Strasbourg
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2006-02-20
-
-  Copyright (C) 2006 EPFL
-  Copyright (C) 2007 Université Joseph Fourier Grenoble 1
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
-   \file legendre.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2006-02-20
+ * @file legendre.hpp
+ * @brief Tensor-product Legendre bases and requested-order evaluation.
  */
 #ifndef __Legendre_H
 #define __Legendre_H 1
 
 #include <vector>
+#include <array>
 
 #include <boost/lambda/if.hpp>
 
 #include <feel/feelmesh/refentity.hpp>
 #include <feel/feelalg/glas.hpp>
-#include <feel/feelalg/lu.hpp>
+#include <feel/feelpoly/referenceoperators.hpp>
 #include <feel/feelpoly/expansions.hpp>
+#include <feel/feelpoly/legendretabulation.hpp>
+#include <feel/feelpoly/meta.hpp>
 #include <feel/feelpoly/policy.hpp>
 #include <feel/feelpoly/gausslobatto.hpp>
 #include <feel/feelpoly/equispaced.hpp>
@@ -45,8 +31,14 @@
 
 namespace Feel
 {
+namespace detail
+{
+/** Mathematical identity shared across static facade seeds and requested runtime degrees. */
+template <int Dimension, int RealDimension, typename T, bool Normalized, typename Matrix>
+struct LegendreOperatorFamily;
+} // namespace detail
 template< class Convex,
-          uint16_type Order,
+          int Order,
           typename T >
 class PointSetGaussLobatto;
 
@@ -136,7 +128,7 @@ struct LegendreTag
  * \brief Legendre polynomial orthonormal basis
  *
  * This class represents the Legendre polynomials up to degree \c
- * Degree on a simplex in dimension \c Dim.
+ * Degree on a hypercube in dimension \c Dim.
  *
  *
  * The legendre polynomials in 1D, the segment \f$[-1;1]\f$ are defined
@@ -217,7 +209,7 @@ public:
         M_refconvex(),
         M_pts( M_refconvex.makePoints( nDim, 0 ) )
     {
-        this->initDerivation();
+        // Values and sampled derivatives do not require coefficient operators.
     }
     Legendre( Legendre const & d )
         :
@@ -241,7 +233,6 @@ public:
         if ( this != &d )
         {
             M_pts = d.M_pts;
-            _S_D = d._S_D;
         }
 
         return *this;
@@ -332,12 +323,10 @@ public:
      */
     matrix_type coeff() const
     {
-#if 0
-        std::cout << "[Legendre::coeff] coeff = "
-                  << ublas::identity_matrix<value_type>( reference_convex_type::polyDims( nOrder ), M_pts.size2() )
-                  << "\n";
-#endif
-        return ublas::identity_matrix<value_type>( reference_convex_type::polyDims( nOrder ), M_pts.size2() );
+        // Modal coefficients are the identity in mode space, independently of geometry vertices.
+        auto const count = ::Feel::detail::HypercubeCardinality::total( nDim, nOrder );
+        if constexpr ( EigenMatrix<matrix_type> ) return matrix_type::Identity( count, count );
+        else return ublas::identity_matrix<value_type>( count, count );
     }
 
 
@@ -348,359 +337,262 @@ public:
      */
     static matrix_type evaluate( points_type const& __pts )
     {
-        return evaluate( __pts, mpl::int_<nDim>() );
+        return evaluateWithOrder<nOrder>( __pts, RuntimeOrder{ nOrder } );
+    }
+
+    /**
+     * @brief Evaluate Legendre polynomials up to given order
+     *
+     * A different requested order uses the shared runtime kernel. Lower-order
+     * tensor-product modes are not a contiguous prefix of the higher basis.
+     *
+     * @param __pts Points to evaluate at
+     * @param order Requested polynomial order, below/equal/above the template order
+     * @return Evaluation matrix
+     */
+    static matrix_type evaluate( points_type const& __pts, uint16_type order )
+    {
+        return evaluateWithOrder<Dynamic>( __pts, RuntimeOrder{ order } );
+    }
+
+    /** @brief Evaluate native modal values with the compile-time expansion degree. */
+    template<typename Points>
+    [[nodiscard]] static auto values( Points const& points )
+    { return valuesWithOrder<nOrder>( points, RuntimeOrder{ nOrder } ); }
+
+    /** @brief Evaluate native modal values while preserving runtime order semantics. */
+    template<typename Points>
+    [[nodiscard]] static auto values( Points const& points, RuntimeOrder order )
+    { return valuesWithOrder<Dynamic>( points, order ); }
+
+    /** @brief Evaluate an explicit static/runtime extent independently of the seed degree. */
+    template<int OrderSpec, typename Points>
+    [[nodiscard]] static auto values( Points const& points, RuntimeOrder order )
+    { return valuesWithOrder<OrderSpec>( points, order ); }
+
+    /** @brief Evaluate native reference gradients at the compile-time degree. */
+    template<typename Points>
+    [[nodiscard]] static auto gradients( Points const& points )
+    { return gradientsWithOrder<nOrder>( points, RuntimeOrder{ nOrder } ); }
+
+    /** @brief Evaluate native reference gradients at a runtime degree. */
+    template<typename Points>
+    [[nodiscard]] static auto gradients( Points const& points, RuntimeOrder order )
+    { return gradientsWithOrder<Dynamic>( points, order ); }
+
+    /** @brief Retain an explicit order specification in native reference gradients. */
+    template<int OrderSpec, typename Points>
+    [[nodiscard]] static auto gradients( Points const& points, RuntimeOrder order )
+    { return gradientsWithOrder<OrderSpec>( points, order ); }
+
+    /** Native kernel preserving effective degree independently of the facade seed. */
+    template <int OrderSpec>
+    using TabulationKernelFor = TensorLegendreBasis<nDim, OrderSpec, value_type, is_normalized>;
+
+    /** @brief Evaluate direct native reference Hessians at the compile-time degree. */
+    template <typename Points>
+    [[nodiscard]] static auto hessians( Points const& points )
+    {
+        return hessians<nOrder>( points, RuntimeOrder{ nOrder } );
+    }
+
+    /** @brief Evaluate direct reference Hessians with a runtime degree axis. */
+    template <typename Points>
+    [[nodiscard]] static auto hessians( Points const& points, RuntimeOrder order )
+    {
+        return hessians<Dynamic>( points, order );
+    }
+
+    /** @brief Retain the requested degree and sample extents in direct reference Hessians. */
+    template <int OrderSpec, typename Points>
+    [[nodiscard]] static auto hessians( Points const& points, RuntimeOrder order )
+    {
+        return ::Feel::detail::withEigenMatrix<value_type>( points, [&]( auto const& coordinates )
+                                                            { return TabulationKernelFor<OrderSpec>{ order }.hessians( coordinates ); } );
     }
 
     template<typename AE>
     static vector_matrix_type derivate( ublas::matrix_expression<AE>  const& __pts )
     {
-        return derivate( __pts, mpl::int_<nDim>() );
+        return derivativesWithOrder<nOrder>( __pts(), RuntimeOrder{ nOrder } );
     }
 
     /**
-     * \brief derivatives of Dubiner polynomials
+     * @brief Derivate Legendre polynomials up to given order
+     *
+     * Use the requested tensor-product ordering for every derivative direction.
+     *
+     * @param __pts Points to evaluate at
+     * @param order Requested polynomial order, below/equal/above the template order
+     * @return Vector of derivation matrices (one per spatial dimension)
+     */
+    template<typename AE>
+    static vector_matrix_type derivate( ublas::matrix_expression<AE>  const& __pts, uint16_type order )
+    {
+        return derivativesWithOrder<Dynamic>( __pts(), RuntimeOrder{ order } );
+    }
+
+    /**
+     * \brief derivatives of Legendre polynomials
      * the derivatives are computed at the nodes of the lattice
      *
      * \arg i index of the derivative (0 : x, 1 : y, 2 : z )
      */
     static matrix_type const& d( uint16_type i )
     {
-        return _S_D[i];
+        return differentiationOperators().at( i );
     }
 
     /**
-     * \brief derivatives of Dubiner polynomials
+     * @brief Compute derivation matrix at runtime for given order
+     *
+     * Used for dynamic polynomial order support. Computes the derivation
+     * matrix D_i such that d/dx_i f = D_i * f for polynomial coefficients f.
+     *
+     * @param i Derivative direction (0: x, 1: y, 2: z)
+     * @param order Polynomial order
+     * @return Derivation matrix of size (nBasis x nBasis) for the given order
+     */
+    static matrix_type d( uint16_type i, uint16_type order )
+    {
+        if ( i >= nDim ) throw std::out_of_range( "invalid Legendre derivative direction" );
+        if ( order == nOrder ) return differentiationOperators().at( i );
+        return referenceOperators( RuntimeOrder{ order } )->matrix( i );
+    }
+
+    /** Fixed-dimensional coefficient operators, shared by both order policies. */
+    using OperatorData = ::Feel::detail::ReferenceDerivativeOperators<matrix_type, nDim>;
+
+    /** @brief Retain all directions at one checked effective degree.
+     * @note P_n' = sum_(k<n, n-k odd) (2k+1) P_k. Normalized coefficients
+     * are sqrt((2n+1)(2k+1)); tensor directions preserve every other mode index.
+     * This construction needs neither points nor interpolation/factorization.
+     */
+    [[nodiscard]] static std::shared_ptr<OperatorData const> referenceOperators( RuntimeOrder degree )
+    {
+        degree = ::Feel::detail::validatedNodalOrder<::Feel::detail::HypercubeCardinality>( nDim, degree );
+        using Family = ::Feel::detail::LegendreOperatorFamily<nDim, nRealDim, value_type, is_normalized, matrix_type>;
+        auto build = [degree]
+        {
+            OperatorData result{ degree.value, {} };
+            Eigen::Index const radix = degree.value + 1;
+            Eigen::Index const count = ::Feel::detail::HypercubeCardinality::total( nDim, degree.value );
+            (void)::Feel::detail::matrixElementCount( count, count, sizeof( value_type ) );
+
+            // Decode the established last-axis-fastest tensor ordering once per direction/row.
+            Eigen::Index stride = 1;
+            for ( int direction = nDim - 1; direction >= 0; --direction, stride *= radix )
+            {
+                result.matrices[direction].resize( count, count );
+                decltype( auto ) matrix = ::Feel::detail::referenceOperatorView( result.matrices[direction] );
+                matrix.setZero();
+                for ( Eigen::Index row = 0; row < count; ++row )
+                {
+                    int const high = static_cast<int>( row / stride % radix );
+                    for ( int low = high - 1; low >= 0; low -= 2 )
+                    {
+                        value_type coefficient = value_type( 2 * low + 1 );
+                        if constexpr ( is_normalized )
+                        {
+                            using std::sqrt;
+                            coefficient = sqrt( value_type( 2 * high + 1 ) * coefficient );
+                        }
+                        matrix( row, row - ( high - low ) * stride ) = coefficient;
+                    }
+                }
+            }
+            return result;
+        };
+
+        // Share complete immutable data without repeating construction across facade seeds.
+        return ::Feel::detail::ReferenceOperatorCache<Family, OperatorData>::get( degree, build );
+    }
+
+    /**
+     * \brief derivatives of Legendre polynomials
      * the derivatives are computed at the nodes of the lattice
      *
      * \arg i index of the derivative (0 : x, 1 : y, 2 : z )
      */
     static matrix_type const& derivate( uint16_type i )
     {
-        return _S_D[i];
+        return differentiationOperators().at( i );
     }
 
 
     //@}
 
 private:
-private:
+    /** @brief Borrow contiguous legacy/Eigen coordinates or materialize an expression once. */
+    template<typename Points, typename Operation>
+    static auto withEigenPoints( Points const& points, Operation&& operation )
+    {
+        return ::Feel::detail::withEigenMatrix<value_type>( points, std::forward<Operation>( operation ) );
+    }
 
-    static value_type normalization( int i )
+    /** @brief Materialize one result at the selected compatibility-storage boundary. */
+    template<typename Derived>
+    static matrix_type materialize( Eigen::MatrixBase<Derived> const& expression )
     {
-        return ( is_normalized?math::sqrt( value_type( i ) + 0.5 ) : value_type( 1 ) );
+        matrix_type result( expression.rows(), expression.cols() );
+        if constexpr ( EigenMatrix<matrix_type> ) result = expression;
+        else eigenMap( result ) = expression;
+        return result;
     }
-    static value_type normalization( int i, int j )
-    {
-        return ( is_normalized?math::sqrt( ( value_type( i ) + 0.5 ) *
-                                           ( value_type( j ) + 0.5 ) ) : value_type( 1 ) );
-    }
-    static value_type normalization( int i, int j, int k )
-    {
-        return ( is_normalized?math::sqrt( ( value_type( i ) + 0.5 ) *
-                                           ( value_type( j ) + 0.5 ) *
-                                           ( value_type( k ) + 0.5 ) ) : value_type( 1 ) );
-    }
-    /**
-     * Evaluation at a set of points of the expansion basis in 2D on
-     * the triangle
-     */
-    static matrix_type
-    evaluate( points_type const& __pts, mpl::int_<1> )
-    {
-        matrix_type m ( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts, 0 ) ) );
 
-        if ( is_normalized )
+    /** @brief Preserve the requested order specification without a compatibility copy. */
+    template<int OrderSpec, typename Points>
+    static auto valuesWithOrder( Points const& points, RuntimeOrder order )
+    {
+        return withEigenPoints( points, [&]( auto const& coordinates )
         {
-            for ( uint16_type i = 0; i < m.size1(); ++i )
-                ublas::row( m, i ) *= normalization( i );
-        }
-
-        return m;
+            return TensorLegendreBasis<nDim, OrderSpec, value_type, is_normalized>{ order }.values( coordinates );
+        } );
     }
 
-    /**
-     * derivation at a set of points of the expansion basis in 2D on
-     * the triangle
-     */
-    template<typename AE>
-    static vector_matrix_type
-    derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<1> )
+    /** @brief Materialize native values only at the legacy evaluation boundary. */
+    template<int OrderSpec>
+    static matrix_type evaluateWithOrder( points_type const& points, RuntimeOrder order )
     {
-        vector_matrix_type D( 1 );
-        D[0].resize( nOrder+1, __pts().size2() );
-        D[0] = JacobiBatchDerivation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(),0 ) );
-
-        if ( is_normalized )
-            for ( uint16_type i = 0; i < nOrder+1; ++i )
-                ublas::row( D[0], i ) *= normalization( i );
-
-        return D;
+        auto values = valuesWithOrder<OrderSpec>( points, order );
+        return materialize( values.matrix() );
     }
 
-    /**
-     * Evaluation at a set of points of the expansion basis in 2D on
-     * the triangle
-     */
-    static matrix_type evaluate( points_type const& __pts, mpl::int_<2> );
+    /** @brief Forward all reference directions to the shared native gradient kernel. */
+    template<int OrderSpec, typename Points>
+    static auto gradientsWithOrder( Points const& points, RuntimeOrder order )
+    {
+        return withEigenPoints( points, [&]( auto const& coordinates )
+        {
+            return TensorLegendreBasis<nDim, OrderSpec, value_type, is_normalized>{ order }.gradients( coordinates );
+        } );
+    }
 
-    /**
-     * derivation at a set of points of the expansion basis in 2D on
-     * the triangle
-     */
-    template<typename AE>
-    static vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<2> );
+    /** @brief Forward all reference directions to the same native gradient kernel. */
+    template<int OrderSpec, typename Points>
+    static vector_matrix_type derivativesWithOrder( Points const& points, RuntimeOrder order )
+    {
+        auto gradients = gradientsWithOrder<OrderSpec>( points, order );
+        vector_matrix_type result( nDim );
+        for ( int d = 0; d < nDim; ++d ) result[d] = materialize( gradients[d].matrix() );
+        return result;
+    }
 
-    /**
-     * Evaluation at a set of points of the expansion basis in 3D on
-     * the tetrahedron
-     */
-    static matrix_type evaluate( points_type const& __pts, mpl::int_<3> );
+    /** @brief Initialize fixed-dimensional operators once, with thread-safe static initialization. */
+    static std::array<matrix_type, nDim> const& differentiationOperators()
+    {
+        static auto const operators = referenceOperators( RuntimeOrder{ nOrder } );
+        return operators->matrices;
+    }
 
-    /**
-     * derivation at a set of points of the expansion basis in 3D on
-     * the tetrahedron
-     */
-    template<typename AE>
-    static vector_matrix_type derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<3> );
-
-    static void initDerivation();
-private:
+    /** Reference geometry retained for legacy node access. */
     reference_convex_type M_refconvex;
+    /** Owned legacy reference nodes. */
     points_type M_pts;
-    /**
-     * \c true if differentation matrix initialized, \c false
-     * otherwise
-     */
-    static bool _S_has_derivation;
-
-    /**
-     * Derivation matrix
-     * \note construct it only once per dubiner polynomials
-     */
-    static std::vector<matrix_type> _S_D;
 
 }; // class Dubiner
 
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy,
-         typename T,
-         template<class> class StoragePolicy>
-bool Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::_S_has_derivation = false;
-
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy,
-         typename T,
-         template<class> class StoragePolicy>
-std::vector<typename Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::matrix_type>
-Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::_S_D;
-
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy,
-         typename T,
-         template<class> class StoragePolicy>
-void
-Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::initDerivation()
-{
-#if 0
-    typedef typename traits_type::convex_type convex_type;
-    typedef typename traits_type::reference_convex_type reference_convex_type;
-
-    typedef typename traits_type::diff_pointset_type diff_pointset_type;
-
-    typedef typename traits_type::storage_policy storage_policy;
-    typedef typename traits_type::matrix_type matrix_type;
-    typedef typename traits_type::vector_matrix_type vector_matrix_type;
-    typedef typename traits_type::matrix_node_type matrix_node_type;
-    typedef typename traits_type::points_type points_type;
-    typedef typename traits_type::node_type node_type;
-#endif // 0
-
-    if ( _S_has_derivation == false )
-    {
-        _S_has_derivation = true;
-
-        reference_convex_type refconvex;
-        // constructor pointset for differentiation only in
-        // the interior(1)
-        diff_pointset_type diff_pts( 1 );
-        matrix_type A( evaluate( diff_pts.points() ) );
-
-#if 1
-        matrix_type D = ublas::identity_matrix<value_type>( A.size1(), A.size2()  );
-        LU<matrix_type> lu( A );
-        matrix_type C = lu.solve( D );
-
-        vector_matrix_type d ( derivate( diff_pts.points() ) );
-        _S_D.resize( d.size() );
-
-        for ( size_type i = 0; i < d.size(); ++i )
-        {
-            _S_D[i] = ublas::prod( d[i], C );
-            glas::clean( _S_D[i] );
-        }
-
-#endif
-    }
-}
-
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy,
-         typename T,
-         template<class> class StoragePolicy>
-typename Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::matrix_type
-Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( points_type const& __pts, mpl::int_<2> )
-{
-    matrix_type res( convex_type::polyDims( nOrder ), __pts.size2() );
-
-    ublas::vector<value_type> eta1s = ublas::row( __pts, 0 );
-    ublas::vector<value_type> eta2s = ublas::row( __pts, 1 );
-
-    matrix_type as( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, eta1s ) );
-    matrix_type bs( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, eta2s ) );
-
-    for ( uint16_type cur = 0, i = 0; i < nOrder+1; ++i )
-    {
-        for ( uint16_type j = 0; j < nOrder+1; ++j,++cur )
-        {
-            ublas::row( res, cur ) = normalization( i, j ) * ublas::element_prod( ublas::row( as, i ),
-                                     ublas::row( bs, j ) );
-        }
-    }
-
-    return res;
-}
-
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy,
-         typename T,
-         template<class> class StoragePolicy>
-template<typename AE>
-typename Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::vector_matrix_type
-Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<2> )
-{
-    vector_matrix_type res( 2 );
-    res[0].resize( convex_type::polyDims( nOrder ), __pts().size2() );
-    res[1].resize( convex_type::polyDims( nOrder ), __pts().size2() );
-
-    // evaluate Legendre polynomials components
-    matrix_type as( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 0 ) ) );
-    matrix_type das( JacobiBatchDerivation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 0 ) ) );
-    matrix_type bs( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 1 ) ) );
-    matrix_type dbs( JacobiBatchDerivation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 1 ) ) );
-
-    for ( uint16_type cur = 0, i = 0; i < nOrder+1; ++i )
-    {
-        for ( uint16_type j = 0; j < nOrder+1; ++j,++cur )
-        {
-            ublas::row( res[0], cur ) = normalization( i, j ) * ublas::element_prod( ublas::row( das, i ),
-                                        ublas::row( bs, j ) );
-            ublas::row( res[1], cur ) = normalization( i, j ) * ublas::element_prod( ublas::row( as, i ),
-                                        ublas::row( dbs, j ) );
-        }
-    }
-
-    return res;
-}
-
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy,
-         typename T,
-         template<class> class StoragePolicy>
-typename Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::matrix_type
-Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::evaluate( points_type const& __pts, mpl::int_<3> )
-{
-    matrix_type res( convex_type::polyDims( nOrder ), __pts.size2() );
-
-    ublas::vector<value_type> eta1s = ublas::row( __pts, 0 );
-    ublas::vector<value_type> eta2s = ublas::row( __pts, 1 );
-    ublas::vector<value_type> eta3s = ublas::row( __pts, 2 );
-
-    matrix_type as( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, eta1s ) );
-    matrix_type bs( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, eta2s ) );
-    matrix_type cs( JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, eta3s ) );
-
-    for ( uint16_type cur = 0, i = 0; i < nOrder+1; ++i )
-    {
-        for ( uint16_type j = 0; j < nOrder+1; ++j )
-        {
-            for ( uint16_type k = 0; k < nOrder+1; ++k,++cur )
-            {
-                ublas::row( res, cur ) =
-                    normalization( i, j, k )*
-                    ublas::element_prod( ublas::element_prod( ublas::row( as, i ),
-                                         ublas::row( bs, j ) ),
-                                         ublas::row( cs, k ) );
-            }
-        }
-    }
-
-    return res;
-}
-
-template<uint16_type Dim,
-         uint16_type RealDim,
-         uint16_type Degree,
-         typename NormalizationPolicy,
-         typename T,
-         template<class> class StoragePolicy>
-template<typename AE>
-typename Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::vector_matrix_type
-Legendre<Dim, RealDim, Degree, NormalizationPolicy, T, StoragePolicy>::derivate( ublas::matrix_expression<AE> const& __pts, mpl::int_<3> )
-{
-    vector_matrix_type res( 3 );
-    res[0].resize( convex_type::polyDims( nOrder ), __pts().size2() );
-    res[1].resize( convex_type::polyDims( nOrder ), __pts().size2() );
-    res[2].resize( convex_type::polyDims( nOrder ), __pts().size2() );
-
-    // evaluate Legendre polynomials components
-    matrix_type as(  JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 0 ) ) );
-    matrix_type das( JacobiBatchDerivation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 0 ) ) );
-    matrix_type bs(  JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 1 ) ) );
-    matrix_type dbs( JacobiBatchDerivation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 1 ) ) );
-    matrix_type cs(  JacobiBatchEvaluation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 2 ) ) );
-    matrix_type dcs( JacobiBatchDerivation<value_type>( nOrder, 0.0, 0.0, ublas::row( __pts(), 2 ) ) );
-
-    for ( uint16_type cur = 0, i = 0; i < nOrder+1; ++i )
-    {
-        for ( uint16_type j = 0; j < nOrder+1; ++j )
-        {
-            for ( uint16_type k = 0; k < nOrder+1; ++k,++cur )
-            {
-                ublas::row( res[0], cur ) = ( normalization( i, j, k ) *
-                                              ublas::element_prod( ublas::element_prod( ublas::row( das, i ),
-                                                      ublas::row( bs, j ) ),
-                                                      ublas::row( cs, k ) ) );
-
-                ublas::row( res[1], cur ) = ( normalization( i, j, k ) *
-                                              ublas::element_prod( ublas::element_prod( ublas::row( as, i ),
-                                                      ublas::row( dbs, j ) ),
-                                                      ublas::row( cs, k ) ) );
-
-                ublas::row( res[2], cur ) = ( normalization( i, j, k ) *
-                                              ublas::element_prod( ublas::element_prod( ublas::row( as, i ),
-                                                      ublas::row( bs, j ) ),
-                                                      ublas::row( dcs, k ) ) );
 
 
-            }
-        }
-    }
-
-    return res;
-}
-
-
-}
+} // namespace Feel
 #endif /* __Legendre_H */

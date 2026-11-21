@@ -1,3 +1,6 @@
+# SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+# SPDX-FileCopyrightText: 2026 University of Strasbourg
+# SPDX-License-Identifier: LGPL-3.0-or-later
 from __future__ import annotations
 
 import argparse
@@ -84,6 +87,9 @@ def _setup_script(
             f"export SPACK_USER_CACHE_PATH={shell_quote(user_cache_path)}",
             'if [ -f "$SPACK_ROOT/share/spack/setup-env.sh" ]; then',
             '  . "$SPACK_ROOT/share/spack/setup-env.sh"',
+            "fi",
+            f"if [ -f {shell_quote(repo_root / 'ops' / 'feelpp-spack.sh')} ]; then",
+            f"  . {shell_quote(repo_root / 'ops' / 'feelpp-spack.sh')}",
             "fi",
             "",
         ]
@@ -400,11 +406,11 @@ def _activation_script(
             f"export SPACK_ROOT={shell_quote(spack_root)}",
             f"export SPACK_USER_CONFIG_PATH={shell_quote(user_config_path)}",
             f"export SPACK_USER_CACHE_PATH={shell_quote(user_cache_path)}",
-            'if [ -f "$SPACK_ROOT/share/spack/setup-env.sh" ]; then',
-            '  . "$SPACK_ROOT/share/spack/setup-env.sh"',
-            "fi",
-            "if command -v spack >/dev/null 2>&1; then",
-            f"  eval \"$(spack env activate --sh {shell_quote(environment_root)})\"",
+            'if [ -x "$SPACK_ROOT/bin/spack" ]; then',
+            f'  _feelpp_spack_activation=$(command "$SPACK_ROOT/bin/spack" env activate --sh {shell_quote(environment_root)}) || {{ return 1 2>/dev/null || exit 1; }}',
+            '  case ":$PATH:" in *":$SPACK_ROOT/bin:"*) ;; *) export PATH="$SPACK_ROOT/bin:$PATH" ;; esac',
+            '  eval "$_feelpp_spack_activation"',
+            "  unset _feelpp_spack_activation",
             "else",
             "  echo 'fpp-spack: spack command not found; run fpp-spack init --install-spack or set SPACK_ROOT' >&2",
             "  return 1 2>/dev/null || exit 1",
@@ -431,6 +437,53 @@ def command_spack_activate(args: argparse.Namespace) -> int:
         )
     )
     return 0
+
+
+def command_spack_status(args: argparse.Namespace) -> int:
+    """Report the calling shell's active environment and selected local paths."""
+    repo_root = resolve_repo_root(args.repo_root)
+    active = os.getenv("SPACK_ENV")
+    active_path = Path(active).expanduser().resolve() if active else None
+    root = environments_root(repo_root)
+    name = None
+    views = []
+    cache = resolve_user_cache_path(repo_root, args.user_cache_path)
+    if active_path is not None:
+        try:
+            name = active_path.relative_to(root).as_posix()
+        except ValueError:
+            name = str(active_path)
+        if (active_path / "spack.yaml").is_file():
+            views = _environment_payload(active_path.parent, active_path / "spack.yaml", user_cache_path=cache)["views"]
+    payload = {
+        "active": active_path is not None,
+        "name": name,
+        "environment_root": str(active_path) if active_path else None,
+        "lockfile_exists": bool(active_path and (active_path / "spack.lock").is_file()),
+        "spack_root": str(resolve_spack_root(repo_root, args.spack_root)),
+        "spack_user_config_path": str(resolve_user_config_path(repo_root, args.user_config_path)),
+        "spack_user_cache_path": str(cache),
+        "views": views,
+    }
+    if args.json:
+        print(json.dumps(payload, indent=2))
+    else:
+        print(f"Active environment: {name or 'none'}")
+        print(f"Spack: {payload['spack_root']}")
+        print(f"Config: {payload['spack_user_config_path']}")
+        print(f"Cache: {payload['spack_user_cache_path']}")
+        if active_path:
+            print(f"Lockfile: {'present' if payload['lockfile_exists'] else 'missing'}")
+        for view in views:
+            print(f"View: {view['path']} ({'present' if view['exists'] else 'missing'})")
+    return 0
+
+
+def command_spack_shell_required(args: argparse.Namespace) -> int:
+    """Explain how to install the current-shell enable/disable commands."""
+    repo_root = resolve_repo_root(args.repo_root)
+    print(f"Source the shell helper first: source {shell_quote(repo_root / 'ops' / 'feelpp-spack.sh')}", file=sys.stderr)
+    return 1
 
 
 def register_local_commands(
@@ -479,6 +532,7 @@ def register_local_commands(
     list_parser = subparsers.add_parser("list", help="List Feel++ Spack environments and views")
     _add_repo_root_argument(list_parser)
     list_parser.add_argument("--user-cache-path", help="SPACK_USER_CACHE_PATH used to resolve views")
+    list_parser.add_argument("--json", action="store_true", help="Print machine-readable environment details")
     list_parser.set_defaults(func=command_spack_env_list)
 
     activate_parser = subparsers.add_parser("activate", help="Print shell code to activate a Spack environment")
@@ -486,3 +540,15 @@ def register_local_commands(
     _add_local_path_arguments(activate_parser)
     activate_parser.add_argument("name", help="Environment name or short alias, for example openmpi")
     activate_parser.set_defaults(func=command_spack_activate)
+
+    status_parser = subparsers.add_parser("status", help="Show the active environment and local paths")
+    _add_repo_root_argument(status_parser)
+    _add_local_path_arguments(status_parser)
+    status_parser.add_argument("--json", action="store_true", help="Print machine-readable status")
+    status_parser.set_defaults(func=command_spack_status)
+    for command in ("enable", "disable"):
+        parser = subparsers.add_parser(command, help=f"{command.capitalize()} the current shell environment (source ops/feelpp-spack.sh first)")
+        _add_repo_root_argument(parser)
+        if command == "enable":
+            parser.add_argument("name")
+        parser.set_defaults(func=command_spack_shell_required)

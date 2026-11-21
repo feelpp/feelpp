@@ -24,7 +24,6 @@
 
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/interpolate.hpp>
-#include <feel/feelvf/vf.hpp>
 
 
 namespace Feel

@@ -275,8 +275,7 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
         M_Xh = space_advection_type::New( 
                 _mesh=this->mesh(), 
                 _worldscomm=this->worldsComm(), 
-                _extended_doftable=extendedDT,
-                _periodicity=this->periodicity()
+                _extended_doftable=extendedDT
                 );
     }
     if( this->stabilizationMethod() == AdvectionStabMethod::CIP )

@@ -1,8 +1,11 @@
+# SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+# SPDX-FileContributor: Alexandre Ancel <alexandre.ancel@cemosis.fr>
+# SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+#
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
 set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testcore")
-IF ( TBB_FOUND )
-  SET( OTESTS tbb )
-ENDIF()
-foreach(TEST json git traits singleton enumerate factory debug context simget ${OTESTS} env env_configfiles removecomments feelio boostmpi enums mongo hana remotedata repository timertable)
+foreach(TEST json git traits singleton enumerate factory debug context simget env env_configfiles removecomments feelio boostmpi enums mongo hana remotedata repository timertable)
 
   feelpp_add_test( ${TEST} )
 

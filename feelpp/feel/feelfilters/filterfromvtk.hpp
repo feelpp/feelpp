@@ -35,6 +35,7 @@
 
 #include <feel/feelcore/visitor.hpp>
 #include <feel/feeldiscr/mesh.hpp>
+#include <type_traits>
 
 #if defined(FEELPP_HAS_VTK)
 // Vtk header files
@@ -79,9 +80,7 @@ public:
     typedef typename mesh_type::element_type element_type;
 #if defined(FEELPP_HAS_VTK)
 
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<MeshType::nDim>,mpl::int_<2> >,
-            mpl::identity<vtkPolyData>,
-            mpl::identity<vtkUnstructuredGrid> >::type::type vtkmesh_type;
+    using vtkmesh_type = std::conditional_t<MeshType::nDim == 2, vtkPolyData, vtkUnstructuredGrid>;
 
 
 #endif /* FEELPP_HAS_VTK */
@@ -124,7 +123,8 @@ public:
 
     void visit( mesh_type* mesh ) override
     {
-        visit( mesh, mpl::int_<nDim>() );
+        static_assert( nDim == 2, "FilterFromVtk supports only 2D meshes. Use FilterFromVtk3D for 3D meshes." );
+        visit2D( mesh );
     }
 
 
@@ -138,8 +138,7 @@ protected :
 
 private:
 
-    void visit( mesh_type* mesh, mpl::int_<2> );
-    //void visit( mesh_type* mesh, mpl::int_<3> );
+    void visit2D( mesh_type* mesh );
 };
 
 /**
@@ -172,9 +171,7 @@ public:
     typedef typename mesh_type::face_type face_type;
     typedef typename mesh_type::element_type element_type;
 #if defined(FEELPP_HAS_VTK)
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<MeshType::nDim>,mpl::int_<2> >,
-            mpl::identity<vtkPolyData>,
-            mpl::identity<vtkUnstructuredGrid> >::type::type vtkmesh_type;
+    using vtkmesh_type = std::conditional_t<MeshType::nDim == 2, vtkPolyData, vtkUnstructuredGrid>;
 
 #endif /* FEELPP_HAS_VTK */
     //@}
@@ -216,7 +213,8 @@ public:
 
     void visit( mesh_type* mesh ) override
     {
-        visit( mesh, mpl::int_<nDim>() );
+        static_assert( nDim == 3, "FilterFromVtk3D supports only 3D meshes." );
+        visit3D( mesh );
     }
 
 
@@ -230,13 +228,12 @@ protected :
 
 private:
 
-    //void visit( mesh_type* mesh, mpl::int_<2> );
-    void visit( mesh_type* mesh, mpl::int_<3> );
+    void visit3D( mesh_type* mesh );
 };
 
 template<typename MeshType>
 void
-FilterFromVtk<MeshType>::visit( mesh_type* mesh, mpl::int_<2> )
+FilterFromVtk<MeshType>::visit2D( mesh_type* mesh )
 {
     Feel::detail::ignore_unused_variable_warning( mesh );
 #if defined(FEELPP_HAS_VTK)
@@ -370,7 +367,7 @@ FilterFromVtk<MeshType>::visit( mesh_type* mesh, mpl::int_<2> )
 
 template<typename MeshType>
 void
-FilterFromVtk3D<MeshType>::visit( mesh_type* mesh, mpl::int_<3> )
+FilterFromVtk3D<MeshType>::visit3D( mesh_type* mesh )
 {
     Feel::detail::ignore_unused_variable_warning( mesh );
 #if defined(FEELPP_HAS_VTK)

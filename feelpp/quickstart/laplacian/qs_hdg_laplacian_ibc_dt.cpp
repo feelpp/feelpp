@@ -1,26 +1,11 @@
-//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-//!
-//! This file is part of the Feel++ library
-//!
-//! This library is free software; you can redistribute it and/or
-//! modify it under the terms of the GNU Lesser General Public
-//! License as published by the Free Software Foundation; either
-//! version 2.1 of the License, or (at your option) any later version.
-//!
-//! This library is distributed in the hope that it will be useful,
-//! but WITHOUT ANY WARRANTY; without even the implied warranty of
-//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//! Lesser General Public License for more details.
-//!
-//! You should have received a copy of the GNU Lesser General Public
-//! License along with this library; if not, write to the Free Software
-//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-//!
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Thomas Saigre <thomas.saigre@outlook.fr>
+ * SPDX-FileCopyrightText: 2021-2026 University of Strasbourg
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 //! @file
-//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 //! @date 26 Aug 2017
-//! @copyright 2017 Feel++ Consortium
-//!
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/checker.hpp>
 #include <feel/feeldiscr/pch.hpp>
@@ -31,7 +16,7 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelpython/pyexpr.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/vf_eval.hpp>
 #include <feel/feelvf/print.hpp>
 #include <feel/feelts/bdf.hpp>
 
@@ -41,6 +26,9 @@
 #include <feel/feelpython/pyexpr.hpp>
 #include <feel/feelmesh/complement.hpp>
 #include <feel/feelpde/cg_laplacian.hpp>
+#include "../discretization.hpp"
+#include "../local_mean.hpp"
+#include <algorithm>
 namespace Feel {
 
 
@@ -65,8 +53,9 @@ makeOptions()
         ( "hdg.tau.constant", po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( "hdg.tau.order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         ( "solvecg", po::value<bool>()->default_value( false ), "solve corresponding problem with CG"  )
-        ( "rhs_quad", po::value<int>()->default_value( 4 ), "quadrature order"  )
+        ( "rhs_quad", po::value<int>()->default_value( 0 ), "RHS quadrature order (0: expression order with a 2*k floor, scaled by geometry order); increase explicitly for nonpolynomial data" )
         ( "order", po::value<int>()->default_value( 1 ), "approximation order"  )
+        ( "geometry.order", po::value<int>()->default_value( 1 ), "mesh geometric transformation order" )
         ( "use-strong-dirichlet", po::value<bool>()->default_value( false ), "use strong ")
         ( "time-step", po::value<double>()->default_value( 1. ), "time step" )
         ( "time-final", po::value<double>()->default_value( 10. ), "final time" )
@@ -91,16 +80,26 @@ makeAbout()
 
 }
 
-template<int Dim, int OrderP>
+template<int Dim>
 int hdg_laplacian()
 {
     using Feel::cout;
 
+    auto const runtimeOrder = quickstart::checkedOrder( "order" );
+    int const order = runtimeOrder.value;
+    auto const postOrder = RuntimeOrder::checked( order + 1 );
+    auto const geometryOrder = quickstart::geometryOrder();
+
     auto tau_constant =  cst(doption("hdg.tau.constant"));
     int tau_order =  ioption("hdg.tau.order");
+    int quadratureOrder = ioption( "rhs_quad" );
+    CHECK_GE( quadratureOrder, 0 ) << "rhs_quad must be non-negative";
+    if ( quadratureOrder == 0 )
+        quadratureOrder = quad_order_from_expression;
 
     tic();
-    auto mesh = loadMesh( _mesh=new Mesh<Simplex<Dim>> );
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<Dim, Dynamic>>( geometryOrder ) );
+    CHECK_EQ( mesh->order(), geometryOrder.value ) << "loaded mesh order must match geometry.order";
     int nbIbc = nelements(markedfaces(mesh,"Ibc"),true) >= 1 ? 1 : 0;
     int nbIbcOde = nelements(markedfaces(mesh,"IbcOde"),true) >= 1 ? 2 : 0;
     std::map<std::string,std::pair<int,std::string>> ibcs;
@@ -157,19 +156,30 @@ int hdg_laplacian()
     auto J_exact = inner(u_exact)/k;
 #endif
 
+    // Match at least the degree of the HDG mass terms. On curved faces,
+    // using a lower rule for representable boundary data can spoil exactness.
+    // This is a polynomial estimate; nonpolynomial data may need rhs_quad.
+    auto integrateRhs = [&]( auto const& range, auto const& expression )
+    {
+        int const q = quadratureOrder == quad_order_from_expression
+                          ? std::max( static_cast<int>( expression.polynomialOrder() ), 2*order ) * mesh->order()
+                          : quadratureOrder;
+        return integrate( _range=range, _expr=expression, _quad=q );
+    };
+
     std::map<std::string,double> ibc_exact_map;
     for( auto const& [ibc_type, ibc_data ] : ibcs )
         if ( ibc_data.second == "IbcOde" && ibc_type == "Ibc" )
             ibc_exact_map[ibc_type] = 0;
         else
-            ibc_exact_map[ibc_type] = integrate(_range=markedfaces(mesh,ibc_data.second), _expr=un).evaluate()(0,0);
+            ibc_exact_map[ibc_type] = integrateRhs( markedfaces(mesh,ibc_data.second), un ).evaluate()(0,0);
 
     // ****** Hybrid-mixed formulation ******
     // We treat Vh, Wh, and Mh separately
     tic();
 
-    auto Vh = Pdhv<OrderP>( mesh );
-    auto Wh = Pdh<OrderP>( mesh );
+    auto Vh = Pdhv<Dynamic>( mesh, runtimeOrder );
+    auto Wh = Pdh<Dynamic>( mesh, runtimeOrder );
     auto select_faces = [mesh]( auto const& ewrap ) {
         auto const& e = unwrap_ref( ewrap );
         if ( e.hasMarker() && ( e.marker().value() == mesh->markerName( "Ibc" )  ||
@@ -180,10 +190,12 @@ int hdg_laplacian()
     auto complement_integral_bdy_boundary = complement(boundaryfaces(mesh),select_faces);
 
     auto face_mesh = createSubmesh( _mesh=mesh, _range=complement_integral_bdy, _update=0 );
+    CHECK_EQ( face_mesh->order(), geometryOrder.value ) << "face mesh must preserve geometry.order";
     // auto face_mesh = createSubmesh( _mesh=mesh, _range=faces(mesh ), _update=0 );
-    auto Mh = Pdh<OrderP>( face_mesh );
+    auto Mh = Pdh<Dynamic>( face_mesh, runtimeOrder );
     auto ibc_mesh = createSubmesh( _mesh=mesh, _range=markedfaces(mesh, {"Ibc","IbcOde"}), _update=0 );
-    auto Ch = Pch<0>( ibc_mesh );
+    CHECK_EQ( ibc_mesh->order(), geometryOrder.value ) << "IBC mesh must preserve geometry.order";
+    auto Ch = Pch<Dynamic>( ibc_mesh, RuntimeOrder{0} );
 
     // auto myBdf = bdf( _space=Xh, _name="mybdf" );
     // for (auto time : myBdg->priorTimes() )
@@ -200,10 +212,10 @@ int hdg_laplacian()
     // }
 
     toc("spaces",true);
-    auto P0dh = Pdh<0>(mesh);
-    auto Xh = Pdh<0>(face_mesh);
+    auto P0dh = Pdh<Dynamic>( mesh, RuntimeOrder{0} );
+    auto Xh = Pdh<Dynamic>( face_mesh, RuntimeOrder{0} );
     auto uf = Xh->element(cst(1.));
-    auto cgXh = Pch<OrderP>(mesh);
+    auto cgXh = Pch<Dynamic>( mesh, runtimeOrder );
 
     cout << "Exact potential if applicable: " << p_exact_str << "\n"
          << "Exact flux if applicable: " << u_exact_str << "\n";
@@ -212,9 +224,9 @@ int hdg_laplacian()
          << "#faces: " << mesh->numGlobalFaces() << std::endl
 
          << "#facesMh: " << face_mesh->numGlobalElements() << std::endl
-         << "Vh<" << OrderP << "> : " << Vh->nDof() << std::endl
-         << "Wh<" << OrderP << "> : " << Wh->nDof() << std::endl
-         << "Mh<" << OrderP << "> : " << Mh->nDof() << std::endl;
+         << "Vh<" << order << "> : " << Vh->nDof() << std::endl
+         << "Wh<" << order << "> : " << Wh->nDof() << std::endl
+         << "Mh<" << order << "> : " << Mh->nDof() << std::endl;
     if( nbIbc > 0 || nbIbcOde)
         cout << "Ch<0> : " << Ch->nDof() << std::endl;
     cout << mesh->numGlobalElements()  << " " << mesh->numGlobalFaces() << " "
@@ -224,8 +236,8 @@ int hdg_laplacian()
     int status_cg = 0;
     if ( boption( "solvecg" ) == true )
     {
-        auto cgXh = Pch<OrderP+1>(mesh);
-        Feel::cout << "cgXh<" << OrderP+1 << "> : " << cgXh->nDof() << std::endl;
+        auto cgXh = Pch<Dynamic>( mesh, postOrder );
+        Feel::cout << "cgXh<" << postOrder.value << "> : " << cgXh->nDof() << std::endl;
         auto u = cgLaplacian( _space=cgXh, _data=std::tuple{k,f,p_exact,un,r_1,r_2} );
 #if defined(FEELPP_HAS_SYMPY)
         if ( u )
@@ -309,28 +321,21 @@ int hdg_laplacian()
         // imagine we moved it to the left? SKIPPING boundary conditions for the moment.
         // How to identify Dirichlet/Neumann boundaries?
 
-        rhs(1_c) += integrate( _range=elements(mesh),
-                               _expr=f*id(w));
-        rhs(1_c) += integrate( _range=elements(mesh),
-                               _expr=idv(pnm1)/dt*id(w));
+        rhs(1_c) += integrateRhs( elements(mesh), f*id(w));
+        rhs(1_c) += integrateRhs( elements(mesh), idv(pnm1)/dt*id(w));
 
-        rhs(2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
-                            _expr=id(l)*un );
+        rhs(2_c) += integrateRhs( markedfaces(mesh,"Neumann"), id(l)*un );
         if( !boption("use-strong-dirichlet") || boption("sc.condense"))
         {
-            rhs(2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
-                                _expr=id(l)*p_exact);
+            rhs(2_c) += integrateRhs( markedfaces(mesh,"Dirichlet"), id(l)*p_exact);
         }
-        rhs(2_c) += integrate( _range=markedfaces(mesh, "Robin"),
-                            _expr=id(l)*r_2);
+        rhs(2_c) += integrateRhs( markedfaces(mesh, "Robin"), id(l)*r_2);
         for( auto const& [ ibc_type, ibc_data ]  : ibcs )
         {
             auto const& [ibc_space_index,ibc_marker] = ibc_data;
             Feel::cout << "rhs assembly " << ibc_type << " -- block:" << ibc_space_index << " -- marker: " << ibc_marker << " -- value:" << ibc_exact_map[ibc_type] << std::endl;
-            double meas = integrate( _range=markedfaces(mesh, ibc_marker ),
-                                    _expr=cst(1.)).evaluate()(0,0);
-            rhs(3_c,ibc_space_index) += integrate( _range=markedfaces(mesh, ibc_marker ),
-                                                _expr=ibc_exact_map[ibc_type]*id(nu)/meas);
+            double meas = integrateRhs( markedfaces(mesh, ibc_marker ), cst(1.)).evaluate()(0,0);
+            rhs(3_c,ibc_space_index) += integrateRhs( markedfaces(mesh, ibc_marker ), ibc_exact_map[ibc_type]*id(nu)/meas);
         }
 
         toc("rhs",true);
@@ -512,7 +517,7 @@ int hdg_laplacian()
 
         tic();
         tic();
-        auto Whp = Pdh<OrderP+1>( mesh );
+        auto Whp = Pdh<Dynamic>( mesh, postOrder );
         auto pps = product( Whp );
         auto PP = pps.element();
         auto ppp = PP(0_c);
@@ -534,12 +539,7 @@ int hdg_laplacian()
         toc("postprocessing.solve.local",Environment::logVerbosityLevel()>0);
         ppp=PP(0_c);
         tic();
-        tic();
-        ppp -= ppp.ewiseMean(P0dh);
-        toc("postprocessing.solve.correction.ppp",Environment::logVerbosityLevel()>0);
-        tic();
-        ppp += pp.ewiseMean(P0dh);
-        toc("postprocessing.solve.correction.pp",Environment::logVerbosityLevel()>0);
+        quickstart::matchCellMean( ppp, pp, P0dh );
         toc("postprocessing.solve.correction",Environment::logVerbosityLevel()>0);
         toc("postprocessing.solve",Environment::logVerbosityLevel()>0);
         toc("postprocessing",true);
@@ -549,12 +549,12 @@ int hdg_laplacian()
         q.on( _range=elements(mesh), _expr=p_exact );
 
 
-        double I1 = integrate( _range=elements(mesh), _expr=k*gradv(pp)*trans(gradv(pp)), _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
-        double I2 = integrate( _range=elements(mesh), _expr=inner(idv(up))/k, _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
-        double I3 = integrate( _range=elements(mesh), _expr=inner(u_exact)/k, _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
-        double I4 = integrate( _range=elements(mesh), _expr=k*inner(gradv(q)), _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
-        double I5 = integrate( _range=elements(mesh), _expr=k*inner(gradv(ppp)), _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
-        double I6 = integrate( _range=elements(mesh), _expr=J_exact, _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
+        double I1 = integrate( _range=elements(mesh), _expr=k*gradv(pp)*trans(gradv(pp)), _quad=quadratureOrder ).evaluate()( 0,0 );
+        double I2 = integrate( _range=elements(mesh), _expr=inner(idv(up))/k, _quad=quadratureOrder ).evaluate()( 0,0 );
+        double I3 = integrate( _range=elements(mesh), _expr=inner(u_exact)/k, _quad=quadratureOrder ).evaluate()( 0,0 );
+        double I4 = integrate( _range=elements(mesh), _expr=k*inner(gradv(q)), _quad=quadratureOrder ).evaluate()( 0,0 );
+        double I5 = integrate( _range=elements(mesh), _expr=k*inner(gradv(ppp)), _quad=quadratureOrder ).evaluate()( 0,0 );
+        double I6 = integrate( _range=elements(mesh), _expr=J_exact, _quad=quadratureOrder ).evaluate()( 0,0 );
 
         std::vector<double> J = {I1,I2,I5,I3,I4,I6};
         double umin = up.min(), umax = up.max(), vmin = v.min(), vmax=v.max();
@@ -579,7 +579,7 @@ int hdg_laplacian()
         e->step(t)->addRegions();
         e->step(t)->add( "flux", U(0_c) );
         e->step(t)->add( "potential", U(1_c) );
-        e->step(t)->add( "potentialpp", PP(0_c) );
+        e->step(t)->add( "potentialpp", ppp );
         e->step(t)->add( "flux.exact", v );
         e->step(t)->add( "potential.exact", q );
         e->save();
@@ -631,17 +631,5 @@ int main( int argc, char** argv )
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
     // end::env[]
-    if ( ioption( "order" ) == 1 )
-        return hdg_laplacian<FEELPP_DIM,1>();
-#if 0
-    if ( ioption( "order" ) == 2 )
-        return hdg_laplacian<FEELPP_DIM,2>();
-
-
-    if ( ioption( "order" ) == 3 )
-        return !hdg_laplacian<FEELPP_DIM,3>();
-    if ( ioption( "order" ) == 4 )
-        return !hdg_laplacian<FEELPP_DIM,4>();
-#endif
-    return 1;
+    return hdg_laplacian<FEELPP_DIM>();
 }

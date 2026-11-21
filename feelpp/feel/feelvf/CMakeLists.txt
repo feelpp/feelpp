@@ -27,9 +27,24 @@ SET( SRC
   ginac.cpp
   ginacbase.cpp
   detail/ginacbuildlibrary.cpp
+  detail/ginacjit.cpp
+  detail/ginacfunctions.cpp
   bilinearformbase.cpp
   symbolsexpr.cpp
   )
+
+set(FEELPP_JIT_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/detail")
+set(FEELPP_EXCOMPILER_COMMAND "${CMAKE_CURRENT_BINARY_DIR}/feelpp_excompiler")
+set(_USE_STANDARD_C_HEADERS_ "-DUSE_STANDARD_HEADERS_IN_GINAC_EXCOMPILER")
+configure_file(detail/feelpp_excompiler.in "${FEELPP_EXCOMPILER_COMMAND}" @ONLY)
+file(CHMOD "${FEELPP_EXCOMPILER_COMMAND}"
+  PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+configure_file(detail/ginacjitconfig.hpp.in "${CMAKE_CURRENT_BINARY_DIR}/ginacjitconfig.hpp" @ONLY)
+
+# Installed compilation uses only installed Feel++ headers.
+set(FEELPP_JIT_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/include/feelpp/feel/feelvf/detail")
+configure_file(detail/feelpp_excompiler.in "${CMAKE_CURRENT_BINARY_DIR}/install/feelpp_excompiler" @ONLY)
+install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/install/feelpp_excompiler" DESTINATION bin COMPONENT Bin)
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp detail/*.hpp)
 feel_append_src(feelvf "${SRC};${HDR}")

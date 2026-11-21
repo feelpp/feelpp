@@ -1,14 +1,13 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-    SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
-    SPDX-FileContributor: Alexandre Ancel <alexandre.ancel@cemosis.fr>
-
-    SPDX-FileCopyrightText: 2007-2011 Joseph Fourier University
-    SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
-
-    SPDX-License-Identifier: LGPL-3.0-or-later
-*/
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Alexandre Ancel <alexandre.ancel@cemosis.fr>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2010-2011 Université Joseph Fourier (Grenoble I)
+ * SPDX-FileCopyrightText: 2010-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
 #include <cstdlib>
 #include <cmath>
@@ -80,6 +79,8 @@ extern "C"
 #endif
 
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/environmentruntime.hpp>
+#include <feel/feelvf/detail/ginacjit.hpp>
 
 #if FEELPP_HAS_PETSC
 #include <feel/feelcore/feelpetsc.hpp>
@@ -95,10 +96,6 @@ extern "C"
 
 
 
-namespace GiNaC
-{
-extern void cleanup_ex( bool verbose );
-}
 namespace detail
 {
 void DebugWait(int rank)
@@ -440,6 +437,32 @@ Environment::initPetsc( int * argc, char *** argv )
 #endif // FEELPP_HAS_PETSC_H
 
 // Constructor
+namespace
+{
+/** Factories selected before Environment construction, without core execution dependencies. */
+std::vector<std::pair<std::string, EnvironmentRuntimeFactory>>& runtimeFactories()
+{
+    static std::vector<std::pair<std::string, EnvironmentRuntimeFactory>> factories;
+    return factories;
+}
+/// Leases initialized and released by Environment.
+std::vector<std::shared_ptr<void>> environmentRuntimeLeases;
+/// Reject late registration and initialization after teardown.
+bool environmentRuntimesStarted = false;
+}
+
+void registerEnvironmentRuntime( std::string name, EnvironmentRuntimeFactory factory )
+{
+    if ( name.empty() || !factory )
+        throw std::invalid_argument( "Execution runtime registration is empty" );
+    if ( environmentRuntimesStarted )
+        throw std::logic_error( "Register execution runtimes before Environment construction" );
+    for ( auto const& entry : runtimeFactories() )
+        if ( entry.first == name )
+            throw std::logic_error( "Execution runtime is already registered" );
+    runtimeFactories().emplace_back( std::move( name ), std::move( factory ) );
+}
+
 Environment::Environment( int argc, char** argv,
                           mpi::threading::level lvl,
                           po::options_description const& desc,
@@ -696,12 +719,6 @@ Environment::Environment( int argc, char** argv,
 #endif
     }
 
-#if defined( FEELPP_HAS_TBB )
-    int n = tbb::task_scheduler_init::default_num_threads();
-    //int n = 2;
-    //VLOG(2) << "[Feel++] TBB running with " << n << " threads\n";
-    //tbb::task_scheduler_init init(2);
-#endif
 
     // Note: verbosity is now handled in Environment::startLogging() for spdlog
     // or by glog directly when FEELPP_HAS_SPDLOG is not defined
@@ -737,6 +754,14 @@ Environment::Environment( int argc, char** argv,
 #endif
 
     Environment::journalCheckpoint();
+
+    // Construct execution services after MPI, options and solver setup.
+    // Local leases unwind safely while MPI lives if a factory fails.
+    environmentRuntimesStarted = true;
+    std::vector<std::shared_ptr<void>> runtimeLeases;
+    for ( auto const& entry : runtimeFactories() )
+        runtimeLeases.push_back( entry.second() );
+    environmentRuntimeLeases = std::move( runtimeLeases );
 
     //::detail::DebugWait( worldComm().globalRank() );
 }
@@ -885,6 +910,7 @@ Environment::~Environment()
 
     Environment::clearSomeMemory();
 
+
 #if defined(FEELPP_HAS_PYTHON)
     if ( S_init_python )
         py::finalize_interpreter();
@@ -908,7 +934,10 @@ Environment::~Environment()
     S_paths.clear();
 
     VLOG( 2 ) << "[~Environment] cleaning up global excompiler\n";
-    GiNaC::cleanup_ex( false );
+    Feel::detail::ginacjit::cleanup_ex( false );
+
+    // Numerical/Python cleanup is complete; release services before PETSc and MPI.
+    environmentRuntimeLeases.clear();
 
     VLOG( 2 ) << "[~Environment] finalizing slepc,petsc and mpi\n";
 #if defined ( FEELPP_HAS_PETSC_H )

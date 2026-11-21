@@ -1,28 +1,14 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Alexandre Ancel <alexandre.ancel@cemosis.fr>
+ *
+ * SPDX-FileCopyrightText: 2006-2010 Université Joseph Fourier (Grenoble I)
+ * SPDX-FileCopyrightText: 2011-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-01-20
-
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2006-2010 Université Joseph Fourier (Grenoble I)
-  Copyright (C) 2010-2014 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file integrators.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -36,8 +22,8 @@
 
 #include <Eigen/Eigen>
 
-#include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/parameter.hpp>
+#include <feel/feelcore/feel.hpp>
 
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelpoly/quadmapped.hpp>
@@ -46,11 +32,13 @@
 #include <feel/feelvf/cst.hpp>
 #include <feel/feelvf/detail/clean.hpp>
 #include <feel/feelvf/block.hpp>
+#include <feel/feelvf/concepts.hpp>
 
 #include <feel/feelvf/formcontextbase.hpp>
 #include <feel/feelvf/bilinearform.hpp>
 #include <feel/feelvf/linearform.hpp>
 #include <feel/feelvf/matvec.hpp>
+#include <feel/feelvf/detail/localform_lower_impl.hpp>
 #include <feel/feeldiscr/quadptlocalization.hpp>
 #if defined( FEELPP_HAS_GOOGLE_PROFILER_H )
 #include <google/profiler.h>
@@ -99,8 +87,14 @@ enum IntegratorType
  *
  * @author Christophe Prud'homme
  * @see IntegratorOn
+ *
+ * @tparam Elements Range type satisfying RangeConcept (e.g., elements(mesh), boundaryfaces(mesh))
+ * @tparam Im Quadrature type satisfying QuadOrderConcept (integer order or _Q<N> type)
+ * @tparam Expr Expression type satisfying VfExprConcept
+ * @tparam Im2 Secondary quadrature type (defaults to Im)
  */
-template<typename Elements, typename Im, typename Expr, typename Im2=Im>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2=Im>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 class Integrator: public IntegratorBase
 {
 public:
@@ -252,9 +246,11 @@ public:
                 Im const& __im,
                 expression_type const& __expr,
                 GeomapStrategyType gt,
+                geometry::geometry_evaluation_strategy geometryEvaluation,
                 Im2 const& __im2,
-                bool use_tbb, bool use_harts, int grainsize, std::string const& partitioner,
-                std::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > qpl )
+                bool use_harts,
+                std::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > qpl,
+                local_form_lowering localFormLowering = local_form_lowering::automatic )
         :
         M_elts(),
         M_eltbegin( elts.begin() ),
@@ -264,10 +260,9 @@ public:
         M_im2( __im2 ),
         M_expr( __expr ),
         M_gt( gt ),
-        M_use_tbb( use_tbb ),
+        M_geometry_evaluation( geometryEvaluation ),
+        M_local_form_lowering( localFormLowering ),
         M_use_harts( use_harts ),
-        M_grainsize( grainsize ),
-        M_partitioner( partitioner ),
         M_QPL( qpl )
     {
         if ( !M_wc )
@@ -283,9 +278,11 @@ public:
                 Im const& __im,
                 expression_type const& __expr,
                 GeomapStrategyType gt,
+                geometry::geometry_evaluation_strategy geometryEvaluation,
                 Im2 const& __im2,
-                bool use_tbb, bool use_harts, int grainsize, std::string const& partitioner,
-                std::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > qpl )
+                bool use_harts,
+                std::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > qpl,
+                local_form_lowering localFormLowering = local_form_lowering::automatic )
         :
         M_elts( elts ),
         M_wc( Environment::worldCommPtr() ),
@@ -293,10 +290,9 @@ public:
         M_im2( __im2 ),
         M_expr( __expr ),
         M_gt( gt ),
-        M_use_tbb( use_tbb ),
+        M_geometry_evaluation( geometryEvaluation ),
+        M_local_form_lowering( localFormLowering ),
         M_use_harts( use_harts ),
-        M_grainsize( grainsize ),
-        M_partitioner( partitioner ),
         M_QPL( qpl )
     {
         DLOG(INFO) << "Integrator constructor from expression\n";
@@ -318,10 +314,9 @@ public:
         M_im2( __vfi.M_im2 ),
         M_expr( __vfi.M_expr ),
         M_gt( __vfi.M_gt ),
-        M_use_tbb( __vfi.M_use_tbb ),
+        M_geometry_evaluation( __vfi.M_geometry_evaluation ),
+        M_local_form_lowering( __vfi.M_local_form_lowering ),
         M_use_harts( __vfi.M_use_harts ),
-        M_grainsize( __vfi.M_grainsize ),
-        M_partitioner( __vfi.M_partitioner ),
         M_QPL( __vfi.M_QPL )
     {
         DLOG(INFO) << "Integrator copy constructor\n";
@@ -369,8 +364,9 @@ public:
             //typedef _Q< ExpressionOrder<Elements,e_type>::value > quad_type;
             //typedef _Q< ExpressionOrder<Elements,e_type>::value_1 > quad1_type;
             typedef std::shared_ptr<QuadPtLocalization<Elements,quad_type,expr_type > > quadptloc_ptrtype;
-            quad_type quad( expr_order_t::value(new_expr) );
-            quad1_type quad1( expr_order_t::value_1(new_expr) );
+            auto const geometryOrder = expr_order_t::geometryOrder( M_elts );
+            quad_type quad( expr_order_t::value( new_expr, geometryOrder ) );
+            quad1_type quad1( expr_order_t::value_1( new_expr, geometryOrder ) );
 
 #if 0
             auto the_ims = vf::detail::integrate_im_type<Elements,expr_type>::im( quad,quad1,expr );
@@ -380,7 +376,10 @@ public:
 
 
             //BOOST_STATIC_ASSERT( ( boost::is_same<expr_type,e_type> ) );
-            auto i = Integrator<Elements, quad_type, expr_type, quad1_type>( M_elts, quad, new_expr, M_gt, quad1, M_use_tbb, M_use_harts, M_grainsize, M_partitioner, quadptloc_ptrtype() );
+            auto i = Integrator<Elements, quad_type, expr_type, quad1_type>(
+                M_elts, quad, new_expr, M_gt, M_geometry_evaluation,
+                quad1, M_use_harts,
+                quadptloc_ptrtype(), M_local_form_lowering );
             DLOG(INFO) << " -- M_elts size=" << M_elts.size() << "\n";
             DLOG(INFO) << " -- nelts=" << std::distance( M_eltbegin, M_eltend ) << "\n";
             DLOG(INFO) << " -- integrate: quad = " << i.im().nPoints() << "\n";
@@ -566,201 +565,20 @@ public:
         }
     }
 
-#if defined( FEELPP_HAS_TBB )
-    template<typename FormType, typename ExprType, typename IMType, typename EltType>
-    class Context
-    {
-    public:
-        //
-        // some typedefs
-        //
-        typedef typename eval::gm_type gm_type;
-        typedef typename eval::gmc_type gmc_type;
-        typedef typename eval::gmpc_type gmpc_type;
-        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
-        typedef std::shared_ptr<gmpc_type> gmpc_ptrtype;
-        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-        typedef typename FormType::template Context<map_gmc_type, expression_type, im_type> form_context_type;
-        //typedef vf::detail::FormContextBase<map_gmc_type,im_type> fcb_type;
-        typedef form_context_type fcb_type;
-        typedef std::shared_ptr<fcb_type> fcb_ptrtype;
-
-
-        Context( FormType& _form,
-                 ExprType const& _expr,
-                 IMType const& _im,
-                 EltType const& _elt )
-            :
-            M_geopc( new gmpc_type( _form.gm(), _im.points() ) ),
-            M_c( new gmc_type( _form.gm(), _elt, M_geopc, invalid_uint16_type_value, _expr.dynamicContext()  ) ),
-            M_formc( new form_context_type( _form,
-                                            fusion::make_pair<vf::detail::gmc<0> >( M_c ),
-                                            fusion::make_pair<vf::detail::gmc<0> >( M_c ),
-                                            _expr,
-                                            _im ) )
-
-        {
-        }
-        Context( Context const& c )
-            :
-            M_geopc( new gmpc_type( *c.M_geopc ) ),
-            M_c( new gmc_type( *c.M_c ) ),
-            M_formc( new form_context_type( *c.M_formc ) )
-        {
-        }
-        //std::vector<boost::reference_wrapper<const typename mesh_type::element_type> > _v;
-        typedef typename std::vector<boost::reference_wrapper<const typename eval::element_type> >::iterator elt_iterator;
-        void operator() ( const tbb::blocked_range<elt_iterator>& r ) const
-        {
-#if 1
-            tbb::mutex m;
-            tbb::mutex::scoped_lock lock( m  );
-            lock.release();
-            auto  mapgmc = fusion::make_pair<vf::detail::gmc<0> >( M_c );
-
-            for ( auto _elt = r.begin(); _elt != r.end(); ++_elt )
-            {
-                M_c->update( *_elt );
-                M_formc->update( mapgmc, mapgmc );
-                M_formc->integrate();
-                lock.acquire( m );
-                M_formc->assemble();
-                lock.release();
-            }
-
-#else
-
-            for ( auto _elt = r.begin(); _elt != r.end(); ++_elt )
-            {
-                M_c->update( *_elt );
-                M_formc->update( fusion::make_pair<vf::detail::gmc<0> >( M_c ),
-                                 fusion::make_pair<vf::detail::gmc<0> >( M_c ) );
-                M_formc->integrate();
-            }
-
-#endif
-        }
-        mutable gmpc_ptrtype M_geopc;
-        mutable gmc_ptrtype M_c;
-        mutable fcb_ptrtype M_formc;
-
-    };
-
-    template<typename ExprType, typename IMType, typename EltType>
-    class ContextEvaluate
-    {
-    public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-        //
-        // some typedefs
-        //
-        typedef ExprType expression_type;
-        typedef typename eval::gm_type gm_type;
-        typedef std::shared_ptr<gm_type> gm_ptrtype;
-        typedef typename eval::gmc_type gmc_type;
-        typedef typename eval::gmpc_type gmpc_type;
-        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
-        typedef std::shared_ptr<gmpc_type> gmpc_ptrtype;
-        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-        typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
-        typedef typename eval_expr_type::shape shape;
-        typedef IMType im_type;
-        typedef typename eval::matrix_type value_type;
-        ContextEvaluate( ExprType const& _expr,
-                         IMType const& _im,
-                         EltType const& _elt )
-            :
-            M_gm( new gm_type( *_elt.gm() ) ),
-            M_geopc( new gmpc_type( M_gm, _im.points() ) ),
-            M_c( new gmc_type( M_gm, _elt, M_geopc, invalid_uint16_type_value, _expr.dynamicContext() ) ),
-            M_expr( _expr, map_gmc_type( fusion::make_pair<vf::detail::gmc<0> >( M_c ) ) ),
-            M_im( _im ),
-            M_ret( eval::matrix_type::Zero() )
-        {
-        }
-        ContextEvaluate( ContextEvaluate& c, tbb::split )
-            :
-            M_gm( new gm_type( *c.M_gm ) ),
-            //M_geopc( new gmpc_type( M_gm, c.M_im.points() ) ),
-            M_geopc( c.M_geopc ),
-            M_c( new gmc_type( M_gm, c.M_c->element(), M_geopc, invalid_uint16_type_value, c.M_expr.dynamicContext() ) ),
-            M_expr( c.M_expr ),
-            M_im( c.M_im ),
-            M_ret( eval::matrix_type::Zero() )
-        {}
-
-        ContextEvaluate( ContextEvaluate const& c )
-            :
-            M_gm( new gm_type( *c.M_gm ) ),
-            //M_geopc( new gmpc_type( M_gm, c.M_im.points() ) ),
-            M_geopc( c.M_geopc ),
-            M_c( new gmc_type( M_gm, c.M_c->element(), M_geopc; invalid_uint16_type_value, c.M_expr.dynamicContext() ) ),
-            M_expr( c.M_expr ),
-            M_im( c.M_im ),
-            M_ret( c.M_ret )
-        {
-        }
-        //std::vector<boost::reference_wrapper<const typename mesh_type::element_type> > _v;
-        typedef typename std::vector<boost::reference_wrapper<const typename eval::element_type> >::iterator elt_iterator;
-        void operator() ( const tbb::blocked_range<elt_iterator>& r )
-        {
-#if 1
-
-            for ( auto _elt = r.begin(); _elt != r.end(); ++_elt )
-            {
-                M_c->update( *_elt );
-                map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( M_c ) );
-
-                M_expr.update( mapgmc );
-                M_im.update( *M_c );
-
-#if 1
-
-                for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
-                    for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
-                    {
-                        M_ret( c1,c2 ) += M_im( M_expr, c1, c2 );
-                    }
-
-#endif
-            }
-
-#else
-#if 0
-
-            for ( int i = 0; i < 10000; ++i )
-                for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
-                    for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
-                    {
-                        M_ret( c1,c2 ) += i*i; //M_im( M_expr, c1, c2 );
-                    }
-
-#endif
-#endif
-        }
-        void join( ContextEvaluate const& other )
-        {
-            M_ret += other.M_ret;
-        }
-
-        value_type result() const
-        {
-            return M_ret;
-        }
-
-        gm_ptrtype M_gm;
-        gmpc_ptrtype M_geopc;
-        gmc_ptrtype M_c;
-        eval_expr_type M_expr;
-        im_type M_im;
-        value_type M_ret;
-    };
-#endif // FEELPP_HAS_TBB
 
     //@}
 
 
 private:
+
+    template<typename Elem1, typename Elem2, typename FormType>
+    bool tryAssembleLoweredScalarLocalform( std::shared_ptr<Elem1> const& __u,
+                                            std::shared_ptr<Elem2> const& __v,
+                                            FormType& __form ) const;
+
+    template<typename Elem1, typename FormType>
+    bool tryAssembleLoweredScalarLocalform( std::shared_ptr<Elem1> const& __v,
+                                            FormType& __form ) const;
 
     template<typename FE1,typename FE2,typename ElemContType,typename FaceRangeType>
     bool useSameMesh( vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
@@ -883,17 +701,20 @@ private:
     mutable im2_type M_im2;
     expression_type   M_expr;
     GeomapStrategyType M_gt;
-    bool M_use_tbb;
+    /** Geometry kernel selected below the variational DSEL. */
+    geometry::geometry_evaluation_strategy M_geometry_evaluation;
+    local_form_lowering M_local_form_lowering;
     bool M_use_harts;
-    int M_grainsize;
-    std::string M_partitioner;
     mutable std::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > M_QPL;
     //     mutable boost::prof::basic_profiler<boost::prof::basic_profile_manager<std::string, double, boost::high_resolution_timer, boost::prof::empty_logging_policy, boost::prof::default_stats_policy<std::string, double> > > M_profile_local_assembly;
 
     //     mutable boost::prof::basic_profiler<boost::prof::basic_profile_manager<std::string, double, boost::high_resolution_timer, boost::prof::empty_logging_policy, boost::prof::default_stats_policy<std::string, double> > > M_profile_global_assembly;
 };
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+#include <feel/feelvf/detail/integrator_localform_dispatch.hpp>
+
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename Elem1, typename Elem2, typename FormType>
 void
 Integrator<Elements, Im, Expr, Im2>::assemble( std::shared_ptr<Elem1> const& __u,
@@ -910,6 +731,9 @@ Integrator<Elements, Im, Expr, Im2>::assemble( std::shared_ptr<Elem1> const& __u
     typedef typename boost::is_same<typename eval::gmc_type::element_type,typename Elem1::mesh_type::element_type>::type same1_mesh_type;
     typedef typename boost::is_same<typename eval::gmc_type::element_type,typename Elem2::mesh_type::element_type>::type same2_mesh_type;
     typedef typename boost::mpl::and_< same1_mesh_type,same2_mesh_type>::type same_mesh_type;
+
+    if ( tryAssembleLoweredScalarLocalform( __u, __v, __form ) )
+        return;
 
     // specifiy matrix (form2) is in assembly state
     __form.matrixPtr()->setIsClosed( false );
@@ -947,7 +771,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( std::shared_ptr<Elem1> const& __u
 }
 
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename Elem1, typename FormType>
 void
 Integrator<Elements, Im, Expr, Im2>::assemble( std::shared_ptr<Elem1> const& __v,
@@ -960,6 +785,9 @@ Integrator<Elements, Im, Expr, Im2>::assemble( std::shared_ptr<Elem1> const& __v
 #endif
 
     typedef typename boost::is_same<typename eval::gmc_type::element_type,typename Elem1::mesh_type::element_type>::type same_mesh_type;
+
+    if ( tryAssembleLoweredScalarLocalform( __v, __form ) )
+        return;
 
     // specifiy vector (form1) is in assembly state
     __form.vectorPtr()->setIsClosed( false );
@@ -991,272 +819,243 @@ Integrator<Elements, Im, Expr, Im2>::assemble( std::shared_ptr<Elem1> const& __v
 
     //assemble( __form, mpl::int_<iDim>(), mpl::bool_<true>() );
 }
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FormType>
 void
 Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<true> /**/, bool /*hasRelation*/ ) const
 {
     tic();
     DLOG(INFO) << "[integrator::assemble FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<true>\n";
+    //
+    // some typedefs
+    //
+    typedef typename eval::gm_type gm_type;
+    typedef typename eval::gmc_type gmc_type;
+    typedef std::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+    typedef typename FormType::template Context<map_gmc_type, expression_type, im_type> form_context_type;
+    typedef form_context_type fcb_type;
+    using focb_ptrtype = std::shared_ptr<fcb_type>;
 
-#if defined(FEELPP_HAS_TBB)
+    typedef typename eval::gm1_type gm1_type;
+    typedef typename eval::gmc1_type gmc1_type;
+    typedef std::shared_ptr<gmc1_type> gmc1_ptrtype;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
+    typedef typename FormType::template Context<map_gmc1_type, expression_type, im2_type> form1_context_type;
+    typedef form1_context_type fcb1_type;
+    using focb1_ptrtype = std::shared_ptr<fcb1_type>;
 
-    //std::cout << "Integrator Uses TBB: " << M_use_tbb << "\n";
-    if ( !M_use_tbb )
-#else
-        if ( 1 )
-#endif
+    // mortar context
+    constexpr bool has_mortar_test = FormType::test_space_type::is_mortar;
+    constexpr bool has_mortar_trial = FormType::trial_space_type::is_mortar;
+    static const int mortarTag = (has_mortar_test && has_mortar_trial)? 3 : ( (has_mortar_test)? 1 : ( (has_mortar_trial)? 2 : 0 ) );
+
+    typedef typename FormType::template Context<map_gmc_type, expression_type, im_type,map_gmc_type,map_gmc_type,mortarTag> form_mortar_context_type;
+    typedef typename FormType::template Context<map_gmc1_type, expression_type, im2_type,map_gmc1_type,map_gmc1_type,mortarTag> form1_mortar_context_type;
+    using mortar_focb_ptrtype = std::shared_ptr<form_mortar_context_type>;
+    using mortar_focb1_ptrtype = std::shared_ptr<form1_mortar_context_type>;
+
+    bool useGeomapHO = (M_gt == GeomapStrategyType::GEOMAP_HO) || (M_gt == GeomapStrategyType::GEOMAP_OPT );
+    bool useGeomapO1 = (M_gt == GeomapStrategyType::GEOMAP_O1) || (M_gt == GeomapStrategyType::GEOMAP_OPT );
+
+    gmc_ptrtype __c;
+    focb_ptrtype formc;
+    gmc1_ptrtype __c1;
+    focb1_ptrtype formc1;
+    mortar_focb_ptrtype formcm;
+    mortar_focb1_ptrtype formc1m;
+    size_type nElt_ho = 0, nElt_o1 = 0;
+
+    for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
+    {
+        element_iterator it = lit->begin();
+        element_iterator en = lit->end();
+        DLOG(INFO) << "integrating over " << std::distance( it, en )  << " elements\n";
+
+        // check that we have elements to iterate over
+        if ( it == en )
+            continue;
+
+        auto const& eltInit = boost::unwrap_ref( *it );
+
+        bool rangeAndTestUseSameMesh = eltInit.mesh()->isSameMesh( __form.testSpace()->mesh() );
+
+        size_type idEltTestInit = eltInit.id();
+        if ( !rangeAndTestUseSameMesh )
         {
-            //
-            // some typedefs
-            //
-            typedef typename eval::gm_type gm_type;
-            typedef typename eval::gmc_type gmc_type;
-            typedef std::shared_ptr<gmc_type> gmc_ptrtype;
-            typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-            typedef typename FormType::template Context<map_gmc_type, expression_type, im_type> form_context_type;
-            typedef form_context_type fcb_type;
-            using focb_ptrtype = std::shared_ptr<fcb_type>;
+            if ( eltInit.mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
+                idEltTestInit = eltInit.mesh()->subMeshToMesh( idEltTestInit );
+            else if ( __form.testSpace()->mesh()->isSubMeshFrom( eltInit.mesh() ) )
+                idEltTestInit = __form.testSpace()->mesh()->meshToSubMesh( idEltTestInit );
+        }
 
-            typedef typename eval::gm1_type gm1_type;
-            typedef typename eval::gmc1_type gmc1_type;
-            typedef std::shared_ptr<gmc1_type> gmc1_ptrtype;
-            typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
-            typedef typename FormType::template Context<map_gmc1_type, expression_type, im2_type> form1_context_type;
-            typedef form1_context_type fcb1_type;
-            using focb1_ptrtype = std::shared_ptr<fcb1_type>;
+        auto const& eltTestInit = rangeAndTestUseSameMesh? eltInit :  __form.testSpace()->mesh()->element( idEltTestInit );
 
-            // mortar context
-            constexpr bool has_mortar_test = FormType::test_space_type::is_mortar;
-            constexpr bool has_mortar_trial = FormType::trial_space_type::is_mortar;
-            static const int mortarTag = (has_mortar_test && has_mortar_trial)? 3 : ( (has_mortar_test)? 1 : ( (has_mortar_trial)? 2 : 0 ) );
+        if ( useGeomapHO && !__c )
+        {
+            // Precompute some data in the reference element for geometric mapping and reference finite element
+            auto __geopc = __form.gm()->preCompute( this->im().points() );
+            __c = __form.gm()->template context<eval::gmc_context_v>( eltTestInit, __geopc, this->expression().dynamicContext() );
+            __c->setGeometryEvaluationStrategy(
+                M_geometry_evaluation );
+            auto mapgmc = vf::mapgmc(__c);
+            formc = std::make_shared<form_context_type>( __form, mapgmc, mapgmc, mapgmc,
+                                                         this->expression(), this->im() );
+            if constexpr ( mortarTag > 0 )
+                 formcm = std::make_shared<form_mortar_context_type>( __form, mapgmc, mapgmc, mapgmc,
+                                                                      this->expression(), this->im() );
+        }
 
-            typedef typename FormType::template Context<map_gmc_type, expression_type, im_type,map_gmc_type,map_gmc_type,mortarTag> form_mortar_context_type;
-            typedef typename FormType::template Context<map_gmc1_type, expression_type, im2_type,map_gmc1_type,map_gmc1_type,mortarTag> form1_mortar_context_type;
-            using mortar_focb_ptrtype = std::shared_ptr<form_mortar_context_type>;
-            using mortar_focb1_ptrtype = std::shared_ptr<form1_mortar_context_type>;
+        if ( useGeomapO1 && !__c1 )
+        {
+            auto __geopc1 = __form.gm1()->preCompute( this->im2().points() );
+            __c1 = __form.gm1()->template context<eval::gmc_context_v>( eltTestInit, __geopc1, this->expression().dynamicContext() );
+            __c1->setGeometryEvaluationStrategy(
+                M_geometry_evaluation );
+            auto mapgmc1 = vf::mapgmc(__c1);
+            formc1 = std::make_shared<form1_context_type>( __form, mapgmc1, mapgmc1, mapgmc1,
+                                                           this->expression(), this->im2() );
+            if constexpr ( mortarTag > 0 )
+                  formc1m = std::make_shared<form1_mortar_context_type>( __form, mapgmc1, mapgmc1, mapgmc1,
+                                                                         this->expression(), this->im2() );
+        }
 
-            bool useGeomapHO = (M_gt == GeomapStrategyType::GEOMAP_HO) || (M_gt == GeomapStrategyType::GEOMAP_OPT );
-            bool useGeomapO1 = (M_gt == GeomapStrategyType::GEOMAP_O1) || (M_gt == GeomapStrategyType::GEOMAP_OPT );
+        //int nelt = std::distance( this->beginElement(), this->endElement() );
 
-            gmc_ptrtype __c;
-            focb_ptrtype formc;
-            gmc1_ptrtype __c1;
-            focb1_ptrtype formc1;
-            mortar_focb_ptrtype formcm;
-            mortar_focb1_ptrtype formc1m;
-            size_type nElt_ho = 0, nElt_o1 = 0;
+        //
+        // start the real intensive job:
+        // -# iterate over all elements to integrate over
+        // -# construct the associated geometric mapping with the reference element
+        // -# loop over quadrature loop and assemble the local matrix associated with the bilinear form
+        // -# assemble the local contribution in the global representation of the bilinear form
+        //
+        const bool updateCtxAndIntegrate = !(__form.testSpace()->mesh()->isCartesian()  &&
+                                             ( !hasPOINT(__c->dynamicContext() ) && !hasINTERPOLANT(__c->dynamicContext()) ) );
 
-            for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
+        for ( ; it != en; ++it )
+        {
+            auto const& eltCur = boost::unwrap_ref( *it );
+
+            size_type idElt = eltCur.id();
+            if ( !rangeAndTestUseSameMesh )
             {
-                element_iterator it = lit->begin();
-                element_iterator en = lit->end();
-                DLOG(INFO) << "integrating over " << std::distance( it, en )  << " elements\n";
+                if ( eltCur.mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
+                    idElt = eltCur.mesh()->subMeshToMesh( idElt );
+                else if ( __form.testSpace()->mesh()->isSubMeshFrom( eltCur.mesh() ) )
+                    idElt = __form.testSpace()->mesh()->meshToSubMesh( idElt );
+            }
 
-                // check that we have elements to iterate over
-                if ( it == en )
+            if ( useGeomapHO )
+            {
+                if ( formc->isZero( idElt ) )
                     continue;
+            }
+            else
+            {
+                if ( formc1->isZero( idElt ) )
+                    continue;
+            }
 
-                auto const& eltInit = boost::unwrap_ref( *it );
+            auto const& eltTest = rangeAndTestUseSameMesh? eltCur : __form.testSpace()->mesh()->element( idElt );
 
-                bool rangeAndTestUseSameMesh = eltInit.mesh()->isSameMesh( __form.testSpace()->mesh() );
+            // 0 : ho , 1 -> o1, 2 -> mortar ho, 3 -> mortar o1
+            int currentAssemblyType = 0;
+            switch ( M_gt )
+            {
+            default:
+            case GeomapStrategyType::GEOMAP_HO:
+                currentAssemblyType = 0;
+                break;
+            case GeomapStrategyType::GEOMAP_O1:
+                currentAssemblyType = 1;
+                break;
+            case GeomapStrategyType::GEOMAP_OPT:
+                if ( eltCur.isOnBoundary() )
+                    currentAssemblyType = 0;
+                else
+                    currentAssemblyType = 1;
+                break;
+            }
 
-                size_type idEltTestInit = eltInit.id();
-                if ( !rangeAndTestUseSameMesh )
+            bool useMortarAssembly = false;
+            if constexpr ( mortarTag > 0 )
+            {
+                if ( currentAssemblyType == 0 )
+                    useMortarAssembly = ( has_mortar_test && eltTest.isOnBoundary() ) || ( has_mortar_trial && formc->trialElementIsOnBoundary( idElt ) );
+                else
+                    useMortarAssembly = ( has_mortar_test && eltTest.isOnBoundary() ) || ( has_mortar_trial && formc1->trialElementIsOnBoundary( idElt ) );
+                if ( useMortarAssembly )
+                    currentAssemblyType += 2;
+            }
+
+
+            switch ( currentAssemblyType )
+            {
+            default:
+            case 0:
+                //Feel::cout << "update ctx and integrate HO" << std::endl;
+                if ( updateCtxAndIntegrate || ( nElt_ho == 0 ) )
                 {
-                    if ( eltInit.mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
-                        idEltTestInit = eltInit.mesh()->subMeshToMesh( idEltTestInit );
-                    else if ( __form.testSpace()->mesh()->isSubMeshFrom( eltInit.mesh() ) )
-                        idEltTestInit = __form.testSpace()->mesh()->meshToSubMesh( idEltTestInit );
+                    __c->template update<eval::gmc_context_v>( eltTest );
+                    auto mapgmc = vf::mapgmc( __c );
+                    formc->update( mapgmc, mapgmc, mapgmc );
+                    formc->integrate();
                 }
-
-                auto const& eltTestInit = rangeAndTestUseSameMesh? eltInit :  __form.testSpace()->mesh()->element( idEltTestInit );
-
-                if ( useGeomapHO && !__c )
+                else
                 {
-                    // Precompute some data in the reference element for geometric mapping and reference finite element
-                    auto __geopc = __form.gm()->preCompute( this->im().points() );
-                    __c = __form.gm()->template context<eval::gmc_context_v>( eltTestInit, __geopc, this->expression().dynamicContext() );
-                    auto mapgmc = vf::mapgmc(__c);
-                    formc = std::make_shared<form_context_type>( __form, mapgmc, mapgmc, mapgmc,
-                                                                 this->expression(), this->im() );
-                    if constexpr ( mortarTag > 0 )
-                         formcm = std::make_shared<form_mortar_context_type>( __form, mapgmc, mapgmc, mapgmc,
-                                                                              this->expression(), this->im() );
+                    __c->setElement( eltTest );
                 }
-
-                if ( useGeomapO1 && !__c1 )
+                formc->assemble();
+                ++nElt_ho;
+                break;
+            case 1:
+                if ( updateCtxAndIntegrate || ( nElt_o1 == 0 )  )
                 {
-                    auto __geopc1 = __form.gm1()->preCompute( this->im2().points() );
-                    __c1 = __form.gm1()->template context<eval::gmc_context_v>( eltTestInit, __geopc1, this->expression().dynamicContext() );
-                    auto mapgmc1 = vf::mapgmc(__c1);
-                    formc1 = std::make_shared<form1_context_type>( __form, mapgmc1, mapgmc1, mapgmc1,
-                                                                   this->expression(), this->im2() );
-                    if constexpr ( mortarTag > 0 )
-                          formc1m = std::make_shared<form1_mortar_context_type>( __form, mapgmc1, mapgmc1, mapgmc1,
-                                                                                 this->expression(), this->im2() );
+                    __c1->template update<eval::gmc_context_v>( eltTest );
+                    auto mapgmc1 = vf::mapgmc( __c1 );
+                    formc1->update( mapgmc1, mapgmc1, mapgmc1 );
+                    formc1->integrate();
                 }
-
-                //int nelt = std::distance( this->beginElement(), this->endElement() );
-
-                //
-                // start the real intensive job:
-                // -# iterate over all elements to integrate over
-                // -# construct the associated geometric mapping with the reference element
-                // -# loop over quadrature loop and assemble the local matrix associated with the bilinear form
-                // -# assemble the local contribution in the global representation of the bilinear form
-                //
-                const bool updateCtxAndIntegrate = !(__form.testSpace()->mesh()->isCartesian()  &&
-                                                     ( !hasPOINT(__c->dynamicContext() ) && !hasINTERPOLANT(__c->dynamicContext()) ) );
-
-                for ( ; it != en; ++it )
+                else
                 {
-                    auto const& eltCur = boost::unwrap_ref( *it );
-
-                    size_type idElt = eltCur.id();
-                    if ( !rangeAndTestUseSameMesh )
-                    {
-                        if ( eltCur.mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
-                            idElt = eltCur.mesh()->subMeshToMesh( idElt );
-                        else if ( __form.testSpace()->mesh()->isSubMeshFrom( eltCur.mesh() ) )
-                            idElt = __form.testSpace()->mesh()->meshToSubMesh( idElt );
-                    }
-
-                    if ( useGeomapHO )
-                    {
-                        if ( formc->isZero( idElt ) )
-                            continue;
-                    }
-                    else
-                    {
-                        if ( formc1->isZero( idElt ) )
-                            continue;
-                    }
-
-                    auto const& eltTest = rangeAndTestUseSameMesh? eltCur : __form.testSpace()->mesh()->element( idElt );
-
-                    // 0 : ho , 1 -> o1, 2 -> mortar ho, 3 -> mortar o1
-                    int currentAssemblyType = 0;
-                    switch ( M_gt )
-                    {
-                    default:
-                    case GeomapStrategyType::GEOMAP_HO:
-                        currentAssemblyType = 0;
-                        break;
-                    case GeomapStrategyType::GEOMAP_O1:
-                        currentAssemblyType = 1;
-                        break;
-                    case GeomapStrategyType::GEOMAP_OPT:
-                        if ( eltCur.isOnBoundary() )
-                            currentAssemblyType = 0;
-                        else
-                            currentAssemblyType = 1;
-                        break;
-                    }
-
-                    bool useMortarAssembly = false;
-                    if constexpr ( mortarTag > 0 )
-                    {
-                        if ( currentAssemblyType == 0 )
-                            useMortarAssembly = ( has_mortar_test && eltTest.isOnBoundary() ) || ( has_mortar_trial && formc->trialElementIsOnBoundary( idElt ) );
-                        else
-                            useMortarAssembly = ( has_mortar_test && eltTest.isOnBoundary() ) || ( has_mortar_trial && formc1->trialElementIsOnBoundary( idElt ) );
-                        if ( useMortarAssembly )
-                            currentAssemblyType += 2;
-                    }
+                    __c1->setElement( eltTest );
+                }
+                formc1->assemble();
+                ++nElt_o1;
+                break;
+            case 2: // mortar ho
+                if constexpr ( mortarTag > 0 )
+                {
+                    __c->template update<eval::gmc_context_v>( eltTest );
+                    auto mapgmc = vf::mapgmc( __c );
+                    formcm->update( mapgmc, mapgmc, mapgmc );
+                    formcm->integrate();
+                    formcm->assemble();
+                }
+                break;
+            case 3: //mortar o1
+                if constexpr ( mortarTag > 0 )
+                {
+                    __c1->template update<eval::gmc_context_v>( eltTest );
+                    auto mapgmc = vf::mapgmc( __c1 );
+                    formc1m->update( mapgmc, mapgmc, mapgmc );
+                    formc1m->integrate();
+                    formc1m->assemble();
+                }
+                break;
+            }
 
 
-                    switch ( currentAssemblyType )
-                    {
-                    default:
-                    case 0:
-                        //Feel::cout << "update ctx and integrate HO" << std::endl;
-                        if ( updateCtxAndIntegrate || ( nElt_ho == 0 ) )
-                        {
-                            __c->template update<eval::gmc_context_v>( eltTest );
-                            auto mapgmc = vf::mapgmc( __c );
-                            formc->update( mapgmc, mapgmc, mapgmc );
-                            formc->integrate();
-                        }
-                        else
-                        {
-                            __c->setElement( eltTest );
-                        }
-                        formc->assemble();
-                        ++nElt_ho;
-                        break;
-                    case 1:
-                        if ( updateCtxAndIntegrate || ( nElt_o1 == 0 )  )
-                        {
-                            __c1->template update<eval::gmc_context_v>( eltTest );
-                            auto mapgmc1 = vf::mapgmc( __c1 );
-                            formc1->update( mapgmc1, mapgmc1, mapgmc1 );
-                            formc1->integrate();
-                        }
-                        else
-                        {
-                            __c1->setElement( eltTest );
-                        }
-                        formc1->assemble();
-                        ++nElt_o1;
-                        break;
-                    case 2: // mortar ho
-                        if constexpr ( mortarTag > 0 )
-                        {
-                            __c->template update<eval::gmc_context_v>( eltTest );
-                            auto mapgmc = vf::mapgmc( __c );
-                            formcm->update( mapgmc, mapgmc, mapgmc );
-                            formcm->integrate();
-                            formcm->assemble();
-                        }
-                        break;
-                    case 3: //mortar o1
-                        if constexpr ( mortarTag > 0 )
-                        {
-                            __c1->template update<eval::gmc_context_v>( eltTest );
-                            auto mapgmc = vf::mapgmc( __c1 );
-                            formc1m->update( mapgmc, mapgmc, mapgmc );
-                            formc1m->integrate();
-                            formc1m->assemble();
-                        }
-                        break;
-                    }
+        } // end loop on elements
+    } // end loop on list of elements
 
+    toc("Integrator::assemble form MESH_ELEMENTS", Environment::logVerbosityLevel()>1);
 
-                } // end loop on elements
-            } // end loop on list of elements
-
-            toc("Integrator::assemble form MESH_ELEMENTS", Environment::logVerbosityLevel()>1);
-        }
-
-#if defined( FEELPP_HAS_TBB )
-
-        else
-        {
-            element_iterator it = this->beginElement();
-            element_iterator en = this->endElement();
-
-            if ( it == en )
-                return;
-
-            std::vector<boost::reference_wrapper<const typename eval::element_type> > _v;
-
-            for ( auto _it = it; _it != en; ++_it )
-                _v.push_back( boost::cref( *_it ) );
-
-            //tbb::blocked_range<decltype(_v.begin())> r( _v.begin(), _v.end(), M_grainsize );
-            tbb::blocked_range<decltype( _v.begin() )> r( _v.begin(), _v.end(), std::distance( it, en ) );
-            Context<FormType,expression_type, im_type, typename eval::the_element_type> thecontext ( __form,
-                                                                                                     this->expression(),
-                                                                                                     this->im(),
-                                                                                                     *it );
-            tbb::parallel_for( r,  thecontext );
-        }
-
-#endif // FEELPP_HAS_TBB
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FormType>
 void
 Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<false> /**/, bool hasRelation ) const
@@ -1271,7 +1070,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     }
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FormType>
 void
 Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_POINTS> /**/, mpl::bool_<true> /**/, bool /*hasRelation*/ ) const
@@ -1279,7 +1079,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     assembleInCaseOfInterpolate( __form, mpl::int_<MESH_POINTS>() );
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FormType>
 void
 Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_POINTS> /**/, mpl::bool_<false> /**/, bool hasRelation ) const
@@ -2058,7 +1859,8 @@ updateGmcWithRelationDifferentMeshType21( FaceType const& theface, std::shared_p
 
 } // namespace detail
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE1,typename FE2,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
@@ -2277,7 +2079,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
         } // end loop on list of elements
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE1,typename FE2,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
@@ -2534,7 +2337,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
         } // end loop on list of elements
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE,typename VectorType,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const
@@ -2542,7 +2346,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     CHECK ( false ) << "[assembleWithRelationDifferentMeshType<LinearForm,MESH_ELEMENTS>] : not implement\n";
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE1,typename FE2,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
@@ -2714,7 +2519,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
 
 } // assembleInCaseOfInterpolate
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE1,typename FE2,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
@@ -2945,7 +2751,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
 } // assembleInCaseOfInterpolate
 
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE,typename VectorType,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const
@@ -3089,7 +2896,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
 }
 
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE1,typename FE2,typename ElemContType,typename FaceRangeType>
 bool
 Integrator<Elements, Im, Expr, Im2>::useSameMesh( vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
@@ -3099,7 +2907,8 @@ Integrator<Elements, Im, Expr, Im2>::useSameMesh( vf::detail::BilinearForm<FE1,F
     return res;
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE,typename VectorType,typename ElemContType,typename FaceRangeType>
 bool
 Integrator<Elements, Im, Expr, Im2>::useSameMesh( vf::detail::LinearForm<FE,VectorType,ElemContType>& __form,
@@ -3109,7 +2918,8 @@ Integrator<Elements, Im, Expr, Im2>::useSameMesh( vf::detail::LinearForm<FE,Vect
     return res;
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE1,typename FE2,typename ElemContType,typename FaceRangeType>
 std::vector<std::tuple<uint16_type,
                        typename vf::detail::BilinearForm<FE1,FE2,ElemContType>::mesh_element_1_type const*,
@@ -3180,7 +2990,8 @@ Integrator<Elements, Im, Expr, Im2>::testElt0IdFromFaceRange( vf::detail::Biline
     return res;
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE,typename VectorType,typename ElemContType,typename FaceRangeType>
 std::vector<std::tuple<uint16_type,
                        typename vf::detail::LinearForm<FE,VectorType,ElemContType>::mesh_test_element_type const*>>
@@ -3223,7 +3034,8 @@ Integrator<Elements, Im, Expr, Im2>::testElt0IdFromFaceRange( vf::detail::Linear
     return res;
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE1,typename FE2,typename ElemContType,typename FaceRangeType>
 bool
 Integrator<Elements, Im, Expr, Im2>::faceIntegratorUseTwoConnections( vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
@@ -3254,7 +3066,8 @@ Integrator<Elements, Im, Expr, Im2>::faceIntegratorUseTwoConnections( vf::detail
 
     return res;
 }
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE,typename VectorType,typename ElemContType,typename FaceRangeType>
 bool
 Integrator<Elements, Im, Expr, Im2>::faceIntegratorUseTwoConnections( vf::detail::LinearForm<FE,VectorType,ElemContType>& __form,
@@ -3267,7 +3080,8 @@ Integrator<Elements, Im, Expr, Im2>::faceIntegratorUseTwoConnections( vf::detail
     return res;
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FormType>
 void
 Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_FACES> /**/, mpl::bool_<true> /**/, bool /*hasRelation*/ ) const
@@ -3317,7 +3131,6 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
         for ( permutation_type __p( permutation_type::IDENTITY );
               __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
         {
-            //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
             __geopc[__f][__p] = pc_ptrtype(  new pc_type( __form.gm(), this->im().fpoints(__f, __p.value() ) ) );
             __geopc1[__f][__p] = pc1_ptrtype(  new pc1_type( __form.gm1(), this->im2().fpoints(__f, __p.value() ) ) );
         }
@@ -3482,7 +3295,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     toc("integrating over faces", Environment::logVerbosityLevel()>1);
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FormType>
 void
 Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_FACES> /**/, mpl::bool_<false> /**/, bool hasRelation ) const
@@ -3497,7 +3311,8 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     }
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE1,typename FE2,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
@@ -3637,7 +3452,6 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                 for ( permutation_type __p( permutation_type::IDENTITY );
                       __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
                 {
-                    //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
                     __geopc[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( faceInit.element( 0 ).gm(), imRange.fpoints(__f, __p.value() ) ) );
                     __geopc1[__f][__p] = pc1_expr_ptrtype(  new pc1_expr_type( faceInit.element( 0 ).gm1(), im1Range.fpoints(__f, __p.value() ) ) );
                 }
@@ -3736,7 +3550,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE,typename VectorType,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_FACES> /**/ ) const
@@ -3850,7 +3665,6 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                 for ( permutation_type __p( permutation_type::IDENTITY );
                       __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
                 {
-                    //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
                     __geopc[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( faceInit.element( 0 ).gm(), imRange.fpoints(__f, __p.value() ) ) );
                     __geopc1[__f][__p] = pc1_expr_ptrtype(  new pc1_expr_type( faceInit.element( 0 ).gm1(), im1Range.fpoints(__f, __p.value() ) ) );
                 }
@@ -3930,7 +3744,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE1,typename FE2,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
@@ -4019,7 +3834,6 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
         for ( permutation_type __p( permutation_type::IDENTITY );
               __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
         {
-            //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
             __geopcExpr[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( faceInit.element( 0 ).gm(), imRange.fpoints(__f, __p.value() ) ) );
 
         }
@@ -4156,7 +3970,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     delete formc;
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE1,typename FE2,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
@@ -4251,7 +4066,6 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
         for ( permutation_type __p( permutation_type::IDENTITY );
               __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
         {
-            //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
             __geopcExpr[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( faceInit.element( 0 ).gm(), imRange.fpoints(__f, __p.value() ) ) );
 
         }
@@ -4440,7 +4254,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     delete formc;
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE,typename VectorType,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_FACES> /**/ ) const
@@ -4513,7 +4328,6 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
         for ( permutation_type __p( permutation_type::IDENTITY );
               __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
         {
-            //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
             __geopcExpr[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( faceInit.element( 0 ).gm(), imRange.fpoints(__f, __p.value() ) ) );
         }
     }
@@ -4651,7 +4465,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
     delete formc;
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename FE,typename VectorType,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_POINTS> /**/ ) const
@@ -4673,9 +4488,13 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
     auto fe = space->fe();
     auto gm = __form.gm();
 
-    Eigen::Matrix<int, test_dof_type::nDofPerElement, 1> localRows;
-    Eigen::Matrix<form_value_type, test_dof_type::nDofPerElement, 1> localValues;
-    Eigen::Matrix<int, test_dof_type::nDofPerElement, 1> localSigns;
+    // Runtime-order FE metadata uses zero for an unknown fixed local size.
+    constexpr int localStorage = test_dof_type::is_order_dynamic
+                                     ? Eigen::Dynamic
+                                     : static_cast<int>( test_dof_type::nDofPerElement );
+    Eigen::Matrix<int, localStorage, 1> localRows;
+    Eigen::Matrix<form_value_type, localStorage, 1> localValues;
+    Eigen::Matrix<int, localStorage, 1> localSigns;
 
     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
     {
@@ -4718,9 +4537,10 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
             fec->update( gmc );
             exprEvaluator.update( mapgmc, mapfec );
 
-            localValues.setZero();
+            localRows = dof->localToGlobalIndices( eid, __form.dofIdToContainerId() ).array();
+            localValues.setZero( localRows.size() );
             for ( int q = 0; q < gmc->xRefs().size2(); ++q )
-                for ( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+                for ( Eigen::Index i = 0; i < localRows.size(); ++i )
                     localValues( i ) += exprEvaluator.evaliq( i, 0, 0, q );
 
             if ( test_dof_type::is_modal || is_hdiv_conforming<fe_type>::value || is_hcurl_conforming<fe_type>::value )
@@ -4729,7 +4549,6 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
                 localValues.array() *= localSigns.array().template cast<form_value_type>();
             }
 
-            localRows = dof->localToGlobalIndices( eid, __form.dofIdToContainerId() ).array();
             __form.addVector( localRows.data(), localRows.size(), localValues.data(), eid );
         }
     }
@@ -4748,7 +4567,8 @@ auto
 generateLambdaExpr( ExprLambdaType const& exprLambda, ExprXType const& exprX, ExprYType const& exprY, ExprZType const& exprZ, mpl::int_<3> ) { return exprLambda(vec(exprX,exprY,exprZ)); }
 }
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template<typename T, int M,int N>
 decltype(auto)
 Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>> const& v, bool parallel ) const
@@ -4927,7 +4747,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( std::vector<Eigen::Matrix<T, M,N>
 
 
 
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template <int iDimDummy>
     requires (iDimDummy == MESH_ELEMENTS)
 typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
@@ -4937,39 +4758,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                 << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
     tic();
 
-#if defined(FEELPP_HAS_TBB)
-    if ( boption(_name="parallel.cpu.enable") && M_use_tbb )
-    {
-        //std::cout << "Integrator Uses TBB: " << M_use_tbb << "\n";
-        element_iterator it = this->beginElement();
-        element_iterator en = this->endElement();
-        typedef ContextEvaluate<expression_type, im_type, typename eval::the_element_type> context_type;
-
-        if ( it == en )
-            return eval::zero();
-
-        std::vector<boost::reference_wrapper<const typename eval::element_type> > _v;
-
-        for ( auto _it = it; _it != en; ++_it )
-            _v.push_back( boost::cref( _it->second ) );
-
-        tbb::blocked_range<decltype( _v.begin() )> r( _v.begin(), _v.end(), M_grainsize );
-        context_type thecontext( this->expression(), this->im(), it->second );
-
-        if ( M_partitioner == "auto" )
-            tbb::parallel_reduce( r,  thecontext );
-
-        else if ( M_partitioner == "simple" )
-            tbb::parallel_reduce( r,  thecontext, tbb::simple_partitioner() );
-
-        //else if ( M_partitioner == "affinity" )
-        //tbb::parallel_reduce( r,  thecontext, tbb::affinity_partitioner() );
-        return thecontext.result();
-    }
-    else
-#endif // defined(FEELPP_HAS_TBB)
 #if defined(FEELPP_HAS_HARTS)
-        if ( boption(_name="parallel.cpu.enable") && soption(_name="parallel.cpu.impl").find("harts.") == 0 )
+    if ( boption(_name="parallel.cpu.enable") && soption(_name="parallel.cpu.impl").find("harts.") == 0 )
         {
             RunTimeSystem::PerfCounterMng<std::string> perf_mng ;
             perf_mng.init("total") ;
@@ -5584,7 +5374,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
                     return res;
                 }
 }
-template<typename Elements, typename Im, typename Expr, typename Im2>
+template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
 template <int iDimDummy>
     requires (iDimDummy == MESH_FACES) /*|| ( iDimDummy == MESH_EDGES && Integrator<Elements, Im, Expr, Im2>::eval::gm_type::nDim == 2)*/
 typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
@@ -5785,7 +5576,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
     return res;
 }
 
- template<typename Elements, typename Im, typename Expr, typename Im2>
+ template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
  template <int iDimDummy>
      requires (iDimDummy == MESH_POINTS)
  typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
@@ -5800,7 +5592,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
 
  }
 
- template<typename Elements, typename Im, typename Expr, typename Im2>
+ template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
      template<typename P0hType>
      typename P0hType::element_type
      Integrator<Elements, Im, Expr, Im2>::broken( std::shared_ptr<P0hType>& P0h, mpl::int_<MESH_ELEMENTS> ) const
@@ -5881,7 +5674,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
 
      return p0;
  }
- template<typename Elements, typename Im, typename Expr, typename Im2>
+ template<RangeConcept Elements, typename Im, VfExprConcept Expr, typename Im2>
+    requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
      template<typename P0hType>
      typename P0hType::element_type
      Integrator<Elements, Im, Expr, Im2>::broken( std::shared_ptr<P0hType>& P0h, mpl::int_<MESH_FACES> ) const
@@ -5948,7 +5742,6 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
              for ( permutation_type __p( permutation_type::IDENTITY );
                    __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
              {
-                 //FEELPP_ASSERT( ppts[__f][__p]->size2() != 0 ).warn( "invalid quadrature type" );
                  __geopc[__f][__p] = pc_ptrtype(  new pc_type( gm, ppts[__f].find( __p )->second ) );
              }
          }
@@ -6013,8 +5806,9 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
              }
              if ( faceConnection.isConnectedTo1() )
              {
-                 FEELPP_ASSERT( faceConnection.isOnBoundary() == false   )
-                     ( faceConnection.id() ).error( "face on boundary but connected on both sides" );
+                 CHECK( !faceConnection.isOnBoundary() )
+                     << "face " << faceConnection.id()
+                     << " is on the boundary but connected on both sides";
                  uint16_type __face_id_in_elt_0 = faceConnection.pos_first();
                  uint16_type __face_id_in_elt_1 = faceConnection.pos_second();
 
@@ -6090,20 +5884,26 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
  /**
   * integrate an expression \c expr over a set of convexes \c elts
   * using the integration rule \c im .
+  *
+  * @tparam Elts Range type (elements(mesh), boundaryfaces(mesh), etc.)
+  * @tparam Im Quadrature specification (integer order or _Q<N> type)
+  * @tparam ExprT Variational formulation expression
+  * @tparam Im2 Secondary quadrature specification (defaults to Im)
   */
- template<typename Elts, typename Im, typename ExprT, typename Im2 = Im>
+ template<typename Elts, typename Im, VfExprConcept ExprT, typename Im2 = Im>
+     requires QuadOrderConcept<Im> && QuadOrderConcept<Im2>
+           && RangeConcept<typename Feel::detail::quadptlocrangetype<Elts>::type>
      Expr<Integrator<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT, Im2> >
      integrate_impl( Elts const& elts,
                      Im const& im,
                      ExprT const& expr,
                      GeomapStrategyType const& gt,
+                     geometry::geometry_evaluation_strategy geometryEvaluation,
                      Im2 const& im2,
-                     bool use_tbb,
                      bool use_harts,
-                     int grainsize,
-                     std::string const& partitioner,
                      std::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT > > quadptloc
-                     = std::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT > >() )
+                     = std::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT > >(),
+                     local_form_lowering localFormLowering = local_form_lowering::automatic )
  {
 
      typedef typename Feel::detail::quadptlocrangetype< Elts >::type range_type;
@@ -6112,7 +5912,9 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
      using element_iterator = typename range_type::iterator_t;
      static constexpr uint16_type geoOrder = range_type::element_t::nOrder;
      LOG_IF(WARNING, gt != GeomapStrategyType::GEOMAP_HO && geoOrder == 1 ) << "you use a non standard geomap : ";
-     return Expr<expr_t>( expr_t( elts, im, expr, gt, im2, use_tbb, use_harts, grainsize, partitioner, quadptloc ) );
+     return Expr<expr_t>( expr_t( elts, im, expr, gt, geometryEvaluation,
+                                  im2, use_harts,
+                                  quadptloc, localFormLowering ) );
  }
 
 
@@ -6137,10 +5939,10 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
          requires std::is_integral_v<QuadType> && std::is_integral_v<Quad1Type>
      static
      std::pair<_quad_type,_quad1_type>
-     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr )
+     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr, uint16_type geometryOrder )
          {
-             quad_order_type exprOrder = expr_order_t::value( expr );
-             quad_order_type exprOrder_1 = expr_order_t::value_1( expr );
+             quad_order_type exprOrder = expr_order_t::value( expr, geometryOrder );
+             quad_order_type exprOrder_1 = expr_order_t::value_1( expr, geometryOrder );
              if ( thequad == quad_order_from_expression && thequad1 == quad_order_from_expression )
                  return std::make_pair( Feel::im<_quad_type>( exprOrder ), Feel::im<_quad1_type>( exprOrder_1 ) );
              else if ( thequad == quad_order_from_expression )
@@ -6154,9 +5956,9 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
          requires std::is_integral_v<QuadType> && (!std::is_integral_v<Quad1Type>)
      static
      std::pair<_quad_type,_quad1_type>
-     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr )
+     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr, uint16_type geometryOrder )
          {
-             quad_order_type exprOrder = expr_order_t::value( expr );
+             quad_order_type exprOrder = expr_order_t::value( expr, geometryOrder );
              if ( thequad == quad_order_from_expression )
                  return std::make_pair( Feel::im<_quad_type>( exprOrder ), Feel::im<_quad1_type>( thequad1 ) );
              else
@@ -6166,7 +5968,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
          requires (!std::is_integral_v<QuadType>) && std::is_integral_v<Quad1Type>
      static
      std::pair<_quad_type,_quad1_type>
-     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr )
+     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr, uint16_type /*geometryOrder*/ )
          {
              if ( thequad1 == quad_order_from_expression )
                  return std::make_pair( Feel::im<_quad_type>( thequad ), Feel::im<_quad1_type>( thequad ) );
@@ -6178,7 +5980,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluateImpl() const
          requires (!std::is_integral_v<QuadType>) && (!std::is_integral_v<Quad1Type>)
      static
      std::pair<_quad_type,_quad1_type>
-     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr )
+     im( QuadType const& thequad, Quad1Type const& thequad1, _expr_type const& expr, uint16_type /*geometryOrder*/ )
          {
              return std::make_pair( Feel::im<_quad_type>( thequad ), Feel::im<_quad1_type>( thequad1 ) );
          }

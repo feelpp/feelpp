@@ -1,10 +1,9 @@
-#
 # SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+# SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
 #
 # SPDX-FileCopyrightText: 2026 University of Strasbourg
 #
 # SPDX-License-Identifier: LGPL-3.0-or-later
-#
 
 set_directory_properties(PROPERTIES LABELS "testsuite;testsuite-feelpp;testdiscr")
 
@@ -21,10 +20,16 @@ feelpp_add_test( fspace_context )
 feelpp_add_test( functionspace_manager_baseline )
 feelpp_add_test( functionspace_manager )
 feelpp_add_test( geomap )
+feelpp_add_test( geomap_order_validity )
+feelpp_add_test( geomap_representation )
+feelpp_add_test( geomap_frames )
+feelpp_add_test( geomap_inverse )
+feelpp_add_test( curved_geomap_mesh )
+feelpp_add_test( localization )
 
 feelpp_add_test( spacefunc )
 
-# comment out as it breaks compilation and buildkite testuite pipeline
+# comment out as it breaks compilation in the legacy testsuite pipeline
 # feelpp_add_test( space_0d SKIP_TEST )
 
 
@@ -41,6 +46,11 @@ feelpp_add_test( hcurl3D_oneelt CFG test_hcurl3D_oneelt.cfg NO_MPI_TEST )
 feelpp_add_test( continuity_h1 )
 feelpp_add_test( continuity_hdiv NO_MPI_TEST )
 feelpp_add_test( continuity_hcurl NO_MPI_TEST )
+feelpp_add_test( broken_fe )
+feelpp_add_test( de_rham )
+feelpp_add_test( de_rham_3d )
+feelpp_add_test( curved_piola_2d )
+feelpp_add_test( curved_piola_3d )
 
 feelpp_add_test( functionals NO_MPI_TEST )
 
@@ -114,6 +124,45 @@ feelpp_add_test( on_dofs SRCS test_on_dofs.cpp GEO square_mmarked.geo CFG test_o
 
 feelpp_add_test( operatorlagrangep1 CLI "--pc-type=gamg --gmsh.hsize=0.25" )
 
+feelpp_add_test( oseen_header NO_MPI_TEST )
 feelpp_add_test( sensors CFG sensors.cfg GEO sensorsdesc.json )
 
 feelpp_add_test( geometricspace )
+
+feelpp_add_test( pch_dynamic NO_MPI_TEST )
+# The legacy suite contains single-element checks; only this trace regression
+# exercises distributed meshes, without running those serial-only checks.
+set(_pch_dynamic_trace_nprocs ${NProcs2})
+if(MPIEXEC_MAX_NUMPROCS AND MPIEXEC_MAX_NUMPROCS LESS _pch_dynamic_trace_nprocs)
+  set(_pch_dynamic_trace_nprocs ${MPIEXEC_MAX_NUMPROCS})
+endif()
+if(_pch_dynamic_trace_nprocs GREATER 1)
+  set(_pch_dynamic_trace_test feelpp_test_pch_dynamic_trace-np-${_pch_dynamic_trace_nprocs})
+  add_test(NAME ${_pch_dynamic_trace_test}
+    COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${_pch_dynamic_trace_nprocs} ${MPIEXEC_PREFLAGS}
+      $<TARGET_FILE:feelpp_test_pch_dynamic> --log_level=all
+      --run_test=test_pch_dynamic/dynamic_continuous_p0_distributed_trace --
+      ${MPIEXEC_POSTFLAGS}
+      --directory=testsuite/test_pch_dynamic_trace_np_${_pch_dynamic_trace_nprocs} --rm)
+  get_test_property(feelpp_test_pch_dynamic-np-1 LABELS _pch_dynamic_trace_labels)
+  get_test_property(feelpp_test_pch_dynamic-np-1 ENVIRONMENT _pch_dynamic_trace_environment)
+  set_tests_properties(${_pch_dynamic_trace_test} PROPERTIES
+    LABELS "${_pch_dynamic_trace_labels}" PROCESSORS ${_pch_dynamic_trace_nprocs} TIMEOUT 300)
+  if(_pch_dynamic_trace_environment)
+    set_property(TEST ${_pch_dynamic_trace_test} PROPERTY ENVIRONMENT "${_pch_dynamic_trace_environment}")
+  endif()
+endif()
+feelpp_add_test( scalar_pde_acceptance )
+feelpp_add_test( compatible_pde_acceptance )
+feelpp_add_test( dynamic_order_math_parity NO_MPI_TEST )
+feelpp_add_test( hdiv_runtime_order_parity NO_MPI_TEST )
+feelpp_add_test( doftable_fe_contract )
+feelpp_add_test( periodic_mesh_functionspace SRCS test_periodic_mesh_functionspace.cpp NO_MPI_TEST )
+feelpp_add_test( functionspace_composite_guardrails NO_MPI_TEST )
+feelpp_add_test( functionspace_composite_fieldsplit )
+feelpp_add_test( productspace_contract NO_MPI_TEST )
+feelpp_add_test( productfunctionspaces_adapter NO_MPI_TEST )
+feelpp_add_test( mixedspace_product_helpers NO_MPI_TEST )
+feelpp_add_test( single_space_product_blockforms NO_MPI_TEST )
+feelpp_add_test( mortar_functionspace_contract NO_MPI_TEST )
+feelpp_add_test( functionspace_legacy_composite_disabled NO_MPI_TEST DEFS FEELPP_ENABLE_LEGACY_COMPOSITE_FUNCTIONSPACE=0 )

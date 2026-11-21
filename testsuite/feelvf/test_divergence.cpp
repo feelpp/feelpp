@@ -35,7 +35,9 @@
 #include <feel/feelvf/projectors.hpp>
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
 #include <feel/feelfilters/exporter.hpp>
+#include <feel/feelvf/evaluator.hpp>
 #include <feel/feelvf/function.hpp>
+#include <feel/feelvf/function2.hpp>
 #include <feel/feelvf/minmax.hpp>
 #include <feel/feelfilters/unitsquare.hpp>
 
@@ -119,9 +121,9 @@ int main(int argc, char**argv )
     auto b_Hcurl = Hcurl->element();
 
     b_ana bfield;
-    b_H1.on( _range=elements(mesh), _expr=idf2(bfield));
-    b_Hcurl.on( _range=elements(mesh), _expr=idf2(bfield));
-    b_Hdiv.on( _range=elements(mesh), _expr=idf2(bfield));
+    b_H1.on( _range=elements(mesh), _expr=Feel::vf::idf2(bfield));
+    b_Hcurl.on( _range=elements(mesh), _expr=Feel::vf::idf2(bfield));
+    b_Hdiv.on( _range=elements(mesh), _expr=Feel::vf::idf2(bfield));
 
     auto div_H1 = L2->element();
     auto div_Hdiv = L2->element();
@@ -130,19 +132,19 @@ int main(int argc, char**argv )
     div_Hcurl.on( _range=elements(mesh), _expr=divv(b_Hcurl));
     div_Hdiv.on( _range=elements(mesh), _expr=divv(b_Hdiv));
 
-    auto m = minmax( _range=elements(mesh), _pset=_Q<2>(), _expr=idv(div_H1));
+    auto m = Feel::vf::minmax( _range=elements(mesh), _pset=_Q<2>(), _expr=idv(div_H1));
     auto mmin = m.min();
     auto mmax = m.max();
     auto p_mmin = m.argmin();
     auto p_mmax = m.argmax();
 
-    auto n = minmax( _range=elements(mesh), _pset=_Q<2>(), _expr=idv(div_Hcurl));
+    auto n = Feel::vf::minmax( _range=elements(mesh), _pset=_Q<2>(), _expr=idv(div_Hcurl));
     auto nmin = n.min();
     auto nmax = n.max();
     auto p_nmin = n.argmin();
     auto p_nmax = n.argmax();
 
-    auto p = minmax( _range=elements(mesh), _pset=_Q<2>(), _expr=idv(div_Hdiv));
+    auto p = Feel::vf::minmax( _range=elements(mesh), _pset=_Q<2>(), _expr=idv(div_Hdiv));
     auto pmin = p.min();
     auto pmax = p.max();
     auto p_pmin = p.argmin();

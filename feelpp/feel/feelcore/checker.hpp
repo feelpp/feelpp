@@ -1,26 +1,11 @@
-//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-//!
-//! This file is part of the Feel++ library
-//!
-//! This library is free software; you can redistribute it and/or
-//! modify it under the terms of the GNU Lesser General Public
-//! License as published by the Free Software Foundation; either
-//! version 2.1 of the License, or (at your option) any later version.
-//!
-//! This library is distributed in the hope that it will be useful,
-//! but WITHOUT ANY WARRANTY; without even the implied warranty of
-//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//! Lesser General Public License for more details.
-//!
-//! You should have received a copy of the GNU Lesser General Public
-//! License along with this library; if not, write to the Free Software
-//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-//!
-//! @file
-//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-//! @date 23 Jul 2017
-//! @copyright 2017 Feel++ Consortium
-//!
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2017-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 #ifndef FEELPP_CORE_CHECKER_H
 #define FEELPP_CORE_CHECKER_H
 
@@ -243,6 +228,13 @@ Checker::runOnce( ErrorFn fn, ErrorRate rate, std::string metric )
         return true;
     cout << "================================================================================\n"
          << "[Checker] " << this->journalWatcherInstanceName() << "\n";
+
+    // Print exact solution and gradient expressions for verification
+    cout << "  Exact solution: " << M_solution << "\n";
+    if ( M_gradient.has_value() )
+        cout << "  Exact gradient: " << M_gradient.value() << "\n";
+    cout << "--------------------------------------------------------------------------------\n";
+
     auto err = fn( M_solution );
     std::vector<bool> checkSuccess;
     nl::json pt;

@@ -1,39 +1,36 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2011-2020, 2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-08-10
-
-  Copyright (C) 2011-2020 Feel++ Consortium
-  Copyright (C) 2005,2006 EPFL
-
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
-   \file geoentity.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-08-10
+   @file geoentity.hpp
+   @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+   @date 2005-08-10
+   @brief Base class for all geometric entities (C++20/23 modernized)
  */
 #ifndef __GeoEntity_H
 #define __GeoEntity_H 1
 
+#include <algorithm>
+#include <concepts>
+#include <limits>
+#include <memory>
+#include <span>
+#include <stdexcept>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
 #include <feel/feelmesh/simplex.hpp>
 #include <feel/feelmesh/hypercube.hpp>
 #include <feel/feelmesh/refentity.hpp>
+#include <feel/feelmesh/geoentitystorage.hpp>
+#include <feel/feelpoly/order.hpp>
 
 namespace Feel
 {
@@ -74,31 +71,38 @@ public:
     typedef typename Entity::edge_permutation_type edge_permutation_type;
     typedef typename Entity::face_permutation_type face_permutation_type;
 
-    static inline const size_type Shape = super::Shape;
-    static inline const size_type Geometry = super::Geometry;
+    static constexpr size_type Shape = super::Shape;
+    static constexpr size_type Geometry = super::Geometry;
 
-    static inline const uint16_type nDim = super::nDim;
-    static inline const uint16_type nOrder = super::nOrder;
-    static inline const uint16_type nRealDim = super::nRealDim;
+    static constexpr uint16_type nDim = super::nDim;
+    static constexpr uint16_type nRealDim = super::nRealDim;
 
+    //! @brief True if Order is known at compile time (i.e., Order >= 0)
+    static constexpr bool is_order_static = super::is_order_static;
+    //! @brief True if Order is determined at runtime (i.e., Order == Dynamic)
+    static constexpr bool is_order_dynamic = super::is_order_dynamic;
+    //! @brief Template order parameter value (may be Dynamic = -1)
+    static constexpr int nOrder_v = super::nOrder_v;
+    //! @brief Static order (or 1 as placeholder for dynamic case)
+    static constexpr uint16_type nOrder = super::nOrder;
 
-    static inline const uint16_type numVertices = super::numVertices;
-    static inline const uint16_type numFaces = super::numFaces;
-    static inline const uint16_type numGeometricFaces = super::numGeometricFaces;
-    static inline const uint16_type numTopologicalFaces = super::numTopologicalFaces;
-    static inline const uint16_type numEdges = super::numEdges;
-    static inline const uint16_type numNormals = super::numNormals;
+    static constexpr uint16_type numVertices = super::numVertices;
+    static constexpr uint16_type numFaces = super::numFaces;
+    static constexpr uint16_type numGeometricFaces = super::numGeometricFaces;
+    static constexpr uint16_type numTopologicalFaces = super::numTopologicalFaces;
+    static constexpr uint16_type numEdges = super::numEdges;
+    static constexpr uint16_type numNormals = super::numNormals;
 
-    static inline const uint16_type numPoints = super::numPoints;
-    static inline const uint16_type nbPtsPerVertex = super::nbPtsPerVertex;
-    static inline const uint16_type nbPtsPerEdge = super::nbPtsPerEdge;
-    static inline const uint16_type nbPtsPerFace = super::nbPtsPerFace;
-    static inline const uint16_type nbPtsPerVolume = super::nbPtsPerVolume;
+    static constexpr uint16_type numPoints = super::numPoints;
+    static constexpr uint16_type nbPtsPerVertex = super::nbPtsPerVertex;
+    static constexpr uint16_type nbPtsPerEdge = super::nbPtsPerEdge;
+    static constexpr uint16_type nbPtsPerFace = super::nbPtsPerFace;
+    static constexpr uint16_type nbPtsPerVolume = super::nbPtsPerVolume;
 
-    typedef Entity convex_type;
+    using convex_type = Entity;
 
-    static inline const bool is_simplex = super::is_simplex;
-    static inline const bool is_hypercube = super::is_hypercube;
+    static constexpr bool is_simplex = super::is_simplex;
+    static constexpr bool is_hypercube = super::is_hypercube;
 
     /**
      * helper class to construct the associated reference convex.
@@ -112,6 +116,30 @@ public:
     using reference_convex_type =  Reference<Entity, nDim, nOrder, nRealDim, TT>;
 
     using marker_type = Marker<flag_type/*uint16_type*/>;
+    /** Compact trivially copyable entity record. */
+    using core_type = GeoEntityCore<index_type>;
+    /** Detached entity storage used before insertion in a mesh. */
+    using detached_storage_type =
+        GeoEntityDetachedMetadata<index_type, marker_type, value_type>;
+    /** Compatibility name for detached sparse metadata. */
+    using sparse_metadata_type = detached_storage_type;
+    /** Mesh-owned connectivity and sparse metadata storage type. */
+    using entity_storage_type =
+        GeoEntityStorage<index_type, marker_type, value_type>;
+    /** Compatibility name for mesh-owned sparse metadata storage. */
+    using sparse_metadata_storage_type = entity_storage_type;
+    /** Remote partition identifier mapping type. */
+    using remote_id_map_type =
+        typename sparse_metadata_storage_type::remote_id_map_type;
+    /** Point/edge-to-element incidence set type. */
+    using incidence_set_type =
+        typename sparse_metadata_storage_type::incidence_set_type;
+    /** Marker mapping type. */
+    using marker_map_type =
+        typename sparse_metadata_storage_type::marker_map_type;
+    /** Cached measure metadata type. */
+    using measure_metadata_type =
+        typename sparse_metadata_storage_type::measure_metadata_type;
     //@}
 
     /** @name Constructors, destructor
@@ -121,56 +149,111 @@ public:
     GeoEntity()
         :
         super(),
-        M_id( 0 ),
-        M_entity( (MESH_ENTITY_INTERNAL<<nBitShiftedGeoEntityContext) | (Geometry<<nBitShiftedReferenceGeometry) | (Shape<<nBitShiftedReferenceShapes) ),
-        M_boundaryEntityDimension( invalid_uint16_type_value ),
-        M_pid( invalid_rank_type_value ),
-        M_pidInPartition( invalid_rank_type_value )
-    {}
+        M_core{
+            .id = 0,
+            .entityContext =
+                static_cast<uint32_type>(
+                    ( MESH_ENTITY_INTERNAL <<
+                      nBitShiftedGeoEntityContext ) |
+                    ( Geometry << nBitShiftedReferenceGeometry ) |
+                    ( Shape << nBitShiftedReferenceShapes ) )
+        }
+    {
+    }
 
     explicit GeoEntity( size_type i,
                         size_type geometry = Geometry,
                         size_type shape = Shape,
                         size_type context = MESH_ENTITY_INTERNAL )
+        requires( is_order_static )
         :
         super(),
-        M_id( i ),
-        M_entity( (context<<nBitShiftedGeoEntityContext) | (geometry<<nBitShiftedReferenceGeometry) | (shape<<nBitShiftedReferenceShapes) ),
-        M_boundaryEntityDimension( invalid_uint16_type_value ),
-        M_pid( invalid_rank_type_value ),
-        M_pidInPartition( invalid_rank_type_value )
+        M_core{
+            .id = i,
+            .entityContext =
+                static_cast<uint32_type>(
+                    ( context << nBitShiftedGeoEntityContext ) |
+                    ( geometry << nBitShiftedReferenceGeometry ) |
+                    ( shape << nBitShiftedReferenceShapes ) )
+        }
+    {
+    }
+
+    /**
+     * @brief Construct a runtime-order geometric entity.
+     *
+     * @param i entity identifier
+     * @param runtimeOrder effective geometric polynomial order
+     * @param geometry geometric dimension category
+     * @param shape reference-cell shape category
+     * @param context entity ownership/location context
+     */
+    explicit GeoEntity(
+        size_type i, RuntimeOrder runtimeOrder,
+        size_type geometry = Geometry,
+        size_type shape = Shape,
+        size_type context = MESH_ENTITY_INTERNAL )
+        requires( is_order_dynamic )
+        : super( runtimeOrder ),
+          M_core{
+              .id = i,
+              .entityContext =
+                  static_cast<uint32_type>(
+                      ( context << nBitShiftedGeoEntityContext ) |
+                      ( geometry << nBitShiftedReferenceGeometry ) |
+                      ( shape << nBitShiftedReferenceShapes ) )
+          }
     {}
 
-    GeoEntity( GeoEntity const& __me ) = default;
-    GeoEntity( GeoEntity && __me )
+    GeoEntity( GeoEntity const& other )
         :
-        super( std::move( __me ) ),
-        M_id( std::move( __me.M_id ) ),
-        M_entity( std::move( __me.M_entity ) ),
-        M_boundaryEntityDimension( std::move( __me.M_boundaryEntityDimension ) ),
-        M_pid( std::move( __me.M_pid ) ),
-        M_pidInPartition( std::move( __me.M_pidInPartition ) ),
-        M_idInOtherPartitions( std::move( __me.M_idInOtherPartitions ) ),
-        M_elist( std::move( __me.M_elist ) ),
-        M_markers( std::move( __me.M_markers ) )
+        super( other ),
+        M_core( other.M_core )
+    {
+        copySparseMetadataFrom( other );
+    }
+
+    GeoEntity( GeoEntity&& other ) noexcept
+        :
+        super( std::move( other ) ),
+        M_core( other.M_core )
+    {
+        moveSparseMetadataFrom( std::move( other ) );
+    }
+
+    GeoEntity& operator=( GeoEntity const& other )
+    {
+        if ( this != &other )
         {
-            //std::cout << "GeoEntity moved ctor\n";
+            auto* storage = M_sparseMetadataStorage;
+            auto const oldId = M_core.id;
+            auto const oldOffset = M_core.connectivityOffset;
+            auto const oldCount = M_core.connectivityCount;
+            super::operator=( other );
+            M_core = other.M_core;
+            replaceSparseMetadata(
+                other.sparseMetadataSnapshot(), storage, oldId,
+                oldOffset, oldCount );
         }
-    GeoEntity& operator=( GeoEntity const& __me ) = default;
-    GeoEntity& operator=( GeoEntity && __me )
+        return *this;
+    }
+
+    GeoEntity& operator=( GeoEntity&& other )
+    {
+        if ( this != &other )
         {
-            super::operator=( std::move( __me ) );
-            M_id= std::move( __me.M_id );
-            M_entity= std::move( __me.M_entity );
-            M_boundaryEntityDimension= std::move( __me.M_boundaryEntityDimension );
-            M_pid= std::move( __me.M_pid );
-            M_pidInPartition= std::move( __me.M_pidInPartition );
-            M_idInOtherPartitions= std::move( __me.M_idInOtherPartitions );
-            M_elist= std::move( __me.M_elist );
-            M_markers = std::move( __me.M_markers );
-            //std::cout << "GeoEntity moved assign\n";
-            return *this;
+            auto* storage = M_sparseMetadataStorage;
+            auto const oldId = M_core.id;
+            auto const oldOffset = M_core.connectivityOffset;
+            auto const oldCount = M_core.connectivityCount;
+            super::operator=( std::move( other ) );
+            M_core = other.M_core;
+            replaceSparseMetadata(
+                other.releaseSparseMetadata(), storage, oldId,
+                oldOffset, oldCount );
         }
+        return *this;
+    }
 
     ~GeoEntity() override
     {}
@@ -182,16 +265,16 @@ public:
     //@{
     bool operator==( GeoEntity const& e ) const
     {
-        return M_id == e.id();
+        return M_core.id == e.id();
     }
     bool operator<( GeoEntity const& e ) const
     {
-        return M_id < e.id();
+        return M_core.id < e.id();
     }
 
     bool operator<( size_type __i ) const
     {
-        return M_id < __i;
+        return M_core.id < __i;
     }
 
     //@}
@@ -202,7 +285,249 @@ public:
 
     size_type id() const noexcept
     {
-        return M_id;
+        return M_core.id;
+    }
+
+    /**
+     * @brief Return the compact hot entity record.
+     * @return immutable core record
+     */
+    [[nodiscard]] core_type const& core() const noexcept
+    {
+        return M_core;
+    }
+
+    /**
+     * @brief Attach this entity to mesh-owned storage.
+     *
+     * Any metadata accumulated while the entity was detached is transferred
+     * to the storage. Copying an attached entity intentionally creates a
+     * detached metadata snapshot so copies cannot alias another mesh.
+     *
+     * @param storage mesh-owned storage for this entity dimension
+     */
+    void attachEntityStorage( entity_storage_type& storage )
+    {
+        if ( M_sparseMetadataStorage == &storage )
+            return;
+
+        auto data = releaseSparseMetadata();
+        M_sparseMetadataStorage = &storage;
+        auto connectivity = std::move( data.connectivity );
+        data.connectivity.clear();
+        if ( !data.empty() )
+            M_sparseMetadataStorage->assign(
+                M_core.id, std::move( data ) );
+        setConnectivity(
+            std::span<index_type const>(
+                connectivity.data(), connectivity.size() ) );
+    }
+
+    /**
+     * @brief Compatibility wrapper for attaching mesh-owned storage.
+     * @param storage mesh-owned entity storage
+     */
+    void attachSparseMetadataStorage(
+        sparse_metadata_storage_type& storage )
+    {
+        attachEntityStorage( storage );
+    }
+
+    /**
+     * @brief Return true when metadata is owned by a mesh sidecar.
+     */
+    [[nodiscard]] bool hasSparseMetadataStorage() const noexcept
+    {
+        return M_sparseMetadataStorage != nullptr;
+    }
+
+    /** @brief Return true when connectivity and sidecars are mesh-owned. */
+    [[nodiscard]] bool hasEntityStorage() const noexcept
+    {
+        return M_sparseMetadataStorage != nullptr;
+    }
+
+    /**
+     * @brief Return a detached copy of all sparse metadata.
+     */
+    [[nodiscard]] sparse_metadata_type sparseMetadataSnapshot() const
+    {
+        if ( M_sparseMetadataStorage )
+        {
+            auto data = M_sparseMetadataStorage->snapshot( id() );
+            auto connectivity = connectivityIds();
+            data.connectivity.assign(
+                connectivity.begin(), connectivity.end() );
+            return data;
+        }
+        return M_detachedSparseMetadata
+                   ? *M_detachedSparseMetadata
+                   : sparse_metadata_type{};
+    }
+
+    /**
+     * @brief Return the offset in mesh-owned connectivity storage.
+     */
+    [[nodiscard]] uint32_type connectivityOffset() const noexcept
+    {
+        return M_core.connectivityOffset;
+    }
+
+    /**
+     * @brief Return the number of entries in the connectivity span.
+     */
+    [[nodiscard]] uint16_type connectivityCount() const noexcept
+    {
+        return M_core.connectivityCount;
+    }
+
+    /**
+     * @brief Set the mesh-owned connectivity span.
+     * @param offset first connectivity entry
+     * @param count number of connectivity entries
+     */
+    void setConnectivitySpan(
+        uint32_type offset, uint16_type count ) noexcept
+    {
+        M_core.connectivityOffset = offset;
+        M_core.connectivityCount = count;
+    }
+
+    /**
+     * @brief Return connectivity identifiers in local mathematical order.
+     */
+    [[nodiscard]] std::span<index_type const> connectivityIds() const
+    {
+        if ( M_sparseMetadataStorage )
+            return M_sparseMetadataStorage->connectivity(
+                M_core.connectivityOffset,
+                M_core.connectivityCount );
+        if ( M_detachedSparseMetadata )
+            return M_detachedSparseMetadata->connectivity;
+        return {};
+    }
+
+    /**
+     * @brief Replace connectivity with one contiguous mesh-owned span.
+     * @param connectivity identifiers in local mathematical order
+     */
+    void setConnectivity(
+        std::span<index_type const> connectivity )
+    {
+        if ( connectivity.size() >
+             std::numeric_limits<uint16_type>::max() )
+            throw std::length_error(
+                "entity connectivity exceeds 16-bit cardinality" );
+
+        if ( M_sparseMetadataStorage )
+        {
+            M_sparseMetadataStorage->releaseConnectivity(
+                M_core.connectivityOffset,
+                M_core.connectivityCount );
+            M_core.connectivityOffset =
+                M_sparseMetadataStorage->allocateConnectivity(
+                    connectivity );
+        }
+        else
+        {
+            if ( connectivity.empty() &&
+                 !M_detachedSparseMetadata )
+            {
+                M_core.connectivityOffset =
+                    std::numeric_limits<uint32_type>::max();
+                M_core.connectivityCount = 0;
+                return;
+            }
+            auto& detached = mutableDetachedSparseMetadata();
+            detached.connectivity.assign(
+                connectivity.begin(), connectivity.end() );
+            M_core.connectivityOffset =
+                std::numeric_limits<uint32_type>::max();
+        }
+        M_core.connectivityCount =
+            static_cast<uint16_type>( connectivity.size() );
+    }
+
+    /**
+     * @brief Update one local connectivity identifier.
+     * @param localIndex local mathematical connectivity index
+     * @param id external entity identifier
+     * @param cardinality complete entity connectivity cardinality
+     */
+    void setConnectivityEntry(
+        uint16_type localIndex, index_type id,
+        uint16_type cardinality )
+    {
+        if ( localIndex >= cardinality )
+            throw std::out_of_range(
+                "invalid local entity connectivity index" );
+        bool const hasCompleteConnectivity =
+            M_core.connectivityCount == cardinality &&
+            ( M_sparseMetadataStorage
+                  ? ( cardinality == 0 ||
+                      M_core.connectivityOffset !=
+                          std::numeric_limits<uint32_type>::max() )
+                  : ( M_detachedSparseMetadata &&
+                      M_detachedSparseMetadata->connectivity.size() ==
+                          cardinality ) );
+        if ( !hasCompleteConnectivity )
+        {
+            std::vector<index_type> connectivity(
+                cardinality, invalid_v<index_type> );
+            if ( M_sparseMetadataStorage &&
+                 M_core.connectivityOffset !=
+                     std::numeric_limits<uint32_type>::max() )
+            {
+                auto current = connectivityIds();
+                std::copy_n(
+                    current.begin(),
+                    std::min(
+                        current.size(), connectivity.size() ),
+                    connectivity.begin() );
+            }
+            else if ( M_detachedSparseMetadata )
+            {
+                auto const& current =
+                    M_detachedSparseMetadata->connectivity;
+                std::copy_n(
+                    current.begin(),
+                    std::min(
+                        current.size(), connectivity.size() ),
+                    connectivity.begin() );
+            }
+            connectivity[localIndex] = id;
+            setConnectivity( connectivity );
+            return;
+        }
+
+        if ( M_sparseMetadataStorage )
+            M_sparseMetadataStorage->setConnectivityEntry(
+                M_core.connectivityOffset,
+                M_core.connectivityCount, localIndex, id );
+        else
+            mutableDetachedSparseMetadata()
+                .connectivity[localIndex] = id;
+    }
+
+    /**
+     * @brief Remove this entity's connectivity and sparse sidecars.
+     *
+     * Containers call this before erasing the entity record.
+     */
+    void clearEntityStorage()
+    {
+        if ( M_sparseMetadataStorage )
+        {
+            M_sparseMetadataStorage->releaseConnectivity(
+                M_core.connectivityOffset,
+                M_core.connectivityCount );
+            M_sparseMetadataStorage->erase( id() );
+            M_sparseMetadataStorage = nullptr;
+        }
+        M_detachedSparseMetadata.reset();
+        M_core.connectivityOffset =
+            std::numeric_limits<uint32_type>::max();
+        M_core.connectivityCount = 0;
     }
 
 
@@ -218,13 +543,25 @@ public:
     }
 
     /**
-     * number of points on the reference shape
+     * @brief Return the effective number of points on the reference shape.
      *
-     * @return the number of points on the reference shape
+     * Static entities fold this call to the compile-time cardinality. Detached
+     * dynamic entities resolve it from the order stored by their shape policy.
+     * Mesh-aware entities override this method at the `GeoND` layer.
      */
-    constexpr uint16_type nPoints() const
+    [[nodiscard]] constexpr uint16_type nPoints() const noexcept
     {
-        return super::numPoints;
+        return super::nPointsTotal();
+    }
+
+    /**
+     * @brief Get the polynomial order of the geometric entity.
+     * For dynamic order, this returns the runtime order from the underlying shape.
+     * @return The order value.
+     */
+    [[nodiscard]] constexpr uint16_type order() const noexcept
+    {
+        return super::order();
     }
 
     /**
@@ -296,7 +633,8 @@ public:
      */
     bool hasShape( size_type __shape ) const
     {
-        return M_entity.test( __shape << nBitShiftedReferenceShapes );
+        return hasEntityContext(
+            __shape << nBitShiftedReferenceShapes );
     }
 
     /**
@@ -304,7 +642,8 @@ public:
      */
     bool isAVolume() const
     {
-        return M_entity.test( GEOMETRY_VOLUME << nBitShiftedReferenceGeometry );
+        return hasEntityContext(
+            GEOMETRY_VOLUME << nBitShiftedReferenceGeometry );
     }
 
     /**
@@ -312,7 +651,8 @@ public:
      */
     bool isASurface() const
     {
-        return M_entity.test( GEOMETRY_SURFACE << nBitShiftedReferenceGeometry );
+        return hasEntityContext(
+            GEOMETRY_SURFACE << nBitShiftedReferenceGeometry );
     }
 
     /**
@@ -320,7 +660,8 @@ public:
      */
     bool isALine() const
     {
-        return M_entity.test( GEOMETRY_LINE << nBitShiftedReferenceGeometry );
+        return hasEntityContext(
+            GEOMETRY_LINE << nBitShiftedReferenceGeometry );
     }
 
     /**
@@ -328,7 +669,8 @@ public:
      */
     bool isAPoint() const
     {
-        return M_entity.test( GEOMETRY_POINT << nBitShiftedReferenceGeometry );
+        return hasEntityContext(
+            GEOMETRY_POINT << nBitShiftedReferenceGeometry );
     }
 
     /**
@@ -336,7 +678,8 @@ public:
      */
     bool isAPointShape() const
     {
-        return M_entity.test( SHAPE_POINT << nBitShiftedReferenceShapes );
+        return hasEntityContext(
+            SHAPE_POINT << nBitShiftedReferenceShapes );
     }
 
     /**
@@ -344,7 +687,8 @@ public:
      */
     bool isALineShape() const
     {
-        return M_entity.test( SHAPE_LINE << nBitShiftedReferenceShapes );
+        return hasEntityContext(
+            SHAPE_LINE << nBitShiftedReferenceShapes );
     }
 
     /**
@@ -352,7 +696,8 @@ public:
      */
     bool isATriangleShape() const
     {
-        return M_entity.test( SHAPE_TRIANGLE << nBitShiftedReferenceShapes );
+        return hasEntityContext(
+            SHAPE_TRIANGLE << nBitShiftedReferenceShapes );
     }
 
     /**
@@ -360,7 +705,8 @@ public:
      */
     bool isAQuadrangleShape() const
     {
-        return M_entity.test( SHAPE_QUAD << nBitShiftedReferenceShapes );
+        return hasEntityContext(
+            SHAPE_QUAD << nBitShiftedReferenceShapes );
     }
 
     /**
@@ -368,7 +714,8 @@ public:
      */
     bool isATetrahedraShape() const
     {
-        return M_entity.test( SHAPE_TETRA << nBitShiftedReferenceShapes );
+        return hasEntityContext(
+            SHAPE_TETRA << nBitShiftedReferenceShapes );
     }
 
     /**
@@ -376,7 +723,8 @@ public:
      */
     bool isAHexahedraShape() const
     {
-        return M_entity.test( SHAPE_HEXA << nBitShiftedReferenceShapes );
+        return hasEntityContext(
+            SHAPE_HEXA << nBitShiftedReferenceShapes );
     }
 
     /**
@@ -384,7 +732,8 @@ public:
      */
     bool isLinear() const
     {
-        return M_entity.test( SHAPE_LINEAR << nBitShiftedReferenceShapes );
+        return hasEntityContext(
+            SHAPE_LINEAR << nBitShiftedReferenceShapes );
     }
 
     /**
@@ -392,7 +741,8 @@ public:
      */
     bool isBilinear() const
     {
-        return M_entity.test( SHAPE_BILINEAR << nBitShiftedReferenceShapes );
+        return hasEntityContext(
+            SHAPE_BILINEAR << nBitShiftedReferenceShapes );
     }
 
     /**
@@ -400,7 +750,8 @@ public:
      */
     bool isQuadratic() const
     {
-        return M_entity.test( SHAPE_QUADRATIC << nBitShiftedReferenceShapes );
+        return hasEntityContext(
+            SHAPE_QUADRATIC << nBitShiftedReferenceShapes );
     }
 
     /**
@@ -408,7 +759,8 @@ public:
      */
     bool isInternal() const
     {
-        return M_entity.test( MESH_ENTITY_INTERNAL << nBitShiftedGeoEntityContext );
+        return hasEntityContext(
+            MESH_ENTITY_INTERNAL << nBitShiftedGeoEntityContext );
     }
 
 
@@ -418,7 +770,8 @@ public:
      */
     bool isOnBoundary() const noexcept
     {
-        return M_entity.test( MESH_ENTITY_BOUNDARY << nBitShiftedGeoEntityContext );
+        return hasEntityContext(
+            MESH_ENTITY_BOUNDARY << nBitShiftedGeoEntityContext );
     }
 
     /**
@@ -426,7 +779,7 @@ public:
      */
     uint16_type boundaryEntityDimension() const noexcept
     {
-        return M_boundaryEntityDimension;
+        return M_core.boundaryEntityDimension;
     }
     /**
      * \return \c true if ghost cell, \c false otherwise
@@ -436,7 +789,7 @@ public:
         //return (this->worldComm().localRank()!=M_pid);
         //mpi::communicator world;
         //return (world.rank()!=M_pid);
-        return ( M_pidInPartition!=M_pid );
+        return M_core.processIdInPartition != M_core.processId;
     }
 
     /**
@@ -444,7 +797,7 @@ public:
      */
     rank_type processId() const noexcept
     {
-        return M_pid;
+        return M_core.processId;
     }
 
     /**
@@ -453,7 +806,7 @@ public:
      */
     void setProcessId( rank_type pid ) noexcept
     {
-        M_pid = pid ;
+        M_core.processId = pid;
     }
 
     /**
@@ -461,7 +814,7 @@ public:
      */
     rank_type pidInPartition() const noexcept
     {
-        return M_pidInPartition;
+        return M_core.processIdInPartition;
     }
     /**
      * set the processor id of the entity
@@ -469,7 +822,7 @@ public:
      */
     void setProcessIdInPartition( rank_type pid ) noexcept
     {
-        M_pidInPartition = pid ;
+        M_core.processIdInPartition = pid;
     }
 
     /**
@@ -477,7 +830,7 @@ public:
      */
     rank_type partitionId() const noexcept
     {
-        return M_pid;
+        return M_core.processId;
     }
 
     /**
@@ -486,7 +839,8 @@ public:
      */
     rank_type numberOfPartitions() const noexcept
     {
-        return static_cast<rank_type>( M_idInOtherPartitions.size()+1 );
+        return static_cast<rank_type>(
+            idInOthersPartitions().size() + 1 );
     }
 
     /**
@@ -494,7 +848,8 @@ public:
      */
     rank_type numberOfNeighborPartitions() const
     {
-        return static_cast<rank_type>( M_idInOtherPartitions.size() );
+        return static_cast<rank_type>(
+            idInOthersPartitions().size() );
     }
 
     /**
@@ -503,7 +858,7 @@ public:
      */
     bool isLinkedToOtherPartitions() const
     {
-        return !M_idInOtherPartitions.empty();
+        return !idInOthersPartitions().empty();
     }
 
     /**
@@ -513,30 +868,39 @@ public:
     {
         if ( pid == this->pidInPartition() )
             return this->id();
-        DCHECK( M_idInOtherPartitions.find( pid )!=M_idInOtherPartitions.end() )
+        auto const& remoteIds = idInOthersPartitions();
+        auto const it = remoteIds.find( pid );
+        DCHECK( it != remoteIds.end() )
             << " local id " << this->id() << " is unknown for this partition " << pid << "\n";
-        return M_idInOtherPartitions.find( pid )->second;
+        return it->second;
     }
 
     /**
      * \return idInOthersPartitions map
      */
-    std::map<rank_type, size_type> const& idInOthersPartitions() const noexcept
+    remote_id_map_type const& idInOthersPartitions() const noexcept
     {
-        return M_idInOtherPartitions;
+        if ( M_sparseMetadataStorage )
+            return M_sparseMetadataStorage->remoteIds( id() );
+        return M_detachedSparseMetadata
+                   ? M_detachedSparseMetadata->remoteIds
+                   : emptySparseMetadata().remoteIds;
     }
 
-    std::map<rank_type, size_type> const& neighborProcessIds() const noexcept
-        {
-            return M_idInOtherPartitions;
-        }
+    remote_id_map_type const& neighborProcessIds() const noexcept
+    {
+        return idInOthersPartitions();
+    }
 
     /**
      * clear id in others partitions container
      */
     void clearIdInOthersPartitions()
     {
-        M_idInOtherPartitions.clear();
+        if ( M_sparseMetadataStorage )
+            M_sparseMetadataStorage->clearRemoteIds( id() );
+        else if ( M_detachedSparseMetadata )
+            M_detachedSparseMetadata->remoteIds.clear();
     }
 
     /**
@@ -562,7 +926,9 @@ public:
     //@{
     void setId( size_type id )
     {
-        M_id = id;
+        if ( M_sparseMetadataStorage )
+            M_sparseMetadataStorage->rekey( M_core.id, id );
+        M_core.id = id;
     }
 
     /**
@@ -573,72 +939,78 @@ public:
     {
         if ( b )
         {
-            M_entity.set( MESH_ENTITY_BOUNDARY << nBitShiftedGeoEntityContext );
-            M_entity.clear( MESH_ENTITY_INTERNAL << nBitShiftedGeoEntityContext );
+            setEntityContext(
+                MESH_ENTITY_BOUNDARY << nBitShiftedGeoEntityContext );
+            clearEntityContext(
+                MESH_ENTITY_INTERNAL << nBitShiftedGeoEntityContext );
         }
         else
         {
-            M_entity.clear( MESH_ENTITY_BOUNDARY << nBitShiftedGeoEntityContext );
-            M_entity.set( MESH_ENTITY_INTERNAL << nBitShiftedGeoEntityContext );
+            clearEntityContext(
+                MESH_ENTITY_BOUNDARY << nBitShiftedGeoEntityContext );
+            setEntityContext(
+                MESH_ENTITY_INTERNAL << nBitShiftedGeoEntityContext );
         }
-        M_boundaryEntityDimension = ent_d;
+        M_core.boundaryEntityDimension = ent_d;
     }
 
 
     /**
      * set id in a partition pid of the entity
      */
-    // FEELPP_DEPRECATED void setIdInOthersPartitions( rank_type pid, size_type id )
-    // {
-    //     M_idInOtherPartitions.insert( std::make_pair( pid, id ) );
-    // }
     void setIdInOtherPartitions( rank_type pid, size_type id )
-        {
-            M_idInOtherPartitions[pid] = id;
-        }
+    {
+        mutableRemoteIds()[pid] = id;
+    }
 
     /**
      * set (partition,id) in other partitions of the entity
      */
-    void setIdInOtherPartitions( std::map<rank_type,size_type> const& iop )
-        {
-            M_idInOtherPartitions = iop;
-        }
+    void setIdInOtherPartitions( remote_id_map_type const& iop )
+    {
+        assignRemoteIds( iop );
+    }
 
 
     /**
      * set (partition,id) in other partitions of the entity
      */
-    void setIdInOtherPartitions( std::map<rank_type,size_type>&& iop )
-        {
-            M_idInOtherPartitions = iop;
-        }
+    void setIdInOtherPartitions( remote_id_map_type&& iop )
+    {
+        assignRemoteIds( std::move( iop ) );
+    }
 
     template <typename Q>
     void setNeighborProcessIds( Q && pids )
-        {
-            M_idInOtherPartitions = std::forward<Q>( pids );
-            // init with invalid value
-            std::for_each( M_idInOtherPartitions.begin(), M_idInOtherPartitions.end(), [](auto & e){ std::get<1>(e) = invalid_v<index_type>; } );
-        }
+    {
+        auto& remoteIds = mutableRemoteIds();
+        remoteIds = std::forward<Q>( pids );
+        std::for_each(
+            remoteIds.begin(), remoteIds.end(),
+            []( auto& e )
+            {
+                std::get<1>( e ) = invalid_v<index_type>;
+            } );
+    }
 
     /**
      * \return the number of partition the element is linked to
      */
     void setNeighborPartitionIds( std::vector<rank_type> const& npids )
     {
-        M_idInOtherPartitions.clear();
+        clearIdInOthersPartitions();
+        auto& remoteIds = mutableRemoteIds();
         for ( rank_type p : npids)
         {
             CHECK( p != pidInPartition() ) << fmt::format("neighor pid {} should not be the current process id",p );
-            M_idInOtherPartitions.emplace( p, invalid_v<index_type> );
+            remoteIds.emplace( p, invalid_v<index_type> );
         }
     }
 
     void addNeighborPartitionId( rank_type p )
     {
         CHECK( p != pidInPartition() ) << fmt::format("neighor pid {} should not be the current process id",p );
-        M_idInOtherPartitions.emplace( p, invalid_v<index_type> );
+        mutableRemoteIds().emplace( p, invalid_v<index_type> );
     }
 
     //@}
@@ -676,7 +1048,8 @@ public:
      */
     self_type& addElement( size_type e, int id_in_element = 0 )
     {
-        M_elist.insert( std::make_pair(e,id_in_element) );
+        mutableElementIncidence().insert(
+            std::make_pair( e, id_in_element ) );
         return *this;
     }
 
@@ -685,19 +1058,23 @@ public:
      */
     size_type numberOfElements() const
     {
-        return M_elist.size();
+        return elements().size();
     }
 
     /**
      * \return the set of ids of elements whom the point belongs to
      */
-    std::set<std::pair<size_type,uint16_type>> const& elements() const
+    incidence_set_type const& elements() const
     {
-        return M_elist;
+        if ( M_sparseMetadataStorage )
+            return M_sparseMetadataStorage->incidence( id() );
+        return M_detachedSparseMetadata
+                   ? M_detachedSparseMetadata->elementIncidence
+                   : emptySparseMetadata().elementIncidence;
     }
-    std::set<std::pair<size_type,uint16_type>> & elements()
+    incidence_set_type& elements()
     {
-        return M_elist;
+        return mutableElementIncidence();
     }
 
     //@}
@@ -710,9 +1087,10 @@ public:
      */
     virtual void setTags( std::vector<int> const& tags )
     {
-        M_markers[1].assign( tags[0] );
+        auto& markerValues = mutableMarkers();
+        markerValues[1].assign( tags[0] );
         if ( tags.size() > 1 )
-            M_markers[2].assign( tags[1] );
+            markerValues[2].assign( tags[1] );
 
         if ( tags.size() > 2 )
         {
@@ -734,22 +1112,27 @@ public:
     }
 
     //! return all markers
-    std::map<uint16_type, marker_type> const&
+    marker_map_type const&
     markers() const
     {
-        return M_markers;
+        if ( M_sparseMetadataStorage )
+            return M_sparseMetadataStorage->markers( id() );
+        return M_detachedSparseMetadata
+                   ? M_detachedSparseMetadata->markers
+                   : emptySparseMetadata().markers;
     }
     //! set all markers
-    void setMarkers( std::map<uint16_type, marker_type> const& markers )
+    void setMarkers( marker_map_type const& markers )
     {
-        M_markers = markers;
+        assignMarkers( markers );
     }
 
     //! return true if has marker type id k
     bool hasMarkerType( uint16_type k ) const
     {
-        auto itFindMarker = M_markers.find( k );
-        if ( itFindMarker == M_markers.end() )
+        auto const& markerValues = markers();
+        auto itFindMarker = markerValues.find( k );
+        if ( itFindMarker == markerValues.end() )
             return false;
         if ( itFindMarker->second.isOff() )
             return false;
@@ -762,26 +1145,28 @@ public:
     marker_type const& marker( uint16_type k ) const
     {
         DCHECK( this->hasMarkerType( k ) ) << "no marker type " << k;
-        return M_markers.find( k )->second;
+        return markers().find( k )->second;
     }
     //! set marker type id k with flag v
     void setMarker( uint16_type k, flag_type v )
     {
-        M_markers[k].assign( v );
+        mutableMarkers()[k].assign( v );
     }
     //! add flag v to the marker type id k
     void addMarker( uint16_type k, flag_type v )
     {
-        M_markers[k].insert( v );
+        mutableMarkers()[k].insert( v );
     }
     //! set marker type id k with flag v
-    template <typename TT,std::enable_if_t< is_iterable_of_v<TT,flag_type>, bool> = true >
+    template <typename TT>
+        requires is_iterable_of_v<TT, flag_type>
     void setMarker( uint16_type k,TT const& vs )
     {
-        M_markers[k].assign( vs );
+        mutableMarkers()[k].assign( vs );
     }
     //! add flags vs to the marker type id k
-    template <typename TT,std::enable_if_t< is_iterable_of_v<TT,flag_type>, bool> = true >
+    template <typename TT>
+        requires is_iterable_of_v<TT, flag_type>
     void addMarker( uint16_type k, TT const& vs )
     {
         for ( auto const& v : vs )
@@ -805,12 +1190,14 @@ public:
     {
         this->addMarker( 1, v );
     }
-    template <typename TT,std::enable_if_t< is_iterable_of_v<TT,flag_type>, bool> = true >
+    template <typename TT>
+        requires is_iterable_of_v<TT, flag_type>
     void setMarker( TT const& vs )
     {
         this->setMarker( 1, vs );
     }
-    template <typename TT,std::enable_if_t< is_iterable_of_v<TT,flag_type>, bool> = true >
+    template <typename TT>
+        requires is_iterable_of_v<TT, flag_type>
     void addMarker( TT const& vs )
     {
         this->addMarker( 1, vs );
@@ -844,51 +1231,233 @@ public:
         this->setMarker( 3, v );
     }
 
+    /**
+     * @brief Return cached measure metadata or an immutable empty payload.
+     */
+    [[nodiscard]] measure_metadata_type const&
+    measureMetadata() const noexcept
+    {
+        if ( M_sparseMetadataStorage )
+            return M_sparseMetadataStorage->measures( id() );
+        return M_detachedSparseMetadata
+                   ? M_detachedSparseMetadata->measures
+                   : emptySparseMetadata().measures;
+    }
+
+    /**
+     * @brief Return mutable cached measure metadata.
+     *
+     * Only the measure sidecar is created; markers, incidence, and
+     * cross-partition metadata remain absent.
+     */
+    [[nodiscard]] measure_metadata_type& mutableMeasureMetadata() const
+    {
+        if ( M_sparseMetadataStorage )
+            return M_sparseMetadataStorage->mutableMeasures( id() );
+        return mutableDetachedSparseMetadata().measures;
+    }
 
 protected:
 
 private:
 
+    [[nodiscard]] bool hasEntityContext( size_type bits ) const noexcept
+    {
+        return ( M_core.entityContext &
+                 static_cast<uint32_type>( bits ) ) != 0;
+    }
+
+    void setEntityContext( size_type bits ) noexcept
+    {
+        M_core.entityContext |= static_cast<uint32_type>( bits );
+    }
+
+    void clearEntityContext( size_type bits ) noexcept
+    {
+        M_core.entityContext &=
+            ~static_cast<uint32_type>( bits );
+    }
+
+    [[nodiscard]] static sparse_metadata_type const&
+    emptySparseMetadata() noexcept
+    {
+        static sparse_metadata_type const value;
+        return value;
+    }
+
+    [[nodiscard]] sparse_metadata_type&
+    mutableDetachedSparseMetadata() const
+    {
+        if ( !M_detachedSparseMetadata )
+            M_detachedSparseMetadata =
+                std::make_unique<sparse_metadata_type>();
+        return *M_detachedSparseMetadata;
+    }
+
+    [[nodiscard]] remote_id_map_type& mutableRemoteIds()
+    {
+        if ( M_sparseMetadataStorage )
+            return M_sparseMetadataStorage->mutableRemoteIds( id() );
+        return mutableDetachedSparseMetadata().remoteIds;
+    }
+
+    template <typename RemoteIds>
+    void assignRemoteIds( RemoteIds&& remoteIds )
+    {
+        if ( remoteIds.empty() )
+        {
+            clearIdInOthersPartitions();
+            return;
+        }
+        mutableRemoteIds() = std::forward<RemoteIds>( remoteIds );
+    }
+
+    [[nodiscard]] incidence_set_type& mutableElementIncidence()
+    {
+        if ( M_sparseMetadataStorage )
+            return M_sparseMetadataStorage->mutableIncidence( id() );
+        return mutableDetachedSparseMetadata().elementIncidence;
+    }
+
+    [[nodiscard]] marker_map_type& mutableMarkers()
+    {
+        if ( M_sparseMetadataStorage )
+            return M_sparseMetadataStorage->mutableMarkers( id() );
+        return mutableDetachedSparseMetadata().markers;
+    }
+
+    template <typename Markers>
+    void assignMarkers( Markers&& markers )
+    {
+        if ( markers.empty() )
+        {
+            if ( M_sparseMetadataStorage )
+                M_sparseMetadataStorage->clearMarkers( id() );
+            else if ( M_detachedSparseMetadata )
+                M_detachedSparseMetadata->markers.clear();
+            return;
+        }
+        mutableMarkers() = std::forward<Markers>( markers );
+    }
+
+    void copySparseMetadataFrom( GeoEntity const& other )
+    {
+        auto data = other.sparseMetadataSnapshot();
+        M_core.connectivityOffset =
+            std::numeric_limits<uint32_type>::max();
+        M_core.connectivityCount =
+            static_cast<uint16_type>( data.connectivity.size() );
+        if ( !data.empty() )
+            M_detachedSparseMetadata =
+                std::make_unique<sparse_metadata_type>(
+                    std::move( data ) );
+    }
+
+    void moveSparseMetadataFrom( GeoEntity&& other )
+    {
+        if ( other.M_sparseMetadataStorage )
+            M_sparseMetadataStorage =
+                std::exchange( other.M_sparseMetadataStorage, nullptr );
+        else
+            M_detachedSparseMetadata =
+                std::move( other.M_detachedSparseMetadata );
+    }
+
+    [[nodiscard]] sparse_metadata_type releaseSparseMetadata()
+    {
+        if ( M_sparseMetadataStorage )
+        {
+            auto data = sparseMetadataSnapshot();
+            M_sparseMetadataStorage->releaseConnectivity(
+                M_core.connectivityOffset,
+                M_core.connectivityCount );
+            M_sparseMetadataStorage->erase( id() );
+            M_sparseMetadataStorage = nullptr;
+            M_core.connectivityOffset =
+                std::numeric_limits<uint32_type>::max();
+            M_core.connectivityCount =
+                static_cast<uint16_type>(
+                    data.connectivity.size() );
+            return data;
+        }
+        if ( !M_detachedSparseMetadata )
+            return {};
+        auto data = std::move( *M_detachedSparseMetadata );
+        M_detachedSparseMetadata.reset();
+        return data;
+    }
+
+    void replaceSparseMetadata(
+        sparse_metadata_type data,
+        sparse_metadata_storage_type* storage,
+        size_type oldId,
+        uint32_type oldConnectivityOffset,
+        uint16_type oldConnectivityCount )
+    {
+        M_detachedSparseMetadata.reset();
+        M_sparseMetadataStorage = storage;
+        if ( M_sparseMetadataStorage )
+        {
+            M_sparseMetadataStorage->releaseConnectivity(
+                oldConnectivityOffset, oldConnectivityCount );
+            M_sparseMetadataStorage->erase( oldId );
+        }
+
+        auto connectivity = std::move( data.connectivity );
+        data.connectivity.clear();
+        M_core.connectivityOffset =
+            std::numeric_limits<uint32_type>::max();
+        M_core.connectivityCount = 0;
+        if ( M_sparseMetadataStorage )
+        {
+            if ( !data.empty() )
+                M_sparseMetadataStorage->assign(
+                    id(), std::move( data ) );
+            setConnectivity( connectivity );
+        }
+        else
+        {
+            data.connectivity = std::move( connectivity );
+            M_core.connectivityCount =
+                static_cast<uint16_type>(
+                    data.connectivity.size() );
+            if ( !data.empty() )
+            M_detachedSparseMetadata =
+                std::make_unique<sparse_metadata_type>(
+                    std::move( data ) );
+        }
+    }
+
     friend class boost::serialization::access;
     template<class Archive>
     void serialize( Archive & ar, const unsigned int version )
+    {
+        DVLOG( 2 ) << "Serializing GeoEntity...\n";
+        ar& M_core.id;
+        ar& M_core.entityContext;
+        ar& M_core.processId;
+        ar& M_core.processIdInPartition;
+
+        auto remoteIds = idInOthersPartitions();
+        auto markerValues = markers();
+        ar& remoteIds;
+        ar& markerValues;
+
+        if constexpr ( Archive::is_loading::value )
         {
-            DVLOG(2) << "Serializing GeoEntity...\n";
-            DVLOG(2) << "  - id...\n";
-            ar & M_id;
-            DVLOG(2) << "  - id:" << M_id << "\n";
-            DVLOG(2) << "  - entity...\n";
-            ar & M_entity;
-            DVLOG(2) << "  - entity:" << M_entity.context() << "\n";
-            DVLOG(2) << "  - geometry...\n";
-            ar & M_pid;
-            DVLOG(2) << "  - pid:" << M_pid << "\n";
-            ar & M_pidInPartition;
-            ar & M_idInOtherPartitions;
-            DVLOG( 2 ) << "  - markers...\n";
-            ar& M_markers;
+            assignRemoteIds( std::move( remoteIds ) );
+            assignMarkers( std::move( markerValues ) );
         }
+    }
 
 private:
-
-
-    size_type M_id;
-
-    //! 2 bits GeoEntityContext, 6 bits ReferenceGeometry, 13 bits ReferenceShapes
-    meta::Context<uint32_type> M_entity;
-
-    //! maximum dimension of the entity touching the boundary within the element
-    uint16_type M_boundaryEntityDimension;
-
-    rank_type M_pid;
-    rank_type M_pidInPartition;
-    std::map<rank_type, size_type> M_idInOtherPartitions;
-
-    //! element list to which the point belongs
-    std::set<std::pair<size_type,uint16_type>>  M_elist;
-
-    //! mapping from marker index to marker flag
-    std::map<uint16_type, marker_type> M_markers;
+    /** Compact hot data. */
+    core_type M_core;
+    /** Mesh-owned sparse metadata storage, null while detached. */
+    sparse_metadata_storage_type* M_sparseMetadataStorage = nullptr;
+    /** Lazy sparse metadata used only by detached entities. */
+    mutable std::unique_ptr<sparse_metadata_type>
+        M_detachedSparseMetadata;
 };
 
 typedef GeoEntity<Simplex<0, 1> > GeoPoint;
