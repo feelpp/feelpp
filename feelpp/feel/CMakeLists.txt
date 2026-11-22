@@ -1,26 +1,11 @@
-# -*- mode: cmake; coding: utf-8 -*-
+# SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+# SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
 #
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 2009-11-29
+# SPDX-FileCopyrightText: 2009-2010 Université Joseph Fourier (Grenoble I)
+# SPDX-FileCopyrightText: 2011-2026 University of Strasbourg
 #
-#  Copyright (C) 2009-2010 Université Joseph Fourier (Grenoble I)
-#
-# Distributed under the GPL(GNU Public License):
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-#
-#
+# SPDX-License-Identifier: GPL-2.0-or-later
+
 CONFIGURE_FILE(feelconfig.h.in feelconfig.h  @ONLY)
 CONFIGURE_FILE(feelinfo.h.in feelinfo.h  @ONLY)
 
@@ -41,7 +26,7 @@ else()
   set(POST_CONFIGURE_FILE "${CMAKE_CURRENT_BINARY_DIR}/feelcore/git.cpp")
 endif()
 message(STATUS "[feelpp] post_configure_file: ${POST_CONFIGURE_FILE}")
-SET(DIRS core stats timing math alg mesh partition poly opt discr ts filters material vf pde ls fit models python fmi hwsys event viewfactor)
+SET(DIRS core stats timing math alg mesh partition poly opt discr ts filters material vf system pde ls fit models python fmi hwsys event viewfactor)
 foreach(dir ${DIRS})
   add_subdirectory(feel${dir})
 endforeach()
@@ -86,6 +71,19 @@ target_include_directories(feelpp PUBLIC
 IF ( FEELPP_ENABLE_JSON_DIAGNOSTICS )
   target_compile_definitions( feelpp PUBLIC  FEELPP_ENABLE_JSON_DIAGNOSTICS=1 )
 ENDIF()
+
+add_library(feelpp_kokkos_runtime SHARED feelcore/kokkosruntime.cpp)
+add_library(Feelpp::feelpp_kokkos_runtime ALIAS feelpp_kokkos_runtime)
+target_link_libraries(feelpp_kokkos_runtime PUBLIC Feelpp::feelpp)
+
+if(FEELPP_HAS_KOKKOS)
+  target_link_libraries(feelpp_kokkos_runtime PRIVATE Kokkos::kokkos)
+  add_library(feelpp_kokkos INTERFACE)
+  add_library(Feelpp::feelpp_kokkos ALIAS feelpp_kokkos)
+  target_link_libraries(feelpp_kokkos INTERFACE
+    Feelpp::feelpp_kokkos_runtime Kokkos::kokkos Kokkos::kokkoskernels)
+  install(TARGETS feelpp_kokkos EXPORT FeelppTargets COMPONENT Devel)
+endif()
 
 IF (FEELPP_HAS_LIBDL)
   target_link_libraries( feelpp PRIVATE ${DL_LIBRARY} )
@@ -327,6 +325,10 @@ endif()
 
 #target_link_libraries(feelpp ${FEELPP_LIBRARIES})
 include(GNUInstallDirs)
+install(TARGETS feelpp_kokkos_runtime EXPORT FeelppTargets
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Libs
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT Libs
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Libs)
 # Install feelpp
 install(TARGETS feelpp EXPORT FeelppTargets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Libs

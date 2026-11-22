@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-
-    SPDX-FileCopyrightText: 2026 University of Strasbourg
-
-    SPDX-License-Identifier: LGPL-3.0-or-later
-*/
+/*
+ * SPDX-FileContributor: Hanna Chetouane <h.chetouane@unistra.fr>
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2026-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feeldiscr/tensorformat.hpp>
@@ -29,7 +29,7 @@ using namespace Feel;
 
 namespace
 {
-using mesh_type = Mesh<Hypercube<3>>;
+using mesh_type = Mesh<Hypercube<3,Dynamic>>;
 
 po::options_description
 makeOptions()
@@ -138,7 +138,7 @@ std::shared_ptr<mesh_type>
 createUnitShellMesh()
 {
     Environment::changeRepository( _directory=boost::format( "quickstart/%1%/" ) % Environment::about().appName() );
-    return createGMSHMesh( _mesh=new mesh_type,
+    return createGMSHMesh( _mesh=new mesh_type( RuntimeOrder{1} ),
                            _desc=geo( _filename="qs_sb9_minimal_unit_shell.geo",
                                       _desc=unitShellGeo(),
                                       _dim=3,
@@ -162,10 +162,10 @@ main( int argc, char** argv )
     double const lambda = E * nu / ( ( 1.0 + nu ) * ( 1.0 - 2.0 * nu ) );
     double const mu = E / ( 2.0 * ( 1.0 + nu ) );
 
-    auto Uh = Pchv<1>( mesh );
-    auto Ah = Pdh<0>( mesh );
+    auto Uh = Pchv<Dynamic>( mesh, RuntimeOrder{1} );
+    auto Ah = Pdh<Dynamic>( mesh, RuntimeOrder{0} );
     auto Xh = productPtr( Uh, Ah );
-    auto Th = Pdhms<1>( mesh );
+    auto Th = Pdhms<Dynamic>( mesh, RuntimeOrder{1} );
 
     auto epsilon = Th->element( "epsilon" );
     auto sigma = Th->element( "sigma" );

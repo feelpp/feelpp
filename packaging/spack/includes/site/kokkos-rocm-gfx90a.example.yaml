@@ -1,0 +1,46 @@
+# Example MI210 architecture policy with the Spack-built ROCm toolchain.
+# Copy to a local configuration directory as packages.yaml and pass spack -C DIR.
+# Change the architecture and coherent ROCm version together for another site.
+packages:
+  kokkos:
+    require:
+    - "amdgpu_target=gfx90a"
+  hip:
+    require:
+    - "@7.2.0+rocm"
+  hipcc:
+    require:
+    - "@7.2.0"
+  hipify-clang:
+    require:
+    - "@7.2.0"
+  comgr:
+    require:
+    - "@7.2.0"
+  hsa-rocr-dev:
+    require:
+    - "@7.2.0+image+shared"
+  llvm-amdgpu:
+    require:
+    - "@7.2.0+rocm-device-libs"
+  rocminfo:
+    require:
+    - "@7.2.0"
+  rocm-core:
+    require:
+    - "@7.2.0"
+  rocm-cmake:
+    require:
+    - "@7.2.0"
+  rocprofiler-register:
+    require:
+    - "@7.2.0"
+  roctracer-dev-api:
+    require:
+    - "@7.2.0"
+  rocprim:
+    require:
+    - "@7.2.0 amdgpu_target=gfx90a"
+  rocthrust:
+    require:
+    - "@7.2.0 amdgpu_target=gfx90a"

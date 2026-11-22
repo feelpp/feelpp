@@ -1,1 +1,5 @@
+# SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+# SPDX-FileCopyrightText: 2026 University of Strasbourg
+# SPDX-License-Identifier: LGPL-3.0-or-later
 quarterturn-mixed --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/quarter-turn/darcy-quarter-turn3D.cfg --no-export
+runtime-rt1-g2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/quarter-turn/darcy-quarter-turn3D.cfg --darcy.flux-family=rt --darcy.order=1 --geometry.order=2 --gmsh.hsize=0.5 --functions.f={0,0,0}:x:y:z --functions.g=1 --solution.V=0 --solution.j={0,0,0}:x:y:z --ksp-type=preonly --pc-type=lu --checks.tolerance=1e-8 --directory=qs_darcy/runtime-rt1-g2 --no-export

@@ -515,9 +515,12 @@ public :
 #else
                     ublas::column(ptsReal,0 ) = gmc->xReal( q );
                     if (notUseOptLocTest) testIdElt=invalid_v<size_type>;
-                    auto resLocalisationTest = meshTestLocalization->run_analysis(ptsReal,testIdElt,faceCur.vertices(),mpl::int_<0>());
-                    testIdElt = resLocalisationTest.template get<1>();
-                    testNodeRef = meshTestLocalization->result_analysis().begin()->second.begin()->template get<1>();
+                    auto resLocalisationTest =
+                        meshTestLocalization->template localize<
+                            LocalizationPolicy::Unconstrained>(
+                                ptsReal, testIdElt, faceCur.vertices() );
+                    testIdElt = resLocalisationTest.lastElementId;
+                    testNodeRef = meshTestLocalization->resultAnalysis().begin()->second.begin()->template get<1>();
 #endif
                     testEltToPtsQuad[testIdElt].push_back( boost::make_tuple( idq,q,testNodeRef ) );
                 }
@@ -579,9 +582,12 @@ public :
 #else
                     ublas::column(ptsReal,0 ) = gmc->xReal( q );
                     if (notUseOptLocTest) testIdElt=invalid_v<size_type>;
-                    auto resLocalisationTest = meshTestLocalization->run_analysis(ptsReal,testIdElt,eltCur.vertices(),mpl::int_<0>());
-                    testIdElt = resLocalisationTest.template get<1>();
-                    testNodeRef = meshTestLocalization->result_analysis().begin()->second.begin()->template get<1>();
+                    auto resLocalisationTest =
+                        meshTestLocalization->template localize<
+                            LocalizationPolicy::Unconstrained>(
+                                ptsReal, testIdElt, eltCur.vertices() );
+                    testIdElt = resLocalisationTest.lastElementId;
+                    testNodeRef = meshTestLocalization->resultAnalysis().begin()->second.begin()->template get<1>();
 #endif
 
                     testEltToPtsQuad[testIdElt].push_back( boost::make_tuple( idq,q,testNodeRef ) );
@@ -682,9 +688,12 @@ public :
                     if (!quadMeshIsSameThatTrialMesh)
                     {
                         if (notUseOptLocTrial) trialIdElt=invalid_v<size_type>;
-                        auto resLocalisationTrial = meshTrialLocalization->run_analysis(ptsReal,trialIdElt,faceCur.vertices(),mpl::int_<0>());
-                        trialIdElt = resLocalisationTrial.template get<1>();
-                        trialNodeRef = meshTrialLocalization->result_analysis().begin()->second.begin()->template get<1>();
+                        auto resLocalisationTrial =
+                            meshTrialLocalization->template localize<
+                                LocalizationPolicy::Unconstrained>(
+                                    ptsReal, trialIdElt, faceCur.vertices() );
+                        trialIdElt = resLocalisationTrial.lastElementId;
+                        trialNodeRef = meshTrialLocalization->resultAnalysis().begin()->second.begin()->template get<1>();
                     }
                     else
                     {
@@ -697,9 +706,12 @@ public :
                     if (!quadMeshIsSameThatTestMesh)
                     {
                         if (notUseOptLocTest) testIdElt=invalid_v<size_type>;
-                        auto resLocalisationTest = meshTestLocalization->run_analysis(ptsReal,testIdElt,faceCur.vertices(),mpl::int_<0>());
-                        testIdElt = resLocalisationTest.template get<1>();
-                        testNodeRef = meshTestLocalization->result_analysis().begin()->second.begin()->template get<1>();
+                        auto resLocalisationTest =
+                            meshTestLocalization->template localize<
+                                LocalizationPolicy::Unconstrained>(
+                                    ptsReal, testIdElt, faceCur.vertices() );
+                        testIdElt = resLocalisationTest.lastElementId;
+                        testNodeRef = meshTestLocalization->resultAnalysis().begin()->second.begin()->template get<1>();
                     }
                     else
                     {
@@ -813,9 +825,12 @@ public :
                     if (!quadMeshIsSameThatTrialMesh)
                     {
                         if (notUseOptLocTrial) trialIdElt=invalid_v<size_type>;
-                        auto resLocalisationTrial = meshTrialLocalization->run_analysis(ptsReal,trialIdElt,eltCur.vertices(),mpl::int_<0>());
-                        trialIdElt = resLocalisationTrial.template get<1>();
-                        trialNodeRef = meshTrialLocalization->result_analysis().begin()->second.begin()->template get<1>();
+                        auto resLocalisationTrial =
+                            meshTrialLocalization->template localize<
+                                LocalizationPolicy::Unconstrained>(
+                                    ptsReal, trialIdElt, eltCur.vertices() );
+                        trialIdElt = resLocalisationTrial.lastElementId;
+                        trialNodeRef = meshTrialLocalization->resultAnalysis().begin()->second.begin()->template get<1>();
                     }
                     else
                     {
@@ -829,9 +844,12 @@ public :
                     if (!quadMeshIsSameThatTestMesh)
                     {
                         if (notUseOptLocTest) testIdElt=invalid_v<size_type>;
-                        auto resLocalisationTest = meshTestLocalization->run_analysis(ptsReal,testIdElt,eltCur.vertices(),mpl::int_<0>());
-                        testIdElt = resLocalisationTest.template get<1>();
-                        testNodeRef = meshTestLocalization->result_analysis().begin()->second.begin()->template get<1>();
+                        auto resLocalisationTest =
+                            meshTestLocalization->template localize<
+                                LocalizationPolicy::Unconstrained>(
+                                    ptsReal, testIdElt, eltCur.vertices() );
+                        testIdElt = resLocalisationTest.lastElementId;
+                        testNodeRef = meshTestLocalization->resultAnalysis().begin()->second.begin()->template get<1>();
                     }
                     else
                     {

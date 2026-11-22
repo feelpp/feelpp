@@ -1,11 +1,10 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-
-    SPDX-FileCopyrightText: 2026 University of Strasbourg
-
-    SPDX-License-Identifier: LGPL-3.0-or-later
-*/
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2026-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feeldiscr/tensorformat.hpp>
@@ -481,8 +480,8 @@ main( int argc, char** argv )
         };
 
         ticIf();
-        auto Uh = Pchv<1>( mesh );
-        auto Ah = Pdh<0>( mesh );
+        auto Uh = Pchv<Dynamic>( mesh, RuntimeOrder{1} );
+        auto Ah = Pdh<Dynamic>( mesh, RuntimeOrder{0} );
         auto Xh = productPtr( Uh, Ah );
         auto algebraBackend = backend( _rebuild=true, _worldcomm=Uh->worldCommPtr() );
         tocIf( "sb9.spaces" );
@@ -790,9 +789,9 @@ main( int argc, char** argv )
         auto uh = X( 0_c );
         auto alphah = X( 1_c );
 
-        auto scalarSpace = Pch<1>( mesh );
-        auto thicknessSpace = Pdh<0>( mesh );
-        auto symmetricSpace = Pdhms<1>( mesh );
+        auto scalarSpace = Pch<Dynamic>( mesh, RuntimeOrder{1} );
+        auto thicknessSpace = Pdh<Dynamic>( mesh, RuntimeOrder{0} );
+        auto symmetricSpace = Pdhms<Dynamic>( mesh, RuntimeOrder{1} );
         auto shellThicknessField = vf::project( _space=thicknessSpace, _range=elements( mesh ), _expr=shellThickness() );
         auto shellAreaField = vf::project( _space=thicknessSpace, _range=elements( mesh ), _expr=shellArea0() );
         auto normalDispField = vf::project( _space=scalarSpace,

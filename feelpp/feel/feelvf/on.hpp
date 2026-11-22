@@ -1,28 +1,13 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2006-2011 Universite Joseph Fourier (Grenoble I)
+ * SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-03-15
-
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2006-2011 Universite Joseph Fourier (Grenoble I)
-  Copyright (C) 2011-2016 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file integratoron.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -34,6 +19,7 @@
 #include <feel/feelalg/enums.hpp>
 #include <feel/feelalg/vectorblock.hpp>
 #include <feel/feelalg/vectorcondensed.hpp>
+#include <feel/feelvf/field.hpp>
 #include <feel/feelvf/dirichletconstraints.hpp>
 namespace Feel
 {
@@ -467,7 +453,9 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onElements( std::shared_
                 expr_evaluator.update( mapgmc( ctx ) );
                 fe->interpolate( expr_evaluator, IhLoc );
 
-                auto const& s = dof->localToGlobalSigns( curElt.id() );
+                auto canonicalIh = IhLoc;
+                dof->mapLocalToCanonicalDofCoefficients(
+                    curElt.id(), canonicalIh );
                 for( auto const& ldof : dof->localDof( curElt.id() ) )
                 {
                     //size_type index = ldof.second.index();
@@ -477,7 +465,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onElements( std::shared_
                         continue;
 
                     uint16_type thelocdof = ldof.first.localDof();
-                    double __value = s(thelocdof)*IhLoc( thelocdof );
+                    double __value = canonicalIh( thelocdof );
 
                     if ( vf::isEliminationDirichlet( M_on_strategy ) || vf::isPenalisationDirichlet( M_on_strategy ) )
                     {
@@ -598,17 +586,17 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onFaces( std::shared_ptr
 
         auto expr_evaluator = M_expr.evaluator( vf::mapgmc(ctx) );
 
-        DVLOG(2)  << "face_type::numVertices = " << face_type::numVertices << ", fe_type::nDofPerVertex = " << fe_type::nDofPerVertex << "\n"
-                  << "face_type::numEdges = " << face_type::numEdges << ", fe_type::nDofPerEdge = " << fe_type::nDofPerEdge << "\n"
-                  << "face_type::numFaces = " << face_type::numFaces << ", fe_type::nDofPerFace = " << fe_type::nDofPerFace << "\n";
+        DVLOG(2)  << "face_type::numVertices = " << face_type::numVertices << ", dofPerVertex = " << __fe->dofPerVertex() << "\n"
+                  << "face_type::numEdges = " << face_type::numEdges << ", dofPerEdge = " << __fe->dofPerEdge() << "\n"
+                  << "face_type::numFaces = " << face_type::numFaces << ", dofPerFace = " << __fe->dofPerFace() << "\n";
 #if 0
         index_type nbFaceDof = invalid_v<index_type>;
         if ( !fe_type::is_modal )
-            nbFaceDof = ( face_type::numVertices * fe_type::nDofPerVertex +
-                          face_type::numEdges * fe_type::nDofPerEdge +
-                          face_type::numFaces * fe_type::nDofPerFace );
+            nbFaceDof = ( face_type::numVertices * __fe->dofPerVertex() +
+                          face_type::numEdges * __fe->dofPerEdge() +
+                          face_type::numFaces * __fe->dofPerFace() );
         else
-            nbFaceDof = face_type::numVertices * fe_type::nDofPerVertex;
+            nbFaceDof = face_type::numVertices * __fe->dofPerVertex();
         DVLOG(2)  << "nbFaceDof = " << nbFaceDof << "\n";
         //const index_type nbFaceDof = __fe->boundaryFE()->points().size2();
 #endif
@@ -733,15 +721,36 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::onFaces( std::shared_ptr
             //use interpolant
             __fe->faceInterpolate( expr_evaluator, IhLoc );
 
+            // Mapped moment elements store orientation separately from the
+            // legacy FaceDof sign. Reuse Element::assign()'s canonical map,
+            // including the coupled tangential face-moment transformations.
+            auto const canonicalIh = [&]()
+            {
+                if constexpr ( is_hdiv_conforming_v<fe_type> || is_hcurl_conforming_v<fe_type> )
+                    return M_u.canonicalFaceLocalInterpolant(
+                        theface, theface.element( faceConnectionId ).id(), IhLoc );
+                else
+                    return IhLoc;
+            }();
+
             for( auto const& ldof : M_u.functionSpace()->dof()->faceLocalDof( theface.id() ) )
                 {
                     index_type thedof = (is_comp_space)? compDofShift+Elem1::nComponents*ldof.index() : ldof.index();
+                    CHECK( thedof < trialDofIdToContainerId.size() )
+                        << "Invalid trial dof id in onFaces(): dof=" << thedof
+                        << " map-size=" << trialDofIdToContainerId.size()
+                        << " face-id=" << theface.id();
                     thedof = trialDofIdToContainerId[ thedof ];
 
-                    DCHECK( ldof.localDofInFace() < IhLoc.size() )
-                        << "Invalid local dof index in face for face Interpolant "
-                        << ldof.localDofInFace() << ">=" << IhLoc.size();
-                    double __value = ldof.sign()*IhLoc( ldof.localDofInFace() );
+                    CHECK( ldof.localDofInFace() < IhLoc.size() )
+                        << "Invalid local dof index in face for face interpolant: "
+                        << ldof.localDofInFace() << " >= " << IhLoc.size()
+                        << " (face-id=" << theface.id() << ")";
+                    double __value;
+                    if constexpr ( is_hdiv_conforming_v<fe_type> || is_hcurl_conforming_v<fe_type> )
+                        __value = canonicalIh( ldof.localDof() );
+                    else
+                        __value = ldof.sign()*IhLoc( ldof.localDofInFace() );
                     DVLOG(3) << " on " << theface.id() << " thedof "<< thedof << " = " << __value
                              << " start=" << M_u.start() << " ldof=" << ldof.index() << "\n";
                     if ( std::find( dofs.begin(),
@@ -1193,7 +1202,7 @@ auto on( Ts && ... v )
     // NOTE : the line below allows to defined element as an lvalue or rvalue (as given when called the function) : TODO : add api in NApp
     auto && element = std::move(args.template getArgument<na::element>()).value();
     auto && rhs = args.get(_rhs);
-    auto && expr = args.get(_expr);
+    auto expr = Feel::vf::toValueExpression( args.get(_expr) );
     po::variables_map const& vm = args.get_else( _vm, Environment::vm() );
     std::string const& prefix = args.get_else(_prefix,"");
     std::string const& type = args.get_else_invocable(_type,[&prefix,&vm](){ return soption(_prefix=prefix,_name="on.type",_vm=vm); } );

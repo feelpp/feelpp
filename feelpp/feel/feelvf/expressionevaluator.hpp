@@ -1,27 +1,10 @@
-/* -*- mode: c++ -*-
-
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2009-11-24
-
-  Copyright (C) 2009-2012 Universite Joseph Fourier (Grenoble I)
-  Copyright (C) 2011-present Feel++ Consortium
-  
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Romain Hild <romain.hild@cemosis.fr>
+ * SPDX-FileCopyrightText: 2009-2012 Universite Joseph Fourier (Grenoble I)
+ * SPDX-FileCopyrightText: 2011-2026 University of Strasbourg
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
 #ifndef FEELPP_EXPRESSION_EVALUATOR_HPP
 #define FEELPP_EXPRESSION_EVALUATOR_HPP
@@ -112,7 +95,7 @@ ExpressionEvaluator<RangeType, ExprT>::init(int o)
     auto q = _Q(o);
 
     using iim_type = vf::detail::integrate_im_type<decltype(this->M_range),decltype(M_expr),decltype(q),decltype(q)>;
-    auto ims = iim_type::im(q,q,M_expr);
+    auto ims = iim_type::im(q,q,M_expr,iim_type::expr_order_t::geometryOrder(this->M_range));
     auto im = ims.first;
     auto pts = im.points();
     auto gm = eltForInit.gm();

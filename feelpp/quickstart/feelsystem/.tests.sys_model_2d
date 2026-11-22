@@ -1,0 +1,2 @@
+smoke --directory=qs_sys/model
+fe-p2-geometry-g2 --order=2 --geometry.order=2 --directory=qs_sys/model_p2_g2

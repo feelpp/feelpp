@@ -29,9 +29,8 @@
 #include <feel/feelcore/warnon.hpp>
 // clang-format on
 
-#if 0
-#include <Eigen/Core>
-#endif
+#include <feel/feelpoly/jacobirecurrence.hpp>
+#include <feel/feelalg/eigenmap.hpp>
 
 #include <feel/feelcore/traits.hpp>
 
@@ -58,642 +57,94 @@ namespace ublas=boost::numeric::ublas;
  * @see Karniadakis and Sherwin "Spectral/hp element methods for CFD"
  */
 template<int N, typename T = double>
-class Jacobi
+class Jacobi : public JacobiPolynomial<N, T>
 {
+    using super = JacobiPolynomial<N, T>;
 public:
-
-    /** @name Static values
-     */
-    //@{
-
-    static const int order = N;
-    static const int nOrder = N;
-
-    //@}
-
-    /** @name Typedefs
-     */
-    //@{
-
-    typedef T value_type;
-    typedef Jacobi<N, T> self_type;
-
-    //@}
-
-    /** @name Constructors, destructor
-     */
-    //@{
-
-
-    /**
-     * default values for a and b give the special case of Legendre
-     * polynomials
-     */
-    Jacobi( value_type a = value_type( 0.0 ), value_type b = value_type( 0.0 ) )
-        :
-        M_a( a ),
-        M_b( b )
-    {}
-
-    Jacobi( Jacobi const & p )
-        :
-        M_a( p.M_a ),
-        M_b( p.M_b )
-    {}
-
-    ~Jacobi()
-    {}
-
-    //@}
-
-    /** @name Operator overloads
-     */
-    //@{
-
-    self_type& operator=( self_type const& p )
-    {
-        if ( this != &p )
-        {
-            M_a = p.M_a;
-            M_b = p.M_b;
-        }
-
-        return *this;
-    }
-
-    /**
-     * Evaluates the nth jacobi polynomial with weight parameters a,b
-     * at a point x. Recurrence relations implemented from the
-     * pseudocode given in Karniadakis and Sherwin, Appendix B
-     *
-     * a and b are defaulted to 0 and the Jacobi polynomial is then
-     * the Legendre polynomial
-     *
-     * \param x point for polynomial evaluation
-     * \return the value of the jacobi polynomial at \c x
-     */
-    value_type operator()( value_type const& x ) const;
-
-    //@}
-
-    /** @name Accessors
-     */
-    //@{
-
-    uint16_type degree() const
-    {
-        return N;
-    }
-
-    //@}
-
-    /** @name  Mutators
-     */
-    //@{
-
-
-    //@}
-
-    /** @name  Methods
-     */
-    //@{
-
-    /**
-     * Evaluates the nth jacobi polynomial with weight parameters a,b
-     * at a point x. Recurrence relations implemented from the
-     * pseudocode given in Karniadakis and Sherwin, Appendix B
-     *
-     * a and b are defaulted to 0 and the Jacobi polynomial is then
-     * the Legendre polynomial
-     *
-     * \param x point for polynomial evaluation
-     * \return the value of the jacobi polynomial at \c x
-     */
-    value_type value( value_type const& x ) const
-    {
-        return this->operator()( x );
-    }
-
-    value_type derivate( value_type const& x ) const;
-
-    //@}
-
-
-
-protected:
-
-private:
-    value_type M_a;
-    value_type M_b;
+    /** Legacy compile-time degree constant. */
+    static constexpr int order = N;
+    /** Compile-time expansion degree. */
+    static constexpr int nOrder = N;
+    /** Scalar type retained for quadrature clients. */
+    using value_type = T;
+    /** Compatibility self type. */
+    using self_type = Jacobi;
+    using super::super;
+    /** @brief Compatibility spelling of the mathematical derivative. */
+    [[nodiscard]] T derivate( T const& x ) const { return this->derivative( x ); }
 };
-template<int N, typename T>
-typename Jacobi<N, T>::value_type
-Jacobi<N, T>::operator()( value_type const& x ) const
-{
-    const value_type one = 1.0;
-    const value_type two = 2.0;
 
-    if constexpr ( N == 0 )
-        return one;
-
-    else if constexpr ( N == 1 )
-        return 0.5 * ( M_a - M_b + ( M_a + M_b + two ) * x );
-
-    else  // N >= 2
-    {
-        value_type apb = M_a + M_b;
-        value_type pn2 = one;
-        value_type pn1 = 0.5 * ( M_a - M_b + ( apb + two ) * x );
-        value_type p = 0.0;
-
-        for ( int k = 2; k < N+1; ++k )
-        {
-            value_type kv = value_type( k );
-            value_type a1 = two * kv * ( kv + apb ) * ( two * kv + apb - two );
-            value_type a2 = ( two * kv + apb - one ) * ( M_a * M_a - M_b * M_b );
-            value_type a3 = ( ( two * kv + apb - two )
-                              * ( two * kv + apb - one )
-                              * ( two * kv + apb ) );
-            value_type a4 = ( two * ( kv + M_a - one ) * ( kv + M_b - one )
-                              * ( two * kv + apb ) );
-
-            p = ( ( a2 + a3 * x ) * pn1 - a4 * pn2 )/a1;
-            pn2 = pn1;
-            pn1 = p;
-        }
-
-        return p;
-    }
-}
-template<int N, typename T>
-typename Jacobi<N, T>::value_type
-Jacobi<N, T>::derivate( value_type const& x ) const
-{
-    if constexpr (  N == 0 )
-        return 0.0;
-    else
-    {
-        Jacobi<N-1, T> dp( M_a + 1.0, M_b + 1.0 );
-        value_type Nv = value_type( N );
-        return 0.5 * ( M_a  + M_b + Nv + 1.0 ) * dp( x );
-    }
-}
 namespace dyna
 {
-/**
- * \class Jacobi
- * \brief 1D Jacobi polynomial
- *
- * (excerpt from Karniadakis/Sherwin Appendix A)
- * Jacobi polynomials \f$ P^{\alpha,beta}_n(x)\f$ are a family of
- * polynomial to the singular Sturm-Liouville problem. A significant
- * feature of these polynomials is that they are orthogonal in the
- * interval \f$[-1,1]\f$ with respect to the function
- * \f$(1-x)^\alpha(1+x)^\beta (\alpha,\beta > -1)\f$
- *
- * Several functions related to the one-dimensional jacobi
- * polynomials: Evaluation, evaluation of derivatives, plus
- * computation of the roots via Newton's method.
- *
- * \ingroup Polynomial
- * @author Christophe Prud'homme
- * @see Karniadakis and Sherwin "Spectral/hp element methods for CFD"
+/** @brief Compatibility facade for a runtime-degree Jacobi polynomial.
+ * @tparam T Scalar type; the recurrence is shared with static polynomials.
  */
 template<typename T = double>
-class Jacobi
+class Jacobi : public JacobiPolynomial<Dynamic, T>
 {
+    using super = JacobiPolynomial<Dynamic, T>;
 public:
-
-    /** @name Static values
-     */
-    //@{
-
-    //@}
-
-    /** @name Typedefs
-     */
-    //@{
-
-    typedef T value_type;
-    typedef Jacobi<T> self_type;
-
-    //@}
-
-    /** @name Constructors, destructor
-     */
-    //@{
-
-
-    /**
-     * default values for a and b give the special case of Legendre
-     * polynomials
-     */
-    Jacobi( uint16_type N, value_type a = value_type( 0.0 ), value_type b = value_type( 0.0 ) )
-        :
-        M_degree( N ),
-        M_a( a ),
-        M_b( b )
-    {}
-
-    Jacobi( Jacobi const & p )
-        :
-        M_degree( p.M_degree ),
-        M_a( p.M_a ),
-        M_b( p.M_b )
-    {}
-
-    ~Jacobi()
-    {}
-
-    //@}
-
-    /** @name Operator overloads
-     */
-    //@{
-
-    self_type& operator=( self_type const& p )
-    {
-        if ( this != &p )
-        {
-            M_degree = p.M_degree;
-            M_a = p.M_a;
-            M_b = p.M_b;
-        }
-
-        return *this;
-    }
-
-    /**
-     * Evaluates the nth jacobi polynomial with weight parameters a,b
-     * at a point \p x. Recurrence relations implemented from the
-     * pseudocode given in Karniadakis and Sherwin, Appendix B
-     *
-     * a and b are defaulted to 0 and the Jacobi polynomial is then
-     * the Legendre polynomial
-     *
-     * \param x point for polynomial evaluation
-     * \return the value of the jacobi polynomial at \c x
-     */
-    value_type operator()( value_type const& x ) const;
-
-    //@}
-
-    /** @name Accessors
-     */
-    //@{
-
-    uint16_type degree() const
-    {
-        return M_degree;
-    }
-
-    //@}
-
-    /** @name  Mutators
-     */
-    //@{
-
-    void setDegree( uint16_type N )
-    {
-        M_degree = N;
-    }
-
-    //@}
-
-    /** @name  Methods
-     */
-    //@{
-
-    /**
-     * Evaluates the nth jacobi polynomial with weight parameters a,b
-     * at a point x. Recurrence relations implemented from the
-     * pseudocode given in Karniadakis and Sherwin, Appendix B
-     *
-     * a and b are defaulted to 0 and the Jacobi polynomial is then
-     * the Legendre polynomial
-     *
-     * \param x point for polynomial evaluation
-     * \return the value of the jacobi polynomial at \c x
-     */
-    value_type value( value_type const& x ) const
-    {
-        return this->operator()( x );
-    }
-
-    value_type derivate( value_type const& x ) const;
-
-    //@}
-
-
-
-protected:
-
-private:
-    uint16_type M_degree;
-    value_type M_a;
-    value_type M_b;
+    /** Scalar type retained for quadrature clients. */
+    using value_type = T;
+    /** Compatibility self type. */
+    using self_type = Jacobi;
+    /** @brief Construct a validated runtime-degree Jacobi polynomial. */
+    Jacobi( int degree, T a = T( 0 ), T b = T( 0 ) )
+        : super( RuntimeOrder{ degree }, a, b ) {}
+    /** @brief Change the runtime degree after checking its supported range. */
+    void setDegree( int degree ) { this->setOrderChecked( degree ); }
+    /** @brief Compatibility spelling of the mathematical derivative. */
+    [[nodiscard]] T derivate( T const& x ) const { return this->derivative( x ); }
 };
+} // namespace dyna
+
+namespace detail
+{
+/** @brief Allocate a checked final legacy table before a shared kernel fills it. */
 template<typename T>
-typename Jacobi<T>::value_type
-Jacobi<T>::operator()( value_type const& x ) const
+[[nodiscard]] ublas::matrix<T> makeLegacyPolynomialTable( Eigen::Index rows, std::size_t samples )
 {
-    const uint16_type N = this->M_degree;
-    const value_type one = 1.0;
-    const value_type two = 2.0;
-
-    if ( N == 0 )
-        return one;
-
-    else if ( N == 1 )
-        return 0.5 * ( M_a - M_b + ( M_a + M_b + two ) * x );
-
-    else  // N >= 2
-    {
-        value_type apb = M_a + M_b;
-        value_type pn2 = one;
-        value_type pn1 = 0.5 * ( M_a - M_b + ( apb + two ) * x );
-        value_type p = 0.0;
-
-        for ( uint16_type k = 2; k < N+1; ++k )
-        {
-            value_type kv = value_type( k );
-            value_type a1 = two * kv * ( kv + apb ) * ( two * kv + apb - two );
-            value_type a2 = ( two * kv + apb - one ) * ( M_a * M_a - M_b * M_b );
-            value_type a3 = ( ( two * kv + apb - two )
-                              * ( two * kv + apb - one )
-                              * ( two * kv + apb ) );
-            value_type a4 = ( two * ( kv + M_a - one ) * ( kv + M_b - one )
-                              * ( two * kv + apb ) );
-
-            p = ( ( a2 + a3 * x ) * pn1 - a4 * pn2 )/a1;
-            pn2 = pn1;
-            pn1 = p;
-        }
-
-        return p;
-    }
+    if ( samples > static_cast<std::size_t>( std::numeric_limits<Eigen::Index>::max() ) )
+        throw std::length_error( "legacy polynomial sample count exceeds Eigen::Index" );
+    (void)matrixElementCount( rows, static_cast<Eigen::Index>( samples ), sizeof( T ) );
+    return ublas::matrix<T>( rows, samples );
 }
+} // namespace detail
+
+/** @brief Legacy batch-value boundary forwarding to the Eigen recurrence. */
 template<typename T>
-typename Jacobi<T>::value_type
-Jacobi<T>::derivate( value_type const& x ) const
+ublas::matrix<T> JacobiBatchEvaluation( int degree, T a, T b, ublas::vector<T> const& points )
 {
-    const uint16_type N = this->M_degree;
-
-    if (  N == 0 )
-        return 0.0;
-
-    Jacobi<T> dp( N-1, M_a + 1.0, M_b + 1.0 );
-    value_type Nv = value_type( N );
-    return 0.5 * ( M_a  + M_b + Nv + 1.0 ) * dp( x );
-}
+    JacobiPolynomial<Dynamic, T> polynomial{ RuntimeOrder{ degree }, a, b };
+    auto result = ::Feel::detail::makeLegacyPolynomialTable<T>( polynomial.degree() + 1, points.size() );
+    auto output = eigenMap( result );
+    polynomial.valuesInto( output, eigenMap( points ) );
+    return result;
 }
 
-#if 0
-template<uint16_type N, typename T>
-typename Eigen::Matrix<T,N+1,Eigen::Dynamic>
-JacobiBatchEvaluation( T a, T b, Matrix<T,Eigen::Dynamic,1> const& __pts )
-{
-    typedef T value_type;
-    typedef Eigen::Matrix<T,Eigen::Dynamic,N+1> matrix_type;
-    typedef Eigen::Matrix<T,Eigen::Dynamic,1> vector_type;
-    matrix_type res( __pts.size(), N+1 );
-    res.col( 0 ).setOnes();
-
-    if ( N > 0 )
-    {
-        //ublas::col( res, 1 ) = 0.5 * ( ublas::scalar_vector<value_type>( res.size2(), a - b) + ( a + b + 2.0 ) * __pts );
-        res.col( 1 ) = 0.5*( res.col( 1 ).Constant( res.rows(),a-b )+( a+b+2 )*__pts );
-        value_type apb = a + b;
-
-        for ( int k = 2; k < N+1; ++k )
-        {
-            value_type kv = value_type( k );
-            value_type a1 = 2.0 * kv * ( kv + apb ) * ( 2.0 * kv + apb - 2.0 );
-            value_type a2 = ( 2.0 * kv + apb - 1.0 ) * ( a * a - b * b );
-            value_type a3 = ( 2.0 * kv + apb - 2.0 ) * ( 2.0 * kv + apb - 1.0 ) * ( 2.0 * kv + apb );
-            value_type a4 = 2.0 * ( kv + a - 1.0 ) * ( kv + b - 1.0 ) * ( 2.0 * kv + apb );
-            a2 = a2 / a1;
-            a3 = a3 / a1;
-            a4 = a4 / a1;
-
-            res.col( k ) =
-                ( a2* res.col( k-1 ) +
-                  a3 * ( __pts.cwise()*res.col( k-1 ) ) -
-                  a4 * res.col( k-2 ) );
-        }
-    }
-
-    return res.transpose();
-}
-template<typename T,uint16_type N, uint16_type Np>
-typename Eigen::Matrix<T,N+1,Np>
-JacobiBatchEvaluation( T a, T b, Matrix<T,Np,1> const& __pts )
-{
-    typedef T value_type;
-    typedef Eigen::Matrix<T,Np,N+1> matrix_type;
-    typedef Eigen::Matrix<T,Np,1> vector_type;
-    matrix_type res( Np, N+1 );
-    res.col( 0 ).setOnes();
-
-    if ( N > 0 )
-    {
-        //ublas::col( res, 1 ) = 0.5 * ( ublas::scalar_vector<value_type>( res.size2(), a - b) + ( a + b + 2.0 ) * __pts );
-        res.col( 1 ) = 0.5*( res.col( 1 ).Constant( res.rows(),a-b )+( a+b+2 )*__pts );
-        value_type apb = a + b;
-
-        for ( int k = 2; k < N+1; ++k )
-        {
-            value_type kv = value_type( k );
-            value_type a1 = 2.0 * kv * ( kv + apb ) * ( 2.0 * kv + apb - 2.0 );
-            value_type a2 = ( 2.0 * kv + apb - 1.0 ) * ( a * a - b * b );
-            value_type a3 = ( 2.0 * kv + apb - 2.0 ) * ( 2.0 * kv + apb - 1.0 ) * ( 2.0 * kv + apb );
-            value_type a4 = 2.0 * ( kv + a - 1.0 ) * ( kv + b - 1.0 ) * ( 2.0 * kv + apb );
-            a2 = a2 / a1;
-            a3 = a3 / a1;
-            a4 = a4 / a1;
-
-            res.col( k ) =
-                ( a2* res.col( k-1 ) +
-                  a3 * ( __pts.cwise()*res.col( k-1 ) ) -
-                  a4 * res.col( k-2 ) );
-        }
-    }
-
-    return res.transpose();
-}
-#endif // 0 - Eigen
-
+/** @brief Legacy batch-derivative boundary forwarding to the shifted recurrence. */
 template<typename T>
-ublas::matrix<T>
-JacobiBatchEvaluation( int N, T a, T b, ublas::vector<T> const& __pts )
+ublas::matrix<T> JacobiBatchDerivation( int degree, T a, T b, ublas::vector<T> const& points )
 {
-    typedef T value_type;
-    ublas::matrix<T> res( N+1, __pts.size() );
-    ublas::row( res, 0 ) = ublas::scalar_vector<value_type>( res.size2(), 1.0 );
-
-    if ( N > 0 )
-    {
-        ublas::row( res, 1 ) = 0.5 * ( ublas::scalar_vector<value_type>( res.size2(), a - b ) + ( a + b + 2.0 ) * __pts );
-        value_type apb = a + b;
-
-        for ( int k = 2; k < N+1; ++k )
-        {
-            value_type kv = value_type( k );
-            value_type a1 = 2.0 * kv * ( kv + apb ) * ( 2.0 * kv + apb - 2.0 );
-            value_type a2 = ( 2.0 * kv + apb - 1.0 ) * ( a * a - b * b );
-            value_type a3 = ( 2.0 * kv + apb - 2.0 ) * ( 2.0 * kv + apb - 1.0 ) * ( 2.0 * kv + apb );
-            value_type a4 = 2.0 * ( kv + a - 1.0 ) * ( kv + b - 1.0 ) * ( 2.0 * kv + apb );
-            a2 = a2 / a1;
-            a3 = a3 / a1;
-            a4 = a4 / a1;
-
-            ublas::row( res, k ) = a2* ublas::row( res, k-1 ) +
-                                   a3 * ublas::element_prod( __pts, ublas::row( res, k-1 ) ) -
-                                   a4 * ublas::row( res, k-2 );
-        }
-    }
-
-    return res;
+    JacobiPolynomial<Dynamic, T> polynomial{ RuntimeOrder{ degree }, a, b };
+    auto result = ::Feel::detail::makeLegacyPolynomialTable<T>( polynomial.degree() + 1, points.size() );
+    auto output = eigenMap( result );
+    polynomial.derivativesInto( output, eigenMap( points ) );
+    return result;
 }
-
-template<typename T>
-ublas::matrix<T>
-JacobiBatchDerivation( int  N, T a, T b, ublas::vector<T> const& __pts )
-{
-    typedef T value_type;
-    ublas::matrix<T> res( N+1, __pts.size() );
-    ublas::row( res, 0 ) = ublas::scalar_vector<value_type>( res.size2(), 0.0 );
-    if ( N > 0 )
-    {
-        typedef T value_type;
-        ublas::subrange( res, 1, N+1, 0, __pts.size() ) = JacobiBatchEvaluation<T>( N-1, a+1.0, b+1.0, __pts );
-
-        for ( uint16_type i = 1; i < N+1; ++i )
-            ublas::row( res, i ) *= 0.5*( a+b+value_type( i )+1.0 );
-    }
-    return res;
-}
-
-
-#if 0
-template<uint16_type N, typename T>
-Eigen::Matrix<T,N+1,Eigen::Dynamic>
-JacobiBatchDerivation( T a, T b, Eigen::Matrix<T,Eigen::Dynamic,1> const& __pts )
-{
-    typedef T value_type;
-    Eigen::Matrix<T,N+1,Eigen::Dynamic> res( N+1, __pts.size() );
-    res.row( 0 ).setZero();
-
-    if ( N > 0 )
-    {
-        res.block( 1, 0, N, __pts.size() ) = JacobiBatchEvaluation<N-1, T>( a+1.0, b+1.0, __pts );
-
-        //ublas::subrange( res, 1, N+1, 0, __pts.size() ) = JacobiBatchEvaluation<N-1, T>( a+1.0, b+1.0, __pts );
-        for ( uint16_type i = 1; i < N+1; ++i )
-            res.row( i ) *= 0.5*( a+b+value_type( i )+1.0 );
-    }
-
-    return res;
-}
-template<typename T,
-         uint16_type N,
-         uint16_type Ncols>
-Eigen::Matrix<T,N+1,Ncols>
-JacobiBatchDerivation( T a, T b, Eigen::Matrix<T,Ncols,1> const& __pts )
-{
-    typedef T value_type;
-    Eigen::Matrix<T,N+1,Ncols> res;
-    res.row( 0 ).setZero();
-
-    if ( N > 0 )
-    {
-        res.block( 1, 0, N, __pts.size() ) = JacobiBatchEvaluation<T,N-1,Ncols>( a+1.0, b+1.0, __pts );
-
-        //ublas::subrange( res, 1, N+1, 0, __pts.size() ) = JacobiBatchEvaluation<N-1, T>( a+1.0, b+1.0, __pts );
-        for ( uint16_type i = 1; i < N+1; ++i )
-            res.row( i ) *= 0.5*( a+b+value_type( i )+1.0 );
-    }
-
-    return res;
-}
-template<typename T>
-Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic>
-JacobiBatchDerivation( uint16_type N,
-                       T a, T b, Eigen::Matrix<T,Eigen::Dynamic,1> const& __pts )
-{
-    typedef T value_type;
-    Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> res( N+1, __pts.size() );
-    res.row( 0 ).setZero();
-
-    if ( N > 0 )
-    {
-        res.block( 1, 0, N, __pts.size() ) = JacobiBatchEvaluation<T>( N-1,
-                                             a+1.0,
-                                             b+1.0,
-                                             __pts );
-
-        for ( uint16_type i = 1; i < N+1; ++i )
-            res.row( i ) *= 0.5*( a+b+value_type( i )+1.0 );
-    }
-
-    return res;
-}
-#endif // 0 - Eigen
 
 namespace dyna
 {
+/** @brief Runtime compatibility spelling of the shared value boundary. */
 template<typename T>
-ublas::matrix<T>
-JacobiBatchEvaluation( uint16_type N, T a, T b, ublas::vector<T> const& __pts )
-{
-    typedef T value_type;
-    ublas::matrix<T> res( N+1, __pts.size() );
-    ublas::row( res, 0 ) = ublas::scalar_vector<value_type>( res.size2(), 1.0 );
+ublas::matrix<T> JacobiBatchEvaluation( uint16_type degree, T a, T b, ublas::vector<T> const& points )
+{ return Feel::JacobiBatchEvaluation( static_cast<int>( degree ), a, b, points ); }
 
-    if ( N > 0 )
-    {
-        ublas::row( res, 1 ) = 0.5 * ( ublas::scalar_vector<value_type>( res.size2(), a - b ) + ( a + b + 2.0 ) * __pts );
-        value_type apb = a + b;
-
-        for ( uint16_type k = 2; k < N+1; ++k )
-        {
-            value_type kv = value_type( k );
-            value_type a1 = 2.0 * kv * ( kv + apb ) * ( 2.0 * kv + apb - 2.0 );
-            value_type a2 = ( 2.0 * kv + apb - 1.0 ) * ( a * a - b * b );
-            value_type a3 = ( 2.0 * kv + apb - 2.0 ) * ( 2.0 * kv + apb - 1.0 ) * ( 2.0 * kv + apb );
-            value_type a4 = 2.0 * ( kv + a - 1.0 ) * ( kv + b - 1.0 ) * ( 2.0 * kv + apb );
-            a2 = a2 / a1;
-            a3 = a3 / a1;
-            a4 = a4 / a1;
-
-            ublas::row( res, k ) = a2* ublas::row( res, k-1 ) +
-                                   a3 * ublas::element_prod( __pts, ublas::row( res, k-1 ) ) -
-                                   a4 * ublas::row( res, k-2 );
-        }
-    }
-
-    return res;
-}
-
+/** @brief Runtime compatibility spelling of the shared derivative boundary. */
 template<typename T>
-ublas::matrix<T>
-JacobiBatchDerivation( uint16_type N, T a, T b, ublas::vector<T> const& __pts )
-{
-    typedef T value_type;
-    ublas::matrix<T> res( N+1, __pts.size() );
-    ublas::row( res, 0 ) = ublas::scalar_vector<value_type>( res.size2(), 0.0 );
-
-    if ( N > 0 )
-    {
-        ublas::subrange( res, 1, N+1, 0, __pts.size() ) = JacobiBatchEvaluation<T>( N-1, a+1.0, b+1.0, __pts );
-
-        for ( uint16_type i = 1; i < N+1; ++i )
-            ublas::row( res, i ) *= 0.5*( a+b+value_type( i )+1.0 );
-    }
-
-    return res;
-}
-} // dyna
+ublas::matrix<T> JacobiBatchDerivation( uint16_type degree, T a, T b, ublas::vector<T> const& points )
+{ return Feel::JacobiBatchDerivation( static_cast<int>( degree ), a, b, points ); }
+} // namespace dyna
 
 /// \cond DETAIL
 namespace details

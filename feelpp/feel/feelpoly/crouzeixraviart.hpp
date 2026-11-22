@@ -50,9 +50,11 @@
 #include <feel/feelmesh/pointset.hpp>
 
 #include <feel/feelpoly/fe.hpp>
+#include <feel/feelpoly/fefamilyshell.hpp>
 #include <feel/feelpoly/dualbasis.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
 #include <feel/feelpoly/functionalset.hpp>
+#include <feel/feelpoly/pointfunctionals.hpp>
 #include <feel/feelpoly/moment.hpp>
 
 namespace Feel
@@ -111,7 +113,7 @@ public:
 
 };
 
-template<typename Basis, template<class, uint16_type, class> class PointSetType>
+template<typename Basis, template<class, int, class> class PointSetType>
 class CrouzeixRaviartDual
     :
 public DualBasis<Basis>
@@ -210,7 +212,7 @@ public:
         }
 
         //std::cout << "[CrouzeixRaviartDual] points= " << M_pts << "\n";
-        setFset( primal, M_pts, mpl::bool_<primal_space_type::is_scalar>() );
+        M_fset.setFunctionalSet( functional::makePointEvaluationFunctionals( primal, M_pts ) );
 
 
     }
@@ -230,19 +232,6 @@ public:
         return M_fset( pset );
     }
 private:
-
-    void setFset( primal_space_type const& primal, points_type const& __pts, mpl::bool_<true> )
-    {
-        M_fset.setFunctionalSet( functional::PointsEvaluation<primal_space_type>( primal,
-                                  __pts ) );
-    }
-
-    void setFset( primal_space_type const& primal, points_type const& __pts, mpl::bool_<false> )
-    {
-        M_fset.setFunctionalSet( functional::ComponentsPointsEvaluation<primal_space_type>( primal,
-                                  __pts ) );
-    }
-
 
 private:
     reference_convex_type M_convex_ref;
@@ -266,7 +255,7 @@ template<uint16_type N,
          uint16_type RealDim,
          template<uint16_type Dim> class PolySetType,
          typename T = double,
-         template<uint16_type, uint16_type, uint16_type> class Convex = Simplex,
+         template<int, int, int> class Convex = Simplex,
          uint16_type TheTAG=0 >
 class CrouzeixRaviart
     :
@@ -298,6 +287,8 @@ public:
     typedef typename super::primal_space_type primal_space_type;
     typedef typename super::dual_space_type dual_space_type;
     typedef Continuous continuity_type;
+    /** CR is nonconforming: only its facet functional is shared globally. */
+    static inline constexpr bool is_nonconforming = true;
     static inline const uint16_type TAG = TheTAG;
 
     /**
@@ -487,16 +478,84 @@ public:
         return "CrouzeixRaviart";
     }
 
+    uint16_type localDofPerComponent() const override
+    {
+        return nLocalDof;
+    }
+
+    uint16_type localDofId( uint16_type parentLocalDofId, uint16_type component = 0 ) const override
+    {
+        FEELPP_ASSERT( component < nComponents )
+            ( component )( parentLocalDofId )( nComponents ).error( "invalid component index" );
+        FEELPP_ASSERT( parentLocalDofId < nLocalDof )
+            ( parentLocalDofId )( nLocalDof ).error( "invalid parent local dof index" );
+        return static_cast<uint16_type>( nLocalDof * component + parentLocalDofId );
+    }
+
     //! \return the component of a local dof
     uint16_type component( uint16_type localDofId ) const override
         {
-            return 0;
+            uint16_type comp = localDofId/nLocalDof;
+            DCHECK( comp < nComponents ) << "invalid localDofId " << localDofId;
+            return comp;
         }
 
     //! \return a parent local dof id for each component (for example, the first component)
     uint16_type dofParent( uint16_type localDofId ) const override
         {
-            return localDofId;
+            return static_cast<uint16_type>( localDofId % nLocalDof );
+        }
+
+    typename super::DofAttachment dofAttachment( uint16_type localDofId ) const override
+        {
+            const uint16_type parentLocalDofId = this->dofParent( localDofId );
+            const uint16_type nV = static_cast<uint16_type>( reference_convex_type::numVertices * nDofPerVertex );
+            const uint16_type nE = static_cast<uint16_type>( reference_convex_type::numEdges * nDofPerEdge );
+            const uint16_type nF = static_cast<uint16_type>( reference_convex_type::numFaces * nDofPerFace );
+
+            if constexpr ( nDofPerVertex > 0 )
+            {
+                if ( parentLocalDofId < nV )
+                {
+                    return typename super::DofAttachment{
+                        .entityDim = 0,
+                        .entityId = static_cast<uint16_type>( parentLocalDofId / nDofPerVertex ),
+                        .ordinal = static_cast<uint16_type>( parentLocalDofId % nDofPerVertex ),
+                        .kind = this->dofType( localDofId ) };
+                }
+            }
+
+            const uint16_type parentAfterVertex = static_cast<uint16_type>( parentLocalDofId - nV );
+            if constexpr ( nDofPerEdge > 0 )
+            {
+                if ( parentAfterVertex < nE )
+                {
+                    return typename super::DofAttachment{
+                        .entityDim = 1,
+                        .entityId = static_cast<uint16_type>( parentAfterVertex / nDofPerEdge ),
+                        .ordinal = static_cast<uint16_type>( parentAfterVertex % nDofPerEdge ),
+                        .kind = this->dofType( localDofId ) };
+                }
+            }
+
+            const uint16_type parentAfterEdge = static_cast<uint16_type>( parentAfterVertex - nE );
+            if constexpr ( nDofPerFace > 0 )
+            {
+                if ( parentAfterEdge < nF )
+                {
+                    return typename super::DofAttachment{
+                        .entityDim = 2,
+                        .entityId = static_cast<uint16_type>( parentAfterEdge / nDofPerFace ),
+                        .ordinal = static_cast<uint16_type>( parentAfterEdge % nDofPerFace ),
+                        .kind = this->dofType( localDofId ) };
+                }
+            }
+
+            return typename super::DofAttachment{
+                .entityDim = -1,
+                .entityId = super::DofAttachment::invalid_id,
+                .ordinal = super::DofAttachment::invalid_id,
+                .kind = this->dofType( localDofId ) };
         }
 
     //! \return the type of a local dof
@@ -522,14 +581,39 @@ private:
 
 };
 
+/**
+ * @brief Order-aware public shell for the Crouzeix--Raviart family.
+ *
+ * The current backend implements the classical order-one element.  Keeping
+ * the order in this shell makes that support boundary explicit and provides
+ * the common family API without pretending that higher orders exist yet.
+ */
+template<uint16_type Dim, uint16_type RealDim, int Order,
+         template<uint16_type> class PolySetType, typename T,
+         template<int, int, int> class Convex,
+         uint16_type Tag>
+class CrouzeixRaviartElement
+    : public CrouzeixRaviart<Dim, RealDim, PolySetType, T, Convex, Tag>
+{
+    static_assert( Order == 1,
+                   "only the classical order-one Crouzeix-Raviart element is currently implemented" );
+    using super = CrouzeixRaviart<Dim, RealDim, PolySetType, T, Convex, Tag>;
+
+public:
+    using super::super;
+    CrouzeixRaviartElement() = default;
+};
+
 } // fem
 
-template<uint16_type Order,
+template<int Order,
          template<uint16_type Dim> class PolySetType = Scalar,
-         template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
+         template<class, int, class> class Pts = PointSetEquiSpaced,
          uint16_type TheTAG=0 >
-class CrouzeixRaviart
+class CrouzeixRaviart : public FiniteElementFamilyDescriptor<Order, TheTAG>
 {
+    static_assert( Order == 1,
+                   "only the classical order-one Crouzeix-Raviart element is currently implemented" );
 public:
     template<uint16_type N,
              uint16_type RealDim,
@@ -537,9 +621,9 @@ public:
              typename Convex = Simplex<N> >
     struct apply
     {
-        typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
-                mpl::identity<fem::CrouzeixRaviart<N,RealDim,PolySetType,T,Simplex,TheTAG> >,
-                mpl::identity<fem::CrouzeixRaviart<N,RealDim,PolySetType,T,Hypercube,TheTAG> > >::type::type result_type;
+        using result_type = std::conditional_t<Convex::is_simplex,
+                fem::CrouzeixRaviartElement<N,RealDim,Order,PolySetType,T,Simplex,TheTAG>,
+                fem::CrouzeixRaviartElement<N,RealDim,Order,PolySetType,T,Hypercube,TheTAG>>;
         typedef result_type type;
     };
 
@@ -550,9 +634,6 @@ public:
     };
 
     typedef CrouzeixRaviart<Order,Scalar,Pts> component_basis_type;
-
-    static inline const uint16_type nOrder =  Order;
-    static inline const uint16_type TAG = TheTAG;
 
 };
 

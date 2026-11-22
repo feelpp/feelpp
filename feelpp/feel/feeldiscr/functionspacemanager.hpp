@@ -84,6 +84,8 @@ struct FunctionSpaceManagerOptions
     DofTableExtendedType extendedDofTable = DofTableExtendedType::VERTICES;
     /// Effective mesh update components.
     size_type components = MESH_RENUMBER | MESH_CHECK;
+    /// Runtime FE order; -1 when the concrete type already identifies the order.
+    int runtimeOrder = -1;
 };
 
 /**
@@ -325,6 +327,7 @@ getOrCreateFunctionSpace( std::shared_ptr<MeshType> const& mesh,
  * @param dte requested extended-DOF-table mode
  * @param policy requested reuse policy
  * @param factory callable constructing @c std::shared_ptr<SpaceType>
+ * @param runtimeOrder runtime FE order, or -1 for a static-order space
  * @return retained or newly constructed function space
  */
 template <typename SpaceType, typename MeshType, typename Factory>
@@ -332,12 +335,13 @@ std::shared_ptr<SpaceType>
 getOrCreateWholeMeshFunctionSpace( std::shared_ptr<MeshType> const& mesh,
                                    DofTableExtendedType dte,
                                    FunctionSpaceReusePolicy policy,
-                                   Factory&& factory )
+                                   Factory&& factory,
+                                   int runtimeOrder = -1 )
 {
     return getOrCreateFunctionSpace<SpaceType>(
         mesh,
         FunctionSpaceManagerOptions{ normalizeFunctionSpaceDofTable( dte ),
-                                     MESH_RENUMBER | MESH_CHECK },
+                                     MESH_RENUMBER | MESH_CHECK, runtimeOrder },
         policy, std::forward<Factory>( factory ) );
 }
 

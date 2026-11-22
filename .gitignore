@@ -128,7 +128,6 @@ np_*/
 ginac.pc
 /applications/crb/thermalfin/thermalfinapp.cpp
 /research/hpmortar/
-/tools/scripts/buildkite/feelpp_build.sh
 *.cfgbak
 __pycache__
 autom4te.cache
@@ -181,6 +180,7 @@ mor/BenchmarkGrepl/benchmarkgrepl-nonlinear-parabolic3app.cpp
 mor/heat1d/heat1dapp.cpp
 mor/unsteady_heat1d/unsteadyHeat1dapp.cpp
 
+feelppdb*/
 gmsh-config.err
 python/pyfeelpp/feelpp/core/__init__.py
 *.msh
@@ -206,6 +206,8 @@ install/
 /packaging/src/*.egg-info
 # CMake Preset backup files
 CMakePresets.json.backup
+feelpp/python/feelpp/core/__init__.py
+eztrace*/
 !/ops/src/feelpp/pkg/build/
 !/ops/src/feelpp/pkg/build/**
 /ops/src/feelpp/pkg/build/__pycache__/

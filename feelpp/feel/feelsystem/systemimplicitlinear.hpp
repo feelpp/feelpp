@@ -1,28 +1,14 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@cemosis.fr>
+ *
+ * SPDX-FileCopyrightText: 2012-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2009-01-04
-
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file systemimplicitlinear.hpp
+   \brief Legacy linear implicit system compatibility wrapper.
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-01-04
  */
@@ -36,14 +22,15 @@ namespace Feel
 {
 /**
  * \class SystemImplicitLinear
- * \brief brief description
+ * \brief Legacy implicit linear system with lhs/rhs storage.
  *
  * @author Christophe Prud'homme
- * @see
+ * @see Feel::SystemImplicit
  */
 template<typename SpaceType>
 class SystemImplicitLinear : public SystemImplicit<SpaceType>
 {
+    /** @brief Base legacy implicit system type. */
     typedef SystemImplicit<SpaceType> super;
 public:
 
@@ -58,18 +45,29 @@ public:
      */
     //@{
 
+    /** @brief Self type. */
     typedef SystemImplicitLinear<SpaceType> system_type;
 
+    /** @brief Scalar value type. */
     typedef typename super::value_type value_type;
+    /** @brief Function-space type. */
     typedef typename super::functionspace_type functionspace_type;
+    /** @brief Legacy function-space argument type. */
     typedef typename super::functionspace_type functionspace_ptrtype;
+    /** @brief Finite-element field type. */
     typedef typename super::element_type element_type;
 
+    /** @brief Backend type. */
     typedef typename super::backend_type backend_type;
+    /** @brief Shared backend pointer type. */
     typedef typename super::backend_ptrtype backend_ptrtype;
+    /** @brief Sparse matrix type. */
     typedef typename super::sparse_matrix_type sparse_matrix_type;
+    /** @brief Sparse matrix pointer type. */
     typedef typename super::sparse_matrix_ptrtype sparse_matrix_ptrtype;
+    /** @brief Vector type. */
     typedef typename super::vector_type vector_type;
+    /** @brief Vector pointer type. */
     typedef typename super::vector_ptrtype vector_ptrtype;
 
     //@}
@@ -78,8 +76,11 @@ public:
      */
     //@{
 
+    /** @brief Construct from a function space and variables map. */
     SystemImplicitLinear( functionspace_ptrtype const& Xh, po::variables_map const& vm );
+    /** @brief Copy constructor. */
     SystemImplicitLinear( SystemImplicitLinear const & sil );
+    /** @brief Destructor. */
     ~SystemImplicitLinear() {}
 
     //@}
@@ -88,6 +89,7 @@ public:
      */
     //@{
 
+    /** @brief Copy assignment. */
     SystemImplicitLinear& operator=( SystemImplicitLinear const & o )
     {
         if ( this != &o )
@@ -161,7 +163,9 @@ public:
 
 protected:
 
+    /** @brief Legacy lhs matrix storage. */
     sparse_matrix_ptrtype M_lhs;
+    /** @brief Legacy rhs vector storage. */
     vector_ptrtype M_rhs;
 
 private:

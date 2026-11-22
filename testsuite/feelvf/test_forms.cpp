@@ -35,6 +35,7 @@
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
+#include <feel/feelvf/vf.hpp>
 #include <feel/feelvf/dirichletconstraints.hpp>
 
 /** use Feel namespace */

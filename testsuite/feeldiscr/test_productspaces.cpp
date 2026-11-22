@@ -1,11 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-
-    SPDX-FileCopyrightText: 2026 University of Strasbourg
-
-    SPDX-License-Identifier: LGPL-3.0-or-later
-*/
 #define BOOST_TEST_MODULE test_product
 #include <feel/feelcore/testsuite.hpp>
 
@@ -518,6 +518,138 @@ makeAbout()
      ex->add("v",U(1_c));
      ex->save();
  }
+
+BOOST_AUTO_TEST_CASE( test_dynamic_static_mix )
+{
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<2>> );
+    auto b = backend( _rebuild=true );
+
+    auto Xh = Pch<1>( mesh );
+    auto Yh = Pch<Dynamic>( mesh, RuntimeOrder{ 2 } );
+
+    BOOST_CHECK_EQUAL( Yh->order(), 2 );
+
+    auto ps = product( Xh, Yh );
+    BOOST_CHECK_EQUAL( ps.numberOfSpaces(), 2 );
+    BOOST_CHECK_EQUAL( ps[0_c]->nDof(), Xh->nDof() );
+    BOOST_CHECK_EQUAL( ps[1_c]->nDof(), Yh->nDof() );
+
+    auto U = ps.element();
+    auto u = Xh->element();
+    auto v = Yh->element();
+    auto a = blockform2( ps, solve::strategy::monolithic, b );
+    auto l = blockform1( ps, solve::strategy::monolithic, b );
+
+    a( 0_c, 0_c ) += integrate( _range=elements( mesh ), _expr=idt( u )*id( u ) );
+    a( 1_c, 1_c ) += integrate( _range=elements( mesh ), _expr=idt( v )*id( v ) );
+    l( 0_c ) += integrate( _range=elements( mesh ), _expr=cst( 1. )*id( u ) );
+    l( 1_c ) += integrate( _range=elements( mesh ), _expr=cst( 2. )*id( v ) );
+
+    a.close();
+    l.close();
+
+    BOOST_CHECK_GT( l.vectorPtr()->getVector()->l2Norm(), 0.0 );
+
+    a.solve( _solution=U, _rhs=l );
+
+    auto const errU = normL2( _range=elements( mesh ), _expr=idv( U(0_c) )-cst( 1. ) );
+    auto const errV = normL2( _range=elements( mesh ), _expr=idv( U(1_c) )-cst( 2. ) );
+    BOOST_CHECK_SMALL( errU, 1e-8 );
+    BOOST_CHECK_SMALL( errV, 1e-8 );
+
+    auto psRev = product( Yh, Xh );
+    BOOST_CHECK_EQUAL( psRev.numberOfSpaces(), 2 );
+    BOOST_CHECK_EQUAL( psRev[0_c]->nDof(), Yh->nDof() );
+    BOOST_CHECK_EQUAL( psRev[1_c]->nDof(), Xh->nDof() );
+}
+
+BOOST_AUTO_TEST_CASE( test_dynamic_orders_rectangular_test_trial_spaces )
+{
+    using namespace Feel;
+    using namespace boost::hana::literals;
+
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<2>> );
+    auto b = backend( _rebuild=true );
+
+    std::array<std::array<int, 4>, 3> const orders = {{
+        {{ 1, 2, 2, 3 }},
+        {{ 2, 3, 1, 2 }},
+        {{ 3, 1, 3, 2 }}
+    }};
+
+    for ( auto const& order : orders )
+    {
+        auto Vh0 = Pdh<Dynamic>( mesh, RuntimeOrder{ order[0] } );
+        auto Vh1 = Pdh<Dynamic>( mesh, RuntimeOrder{ order[1] } );
+        auto Uh0 = Pch<Dynamic>( mesh, RuntimeOrder{ order[2] } );
+        auto Uh1 = Pch<Dynamic>( mesh, RuntimeOrder{ order[3] } );
+
+        BOOST_CHECK_EQUAL( Vh0->order(), order[0] );
+        BOOST_CHECK_EQUAL( Vh1->order(), order[1] );
+        BOOST_CHECK_EQUAL( Uh0->order(), order[2] );
+        BOOST_CHECK_EQUAL( Uh1->order(), order[3] );
+
+        auto test = product( Vh0, Vh1 );
+        auto trial = product( Uh0, Uh1 );
+        auto A = blockform2( _test=test,
+                             _trial=trial,
+                             _strategy=solve::strategy::monolithic,
+                             _backend=b,
+                             _pattern=Pattern::COUPLED );
+
+        auto v0 = Vh0->element();
+        auto v1 = Vh1->element();
+        auto u0 = Uh0->element();
+        auto u1 = Uh1->element();
+
+        A( 0_c, 0_c ) += integrate( _range=elements( mesh ), _expr=id( v0 )*idt( u0 ) );
+        A( 0_c, 1_c ) += integrate( _range=elements( mesh ), _expr=id( v0 )*idt( u1 ) );
+        A( 1_c, 0_c ) += integrate( _range=elements( mesh ), _expr=id( v1 )*idt( u0 ) );
+        A( 1_c, 1_c ) += integrate( _range=elements( mesh ), _expr=id( v1 )*idt( u1 ) );
+        A.close();
+
+        BOOST_CHECK( A.isRectangular() );
+        BOOST_CHECK_EQUAL( A.matrixPtr()->mapRow().nDof(), Vh0->nDof() + Vh1->nDof() );
+        BOOST_CHECK_EQUAL( A.matrixPtr()->mapCol().nDof(), Uh0->nDof() + Uh1->nDof() );
+        BOOST_CHECK_GT( A.nnz(), 0 );
+        BOOST_CHECK_GT( A.l1Norm(), 0.0 );
+    }
+}
+
+BOOST_AUTO_TEST_CASE( test_same_type_runtime_orders_keep_distinct_bilinear_contexts )
+{
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<2>> );
+    auto b = backend( _rebuild=true );
+    double const volume = integrate( _range=elements(mesh), _expr=cst(1.) ).evaluate()(0,0);
+    auto Vh = Pchv<Dynamic>( mesh, RuntimeOrder{2} );
+    auto v = Vh->element( oneX() );
+
+    for ( int trialOrder : { 0, 1, 2 } )
+    {
+        auto Uh = Pchv<Dynamic>( mesh, RuntimeOrder{trialOrder} );
+        auto u = Uh->element( oneX() );
+        for ( auto lowering : { vf::local_form_lowering::disabled, vf::local_form_lowering::automatic } )
+        {
+            auto forward = form2( _test=Vh, _trial=Uh );
+            auto reverse = form2( _test=Uh, _trial=Vh );
+            forward += integrate( _range=elements(mesh), _expr=inner(id(v),idt(u)),
+                                  _local_form_lowering=lowering );
+            reverse += integrate( _range=elements(mesh), _expr=inner(id(u),idt(v)),
+                                  _local_form_lowering=lowering );
+            forward.close();
+            reverse.close();
+
+            BOOST_CHECK_SMALL( forward(v,u)-volume, 1e-10 );
+            BOOST_CHECK_SMALL( reverse(u,v)-volume, 1e-10 );
+
+            auto difference = b->newMatrix( _test=Vh, _trial=Uh );
+            reverse.matrixPtr()->transpose( *difference );
+            difference->addMatrix( -1., forward.matrixPtr() );
+            difference->close();
+            BOOST_CHECK_SMALL( difference->l1Norm(), 1e-10 );
+        }
+    }
+}
 
 BOOST_AUTO_TEST_CASE( test_productspace_dof_counts )
 {

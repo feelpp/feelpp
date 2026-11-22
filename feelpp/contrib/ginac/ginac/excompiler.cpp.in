@@ -80,7 +80,7 @@ public:
 	{
 		fd_ = open(lockfile.c_str(), O_CREAT | O_RDWR, 0666);
 		if (fd_ == -1) {
-			return; // Could not create lock file, proceed without lock
+			throw std::runtime_error("could not open lock file " + lockfile + ": " + std::string(strerror(errno)));
 		}
 
 		// Try to acquire lock with timeout
@@ -94,14 +94,20 @@ public:
 				locked_ = true;
 				return;
 			}
+			int lock_error = errno;
+			if (lock_error != EWOULDBLOCK && lock_error != EAGAIN && lock_error != EINTR) {
+				close(fd_);
+				fd_ = -1;
+				throw std::runtime_error("could not lock file " + lockfile + ": " + std::string(strerror(lock_error)));
+			}
 
 			auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
 				std::chrono::steady_clock::now() - start).count();
 			if (elapsed >= timeout_ms) {
-				// Timeout - close fd and proceed without lock
+				// Never write shared files without holding the lock.
 				close(fd_);
 				fd_ = -1;
-				return;
+				throw std::runtime_error("timed out waiting for lock file " + lockfile);
 			}
 
 			// Sleep with jitter to avoid thundering herd
@@ -312,16 +318,12 @@ public:
 			std::cerr << "error in dlclosing module : " << it->module << " : " << err << "\n";
 		}
 		if (it->clean_up) {
-			boost::mpi::communicator world;
-			if( world.rank() == 0 )
+			namespace fs = boost::filesystem;
+			if ( fs::exists( fs::path( it->name ) ) )
 			{
-				namespace fs = boost::filesystem;
-				if ( fs::exists( fs::path( it->name ) ) )
-				{
-					int ok = remove(it->name.c_str());
-					if ( ok == -1 )
-						std::cerr << "removing " << it->name << " failed\n";
-				}
+				int ok = remove(it->name.c_str());
+				if ( ok == -1 )
+					std::cerr << "removing " << it->name << " failed\n";
 			}
 		}
 
@@ -369,15 +371,11 @@ public:
 		}
 	void remove_src_file( std::string filename, bool clean_up )
 		{
-			boost::mpi::communicator world;
 			if (clean_up)
 			{
-				if( world.rank() == 0 )
-				{
-					int e = remove(filename.c_str());
-					if ( e == -1 )
-						std::cerr << "Error removing file : " << filename << std::endl;
-				}
+				int e = remove(filename.c_str());
+				if ( e == -1 )
+					std::cerr << "Error removing file : " << filename << std::endl;
 			}
 		}
 	/**
@@ -421,10 +419,7 @@ public:
 
 			auto remove_lock_file = [&lock_filename, clean_up, lock_file]() {
 				if (clean_up && lock_file) {
-					boost::mpi::communicator world;
-					if (world.rank() == 0) {
-						remove(lock_filename.c_str());
-					}
+					remove(lock_filename.c_str());
 				}
 			};
 			auto compile_with = [this, &filename, &compile_filename, &hash, clean_up, filename_is_content_addressed, &remove_lock_file](const std::string& excompiler_path) {
@@ -566,26 +561,49 @@ public:
  */
 static excompiler global_excompiler;
 
+// Broadcasting the outcome also makes followers wait for the writer. In
+// particular, a compiler or filesystem error must not strand them in a barrier.
+template <typename Compile>
+static void compile_on_master(const boost::mpi::communicator& world, const std::string& filename, Compile compile)
+{
+	std::string error;
+	if (world.rank() == 0) {
+		try {
+			boost::filesystem::path parent = boost::filesystem::path(filename).parent_path();
+			if (!parent.empty())
+				boost::filesystem::create_directories(parent);
+			compile();
+		} catch (const std::exception& e) {
+			error = std::string("GiNaC::compile_ex: ") + e.what();
+		} catch (...) {
+			error = "GiNaC::compile_ex: unknown compilation error";
+		}
+	}
+	boost::mpi::broadcast(world, error, 0);
+	if (!error.empty())
+		throw std::runtime_error(error);
+}
+
 void compile_ex(const ex& expr, const symbol& sym, FUNCP_1P& fp, const std::string filename)
 {
-	symbol x("x");
-	ex expr_with_x = expr.subs(lst(sym==x));
+	compile_ex(expr, sym, fp, filename, boost::mpi::communicator());
+}
 
-	std::ofstream ofs;
+void compile_ex(const ex& expr, const symbol& sym, FUNCP_1P& fp, const std::string filename, const boost::mpi::communicator& world)
+{
 	std::string unique_filename = filename;
 
-	boost::mpi::communicator world;
-	bool doCompile = filename.empty() ? ( world.rank() == 0 ) : true;
-
-	if( doCompile )
-	{
+	compile_on_master(world, filename, [&]() {
+		symbol x("x");
+		ex expr_with_x = expr.subs(lst(sym==x));
+		std::ofstream ofs;
 		std::unique_ptr<FileLock> source_lock;
 		if (!filename.empty()) {
 			source_lock.reset(new FileLock(unique_filename + ".lock"));
 		}
 		global_excompiler.create_src_file(unique_filename, ofs);
 
-		ofs << "double compiled_ex(double x)" << std::endl;
+		ofs << "extern \"C\" double compiled_ex(double x)" << std::endl;
 		ofs << "{" << std::endl;
 		ofs << "double res = ";
 		expr_with_x.print(GiNaC::print_csrc_double(ofs));
@@ -596,36 +614,37 @@ void compile_ex(const ex& expr, const symbol& sym, FUNCP_1P& fp, const std::stri
 		ofs.close();
 
 		unique_filename = global_excompiler.compile_src_file(unique_filename, filename.empty(), filename.empty());
-	}
-	world.barrier(); // Waiting for compilation steps to finish before linking.
+	});
 	if ( filename.empty() )
 		boost::mpi::broadcast( world, unique_filename, 0);
+	else
+		unique_filename = filename;
 
 	// This is not standard compliant! ... no conversion between
 	// pointer-to-functions and pointer-to-objects ...
-	fp = (FUNCP_1P) global_excompiler.link_so_file(unique_filename+".so", filename.empty());
+	fp = (FUNCP_1P) global_excompiler.link_so_file(unique_filename+".so", filename.empty() && world.rank() == 0);
 }
 
 void compile_ex(const ex& expr, const symbol& sym1, const symbol& sym2, FUNCP_2P& fp, const std::string filename)
 {
-	symbol x("x"), y("y");
-	ex expr_with_xy = expr.subs(lst(sym1==x, sym2==y));
+	compile_ex(expr, sym1, sym2, fp, filename, boost::mpi::communicator());
+}
 
-	std::ofstream ofs;
+void compile_ex(const ex& expr, const symbol& sym1, const symbol& sym2, FUNCP_2P& fp, const std::string filename, const boost::mpi::communicator& world)
+{
 	std::string unique_filename = filename;
 
-	boost::mpi::communicator world;
-	bool doCompile = filename.empty() ? ( world.rank() == 0 ) : true;
-
-	if( doCompile )
-	{
+	compile_on_master(world, filename, [&]() {
+		symbol x("x"), y("y");
+		ex expr_with_xy = expr.subs(lst(sym1==x, sym2==y));
+		std::ofstream ofs;
 		std::unique_ptr<FileLock> source_lock;
 		if (!filename.empty()) {
 			source_lock.reset(new FileLock(unique_filename + ".lock"));
 		}
 		global_excompiler.create_src_file(unique_filename, ofs);
 
-		ofs << "double compiled_ex(double x, double y)" << std::endl;
+		ofs << "extern \"C\" double compiled_ex(double x, double y)" << std::endl;
 		ofs << "{" << std::endl;
 		ofs << "double res = ";
 		expr_with_xy.print(GiNaC::print_csrc_double(ofs));
@@ -636,39 +655,40 @@ void compile_ex(const ex& expr, const symbol& sym1, const symbol& sym2, FUNCP_2P
 		ofs.close();
 
 		unique_filename = global_excompiler.compile_src_file(unique_filename, filename.empty(), filename.empty());
-	}
-	world.barrier(); // Waiting for compilation steps to finish before linking.
+	});
 	if ( filename.empty() )
 		boost::mpi::broadcast( world, unique_filename, 0);
+	else
+		unique_filename = filename;
 
 	// This is not standard compliant! ... no conversion between
 	// pointer-to-functions and pointer-to-objects ...
-	fp = (FUNCP_2P) global_excompiler.link_so_file(unique_filename+".so", filename.empty());
+	fp = (FUNCP_2P) global_excompiler.link_so_file(unique_filename+".so", filename.empty() && world.rank() == 0);
 }
 
 void compile_ex(const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::string filename, bool filename_is_content_addressed)
 {
+	compile_ex(exprs, syms, fp, filename, filename_is_content_addressed, boost::mpi::communicator());
+}
 
-	lst replacements;
-	for (std::size_t count=0; count<syms.nops(); ++count) {
-		std::ostringstream s;
-		s << "a[" << count << "]";
-		replacements.append(syms.op(count) == symbol(s.str()));
-	}
-
-	std::vector<ex> expr_with_cname;
-	for (std::size_t count=0; count<exprs.nops(); ++count) {
-		expr_with_cname.push_back(exprs.op(count).subs(replacements));
-	}
-
-	std::ofstream ofs;
+void compile_ex(const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::string filename, bool filename_is_content_addressed, const boost::mpi::communicator& world)
+{
 	std::string unique_filename = filename;
 
-	boost::mpi::communicator world;
-	bool doCompile = filename.empty() ? ( world.rank() == 0 ) : true;
+	compile_on_master(world, filename, [&]() {
+		lst replacements;
+		for (std::size_t count=0; count<syms.nops(); ++count) {
+			std::ostringstream s;
+			s << "a[" << count << "]";
+			replacements.append(syms.op(count) == symbol(s.str()));
+		}
 
-	if ( doCompile )
-	{
+		std::vector<ex> expr_with_cname;
+		for (std::size_t count=0; count<exprs.nops(); ++count) {
+			expr_with_cname.push_back(exprs.op(count).subs(replacements));
+		}
+
+		std::ofstream ofs;
 		std::unique_ptr<FileLock> source_lock;
 		if (!filename.empty()) {
 			source_lock.reset(new FileLock(unique_filename + ".lock"));
@@ -687,9 +707,7 @@ void compile_ex(const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::st
 		ofs.close();
 
 		unique_filename = global_excompiler.compile_src_file(unique_filename, filename.empty(), filename.empty(), filename_is_content_addressed);
-	}
-
-	world.barrier(); // Waiting for compilation steps to finish before linking.
+	});
 	if ( filename.empty() )
 		boost::mpi::broadcast( world, unique_filename, 0);
 	else
@@ -697,7 +715,7 @@ void compile_ex(const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::st
 
 	// This is not standard compliant! ... no conversion between
 	// pointer-to-functions and pointer-to-objects ...
-	fp = (FUNCP_CUBA) global_excompiler.link_so_file(unique_filename+".so", filename.empty());
+	fp = (FUNCP_CUBA) global_excompiler.link_so_file(unique_filename+".so", filename.empty() && world.rank() == 0);
 }
 
 void link_ex(const std::string filename, FUNCP_1P& fp)
@@ -743,12 +761,27 @@ void compile_ex(const ex& expr, const symbol& sym, FUNCP_1P& fp, const std::stri
 	throw std::runtime_error("compile_ex has been disabled because of missing libdl!");
 }
 
+void compile_ex(const ex& expr, const symbol& sym, FUNCP_1P& fp, const std::string filename, const boost::mpi::communicator& world)
+{
+	throw std::runtime_error("compile_ex has been disabled because of missing libdl!");
+}
+
 void compile_ex(const ex& expr, const symbol& sym1, const symbol& sym2, FUNCP_2P& fp, const std::string filename)
 {
 	throw std::runtime_error("compile_ex has been disabled because of missing libdl!");
 }
 
+void compile_ex(const ex& expr, const symbol& sym1, const symbol& sym2, FUNCP_2P& fp, const std::string filename, const boost::mpi::communicator& world)
+{
+	throw std::runtime_error("compile_ex has been disabled because of missing libdl!");
+}
+
 void compile_ex(const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::string filename, bool filename_is_content_addressed)
+{
+	throw std::runtime_error("compile_ex has been disabled because of missing libdl!");
+}
+
+void compile_ex(const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::string filename, bool filename_is_content_addressed, const boost::mpi::communicator& world)
 {
 	throw std::runtime_error("compile_ex has been disabled because of missing libdl!");
 }

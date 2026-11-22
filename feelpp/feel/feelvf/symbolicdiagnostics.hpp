@@ -238,7 +238,7 @@ struct SymbolicDifferentiabilityReport
 /**
  * @brief Describe symbolic dependencies against an explicit candidate list.
  */
-template <Feel::VfExpr ExprT>
+template <Feel::VfExprConcept ExprT>
 SymbolicDependencyReport
 describeSymbolicDependencies( ExprT const& expr, std::vector<std::string> const& symbols )
 {
@@ -259,7 +259,7 @@ describeSymbolicDependencies( ExprT const& expr, std::vector<std::string> const&
 /**
  * @brief Describe symbolic dependencies against an explicit candidate list.
  */
-template <Feel::VfExpr ExprT>
+template <Feel::VfExprConcept ExprT>
 SymbolicDependencyReport
 describeSymbolicDependencies( ExprT const& expr, std::initializer_list<std::string> symbols )
 {
@@ -273,7 +273,7 @@ describeSymbolicDependencies( ExprT const& expr, std::initializer_list<std::stri
  * `diff<1>(symbol)` API is available. This makes runtime unsupported paths,
  * such as native math functors without chain rules, visible to users and tests.
  */
-template <Feel::VfExpr ExprT>
+template <Feel::VfExprConcept ExprT>
 SymbolicDifferentiabilityReport
 describeDifferentiability( ExprT const& expr, std::string const& symbol )
 {

@@ -745,6 +745,25 @@ public :
         }
 
 
+private:
+    static void registerContextElement( mesh_ptrtype const& mesh, geoelement_type const& element )
+    {
+        if ( mesh->hasElement( element.id() ) )
+            return;
+
+        // Stored elements resolve their compact connectivity through the owning
+        // mesh. Copy the points before addElement binds the element to this mesh.
+        for ( uint16_type p = 0; p < element.nPoints(); ++p )
+        {
+            auto const& point = element.point( p );
+            if ( !mesh->hasPoint( point.id() ) )
+                mesh->addPoint( point );
+        }
+        auto elementCopy = element;
+        mesh->addElement( elementCopy, false );
+    }
+
+public:
     class ContextRB
         :
         public fespace_type::basis_context_type,
@@ -990,10 +1009,7 @@ public :
                     // std::cout << "has rbspace\n";
                     if ( M_meshForRbContext )
                     {
-                        if ( !M_meshForRbContext->hasElement( meshEltCtx.id() ) )
-                        {
-                            M_meshForRbContext->addElement( meshEltCtx, false );
-                        }
+                        registerContextElement( M_meshForRbContext, meshEltCtx );
                         auto const& meshEltCtxRegister = M_meshForRbContext->element( meshEltCtx.id() );
                         //typename super::geometric_mapping_context_ptrtype gmContext( new typename super::geometric_mapping_context_type( M_meshForRbContext->gm(),meshEltCtxRegister ) );
                         typename super::geometric_mapping_context_ptrtype gmContext = M_meshForRbContext->gm()->template context<0>( meshEltCtxRegister, typename super::geometric_mapping_context_type::precompute_ptrtype{} );
@@ -1210,11 +1226,7 @@ public :
                 CHECK( rbCtxReload ) << "rbCtxReload not init";
                 rbCtxReload->setMeshForRbContext( M_meshForRbContext );
                 auto const& modelMeshEltCtx = rbCtxReload->gmContext()->element();
-                if ( !M_meshForRbContext->hasElement( modelMeshEltCtx.id(), modelMeshEltCtx.processId() ) )
-                {
-                    geoelement_type meshEltCtx = modelMeshEltCtx;;
-                    M_meshForRbContext->addElement( meshEltCtx, false );
-                }
+                registerContextElement( M_meshForRbContext, modelMeshEltCtx );
             }
             else
             {

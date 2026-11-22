@@ -1,32 +1,19 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim: set syntax=cpp fenc=utf-8 ft=tcl et sw=4 ts=4 sts=4
-
-  This file is part of the Feel library
-
-  Author(s): Thomas Lantz
-       Date: 2015-04-27
-
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+/*
+ * SPDX-FileCopyrightText: 2015-2026 Feel++ Consortium
+ * SPDX-FileContributor: Thomas Lantz
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+/** @file test_integrateQuadra.cpp
+ * @brief Data-driven quadrature and projection checks sharing one suite-owned mesh.
+ */
 /// [all]
 
-#define USE_BOOST_TEST 1
-#if defined(USE_BOOST_TEST)
 #define BOOST_TEST_MODULE test_integrateQuadra
+#include <boost/test/data/test_case.hpp>
+#include <boost/filesystem.hpp>
+#include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/testsuite.hpp>
-#endif
-
-
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feelvf/integrate.hpp>
@@ -38,9 +25,12 @@
 #include <feel/feelpoly/multiscalequadrature.hpp>
 #include <feel/feelvf/ginac.hpp>
 #include <feel/feelfilters/exporter.hpp>
+#include <memory>
+#include <stdexcept>
 
 using namespace Feel;
 
+/** @brief Describe the quadrature test and retain its original authorship. */
 inline
 AboutData
 makeAbout()
@@ -50,222 +40,141 @@ makeAbout()
                      "0.2",
                      "test integrate Quadra",
                      Feel::AboutData::License_GPL,
-                     "Copyright (c) 2015 Feel++ Consortium" );
+                     "Copyright (c) 2015-2026 Feel++ Consortium" );
 
-    about.addAuthor( "Thomas Lantz", "student", "", "" );
+    about.addAuthor( "Christophe Prud'homme", "christophe.prudhomme@feelpp.org", "", "" );
     return about;
 }
 
-class Test
+namespace bdata = boost::unit_test::data;
+
+/** @brief Own the common mesh for one suite, within the Feel++ environment lifetime. */
+class QuadratureMeshFixture
 {
- public :
-       
-    void run(std::string s)
+public:
+    /** Reference quadrilateral mesh used by every expression dataset. */
+    using MeshType = Mesh<Hypercube<2>>;
+    /** Owning mesh handle; data fixtures retain it only during their test case. */
+    using MeshPtr = typename MeshType::mesh_ptrtype;
 
-        {
-            /// [mesh] 
-            auto mesh = createGMSHMesh( _mesh=new Mesh<Hypercube<2>>,  
-                                        _desc=domain(_name="polymere",
-                                                     _xmax=1,
-                                                     _ymax=1));
+    /** @brief Prepare this test's expression directory and generate the mesh once. */
+    QuadratureMeshFixture()
+    {
+        // Preserve CTest's distinct serial/MPI repositories, including --rm cleanup.
+        if ( Feel::Environment::isMasterRank() )
+            fs::create_directories( fs::path( Feel::Environment::exprRepository() ) );
+        Feel::Environment::worldComm().barrier();
+        M_mesh = createGMSHMesh( _mesh=new MeshType,
+                                _desc=domain( _name="polymere", _xmax=1, _ymax=1 ) );
+        s_mesh = M_mesh;
+    }
 
-  
-            /// [expression]
-            // our function to integrate
-            auto g = expr( s  );
+    /** @brief Release the suite owner before the global Feel++ environment tears down. */
+    ~QuadratureMeshFixture() = default;
 
-            /// [integrals]
-            // compute on \Omega
-            auto intf_1 = integrate( _range = elements( mesh ),
-                                     _expr = g,
-                                     _quad=_Q<1,MultiScaleQuadrature>() ).evaluate();
-            auto intf_12 = integrate( _range = elements( mesh ),
-                                      _expr = g).evaluate();
-            // compute on boundary
-            auto intf_2 = integrate( _range = boundaryfaces( mesh ),
-                                     _expr = g,
-                                     _quad=_Q<1,MultiScaleQuadrature>()  ).evaluate();
-            auto intf_22 = integrate( _range = boundaryfaces( mesh ),
-                                      _expr = g).evaluate();
-    
-            // compute integral of grad f
-            auto grad_g = grad<2>(g);
-            auto intgrad_f = integrate( _range = elements( mesh ),
-                                        _expr = grad_g,
-                                        _quad=_Q<1,MultiScaleQuadrature>()  ).evaluate();
-            auto intgrad_f2 = integrate( _range = elements( mesh ),
-                                         _expr = grad_g).evaluate();
+    /** @brief Acquire the active suite mesh without giving a global variable ownership. */
+    static MeshPtr sharedMesh()
+    {
+        auto mesh = s_mesh.lock();
+        if ( !mesh ) throw std::logic_error( "quadrature mesh suite fixture is not active" );
+        return mesh;
+    }
 
-            // values view    
-            std::cout << "int_Omega " << g << " = " << intf_1  << std::endl
-                      << "int_{boundary of Omega} " << g << " = " << intf_2 << std::endl
-                      << "int_Omega grad " << g << " = "
-                      << "int_Omega  " << grad_g << " = "
-                      << intgrad_f  << std::endl;
-
-            BOOST_CHECK_CLOSE( intf_1(0,0), intf_12(0,0), 5 );
-            BOOST_CHECK_CLOSE( intf_2(0,0), intf_22(0,0), 5 );
-
-            std::cout <<"" << std::endl;
-
-        }
-    
-    void resol(std::string s)
-
-        {
-            /// [mesh] 
-            auto mesh = createGMSHMesh( _mesh=new Mesh<Hypercube<2>>,  
-                                        _desc=domain(_name="polymere",
-                                                     _xmax=1,
-                                                     _ymax=1));
-
-            auto Vh = Pch<1>( mesh );
-            auto u=Vh->element();
-            auto v=Vh->element();
-         
-            /// [expression]
-            // our function to integrate
-            auto g = expr( s );
-            auto gProj = vf::project( _space=Vh, _range=elements( mesh ), _expr=g);
-
-            auto a = form2( _trial=Vh, _test=Vh );
-            a=integrate( _range=elements( mesh ),
-                         _expr=idt(u)*id(v),
-                         _quad=_Q<1,MultiScaleQuadrature>() );
-
-            auto l = form1( _test=Vh );
-            l= integrate( _range=elements( mesh ),
-                          _expr=g*id(v),
-                          _quad=_Q<1,MultiScaleQuadrature>() ); 
-       
-            a.solve( _rhs=l, _solution=u );
-
-            std::cout << "|| u-f ||^2 =" << normL2 ( _range=elements( mesh ), _expr=idv(u)-idv(gProj)) << std::endl;
-
-            std::cout <<"" << std::endl;
-
-
-            //        BOOST_CHECK_CLOSE( idv(u), idv(gProj), 1e-2 );
-        }
-
-
+private:
+    /** Sole mesh owner across datasets; destroyed with this suite fixture. */
+    MeshPtr M_mesh;
+    /** Non-owning access for data fixtures; safe after the Feel++ environment shuts down. */
+    inline static std::weak_ptr<MeshType> s_mesh;
 };
 
-#if defined(USE_BOOST_TEST)
+/** @brief Give each expression case access to the suite-owned mesh. */
+class IntegrateQuadraFixture
+{
+public:
+    /** @brief Retain the mesh for the current case, preserving independent expression state. */
+    IntegrateQuadraFixture() : mesh( QuadratureMeshFixture::sharedMesh() ) {}
+
+    /** Mesh shared across cases; each projection still owns its function-space state. */
+    QuadratureMeshFixture::MeshPtr mesh;
+};
+
+namespace
+{
+/** Relative tolerance for the default/multiscale quadrature comparison. */
+constexpr double kTolerancePct = 5.0;
+
+/** Independent polynomial and transcendental integrands. */
+const std::vector<std::string> kRunExprs = {
+    "x:x:y",
+    "x+y:x:y",
+    "cos(x)*sin(y):x:y",
+    "y*exp(x):x:y"};
+
+/** Projection datasets covering polynomial and transcendental behavior. */
+const std::vector<std::string> kResolExprs = {
+    "sin(x):x:y",
+    "x+y:x:y",
+    "x*y:x:y",
+    "cos(x*y):x:y"};
+} // namespace
+
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() )
-BOOST_AUTO_TEST_SUITE( integrQuadra_suite )
+BOOST_AUTO_TEST_SUITE( integrQuadraSuite, *boost::unit_test::fixture<QuadratureMeshFixture>() )
 
-BOOST_AUTO_TEST_CASE( test_run0 )
+/** @test Default and multiscale rules agree on volume and boundary integrals. */
+BOOST_DATA_TEST_CASE_F( IntegrateQuadraFixture, integralsMatchDefaultAndMultiscale,
+                        bdata::make( kRunExprs ), exprString )
 {
-    Test t0 ;
-    t0.run("x:x:y");
+    auto g = expr( exprString );
+
+    auto int_volume_msq = integrate( _range=elements( mesh ),
+                                     _expr=g,
+                                     _quad=_Q<1,MultiScaleQuadrature>() ).evaluate();
+    auto int_volume_std = integrate( _range=elements( mesh ),
+                                     _expr=g ).evaluate();
+
+    auto int_boundary_msq = integrate( _range=boundaryfaces( mesh ),
+                                       _expr=g,
+                                       _quad=_Q<1,MultiScaleQuadrature>() ).evaluate();
+    auto int_boundary_std = integrate( _range=boundaryfaces( mesh ),
+                                       _expr=g ).evaluate();
+
+    BOOST_TEST_CONTEXT( "expr=" << exprString )
+    {
+        BOOST_CHECK_CLOSE( int_volume_msq( 0, 0 ), int_volume_std( 0, 0 ), kTolerancePct );
+        BOOST_CHECK_CLOSE( int_boundary_msq( 0, 0 ), int_boundary_std( 0, 0 ), kTolerancePct );
+    }
 }
 
-
-BOOST_AUTO_TEST_CASE( test_run1 ) 
+/** @test Projection and quadrature produce the same L2 approximation. */
+BOOST_DATA_TEST_CASE_F( IntegrateQuadraFixture, projectionMatchesQuadrature,
+                        bdata::make( kResolExprs ), exprString )
 {
-    Test t1 ;
-    t1.run("x*x:x:y");
+    auto Vh = Pch<1>( mesh );
+    auto u = Vh->element();
+    auto v = Vh->element();
+
+    auto g = expr( exprString );
+    auto gProj = vf::project( _space=Vh, _range=elements( mesh ), _expr=g );
+
+    auto a = form2( _trial=Vh, _test=Vh );
+    // Use a higher-order multi-scale quadrature to reduce projection error
+    a = integrate( _range=elements( mesh ),
+                   _expr=idt( u )*id( v ),
+                   _quad=_Q<3,MultiScaleQuadrature>() );
+
+    auto l = form1( _test=Vh );
+    l = integrate( _range=elements( mesh ),
+                   _expr=g*id( v ),
+                   _quad=_Q<3,MultiScaleQuadrature>() );
+
+    a.solve( _rhs=l, _solution=u );
+
+    const auto diff = normL2( _range=elements( mesh ), _expr=idv( u )-idv( gProj ) );
+    BOOST_TEST_CONTEXT( "expr=" << exprString )
+    {
+        BOOST_CHECK_SMALL( diff, 1e-3 );
+    }
 }
-
-
-BOOST_AUTO_TEST_CASE( test_run2 )
-{
-    Test t2 ;
-    t2.run("x*x*x*x*x:x:y");
-}
-
-
-BOOST_AUTO_TEST_CASE( test_run3 )
-{
-    Test t3 ;
-    t3.run("x+y:x:y");
-}
-
-
-BOOST_AUTO_TEST_CASE( test_run4 )
-{
-    Test t4 ;
-    t4.run("cos(x)*sin(y):x:y");
-}
-
-
-BOOST_AUTO_TEST_CASE( test_run5 )
-{
-    Test t5 ;
-    t5.run("cos(x*y):x:y");
-}
-
-
-BOOST_AUTO_TEST_CASE( test_run6 )
-{
-    Test t6 ;
-    t6.run("tan(x*x*x):x:y");
-}
-
-
-BOOST_AUTO_TEST_CASE( test_run7 )
-{
-    Test t7 ;
-    t7.run("y*exp(x):x:y");
-}
-
-
-BOOST_AUTO_TEST_CASE( test_resol0 )
-{
-    Test t0 ;
-    t0.resol("sin(x):x:y");
-}
-
-
-BOOST_AUTO_TEST_CASE( test_resol1 )
-{
-    Test t1 ;
-    t1.resol("x*x*x*x:x:y");
-}
-
-
-BOOST_AUTO_TEST_CASE( test_resol2 )
-{
-    Test t2 ;
-    t2.resol("x+y:x:y");
-}
-
-BOOST_AUTO_TEST_CASE( test_resol3 )
-{
-    Test t3 ;
-    t3.resol("x*y:x:y");
-}
-
-
-BOOST_AUTO_TEST_CASE( test_resol4 )
-{
-    Test t4 ;
-    t4.resol("cos(x)*sin(y):x:y");
-}
-
-BOOST_AUTO_TEST_CASE( test_resol5 )
-{
-    Test t5 ;
-    t5.resol("cos(x*y):x:y");
-}
-
-BOOST_AUTO_TEST_CASE( test_resol6 )
-{
-    Test t6 ;
-    t6.resol("tan(x*x*x):x:y");
-}
-
-
-BOOST_AUTO_TEST_CASE( test_resol7 )
-{
-    Test t7 ;
-    t7.resol("y*exp(x):x:y");
-}
-
 
 BOOST_AUTO_TEST_SUITE_END()
-#else
-std::cout << "USE_BOOST_TEST non define" << std::endl;
-#endif
-

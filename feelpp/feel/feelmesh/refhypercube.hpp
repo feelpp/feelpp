@@ -34,7 +34,7 @@
 
 namespace Feel
 {
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
+template<int Dim, int Order, int RDim,  typename T>
 class Reference<Hypercube<Dim, Order, RDim>, Dim, Order, RDim, T>
     :
 public Hypercube<Dim, Order, RDim>
@@ -942,7 +942,7 @@ private:
 template<typename T> class Entity<SHAPE_QUAD, T>: public Reference<Hypercube<2, 1, 2>, 2, 1, 2, T> {};
 template<typename T> class Entity<SHAPE_HEXA, T>: public Reference<Hypercube<3, 1, 3>, 3, 1, 3, T> {};
 
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
+template<int Dim, int Order, int RDim,  typename T>
 void
 Reference<Hypercube<Dim, Order, RDim>, Dim, Order, RDim, T>::computeBarycenters()
 {
@@ -955,7 +955,7 @@ Reference<Hypercube<Dim, Order, RDim>, Dim, Order, RDim, T>::computeBarycenters(
     }
 }
 
-template<uint16_type Dim, uint16_type Order, uint16_type RDim,  typename T>
+template<int Dim, int Order, int RDim,  typename T>
 void
 Reference<Hypercube<Dim, Order, RDim>, Dim, Order, RDim, T>::computeMeasure()
 {

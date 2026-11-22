@@ -18,7 +18,7 @@
 #include <feel/feelpoly/im.hpp>
 #include <feel/feeldiscr/context.hpp>
 #include <feel/feelviewfactor/viewfactorbase.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/vf_eval.hpp>
 
 namespace Feel {
 
@@ -171,7 +171,7 @@ UnobstructedPlanarViewFactor<MeshType>::compute(bool elementwise /*false by defa
                         }
                     }
                 }                  
-                this->vf_( current_index, remote_index ) /= integrate(_range = current_range, _expr = cst(1.0) ).evaluate()(0,0);              
+                this->vf_( current_index, remote_index ) /= Feel::integrate(_range = current_range, _expr = vf::cst(1.0) ).evaluate()(0,0);              
                 if(this->j_["viewfactor"]["algorithm"] == "SingleAreaIntegration" && current_index==remote_index)
                 {
                     this->vf_( current_index, remote_index ) = math::abs(1 + this->vf_( current_index, remote_index )) ;

@@ -77,9 +77,9 @@ using decay_type = std::decay_t<remove_shared_ptr_type<std::decay_t<T>>>;
 template<typename T>
 decltype(auto) remove_shared_ptr_f( T&& e )
 {
-    return hana::if_( hana::bool_<is_shared_ptr_v<T>>{},
-                     []( auto&& x ) { return *x; },
-                     []( auto&& x ) { return x; } )( std::forward<T>(e) );
+    return hana::if_( hana::bool_<is_shared_ptr_v<std::decay_t<T>>>{},
+                     []( auto&& x ) -> decltype(auto) { return *std::forward<decltype(x)>( x ); },
+                     []( auto&& x ) -> decltype(auto) { return std::forward<decltype(x)>( x ); } )( std::forward<T>(e) );
 
 }
 

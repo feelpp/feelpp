@@ -366,4 +366,30 @@ BOOST_AUTO_TEST_CASE( test_matrix_petsc_operations )
     BOOST_CHECK_CLOSE( mat1c->l1Norm(), 5*(9+8+7)*5, tolCheck );
 
 }
+
+// MatrixPetsc::clone() must keep the index split (PCFIELDSPLIT reads it from the
+// matrix handed to PETSc), and must still work on a matrix that has none.
+BOOST_AUTO_TEST_CASE( test_matrix_petsc_clone_index_split )
+{
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
+    auto Vh = Pch<1>( mesh );
+    auto backendPetsc = backend(_kind="petsc");
+
+    // built from the spaces: the matrix gets the space's index split
+    auto withSplit = backendPetsc->newMatrix( _test=Vh, _trial=Vh );
+    withSplit->close();
+    BOOST_REQUIRE( withSplit->indexSplit() );
+    auto cloned = withSplit->clone();
+    BOOST_REQUIRE( cloned );
+    BOOST_CHECK( cloned->indexSplit() == withSplit->indexSplit() );
+
+    // built from data maps: no index split is set
+    auto graph = stencil( _test=Vh, _trial=Vh )->graph();
+    auto withoutSplit = backendPetsc->newMatrix( Vh->dof(), Vh->dof(), graph );
+    withoutSplit->close();
+    BOOST_REQUIRE( !withoutSplit->indexSplit() );
+    auto clonedWithoutSplit = withoutSplit->clone();
+    BOOST_REQUIRE( clonedWithoutSplit );
+    BOOST_CHECK( !clonedWithoutSplit->indexSplit() );
+}
 BOOST_AUTO_TEST_SUITE_END()

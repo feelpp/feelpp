@@ -1,97 +1,88 @@
-//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-//!
-//! This file is part of the Feel++ library
-//!
-//! This library is free software; you can redistribute it and/or
-//! modify it under the terms of the GNU Lesser General Public
-//! License as published by the Free Software Foundation; either
-//! version 2.1 of the License, or (at your option) any later version.
-//!
-//! This library is distributed in the hope that it will be useful,
-//! but WITHOUT ANY WARRANTY; without even the implied warranty of
-//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//! Lesser General Public License for more details.
-//!
-//! You should have received a copy of the GNU Lesser General Public
-//! License along with this library; if not, write to the Free Software
-//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-//!
-//! @file
-//! @author Vincent Chabannes <vincent.chabannes@feelpp.org>
-//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-//! @date 03 May 2017
-//! @copyright 2017 Feel++ Consortium
-//!
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2014-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/checker.hpp>
 #include <feel/feeldiscr/pch.hpp>
-#include <feel/feeldiscr/thch.hpp>
-#include <feel/feeldiscr/p2ch.hpp>
-#include <feel/feeldiscr/product.hpp>
+#include <feel/feeldiscr/pchv.hpp>
+#include <feel/feeldiscr/pdh.hpp>
+#include <feel/feeldiscr/productfunctionspaces.hpp>
+#include <feel/feeldiscr/traits.hpp>
 #include <feel/feeldiscr/check.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelpython/pyexpr.hpp>
+#include <feel/feelvf/vf_eval.hpp>
+#include <feel/feelvf/print.hpp>
 #include <feel/feelvf/blockforms.hpp>
-#include <feel/feelvf/vf.hpp>
+#include "discretization.hpp"
 
 ///[stokes]
-template<typename MeshPtrType>
+template<typename VelocitySpacePtrType, typename PressureSpacePtrType>
 int
-stokes(MeshPtrType mesh)
+stokes(VelocitySpacePtrType velocitySpace, PressureSpacePtrType pressureSpace)
 {
     using namespace Feel;
+    using namespace boost::hana::literals;
 
     // tag::mesh_space[]
     tic();
-    auto Uh = Pchv<2>(mesh);
-    auto Qh = Pch<1>(mesh);
-    auto ps = product( Uh, Qh );
-    auto u = trial( Uh, "u" );
-    auto v = test( Uh, "v" );
-    auto p = trial( Qh, "p" );
-    auto q = test( Qh, "q" );
-    auto W = ps.element();
-    auto uh = W( 0_c );
-    auto ph = W( 1_c );
+    auto mesh = velocitySpace->mesh();
+    auto Vh = productFunctionSpacesPtr( velocitySpace, pressureSpace );
+    auto U = Vh->element("U");
+    auto& u = U.template element<0>();
+    auto& p = U.template element<1>();
+    auto v = U.template element<0>();
+    auto q = U.template element<1>();
     auto mu = doption(_name="mu");
-    auto f = expr<FEELPP_DIM,1>( soption(_name="functions.f") );
+    auto f = vf::expr<FEELPP_DIM,1>( soption(_name="functions.f") );
     auto thechecker = checker(_name="qs_stokes",_solution_key=soption("checker.solution"));
-    auto solution = expr<FEELPP_DIM,1>( thechecker.check()? thechecker.solution() : soption(_name="functions.g") );
+    auto solution = vf::expr<FEELPP_DIM,1>( thechecker.check()? thechecker.solution() : soption(_name="functions.g") );
     auto g = solution;
     toc("Vh");
     // end::mesh_space[]
 
     // tag::forms[]
     tic();
-    auto l = blockform1( ps, solve::strategy::monolithic, backend() );
-    l( 0_c ) = integrate(_range=elements(mesh),
-                         _expr=inner(f,v));
+    auto l = blockform1( Vh->productSpace(), solve::strategy::monolithic, backend() );
+    l( 0_c ) += Feel::integrate(_range=elements(mesh),
+                        _expr=vf::inner(f,vf::id(v)));
     toc("l");
 
     tic();
-    auto a = blockform2( ps, solve::strategy::monolithic, backend() );
-    a( 0_c, 0_c ) += integrate(_range=elements(mesh),
-                               _expr=2*mu*inner( symm_grad(u), symm_grad(v) ) );
-    a( 0_c, 1_c ) += integrate(_range=elements(mesh),
-                               _expr=-p*div(v) );
-    a( 1_c, 0_c ) += integrate(_range=elements(mesh),
-                               _expr=q*div(u) );
+    auto a = blockform2( Vh->productSpace(), solve::strategy::monolithic, backend() );
+    auto deft = vf::sym(vf::gradt(u));
+    tic();
+    a( 0_c, 0_c ) += Feel::integrate(_range=elements(mesh),
+                        _expr=vf::inner( 2*mu*deft, vf::grad(v) ) );
+    a( 0_c, 1_c ) += Feel::integrate(_range=elements(mesh),
+                         _expr=-vf::idt(p)*vf::div(v) );
+    a( 1_c, 0_c ) += Feel::integrate(_range=elements(mesh),
+                         _expr=vf::id(q)*vf::divt(u) );
     toc("a");
 
     l.close();
     a.close();
 
     if ( mesh->hasAnyMarker({"inlet","Dirichlet"}) )
-        a.row( 0_c ) += on(_range=markedfaces(mesh,{"inlet","Dirichlet"}), _rhs=l( 0_c ), _element=uh, _expr=g, _type="elimination" );
+        a.row( 0_c ) += Feel::on(_range=markedfaces(mesh,{"inlet","Dirichlet"}), _rhs=l( 0_c ), _element=u, _expr=g, _type="elimination" );
     if ( mesh->hasAnyMarker({"wall","letters"}) )
-        a.row( 0_c ) += on(_range=markedfaces(mesh,{"wall","letters"}), _rhs=l( 0_c ), _element=uh, _expr=zero<FEELPP_DIM,1>(), _type="elimination" );
+        a.row( 0_c ) += Feel::on(_range=markedfaces(mesh,{"wall","letters"}), _rhs=l( 0_c ), _element=u, _expr=vf::zero<FEELPP_DIM,1>(), _type="elimination" );
     toc("a");
 
     tic();
     //! solve the linear system, find u s.t. a(u,v)=l(v) for all v
     if ( !boption( "no-solve" ) )
-        a.solve(_rhs=l,_solution=W);
+    {
+        auto const status = a.solve(_rhs=l,_solution=U.productElement());
+        if ( !status.isConverged() )
+            return 1;
+    }
     toc("a.solve");
     // end::forms[]
 
@@ -99,8 +90,8 @@ stokes(MeshPtrType mesh)
     tic();
     auto e = exporter( _mesh=mesh );
     e->addRegions();
-    e->add( "uh", uh );
-    e->add( "ph", ph );
+    e->add( "uh", u );
+    e->add( "ph", p );
     if ( thechecker.check() )
     {
         e->add( "u", solution );
@@ -109,7 +100,7 @@ stokes(MeshPtrType mesh)
     toc("Exporter");
     // end::export[]
 
-    return check( thechecker, uh );
+    return check( thechecker, u );
 }
 ///[stokes]
 int main(int argc, char**argv )
@@ -122,6 +113,8 @@ int main(int argc, char**argv )
 	    laplacianoptions.add_options()
             ( "mu", po::value<double>()->default_value( 1.0 ), "viscosity" )
             ( "space", po::value<std::string>()->default_value( "P2P1" ), "space type: P2P1(default), P1P1, P1P0" )
+            ( "order", po::value<int>(), "pressure order (default 1, or 0 for P1P0); velocity order is one higher except for equal-order P1P1" )
+            ( "geometry.order", po::value<int>()->default_value( 1 ), "mesh geometric transformation order" )
             ( "no-solve", po::value<bool>()->default_value( false ), "No solve" )
 	    	;
 
@@ -134,12 +127,28 @@ int main(int argc, char**argv )
 
         tic();
         ///[stokes-mesh]
-        auto mesh = loadMesh(_mesh=new Mesh<Simplex<FEELPP_DIM,1>>);
+        auto mesh = loadMesh(_mesh=new Mesh<Simplex<FEELPP_DIM,Dynamic>>( quickstart::geometryOrder() ));
+        quickstart::checkMeshOrder( mesh );
         ///[stokes-mesh]
         toc("loadMesh");
 
         ///[stokes-space]
-        return stokes(mesh);
+        auto const space = soption( "space" );
+        if ( space != "P2P1" && space != "P1P1" && space != "P1P0" )
+            throw std::invalid_argument( "space must be P2P1, P1P1 or P1P0" );
+        bool const discontinuousPressure = space == "P1P0";
+        auto const pressureOrder = Environment::vm().count( "order" )
+                                       ? quickstart::checkedOrder( "order", discontinuousPressure ? 0 : 1 )
+                                       : RuntimeOrder{ discontinuousPressure ? 0 : 1 };
+        auto const velocityOrder = RuntimeOrder::checked( pressureOrder.value + ( space == "P1P1" ? 0 : 1 ) );
+        auto velocitySpace = Pchv<Dynamic>( mesh, velocityOrder );
+        int status;
+        if ( discontinuousPressure )
+            status = stokes( velocitySpace, Pdh<Dynamic>( mesh, pressureOrder ) );
+        else
+            status = stokes( velocitySpace, Pch<Dynamic>( mesh, pressureOrder ) );
+        ///[stokes-space]
+        return status;
     }
     catch( ... ) 
     {

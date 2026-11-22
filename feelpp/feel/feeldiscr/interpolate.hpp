@@ -1,26 +1,12 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2008-01-31
-
-  Copyright (C) 2008-2011 Universite Joseph Fourier (Grenoble I)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file interpolate.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -216,8 +202,9 @@ interpolate( std::shared_ptr<SpaceType> const& space,
                         uint16_type f_ldofId = ldof.first.localDof();
                         if constexpr ( f_fe_type::nComponents > 1 )
                         {
-                            uint16_type comp = f_ldofId/basis_type::nLocalDof;
-                            f_ldofId = space->fe()->dofParent( f_ldofId ) + comp*f_fe_type::nLocalDof;
+                            uint16_type comp = f_ldofId/space->fe()->localDof();
+                            f_ldofId = space->fe()->dofParent( f_ldofId ) +
+                                       comp*f.functionSpace()->fe()->localDof();
                         }
                         DCHECK( f_ldofId < f_indices.size() ) << "something wrong " << f_ldofId << " vs " << f_indices.size();
                         index_type f_index = f_indices[f_ldofId];
@@ -229,7 +216,9 @@ interpolate( std::shared_ptr<SpaceType> const& space,
                         {
                             for ( uint16_type c2=0; c2<interp[c1].size(); ++c2 )
                             {
-                                uint16_type newLocalDofId = ldof.first.localDof()+(c2+f_fe_type::nComponents2*c1)*f_fe_type::nLocalDof;
+                                uint16_type newLocalDofId = ldof.first.localDof()+
+                                    (c2+f_fe_type::nComponents2*c1)*
+                                    f.functionSpace()->fe()->localDof();
                                 DCHECK( newLocalDofId <  f_indices.size() ) << "something wrong " << newLocalDofId << " vs " << f_indices.size();
                                 index_type f_index = f_indices[newLocalDofId];
                                 unwrap_ptr(interp[c1][c2])( index ) = f(f_index);
@@ -256,11 +245,13 @@ interpolate( std::shared_ptr<SpaceType> const& space,
                     expr_evaluator.update( vf::mapgmc( gmc ) );
                     __fe->interpolate( expr_evaluator, IhLoc );
 
-                    auto const& s = space->dof()->localToGlobalSigns( curElt.id() );
+                    auto canonicalIh = IhLoc;
+                    space->dof()->mapLocalToCanonicalDofCoefficients(
+                        curElt.id(), canonicalIh );
                     for( auto const& ldof : space->dof()->localDof( curElt.id() ) )
                     {
                         index_type index = ldof.second.index();
-                        interp( index ) = s(ldof.first.localDof())*IhLoc( ldof.first.localDof() );
+                        interp( index ) = canonicalIh( ldof.first.localDof() );
                         dofUsedWithPartialMeshSupport.insert( index );
                     }
                 }
@@ -279,16 +270,25 @@ interpolate( std::shared_ptr<SpaceType> const& space,
                     expr_evaluator.update( vf::mapgmc( gmc ) );
 
                     for ( auto & [c1,c2,IhLoc] : IhLocsByComp )
-                        for( int q = 0; q <  __fe->nLocalDof; ++q )
+                        for ( uint16_type q = 0; q < __fe->localDofCount( true ); ++q )
                             IhLoc( q ) = expr_evaluator.evalq( c1, c2, q );
 
-                    auto const& s = space->dof()->localToGlobalSigns( curElt.id() );
+                    std::vector<std::tuple<uint16_type,uint16_type,decltype(__fe->localInterpolant())>> canonicalIhByComp;
+                    canonicalIhByComp.reserve( IhLocsByComp.size() );
+                    for ( auto const& [c1,c2,IhLoc] : IhLocsByComp )
+                    {
+                        auto canonicalIh = IhLoc;
+                        space->dof()->mapLocalToCanonicalDofCoefficients(
+                            curElt.id(), canonicalIh );
+                        canonicalIhByComp.emplace_back(
+                            c1, c2, std::move( canonicalIh ) );
+                    }
                     for( auto const& ldof : space->dof()->localDof( curElt.id() ) )
                     {
                         index_type gindex = ldof.second.index();
                         uint16_type lindex = ldof.first.localDof();
-                        for ( auto const& [c1,c2,IhLoc] : IhLocsByComp )
-                            unwrap_ptr(interp[c1][c2])( gindex ) = s(lindex)*IhLoc( lindex );
+                        for ( auto const& [c1,c2,canonicalIh] : canonicalIhByComp )
+                            unwrap_ptr(interp[c1][c2])( gindex ) = canonicalIh( lindex );
                         dofUsedWithPartialMeshSupport.insert( gindex );
                     }
                 }
@@ -396,7 +396,6 @@ interpolate( std::shared_ptr<SpaceType> const& space,
 
                     //for ( uint16_type comp = 0;comp < basis_type::nComponents;++comp )
                     {
-                        //size_type globaldof =  basis_type::nLocalDof*comp+first_dof+dof;
                         //size_type globaldof =  first_dof+ndofcomp*comp+dof;
                         //size_type globaldof =  first_dof+dof;
                         size_type globaldof = dof;

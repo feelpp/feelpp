@@ -37,7 +37,7 @@ namespace py = pybind11;
 
 using namespace Feel;
 
-template<typename SpaceT>
+template<typename SpaceT, int SpaceOrder>
 void defBDF( py::module& m )
 {
     using namespace Feel;
@@ -46,7 +46,7 @@ void defBDF( py::module& m )
     using mesh_t = typename SpaceT::mesh_type;
     using mesh_ptr_t = std::shared_ptr<mesh_t>;
     constexpr int Dim = mesh_t::nDim;
-    constexpr int Order = space_t::basis_type::nOrder;
+    constexpr int Order = SpaceOrder;
     constexpr int RealDim = mesh_t::nRealDim;
     using size_type = uint32_type;
 
@@ -59,8 +59,11 @@ void defBDF( py::module& m )
         suffix = std::string( "Pdh" );
     if ( !space_t::is_continuous && space_t::is_vectorial )
         suffix = std::string( "Pdhv" );
-    std::string pyclass_name = fmt::format( "BDF_{}_{}D_P{}", suffix, Dim, Order );
+    std::string order_label = ( Order == Dynamic ) ? "Dynamic" : std::to_string( Order );
+    std::string pyclass_name = fmt::format( "BDF_{}_{}D_P{}", suffix, Dim, order_label );
     VLOG(2) << fmt::format( "[wrapper BDF] class name: {}", pyclass_name );
+    if ( py::hasattr( m, pyclass_name.c_str() ) )
+        return;
 
     using bdf_t = Bdf<space_t>;
     using bdf_ptr_t = std::shared_ptr<bdf_t>;
@@ -109,16 +112,21 @@ PYBIND11_MODULE(_ts, m )
         constexpr int _order = std::decay_t<decltype(o)>::value;
         // 1D
         //std::cout << fmt::format("-- BDF Pch 1D P{}", _order ) << std::endl;
-        defBDF<Pch_type<Mesh<Simplex<1>>, _order>>( m );
+        defBDF<Pch_type<Mesh<Simplex<1>>, _order>, _order>( m );
         // 2D
         //std::cout << fmt::format("-- BDF Pch 2D P{}", _order ) << std::endl;
-        defBDF<Pch_type<Mesh<Simplex<2>>, _order>>( m );
+        defBDF<Pch_type<Mesh<Simplex<2>>, _order>, _order>( m );
         //std::cout << fmt::format("-- BDF Pchv 2D P{}", _order ) << std::endl;
-        defBDF<Pchv_type<Mesh<Simplex<2>>, _order>>( m );
+        defBDF<Pchv_type<Mesh<Simplex<2>>, _order>, _order>( m );
         // 3D
         //std::cout << fmt::format("-- BDF Pch 3D P{}", _order ) << std::endl;
-        defBDF<Pch_type<Mesh<Simplex<3>>, _order>>( m );
-        defBDF<Pchv_type<Mesh<Simplex<3>>, _order>>( m );
+        defBDF<Pch_type<Mesh<Simplex<3>>, _order>, _order>( m );
+        defBDF<Pchv_type<Mesh<Simplex<3>>, _order>, _order>( m );
     });
+    defBDF<Pch_type<Mesh<Simplex<1>>, Dynamic>, Dynamic>( m );
+    defBDF<Pch_type<Mesh<Simplex<2>>, Dynamic>, Dynamic>( m );
+    defBDF<Pchv_type<Mesh<Simplex<2>>, Dynamic>, Dynamic>( m );
+    defBDF<Pch_type<Mesh<Simplex<3>>, Dynamic>, Dynamic>( m );
+    defBDF<Pchv_type<Mesh<Simplex<3>>, Dynamic>, Dynamic>( m );
 
 }

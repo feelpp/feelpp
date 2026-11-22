@@ -112,7 +112,20 @@ public:
     }
 
     //! polynomial order
-    constexpr uint16_type polynomialOrder() const { return Element1::functionspace_type::basis_type::nOrder+Element2::functionspace_type::basis_type::nOrder; }
+    uint16_type polynomialOrder() const {
+        using basis1_type = typename Element1::functionspace_type::basis_type;
+        using basis2_type = typename Element2::functionspace_type::basis_type;
+        int order1, order2;
+        if constexpr ( basis1_type::is_order_dynamic )
+            order1 = M_v.functionSpace()->order();
+        else
+            order1 = basis1_type::nOrder;
+        if constexpr ( basis2_type::is_order_dynamic )
+            order2 = M_u.functionSpace()->order();
+        else
+            order2 = basis2_type::nOrder;
+        return order1 + order2;
+    }
 
     //! expression is polynomial?
     constexpr bool isPolynomial() const { return true; }

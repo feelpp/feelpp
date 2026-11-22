@@ -37,8 +37,8 @@ namespace Feel
 namespace ublas = boost::numeric::ublas;
 
 template< class Convex,
-          uint16_type Order,
-          template<class, uint16_type, class> class PointSetType,
+          int Order,
+          template<class, int, class> class PointSetType,
           typename value_type >
 value_type lebesgueConstant()
 {

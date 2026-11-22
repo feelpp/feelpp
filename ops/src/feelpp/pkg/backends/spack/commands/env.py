@@ -1,3 +1,6 @@
+# SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+# SPDX-FileCopyrightText: 2026 University of Strasbourg
+# SPDX-License-Identifier: LGPL-3.0-or-later
 from __future__ import annotations
 
 import argparse
@@ -199,7 +202,16 @@ def command_spack_env_list(args: argparse.Namespace) -> int:
             for manifest in manifests
         ],
     }
-    print(json.dumps(payload, indent=2))
+    if getattr(args, "json", True):
+        print(json.dumps(payload, indent=2))
+    else:
+        active = os.getenv("SPACK_ENV")
+        active_path = Path(active).resolve() if active else None
+        for environment in payload["environments"]:
+            marker = "*" if active_path == Path(environment["environment_root"]) else " "
+            views = environment["views"]
+            state = "view present" if views and all(view["exists"] for view in views) else "view missing"
+            print(f"{marker} {environment['name']} ({state})")
     return 0
 
 

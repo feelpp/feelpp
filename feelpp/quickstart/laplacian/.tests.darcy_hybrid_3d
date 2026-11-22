@@ -1,1 +1,5 @@
+# SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+# SPDX-FileCopyrightText: 2026 University of Strasbourg
+# SPDX-License-Identifier: LGPL-3.0-or-later
 quarterturn-hybrid --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/quarter-turn/darcy-quarter-turn3D-hybrid.cfg --no-export
+runtime-bdm2-g2 --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/quarter-turn/darcy-quarter-turn3D-hybrid.cfg --darcy.flux-family=bdm --darcy.order=2 --geometry.order=2 --gmsh.hsize=0.5 --functions.f={0,0,0}:x:y:z --functions.g=1 --solution.V=0 --solution.j={0,0,0}:x:y:z --sc.condense=true --checks.tolerance=1e-8 --directory=qs_darcy_hybrid/runtime-bdm2-g2 --no-export

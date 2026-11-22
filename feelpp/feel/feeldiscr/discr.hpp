@@ -36,6 +36,8 @@
 #include <feel/feeldiscr/thch.hpp>
 #include <feel/feeldiscr/p2ch.hpp>
 #include <feel/feeldiscr/dh.hpp>
+#include <feel/feeldiscr/bdmh.hpp>
+#include <feel/feeldiscr/neh.hpp>
 #include <feel/feeldiscr/dhpdh.hpp>
 
 // operations

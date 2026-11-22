@@ -1,26 +1,12 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2014-04-07
-
-  Copyright (C) 2014-2016 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file element_impl.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -38,78 +24,24 @@
 
 namespace Feel{
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 template<int i>
-typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::template sub_element<i>::type
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::elementImpl( std::string const& name,
+typename FunctionSpace<A0, A1, A2, A3>::template Element<Y,Cont>::template sub_element<i>::type
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::elementImpl( std::string const& name,
                                                                       bool updateOffViews )
 {
-    size_type nbdof_start = this->functionSpace()->nLocalDofWithoutGhostStart( i );
-    size_type nbdofWithGhost_start = this->functionSpace()->nLocalDofWithGhostStart( i );
-    size_type startDofIndexGhost = nbdofWithGhost_start - nbdof_start;
-    //if ( !Cont::is_shallow_array_adaptor_vector )
-        //startDofIndexGhost += this->functionSpace()->dof()->nLocalDofWithoutGhost();
-
-
-    typename mpl::at_c<functionspace_vector_type,i>::type space( M_functionspace->template functionSpace<i>() );
-    DVLOG(2) << "Element <" << i << ">::start :  "<< nbdof_start << "\n";
-    DVLOG(2) << "Element <" << i << ">::size :  "<<  space->nDof()<< "\n";
-    DVLOG(2) << "Element <" << i << ">::local size :  "<<  space->nLocalDof()<< "\n";
-    DVLOG(2) << "Element <" << -1 << ">::size :  "<<  this->size() << "\n";
-
-    if ( this->functionSpace()->template functionSpace<i>()->worldComm().isActive() )
-    {
-        ct_type ct( *this, ublas::range( nbdof_start, nbdof_start+space->dof()->nLocalDofWithoutGhost() ),
-                    ublas::range( startDofIndexGhost, startDofIndexGhost+space->dof()->nLocalGhosts() ),
-                    M_functionspace->template functionSpace<i>()->dof() );
-
-        // update M_containersOffProcess<i> : send
-        if ( this->worldComm().globalSize()>1 && updateOffViews && !this->functionSpace()->hasEntriesForAllSpaces() )
-        {
-            std::vector<double> dataToSend( ct.begin(), ct.end() );
-
-            if ( !M_containersOffProcess ) M_containersOffProcess = boost::in_place();
-
-            fusion::for_each( *M_containersOffProcess, Feel::detail::SendContainersOn<i,functionspace_type>( this->functionSpace(), dataToSend ) );
-        }
-
-        DVLOG(2) << "Element <" << i << ">::range.size :  "<< ct.size() << "\n";
-        DVLOG(2) << "Element <" << i << ">::range.start :  "<< ct.start() << "\n";
-        return typename sub_element<i>::type( space, ct, name );
-    }
-
-    else
-    {
-        // initialize if not the case
-        if ( !M_containersOffProcess ) M_containersOffProcess = boost::in_place();
-
-        fusion::for_each( *M_containersOffProcess, Feel::detail::InitializeContainersOff<i,functionspace_type>( this->functionSpace() ) );
-
-        // update M_containersOffProcess<i> : recv
-        if ( this->worldComm().globalSize()>1 && updateOffViews && !this->functionSpace()->hasEntriesForAllSpaces() )
-        {
-            fusion::for_each( *M_containersOffProcess, Feel::detail::RecvContainersOff<i,functionspace_type>( this->functionSpace() ) );
-        }
-
-        // build a subrange view identical
-        ct_type ct( *fusion::at_c<i>( *M_containersOffProcess ),
-                    ublas::range( 0, space->nLocalDof() ),
-                    ublas::range( 0, 0 ),
-                    M_functionspace->template functionSpace<i>()->dof() );
-
-        DVLOG(2) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
-        DVLOG(2) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
-
-        return typename sub_element<i>::type( space, ct, name );
-    }
+    return functionspace_type::legacy_composite_element_ops_type::template buildSubElementView<i>( *this,
+                                                                                                  M_containersOffProcess,
+                                                                                                  name,
+                                                                                                  updateOffViews );
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 template<int i,typename ExprT>
-typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::template sub_element<i>::type &
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::element( ExprT e, std::string const& name,
+typename FunctionSpace<A0, A1, A2, A3>::template Element<Y,Cont>::template sub_element<i>::type &
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::element( ExprT e, std::string const& name,
                                                              bool updateOffViews,
                                                              typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type*  )
 {
@@ -120,9 +52,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::element( ExprT e, std::strin
 //
 // Element implementation
 //
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element()
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::Element()
     :
     super(),
     M_start( 0 ),
@@ -133,9 +65,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element()
     this->initSubElementView( mpl::bool_<functionspace_type::is_composite>() );
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( Element const& __e )
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::Element( Element const& __e )
     :
     super( __e ),
     M_backingGuard( __e.M_backingGuard ),
@@ -153,9 +85,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( Element const& __e 
 }
 
 #if 0
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( Element && __e )
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::Element( Element && __e )
     :
     super( __e ),
     M_functionspace( std::move(__e.M_functionspace) ),
@@ -181,9 +113,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( Element && __e )
 }
 #endif
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrtype const& __functionspace,
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::Element( functionspace_ptrtype const& __functionspace,
                                                              std::string const& __name,
                                                              std::string const& __desc,
                                                              size_type __start,
@@ -206,9 +138,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
     this->initSubElementView( mpl::bool_<functionspace_type::is_composite>() );
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrtype const& __functionspace,
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::Element( functionspace_ptrtype const& __functionspace,
                                                              std::string const& __name,
                                                              size_type __start,
                                                              ComponentType __ct )
@@ -218,9 +150,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
 }
 
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrtype const& __functionspace,
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::Element( functionspace_ptrtype const& __functionspace,
                                                              container_type const& __c,
                                                              std::string const& __name,
                                                              std::string const& __desc,
@@ -246,9 +178,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
     this->initSubElementView( mpl::bool_<functionspace_type::is_composite>() );
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrtype const& __functionspace,
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::Element( functionspace_ptrtype const& __functionspace,
                                                              container_type const& __c,
                                                              std::string const& __name,
                                                              size_type __start,
@@ -257,9 +189,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
     Element( __functionspace, __c, __name, __name, __start, __ct, __ct2 )
 {}
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrtype const& __functionspace,
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::Element( functionspace_ptrtype const& __functionspace,
                                                              size_type nActiveDof, value_type* arrayActiveDof,
                                                              size_type nGhostDof, value_type* arrayGhostDof )
     :
@@ -275,70 +207,36 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
     this->initSubElementView( mpl::bool_<functionspace_type::is_composite>() );
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::~Element()
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::~Element()
 {
     VLOG(1) << "Element destructor...";
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::initFromSpace( functionspace_ptrtype const& __functionspace,
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::initFromSpace( functionspace_ptrtype const& __functionspace,
         container_type const& __c )
 {
     M_functionspace = __functionspace;
     ( container_type )*this = __c;
 }
 
-namespace detail
-{
-template<typename ElementType>
-struct InitializeElement
-{
-    InitializeElement( ElementType * element )
-        :
-        M_element( element )
-        {}
-    template <typename T>
-    void operator()( T & x ) const
-    {
-        typedef typename T::first_type key_type;
-        typedef typename T::second_type::element_type myelt_type;
-        std::string name = (boost::format("%1%_%2%")%M_element->name() %key_type::value).str();
-
-        if( M_element->functionSpace() )
-        {
-            // build view if not built or built with an empty space
-            if ( !x.second || ( !x.second->functionSpace() ) )
-            {
-                auto e = M_element->template elementImpl<key_type::value>( name );
-                auto sp = std::make_shared<myelt_type>( e );
-                x = std::make_pair(key_type(), sp );
-            }
-        }
-        else if ( !x.second )
-        {
-            x = std::make_pair(key_type(), nullptr );
-        }
-    }
-    ElementType * M_element;
-};
-} // namespace detail
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::initSubElementView( mpl::true_ )
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::initSubElementView( mpl::true_ )
 {
     fusion::for_each( M_elements,
-                      Feel::detail::InitializeElement<Element<Y,Cont>>(this) );
+                      Feel::detail::LegacyCompositeInitializeElement<Element<Y,Cont>>( this ) );
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
-typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>&
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( Element<Y,Cont> const& __e )
+typename FunctionSpace<A0, A1, A2, A3>::template Element<Y,Cont>&
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::operator=( Element<Y,Cont> const& __e )
 {
     if (  this != &__e )
     {
@@ -361,10 +259,10 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( Element<Y,Cont> c
     return *this;
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
-typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>&
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( Element<Y,Cont> && __e )
+typename FunctionSpace<A0, A1, A2, A3>::template Element<Y,Cont>&
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::operator=( Element<Y,Cont> && __e )
 {
     if (  this != &__e )
     {
@@ -391,11 +289,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( Element<Y,Cont> &
     return *this;
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 template<typename ContOtherType>
-typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>&
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( Element<Y,ContOtherType> const& v )
+typename FunctionSpace<A0, A1, A2, A3>::template Element<Y,Cont>&
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::operator=( Element<Y,ContOtherType> const& v )
 {
     if ( !M_functionspace )
     {
@@ -408,11 +306,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( Element<Y,ContOth
     return *this;
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 template<typename VectorExpr>
-typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>&
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( VectorExpr const& __v )
+typename FunctionSpace<A0, A1, A2, A3>::template Element<Y,Cont>&
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::operator=( VectorExpr const& __v )
 {
     super::operator=( __v );
     this->initSubElementView( mpl::bool_<functionspace_type::is_composite>() );
@@ -426,10 +324,10 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( VectorExpr const&
 //
 // Interpolation tools
 //
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
-typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::id_type
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const& __x, bool extrapolate, bool parallel ) const
+typename FunctionSpace<A0, A1, A2, A3>::template Element<Y,Cont>::id_type
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::operator()( node_type const& __x, bool extrapolate, bool parallel ) const
 {
     this->updateGlobalValues();
 
@@ -553,11 +451,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
     }
 
 } // operator()
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 template<typename Context_t>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v ) const
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v ) const
 {
 #if 0 // TODO VINCENT
     if ( is_hcurl_conforming && ( ( context.gmContext()->context & vm::KB ) == 0 ) )
@@ -574,13 +472,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
         return;
 
     const uint16_type nq = context.xRefs().size2();
-    auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
-
     for( auto const& ldof : M_functionspace->dof()->localDof( elt_id ) )
     {
         size_type index = ldof.second.index();
         uint16_type local_dof = ldof.first.localDof();
-        auto v_ = super::operator[]( index )*s(local_dof);
+        auto v_ = this->orientedLocalCoefficient( elt_id, local_dof );
         for ( uint16_type q = 0; q < nq; ++q )
         {
             v[q] += context.id(local_dof,q)*v_;
@@ -588,20 +484,21 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
     }
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::idInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
 
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
+        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
+                         std::true_type{} );
     else
-        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
-    auto it = __loc->result_analysis_begin();
-    auto it_end = __loc->result_analysis_end();
+        __loc->localize( __ptsReal, invalid_v<index_type> );
+    auto it = __loc->resultAnalysisBegin();
+    auto it_end = __loc->resultAnalysisEnd();
 
     //geomap
     gm_ptrtype __gm = this->functionSpace()->gm();
@@ -668,10 +565,10 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( matrix_node_t
 //
 // Grad
 //
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
-typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::grad_type
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad( node_type const& __x ) const
+typename FunctionSpace<A0, A1, A2, A3>::template Element<Y,Cont>::grad_type
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::grad( node_type const& __x ) const
 {
     this->updateGlobalValues();
 
@@ -773,12 +670,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad( node_type const& __x )
     }
 
 } // grad
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 template<typename ContextType>
-//typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
+//typename FunctionSpace<A0, A1, A2, A3>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & context, grad_array_type& v ) const
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::grad_( ContextType const & context, grad_array_type& v ) const
 {
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
@@ -791,43 +688,17 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
     if ( elt_id == invalid_v<index_type> )
         return;
 
-    //std::cout << "coeff=" << coeff << "\n";
-    //array_type v( boost::extents[nComponents1][nRealDim][context.xRefs().size2()] );
-    //std::fill( v.data(), v.data()+v.num_elements(), value_type( 0 ) );
-    for ( int l = 0; l < basis_type::nDof; ++l )
+    for ( auto const& ldof : M_functionspace->dof()->localDof( elt_id ) )
     {
-        const int ncdof = is_product?nComponents1:1;
+        size_type index = ldof.second.index();
+        uint16_type local_dof = ldof.first.localDof();
+        value_type v_ = this->orientedLocalCoefficient( elt_id, local_dof );
 
-        for ( int c1 = 0; c1 < ncdof; ++c1 )
+        for ( size_type q = 0; q < context.xRefs().size2(); ++q )
         {
-            int ldof = c1*basis_type::nDof+l;
-            size_type gdof = M_functionspace->dof()->localToGlobal( elt_id, l, c1 ).index();
-            FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
-                           gdof < this->lastLocalIndex() )
-            ( context.eId() )
-            ( l )( c1 )( ldof )( gdof )
-            ( this->size() )( this->localSize() )
-            ( this->firstLocalIndex() )( this->lastLocalIndex() )
-            .error( "FunctionSpace::Element invalid access index" );
-
-            //value_type v_ = (*this)( gdof );
-            value_type v_ = this->globalValue( gdof );
-
-            for ( size_type q = 0; q < context.xRefs().size2(); ++q )
-            {
-#if 0
-                em_fixed_size_matrix_t<nComponents1,nRealDim> mv( v[q].data() );
-                em_fixed_size_cmatrix_t<nComponents1,nRealDim> mg( context.grad( ldof, q ).data() );
-                mv.noalias()= v_*mg;
-#else
-                //v[q] = v_*context.grad( ldof, q );
-                for ( int k = 0; k < nComponents1; ++k )
-                    for ( int j = 0; j < nRealDim; ++j )
-                    {
-                        v[q]( k,j ) += v_*context.grad( ldof, k, j, q );
-                    }
-#endif
-            }
+            for ( int k = 0; k < nComponents1; ++k )
+                for ( int j = 0; j < nRealDim; ++j )
+                    v[q]( k,j ) += v_ * context.grad( local_dof, k, j, q );
         }
     }
 
@@ -872,12 +743,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
 #endif
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 template<typename ContextType,typename EType>
     requires EType::is_vectorial
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::symmetricGradient( ContextType const & context,
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::symmetricGradient( ContextType const & context,
                                                                        grad_array_type& v ) const
 {
     index_type elt_id = context.eId();
@@ -888,39 +759,32 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::symmetricGradient( ContextTy
     if ( elt_id == invalid_v<index_type> )
         return;
 
-    for ( int l = 0; l < basis_type::nDof; ++l )
+    for ( auto const& ldof : M_functionspace->dof()->localDof( elt_id ) )
     {
-        const int ncdof = is_product?nComponents1:1;
+        size_type index = ldof.second.index();
+        uint16_type local_dof = ldof.first.localDof();
+        value_type v_ = this->orientedLocalCoefficient( elt_id, local_dof );
 
-        for ( int c1 = 0; c1 < ncdof; ++c1 )
-        {
-            int ldof = c1*basis_type::nDof+l;
-            size_type gdof = M_functionspace->dof()->localToGlobal( elt_id, l, c1 ).index();
-
-            value_type v_ = this->globalValue( gdof );
-
-            for ( size_type q = 0; q < context.xRefs().size2(); ++q )
-            {
-                v[q] = v_*context.symmetricGradient( ldof, q );
-            }
-        }
+        for ( size_type q = 0; q < context.xRefs().size2(); ++q )
+            v[q] = v_ * context.symmetricGradient( local_dof, q );
     }
 
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::gradInterpolate(  matrix_node_type __ptsReal, grad_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::gradInterpolate(  matrix_node_type __ptsReal, grad_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
+        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
+                         std::true_type{} );
     else
-        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
-    auto it = __loc->result_analysis_begin();
-    auto it_end = __loc->result_analysis_end();
+        __loc->localize( __ptsReal, invalid_v<index_type> );
+    auto it = __loc->resultAnalysisBegin();
+    auto it_end = __loc->resultAnalysisEnd();
 
     gm_ptrtype __gm = this->functionSpace()->gm();
 
@@ -982,11 +846,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::gradInterpolate(  matrix_nod
 
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 template<typename ContextType>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dn_( ContextType const & context, dn_array_type& v ) const
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::dn_( ContextType const & context, dn_array_type& v ) const
 {
     index_type elt_id = context.eId();
     if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
@@ -998,7 +862,6 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dn_( ContextType const & con
 
     const size_type Q = context.xRefs().size2();
 
-    auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
     for ( int l = 0; l < basis_type::nDof; ++l )
     {
         const int ncdof = is_product?nComponents1:1;
@@ -1016,29 +879,29 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dn_( ContextType const & con
             ( this->firstLocalIndex() )( this->lastLocalIndex() )
             .error( "FunctionSpace::Element invalid access index" );
 
-            value_type v_ = this->globalValue( gdof );
+            value_type v_ = this->orientedLocalCoefficient( elt_id, ldof );
 
             for ( size_type q = 0; q < Q; ++q )
-                v[q] += context.dn( ldof, q )*(s(ldof)*v_);
+                v[q] += context.dn( ldof, q )*v_;
         }
     }
 
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dnInterpolate( matrix_node_type __ptsReal, dn_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::dnInterpolate( matrix_node_type __ptsReal, dn_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
     CHECK( false ) << "TODO";
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 template<typename ContextType>
-//typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
+//typename FunctionSpace<A0, A1, A2, A3>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & context, div_array_type& v ) const
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::div_( ContextType const & context, div_array_type& v ) const
 {
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
@@ -1053,15 +916,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
 
     const size_type Q = context.xRefs().size2();
 
-    auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
-    for ( int l = 0; l < basis_type::nDof; ++l )
+    const uint16_type nLocalDofPerComponent = M_functionspace->fe()->localDofPerComponent();
+    for ( uint16_type l = 0; l < nLocalDofPerComponent; ++l )
     {
         const int ncdof = is_product?nComponents:1;
         const int ncdof2 = is_product?nComponents2:1;
 
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
-            int ldof = c1*basis_type::nDof+l;
+            uint16_type ldof = c1*nLocalDofPerComponent+l;
             size_type gdof = M_functionspace->dof()->localToGlobal( elt_id, l, c1 ).index();
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
@@ -1070,29 +933,30 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
             ( this->size() )( this->localSize() )
             ( this->firstLocalIndex() )( this->lastLocalIndex() )
             .error( "FunctionSpace::Element invalid access index" );
-            value_type v_ = this->globalValue( gdof );
+            value_type v_ = this->orientedLocalCoefficient( elt_id, ldof );
             for ( size_type q = 0; q < Q; ++q )
             {
-                v[q] += context.div( ldof, q )*(s(ldof)*v_);
+                v[q] += context.div( ldof, q )*v_;
             }
         }
     }
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::divInterpolate( matrix_node_type __ptsReal, div_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::divInterpolate( matrix_node_type __ptsReal, div_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
 
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
+        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
+                         std::true_type{} );
     else
-        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
-    auto it = __loc->result_analysis_begin();
-    auto it_end = __loc->result_analysis_end();
+        __loc->localize( __ptsReal, invalid_v<index_type> );
+    auto it = __loc->resultAnalysisBegin();
+    auto it_end = __loc->resultAnalysisEnd();
 
     //geomap
     gm_ptrtype __gm = this->functionSpace()->gm();
@@ -1153,12 +1017,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::divInterpolate( matrix_node_
 
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 template<typename ContextType>
-//typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
+//typename FunctionSpace<A0, A1, A2, A3>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & context, curl_array_type& v ) const
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::curl_( ContextType const & context, curl_array_type& v ) const
 {
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
@@ -1171,14 +1035,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
     if ( elt_id == invalid_v<index_type> )
         return;
 
-    auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
-    for ( int l = 0; l < basis_type::nDof; ++l )
+    const uint16_type nLocalDofPerComponent = M_functionspace->fe()->localDofPerComponent();
+    for ( uint16_type l = 0; l < nLocalDofPerComponent; ++l )
     {
         const int ncdof = is_product?nComponents1:1;
 
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
-            int ldof = c1*basis_type::nDof+l;
+            uint16_type ldof = c1*nLocalDofPerComponent+l;
             size_type gdof = M_functionspace->dof()->localToGlobal( elt_id, l, c1 ).index();
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
@@ -1189,25 +1053,25 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
             .error( "FunctionSpace::Element invalid access index" );
 
             //value_type v_ = (*this)( gdof );
-            value_type v_ = this->globalValue( gdof );
+            value_type v_ = this->orientedLocalCoefficient( elt_id, ldof );
             const uint16_type nq = context.xRefs().size2();
 
             for ( uint16_type q = 0; q < nq ; ++q )
             {
 #if 0
-                v[q] += s(ldof)*v_*context.curl( ldof, q );
+                v[q] += v_*context.curl( ldof, q );
 #else
                 if ( nRealDim == 3 )
                 {
                     for ( typename array_type::index i = 0; i < nRealDim; ++i )
                     {
-                        v[q]( i,0 ) += s(ldof)*v_*context.curl( ldof, i, 0, q );
+                        v[q]( i,0 ) += v_*context.curl( ldof, i, 0, q );
                     }
                 }
 
                 else if ( nRealDim == 2 )
                 {
-                    v[q]( 0,0 ) += s(ldof)*v_*context.curl( ldof, 0, 0, q );
+                    v[q]( 0,0 ) += v_*context.curl( ldof, 0, 0, q );
                 }
 #endif
             }
@@ -1216,12 +1080,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
 
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 template<typename ContextType>
-//typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
+//typename FunctionSpace<A0, A1, A2, A3>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & context, comp_curl_array_type& v, int comp ) const
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::curl_( ContextType const & context, comp_curl_array_type& v, int comp ) const
 {
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
@@ -1234,14 +1098,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
     if ( elt_id == invalid_v<index_type> )
         return;
 
-    auto const& s = M_functionspace->dof()->localToGlobalSigns( elt_id );
-    for ( int l = 0; l < basis_type::nDof; ++l )
+    const uint16_type nLocalDofPerComponent = M_functionspace->fe()->localDofPerComponent();
+    for ( uint16_type l = 0; l < nLocalDofPerComponent; ++l )
     {
         const int ncdof = is_product?nComponents1:1;
 
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
-            int ldof = c1*basis_type::nDof+l;
+            uint16_type ldof = c1*nLocalDofPerComponent+l;
             size_type gdof = M_functionspace->dof()->localToGlobal( elt_id, l, c1 ).index();
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
@@ -1252,19 +1116,19 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
             .error( "FunctionSpace::Element invalid access index" );
 
             //value_type v_ = (*this)( gdof );
-            value_type v_ = this->globalValue( gdof );
+            value_type v_ = this->orientedLocalCoefficient( elt_id, ldof );
             const uint16_type nq = context.xRefs().size2();
 
             for ( uint16_type q = 0; q < nq ; ++q )
             {
                 if ( nRealDim == 3 )
                 {
-                    v[q]( 0,0 ) += s(ldof)*v_*context.curl( ldof, comp, 0, q );
+                    v[q]( 0,0 ) += v_*context.curl( ldof, comp, 0, q );
                 }
 
                 else if ( nRealDim == 2 )
                 {
-                    v[q]( 0,0 ) += s(ldof)*v_*context.curl( ldof, 0, 0, q );
+                    v[q]( 0,0 ) += v_*context.curl( ldof, 0, 0, q );
                 }
 
             }
@@ -1273,19 +1137,20 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
 
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlInterpolate( matrix_node_type __ptsReal, curl_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::curlInterpolate( matrix_node_type __ptsReal, curl_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
+        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
+                         std::true_type{} );
     else
-        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
-    auto it = __loc->result_analysis_begin();
-    auto it_end = __loc->result_analysis_end();
+        __loc->localize( __ptsReal, invalid_v<index_type> );
+    auto it = __loc->resultAnalysisBegin();
+    auto it_end = __loc->resultAnalysisEnd();
 
     //geomap
     gm_ptrtype __gm = this->functionSpace()->gm();
@@ -1360,19 +1225,20 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlInterpolate( matrix_node
 }
 
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate( matrix_node_type __ptsReal, comp_curl_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::curlxInterpolate( matrix_node_type __ptsReal, comp_curl_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
+        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
+                         std::true_type{} );
     else
-        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
-    auto it = __loc->result_analysis_begin();
-    auto it_end = __loc->result_analysis_end();
+        __loc->localize( __ptsReal, invalid_v<index_type> );
+    auto it = __loc->resultAnalysisBegin();
+    auto it_end = __loc->resultAnalysisEnd();
 
     //geomap
     gm_ptrtype __gm = this->functionSpace()->gm();
@@ -1446,19 +1312,20 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlxInterpolate( matrix_nod
 
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( matrix_node_type __ptsReal, comp_curl_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::curlyInterpolate( matrix_node_type __ptsReal, comp_curl_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
+        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
+                         std::true_type{} );
     else
-        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
-    auto it = __loc->result_analysis_begin();
-    auto it_end = __loc->result_analysis_end();
+        __loc->localize( __ptsReal, invalid_v<index_type> );
+    auto it = __loc->resultAnalysisBegin();
+    auto it_end = __loc->resultAnalysisEnd();
 
     //geomap
     gm_ptrtype __gm = this->functionSpace()->gm();
@@ -1532,19 +1399,20 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlyInterpolate( matrix_nod
 
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlzInterpolate( matrix_node_type __ptsReal, comp_curl_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::curlzInterpolate( matrix_node_type __ptsReal, comp_curl_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
+        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
+                         std::true_type{} );
     else
-        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
-    auto it = __loc->result_analysis_begin();
-    auto it_end = __loc->result_analysis_end();
+        __loc->localize( __ptsReal, invalid_v<index_type> );
+    auto it = __loc->resultAnalysisBegin();
+    auto it_end = __loc->resultAnalysisEnd();
 
     //geomap
     gm_ptrtype __gm = this->functionSpace()->gm();
@@ -1618,12 +1486,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curlzInterpolate( matrix_nod
 
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 template<typename ContextType>
-//typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
+//typename FunctionSpace<A0, A1, A2, A3>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, ContextType const & context, id_array_type& v ) const
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::d_( int N, ContextType const & context, id_array_type& v ) const
 {
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
@@ -1658,19 +1526,20 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, ContextType const
     }
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dxInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::dxInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
     // create analysys map : id -> List of pt
     auto __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
+        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
+                         std::true_type{} );
     else
-        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
-    auto it = __loc->result_analysis_begin();
-    auto it_end = __loc->result_analysis_end();
+        __loc->localize( __ptsReal, invalid_v<index_type> );
+    auto it = __loc->resultAnalysisBegin();
+    auto it_end = __loc->resultAnalysisEnd();
 
     //geomap
     gm_ptrtype __gm = this->functionSpace()->gm();
@@ -1729,10 +1598,10 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dxInterpolate( matrix_node_t
 
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dyInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::dyInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
 
     typedef typename Localization<mesh_type>::localization_ptrtype localization_ptrtype;
@@ -1742,11 +1611,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dyInterpolate( matrix_node_t
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
+        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
+                         std::true_type{} );
     else
-        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
-    analysis_iterator_type it = __loc->result_analysis_begin();
-    analysis_iterator_type it_end = __loc->result_analysis_end();
+        __loc->localize( __ptsReal, invalid_v<index_type> );
+    analysis_iterator_type it = __loc->resultAnalysisBegin();
+    analysis_iterator_type it_end = __loc->resultAnalysisEnd();
     analysis_output_iterator_type itL,itL_end;
 
     //geomap
@@ -1807,10 +1677,10 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dyInterpolate( matrix_node_t
 
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dzInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::dzInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
 
     typedef typename Localization<mesh_type>::localization_ptrtype localization_ptrtype;
@@ -1820,11 +1690,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dzInterpolate( matrix_node_t
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
+        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
+                         std::true_type{} );
     else
-        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
-    analysis_iterator_type it = __loc->result_analysis_begin();
-    analysis_iterator_type it_end = __loc->result_analysis_end();
+        __loc->localize( __ptsReal, invalid_v<index_type> );
+    analysis_iterator_type it = __loc->resultAnalysisBegin();
+    analysis_iterator_type it_end = __loc->resultAnalysisEnd();
     analysis_output_iterator_type itL,itL_end;
 
     //geomap
@@ -1884,21 +1755,21 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::dzInterpolate( matrix_node_t
 
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 template<typename ContextType>
-//typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
+//typename FunctionSpace<A0, A1, A2, A3>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & context, hess_array_type& v ) const
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::hess_( ContextType const & context, hess_array_type& v ) const
 {
     hess_( context, v, mpl::int_<rank>() );
 }
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 template<typename ContextType>
-//typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
+//typename FunctionSpace<A0, A1, A2, A3>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & context, hess_array_type& v, mpl::int_<0> ) const
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::hess_( ContextType const & context, hess_array_type& v, mpl::int_<0> ) const
 {
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
@@ -1936,10 +1807,10 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & c
 
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hessInterpolate( matrix_node_type __ptsReal, hess_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::hessInterpolate( matrix_node_type __ptsReal, hess_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
 
     typedef typename Localization<mesh_type>::localization_ptrtype localization_ptrtype;
@@ -1949,11 +1820,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hessInterpolate( matrix_node
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
+        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
+                         std::true_type{} );
     else
-        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
-    analysis_iterator_type it = __loc->result_analysis_begin();
-    analysis_iterator_type it_end = __loc->result_analysis_end();
+        __loc->localize( __ptsReal, invalid_v<index_type> );
+    analysis_iterator_type it = __loc->resultAnalysisBegin();
+    analysis_iterator_type it_end = __loc->resultAnalysisEnd();
     analysis_output_iterator_type itL,itL_end;
 
     //geomap
@@ -2016,21 +1888,21 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hessInterpolate( matrix_node
 //
 // Laplacian
 //
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 template<typename ContextType>
-//typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
+//typename FunctionSpace<A0, A1, A2, A3>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::laplacian_( ContextType const & context, id_array_type& v ) const
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::laplacian_( ContextType const & context, id_array_type& v ) const
 {
     laplacian_( context, v, mpl::int_<rank>() );
 }
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 template<typename ContextType>
-//typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
+//typename FunctionSpace<A0, A1, A2, A3>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::laplacian_( ContextType const & context, id_array_type& v, mpl::int_<0> ) const
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::laplacian_( ContextType const & context, id_array_type& v, mpl::int_<0> ) const
 {
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
@@ -2064,12 +1936,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::laplacian_( ContextType cons
 
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 template<typename ContextType>
-//typename FunctionSpace<A0, A1, A2, A3, A4>::template Element<Y,Cont>::array_type
+//typename FunctionSpace<A0, A1, A2, A3>::template Element<Y,Cont>::array_type
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::laplacian_( ContextType const & context, id_array_type& v, mpl::int_<1> ) const
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::laplacian_( ContextType const & context, id_array_type& v, mpl::int_<1> ) const
 {
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
@@ -2101,10 +1973,10 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::laplacian_( ContextType cons
 
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::laplacianInterpolate( matrix_node_type __ptsReal, id_array_type& v,
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::laplacianInterpolate( matrix_node_type __ptsReal, id_array_type& v,
                                                                           bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
 
@@ -2115,11 +1987,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::laplacianInterpolate( matrix
     // create analysys map : id -> List of pt
     localization_ptrtype __loc = this->functionSpace()->mesh()->tool_localization();
     if ( conformalEval )
-        __loc->run_analysis( __ptsReal,invalid_v<index_type>, setPointsConf, mpl::int_<1>() );
+        __loc->localize( __ptsReal, invalid_v<index_type>, setPointsConf,
+                         std::true_type{} );
     else
-        __loc->run_analysis( __ptsReal,invalid_v<index_type> );
-    analysis_iterator_type it = __loc->result_analysis_begin();
-    analysis_iterator_type it_end = __loc->result_analysis_end();
+        __loc->localize( __ptsReal, invalid_v<index_type> );
+    analysis_iterator_type it = __loc->resultAnalysisBegin();
+    analysis_iterator_type it_end = __loc->resultAnalysisEnd();
     analysis_output_iterator_type itL,itL_end;
 
     //geomap
@@ -2177,11 +2050,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::laplacianInterpolate( matrix
 
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 template<typename IteratorType,  typename ExprType>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorType,IteratorType> const& r,
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::onImpl( std::pair<IteratorType,IteratorType> const& r,
                                                             ExprType const& ex,
                                                             std::string const& prefix,
                                                             GeomapStrategyType geomap_strategy,
@@ -2327,18 +2200,20 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
 
 
         //if P0 continuous finish loop here
-        if ( isP0Continuous<fe_type>::result )
+        if ( isP0Continuous<fe_type>::result ||
+             ( is_lagrange_polynomialset_v<fe_type> &&
+               std::is_same_v<typename fe_type::continuity_type, Continuous> && __fe->order() == 0 ) )
         {
             break;
         }
     }
 } // onImpl (MESH_ELEMENTS)
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 template<typename IteratorType,  typename ExprType>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorType,IteratorType> const& r,
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::onImpl( std::pair<IteratorType,IteratorType> const& r,
                                                             ExprType const& ex,
                                                             std::string const& prefix,
                                                             GeomapStrategyType geomap_strategy,
@@ -2354,11 +2229,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
                   mpl::bool_< std::is_same<range_geoshape_type,fe_geoshape_type>::value >() );
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 template<typename IteratorType,  typename ExprType>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorType,IteratorType> const& r,
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::onImpl( std::pair<IteratorType,IteratorType> const& r,
                                                             ExprType const& ex,
                                                             std::string const& prefix,
                                                             GeomapStrategyType geomap_strategy,
@@ -2450,12 +2325,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     size_type nbFaceDof = invalid_v<size_type>;
 
     if ( !fe_type::is_modal )
-        nbFaceDof = ( face_type::numVertices * fe_type::nDofPerVertex +
-                      face_type::numEdges * fe_type::nDofPerEdge +
-                      face_type::numFaces * fe_type::nDofPerFace );
+        nbFaceDof = ( face_type::numVertices * __fe->dofPerVertex() +
+                      face_type::numEdges * __fe->dofPerEdge() +
+                      face_type::numFaces * __fe->dofPerFace() );
 
     else
-        nbFaceDof = face_type::numVertices * fe_type::nDofPerVertex;
+        nbFaceDof = face_type::numVertices * __fe->dofPerVertex();
 
     DVLOG(2)  << "[projector::operator(MESH_FACES)] nbFaceDof = " << nbFaceDof << "\n";
 #endif
@@ -2578,11 +2453,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
 
 }
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 template<typename IteratorType,  typename ExprType>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorType,IteratorType> const& r,
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::onImpl( std::pair<IteratorType,IteratorType> const& r,
                                                             ExprType const& ex,
                                                             std::string const& prefix,
                                                             GeomapStrategyType geomap_strategy,
@@ -2634,10 +2509,23 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
 
     range_gm_ptrtype gmRange = eltConnectedToFirstFace.gm();
     if ( !gmRange )
-        gmRange.reset( new range_gm_type );
+    {
+        if constexpr ( range_geoelement_type::is_order_dynamic )
+            gmRange = std::make_shared<range_gm_type>( RuntimeOrder{ eltConnectedToFirstFace.order() } );
+        else
+            gmRange = std::make_shared<range_gm_type>();
+    }
 
     typedef typename element_type::functionspace_type::basis_type::template ChangeDim<range_geoelement_type::nDim>::type fe_range_dim_type;
-    fe_range_dim_type feRangeDim;
+    auto feRangeDim = [&]() {
+        if constexpr ( std::is_constructible_v<fe_range_dim_type, RuntimeOrder> )
+            return fe_range_dim_type( RuntimeOrder{ fe->order() } );
+        else
+            return fe_range_dim_type();
+    }();
+    bool const isP0d = is_lagrange_polynomialset_v<typename element_type::functionspace_type::basis_type> &&
+                       !element_type::functionspace_type::basis_type::continuity_type::is_continuous &&
+                       fe->order() == 0;
 
     std::vector<std::map<range_permutation_type, range_geopc_ptrtype> > geopcRange( range_geoelement_type::numTopologicalFaces );
 
@@ -2647,7 +2535,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
               __p < range_permutation_type( range_permutation_type::N_PERMUTATIONS ); ++__p )
         {
             // special case with lagrange P0d : dof point in 2d/3d faces are not connected to 1d/2d element, trick use barycenter of faces
-            if constexpr ( is_lagrange_polynomialset_P0d_v<typename element_type::functionspace_type::basis_type> )
+            if ( isP0d )
             {
                 auto fb = gmRange->referenceConvex().faceBarycenter( __f );
                 matrix_node_type fb_convert( fb.size(), 1 );
@@ -2748,11 +2636,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
 
 
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 template<typename IteratorType,  typename ExprType>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorType,IteratorType> const& r,
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::onImpl( std::pair<IteratorType,IteratorType> const& r,
                                                             ExprType const& ex,
                                                             std::string const& prefix,
                                                             GeomapStrategyType geomap_strategy,
@@ -2836,11 +2724,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
 }
 
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename A0, typename A1, typename A2, typename A3>
 template<typename Y,  typename Cont>
 template<typename IteratorType,  typename ExprType>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorType,IteratorType> const& r,
+FunctionSpace<A0, A1, A2, A3>::Element<Y,Cont>::onImpl( std::pair<IteratorType,IteratorType> const& r,
                                                             ExprType const& ex,
                                                             std::string const& prefix,
                                                             GeomapStrategyType geomap_strategy,
@@ -2901,7 +2789,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     //t_expr_type expr( ex, mapgmc(ctx) );
     auto expr_evaluator = ex.evaluator( vf::mapgmc(ctx) );
 
-    size_type nbVertexDof = fe_type::nDofPerVertex;
+    size_type nbVertexDof = __fe->dofPerVertex();
     DVLOG(3)  << "[projector::operator(MESH_POINTS)] nbVertexDof = " << nbVertexDof << "\n";
 
     auto IhLoc = __fe->vertexLocalInterpolant();

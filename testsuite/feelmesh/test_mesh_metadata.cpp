@@ -63,6 +63,28 @@ BOOST_AUTO_TEST_CASE( streamingMetadataAndSparseFragments )
     BOOST_CHECK_LT( table.storageBytes(), 1024 );
 }
 
+BOOST_AUTO_TEST_CASE( streamingGeometryMetadata )
+{
+    Feel::detail::PartitionMetadataReader<flag_type> reader( []( auto const&, int, int ) {} );
+    std::istringstream input( R"({"mesh":{"geometry":{"order":3,"cell_kind":0,"representation":1,"extension":[1,2,3]}}})" );
+    reader.read( input );
+    BOOST_REQUIRE( reader.M_geometry );
+    BOOST_CHECK_EQUAL( reader.M_geometry->size(), 3 );
+    BOOST_CHECK_EQUAL( reader.M_geometry->at( "order" ).get<int>(), 3 );
+    for ( auto invalid : {
+              R"({"mesh":{"geometry":3}})",
+              R"({"mesh":{"geometry":{"order":2}}})",
+              R"({"mesh":{"geometry":{"order":-1,"cell_kind":0,"representation":0}}})",
+              R"({"mesh":{"geometry":{"order":65536,"cell_kind":0,"representation":0}}})",
+              R"({"mesh":{"geometry":{"order":2,"cell_kind":256,"representation":0}}})",
+              R"({"mesh":{"geometry":{"order":2,"cell_kind":0,"representation":[]}}})" } )
+    {
+        Feel::detail::PartitionMetadataReader<flag_type> invalidReader( []( auto const&, int, int ) {} );
+        std::istringstream malformed( invalid );
+        BOOST_CHECK_THROW( invalidReader.read( malformed ), std::runtime_error );
+    }
+}
+
 BOOST_AUTO_TEST_CASE( legacyAndInvalidMetadata )
 {
     Feel::detail::PartitionMetadataReader<flag_type> legacy( []( auto const&, int, int ) {} );

@@ -152,7 +152,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( interp_matrixfield, T, dim_types )
                                BOOST_CHECK_SMALL( l2error_trans, 1e-13 );
                                double int_u = integrate( _range=elements( mesh ), _expr= idv(u)  ).evaluate()( 0, 0 );
                                double int_exp = integrate( _range=elements( mesh ), _expr= expected_res  ).evaluate()( 0, 0 );
-                               BOOST_CHECK_CLOSE( int_u, int_exp, 1e-13 );
+                               BOOST_CHECK_CLOSE_FRACTION( int_u, int_exp, 1e-13 );
 
                            };
     if constexpr ( T::value == 2 )

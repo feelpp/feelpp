@@ -1,242 +1,416 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-07-28
-
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2009 Université de Grenoble 1 (Joseph Fourier)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-/**
-   \file test_jacobi.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-07-28
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileCopyrightText: 2005-2006 EPFL
+ * SPDX-FileCopyrightText: 2009 Université de Grenoble 1 (Joseph Fourier)
+ * SPDX-FileCopyrightText: 2026 University of Strasbourg
+ * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
 #define BOOST_TEST_MODULE test_jacobi
 #include <feel/feelcore/testsuite.hpp>
-#include <feel/feelcore/feel.hpp>
-#include <feel/feeltiming/timer.hpp>
+#include <boost/test/data/test_case.hpp>
+#include <boost/mp11/list.hpp>
+
 #include <feel/feelpoly/jacobi.hpp>
-#include <feel/feelpoly/expansions.hpp>
 #include <feel/feelpoly/dubiner.hpp>
-#include <feel/feelpoly/polynomial.hpp>
-#include <feel/feelpoly/geomap.hpp>
-#include <feel/feelpoly/lagrange.hpp>
+#include <feel/feelpoly/orthonormalpolynomialset.hpp>
 
-unsigned int fact( unsigned int   n )
-{
-    if ( n == 0 )
-        return 1;
+#include "polynomial_reference.hpp"
 
-    return n*fact( n-1 );
-}
-template<typename T>
-T f( T const& t )
-{
-    return sin( t );
-}
-template<Feel::uint16_type N, typename T>
-class TestJacobi
-{
-public:
-    typedef T value_type;
-    value_type M_factor_eps;
-    TestJacobi( value_type factor_eps = value_type( 1 ) )
-        :
-        M_factor_eps( factor_eps )
-    {}
-    void operator()() const
-    {
-        using namespace Feel;
+#include <array>
+#include <cmath>
 
-        Feel::Timer __timer;
-
-        for ( int n = 0; n < 10000; ++n )
-        {
-            Jacobi<N, T> p( 0.0, 0.0 );
-            value_type v = value_type( double( fact( N+0 ) )/value_type( double( fact( N )*fact( 0 ) ) ) );
-            BOOST_CHECK( Feel::math::abs( p( 1.0 ) - v ) < M_factor_eps*Feel::type_traits<T>::epsilon() );
-            //BOOST_CHECK( Feel::math::abs( Jacobi<N, T>( 1.0, 0.0, 1.0 ) -
-            //( fact( n-0 )/( fact( n )*fact(0 ) ) ) ) < Feel::type_traits<T>::epsilon() );
-
-            if ( N > 0 )
-            {
-                // check derivation with derivation relation in KS book appendix A p 351
-                Jacobi<N-1, T> dp( 1.0, 1.0 );
-                value_type dp2 = 0.5 * ( 0.0 + 0.0 + value_type( N ) + 1.0 ) * dp( 0.6 );
-                BOOST_CHECK( Feel::math::abs( p.derivate( 0.6 ) - dp2 ) <  M_factor_eps*Feel::type_traits<T>::epsilon() );
-            }
-
-            BOOST_CHECK( Feel::math::abs( Feel::details::integrate<N,T>( f<T> ) - 0.0 ) < M_factor_eps*Feel::type_traits<T>::epsilon() );
-
-        }
-
-        std::cout << "meta::jacobi test done in " << __timer.elapsed()/1000 << "\n";
-        __timer.start();
-
-        for ( int n = 0; n < 10000; ++n )
-        {
-            dyna::Jacobi<T> p( N, 0.0, 0.0 );
-            value_type v = value_type( double( fact( N+0 ) )/value_type( double( fact( N )*fact( 0 ) ) ) );
-            BOOST_CHECK( Feel::math::abs( p( 1.0 ) - v ) < M_factor_eps*Feel::type_traits<T>::epsilon() );
-            //BOOST_CHECK( Feel::math::abs( Jacobi<N, T>( 1.0, 0.0, 1.0 ) -
-            //( fact( n-0 )/( fact( n )*fact(0 ) ) ) ) < Feel::type_traits<T>::epsilon() );
-
-            if ( N > 0 )
-            {
-                // check derivation with derivation relation in KS book appendix A p 351
-                dyna::Jacobi<T> dp( uint16_type( N-1 ), 1.0, 1.0 );
-                value_type dp2 = 0.5 * ( 0.0 + 0.0 + value_type( N ) + 1.0 ) * dp( 0.6 );
-                BOOST_CHECK( Feel::math::abs( p.derivate( 0.6 ) - dp2 ) <  M_factor_eps*Feel::type_traits<T>::epsilon() );
-            }
-
-            BOOST_CHECK( Feel::math::abs( Feel::details::integrate<N,T>( f<T> ) - 0.0 ) < M_factor_eps*Feel::type_traits<T>::epsilon() );
-        }
-
-        std::cout << "dyna::jacobi test done in " << __timer.elapsed()/1000 << "\n";
-
-        {
-            Jacobi<N, T> p( 0.0, 0.0 );
-            ublas::vector<T> pts( 2 );
-            pts[0] = 1.0;
-            pts[1] = 1.0;
-            ublas::matrix<T> P ( JacobiBatchEvaluation<T>( N, 0, 0, pts ) );
-            BOOST_CHECK( P.size1() == N+1 );
-            BOOST_CHECK( P.size2() == 2 );
-            value_type v = value_type( double( fact( N+0 ) )/value_type( double( fact( N )*fact( 0 ) ) ) );
-            BOOST_CHECK( Feel::math::abs( p( 1.0 ) - v ) < M_factor_eps*Feel::type_traits<T>::epsilon() );
-            BOOST_CHECK( Feel::math::abs( P( N, 0 ) - v ) < M_factor_eps*Feel::type_traits<T>::epsilon() );
-
-            if ( pts.size() > 0 )
-                BOOST_CHECK( Feel::math::abs( P( N, 1 ) - v ) < M_factor_eps*Feel::type_traits<T>::epsilon() );
-
-            if ( N > 0 )
-            {
-                // check derivation with derivation relation in KS book appendix A p 351
-                Jacobi<N-1, T> dp( 1.0, 1.0 );
-                value_type dp2 = 0.5 * ( 0.0 + 0.0 + value_type( N ) + 1.0 ) * dp( 0.6 );
-                BOOST_CHECK( Feel::math::abs( p.derivate( 0.6 ) - dp2 ) <  M_factor_eps*Feel::type_traits<T>::epsilon() );
-                ublas::vector<T> pts( 2 );
-                pts[0] = 0.6;
-                pts[1] = 0.6;
-                ublas::matrix<T> dP ( JacobiBatchDerivation<T>( N, 0.0, 0.0, pts ) );
-
-                if ( Feel::math::abs( dP( N, 0 ) - dp2 ) > Feel::type_traits<T>::epsilon() )
-                {
-                    std::cout << "dP( N, 0 ) = " <<  dP( N, 0 ) << "\n"
-                              << "dp2 = " << dp2 << "\n";
-                }
-
-                BOOST_CHECK( Feel::math::abs( dP( N, 0 ) - dp2 ) < M_factor_eps*Feel::type_traits<T>::epsilon() );
-            }
-        }
-    }
-};
-
-template<Feel::uint16_type N, typename T>
-class TestDubiner
-{
-public:
-    typedef T value_type;
-    TestDubiner()
-    {}
-    void operator()() const
-    {
-        using namespace Feel;
-        Dubiner<2,2,N,Normalized<true>,T> dubexp;
-        ublas::matrix<T,ublas::column_major> pts( 2,2  );
-        ublas::column( pts, 0 )  = ublas::scalar_vector<value_type>( pts.size2(), 1.0 );
-        ublas::column( pts, 1 )  = ublas::scalar_vector<value_type>( pts.size2(), 1.0 );
-        std::cout << "[batch] dubexp at pts =  " << dubexp.evaluate( pts ) << "\n";
-        std::cout << "[batch] dubexp derivation at pts =  " << dubexp.derivate( pts ) << "\n";
-        Dubiner<2,2,N> dub;
-    }
-};
-
+using namespace Feel;
+namespace bdata = boost::unit_test::data;
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
 
-BOOST_AUTO_TEST_SUITE( jacobi )
-
-typedef boost::mpl::list<boost::mpl::int_<0>,boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<10> > test_types;
-
-BOOST_AUTO_TEST_CASE_TEMPLATE( test_jacobi_double, T, test_types )
+namespace
 {
-    BOOST_TEST_MESSAGE( "o- TestJacobi<" << T::value << ", double>()" );
-    TestJacobi<T::value, double> a;
+/** Scalar and batch Jacobi degrees, including constants and higher orders. */
+constexpr std::array<unsigned, 6> degrees{ 0, 1, 2, 3, 5, 10 };
+/** First Jacobi parameters, paired elementwise with beta. */
+constexpr std::array<double, 3> alpha{ 0.0, 0.25, 1.0 };
+/** Second Jacobi parameters, paired elementwise with alpha. */
+constexpr std::array<double, 3> beta{ 0.0, 0.75, 2.0 };
+/** Reference coordinates including both endpoints and asymmetric interior points. */
+constexpr std::array<double, 7> samples{ -1.0, -0.7, -0.2, 0.0, 0.3, 0.9, 1.0 };
+/** Empty, single-point and multi-point batch sizes. */
+constexpr std::array<unsigned, 3> batchSizes{ 0, 1, samples.size() };
+/** Reference dimensions used for simplex value and derivative checks. */
+constexpr std::array<unsigned, 3> dimensions{ 1, 2, 3 };
+/** Bounded total-degree matrix for the ordinary Dubiner reference comparisons. */
+constexpr std::array<unsigned, 5> simplexDegrees{ 0, 1, 2, 3, 5 };
+/** Non-normalized and orthonormal modal conventions. */
+constexpr std::array<bool, 2> normalization{ false, true };
+
+/** @brief Require a finite value within a reference-scaled absolute tolerance.
+ * @param actual Value computed by the production polynomial API.
+ * @param expected Independently computed high-precision reference.
+ * @param tolerance Absolute tolerance multiplied by `1 + abs(expected)`.
+ */
+void checkNear( double actual, polynomial_test::precise_type const& expected,
+                double tolerance = 2e-11 )
+{
+    double const reference = expected.convert_to<double>();
+    BOOST_REQUIRE( std::isfinite( actual ) );
+    BOOST_CHECK_SMALL( actual - reference, tolerance * ( 1.0 + std::abs( reference ) ) );
 }
 
-BOOST_AUTO_TEST_CASE_TEMPLATE( test_dubiner_double, T, test_types )
+/** @brief Check a scalar Jacobi polynomial and its first derivative.
+ * @tparam Polynomial Static- or runtime-order scalar polynomial type.
+ * @param polynomial Production polynomial callable.
+ * @param degree Effective polynomial degree.
+ * @param a First Jacobi parameter.
+ * @param b Second Jacobi parameter.
+ * @param x Reference coordinate.
+ */
+template<typename Polynomial>
+void checkScalar( Polynomial const& polynomial, unsigned degree,
+                  double a, double b, double x )
 {
-    BOOST_TEST_MESSAGE( "o- TestDubiner<" << T::value << ", double>()" );
-    TestDubiner<T::value, double> d0;
+    auto const reference = polynomial_test::jacobi( degree, a, b, x );
+    checkNear( polynomial( x ), reference.value );
+    checkNear( polynomial.derivate( x ), reference.gradient[0] );
+}
+
+/** @brief Compare Dubiner values/gradients at vertices and collapsed-limit points.
+ * @tparam Dim Reference dimension, restricted to 1, 2 or 3.
+ * @tparam NormalizedBasis Whether both paths use the orthonormal convention.
+ * @param degree Effective maximum total degree requested from the shared API.
+ */
+template<int Dim, bool NormalizedBasis>
+void checkDubiner( unsigned degree )
+{
+    using basis_type = Dubiner<Dim, Dim, 1, Normalized<NormalizedBasis>>;
+    // Every vertex, the barycenter, and an approach to the collapsed vertex.
+    typename basis_type::points_type points( Dim, Dim + 3 );
+    for ( int q = 0; q < Dim + 3; ++q )
+        for ( int d = 0; d < Dim; ++d )
+            points( d, q ) = -1.0;
+    for ( int d = 0; d < Dim; ++d )
+    {
+        points( d, d + 1 ) = 1.0;
+        points( d, Dim + 1 ) = -1.0 + 2.0 / ( Dim + 1 );
+        points( d, Dim + 2 ) = -1.0 + 1e-8;
+    }
+    points( Dim - 1, Dim + 2 ) = 1.0 - Dim * 1e-8;
+    auto const values = basis_type::evaluate( points, degree );
+    auto const gradients = basis_type::derivate( points, degree );
+    BOOST_REQUIRE_EQUAL( gradients.size(), Dim );
+    BOOST_REQUIRE_EQUAL( values.size2(), points.size2() );
+    for ( int q = 0; q < Dim + 3; ++q )
+    {
+        std::array<double, Dim> point;
+        for ( int d = 0; d < Dim; ++d )
+            point[d] = points( d, q );
+        auto const expected = polynomial_test::dubiner<Dim>( degree, point, NormalizedBasis );
+        BOOST_REQUIRE_EQUAL( values.size1(), expected.size() );
+        BOOST_TEST_CONTEXT( "dimension=" << Dim << " degree=" << degree <<
+                            " normalized=" << NormalizedBasis << " sample=" << q )
+        {
+            for ( std::size_t i = 0; i < expected.size(); ++i )
+            {
+                checkNear( values( i, q ), expected[i].value );
+                for ( int d = 0; d < Dim; ++d )
+                {
+                    BOOST_REQUIRE_EQUAL( gradients[d].size1(), expected.size() );
+                    BOOST_REQUIRE_EQUAL( gradients[d].size2(), points.size2() );
+                    checkNear( gradients[d]( i, q ), expected[i].gradient[d], 2e-8 );
+                }
+            }
+        }
+    }
+}
+} // namespace
+
+BOOST_AUTO_TEST_SUITE( jacobi )
+
+/** @test Scalar/batch Jacobi values and derivatives match the independent oracle. */
+BOOST_DATA_TEST_CASE( batchAndRuntimeJacobi,
+    bdata::make( degrees ) * ( bdata::make( alpha ) ^ bdata::make( beta ) ) * bdata::make( batchSizes ),
+    degree, a, b, batchSize )
+{
+    ublas::vector<double> points( batchSize );
+    for ( unsigned q = 0; q < batchSize; ++q )
+        points[q] = samples[q];
+    auto const values = JacobiBatchEvaluation<double>( degree, a, b, points );
+    auto const gradients = JacobiBatchDerivation<double>( degree, a, b, points );
+    auto const runtimeValues = dyna::JacobiBatchEvaluation( degree, a, b, points );
+    auto const runtimeGradients = dyna::JacobiBatchDerivation( degree, a, b, points );
+    for ( auto const* matrix : { &values, &gradients, &runtimeValues, &runtimeGradients } )
+    {
+        BOOST_REQUIRE_EQUAL( matrix->size1(), degree + 1 );
+        BOOST_REQUIRE_EQUAL( matrix->size2(), batchSize );
+    }
+    for ( unsigned q = 0; q < batchSize; ++q )
+        BOOST_TEST_CONTEXT( "point=" << q << " x=" << points[q] )
+        {
+            checkScalar( dyna::Jacobi<double>{ static_cast<uint16_type>( degree ), a, b },
+                         degree, a, b, points[q] );
+            for ( unsigned i = 0; i <= degree; ++i )
+            {
+                auto const expected = polynomial_test::jacobi( i, a, b, points[q] );
+                checkNear( values( i, q ), expected.value );
+                checkNear( runtimeValues( i, q ), expected.value );
+                checkNear( gradients( i, q ), expected.gradient[0] );
+                checkNear( runtimeGradients( i, q ), expected.gradient[0] );
+            }
+        }
+}
+
+/** Compile-time Jacobi degrees dispatched by Boost.Test template cases. */
+using static_orders = boost::mp11::mp_list_c<int, 0, 1, 2, 3, 5, 10>;
+
+/** @test Static Jacobi instantiations share scalar value/derivative assertions. */
+BOOST_AUTO_TEST_CASE_TEMPLATE( staticJacobi, Order, static_orders )
+{
+    for ( std::size_t parameter = 0; parameter < alpha.size(); ++parameter )
+        for ( double x : samples )
+            BOOST_TEST_CONTEXT( "alpha=" << alpha[parameter] << " beta=" << beta[parameter] << " x=" << x )
+                checkScalar( Jacobi<Order::value>{ alpha[parameter], beta[parameter] },
+                             Order::value, alpha[parameter], beta[parameter], x );
+}
+
+/** @test Native Eigen batches retain static degree and share the runtime recurrence. */
+BOOST_AUTO_TEST_CASE_TEMPLATE( eigenJacobiStaticRuntime, Order, static_orders )
+{
+    constexpr int degree = Order::value;
+    JacobiPolynomial<degree> fixed{ 0.25, 0.75 };
+    JacobiPolynomial<Dynamic> runtime{ RuntimeOrder{ degree }, 0.25, 0.75 };
+    Eigen::Matrix<double, 7, 1> points;
+    for ( int q = 0; q < 7; ++q ) points( q ) = samples[q];
+    auto values = fixed.values( points );
+    auto derivatives = runtime.derivatives( points );
+    auto seconds = runtime.derivatives<2>( points );
+    static_assert( decltype( values )::rowsAtCompileTime == degree + 1 );
+    static_assert( decltype( values )::colsAtCompileTime == 7 );
+    static_assert( decltype( values )::usesInlineStorage );
+    static_assert( decltype( derivatives )::rowsAtCompileTime == Dynamic );
+    static_assert( decltype( derivatives )::colsAtCompileTime == 7 );
+    static_assert( !decltype( derivatives )::usesInlineStorage );
+    for ( int q = 0; q < 7; ++q )
+        for ( int n = 0; n <= degree; ++n )
+        {
+            auto expected = polynomial_test::jacobi( n, 0.25, 0.75, points( q ) );
+            checkNear( values.matrix()( n, q ), expected.value );
+            checkNear( derivatives.matrix()( n, q ), expected.gradient[0] );
+            checkNear( seconds.matrix()( n, q ), expected.hessian[0] );
+        }
+    for ( int q = 0; q < 7; ++q )
+        checkNear( fixed.template derivative<2>( points( q ) ),
+                   polynomial_test::jacobi( degree, 0.25, 0.75, points( q ) ).hessian[0] );
+    auto const* coefficients = values.matrix().data();
+    fixed.valuesInto( values, points );
+    BOOST_CHECK( values.matrix().data() == coefficients );
+    fixed.derivativesInto( values, points );
+    BOOST_CHECK( values.matrix().data() == coefficients );
+    BOOST_CHECK_SMALL( ( values.matrix() - derivatives.matrix() ).norm(), 1e-12 );
+    Eigen::RowVectorXd empty( 0 );
+    auto noSamples = fixed.values( empty );
+    BOOST_CHECK_EQUAL( noSamples.rows(), degree + 1 );
+    BOOST_CHECK_EQUAL( noSamples.cols(), 0 );
+}
+
+/** @test Strided coordinates and aliased rows are evaluated before output replacement. */
+BOOST_AUTO_TEST_CASE( eigenJacobiStridesAndAliasing )
+{
+    JacobiPolynomial<Dynamic> polynomial{ RuntimeOrder{ 5 }, 0.25, 0.75 };
+    Eigen::Matrix<double, 3, 7, Eigen::ColMajor> coordinates =
+        Eigen::Matrix<double, 3, 7, Eigen::ColMajor>::Zero();
+    for ( int q = 0; q < 7; ++q ) coordinates( 1, q ) = samples[q];
+    auto values = polynomial.values( coordinates.row( 1 ) );
+    auto expected = values.matrix().eval();
+    values.matrix().row( 0 ) = coordinates.row( 1 );
+    polynomial.valuesInto( values, values.matrix().row( 0 ) );
+    BOOST_CHECK_SMALL( ( values.matrix() - expected ).norm(), 1e-12 );
+    auto expressionValues = polynomial.values( ( 2. * coordinates.row( 1 ) ).eval() / 2. );
+    BOOST_CHECK_SMALL( ( expressionValues.matrix() - expected ).norm(), 1e-12 );
+    BOOST_CHECK_THROW( (void)polynomial.values( Eigen::MatrixXd::Zero( 2, 3 ) ), std::invalid_argument );
+    ublas::vector<double> legacyPoints( 1 );
+    BOOST_CHECK_THROW( (void)JacobiBatchEvaluation( -1, 0., 0., legacyPoints ), std::invalid_argument );
+}
+
+/** @test Mixed compile-time vector axes preserve orientation and snapshot aliased input. */
+BOOST_AUTO_TEST_CASE( mixedExtentJacobiViews )
+{
+    JacobiPolynomial<3> polynomial;
+    Eigen::RowVector3d points;
+    points << -.7, -.2, .3;
+    auto table = polynomial.values( points );
+    auto expected = table.matrix().eval();
+    table.matrix().row( 0 ) = points;
+    polynomial.valuesInto( table, table.matrix().topRows( 1 ) );
+    BOOST_CHECK_SMALL( ( table.matrix() - expected ).norm(), 1e-12 );
+    Eigen::Matrix<double, 3, Eigen::Dynamic> columns( 3, 2 );
+    columns.col( 0 ) = points.transpose();
+    auto columnValues = polynomial.values( columns.leftCols( 1 ) );
+    static_assert( decltype( columnValues )::colsAtCompileTime == 3 );
+    BOOST_CHECK_SMALL( ( columnValues.matrix() - expected ).norm(), 1e-12 );
+}
+
+/** @test Caller-owned destinations preserve strided aliases, derivative zeros and shape checks. */
+BOOST_AUTO_TEST_CASE_TEMPLATE( borrowedPolynomialDestinations, Order, static_orders )
+{
+    constexpr int degree = Order::value;
+    Eigen::RowVector3d points;
+    points << -.7, -.2, .3;
+    auto checkValues = [&]( auto const& kernel )
+    {
+        auto expected = kernel.values( points );
+        Eigen::Matrix<double, Dynamic, Dynamic, Eigen::RowMajor> storage( degree + 1, 11 );
+        storage.setConstant( -99. );
+        auto output = storage.block( 0, 2, degree + 1, 3 );
+        int const aliasRow = degree > 1 ? degree - 1 : 0;
+        output.row( aliasRow ) = points;
+        kernel.valuesInto( output, output.row( aliasRow ) );
+        BOOST_CHECK_SMALL( ( output - expected.matrix() ).norm(), 1e-12 );
+        BOOST_CHECK_EQUAL( storage( 0, 0 ), -99. );
+        BOOST_CHECK_EQUAL( storage( degree, 10 ), -99. );
+        auto wrong = storage.topRows( degree );
+        BOOST_CHECK_THROW( kernel.valuesInto( wrong, points ), std::invalid_argument );
+    };
+    JacobiPolynomial<degree> polynomial{ .25, .75 };
+    checkValues( polynomial );
+    checkValues( ScalingPowers<degree>{} );
+    Eigen::MatrixXd derivatives = Eigen::MatrixXd::Constant( degree + 1, 3, -99. );
+    polynomial.template derivativesInto<2>( derivatives, points );
+    auto expected = polynomial.template derivatives<2>( points );
+    BOOST_CHECK_SMALL( ( derivatives - expected.matrix() ).norm(), 1e-12 );
+    BOOST_CHECK_SMALL( derivatives.topRows( std::min( degree + 1, 2 ) ).norm(), 1e-30 );
+}
+
+/** @test Static/runtime scaling tables use one recurrence for all batch sizes. */
+BOOST_AUTO_TEST_CASE_TEMPLATE( scalingPowersStaticRuntime, Order, static_orders )
+{
+    ScalingPowers<Order::value> fixed;
+    ScalingPowers<Dynamic> runtime{ RuntimeOrder{ Order::value } };
+    for ( auto size : batchSizes )
+    {
+        Eigen::RowVectorXd points( size );
+        for ( unsigned q = 0; q < size; ++q ) points( q ) = samples[q];
+        auto values = fixed.values( points );
+        auto dynamicValues = runtime.values( points );
+        for ( int n = 0; n <= Order::value; ++n )
+            for ( unsigned q = 0; q < size; ++q )
+                BOOST_CHECK_SMALL( values.matrix()( n, q ) - std::pow( ( 1. - points( q ) ) / 2., n ), 1e-13 );
+        BOOST_CHECK_SMALL( ( values.matrix() - dynamicValues.matrix() ).norm(), 1e-13 );
+        if ( size != 0 )
+        {
+            auto expected = values.matrix().eval();
+            values.matrix().row( 0 ) = points;
+            fixed.valuesInto( values, values.matrix().row( 0 ) );
+            BOOST_CHECK_SMALL( ( values.matrix() - expected ).norm(), 1e-13 );
+        }
+    }
+}
+
+/** Triangle/tetrahedron coordinate-map datasets. */
+using coordinateDimensions = boost::mp11::mp_list_c<int, 2, 3>;
+
+/** @test Coordinate maps preserve fixed spatial/sample extents and legacy limits. */
+BOOST_AUTO_TEST_CASE_TEMPLATE( simplexCoordinateMaps, Dimension, coordinateDimensions )
+{
+    constexpr int dim = Dimension::value;
+    Eigen::Matrix<double, dim, 3> collapsed = Eigen::Matrix<double, dim, 3>::Zero();
+    for ( int d = 0; d < dim; ++d )
+    {
+        collapsed( d, 1 ) = -0.7 + 0.2 * d;
+        collapsed( d, 2 ) = 0.1 + 0.2 * d;
+    }
+    auto cartesian = SimplexCoordinates<dim>::toCartesian( collapsed );
+    auto restored = SimplexCoordinates<dim>::toCollapsed( cartesian.matrix() );
+    static_assert( decltype( cartesian )::rowsAtCompileTime == dim );
+    static_assert( decltype( cartesian )::colsAtCompileTime == 3 );
+    BOOST_CHECK_SMALL( ( restored.matrix() - collapsed ).norm(), 1e-13 );
+    BOOST_CHECK_EQUAL( cartesian.matrix()( 0, 0 ), dim == 2 ? -.5 : -.75 );
+    BOOST_CHECK_EQUAL( cartesian.matrix()( dim - 1, 0 ), 0. );
+    Eigen::Matrix<double, dim, 1> vertex = Eigen::Matrix<double, dim, 1>::Constant( -1. );
+    vertex( dim - 1 ) = 1.;
+    auto representative = SimplexCoordinates<dim>::toCollapsed( vertex );
+    static_assert( decltype( representative )::usesInlineStorage );
+    BOOST_CHECK_EQUAL( representative.matrix()( 0, 0 ), dim == 2 ? -1. : 1. );
+    if constexpr ( dim == 3 ) BOOST_CHECK_EQUAL( representative.matrix()( 1, 0 ), -1. );
+    BOOST_CHECK_EQUAL( representative.matrix()( dim - 1, 0 ), 1. );
+    constexpr TheShape shape = dim == 2 ? TRIANGLE : TETRAHEDRON;
+    typename node<double>::type legacy( dim );
+    eigenMap( legacy ) = vertex;
+    details::CollapsedCoordinates<shape> map;
+    details::CollapsedCoordinates<shape> constructed( legacy );
+    BOOST_CHECK_SMALL( ( eigenMap( map( legacy ) ) - representative.matrix().col( 0 ) ).norm(), 1e-13 );
+    BOOST_CHECK_SMALL( ( eigenMap( constructed() ) - eigenMap( map() ) ).norm(), 1e-13 );
+    for ( int count : { 0, 1, 3 } )
+    {
+        typename matrix_node<double>::type batch( dim, count );
+        eigenMap( batch ) = cartesian.matrix().leftCols( count );
+        details::CollapsedPointCoordinates<shape> batchMap;
+        auto expected = SimplexCoordinates<dim>::toCollapsed( eigenMap( batch ) );
+        BOOST_CHECK_SMALL( ( eigenMap( batchMap( batch ) ) - expected.matrix() ).norm(), 1e-13 );
+        auto aliasedExpected = SimplexCoordinates<dim>::toCollapsed( eigenMap( batchMap() ) );
+        BOOST_CHECK_SMALL( ( eigenMap( batchMap( batchMap() ) ) - aliasedExpected.matrix() ).norm(), 1e-13 );
+    }
+}
+
+/** @test Simplex values/gradients agree for each degree and normalization policy. */
+BOOST_DATA_TEST_CASE( dubinerAgainstPolynomialReference,
+    bdata::make( dimensions ) * bdata::make( simplexDegrees ) * bdata::make( normalization ),
+    dimension, degree, normalized )
+{
+    polynomial_test::visitDimension( dimension, [&]<int Dim>()
+    {
+        if ( normalized )
+            checkDubiner<Dim, true>( degree );
+        else
+            checkDubiner<Dim, false>( degree );
+    } );
+}
+
+/** @test Higher-degree triangular modes remain accurate at boundary limits. */
+BOOST_DATA_TEST_CASE( highDegreeTriangleReference,
+    bdata::make( std::array<unsigned, 2>{ 8, 10 } ) * bdata::make( normalization ), degree, normalized )
+{
+    if ( normalized )
+        checkDubiner<2, true>( degree );
+    else
+        checkDubiner<2, false>( degree );
+}
+
+/** @test Low-degree simplex Hessians match product-rule reference derivatives. */
+BOOST_DATA_TEST_CASE( simplexHessiansAgainstPolynomialReference,
+    bdata::make( dimensions ) * bdata::make( std::array<unsigned, 4>{ 0, 1, 2, 3 } ),
+    dimension, degree )
+{
+    polynomial_test::visitDimension( dimension, [&]<int Dim>()
+    {
+        using modal_type = Feel::detail::OrthonormalPolynomialSet<
+            Dim, Dynamic, Dim, Scalar, double, 0, Simplex>;
+        modal_type modal{ RuntimeOrder{ static_cast<uint16_type>( degree ) } };
+        typename modal_type::points_type points( Dim, Dim + 2 );
+        for ( int q = 0; q < Dim + 2; ++q )
+            for ( int d = 0; d < Dim; ++d )
+                points( d, q ) = q == Dim + 1 ? -1.0 + 2.0 / ( Dim + 1 ) : -1.0;
+        for ( int d = 0; d < Dim; ++d )
+            points( d, d + 1 ) = 1.0;
+        auto const hessians = modal.derivate2( points );
+        BOOST_REQUIRE_EQUAL( hessians.size1(), Dim );
+        BOOST_REQUIRE_EQUAL( hessians.size2(), Dim );
+        for ( int q = 0; q < Dim + 2; ++q )
+        {
+            std::array<double, Dim> point;
+            for ( int d = 0; d < Dim; ++d )
+                point[d] = points( d, q );
+            auto const expected = polynomial_test::dubiner<Dim>( degree, point, true );
+            for ( int i = 0; i < Dim; ++i )
+                for ( int j = 0; j < Dim; ++j )
+                {
+                    BOOST_REQUIRE_EQUAL( hessians( i, j ).size1(), expected.size() );
+                    BOOST_REQUIRE_EQUAL( hessians( i, j ).size2(), points.size2() );
+                    BOOST_TEST_CONTEXT( "sample=" << q << " Hessian=(" << i << "," << j << ")" )
+                        for ( std::size_t mode = 0; mode < expected.size(); ++mode )
+                            checkNear( hessians( i, j )( mode, q ), expected[mode].hessian[i * Dim + j], 1e-9 );
+                }
+        }
+    } );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-
-#if 0
-#if 1
-//
-// TestJacobi
-//
-TestJacobi<0, double> a;
-TestJacobi<1, double> b;
-TestJacobi<2, double> c;
-TestJacobi<10, double> d;
-//test->add( BOOST_TEST_CASE( ( TestJacobi<15, Feel::real96_type>(50.0) )  ) );
-
-#if defined( FEELPP_HAS_QD_REAL)
-unsigned int old_cw;
-fpu_fix_start( &old_cw );
-
-TestJacobi<0, qd_real> a_qd;
-TestJacobi<1, qd_real> b_qd;
-TestJacobi<2, qd_real> c_qd;
-test->add( BOOST_TEST_CASE( ( TestJacobi<4, qd_real>() )  ) );
-test->add( BOOST_TEST_CASE( ( TestJacobi<10, qd_real>() )  ) );
-//test->add( BOOST_TEST_CASE( ( TestJacobi<15, qd_real>() )  ) );
-#endif /* FEELPP_HAS_QD_REAL */
-
-//
-// TestDubiner
-//
-BOOST_TEST_MESSAGE( "o- TestDubiner<0, double>()" );
-TestDubiner<0, double> d0;
-BOOST_TEST_MESSAGE( "o- TestDubiner<1, double>()" );
-TestDubiner<1, double> d1;
-#else
-//test->add( BOOST_TEST_CASE( ( TestJacobi<1, double>() )  ) );
-//test->add( BOOST_TEST_CASE( ( TestJacobi<10, double>() )  ) );
-
-#if defined( FEELPP_HAS_QD_REAL)
-unsigned int old_cw;
-fpu_fix_start( &old_cw );
-
-test->add( BOOST_TEST_CASE( ( TestJacobi<0, qd_real>() )  ) );
-//test->add( BOOST_TEST_CASE( ( TestJacobi<1, qd_real>() )  ) );
-//test->add( BOOST_TEST_CASE( ( TestJacobi<2, qd_real>() )  ) );
-//test->add( BOOST_TEST_CASE( ( TestJacobi<4, qd_real>() )  ) );
-test->add( BOOST_TEST_CASE( ( TestJacobi<10, qd_real>() )  ) );
-//test->add( BOOST_TEST_CASE( ( TestJacobi<15, qd_real>() )  ) );
-#endif /* FEELPP_HAS_QD_REAL */
-
-#endif
-//    return test;
-}
-#endif

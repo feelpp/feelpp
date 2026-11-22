@@ -11,6 +11,7 @@ set(PYFILES
   test_exporter.py
   test_forms.py
   test_integrate.py
+  test_interpolation.py
   test_measure.py
   test_mesh.py
   test_meshmover.py
@@ -21,7 +22,7 @@ set(PYFILES
 )
 feelpp_install_python_tests(COMPONENT core FILES ${PYFILES})
 
-foreach( test  alg core discr exporter integrate measure mesh meshmover operators remesh remotedata timing )
+foreach( test  alg core discr exporter integrate interpolation measure mesh meshmover operators remesh remotedata timing )
 feelpp_add_python_pytest_test(
   NAME feelpp_qs_python-${test}
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}

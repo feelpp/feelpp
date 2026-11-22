@@ -1,0 +1,2 @@
+smoke --directory=qs_sys/mixed
+fe-p3p2-geometry-g2 --order=3 --geometry.order=2 --directory=qs_sys/mixed_p3p2_g2

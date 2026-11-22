@@ -42,17 +42,16 @@ Planned later namespaces:
 Bootstrap:
 
 ```bash
-python3 -m venv .venv-ops
-. .venv-ops/bin/activate
-pip install -e ops
+uv sync --project ops
+source ops/.venv/bin/activate
 fpp-pkg --help
 fpp-version --help
 ```
 
-Run the `ops` test suite with `pytest`:
+Run the `ops` test suite through uv with the test dependencies:
 
 ```bash
-pytest -q ops/tests
+uv run --project ops --extra test pytest -q ops/tests
 ```
 
 `fpp-version` uses the repository root [`feelpp.version.cmake`](../feelpp.version.cmake)
@@ -113,10 +112,46 @@ has a small local workflow surface:
 fpp-spack doctor
 fpp-spack doctor --json
 fpp-spack init
+source ops/feelpp-spack.sh
 fpp-spack list
-eval "$(fpp-spack activate openmpi)"
-eval "$(fpp-spack activate cpu/openmpi)"
+fpp-spack enable cpu/openmpi5-kokkos
+fpp-spack status
+fpp-spack disable
 ```
+
+The sourced Bash helper also enables Tab completion for commands, nested
+commands, options and environment names/unique aliases. For example,
+`fpp-spack ena<Tab>` completes `enable`, and
+`fpp-spack enable cpu/openmpi5-k<Tab>` completes `cpu/openmpi5-kokkos`.
+Environment completion reads this checkout's manifests without activating
+Spack. Re-source the helper to enable completion in an existing terminal.
+
+The Bash helper selects this checkout and automatically uses
+`ops/.venv/bin/python` when present. Set up its Python dependencies once:
+
+```bash
+uv sync --project ops
+source ops/feelpp-spack.sh
+```
+
+Activating the Python venv separately is optional: the helper retains its
+interpreter path while Spack changes PATH. `FEELPP_OPS_PYTHON` selects another
+interpreter with the ops dependencies installed. An existing `.venv-ops` is
+also supported. The helper also works without
+an installed console entry point by using this checkout's Python module.
+Path resolution does not call shell directory functions, and activation uses
+the selected Spack executable directly, so custom `cd`/`pwd` functions do not
+interfere with setup.
+It preserves `SPACK_USER_CONFIG_PATH` and `SPACK_USER_CACHE_PATH`; set them
+before enabling an environment when using existing site configuration/cache.
+
+`list` prints environment names and view presence, marking the active entry
+with `*`; `status` reports the current shell's environment, paths, lockfile and
+views. Both accept `--json`. View/lockfile presence does not certify that every
+dependency is installed; `doctor` provides the broader readiness check.
+`enable`/`disable` require the sourced helper because they change the parent
+shell. Existing `eval "$(fpp-spack activate cpu/openmpi5-kokkos)"` commands
+remain supported. `fpp-spack env list` retains its JSON inspection output.
 
 `doctor` checks the local Spack executable, config/cache paths, shared manifests,
 and optional selected environment. It prints human-readable output by default;

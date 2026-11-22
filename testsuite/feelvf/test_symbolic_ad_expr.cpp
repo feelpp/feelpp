@@ -161,7 +161,7 @@ BOOST_AUTO_TEST_CASE( concepts_and_diagnostic_reports_describe_symbolic_ad_capab
     auto law = expr( "mu*(u*u+1):mu:u" );
     law.setParameterValues( { { "mu", 2.0 }, { "u", 3.0 } } );
 
-    static_assert( Feel::VfExpr<decltype( law )> );
+    static_assert( Feel::VfExprConcept<decltype( law )> );
     static_assert( Feel::HasSymbolDependency<decltype( law )> );
     static_assert( Feel::ParametricSymbolExpr<decltype( law )> );
     static_assert( Feel::SymbolicallyDifferentiableExpr<decltype( law )> );

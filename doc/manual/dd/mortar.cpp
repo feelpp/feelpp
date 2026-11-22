@@ -76,7 +76,7 @@ public:
     typedef bases<Lagrange<Order2,Scalar> > basis2_type;
     typedef FunctionSpace<mesh_type, basis1_type> space1_type;
     typedef FunctionSpace<mesh_type, basis2_type> space2_type;
-    typedef FunctionSpace<trace_mesh_type, basis1_type, Periodicity<NoPeriodicity>, mortars<Mortar> > lagmult_space_type;
+    typedef FunctionSpace<trace_mesh_type, basis1_type, value_type, mortars<Mortar> > lagmult_space_type;
     //typedef typename space1_type::trace_functionspace_type lagmult_space_type;
     typedef typename space1_type::element_type element1_type;
     typedef typename space2_type::element_type element2_type;

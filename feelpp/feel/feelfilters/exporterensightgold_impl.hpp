@@ -1,11 +1,14 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ * SPDX-FileContributor: Alexandre Ancel <alexandre.ancel@cemosis.fr>
+ * SPDX-FileContributor: youldrouis <yacine.ould-rouis@cea.fr>
+ *
+ * SPDX-FileCopyrightText: 2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-
-    SPDX-FileCopyrightText: 2026 University of Strasbourg
-
-    SPDX-License-Identifier: LGPL-3.0-or-later
-*/
 #ifndef FEELPP_EXPORTERENSIGHTGOLD_CPP
 #define FEELPP_EXPORTERENSIGHTGOLD_CPP 1
 
@@ -53,41 +56,7 @@ template<typename MeshType, int N>
 void
 ExporterEnsightGold<MeshType,N>::init()
 {
-    /* define ensight named constant for the different faces/elements */
-    if ( mesh_type::nDim == 1 )
-        if ( mesh_type::Shape == SHAPE_LINE )
-        {
-            M_element_type = ( mesh_type::nOrder == 1 )?"bar2":"bar3";
-            M_face_type = "point";
-        }
-
-    if ( mesh_type::nDim == 2 )
-    {
-        if ( mesh_type::Shape == SHAPE_TRIANGLE )
-            M_element_type = ( mesh_type::nOrder == 1 )?"tria3":"tria6";
-
-        else if ( mesh_type::Shape == SHAPE_QUAD )
-            M_element_type = ( mesh_type::nOrder == 1 )?"quad4":"quad8";
-
-        M_face_type = ( mesh_type::nOrder == 1 )?"bar2":"bar3";
-    }
-
-    if ( mesh_type::nDim == 3 )
-    {
-        if ( mesh_type::Shape == SHAPE_TETRA )
-        {
-            M_element_type = ( mesh_type::nOrder == 1 )?"tetra4":"tetra10";
-            M_face_type = ( mesh_type::nOrder == 1 )?"tria3":"tria6";
-        }
-
-        else if ( mesh_type::Shape == SHAPE_HEXA )
-        {
-            M_element_type = ( mesh_type::nOrder == 1 )?"hexa8":"hexa20";
-            M_face_type = ( mesh_type::nOrder == 1 )?"quad4":"quad8";
-        }
-    }
-
-
+    updateElementTypes( mesh_type::nOrder );
 
     M_nodesOrderingInElementToEnsight[ Simplex<1,2>::type() + "_1d_g2" ] = { 0,2,1 };
     M_nodesOrderingInElementToEnsight[ Simplex<2,2>::type() + "_2d_g2" ] = { 0,1,2,4,5,3 };
@@ -96,7 +65,6 @@ ExporterEnsightGold<MeshType,N>::init()
     M_nodesOrderingInElementToEnsight[ Hypercube<1,2>::type() + "_1d_g2" ] = { 0,2,1 };
     M_nodesOrderingInElementToEnsight[ Hypercube<2,2>::type() + "_2d_g2" ] = { 0,1,2,3,4,5,6,7 };
     M_nodesOrderingInElementToEnsight[ Hypercube<3,2>::type() + "_3d_g2" ] = { 0,1,2,3,4,5,6,7,8,9,10,11,17,12,16,18,13,19,14,15 };
-
 
     /* TODO Do a cleanup of previous stored files */
     /* to avoid conflicts */
@@ -110,6 +78,49 @@ ExporterEnsightGold<MeshType,N>::init()
     M_packTimeSteps = ioption( _name="exporter.ensightgold.pack.timesteps" );
     if ( M_mergeTimeSteps && ( M_packTimeSteps == 1 ) )
         M_mergeTimeSteps = false;
+}
+
+template<typename MeshType, int N>
+void
+ExporterEnsightGold<MeshType,N>::updateElementTypes( uint16_type order ) const
+{
+    // EnSight Gold has no cubic or higher-order cell types. For G>2,
+    // linearize visualization geometry to the cell corners; the simulation
+    // mesh and all exported coordinate/field samples remain unchanged.
+    bool const quadratic = order == 2;
+    /* define ensight named constant for the different faces/elements */
+    if ( mesh_type::nDim == 1 )
+        if ( mesh_type::Shape == SHAPE_LINE )
+        {
+            M_element_type = quadratic ? "bar3" : "bar2";
+            M_face_type = "point";
+        }
+
+    if ( mesh_type::nDim == 2 )
+    {
+        if ( mesh_type::Shape == SHAPE_TRIANGLE )
+            M_element_type = quadratic ? "tria6" : "tria3";
+
+        else if ( mesh_type::Shape == SHAPE_QUAD )
+            M_element_type = quadratic ? "quad8" : "quad4";
+
+        M_face_type = quadratic ? "bar3" : "bar2";
+    }
+
+    if ( mesh_type::nDim == 3 )
+    {
+        if ( mesh_type::Shape == SHAPE_TETRA )
+        {
+            M_element_type = quadratic ? "tetra10" : "tetra4";
+            M_face_type = quadratic ? "tria6" : "tria3";
+        }
+
+        else if ( mesh_type::Shape == SHAPE_HEXA )
+        {
+            M_element_type = quadratic ? "hexa20" : "hexa8";
+            M_face_type = quadratic ? "quad8" : "quad4";
+        }
+    }
 }
 
 template<typename MeshType, int N>
@@ -497,7 +508,9 @@ template<typename MeshType, int N>
 void
 ExporterEnsightGold<MeshType,N>::writeGeoFiles( timeset_ptrtype __ts, mesh_ptrtype mesh, int timeIndex, bool isFirstStep ) const
 {
-    // prepare/update cache
+    updateElementTypes( mesh->order() );
+
+    // prepare/udate cache
     bool buildNewCache = true;
     auto itFindCache = M_cache_mp.find( __ts->name() );
     if ( itFindCache != M_cache_mp.end() )
@@ -1353,15 +1366,27 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements( MPI_File fh, mesh_conti
         return int32_t(id)+1;
     };
 
-    uint16_type nPointsUsedInElt = mesh_type::element_type::numPoints;
-    if constexpr ( N == 1 )
+    uint16_type nPointsUsedInElt = mp.pointsPerElement();
+    if ( mesh->order() == 1 )
     {
         for ( std::size_t k=0;k<pointsIdsInElt_B.size();++k)
             pointsIdsInElt[k] = localPointId(pointsIdsInElt_B[k]);
     }
+    else if ( mesh->order() > 2 )
+    {
+        // Match the linear element type selected by updateElementTypes().
+        // Keep the numbering of all coordinates and nodal fields intact,
+        // but connect only corners for this visualization approximation.
+        nPointsUsedInElt = mesh_type::element_type::numVertices;
+        pointsIdsInElt.resize( std::size_t( mp.numberOfElement( part, currentPid ) ) * nPointsUsedInElt );
+        for ( std::size_t k = 0; k < mp.numberOfElement( part, currentPid ); ++k )
+            for ( uint16_type p = 0; p < nPointsUsedInElt; ++p )
+                pointsIdsInElt[k*nPointsUsedInElt+p] =
+                    localPointId( pointsIdsInElt_B[k*mp.pointsPerElement()+p] );
+    }
     else
     {
-        auto itFindOrdering = M_nodesOrderingInElementToEnsight.find( (boost::format("%1%_%2%d_g%3%") %mesh_type::shape_type::type() %mesh_type::shape_type::nDim %mesh_type::shape_type::nOrder ).str() );
+        auto itFindOrdering = M_nodesOrderingInElementToEnsight.find( (boost::format("%1%_%2%d_g%3%") %mesh_type::shape_type::type() %mesh_type::shape_type::nDim %mesh->order() ).str() );
         CHECK( itFindOrdering != M_nodesOrderingInElementToEnsight.end() ) << "not found an ordering";
         auto const& mappingWithThisKindOfElement = itFindOrdering->second;
         nPointsUsedInElt = mappingWithThisKindOfElement.size();
@@ -1369,7 +1394,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements( MPI_File fh, mesh_conti
         for (std::size_t k=0;k<mp.numberOfElement(part,currentPid);++k)
             for (uint16_type p=0;p<nPointsUsedInElt;++p)
                 pointsIdsInElt[k*nPointsUsedInElt+mappingWithThisKindOfElement[p]]=
-                    localPointId(pointsIdsInElt_B[k*mesh_type::element_type::numPoints+p]);
+                    localPointId(pointsIdsInElt_B[k*mp.pointsPerElement()+p]);
     }
     localOffset = MPI_Offset(mp.startElementIds(part,currentPid))*nPointsUsedInElt*sizeOfInt32_t;
     writePayload(fh, posInFile+localOffset, pointsIdsInElt.data(), pointsIdsInElt.size(), MPI_INT32_T, &status );
@@ -1756,7 +1781,9 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename supe
                         {
                             auto const& elt = unwrap_ref( *elt_it );
                             auto const& locglob_ind = d->localToGlobalIndices( elt.id() );
-                            const int np = N==1? elt.numVertices : elt.numPoints;
+                            const int np = __mesh->order() == 1
+                                               ? elt.numVertices
+                                               : elt.nPoints();
                             for ( uint16_type p = 0; p < np; ++p )
                             {
                                 index_type ptid = mp.pointIdToContiguous(part,elt.point( p ).id());

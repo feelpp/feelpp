@@ -87,7 +87,7 @@ straightenMesh( std::shared_ptr<MeshType> mesh, worldcomm_ptr_t const& worldcomm
 
 #if 0
     if (worldcomm->localSize()>1)
-        Feel::detail::straightenMeshUpdateEdgesOnBoundaryIsolated( straightener,mpl::int_<_mesh_type::nDim>() );
+        Feel::detail::straightenMeshUpdateEdgesOnBoundaryIsolated( straightener );
 #endif
         double norm_mean_value = integrate( _range = boundaryfaces( _mesh ), _expr = idv( straightener ) ).evaluate( parallelEvaluation ).norm();
 

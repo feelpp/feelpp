@@ -1,27 +1,12 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2006-2010 Université Joseph Fourier (Grenoble I)
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-   This file is part of the Feel library
-
-   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   Date: 2005-01-18
-
-   Copyright (C) 2005,2006 EPFL
-   Copyright (C) 2006-2010 Université Joseph Fourier (Grenoble I)
-
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public
-   License as published by the Free Software Foundation; either
-   version 3.0 of the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
  *  \file bilinearform.hpp
  *  \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -45,6 +30,7 @@
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/stencil.hpp>
 
+#include <feel/feelvf/assemblystorage.hpp>
 #include <feel/feelvf/bilinearformbase.hpp>
 #include <feel/feelvf/linearform.hpp>
 #include <feel/feelvf/expr.hpp>
@@ -294,14 +280,20 @@ public:
     typename finite_element<space_1_type,UseMortar>::ptrtype
     testFiniteElement() const
         {
-            return std::make_shared<typename finite_element<space_1_type,UseMortar>::type>();
+            if constexpr ( UseMortar && space_1_type::is_mortar )
+                return std::make_shared<typename finite_element<space_1_type,UseMortar>::type>();
+            else
+                return M_X1->fe();
         }
     // return trial finite element
     template<bool UseMortar=false>
     typename finite_element<space_2_type,UseMortar>::ptrtype
     trialFiniteElement() const
         {
-            return std::make_shared<typename finite_element<space_2_type,UseMortar>::type>();
+            if constexpr ( UseMortar && space_2_type::is_mortar )
+                return std::make_shared<typename finite_element<space_2_type,UseMortar>::type>();
+            else
+                return M_X2->fe();
         }
     //@}
 
@@ -457,111 +449,86 @@ public:
 
         typedef typename space_1_type::dof_type test_dof_type;
         typedef typename space_2_type::dof_type trial_dof_type;
+        static constexpr bool hasDynamicOrder = test_dof_type::is_order_dynamic || trial_dof_type::is_order_dynamic;
         static const int nDofPerElementTest = space_1_type::dof_type::nDofPerElement;
         static const int nDofPerElementTrial = space_2_type::dof_type::nDofPerElement;
-        static const int nDofPerComponentTest = test_fe_type::nLocalDof;
-        static const int nDofPerComponentTrial = trial_fe_type::nLocalDof;
-        static constexpr int local_mat_traits = (nDofPerElementTrial == 1) ? Eigen::ColMajor : Eigen::RowMajor;
+        static const int nDofPerComponentTest =
+            finiteElementFixedLocalDofCountOrZero<test_fe_type>( 1 );
+        static const int nDofPerComponentTrial =
+            finiteElementFixedLocalDofCountOrZero<trial_fe_type>( 1 );
+        // Keep the test and trial extent contracts independent in mixed-order forms.
+        using ElementStorage = ::Feel::detail::AssemblyStorage<value_type,
+                                                               test_dof_type::is_order_dynamic ? Dynamic : nDofPerElementTest,
+                                                               trial_dof_type::is_order_dynamic ? Dynamic : nDofPerElementTrial>;
+        using ComponentStorage = ::Feel::detail::AssemblyStorage<value_type,
+                                                                 test_dof_type::is_order_dynamic ? Dynamic : nDofPerComponentTest,
+                                                                 trial_dof_type::is_order_dynamic ? Dynamic : nDofPerComponentTrial>;
 
-        static const int local_mat_traits_per_component = mpl::if_<mpl::equal_to<mpl::int_<nDofPerComponentTrial>,mpl::int_<1> >,
-                                                                   mpl::int_<Eigen::ColMajor>,
-                                                                   mpl::int_<Eigen::RowMajor> >::type::value;
+        /** Ordinary local element matrix. */
+        using local_matrix_type = typename ElementStorage::Ordinary;
+        /** Local matrix after eliminating one test mortar constraint. */
+        using mortar_test_local_matrix_type = typename ElementStorage::MortarTest;
+        /** Local matrix after eliminating one trial mortar constraint. */
+        using mortar_trial_local_matrix_type = typename ElementStorage::MortarTrial;
+        /** Two-element face contribution. */
+        using local2_matrix_type = typename ElementStorage::TwoCell;
+        /** One component block, with its own fixed or dynamic cardinalities. */
+        using c_local_matrix_type = typename ComponentStorage::Ordinary;
+        /** Test-mortar component block. */
+        using c_mortar_test_local_matrix_type = typename ComponentStorage::MortarTest;
+        /** Trial-mortar component block. */
+        using c_mortar_trial_local_matrix_type = typename ComponentStorage::MortarTrial;
+        /** Two-element component block. */
+        using c_local2_matrix_type = typename ComponentStorage::TwoCell;
 
-        static const int local_mat_m1_traits = mpl::if_<mpl::equal_to<mpl::int_<nDofPerElementTrial>,mpl::int_<2> >,
-                                                     mpl::int_<Eigen::ColMajor>,
-                                                     mpl::int_<Eigen::RowMajor> >::type::value;
-
-        static const int local_mat_m1_traits_per_component = mpl::if_<mpl::equal_to<mpl::int_<nDofPerComponentTrial>,mpl::int_<2> >,
-                                                                   mpl::int_<Eigen::ColMajor>,
-                                                                   mpl::int_<Eigen::RowMajor> >::type::value;
-
-#if 0
-        // Eigen::Matrix allocation on stack
-        typedef Eigen::Matrix<value_type, nDofPerElementTest, nDofPerElementTrial,local_mat_traits> local_matrix_type;
-        typedef Eigen::Matrix<value_type, nDofPerElementTest-1, nDofPerElementTrial,local_mat_traits> mortar_local_matrix_type;
-        typedef Eigen::Matrix<value_type, 2*nDofPerElementTest, 2*nDofPerElementTrial,Eigen::RowMajor> local2_matrix_type;
-        typedef Eigen::Matrix<value_type, nDofPerComponentTest, nDofPerComponentTrial,local_mat_traits> c_local_matrix_type;
-        typedef Eigen::Matrix<value_type, nDofPerComponentTest-1, nDofPerComponentTrial,local_mat_traits> c_mortar_local_matrix_type;
-        typedef Eigen::Matrix<value_type, 2*nDofPerComponentTest, 2*nDofPerComponentTrial,Eigen::RowMajor> c_local2_matrix_type;
-#else
-        // Eigen::Matrix allocation on stack or dynamic
-        // local_matrix
-        static inline const bool useEigenDynamicAlloc = nDofPerElementTest*nDofPerElementTrial*sizeof(value_type) > 128*128*8;
-        static const int nRowEigenLocalMatrix = ( useEigenDynamicAlloc )? Eigen::Dynamic : nDofPerElementTest;
-        static const int nColEigenLocalMatrix = ( useEigenDynamicAlloc )? Eigen::Dynamic : nDofPerElementTrial;
-        typedef Eigen::Matrix<value_type, nRowEigenLocalMatrix, nColEigenLocalMatrix,local_mat_traits> local_matrix_type;
-        // mortar_test_local_matrix
-        static inline const bool useEigenDynamicAllocMortarTest = (nDofPerElementTest-1)*nDofPerElementTrial*sizeof(value_type) > 128*128*8;
-        static const int nRowEigenMortarTestLocalMatrix = ( useEigenDynamicAllocMortarTest )? Eigen::Dynamic : nDofPerElementTest-1;
-        static const int nColEigenMortarTestLocalMatrix = ( useEigenDynamicAllocMortarTest )? Eigen::Dynamic : nDofPerElementTrial;
-        typedef Eigen::Matrix<value_type, nRowEigenMortarTestLocalMatrix, nColEigenMortarTestLocalMatrix, local_mat_traits> mortar_test_local_matrix_type;
-#if 1
-        // mortar_trial_local_matrix
-        static inline const bool useEigenDynamicAllocMortarTrial = nDofPerElementTest*(nDofPerElementTrial-1)*sizeof(value_type) > 128*128*8;
-        static const int nRowEigenMortarTrialLocalMatrix = ( useEigenDynamicAllocMortarTrial )? Eigen::Dynamic : nDofPerElementTest;
-        static const int nColEigenMortarTrialLocalMatrix = ( useEigenDynamicAllocMortarTrial )? Eigen::Dynamic : nDofPerElementTrial-1;
-        typedef Eigen::Matrix<value_type, nRowEigenMortarTrialLocalMatrix, nColEigenMortarTrialLocalMatrix, local_mat_m1_traits> mortar_trial_local_matrix_type;
-#endif
-        // local2_matrix
-        static inline const bool useEigenDynamicAlloc2 = 4*nDofPerElementTest*nDofPerElementTrial*sizeof(value_type) > 128*128*8;
-        static const int nRowEigenLocal2Matrix = ( useEigenDynamicAlloc2 )? Eigen::Dynamic : 2*nDofPerElementTest;
-        static const int nColEigenLocal2Matrix = ( useEigenDynamicAlloc2 )? Eigen::Dynamic : 2*nDofPerElementTrial;
-        typedef Eigen::Matrix<value_type, nRowEigenLocal2Matrix, nColEigenLocal2Matrix,Eigen::RowMajor> local2_matrix_type;
-        // c_local matrix
-        static inline const bool c_useEigenDynamicAlloc = nDofPerComponentTest*nDofPerComponentTrial*sizeof(value_type) > 128*128*8;
-        static const int nRowEigenCompLocalMatrix = ( c_useEigenDynamicAlloc )? Eigen::Dynamic : nDofPerComponentTest;
-        static const int nColEigenCompLocalMatrix = ( c_useEigenDynamicAlloc )? Eigen::Dynamic : nDofPerComponentTrial;
-        typedef Eigen::Matrix<value_type, nRowEigenCompLocalMatrix, nColEigenCompLocalMatrix,local_mat_traits_per_component> c_local_matrix_type;
-        // c_mortar_test_local
-        static inline const bool c_useEigenDynamicAllocMortarTest = (nDofPerComponentTest-1)*nDofPerComponentTrial*sizeof(value_type) > 128*128*8;
-        static const int nRowEigenCompMortarTestLocalMatrix = ( c_useEigenDynamicAllocMortarTest )? Eigen::Dynamic : nDofPerComponentTest-1;
-        static const int nColEigenCompMortarTestLocalMatrix = ( c_useEigenDynamicAllocMortarTest )? Eigen::Dynamic : nDofPerComponentTrial;
-        typedef Eigen::Matrix<value_type, nRowEigenCompMortarTestLocalMatrix, nColEigenCompMortarTestLocalMatrix,local_mat_traits_per_component> c_mortar_test_local_matrix_type;
-#if 1
-        // c_mortar_trial_local
-        static inline const bool c_useEigenDynamicAllocMortarTrial = nDofPerComponentTest*(nDofPerComponentTrial-1)*sizeof(value_type) > 128*128*8;
-        static const int nRowEigenCompMortarTrialLocalMatrix = ( c_useEigenDynamicAllocMortarTrial )? Eigen::Dynamic : nDofPerComponentTest;
-        static const int nColEigenCompMortarTrialLocalMatrix = ( c_useEigenDynamicAllocMortarTrial )? Eigen::Dynamic : nDofPerComponentTrial-1;
-        typedef Eigen::Matrix<value_type, nRowEigenCompMortarTrialLocalMatrix, nColEigenCompMortarTrialLocalMatrix,local_mat_m1_traits_per_component> c_mortar_trial_local_matrix_type;
-#endif
-        // c_local2_matrix
-        static inline const bool c_useEigenDynamicAlloc2 = 4*nDofPerComponentTest*nDofPerComponentTrial*sizeof(value_type) > 128*128*8;
-        static const int nRowEigenCompLocal2Matrix = ( c_useEigenDynamicAlloc2 )? Eigen::Dynamic : 2*nDofPerComponentTest;
-        static const int nColEigenCompLocal2Matrix = ( c_useEigenDynamicAlloc2 )? Eigen::Dynamic : 2*nDofPerComponentTrial;
-        typedef Eigen::Matrix<value_type, nRowEigenCompLocal2Matrix, nColEigenCompLocal2Matrix,Eigen::RowMajor> c_local2_matrix_type;
-        // local_row_sign_type and local_col_sign_type
-        static inline const bool c_useEigenDynamicAllocSign = nDofPerElementTest*nDofPerElementTrial*sizeof(int) > 128*128*8;
-        static const int nRowEigenLocalRowSign = ( c_useEigenDynamicAllocSign )? Eigen::Dynamic : nDofPerElementTest;
-        static const int nRowEigenLocalColSign = ( c_useEigenDynamicAllocSign )? Eigen::Dynamic : nDofPerElementTrial;
-        typedef Eigen::Matrix<int, nRowEigenLocalRowSign, 1> local_row_sign_type;
-        typedef Eigen::Matrix<int, nRowEigenLocalColSign, 1> local_col_sign_type;
-        // local2_row_sign_type and local2_col_sign_type
-        static inline const bool c_useEigenDynamicAllocSign2 = 4*nDofPerElementTest*nDofPerElementTrial*sizeof(int) > 128*128*8;
-        static const int nRowEigenLocal2RowSign = ( c_useEigenDynamicAllocSign2 )? Eigen::Dynamic : 2*nDofPerElementTest;
-        static const int nRowEigenLocal2ColSign = ( c_useEigenDynamicAllocSign2 )? Eigen::Dynamic : 2*nDofPerElementTrial;
-        typedef Eigen::Matrix<int, nRowEigenLocal2RowSign, 1> local2_row_sign_type;
-        typedef Eigen::Matrix<int, nRowEigenLocal2ColSign, 1> local2_col_sign_type;
-#endif
-        typedef Eigen::Matrix<int, nDofPerElementTest, 1> local_row_type;
-        typedef Eigen::Matrix<int, nDofPerElementTest-1, 1> mortar_test_local_row_type;
-        typedef Eigen::Matrix<int, nDofPerElementTrial-1, 1> mortar_trial_local_col_type;
-        typedef Eigen::Matrix<int, 2*nDofPerElementTest, 1> local2_row_type;
-        typedef Eigen::Matrix<int, nDofPerElementTrial, 1> local_col_type;
-        typedef Eigen::Matrix<int, 2*nDofPerElementTrial, 1> local2_col_type;
-
-        typedef Eigen::Matrix<int, nDofPerComponentTest, 1> c_local_row_type;
-        typedef Eigen::Matrix<int, nDofPerComponentTest-1, 1> c_mortar_test_local_row_type;
-        typedef Eigen::Matrix<int, 2*nDofPerComponentTest, 1> c_local2_row_type;
-        typedef Eigen::Matrix<int, nDofPerComponentTrial, 1> c_local_col_type;
-        typedef Eigen::Matrix<int, 2*nDofPerComponentTrial, 1> c_local2_col_type;
-
+        // Orientation signs and index vectors share the same local extent policy.
+        using local_row_sign_type = typename ElementStorage::RowSigns;
+        using local_col_sign_type = typename ElementStorage::ColSigns;
+        using local2_row_sign_type = typename ElementStorage::TwoCellRowSigns;
+        using local2_col_sign_type = typename ElementStorage::TwoCellColSigns;
+        // DofTable's output-buffer API owns dynamic index vectors; retain its capacity reuse.
+        using local_row_type = Eigen::VectorXi;
+        using local_col_type = Eigen::VectorXi;
+        using local2_row_type = Eigen::VectorXi;
+        using local2_col_type = Eigen::VectorXi;
+        using mortar_test_local_row_type = Eigen::VectorXi;
+        using mortar_trial_local_col_type = Eigen::VectorXi;
+        using c_local_row_type = Eigen::VectorXi;
+        using c_local_col_type = Eigen::VectorXi;
+        using c_local2_row_type = Eigen::VectorXi;
+        using c_local2_col_type = Eigen::VectorXi;
+        using c_mortar_test_local_row_type = Eigen::VectorXi;
+        /** Component orientation signs preserve their own static axis extents. */
+        using ComponentRowSigns = typename ComponentStorage::RowSigns;
+        /** Trial component orientation signs are independent of test cardinality. */
+        using ComponentColSigns = typename ComponentStorage::ColSigns;
+        /** Orientation signs for the test components on two elements. */
+        using ComponentPairRowSigns = typename ComponentStorage::TwoCellRowSigns;
+        /** Orientation signs for the trial components on two elements. */
+        using ComponentPairColSigns = typename ComponentStorage::TwoCellColSigns;
 
     public:
+
+        bool canReuseTestContext() const
+        {
+            if constexpr ( !std::is_same_v<map_test_fecontext_type, map_trial_fecontext_type> )
+                return false;
+            else if constexpr ( hasDynamicOrder )
+            {
+                // Matching C++ types do not imply matching runtime bases.
+                // Reuse only the same FE instance on the same mesh.
+                return M_form.testSpace()->mesh()->isSameMesh( M_form.trialSpace()->mesh() ) &&
+                       M_form.template testFiniteElement<UseMortarTest>().get() ==
+                           M_form.template trialFiniteElement<UseMortarTrial>().get();
+            }
+            else
+                return M_form.testSpace()->mesh()->isRelatedTo( M_form.trialSpace()->mesh() );
+        }
 
         template<typename Left, typename Right>
         map_trial_fecontext_type getMap( Left  left, Right right, bool same_mesh = true )
         {
-            if ( same_mesh )
+            if ( same_mesh && this->canReuseTestContext() )
                 return getMap( left, right, std::is_same<Left, map_trial_fecontext_type>() );
             return getMap( left, right, std::integral_constant<bool, false>() );
         }
@@ -579,7 +546,7 @@ public:
         template<typename Left, typename Right>
         map_left_trial_fecontext_type getMapL( Left  left, Right right, bool same_mesh = true )
         {
-            if ( same_mesh )
+            if ( same_mesh && this->canReuseTestContext() )
                 return getMapL( left, right, std::is_same<Left, map_left_trial_fecontext_type>() );
             return getMapL( left, right, std::integral_constant<bool, false>() );
         }
@@ -650,14 +617,58 @@ public:
 
         void initDynamicEigenMatrix()
         {
-            if ( useEigenDynamicAlloc )
-                M_rep.resize( nDofPerElementTest, nDofPerElementTrial );
-            if ( useEigenDynamicAllocMortarTest )
-                M_mortarTest_rep.resize( nDofPerElementTest-1,nDofPerElementTrial );
-            if ( useEigenDynamicAllocMortarTrial )
-                M_mortarTrial_rep.resize( nDofPerElementTest,nDofPerElementTrial-1 );
-            if ( useEigenDynamicAlloc2 )
-                M_rep_2.resize( 2*nDofPerElementTest, 2*nDofPerElementTrial );
+            using ::Feel::detail::assemblyDofCount;
+            using ::Feel::detail::assemblyExtent;
+            using ::Feel::detail::resizeAssemblyMatrix;
+
+            // Obtain effective cardinalities before narrowing or adjusting either side.
+            int const rows = assemblyDofCount( M_test_dof->nLocalDof() );
+            int const cols = assemblyDofCount( M_trial_dof->nLocalDof() );
+            int const componentRows = [&]
+            {
+                if constexpr ( test_dof_type::is_order_dynamic )
+                    return assemblyDofCount( M_form.template testFiniteElement<UseMortarTest>()->localDof() );
+                else
+                    return nDofPerComponentTest;
+            }();
+            int const componentCols = [&]
+            {
+                if constexpr ( trial_dof_type::is_order_dynamic )
+                    return assemblyDofCount( M_form.template trialFiniteElement<UseMortarTrial>()->localDof() );
+                else
+                    return nDofPerComponentTrial;
+            }();
+
+            // Reuse an unchanged shape; fixed axes remain checked in Release builds.
+            auto bind = [&]( auto& ordinary, auto& mortar, auto& pair,
+                             auto& rowIndices, auto& colIndices, auto& rowSigns, auto& colSigns,
+                             auto& pairRows, auto& pairCols, auto& pairRowSigns, auto& pairColSigns,
+                             int r, int c )
+            {
+                resizeAssemblyMatrix( ordinary, r, c );
+                resizeAssemblyMatrix( mortar, assemblyExtent( r, 1 ), c );
+                resizeAssemblyMatrix( pair, assemblyExtent( r, 0, 2 ), assemblyExtent( c, 0, 2 ) );
+                resizeAssemblyMatrix( rowIndices, r );
+                resizeAssemblyMatrix( colIndices, c );
+                resizeAssemblyMatrix( rowSigns, r );
+                resizeAssemblyMatrix( colSigns, c );
+                resizeAssemblyMatrix( pairRows, assemblyExtent( r, 0, 2 ) );
+                resizeAssemblyMatrix( pairCols, assemblyExtent( c, 0, 2 ) );
+                resizeAssemblyMatrix( pairRowSigns, assemblyExtent( r, 0, 2 ) );
+                resizeAssemblyMatrix( pairColSigns, assemblyExtent( c, 0, 2 ) );
+            };
+            bind( M_rep, M_mortarTest_rep, M_rep_2, M_local_rows, M_local_cols,
+                  M_local_rowsigns, M_local_colsigns, M_local_rows_2, M_local_cols_2,
+                  M_local_rowsigns_2, M_local_colsigns_2, rows, cols );
+            bind( M_c_rep, M_c_mortarTest_rep, M_c_rep_2, M_c_local_rows, M_c_local_cols,
+                  M_c_local_rowsigns, M_c_local_colsigns, M_c_local_rows_2, M_c_local_cols_2,
+                  M_c_local_rowsigns_2, M_c_local_colsigns_2, componentRows, componentCols );
+
+            // The trial-mortar owner is distinct from the test-mortar component path.
+            resizeAssemblyMatrix( M_mortarTrial_rep, rows, assemblyExtent( cols, 1 ) );
+            resizeAssemblyMatrix( M_mortarTest_local_rows, assemblyExtent( rows, 1 ) );
+            resizeAssemblyMatrix( M_mortarTrial_local_cols, assemblyExtent( cols, 1 ) );
+            resizeAssemblyMatrix( M_c_mortarTest_local_rows, assemblyExtent( componentRows, 1 ) );
         }
 
         bool trialElementIsOnBoundary( index_type test_eid ) const { return M_form.trialSpace()->mesh()->element( this->trialElementId( test_eid ) ).isOnBoundary(); }
@@ -1030,10 +1041,10 @@ public:
         c_local2_row_type M_c_local_rows_2;
         c_local_col_type M_c_local_cols;
         c_local2_col_type M_c_local_cols_2;
-        c_local_row_type M_c_local_rowsigns;
-        c_local2_row_type M_c_local_rowsigns_2;
-        c_local_col_type M_c_local_colsigns;
-        c_local2_col_type M_c_local_colsigns_2;
+        ComponentRowSigns M_c_local_rowsigns;
+        ComponentPairRowSigns M_c_local_rowsigns_2;
+        ComponentColSigns M_c_local_colsigns;
+        ComponentPairColSigns M_c_local_colsigns_2;
 
         eval00_expr_ptrtype M_eval_expr00;
         eval01_expr_ptrtype M_eval_expr01;

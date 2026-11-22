@@ -7,7 +7,7 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/exporter.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/vf_eval.hpp>
 #include <feel/feelfilters/geotool.hpp>
 
 
@@ -125,4 +125,3 @@ BOOST_AUTO_TEST_CASE( interp_P1mesh )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-

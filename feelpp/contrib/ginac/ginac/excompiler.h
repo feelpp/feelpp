@@ -28,6 +28,8 @@
 
 #include <string>
 
+namespace boost { namespace mpi { class communicator; } }
+
 namespace GiNaC {
 
 class ex;
@@ -60,6 +62,11 @@ typedef void (*FUNCP_CUBA) (const int*, const double[], const int*, double[]);
  */
 void compile_ex(const ex& expr, const symbol& sym, FUNCP_1P& fp, const std::string filename = "");
 
+/** Collective on world: only rank 0 writes and compiles; all ranks link.
+ * All ranks must supply the same expression and filename on a shared filesystem.
+ */
+void compile_ex(const ex& expr, const symbol& sym, FUNCP_1P& fp, const std::string filename, const boost::mpi::communicator& world);
+
 /**
  * Takes an expression and produces a function pointer to the compiled and linked
  * C code equivalent in double precision. The function pointer has type FUNCP_2P.
@@ -71,6 +78,9 @@ void compile_ex(const ex& expr, const symbol& sym, FUNCP_1P& fp, const std::stri
  * supplied, these intermediate files will not be deleted
  */
 void compile_ex(const ex& expr, const symbol& sym1, const symbol& sym2, FUNCP_2P& fp, const std::string filename = "");
+
+/** Collective on world, with the same contract as the one-parameter overload. */
+void compile_ex(const ex& expr, const symbol& sym1, const symbol& sym2, FUNCP_2P& fp, const std::string filename, const boost::mpi::communicator& world);
 
 /**
  * Takes an expression and produces a function pointer to the compiled and linked
@@ -86,6 +96,9 @@ void compile_ex(const ex& expr, const symbol& sym1, const symbol& sym2, FUNCP_2P
  * create a persistent module name.
  */
 void compile_ex(const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::string filename = "", bool filename_is_content_addressed = false);
+
+/** Collective on world, with the same contract as the one-parameter overload. */
+void compile_ex(const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::string filename, bool filename_is_content_addressed, const boost::mpi::communicator& world);
 
 /** 
  * Opens an existing so-file and returns a function pointer of type FUNCP_1P to

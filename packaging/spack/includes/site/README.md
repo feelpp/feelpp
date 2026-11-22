@@ -18,3 +18,9 @@ outside the shared repository-owned environments:
 - `compilers.example.yaml`
 - `packages.example.yaml`
 - `mirrors.example.yaml`
+- `kokkos-rocm-gfx90a.example.yaml`
+  - MI210 architecture and coherent Spack-built ROCm 7.2.0 policy
+  - copy to a local directory as `packages.yaml` and select it with
+    `spack -C DIR` when concretizing/installing `hybrid/kokkos-rocm`
+  - shared manifests retain the OpenMPI 5 baseline without embedding a GPU
+    node's compiler paths or ROCm prefix

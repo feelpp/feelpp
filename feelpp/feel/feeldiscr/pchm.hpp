@@ -32,15 +32,16 @@
 #include <boost/mp11/utility.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/functionspacemanager.hpp>
+#include <feel/feelpoly/order.hpp>
 
 namespace Feel {
 
 namespace meta {
 template<typename MeshType,
-         int Order,
+         int Order = Dynamic,
          template <uint16_type> class Pset = Tensor2,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 struct Pchmg
 {
@@ -51,44 +52,44 @@ struct Pchmg
 };
 
 template<typename MeshType,
-         int Order,
+         int Order = Dynamic,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pchm = Pchmg<MeshType,Order,Tensor2,T,Pts,Tag>;
 
 template<typename MeshType,
-         int Order,
+         int Order = Dynamic,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pchms = Pchmg<MeshType,Order,Tensor2Symm,T,Pts,Tag>;
 
 } // meta
 
 template<typename MeshType,
-         int Order,
+         int Order = Dynamic,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pchm_type = typename meta::Pchm<MeshType,Order,T,Pts,Tag>::type;
 template<typename MeshType,
-         int Order,
+         int Order = Dynamic,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pchm_ptrtype = typename meta::Pchm<MeshType,Order,T,Pts,Tag>::ptrtype;
 
 template<typename MeshType,
-         int Order,
+         int Order = Dynamic,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pchms_type = typename meta::Pchms<MeshType,Order,T,Pts,Tag>::type;
 template<typename MeshType,
-         int Order,
+         int Order = Dynamic,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0>
 using Pchms_ptrtype = typename meta::Pchms<MeshType,Order,T,Pts,Tag>::ptrtype;
 
@@ -98,30 +99,96 @@ using Pchms_ptrtype = typename meta::Pchms<MeshType,Order,T,Pts,Tag>::ptrtype;
  * build a function space of continuous matrix fields which are piecewise polynomial
  * of degree (total or in each variable) less than k.
  */
-template<int Order,
+template<int Order = Dynamic,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          typename MeshType,
          int Tag = 0>
 inline
 Pchm_ptrtype<MeshType,Order,T,Pts,Tag>
-Pchm( std::shared_ptr<MeshType> mesh, DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
+Pchm( std::shared_ptr<MeshType> mesh,
+      RuntimeOrder order,
+      DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
 {
     using space_type = Pchm_type<MeshType,Order,T,Pts,Tag>;
+    order = validatedOrder<typename space_type::reference_element_type>( order );
     return getOrCreateWholeMeshFunctionSpace<space_type>(
-        mesh, dte,
-        FunctionSpaceReusePolicy::automatic,
+        mesh, dte, FunctionSpaceReusePolicy::automatic,
         [&]()
         {
             return space_type::New( _mesh=mesh,
-                                    _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
-                                    _extended_doftable=dte );
-        } );
+                                   _worldscomm=makeWorldsComm( 1, mesh->worldComm() ),
+                                   _extended_doftable=dte,
+                                   _runtime_order=order );
+        }, Order == Dynamic ? static_cast<int>( order.value ) : -1 );
+}
+
+template<int Order = Dynamic,
+         typename T = double,
+         template<class, int, class> class Pts = PointSetFekete,
+         typename MeshType,
+         int Tag = 0>
+    requires ( Order >= 0 )
+inline
+Pchm_ptrtype<MeshType,Order,T,Pts,Tag>
+Pchm( std::shared_ptr<MeshType> mesh,
+      DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
+{
+    return Pchm<Order,T,Pts,MeshType,Tag>( mesh,
+                                           RuntimeOrder{ static_cast<uint16_type>( Order ) },
+                                           dte );
+}
+
+/**
+ * build a function space of continuous symmetric matrix fields which are piecewise polynomial
+ * of degree (total or in each variable) less than k.
+ */
+template<int Order,
+         typename T = double,
+         template<class, int, class> class Pts = PointSetFekete,
+         typename MeshType,
+         int Tag = 0>
+inline
+Pchms_ptrtype<MeshType,Order,T,Pts,Tag>
+Pchms( std::shared_ptr<MeshType> const& mesh,
+       RuntimeOrder order,
+       DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
+{
+    using space_type = Pchms_type<MeshType,Order,T,Pts,Tag>;
+    order = validatedOrder<typename space_type::reference_element_type>( order );
+    return getOrCreateWholeMeshFunctionSpace<space_type>(
+        mesh, dte, FunctionSpaceReusePolicy::automatic,
+        [&]()
+        {
+            return space_type::New( _mesh=mesh,
+                                   _worldscomm=makeWorldsComm( 1, mesh->worldComm() ),
+                                   _extended_doftable=dte,
+                                   _runtime_order=order );
+        }, Order == Dynamic ? static_cast<int>( order.value ) : -1 );
 }
 
 template<int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
+         typename MeshType,
+         int Tag = 0>
+    requires ( Order >= 0 )
+inline
+Pchms_ptrtype<MeshType,Order,T,Pts,Tag>
+Pchms( std::shared_ptr<MeshType> const& mesh,
+       DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
+{
+    return Pchms<Order,T,Pts,MeshType,Tag>( mesh,
+                                            RuntimeOrder{ static_cast<uint16_type>( Order ) },
+                                            dte );
+}
+
+
+
+/** @brief Managed whole-mesh factory; dynamic orders require `_runtime_order`. */
+template<int Order,
+         typename T = double,
+         template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0,
          typename... Ts>
     requires ( sizeof...( Ts ) != 0 ) && ( NA::is_named_argument_v<Ts> && ... )
@@ -135,45 +202,30 @@ Pchm( Ts&&... v )
                                  FunctionSpaceReusePolicy::automatic );
     using mesh_type = typename std::decay_t<decltype( mesh )>::element_type;
     using space_type = Pchm_type<mesh_type,Order,T,Pts,Tag>;
+    auto order = [&]()
+    {
+        if constexpr ( Order == Dynamic )
+            return args.get( _runtime_order );
+        else
+            return args.get_else( _runtime_order, RuntimeOrder{ Order } );
+    }();
+    order = validatedOrder<typename space_type::reference_element_type>( order );
     return getOrCreateWholeMeshFunctionSpace<space_type>(
         mesh, dte,
         policy,
         [&]()
         {
             return space_type::New( _mesh=mesh,
-                                    _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
-                                    _extended_doftable=dte );
-        } );
+                                   _worldscomm=makeWorldsComm( 1, mesh->worldComm() ),
+                                   _extended_doftable=dte,
+                                   _runtime_order=order );
+        }, Order == Dynamic ? static_cast<int>( order.value ) : -1 );
 }
 
-/**
- * build a function space of continuous symmetric matrix fields which are piecewise polynomial
- * of degree (total or in each variable) less than k.
- */
+/** @brief Managed whole-mesh factory; dynamic orders require `_runtime_order`. */
 template<int Order,
          typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
-         typename MeshType,
-         int Tag = 0>
-inline
-Pchms_ptrtype<MeshType,Order,T,Pts,Tag>
-Pchms( std::shared_ptr<MeshType> const& mesh, DofTableExtendedType dte = DofTableExtendedType::DEFAULT )
-{
-    using space_type = Pchms_type<MeshType,Order,T,Pts,Tag>;
-    return getOrCreateWholeMeshFunctionSpace<space_type>(
-        mesh, dte,
-        FunctionSpaceReusePolicy::automatic,
-        [&]()
-        {
-            return space_type::New( _mesh=mesh,
-                                    _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
-                                    _extended_doftable=dte );
-        } );
-}
-
-template<int Order,
-         typename T = double,
-         template<class, uint16_type, class> class Pts = PointSetFekete,
+         template<class, int, class> class Pts = PointSetFekete,
          int Tag = 0,
          typename... Ts>
     requires ( sizeof...( Ts ) != 0 ) && ( NA::is_named_argument_v<Ts> && ... )
@@ -187,17 +239,25 @@ Pchms( Ts&&... v )
                                  FunctionSpaceReusePolicy::automatic );
     using mesh_type = typename std::decay_t<decltype( mesh )>::element_type;
     using space_type = Pchms_type<mesh_type,Order,T,Pts,Tag>;
+    auto order = [&]()
+    {
+        if constexpr ( Order == Dynamic )
+            return args.get( _runtime_order );
+        else
+            return args.get_else( _runtime_order, RuntimeOrder{ Order } );
+    }();
+    order = validatedOrder<typename space_type::reference_element_type>( order );
     return getOrCreateWholeMeshFunctionSpace<space_type>(
         mesh, dte,
         policy,
         [&]()
         {
             return space_type::New( _mesh=mesh,
-                                    _worldscomm=makeWorldsComm( 1,mesh->worldCommPtr() ),
-                                    _extended_doftable=dte );
-        } );
+                                   _worldscomm=makeWorldsComm( 1, mesh->worldComm() ),
+                                   _extended_doftable=dte,
+                                   _runtime_order=order );
+        }, Order == Dynamic ? static_cast<int>( order.value ) : -1 );
 }
-
 
 } // Feel
 

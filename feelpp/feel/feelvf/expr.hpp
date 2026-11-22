@@ -1,27 +1,12 @@
-/* -*- Mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-01-17
-
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2006,2007 Université Joseph Fourier (Grenoble I)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2006,2007 Université Joseph Fourier (Grenoble I)
+ * SPDX-FileCopyrightText: 2011-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 /**
    \file expr.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -579,11 +564,11 @@ constexpr bool has_symbolic_diff_v = has_symbolic_diff_type<T,diffOrder,TheSymbo
 template<typename ExprT>
 class Expr;
 
-template <VfExpr ExprT>
+template <VfExprConcept ExprT>
 Expr<ExprT>
 expr( ExprT const& exprt );
 
-template <VfExpr ExprT>
+template <VfExprConcept ExprT>
 Expr<ExprT>
 expr( ExprT && exprt );
 
@@ -1193,14 +1178,14 @@ private:
 };
 
 
-template <VfExpr ExprT>
+template <VfExprConcept ExprT>
 Expr<ExprT>
 expr( ExprT const& exprt )
 {
     return Expr<ExprT>( exprt );
 }
 
-template <VfExpr ExprT>
+template <VfExprConcept ExprT>
 Expr<ExprT>
 expr( ExprT && exprt )
 {
@@ -1286,8 +1271,46 @@ struct ExpressionOrder
 #endif
 #else
     static bool isPolynomial( ExprT const& expr ) { return expr.isPolynomial(); }
-    static quad_order_type value( ExprT const& expr ) { return ( expr.polynomialOrder() )?( expr.polynomialOrder()*nOrderGeo ):( nOrderGeo ); }
-    static quad_order_type value_1( ExprT const& expr ) { return expr.polynomialOrder()+(the_element_type::is_hypercube?nOrderGeo:0); }
+    // Read the owning mesh even on ranks with an empty local range. Dynamic
+    // entity types have no compile-time geometry order (nOrderGeo is zero).
+    template <typename RangeOrRanges>
+    static uint16_type geometryOrder( RangeOrRanges const& ranges )
+    {
+        if constexpr ( !the_element_type::is_order_dynamic )
+            return nOrderGeo;
+        else if constexpr ( requires { ranges.mesh(); } )
+        {
+            if ( auto mesh = ranges.mesh() )
+                return mesh->order();
+            if ( ranges.begin() != ranges.end() )
+                return boost::unwrap_ref( *ranges.begin() ).order();
+            return 1; // An unbound empty range contributes no integral.
+        }
+        else
+        {
+            uint16_type order = 1;
+            for ( auto const& range : ranges )
+                order = std::max( order, geometryOrder( range ) );
+            return order;
+        }
+    }
+
+    static quad_order_type value( ExprT const& expr, uint16_type geometryOrder )
+    {
+        return expr.polynomialOrder() ? expr.polynomialOrder()*geometryOrder : geometryOrder;
+    }
+    static quad_order_type value_1( ExprT const& expr, uint16_type geometryOrder )
+    {
+        return expr.polynomialOrder() + (the_element_type::is_hypercube ? geometryOrder : 0);
+    }
+    static quad_order_type value( ExprT const& expr ) requires ( nOrderGeo > 0 )
+    {
+        return value( expr, nOrderGeo );
+    }
+    static quad_order_type value_1( ExprT const& expr ) requires ( nOrderGeo > 0 )
+    {
+        return value_1( expr, nOrderGeo );
+    }
 #endif
     ExpressionOrder() = default;
 };

@@ -1,17 +1,29 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2005-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-    SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
-
-    SPDX-FileCopyrightText: 2011-2017 University of Strasbourg
-    SPDX-FileCopyrightText: 2026 University of Strasbourg
-
-    SPDX-License-Identifier: LGPL-3.0-or-later
-*/
+/**
+ * @file mesh.hpp
+ * @brief Distributed finite-element mesh container and topology services.
+ */
 #ifndef FEELPP_MESH_HPP
 #define FEELPP_MESH_HPP 1
 
+#include <algorithm>
+#include <array>
 #include <bitset>
+#include <concepts>
+#include <numeric>
+#include <ranges>
+#include <type_traits>
+#include <unordered_map>
+#include <unordered_set>
+#include <variant>
 
 #include <boost/unordered_map.hpp>
 #include <boost/version.hpp>
@@ -40,6 +52,7 @@
 
 #include <feel/feeldiscr/traits.hpp>
 #include <feel/feelmesh/enums.hpp>
+#include <feel/feelmesh/entityview.hpp>
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelmesh/compactmarkerfragmentation.hpp>
 #include <feel/feelmesh/mesh0d.hpp>
@@ -47,10 +60,14 @@
 #include <feel/feelmesh/mesh2d.hpp>
 #include <feel/feelmesh/mesh3d.hpp>
 #include <feel/feeldiscr/mesh_fwd.hpp>
+#include <feel/feeldiscr/submeshcontext.hpp>
 
 #include <feel/feelalg/boundingbox.hpp>
 #include <feel/feelpoly/geomap.hpp>
+#include <feel/feelpoly/geometrydescriptor.hpp>
+#include <feel/feelpoly/geometrypointtopology.hpp>
 #include <feel/feelpoly/geomapinv.hpp>
+#include <feel/feelpoly/order.hpp>
 
 #include <boost/preprocessor/comparison/less.hpp>
 #include <boost/preprocessor/control/if.hpp>
@@ -91,17 +108,6 @@ enum class IOStatus
     isSaving
 };
 
-const size_type EXTRACTION_KEEP_POINTS_IDS = ( 1 << 0 );
-const size_type EXTRACTION_KEEP_EDGES_IDS = ( 1 << 1 );
-const size_type EXTRACTION_KEEP_FACES_IDS = ( 1 << 2 );
-const size_type EXTRACTION_KEEP_VOLUMES_IDS = ( 1 << 3 );
-const size_type EXTRACTION_KEEP_ALL_IDS = ( EXTRACTION_KEEP_POINTS_IDS |
-                                            EXTRACTION_KEEP_EDGES_IDS |
-                                            EXTRACTION_KEEP_FACES_IDS |
-                                            EXTRACTION_KEEP_VOLUMES_IDS );
-const size_type EXTRACTION_KEEP_MESH_RELATION = ( 1 << 4 );
-const size_type EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT = ( 1 << 5 );
-
 } // namespace Feel
 #include <feel/feeldiscr/createsubmesh.hpp>
 #include <feel/feeldiscr/localization.hpp>
@@ -120,6 +126,10 @@ struct PeriodicEntity
     int slave;
     int master;
     std::map<int, int> correspondingVertices;
+    // MSH4.1 optional affine transform coefficients as stored in $Periodic.
+    std::vector<double> affineTransform;
+
+    bool hasAffineTransform() const { return !affineTransform.empty(); }
 };
 struct MeshMarkerName
 {
@@ -181,11 +191,32 @@ class Mesh
     //!
     //! @{
 
-    static inline const uint16_type nDim = GeoShape::nDim;
-    static inline const uint16_type nRealDim = GeoShape::nRealDim;
-    static inline const uint16_type Shape = GeoShape::Shape;
-    static inline const uint16_type nOrder = GeoShape::nOrder;
-    static inline const uint16_type tag = Tag;
+    static constexpr uint16_type nDim = GeoShape::nDim;
+    static constexpr uint16_type nRealDim = GeoShape::nRealDim;
+    static constexpr uint16_type Shape = GeoShape::Shape;
+    static constexpr uint16_type nOrder = GeoShape::nOrder;
+    static constexpr uint16_type tag = Tag;
+
+    //! @brief True if Order is known at compile time
+    static constexpr bool is_order_static = GeoShape::is_order_static;
+    //! @brief True if Order is determined at runtime
+    static constexpr bool is_order_dynamic = GeoShape::is_order_dynamic;
+    //! @brief Template order parameter value (may be Dynamic = -1)
+    static constexpr int nOrder_v = GeoShape::nOrder_v;
+
+    /** Mesh-wide geometric order and representation descriptor. */
+    using geometry_descriptor_type =
+        geometry::GeometryDescriptor<
+            nDim, nOrder_v,
+            geometry::geometryCellKind<GeoShape>>;
+    using geometry_representation_kind =
+        geometry::GeometryRepresentationKind;
+    using geometry_coordinate_matrix_type =
+        Eigen::Matrix<T, nRealDim, Eigen::Dynamic,
+                      nRealDim == 1 ? Eigen::RowMajor : Eigen::ColMajor>;
+    /** Reference-node restrictions shared by static and runtime meshes. */
+    using geometry_point_topology_type =
+        geometry::GeometryPointTopology<GeoShape>;
 
     //! @}
     //!  @name Typedefs
@@ -216,11 +247,35 @@ class Mesh
     typedef typename super::face_const_iterator face_const_iterator;
 
     typedef typename super::edge_type edge_type;
+    /** Mathematical edge entity type for every mesh dimension. */
+    using edge_entity_type =
+        std::conditional_t<nDim == 1, element_type,
+                           std::conditional_t<nDim == 2, face_type,
+                                              edge_type>>;
 
     typedef typename super::points_type points_type;
     typedef typename super::point_type point_type;
     typedef typename super::point_iterator point_iterator;
     typedef typename super::point_const_iterator point_const_iterator;
+
+    /** Non-owning mathematical point view type. */
+    using point_view_type = GeometricPointView<
+        Mesh<GeoShape, T, Tag, IndexT, _EnableSharedFromThis>>;
+    /** Non-owning mathematical edge view type. */
+    using edge_view_type =
+        GeometricEntityView<
+            Mesh<GeoShape, T, Tag, IndexT, _EnableSharedFromThis>,
+            edge_entity_type>;
+    /** Non-owning mathematical face view type. */
+    using face_view_type =
+        GeometricEntityView<
+            Mesh<GeoShape, T, Tag, IndexT, _EnableSharedFromThis>,
+            face_type>;
+    /** Non-owning mathematical cell view type. */
+    using element_view_type =
+        GeometricEntityView<
+            Mesh<GeoShape, T, Tag, IndexT, _EnableSharedFromThis>,
+            element_type>;
 
     typedef typename element_type::gm_type gm_type;
     typedef std::shared_ptr<gm_type> gm_ptrtype;
@@ -236,7 +291,8 @@ class Mesh
     typedef std::shared_ptr<self_type> self_ptrtype;
     typedef self_ptrtype mesh_ptrtype;
 
-    typedef typename element_type::template reference_convex<T>::type reference_convex_type;
+    using reference_convex_type =
+        typename element_type::reference_convex_type;
 
     //! typedef Partitioner<self_type> partitioner_type;
     //! typedef std::shared_ptr<partitioner_type> partitioner_ptrtype;
@@ -268,14 +324,52 @@ class Mesh
     //@}
 
     //!
-    //!  Default mesh constructor
+    //!  Default mesh constructor (static order)
     //
     explicit Mesh( std::string const& name,
                    worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
-                   std::string const& props = "00001" );
+                   std::string const& props = "00001",
+                   geometry_representation_kind representation =
+                       geometry_descriptor_type::default_representation )
+        requires( is_order_static );
+
+    explicit Mesh(
+        geometry_representation_kind representation,
+        std::string const& name = "",
+        worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
+        std::string const& props = "00001" )
+        requires( is_order_static )
+        : Mesh( name, worldComm, props, representation )
+    {}
 
     explicit Mesh( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(), std::string const& props = "00001"  )
+        requires( is_order_static )
         : Mesh( "", worldComm, props ) {}
+
+    //!
+    //! @brief Construct mesh with runtime order (dynamic order shapes only)
+    //! @param runtime_order the polynomial order to use at runtime
+    //! @param name optional mesh name
+    //! @param worldComm optional communicator
+    //! @param props structure properties
+    //!
+    explicit Mesh( RuntimeOrder runtime_order,
+                   std::string const& name = "",
+                   worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
+                   std::string const& props = "00001",
+                   geometry_representation_kind representation =
+                       geometry_descriptor_type::default_representation )
+        requires( is_order_dynamic );
+
+    explicit Mesh(
+        RuntimeOrder runtime_order,
+        geometry_representation_kind representation,
+        std::string const& name = "",
+        worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
+        std::string const& props = "00001" )
+        requires( is_order_dynamic )
+        : Mesh( runtime_order, name, worldComm, props, representation )
+    {}
 
     ~Mesh() override {}
 
@@ -285,6 +379,8 @@ class Mesh
         M_gm.reset();
         M_gm1.reset();
         M_tool_localization.reset();
+        M_periodic_entities.clear();
+        this->invalidatePeriodicCanonicalMaps();
         super::clear();
     }
 
@@ -307,13 +403,225 @@ class Mesh
     }
 
     //!
-    //! @brief allocate a new Mesh
+    //! @brief allocate a new Mesh (static order)
     //! @param worldcomm communicator defaulting to Environment::worldComm()
     //! @return the Mesh shared pointer
     //!
     static mesh_ptrtype New( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+        requires( is_order_static )
     {
         return std::make_shared<mesh_type>( worldComm );
+    }
+
+    /** @brief Allocate a static-order mesh with selected coefficient semantics. */
+    static mesh_ptrtype New(
+        geometry_representation_kind representation,
+        worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+        requires( is_order_static )
+    {
+        return std::make_shared<mesh_type>( representation, "", worldComm );
+    }
+
+    //!
+    //! @brief allocate a new Mesh with runtime order (dynamic order shapes only)
+    //! @param runtime_order the polynomial order to use at runtime
+    //! @param worldcomm communicator defaulting to Environment::worldComm()
+    //! @return the Mesh shared pointer
+    //!
+    static mesh_ptrtype New( RuntimeOrder runtime_order,
+                             worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+        requires( is_order_dynamic )
+    {
+        return std::make_shared<mesh_type>( runtime_order, "", worldComm );
+    }
+
+    /** @brief Allocate a runtime-order mesh with selected coefficient semantics. */
+    static mesh_ptrtype New(
+        RuntimeOrder runtime_order,
+        geometry_representation_kind representation,
+        worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+        requires( is_order_dynamic )
+    {
+        return std::make_shared<mesh_type>(
+            runtime_order, representation, "", worldComm );
+    }
+
+    //!
+    //! @brief Get the runtime order of the mesh
+    //! @return the polynomial order (static value for static order meshes, runtime value for dynamic)
+    //!
+    [[nodiscard]] constexpr uint16_type order() const noexcept
+    {
+        return M_geometryDescriptor.order();
+    }
+
+    /**
+     * @brief Return the order owned by the mesh geometry descriptor.
+     * @return effective geometric polynomial order
+     */
+    [[nodiscard]] uint16_type geometryOrder() const noexcept override
+    {
+        return this->order();
+    }
+
+    /** @brief Return the mesh-wide geometry descriptor. */
+    [[nodiscard]] constexpr geometry_descriptor_type const&
+    geometryDescriptor() const noexcept
+    {
+        return M_geometryDescriptor;
+    }
+
+    /** @brief Return the mathematical meaning of stored geometry coefficients. */
+    [[nodiscard]] geometry_representation_kind
+    geometryRepresentation() const noexcept override
+    {
+        return M_geometryDescriptor.representation();
+    }
+
+    /**
+     * @brief Return all mesh geometry as nodal interpolation coordinates.
+     *
+     * The returned table is suitable for nodal file formats and compatibility
+     * algorithms, independently of the mesh's native storage representation.
+     */
+    [[nodiscard]] geometry_coordinate_matrix_type
+    nodalGeometryCoordinates() const
+    {
+        return this->convertedGeometryCoordinates(
+            this->geometryRepresentation(),
+            geometry_representation_kind::NodalLagrange );
+    }
+
+    /**
+     * @brief Change native geometry representation without changing the map.
+     * @param representation requested coefficient semantics
+     */
+    void setGeometryRepresentation(
+        geometry_representation_kind representation )
+    {
+        geometry_descriptor_type descriptor = [&]()
+        {
+            if constexpr ( is_order_dynamic )
+                return geometry_descriptor_type{
+                    RuntimeOrder{ this->order() }, representation };
+            else
+                return geometry_descriptor_type{ representation };
+        }();
+        if ( representation == this->geometryRepresentation() )
+            return;
+        auto converted = this->convertedGeometryCoordinates(
+            this->geometryRepresentation(), representation );
+        this->editPointCoordinates(
+            [&converted]( auto& coordinates )
+            {
+                coordinates = converted;
+            } );
+        M_geometryDescriptor = descriptor;
+    }
+
+    /**
+     * @brief Adopt coordinates supplied in a known external representation.
+     *
+     * Importers use this once, after topology is complete, to convert nodal
+     * file coordinates into the representation selected by the mesh.
+     */
+    void adoptGeometryCoefficients(
+        geometry_representation_kind sourceRepresentation )
+    {
+        if ( sourceRepresentation == this->geometryRepresentation() )
+            return;
+        auto converted = this->convertedGeometryCoordinates(
+            sourceRepresentation, this->geometryRepresentation() );
+        this->editPointCoordinates(
+            [&converted]( auto& coordinates )
+            {
+                coordinates = converted;
+            } );
+    }
+
+    /**
+     * @brief Return the mesh-wide cell-to-subentity point restrictions.
+     *
+     * The table is generated from the same mathematical point set as the
+     * geometric mapping and is therefore valid for arbitrary effective order.
+     */
+    [[nodiscard]] geometry_point_topology_type const&
+    geometryPointTopology() const
+    {
+        return geometry_point_topology_type::get(
+            RuntimeOrder{ this->order() } );
+    }
+
+    /**
+     * @brief Restore the descriptor of an empty runtime-order mesh.
+     *
+     * Persistence adapters call this before reconstructing points and
+     * connectivity. Changing geometry order after entities exist would make
+     * their coefficient layouts inconsistent and is therefore rejected.
+     *
+     * @param order restored positive geometry order
+     * @throws std::logic_error if mesh entities already exist
+     */
+    void restoreGeometryDescriptor(
+        RuntimeOrder order,
+        geometry_representation_kind representation =
+            geometry_descriptor_type::default_representation )
+    {
+        if ( this->numPoints() != 0 ||
+             this->numElements() != 0 ||
+             this->numFaces() != 0 )
+            throw std::logic_error(
+                "Geometry order can be restored only on an empty mesh" );
+        if constexpr ( is_order_dynamic )
+        {
+            M_geometryDescriptor =
+                geometry_descriptor_type{ order, representation };
+            M_gm = std::make_shared<gm_type>( order );
+            M_gm1 = std::make_shared<gm1_type>();
+        }
+        else
+        {
+            if ( order.value != nOrder )
+                throw std::invalid_argument(
+                    "Restored geometry order disagrees with the static mesh type" );
+            M_geometryDescriptor =
+                geometry_descriptor_type{ representation };
+            M_gm = std::make_shared<gm_type>();
+            if constexpr ( nOrder == 1 )
+                M_gm1 = M_gm;
+            else
+                M_gm1 = std::make_shared<gm1_type>();
+        }
+    }
+
+    /**
+     * @brief Construct one element with this mesh's geometry policy.
+     *
+     * Static entities retain their default zero-overhead construction.
+     * Runtime entities receive the mesh-wide order explicitly, which prevents
+     * importers and topology builders from falling back to a placeholder G1
+     * layout.
+     */
+    [[nodiscard]] element_type makeElement() const
+    {
+        return this->template makeGeometricEntity<element_type>();
+    }
+
+    /**
+     * @brief Construct one codimension-one entity with this mesh's geometry
+     * policy.
+     */
+    [[nodiscard]] face_type makeFace() const
+    {
+        return this->template makeGeometricEntity<face_type>();
+    }
+
+    /**
+     * @brief Construct one edge with this mesh's geometry policy.
+     */
+    [[nodiscard]] edge_type makeEdge() const
+    {
+        return this->template makeGeometricEntity<edge_type>();
     }
 
     self_type& operator+=( self_type const& m );
@@ -321,6 +629,152 @@ class Mesh
     //!  @name Accessors
     //!
     //! @{
+
+    /**
+     * @brief Return a non-owning mathematical point view.
+     * @param id external point identifier
+     */
+    [[nodiscard]] point_view_type pointView( index_type id ) const
+    {
+        return point_view_type( *this, id );
+    }
+
+    /**
+     * @brief Return a non-owning mathematical edge view.
+     * @param id external edge identifier
+     */
+    [[nodiscard]] edge_view_type edgeView( index_type id ) const
+        requires( nDim == 1 )
+    {
+        return edge_view_type( *this, this->element( id ) );
+    }
+
+    /** @copydoc edgeView(index_type) const */
+    [[nodiscard]] edge_view_type edgeView( index_type id ) const
+        requires( nDim == 2 )
+    {
+        return edge_view_type( *this, this->face( id ) );
+    }
+
+    /** @copydoc edgeView(index_type) const */
+    [[nodiscard]] edge_view_type edgeView( index_type id ) const
+        requires( nDim == 3 )
+    {
+        return edge_view_type( *this, this->edge( id ) );
+    }
+
+    /**
+     * @brief Return a non-owning mathematical face view.
+     * @param id external face identifier
+     */
+    [[nodiscard]] face_view_type faceView( index_type id ) const
+        requires( nDim >= 1 )
+    {
+        return face_view_type( *this, this->face( id ) );
+    }
+
+    /**
+     * @brief Return a non-owning mathematical cell view.
+     * @param id external element identifier
+     */
+    [[nodiscard]] element_view_type
+    elementView( index_type id ) const
+    {
+        return element_view_type(
+            *this, this->element( id ) );
+    }
+
+    /**
+     * @brief Return a lazy value-semantic range of point views.
+     *
+     * The range and its elements are invalidated by point erasure or mesh
+     * destruction.
+     */
+    [[nodiscard]] auto pointViews() const
+    {
+        auto const* mesh = this;
+        return std::views::all( this->points() ) |
+               std::views::transform(
+                   [mesh]( auto const& entry )
+                   {
+                       return mesh->pointView( entry.first );
+                   } );
+    }
+
+    /**
+     * @brief Return a lazy value-semantic range of edge views.
+     */
+    [[nodiscard]] auto edgeViews() const
+        requires( nDim == 1 )
+    {
+        auto const* mesh = this;
+        return std::views::all( this->elements() ) |
+               std::views::transform(
+                   [mesh]( auto const& entry )
+                   {
+                       return edge_view_type(
+                           *mesh, entry.second );
+                   } );
+    }
+
+    /** @copydoc edgeViews() const */
+    [[nodiscard]] auto edgeViews() const
+        requires( nDim == 2 )
+    {
+        auto const* mesh = this;
+        return std::views::all( this->faces() ) |
+               std::views::transform(
+                   [mesh]( auto const& entry )
+                   {
+                       return edge_view_type(
+                           *mesh, entry.second );
+                   } );
+    }
+
+    /** @copydoc edgeViews() const */
+    [[nodiscard]] auto edgeViews() const
+        requires( nDim == 3 )
+    {
+        auto const* mesh = this;
+        return std::views::all( this->edges() ) |
+               std::views::transform(
+                   [mesh]( auto const& entry )
+                   {
+                       return edge_view_type(
+                           *mesh, entry.second );
+                   } );
+    }
+
+    /**
+     * @brief Return a lazy value-semantic range of face views.
+     */
+    [[nodiscard]] auto faceViews() const
+        requires( nDim >= 1 )
+    {
+        auto const* mesh = this;
+        return std::views::all( this->faces() ) |
+               std::views::transform(
+                   [mesh]( auto const& entry )
+                   {
+                       return face_view_type(
+                           *mesh, entry.second );
+                   } );
+    }
+
+    /**
+     * @brief Return a lazy value-semantic range of cell views.
+     */
+    [[nodiscard]] auto elementViews() const
+    {
+        auto const* mesh = this;
+        return std::views::all( this->elements() ) |
+               std::views::transform(
+                   [mesh]( auto const& entry )
+                   {
+                       return element_view_type(
+                           *mesh, entry.second );
+                   } );
+    }
 
     //!
     //!  @brief get the number of active elements,faces,edges,points for each partition
@@ -541,10 +995,10 @@ class Mesh
             // }
 
             std::vector<size_type> numEntitiesGlobalCounter = {numFaceGlobalCounter, numEdgeGlobalCounter, numPointGlobalCounter};
-            if ( nOrder > 1 )
+            if ( this->order() > 1 )
                 numEntitiesGlobalCounter.push_back( numVerticeGlobalCounter );
             std::vector<size_type> maxNumEntities = {neall, nfall, nedall, npall};
-            if ( nOrder > 1 )
+            if ( this->order() > 1 )
                 maxNumEntities.push_back( nvall );
 
             // TODO: we don't need to make a all_reduce now!
@@ -558,13 +1012,13 @@ class Mesh
             M_numGlobalFaces = numEntitiesGlobalCounterGlobal[0];
             M_numGlobalEdges = numEntitiesGlobalCounterGlobal[1];
             M_numGlobalPoints = numEntitiesGlobalCounterGlobal[2];
-            M_numGlobalVertices = ( nOrder > 1 ) ? numEntitiesGlobalCounterGlobal[3] : M_numGlobalPoints;
+            M_numGlobalVertices = ( this->order() > 1 ) ? numEntitiesGlobalCounterGlobal[3] : M_numGlobalPoints;
 
             M_maxNumElements = maxNumEntitiesGlobal[0];
             M_maxNumFaces = maxNumEntitiesGlobal[1];
             M_maxNumEdges = maxNumEntitiesGlobal[2];
             M_maxNumPoints = maxNumEntitiesGlobal[3];
-            M_maxNumVertices = ( nOrder > 1 ) ? maxNumEntitiesGlobal[4] : M_maxNumPoints;
+            M_maxNumVertices = ( this->order() > 1 ) ? maxNumEntitiesGlobal[4] : M_maxNumPoints;
         }
         else
         {
@@ -671,10 +1125,10 @@ class Mesh
             // }
 
             std::vector<size_type> numEntitiesGlobalCounter = {numFaceGlobalCounter, numPointGlobalCounter};
-            if ( nOrder > 1 )
+            if ( this->order() > 1 )
                 numEntitiesGlobalCounter.push_back( numVerticeGlobalCounter );
             std::vector<size_type> maxNumEntities = {neall, nfall, npall};
-            if ( nOrder > 1 )
+            if ( this->order() > 1 )
                 maxNumEntities.push_back( nvall );
 
             // TODO: we don't need to make a all_reduce now!
@@ -688,13 +1142,13 @@ class Mesh
             M_numGlobalFaces = numEntitiesGlobalCounterGlobal[0];
             M_numGlobalEdges = 0;
             M_numGlobalPoints = numEntitiesGlobalCounterGlobal[1];
-            M_numGlobalVertices = ( nOrder > 1 ) ? numEntitiesGlobalCounterGlobal[2] : M_numGlobalPoints;
+            M_numGlobalVertices = ( this->order() > 1 ) ? numEntitiesGlobalCounterGlobal[2] : M_numGlobalPoints;
 
             M_maxNumElements = maxNumEntitiesGlobal[0];
             M_maxNumFaces = maxNumEntitiesGlobal[1];
             M_maxNumEdges = 0;
             M_maxNumPoints = maxNumEntitiesGlobal[2];
-            M_maxNumVertices = ( nOrder > 1 ) ? maxNumEntitiesGlobal[3] : M_maxNumPoints;
+            M_maxNumVertices = ( this->order() > 1 ) ? maxNumEntitiesGlobal[3] : M_maxNumPoints;
         }
         else
         {
@@ -1045,12 +1499,170 @@ public:
     //!
     //!  set the periodic entities
     //!
-    void setPeriodicEntities( std::vector<PeriodicEntity> const& e ) { M_periodic_entities = e; }
+    void setPeriodicEntities( std::vector<PeriodicEntity> const& e )
+    {
+        M_periodic_entities = e;
+        this->buildPeriodicCanonicalMaps();
+    }
+
+    //!
+    //! @return periodic entities metadata
+    //!
+    std::vector<PeriodicEntity> const& periodicEntities() const { return M_periodic_entities; }
 
     //!
     //!  @return true if the mesh has periodic entities
     //!
     bool isPeriodic() const { return M_periodic_entities.empty() == false; }
+
+    //!
+    //! @return canonical point id driven by mesh periodic correspondences
+    //!
+    size_type canonicalPointId( size_type pointId ) const
+    {
+        if ( !this->isPeriodic() )
+            return pointId;
+        CHECK( M_hasPeriodicCanonicalMaps )
+            << "Periodic canonical point map is not initialized";
+        auto it = M_periodicCanonicalPointId.find( pointId );
+        return ( it != M_periodicCanonicalPointId.end() ) ? it->second : pointId;
+    }
+
+    //!
+    //! @return canonical edge id driven by periodic point canonicalization
+    //!
+    size_type canonicalEdgeId( size_type edgeId ) const
+    {
+        if ( !this->isPeriodic() )
+            return edgeId;
+        CHECK( M_hasPeriodicCanonicalMaps )
+            << "Periodic canonical edge map is not initialized";
+        auto it = M_periodicCanonicalEdgeId.find( edgeId );
+        return ( it != M_periodicCanonicalEdgeId.end() ) ? it->second : edgeId;
+    }
+
+    //!
+    //! @return canonical face id driven by periodic point canonicalization
+    //!
+    size_type canonicalFaceId( size_type faceId ) const
+    {
+        if ( !this->isPeriodic() )
+            return faceId;
+        CHECK( M_hasPeriodicCanonicalMaps )
+            << "Periodic canonical face map is not initialized";
+        auto it = M_periodicCanonicalFaceId.find( faceId );
+        return ( it != M_periodicCanonicalFaceId.end() ) ? it->second : faceId;
+    }
+
+    //!
+    //! @return true if the point has an explicit periodic master relation
+    //!
+    bool hasPeriodicPointMaster( size_type pointId ) const
+    {
+        if ( !this->isPeriodic() )
+            return false;
+        CHECK( M_hasPeriodicCanonicalMaps )
+            << "Periodic canonical point map is not initialized";
+        return M_periodicPointMasterId.find( pointId ) != M_periodicPointMasterId.end();
+    }
+
+    //!
+    //! @return periodic master point id when available, otherwise pointId
+    //!
+    size_type periodicPointMasterId( size_type pointId ) const
+    {
+        if ( !this->isPeriodic() )
+            return pointId;
+        CHECK( M_hasPeriodicCanonicalMaps )
+            << "Periodic canonical point map is not initialized";
+        auto it = M_periodicPointMasterId.find( pointId );
+        return ( it != M_periodicPointMasterId.end() ) ? it->second : pointId;
+    }
+
+    //!
+    //! @return true if the edge has an explicit periodic master relation
+    //!
+    bool hasPeriodicEdgeMaster( size_type edgeId ) const
+    {
+        if ( !this->isPeriodic() )
+            return false;
+        CHECK( M_hasPeriodicCanonicalMaps )
+            << "Periodic canonical edge map is not initialized";
+        return M_periodicEdgeMasterId.find( edgeId ) != M_periodicEdgeMasterId.end();
+    }
+
+    //!
+    //! @return periodic master edge id when available, otherwise edgeId
+    //!
+    size_type periodicEdgeMasterId( size_type edgeId ) const
+    {
+        if ( !this->isPeriodic() )
+            return edgeId;
+        CHECK( M_hasPeriodicCanonicalMaps )
+            << "Periodic canonical edge map is not initialized";
+        auto it = M_periodicEdgeMasterId.find( edgeId );
+        return ( it != M_periodicEdgeMasterId.end() ) ? it->second : edgeId;
+    }
+
+    //!
+    //! @return edge orientation (+1/-1) from slave edge to periodic master edge
+    //!
+    int periodicEdgeMasterOrientation( size_type edgeId ) const
+    {
+        if ( !this->isPeriodic() )
+            return 1;
+        CHECK( M_hasPeriodicCanonicalMaps )
+            << "Periodic canonical edge map is not initialized";
+        auto it = M_periodicEdgeMasterOrientation.find( edgeId );
+        return ( it != M_periodicEdgeMasterOrientation.end() ) ? it->second : 1;
+    }
+
+    //!
+    //! @return true if the face has an explicit periodic master relation
+    //!
+    bool hasPeriodicFaceMaster( size_type faceId ) const
+    {
+        if ( !this->isPeriodic() )
+            return false;
+        CHECK( M_hasPeriodicCanonicalMaps )
+            << "Periodic canonical face map is not initialized";
+        return M_periodicFaceMasterId.find( faceId ) != M_periodicFaceMasterId.end();
+    }
+
+    //!
+    //! @return periodic master face id when available, otherwise faceId
+    //!
+    size_type periodicFaceMasterId( size_type faceId ) const
+    {
+        if ( !this->isPeriodic() )
+            return faceId;
+        CHECK( M_hasPeriodicCanonicalMaps )
+            << "Periodic canonical face map is not initialized";
+        auto it = M_periodicFaceMasterId.find( faceId );
+        return ( it != M_periodicFaceMasterId.end() ) ? it->second : faceId;
+    }
+
+    //!
+    //! @return periodic slave-to-master face vertex permutation (identity when not periodic)
+    //!
+    std::vector<uint16_type> periodicFaceMasterPermutation( size_type faceId ) const
+    {
+        std::vector<uint16_type> identity;
+        if constexpr ( nDim == 3 )
+        {
+            identity.resize( face_type::numVertices );
+            std::iota( identity.begin(), identity.end(), uint16_type( 0 ) );
+        }
+
+        if ( !this->isPeriodic() )
+            return identity;
+
+        CHECK( M_hasPeriodicCanonicalMaps )
+            << "Periodic canonical face map is not initialized";
+
+        auto it = M_periodicFaceMasterPermutation.find( faceId );
+        return ( it != M_periodicFaceMasterPermutation.end() ) ? it->second : identity;
+    }
 
     //!  @name  Methods
     //!
@@ -1079,7 +1691,10 @@ public:
         if ( ret.second )
         {
             if ( !M_geondEltCommon )
+            {
                 M_geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
+                M_geondEltCommon->bindPointResolver( *this );
+            }
             auto & eltInserted = ret.first->second;
             eltInserted.setCommonData( M_geondEltCommon.get() );
         }
@@ -1097,7 +1712,10 @@ public:
         if ( ret.second )
         {
             if ( !M_geondEltCommon )
+            {
                 M_geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( this, this->gm(), this->gm1() );
+                M_geondEltCommon->bindPointResolver( *this );
+            }
             auto & eltInserted = ret.first->second;
             eltInserted.setCommonData( M_geondEltCommon.get() );
         }
@@ -1327,7 +1945,7 @@ public:
         out << "| Shape              |" << Shape << "|\n";
         out << "|---|---|\n";
         out << "| DIM              |" << dimension() << "|\n";
-        out << "| Order              |" << nOrder << "|\n";
+        out << "| Order              |" << this->order() << "|\n";
         out << "| hMin              |" << hMin() << "|\n";
         out << "| hMax              |" << hMax() << "|\n";
         out << "| hAverage              |" << hAverage() << "|\n";
@@ -1558,6 +2176,87 @@ public:
      void removeMarkerNameWithoutEntity();
 
   private:
+    /** Convert the mesh-owned coefficient table through the GeoMap kernel. */
+    [[nodiscard]] geometry_coordinate_matrix_type
+    convertedGeometryCoordinates(
+        geometry_representation_kind sourceRepresentation,
+        geometry_representation_kind targetRepresentation ) const
+    {
+        if ( !geometry::isValidGeometryRepresentation(
+                 sourceRepresentation ) ||
+             !geometry::isValidGeometryRepresentation(
+                 targetRepresentation ) )
+            throw std::invalid_argument(
+                "Unsupported geometry coefficient representation" );
+
+        auto const coordinates =
+            static_cast<super const&>( *this ).pointCoordinates();
+        geometry_coordinate_matrix_type converted = coordinates;
+        if ( sourceRepresentation == targetRepresentation ||
+             coordinates.cols() == 0 )
+            return converted;
+        if ( !M_gm )
+            throw std::logic_error(
+                "Geometry conversion requires an initialized geometric map" );
+
+        std::vector<bool> assigned(
+            static_cast<size_type>( coordinates.cols() ), false );
+        for ( auto element = this->beginElement();
+              element != this->endElement(); ++element )
+        {
+            auto const& entity = element->second;
+            auto const pointCount = entity.nPoints();
+            if ( pointCount != M_gm->nbPoints() )
+                throw std::logic_error(
+                    "Mesh entity geometry disagrees with its geometric map" );
+
+            Eigen::Matrix<value_type, nRealDim, Eigen::Dynamic>
+                localCoordinates( nRealDim, pointCount );
+            std::vector<uint32_type> localIndices( pointCount );
+            for ( uint16_type localPoint = 0;
+                  localPoint < pointCount; ++localPoint )
+            {
+                auto const localIndex = this->pointLocalIndex(
+                    entity.pointIds()[localPoint] );
+                localIndices[localPoint] = localIndex;
+                localCoordinates.col( localPoint ) =
+                    coordinates.col( localIndex );
+            }
+
+            if ( sourceRepresentation ==
+                 geometry_representation_kind::BernsteinBezier )
+                M_gm->convertStoredGeometryToNodal(
+                    localCoordinates, sourceRepresentation );
+            if ( targetRepresentation ==
+                 geometry_representation_kind::BernsteinBezier )
+                M_gm->convertNodalGeometryToStored(
+                    localCoordinates, targetRepresentation );
+
+            for ( uint16_type localPoint = 0;
+                  localPoint < pointCount; ++localPoint )
+            {
+                auto const localIndex = localIndices[localPoint];
+                if ( !assigned[localIndex] )
+                {
+                    converted.col( localIndex ) =
+                        localCoordinates.col( localPoint );
+                    assigned[localIndex] = true;
+                    continue;
+                }
+                value_type const scale = std::max<value_type>(
+                    1, std::max(
+                           converted.col( localIndex ).norm(),
+                           localCoordinates.col( localPoint ).norm() ) );
+                if ( ( converted.col( localIndex ) -
+                       localCoordinates.col( localPoint ) )
+                         .norm() > value_type( 1e-10 ) * scale )
+                    throw std::runtime_error(
+                        "Geometry conversion produced inconsistent shared coefficients" );
+            }
+        }
+        return converted;
+    }
+
     FEELPP_NO_EXPORT void propagateMarkers( mpl::int_<1> ) {}
     FEELPP_NO_EXPORT void propagateMarkers( mpl::int_<2> );
     FEELPP_NO_EXPORT void propagateMarkers( mpl::int_<3> );
@@ -1579,6 +2278,37 @@ public:
     template <class Archive>
     void serialize( Archive& ar, const unsigned int version )
     {
+        uint16_type geometryOrder = this->order();
+        std::uint8_t geometryCellKind =
+            static_cast<std::uint8_t>(
+                geometry_descriptor_type::cellKind );
+        std::uint8_t geometryRepresentation =
+            static_cast<std::uint8_t>(
+                this->geometryRepresentation() );
+
+        ar & geometryOrder;
+        ar & geometryCellKind;
+        ar & geometryRepresentation;
+
+        if constexpr ( Archive::is_loading::value )
+        {
+            if ( geometryCellKind !=
+                 static_cast<std::uint8_t>(
+                     geometry_descriptor_type::cellKind ) )
+                throw std::runtime_error(
+                    "Mesh archive geometry cell kind does not match the mesh type" );
+            auto const restoredRepresentation =
+                static_cast<geometry_representation_kind>(
+                    geometryRepresentation );
+            if ( !geometry::isValidGeometryRepresentation(
+                     restoredRepresentation ) )
+                throw std::runtime_error(
+                    "Mesh archive contains an unsupported geometry representation" );
+
+            this->restoreGeometryDescriptor(
+                RuntimeOrder{ geometryOrder }, restoredRepresentation );
+        }
+
         if ( Archive::is_saving::value )
         {
             DVLOG( 2 ) << "Serializing mesh(saving) ...\n";
@@ -1662,6 +2392,18 @@ public:
     void check() const override;
 
   private:
+
+    /**
+     * @brief Shared static/runtime entity-construction policy.
+     * @tparam EntityType geometric entity type to construct
+     */
+    template <typename EntityType>
+    [[nodiscard]] EntityType makeGeometricEntity() const
+    {
+        return makeOrderAware<EntityType>(
+            RuntimeOrder{ this->order() } );
+    }
+
     //!
     //!  \sa renumber()
     //!
@@ -1706,10 +2448,21 @@ public:
     FEELPP_NO_EXPORT void updateOnBoundary();
 
     /**
-     * fix duplication of point in connection1 with 3d mesh at order 3 and 4
+     * @brief Canonicalize interior high-order face points shared by two cells.
+     *
+     * Mesh importers may create one copy of a face-interior geometric node per
+     * adjacent three-dimensional cell. This operation replaces the copy owned
+     * by @p elt with the canonical point already stored by @p face. It is a
+     * compile-time no-op for cells that cannot have face-interior nodes.
+     *
+     * @param elt second cell connected to the shared face
+     * @param face canonical mesh face
      */
-    FEELPP_NO_EXPORT void fixPointDuplicationInHOMesh( element_type& elt, face_type const& face, mpl::true_ );
-    FEELPP_NO_EXPORT void fixPointDuplicationInHOMesh( element_type& elt, face_type const& face, mpl::false_ );
+    FEELPP_NO_EXPORT void fixPointDuplicationInHOMesh(
+        element_type& elt, face_type const& face );
+
+    void invalidatePeriodicCanonicalMaps();
+    void buildPeriodicCanonicalMaps();
 
   private:
 
@@ -1773,6 +2526,19 @@ public:
     std::vector<PeriodicEntity> M_periodic_entities;
 
     //!
+    //! canonical periodic ids for mesh-driven dof numbering
+    //!
+    bool M_hasPeriodicCanonicalMaps = false;
+    std::unordered_map<size_type, size_type> M_periodicCanonicalPointId;
+    std::unordered_map<size_type, size_type> M_periodicCanonicalEdgeId;
+    std::unordered_map<size_type, size_type> M_periodicCanonicalFaceId;
+    std::unordered_map<size_type, size_type> M_periodicPointMasterId;
+    std::unordered_map<size_type, size_type> M_periodicEdgeMasterId;
+    std::unordered_map<size_type, int> M_periodicEdgeMasterOrientation;
+    std::unordered_map<size_type, size_type> M_periodicFaceMasterId;
+    std::unordered_map<size_type, std::vector<uint16_type>> M_periodicFaceMasterPermutation;
+
+    //!
     //!  to encode points coordinates
     //!
     std::map<uint64_type, boost::tuple<bool, std::vector<int>, std::vector<double>>> M_enc_pts;
@@ -1798,6 +2564,11 @@ public:
     std::shared_ptr<GeoNDCommon<typename face_type::super>> M_geondFaceCommon;
     //! data accessibles in each edges
     std::shared_ptr<GeoNDCommon<typename edge_type::super>> M_geondEdgeCommon;
+
+    /** Geometry metadata stored once for the homogeneous mesh block. */
+    [[no_unique_address]]
+    geometry_descriptor_type M_geometryDescriptor;
+
 };
 
 
@@ -1821,6 +2592,9 @@ void Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::createSubmesh( self_type
     DVLOG( 2 ) << "[Mesh<Shape,T>::createSubmesh] start\n";
     //!  make sure it is all empty
     new_mesh.clear();
+    new_mesh.restoreGeometryDescriptor(
+        RuntimeOrder{ this->order() },
+        this->geometryRepresentation() );
     //!  inherit all the markers
     new_mesh.M_markername = this->markerNames();
     for ( auto marker : new_mesh.M_markername )
@@ -1850,7 +2624,9 @@ void Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::createSubmesh( self_type
         //!  Loop over the nodes on this element.
         for ( unsigned int n = 0; n < old_elem.nPoints(); n++ )
         {
-            FEELPP_ASSERT( old_elem.point( n ).id() < new_node_numbers.size() ).error( "invalid point id()" );
+            CHECK_LT( old_elem.point( n ).id(),
+                      new_node_numbers.size() )
+                << "invalid point id()";
 
             if ( new_node_numbers[old_elem.point( n ).id()] == invalid_v<size_type> )
             {
@@ -1871,13 +2647,19 @@ void Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::createSubmesh( self_type
 
                 if ( n < element_type::numVertices )
                 {
-                    FEELPP_ASSERT( new_vertex[old_elem.point( n ).id()] == 0 ).error( "already seen this point?" );
+                    CHECK_EQ(
+                        new_vertex[old_elem.point( n ).id()],
+                        0 )
+                        << "already seen this point?";
                     new_vertex[old_elem.point( n ).id()] = 1;
                 }
             }
 
             //!  Define this element's connectivity on the new mesh
-            FEELPP_ASSERT( new_node_numbers[old_elem.point( n ).id()] < new_mesh.numPoints() ).error( "invalid connectivity" );
+            CHECK_LT(
+                new_node_numbers[old_elem.point( n ).id()],
+                new_mesh.numPoints() )
+                << "invalid connectivity";
 
             DVLOG( 2 ) << "[Mesh<Shape,T>::createSubmesh] adding point old(" << old_elem.point( n ).id()
                        << ") as point new(" << new_node_numbers[old_elem.point( n ).id()]
@@ -1931,7 +2713,13 @@ void Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::createSubmesh( self_type
                     std::cout << "add old point " << old_face.point( p ).id() << " to face \n";
                     std::cout << "new point id " << new_node_numbers[old_elem.point( old_elem.fToP( s,p ) ).id()] << "\n";
 #endif
-                    new_face.setPoint( p, new_mesh.point( new_node_numbers[old_elem.point( old_elem.fToP( s, p ) ).id()] ) );
+                    new_face.setPoint(
+                        p, new_mesh.point(
+                               new_node_numbers[
+                                   old_elem.point(
+                                       old_elem.localPointOnFace(
+                                           s, p ) )
+                                       .id()] ) );
                 }
 
                 new_face.setId( n_new_faces++ );
@@ -2079,15 +2867,21 @@ void Mesh<Shape, T, Tag, IndexT, EnableSharedFromThis>::updateInformationObject(
 {
     if ( p.contains( "shape" ) )
         return;
-    p.emplace( "shape", Shape::name() );
+    if constexpr ( is_order_dynamic )
+        p.emplace(
+            "shape",
+            makeOrderAware<shape_type>(
+                RuntimeOrder{ this->order() } ).name() );
+    else
+        p.emplace( "shape", Shape::name() );
     p.emplace( "dim", this->dimension() );
-    p.emplace( "order", this->nOrder );
+    p.emplace( "order", this->order() );
     p.emplace( "real_dim", this->realDimension() );
     p.emplace( "h_min", this->hMin() );
     p.emplace( "h_max", this->hMax() );
     p.emplace( "h_average", this->hAverage() );
     p.emplace( "n_points", this->numGlobalPoints() );
-    if ( nOrder > 1 )
+    if ( this->order() > 1 )
         p.emplace( "n_vertices", this->numGlobalVertices() );
     if ( this->dimension() == 3 )
         p.emplace( "n_edges", this->numGlobalEdges() );
@@ -2126,8 +2920,8 @@ template<typename MeshType>
 class MeshInverse
         : public boost::mp11::mp_if_c<
               MeshType::shape_type::is_simplex,
-              GeoMapInverse<MeshType::nDim, MeshType::nOrder, MeshType::nRealDim, typename MeshType::value_type, Simplex>,
-              GeoMapInverse<MeshType::nDim, MeshType::nOrder, MeshType::nRealDim, typename MeshType::value_type, Hypercube>
+              GeoMapInverse<MeshType::nDim, MeshType::nOrder_v, MeshType::nRealDim, typename MeshType::value_type, Simplex>,
+              GeoMapInverse<MeshType::nDim, MeshType::nOrder_v, MeshType::nRealDim, typename MeshType::value_type, Hypercube>
             >
 {
 public:
@@ -2137,8 +2931,8 @@ public:
     using size_type = typename mesh_t::size_type;
     using super = boost::mp11::mp_if_c<
         MeshType::shape_type::is_simplex,
-        GeoMapInverse<MeshType::nDim, MeshType::nOrder, MeshType::nRealDim, typename MeshType::value_type, Simplex>,
-        GeoMapInverse<MeshType::nDim, MeshType::nOrder, MeshType::nRealDim, typename MeshType::value_type, Hypercube>
+        GeoMapInverse<MeshType::nDim, MeshType::nOrder_v, MeshType::nRealDim, typename MeshType::value_type, Simplex>,
+        GeoMapInverse<MeshType::nDim, MeshType::nOrder_v, MeshType::nRealDim, typename MeshType::value_type, Hypercube>
     >;
     using gic_type = typename super::gic_type;
     using gm_type = typename super::gm_type;
@@ -2306,6 +3100,7 @@ MeshInverse<MeshType>::distribute( bool extrapolation )
 } // namespace Feel
 
 //#if !defined(FEELPP_INSTANTIATION_MODE)
+#include <feel/feeldiscr/meshperiodicimpl.hpp>
 #include <feel/feeldiscr/meshimpl.hpp>
 //#endif
 

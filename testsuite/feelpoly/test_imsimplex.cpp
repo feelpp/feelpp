@@ -20,26 +20,113 @@
   You should have received a copy of the GNU Lesser General Public
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+ */
 /**
    \file test_imsimplex.cpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-06-19
  */
+
+#define BOOST_TEST_MODULE test_imsimplex
+#include <boost/test/data/test_case.hpp>
+#include <feel/feelcore/testsuite.hpp>
 #include <feel/feelpoly/im.hpp>
+#include <algorithm>
+#include <cmath>
 
+namespace bdata = boost::unit_test::data;
+using namespace Feel;
 
-int main( int argc, char** argv )
+static const std::vector<uint16_type> kOrders = {0, 1, 2, 3, 5, 10};
+
+template<int Dim>
+void check_imsimplex_order( uint16_type order )
 {
-    
-    using namespace Feel;
-    Environment env( argc, argv );
+  IMSimplex<Dim,double> im;
+  im.create( order );
 
-    IMSimplex<2,double> im2;
-    for( int q = 0; q < 20; q++ )
-        im2.create(q);
+  BOOST_TEST_CONTEXT( "dim=" << Dim << " order=" << order )
+  {
+    BOOST_CHECK( im.nPoints() > 0 );
+    BOOST_CHECK_EQUAL( im.weights().size(), im.nPoints() );
 
-    IMSimplex<3,double> im3;
-    for( int q = 0; q < 20; q++ )
-        im3.create(q);
+    if ( im.weights().size() > 0 )
+      BOOST_CHECK_GT( im.weightsSum(), 0.0 );
+
+    if constexpr ( Dim > 1 )
+    {
+      BOOST_CHECK( im.nFaces() > 0 );
+      BOOST_CHECK( im.nPointsOnFace( 0 ) > 0 );
+    }
+  }
 }
+
+template<typename T>
+void check_high_order_tetrahedron()
+{
+  for ( uint16_type order = 10; order <= 21; ++order )
+  {
+    IMGeneral<3,T,Simplex> im( order );
+    BOOST_TEST_CONTEXT( "tetrahedron order=" << order << " scalar bytes=" << sizeof(T) )
+    {
+      T minimumWeight = im.weight(0);
+      long double volume = 0;
+      for ( int q = 0; q < im.nPoints(); ++q )
+      {
+        minimumWeight = std::min(minimumWeight,im.weight(q));
+        volume += im.weight(q);
+      }
+      // Positive weights avoid cancellation in mass/energy assembly and norms.
+      BOOST_REQUIRE_GT(minimumWeight,T(0));
+      double const tolerance = sizeof(T) == sizeof(float) ? 5e-5 : 5e-12;
+      BOOST_CHECK_SMALL(static_cast<double>(volume-4.L/3.L),tolerance);
+
+      // Barycentric monomials span P_order on the reference tetrahedron.
+      // Their exact integrals are 8*a!*b!*c!/(a+b+c+3)!.
+      for ( int a = 0; a <= order; ++a )
+        for ( int b = 0; a+b <= order; ++b )
+          for ( int c = 0; a+b+c <= order; ++c )
+          {
+            long double value = 0;
+            for ( int q = 0; q < im.nPoints(); ++q )
+            {
+              auto const x = (static_cast<long double>(im.points()(0,q))+1.L)/2.L;
+              auto const y = (static_cast<long double>(im.points()(1,q))+1.L)/2.L;
+              auto const z = (static_cast<long double>(im.points()(2,q))+1.L)/2.L;
+              value += static_cast<long double>(im.weight(q))*
+                       std::pow(x,a)*std::pow(y,b)*std::pow(z,c);
+            }
+            auto const exact = 8.L*std::tgamma(a+1.L)*std::tgamma(b+1.L)*
+                               std::tgamma(c+1.L)/std::tgamma(a+b+c+4.L);
+            BOOST_TEST_CONTEXT( "monomial=" << a << "," << b << "," << c )
+              BOOST_CHECK_SMALL(static_cast<double>((value-exact)/exact),tolerance);
+          }
+    }
+  }
+}
+
+FEELPP_ENVIRONMENT_NO_OPTIONS
+
+BOOST_AUTO_TEST_SUITE( imsimplex_suite )
+
+BOOST_DATA_TEST_CASE( imsimplex_2d_orders, bdata::make( kOrders ), order )
+{
+  check_imsimplex_order<2>( order );
+}
+
+BOOST_DATA_TEST_CASE( imsimplex_3d_orders, bdata::make( kOrders ), order )
+{
+  check_imsimplex_order<3>( order );
+}
+
+BOOST_AUTO_TEST_CASE( high_order_tetrahedron_positive_exactness_double )
+{
+  check_high_order_tetrahedron<double>();
+}
+
+BOOST_AUTO_TEST_CASE( high_order_tetrahedron_positive_exactness_float )
+{
+  check_high_order_tetrahedron<float>();
+}
+
+BOOST_AUTO_TEST_SUITE_END()

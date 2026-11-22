@@ -1,27 +1,9 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+// SPDX-FileCopyrightText: 2005-2006 EPFL
+// SPDX-FileCopyrightText: 2011 Universite de Grenoble
+// SPDX-FileCopyrightText: 2026 University of Strasbourg
+// SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+// SPDX-License-Identifier: LGPL-3.0-or-later
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-10-06
-
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2011 Universite de Grenoble
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file polynomial.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -38,15 +20,20 @@
 // clang-format on
 
 
+#include <type_traits>
+#include <variant>
+
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/glas.hpp>
+#include <feel/feelpoly/polynomialbasis.hpp>
+#include <feel/feelpoly/polynomialcoefficients.hpp>
 #include <feel/feelpoly/policy.hpp>
 
 namespace Feel
 {
 namespace ublas = boost::numeric::ublas;
 
-template<typename, template<uint16_type> class PolySetType > class PolynomialSet;
+template<typename, template<uint16_type> class PolySetType, int OrderSpec> class PolynomialSet;
 
 /**
  * \class Polynomial
@@ -67,7 +54,8 @@ template<typename, template<uint16_type> class PolySetType > class PolynomialSet
  */
 template<typename Poly,
          template<uint16_type> class PolySetType = Scalar,
-         typename Container =  typename Poly::basis_type::matrix_type>
+         typename Container = typename Poly::basis_type::matrix_type,
+         int OrderSpec = orderSpecification<Poly>()>
 class Polynomial
 {
 public:
@@ -76,8 +64,12 @@ public:
      */
     //@{
 
-    static const uint16_type nDim = Poly::nDim;
-    static const uint16_type nOrder = Poly::nOrder;
+    static constexpr uint16_type nDim = Poly::nDim;
+    /** Authoritative signed order specification. */
+    static constexpr int order_spec = OrderSpec;
+    static constexpr bool is_order_static = ( OrderSpec != Dynamic );
+    static constexpr bool is_order_dynamic = !is_order_static;
+    static constexpr uint16_type nOrder = is_order_static ? static_cast<uint16_type>( OrderSpec ) : 1;
 
     //@}
 
@@ -86,7 +78,7 @@ public:
      */
     //@{
 
-    typedef Polynomial<Poly, PolySetType> self_type;
+    typedef Polynomial<Poly, PolySetType, Container, OrderSpec> self_type;
     typedef typename Poly::value_type value_type;
     typedef typename Poly::basis_type basis_type;
 
@@ -100,17 +92,21 @@ public:
     static const uint16_type nComponents1 = polyset_type::nComponents1;
     static const uint16_type nComponents2 = polyset_type::nComponents2;
 
-    typedef typename GetComponent<polyset_type>::type component_type;
-    typedef Polynomial<Poly,Scalar> scalar_component_type;
+    /** Scalar polynomial obtained by extracting a component. */
+    using component_type = Polynomial<Poly, Scalar, typename Poly::basis_type::matrix_type, OrderSpec>;
+    typedef Polynomial<Poly, Scalar, typename Poly::basis_type::matrix_type, OrderSpec> scalar_component_type;
 
     typedef typename basis_type::points_type points_type;
     typedef typename basis_type::matrix_type matrix_type;
     typedef Container container_type;
+    /** Canonical coefficient owner keeps the expansion axis independent of component rows. */
+    using CoefficientStorage = ::Feel::detail::PolynomialCoefficientStorage<value_type,
+        ::Feel::detail::polynomialCoefficientExtent<Poly, OrderSpec>()>;
 
     typedef typename node<value_type>::type node_type;
 
-    BOOST_STATIC_ASSERT( ( boost::is_same<typename matrix_type::value_type, value_type>::value ) );
-    BOOST_STATIC_ASSERT( ( boost::is_same<typename matrix_type::value_type, typename points_type::value_type>::value ) );
+    static_assert( std::is_same_v<typename matrix_type::value_type, value_type> );
+    static_assert( std::is_same_v<typename matrix_type::value_type, typename points_type::value_type> );
 
     //@}
 
@@ -126,6 +122,17 @@ public:
         M_basis(),
         M_coeff( M_basis.coeff() )
     {
+        setOrderValue( nOrder );
+    }
+
+    /** @brief Construct a polynomial with a runtime expansion degree. */
+    Polynomial( uint16_type order )
+        requires( is_order_dynamic )
+        :
+        M_basis(),
+        M_coeff( M_basis.coeff() )
+    {
+        setOrderValue( order );
     }
 
 
@@ -133,63 +140,48 @@ public:
      * constructor giving only the underlying basis
      * \param __poly polynomial whose we take the basis
      */
-    Polynomial( Poly const& __poly )
+    template<class Source>
+        requires requires( Source const& p ) { p.basis(); p.coeff(); }
+    Polynomial( Source const& __poly )
         :
         M_basis( __poly.basis() ),
-        M_coeff( M_basis.coeff() )
+        M_coeff( ::Feel::detail::polynomialCoefficientStorageFrom<CoefficientStorage>( __poly ) )
     {
+        setOrderValue( ::Feel::detail::polynomialOrder( __poly ) );
     }
 
-    /**
-     * constructor giving the underlying basis and the coefficient of
-     * the polynomial in the basis
-     *
-     * \param __poly polynomial whose we take the basis
-     * \param __coeff coefficients of the polynomial in the basis
-     */
-    Polynomial( Poly const& __poly, container_type const& __coeff, bool __as_is = false )
-        :
-        M_basis( __poly.basis() ),
-        M_coeff( M_basis.coeff() )
+    /** @brief Construct from source-relative or modal Eigen/legacy coefficients. */
+    template<class Source, typename Coefficients>
+        requires requires( Source const& p ) { p.basis(); p.coeff(); } &&
+                 ( EigenMatrix<Coefficients> || UBlasMatrix<Coefficients> )
+    Polynomial( Source const& source, Coefficients const& coefficients, bool asIs = false )
+        : M_basis( source.basis() ),
+          M_coeff( ::Feel::detail::polynomialCoefficientStorageFrom<CoefficientStorage, polyset_type, true>(
+              source, coefficients, asIs ) )
     {
-        setCoefficient( __coeff, __as_is );
+        setOrderValue( ::Feel::detail::polynomialOrder( source ) );
     }
 
-    /**
-     * constructor giving the underlying basis and the coefficient of
-     * the polynomial in the basis
-     *
-     * \param __coeff coefficients of the polynomial in the basis
-     */
-    Polynomial( container_type const& __coeff, bool __as_is = false )
-        :
-        M_basis(),
-        M_coeff( M_basis.coeff() )
+    /** @brief Construct coefficients in the default modal expansion. */
+    template<typename Coefficients>
+        requires ( EigenMatrix<Coefficients> || UBlasMatrix<Coefficients> )
+    Polynomial( Coefficients const& coefficients, bool asIs = false )
+        : M_basis(), M_coeff( M_basis.coeff() )
     {
-        setCoefficient( __coeff, __as_is );
+        setOrderValue( nOrder );
+        setCoefficient( coefficients, asIs );
     }
 
-    /**
-     * constructor giving the underlying basis and the coefficient of
-     * the polynomial in the basis
-     *
-     * \param __poly polynomial whose we take the basis
-     * \param __coeff coefficients of the polynomial in the basis
-     */
-    template<class AE>
-    Polynomial( Poly const& __poly, ublas::matrix_expression<AE> const& __coeff, bool __as_is = false )
-        :
-        M_basis( __poly.basis() ),
-        M_coeff( M_basis.coeff() )
-    {
-        setCoefficient( __coeff, __as_is );
-    }
-
+    /** @brief Copy coefficients and share immutable differentiation operators. */
     Polynomial( Polynomial const & p )
-        :
-        M_basis( p.M_basis ),
-        M_coeff( p.M_coeff )
+        : Polynomial( p, CoefficientStorage( p.M_coeff ) )
     {}
+
+    /** @brief Move coefficients, basis and order policy together. */
+    Polynomial( Polynomial&& ) = default;
+
+    /** @brief Move-assign a polynomial without retaining its former order. */
+    self_type& operator=( Polynomial&& ) = default;
 
     ~Polynomial()
     {}
@@ -204,6 +196,7 @@ public:
     {
         if ( this != &__p )
         {
+            M_order = __p.M_order;
             M_basis = __p.M_basis;
             M_coeff = __p.M_coeff;
         }
@@ -211,23 +204,14 @@ public:
         return *this;
     }
 
+    /** @brief Subtract coefficients in the same expansion, rejecting different degrees. */
     self_type const& operator-=( self_type const& __p )
     {
-        M_coeff -= __p.M_coeff;
+        if ( order() != __p.order() )
+            throw std::invalid_argument("cannot subtract polynomials with different expansion orders");
+        M_coeff.assign( M_coeff.matrix() - __p.M_coeff.matrix() );
         return *this;
     }
-
-    self_type const& operator()( self_type const& __p ) const
-    {
-        if ( this != &__p )
-        {
-            M_basis = __p.M_basis;
-            M_coeff = __p.M_coeff;
-        }
-
-        return *this;
-    }
-
 
     /**
      * \brief extract the i-th component of a vectorial polynomial
@@ -236,10 +220,17 @@ public:
      */
     component_type operator[]( int i ) const
     {
-        const int ncols = M_coeff.size2();
-        return component_type( Poly(), ublas::project( M_coeff,
-                               ublas::slice( nComponents*i+i, 1, 1  ),
-                               ublas::slice( 0, 1, ncols ) ) );
+        if ( i < 0 || i >= nComponents )
+            throw std::out_of_range( "polynomial component index is outside the component range" );
+        return component_type( *this, M_coeff.matrix().row( i ), true );
+    }
+
+    /** @brief Extract a tensor entry as a scalar polynomial with the same degree. */
+    scalar_component_type operator()( uint16_type i, uint16_type j ) const requires( is_tensor2 )
+    {
+        if ( i >= nComponents1 || j >= nComponents2 )
+            throw std::out_of_range("tensor component index is outside the component range");
+        return (*this)[i*nComponents2+j];
     }
 
     /**
@@ -251,7 +242,7 @@ public:
     matrix_type
     operator()( node_type const& __x ) const
     {
-        return ublas::prod( M_coeff, M_basis( __x ) );
+        return evaluate( __x );
     }
 
     /**
@@ -262,7 +253,7 @@ public:
      */
     matrix_type operator()( points_type const& __pts ) const
     {
-        return ublas::prod( M_coeff, M_basis( __pts ) );
+        return evaluate( __pts );
     }
 
     //@}
@@ -277,24 +268,27 @@ public:
      */
     bool isZero() const
     {
-        return ublas::norm_2( M_coeff ) < Feel::type_traits<value_type>::epsilon();
+        return M_coeff.matrix().norm() < Feel::type_traits<value_type>::epsilon();
 
     }
     /**
      * \return the dof
      */
-    matrix_type const& coeff() const
+    matrix_type coeff() const
     {
-        return M_coeff;
+        return M_coeff.template legacy<matrix_type>();
     }
 
     /**
      * \return the dof
      */
-    matrix_type const& coefficients() const
+    auto coefficients() const&
     {
-        return M_coeff;
+        return M_coeff.matrix();
     }
+
+    /** @brief Reject a coefficient view of a temporary polynomial. */
+    auto coefficients() const&& = delete;
 
     /**
      * \return the basis in which the polynomial is expressed
@@ -304,29 +298,62 @@ public:
         return M_basis;
     }
 
+    /** @brief Name of the underlying modal expansion family. */
+    std::string familyName() const { return M_basis.familyName(); }
+
+    /** @brief Effective expansion degree, retained under differentiation. */
+    uint16_type degree() const
+    {
+        return orderValue();
+    }
+
+    /** @brief Effective degree selected by the static or runtime order policy. */
+    uint16_type order() const
+    {
+        return orderValue();
+    }
+
     //@}
 
     /** @name  Mutators
      */
     //@{
 
+    /** @brief Change runtime degree; coefficients must match the requested expansion. */
+    void setOrder( uint16_type order )
+        requires( is_order_dynamic )
+    {
+        setOrderValue( order );
+    }
+
     /**
      * set the coefficient of the polynomial in the basis.
      */
     void setCoefficient( matrix_type const& __c, bool __as_is = false )
     {
-        //FEELPP_ASSERT( __c.size1() == nComponents*nComponents && __c.size2() == M_coeff.size2() )
-        //    ( is_scalar )( is_vectorial )( is_tensor2 )( __c )( M_coeff ).error( "invalid polynomial coefficients" );
-        if ( !__as_is )
-        {
-            M_coeff = ublas::prod( polyset_type::toMatrix( __c ), polyset_type::toMatrix( M_coeff ) );
-            M_coeff = polyset_type::toType( M_coeff );
-        }
-
-        else
-            M_coeff = __c;
+        setCoefficient( eigenMap( __c ), __as_is );
     }
 
+
+    /** @brief Compose component coefficients or directly own modal Eigen coefficients. */
+    template<typename Derived>
+    void setCoefficient( Eigen::MatrixBase<Derived> const& coefficients, bool asIs = false )
+    {
+        if ( asIs ) M_coeff.assign( coefficients );
+        else
+        {
+            decltype(auto) packed = polyset_type::toMatrix( coefficients.derived() );
+            M_coeff.template set<polyset_type>( packed, false );
+        }
+    }
+
+    /** @brief Materialize an unmapped legacy expression at its input boundary. */
+    template<typename Derived>
+    void setCoefficient( ublas::matrix_expression<Derived> const& expression, bool asIs = false )
+    {
+        matrix_type owned( expression );
+        setCoefficient( owned, asIs );
+    }
 
     //@}
 
@@ -343,39 +370,82 @@ public:
     matrix_type
     evaluate( node_type const& __x ) const
     {
-        return ublas::prod( M_coeff, M_basis( __x ) );
+        points_type points( __x.size(), 1 );
+        ublas::column( points, 0 ) = __x;
+        return evaluate( points );
     }
 
-    /**
-     * Evaluate polynomial at points \p __pts
-     *
-     * \param __pts the matrix of coordinates of the points
-     * \return the evaluation of the polynomial at point \p __x
-     */
-    matrix_type evaluate( points_type const& __pts ) const
+    /** @brief Evaluate this polynomial at a batch of points. */
+    matrix_type evaluate( points_type const& points ) const
     {
-        return ublas::prod( M_coeff, M_basis( __pts ) );
+        return M_order.withValues( M_basis, points, [&]( auto const& modal )
+        { return M_coeff.template multiplyAs<matrix_type>( modal ); } );
     }
 
+    /** @brief Evaluate C Phi in canonical Eigen storage. */
+    template<typename Points>
+    [[nodiscard]] auto values( Points const& points ) const
+    {
+        return M_order.withValues( M_basis, points, [&]( auto const& modal )
+        { return M_coeff.multiply( modal ); } );
+    }
+
+    /** @brief Own requested reference values and derivatives through one modal recurrence. */
+    template <Evaluation Request = Evaluation::All, typename Points>
+    [[nodiscard]] auto tabulate( Points const& points ) const
+    {
+        return ::Feel::tabulate<Request>( *this, points );
+    }
+
+    /** @brief Reuse caller-owned reference tables and modal recurrence storage. */
+    template <typename Points, typename Tables, typename Workspace>
+    void tabulateInto( Points const& points, Tables& output, Workspace& workspace ) const
+    {
+        ::Feel::tabulateInto( *this, points, output, workspace );
+    }
+
+    /** @brief Evaluate one reference gradient direction directly in the legacy result. */
     template<typename AE>
     matrix_type derivate( uint16_type i, ublas::matrix_expression<AE> const& pts ) const
     {
-        ublas::vector<matrix_type> der( M_basis.derivate( pts ) );
-        matrix_type res( M_coeff.size1(), pts().size2() );
-        ublas::axpy_prod( M_coeff, der[i], res );
-        return res;
+        if ( i >= nDim ) throw std::out_of_range( "invalid polynomial derivative direction" );
+        matrix_type result;
+        M_order.forEachGradient( M_basis, pts(), [&]( int direction, auto const& modal )
+        {
+            if ( direction == i ) result = M_coeff.template multiplyAs<matrix_type>( modal );
+        } );
+        return result;
     }
 
+    /** @brief Evaluate a mixed second reference derivative using native modal values. */
     template<typename AE>
     matrix_type derivate( uint16_type i, uint16_type j, ublas::matrix_expression<AE> const& pts ) const
     {
-        //std::cout << "[derivate2] M_coeff = " << M_coeff << "\n";
-        matrix_type eval( M_basis.evaluate( pts ) );
-        //matrix_type res( M_coeff.size1(), pts().size2() );
-        //ublas::axpy_prod( M_coeff, der[i], res );
-        matrix_type p1 = ublas::prod( M_coeff, M_basis.d( i ) );
-        matrix_type p2 = ublas::prod( p1, M_basis.d( j ) );
-        return ublas::prod( p2, eval );
+        if ( i >= nDim || j >= nDim ) throw std::out_of_range( "invalid polynomial Hessian direction" );
+
+        // Retain one coefficient-operator path for compatibility and low-order tensors.
+        auto withOperators = [&]()
+        {
+            auto first = M_coeff.multiply( eigenMap( d( i ) ) );
+            auto second = ( first * eigenMap( d( j ) ) ).eval();
+            return M_order.withValues( M_basis, pts(), [&]( auto const& modal )
+            { return ::Feel::detail::materializePolynomialMatrix<matrix_type>( second * modal ); } );
+        };
+
+        // Share backend selection with polynomial sets at the same effective degree.
+        if constexpr ( order_storage_type::template hasDirectHessians<AE> )
+        {
+            if ( M_order.useDirectHessians() )
+            {
+                matrix_type result;
+                M_order.forEachHessian( M_basis, pts(), [&]( int first, int second, auto const& modal )
+                                        {
+                    if ( first == i && second == j ) result = M_coeff.template multiplyAs<matrix_type>( modal ); } );
+                return result;
+            }
+        }
+
+        return withOperators();
     }
 
 
@@ -387,7 +457,13 @@ public:
      */
     matrix_type const& d( uint16_type i ) const
     {
-        return M_basis.d( i );
+        return M_order.d( M_basis, i );
+    }
+
+    /** @brief Return the mixed second differentiation operator. */
+    matrix_type d( uint16_type i, uint16_type j ) const
+    {
+        return ::Feel::detail::materializePolynomialMatrix<matrix_type>( eigenMap( d( i ) ) * eigenMap( d( j ) ) );
     }
 
     /**
@@ -395,29 +471,28 @@ public:
      *
      * \param l direction of derivation
      * \return the derivative of the polynomial
+     * \note Retains the expansion state and shared immutable operators.
      */
     self_type derivative( uint16_type l ) const
     {
-        return self_type( Poly(), ublas::prod( M_coeff, M_basis.d( l ) ), true );
+        return self_type( *this, M_coeff.rightProduct( eigenMap( d( l ) ) ) );
     }
+
+    /** @brief Gradient or Jacobian, with one result for this polynomial. */
+    auto gradient() const { return toSet().gradient().polynomial(0); }
 
     /**
      * transform a \p Polynomial into a PolynomialSet with one polynomial
      *
      * \return a \p PolynomialSet
      */
-    PolynomialSet<Poly,PolySetType> toSet( bool asis = false ) const
+    PolynomialSet<Poly, PolySetType, OrderSpec> toSet( [[maybe_unused]] bool asis = false ) const
     {
-        return PolynomialSet<Poly,PolySetType>( Poly(), M_coeff, asis );
+        PolynomialSet<Poly, PolySetType, OrderSpec> result( *this, M_coeff.matrix(), true );
+        if constexpr ( is_order_dynamic )
+            result.setOrder( orderValue() );
+        return result;
     }
-#if 0
-    Polynomial<Poly, PolySetType> operator-( Polynomial<Poly, PolySetType> const& p ) const
-    {
-        matrix_type c = M_coeff-p.M_coeff;
-        std::cout << "c=" << c << "\n";
-        return Polynomial<Poly, PolySetType>( Poly(), c );
-    }
-#endif
     //@}
 
 
@@ -425,15 +500,44 @@ protected:
 
 private:
 
+    /** @brief Retain basis/order state while adopting independently owned coefficients. */
+    Polynomial( self_type const& source, CoefficientStorage&& coefficients )
+        : M_order( source.M_order ), M_basis( source.M_basis ), M_coeff( std::move( coefficients ) ) {}
+
+    using order_storage_type = ::Feel::detail::PolynomialBasisState<basis_type, OrderSpec>;
+
+    /** @brief Effective expansion degree from the shared order policy. */
+    [[nodiscard]] uint16_type orderValue() const
+    {
+        if constexpr ( is_order_static )
+            return nOrder;
+        else
+            return M_order.order();
+    }
+
+    /** @brief Set runtime degree or validate a static degree. */
+    void setOrderValue( uint16_type order )
+    {
+        M_order.setOrder( order );
+    }
+
+    [[no_unique_address]] order_storage_type M_order{};
     basis_type M_basis;
-    container_type M_coeff;
+    /** Sole Eigen owner; compatibility access materializes an independent legacy matrix. */
+    CoefficientStorage M_coeff;
 };
-template<typename Poly, template<uint16_type> class PolySetType>
-Polynomial<Poly, PolySetType> operator-( Polynomial<Poly, PolySetType> const& p1,Polynomial<Poly, PolySetType> const& p2 )
+/** @brief Subtract polynomials while retaining their common basis and order policy. */
+template<typename Poly, template<uint16_type> class PolySetType, typename Container, int OrderSpec>
+Polynomial<Poly, PolySetType, Container, OrderSpec> operator-( Polynomial<Poly, PolySetType, Container, OrderSpec> const& p1,Polynomial<Poly, PolySetType, Container, OrderSpec> const& p2 )
 {
-    auto c = p1.coeff()-p2.coeff();
+    if ( p1.order() != p2.order() )
+        throw std::invalid_argument("cannot subtract polynomials with different expansion orders");
+    typename Polynomial<Poly, PolySetType, Container, OrderSpec>::matrix_type c = p1.coeff()-p2.coeff();
     //std::cout << "operator- c=" << c << "\n";
-    return Polynomial<Poly, PolySetType>( Poly(), c );
+    Polynomial<Poly, PolySetType, Container, OrderSpec> result( p1, c, true );
+    if constexpr ( Polynomial<Poly, PolySetType, Container, OrderSpec>::is_order_dynamic )
+        result.setOrder( p1.order() );
+    return result;
 }
 
 }

@@ -156,4 +156,3 @@ def get_image_target(
             f"Image target {target} uses backend '{row.image_backend}', expected '{backend}'"
         )
     return row
-

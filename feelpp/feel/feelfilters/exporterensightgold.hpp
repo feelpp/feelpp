@@ -1,31 +1,19 @@
 /*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Alexandre Ancel <alexandre.ancel@cemosis.fr>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2007-2012 Universite Joseph Fourier (Grenoble I)
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2004-11-09
-
-  Copyright (C) 2004,2005 EPFL
-  Copyright (C) 2007-2012 Universite Joseph Fourier (Grenoble I)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-//! \file ExporterEnsightGold.hpp
-//! \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-//! \author Alexandre Ancel <alexandre.ancel@cemosis.fr>
-//! \date 2006-11-26
+/**
+   \file ExporterEnsightGold.hpp
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+   \author Alexandre Ancel <alexandre.ancel@cemosis.fr>
+   \date 2006-11-26
+ */
 #ifndef FEELPP_FILTERS_EXPORTERENSIGHTGOLD_HPP
 #define FEELPP_FILTERS_EXPORTERENSIGHTGOLD_HPP 1
 
@@ -183,6 +171,9 @@ template <typename MeshType, int N> class ExporterEnsightGold : public Exporter<
     void save( steps_write_on_disk_type const &stepsToWriteOnDisk ) const override;
 
   private:
+    static constexpr MPI_Offset S_payloadChunkSize = 1024 * 1024;
+    static constexpr std::size_t S_payloadBatchSize = 4 * S_payloadChunkSize;
+
     //! \brief Collectively resolve and cache the I/O policy for this destination.
     void resolveIOPolicy() const
     {
@@ -219,14 +210,15 @@ template <typename MeshType, int N> class ExporterEnsightGold : public Exporter<
         if ( M_useRootIO && !M_payloadComm )
             M_payloadComm.emplace( this->worldComm().comm(), mpi::comm_duplicate );
         if ( M_useRootIO && this->worldComm().isMasterRank() )
-            M_payloadBuffer.resize( 1024 * 1024 );
+            M_payloadBuffer.resize( S_payloadBatchSize );
         M_resolvedIOPath = this->path();
     }
 
     //! \brief Collectively write a distributed payload, including empty ranks.
-    //! Independent uses the original disjoint MPI writes. Root exchanges byte
-    //! ranges on a private communicator and streams at most 1 MiB at a time,
-    //! avoiding both cross-client NFS writes and a full-field gather allocation.
+    //! Independent uses the original disjoint MPI writes. Root receives byte
+    //! ranges on a private communicator in chunks of at most 1 MiB, and batches
+    //! adjacent chunks into writes of at most 4 MiB. This keeps a single NFS
+    //! writer without a full-field gather allocation.
     //! \param offset Absolute byte offset of this rank's range.
     //! \param count Number of datatype entries in this rank's input buffer.
     void writePayload( MPI_File file, MPI_Offset offset, void const *data, std::size_t count,
@@ -249,7 +241,7 @@ template <typename MeshType, int N> class ExporterEnsightGold : public Exporter<
         checkMpiIo( MPI_Gather( descriptor, 2, MPI_OFFSET, ranges.data(), 2, MPI_OFFSET, root,
                                 *M_payloadComm ),
                     "gather payload ranges" );
-        constexpr MPI_Offset chunkSize = 1024 * 1024;
+        constexpr MPI_Offset chunkSize = S_payloadChunkSize;
         auto const *bytes = static_cast<char const *>( data );
         if ( rank != root )
         {
@@ -262,17 +254,35 @@ template <typename MeshType, int N> class ExporterEnsightGold : public Exporter<
         }
         else
         {
+            MPI_Offset batchOffset = 0;
+            std::size_t used = 0;
+            auto flush = [&]() {
+                if ( used )
+                {
+                    writeAt( file, batchOffset, M_payloadBuffer.data(), used, MPI_BYTE, status );
+                    used = 0;
+                }
+            };
+
             for ( int peer = 0; peer < size; ++peer )
                 for ( MPI_Offset received = 0; received < ranges[2 * peer + 1];
                       received += chunkSize )
                 {
-                    int n = int( std::min( chunkSize, ranges[2 * peer + 1] - received ) );
-                    char const *buffer = nullptr;
+                    int const n = int( std::min( chunkSize, ranges[2 * peer + 1] - received ) );
+                    auto const offset = ranges[2 * peer] + received;
+                    // Preserve rank order and never fill a gap with batch data.
+                    if ( used && ( offset != batchOffset + MPI_Offset( used ) ||
+                                   std::size_t( n ) > M_payloadBuffer.size() - used ) )
+                        flush();
+                    if ( !used )
+                        batchOffset = offset;
+
+                    auto *destination = M_payloadBuffer.data() + used;
                     if ( peer == root )
-                        buffer = bytes + received;
+                        std::copy_n( bytes + received, n, destination );
                     else
                     {
-                        checkMpiIo( MPI_Recv( M_payloadBuffer.data(), n, MPI_BYTE, peer, 0,
+                        checkMpiIo( MPI_Recv( destination, n, MPI_BYTE, peer, 0,
                                               *M_payloadComm, status ),
                                     "receive payload" );
                         int receivedCount = 0;
@@ -280,10 +290,10 @@ template <typename MeshType, int N> class ExporterEnsightGold : public Exporter<
                                     "payload receive count" );
                         if ( receivedCount != n )
                             checkMpiIo( MPI_ERR_IO, "short payload receive" );
-                        buffer = M_payloadBuffer.data();
                     }
-                    writeAt( file, ranges[2 * peer] + received, buffer, n, MPI_BYTE, status );
+                    used += n;
                 }
+            flush();
         }
     }
 
@@ -354,6 +364,9 @@ template <typename MeshType, int N> class ExporterEnsightGold : public Exporter<
     //! init the ensight exporter
     FEELPP_NO_EXPORT void init();
 
+    //! select format element names from the effective mesh order
+    FEELPP_NO_EXPORT void updateElementTypes( uint16_type order ) const;
+
     //! write the '' file for ensight
     FEELPP_NO_EXPORT void writeSoSFile() const;
 
@@ -402,8 +415,8 @@ template <typename MeshType, int N> class ExporterEnsightGold : public Exporter<
     //! Bounded master-only staging storage, independent of global mesh size/rank count.
     mutable std::vector<char> M_payloadBuffer;
     mutable std::string M_filename;
-    std::string M_element_type;
-    std::string M_face_type;
+    mutable std::string M_element_type;
+    mutable std::string M_face_type;
     bool M_mergeTimeSteps;
     int M_packTimeSteps;
 

@@ -1,26 +1,16 @@
-//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-//!
-//! This file is part of the Feel++ library
-//!
-//! This library is free software; you can redistribute it and/or
-//! modify it under the terms of the GNU Lesser General Public
-//! License as published by the Free Software Foundation; either
-//! version 2.1 of the License, or (at your option) any later version.
-//!
-//! This library is distributed in the hope that it will be useful,
-//! but WITHOUT ANY WARRANTY; without even the implied warranty of
-//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//! Lesser General Public License for more details.
-//!
-//! You should have received a copy of the GNU Lesser General Public
-//! License along with this library; if not, write to the Free Software
-//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-//!
-//! @file
-//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-//! @date 11 Apr 2017
-//! @copyright 2017 Feel++ Consortium
-//!
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2017-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-2.1-or-later
+ */
+
+/**
+ * @file matrixcondensed.hpp
+ * @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * @date 11 Apr 2017
+ */
 #ifndef FEELPP_MATRIXCONDENSED_HPP
 #define FEELPP_MATRIXCONDENSED_HPP 1
 
@@ -80,6 +70,13 @@ public:
         M_sc( new sc_type ),
         M_strategy( s )
         {}
+    MatrixCondensed( solve::strategy s,
+                     typename super::matrix_ptrtype matrix,
+                     backend_ptrtype backend )
+        : super( std::move( matrix ), std::move( backend ) ),
+          M_sc( new sc_type ),
+          M_strategy( s )
+    {}
 #if 0
     template<typename... Args>
     MatrixCondensed( Args&&... params )
@@ -157,7 +154,7 @@ public:
         }
     void zero() override
         {
-            if ( staticCondensation() )
+            if ( staticCondensation() || localSolve() )
                 M_sc->zeroMatrix();
             else
                 super::zero();
@@ -167,7 +164,7 @@ public:
     //!
     void zeroBlock( int n1, int n2 )
         {
-            if ( staticCondensation() )
+            if ( staticCondensation() || localSolve() )
                 M_sc->zero( n1, n2 );
         }
     /**

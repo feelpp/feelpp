@@ -1,11 +1,13 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ * SPDX-FileContributor: Benjamin Vanthong <benjamin.vanthong@icloud.com>
+ *
+ * SPDX-FileCopyrightText: 2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-    SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-
-    SPDX-FileCopyrightText: 2026 University of Strasbourg
-
-    SPDX-License-Identifier: LGPL-3.0-or-later
-*/
 #ifndef FEELPP_FILTERS_EXPORTERXDMF_IMPL_HPP
 #define FEELPP_FILTERS_EXPORTERXDMF_IMPL_HPP 1
 
@@ -239,7 +241,7 @@ void ExporterXDMF<MeshType, N>::saveMesh( mesh_ptrtype mesh, std::string const& 
         M_hdf5Geo.closeTable(groupName + "/point_coords");
 
         localDims[0] = mp.numberOfElement( part,currentPid );
-        localDims[1] = mesh_type::element_type::numPoints;//elt.numLocalVertices;
+        localDims[1] = mp.pointsPerElement();
         globalElementDims[0] = mp.numberOfElementAllProcess( part );
         globalElementDims[1] = localDims[1];
         currentOffset[0] = mp.startElementIds( part,currentPid );
@@ -383,7 +385,7 @@ void ExporterXDMF<MeshType, N>::saveFields( std::string const& fieldsfilename, s
                 {
                     auto const& elt = unwrap_ref( *elt_it );
                     auto const& locglob_ind = d->localToGlobalIndices( elt.id() );
-                    for ( uint16_type p = 0; p <  mesh_type::element_type::numPoints/*__step->mesh()->numLocalVertices()*/; ++p )
+                    for ( uint16_type p = 0; p < mp.pointsPerElement(); ++p )
                     {
                         index_type ptid = mp.pointIdToContiguous(part,elt.point( p ).id());
                         if ( ptid == invalid_v<typename mesh_type::index_type> ) // point not in this process

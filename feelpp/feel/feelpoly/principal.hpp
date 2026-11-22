@@ -1,26 +1,13 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 
-  This file is part of the Feel library
+  SPDX-FileContributor: Gilles Steiner <gilles.steiner@epfl.ch>
+  SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
-  Author(s): Gilles Steiner <gilles.steiner@epfl.ch>
-       Date: 2005-12-14
+  SPDX-FileCopyrightText: 2005-2006 EPFL
+  SPDX-FileCopyrightText: 2011-2021 Feel++ Consortium
+  SPDX-FileCopyrightText: 2026 University of Strasbourg
 
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2011-2021 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+  SPDX-License-Identifier: LGPL-3.0-or-later
 */
 /**
    \file principal.hpp
@@ -91,35 +78,45 @@ public:
      */
     //@{
 
+    /** @brief Construct linear principal functions with Jacobi parameters (1,1). */
     Principal()
         : Principal(1, 1, 1)
     {}
+    /** @brief Construct degree N principal functions with Jacobi parameters (1,1). */
     Principal( int N )
         : Principal(N, 1, 1)
     {}
 
+    /** @brief Construct linear principal functions with the supplied Jacobi parameters. */
     Principal( value_type a,value_type b )
         : Principal( 1, a, b )
     {}
+    /** @brief Retain the degree and Jacobi parameters for later sampled evaluation. */
     Principal( int N, value_type a,value_type b )
         : M_order(N), M_a( a ), M_b( b )
     {}
 
+    /** @brief Copy the mathematical configuration. */
     Principal( Principal const& ) = default;
+    /** @brief Move the mathematical configuration. */
     Principal( Principal && ) = default;
 
+    /** @brief Release the descriptor. */
     ~Principal() = default;
 
     //@}
 
 
-    self_type const& operator=( self_type const& d ) = default;
+    /** @brief Replace the configuration by copy. */
+    self_type& operator=( self_type const& d ) = default;
+    /** @brief Replace the configuration by move. */
     self_type& operator=( self_type&& d ) = default;
 
     /** @name Accessors
      */
     //@{
 
+    /** @brief Return the retained polynomial degree. */
     uint16_type degree() const
     {
         return M_order;
@@ -131,10 +128,12 @@ public:
      */
     //@{
 
+    /** @brief Return the first Jacobi parameter. */
     value_type a() const
     {
         return M_a;
     }
+    /** @brief Return the second Jacobi parameter. */
     value_type b() const
     {
         return M_b;
@@ -161,16 +160,25 @@ public:
     //@}
 
 
+    /** @brief Sample derivatives of the first principal factors. */
     matrix_type derivate_1(  vector_type const& __pts ) const;
 
+    /** @brief Differentiate the second principal factors with the complete product rule.
+     * For t=(1-x)/2 and s=(1+x)/2, interior factors are s t^(i+1) P_(j-1)(x).
+     * Each derivative includes s' t^(i+1) P, including the full power of t.
+     */
     vector_matrix_type derivate_2( vector_type  const& __pts ) const;
 
+    /** @brief Sample derivatives of the third principal factors. */
     vector_vector_matrix_type derivate_3( vector_type  const& __pts ) const;
 
 private:
 
+    /** Degree of the endpoint/interior hierarchy. */
     int M_order;
+    /** First Jacobi shape parameter. */
     value_type M_a;
+    /** Second Jacobi shape parameter. */
     value_type M_b;
 
 
@@ -375,7 +383,8 @@ Principal<T, StoragePolicy>::derivate_2( vector_type const& __pts ) const
             vector_type A( ublas::element_prod( ublas::row( m[i],0 ), tmp2 ) );
             A = ublas::element_prod( A, ublas::row( J[i-1],j-1 ) );
 
-            vector_type B( ublas::element_prod( 0.5*tmp_i , ublas::row( J[i-1],j-1 ) ) );
+            // Differentiating (1+x)/2 retains the complete ((1-x)/2)^(i+1) factor.
+            vector_type B( ublas::element_prod( 0.5 * ublas::element_prod( tmp_i, tmp1 ), ublas::row( J[i - 1], j - 1 ) ) );
 
             vector_type C( ublas::element_prod( tmp_i , tmp_prod ) );
             C = ublas::element_prod( C ,ublas::row( dJ[i-1],j-1 ) );

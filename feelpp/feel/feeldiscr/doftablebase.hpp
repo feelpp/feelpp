@@ -1,26 +1,16 @@
-//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-//!
-//! This file is part of the Feel++ library
-//!
-//! This library is free software; you can redistribute it and/or
-//! modify it under the terms of the GNU Lesser General Public
-//! License as published by the Free Software Foundation; either
-//! version 2.1 of the License, or (at your option) any later version.
-//!
-//! This library is distributed in the hope that it will be useful,
-//! but WITHOUT ANY WARRANTY; without even the implied warranty of
-//! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//! Lesser General Public License for more details.
-//!
-//! You should have received a copy of the GNU Lesser General Public
-//! License along with this library; if not, write to the Free Software
-//! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-//!
+/*
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2017-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
+
 //! @file
 //! @author Vincent Chabannes <vincent.chabannes@feelpp.org>
 //! @date 15 Jun 2017
-//! @copyright 2017 Feel++ Consortium
-//!
+
 #ifndef FEELPP_DOFTABLEBASE_HPP
 #define FEELPP_DOFTABLEBASE_HPP 1
 
@@ -39,38 +29,38 @@ struct DofTableInfos
     DofTableInfos& operator=( DofTableInfos const& ) = default;
     DofTableInfos& operator=( DofTableInfos && ) = default;
 
-    uint16_type nOrder;
-    uint16_type nDim;
-    uint16_type nRealDim;
-    uint16_type Shape;
-    uint16_type nComponents;
-    uint16_type nComponents1;
-    uint16_type nComponents2;
+    uint16_type nOrder = 0;
+    uint16_type nDim = 0;
+    uint16_type nRealDim = 0;
+    uint16_type Shape = 0;
+    uint16_type nComponents = 0;
+    uint16_type nComponents1 = 0;
+    uint16_type nComponents2 = 0;
 
 
-    bool is_continuous;
-    bool is_discontinuous_locally;
-    bool is_discontinuous_totally;
+    bool is_continuous = false;
+    bool is_discontinuous_locally = false;
+    bool is_discontinuous_totally = false;
 
-    bool is_scalar;
-    bool is_vectorial;
-    bool is_tensor2;
-    bool is_tensor2symm;
-    bool is_modal;
-    bool is_product;
-    uint16_type nRealComponents;
+    bool is_scalar = false;
+    bool is_vectorial = false;
+    bool is_tensor2 = false;
+    bool is_tensor2symm = false;
+    bool is_modal = false;
+    bool is_product = false;
+    uint16_type nRealComponents = 0;
 
-    bool is_p0_continuous;
+    bool is_p0_continuous = false;
 
-    bool is_hdiv_conforming;
-    bool is_hcurl_conforming;
+    bool is_hdiv_conforming = false;
+    bool is_hcurl_conforming = false;
 
-    uint16_type nDofPerEdge;
-    uint16_type nDofPerElement;
+    uint16_type nDofPerEdge = 0;
+    uint16_type nDofPerElement = 0;
 
-    bool is_periodic;
+    bool is_periodic = false;
 
-    uint16_type nDofComponents;
+    uint16_type nDofComponents = 0;
 
     std::string feFamilyName;
 };
@@ -108,6 +98,13 @@ public:
     virtual global_dof_fromface_type const& faceLocalToGlobal( const size_type ElId,
                                                                const uint16_type localNode,
                                                                const uint16_type c = 0 ) const = 0;
+
+    global_dof_fromface_type const& facetLocalToGlobal( const size_type ElId,
+                                                        const uint16_type localNode,
+                                                        const uint16_type c = 0 ) const
+        {
+            return this->faceLocalToGlobal( ElId, localNode, c );
+        }
 
     virtual mesh_support_base_ptrtype meshSupportBase() const = 0;
 

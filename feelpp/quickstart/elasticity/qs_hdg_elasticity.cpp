@@ -1,28 +1,10 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-  This file is part of the Feel++ library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-             Daniele Prada <daniele.prada85@gmail.com>
-			 Lorenzo Sala <sala@unistra.fr>
-       Date: 2016-02-10
-
-  Copyright (C) 2016 Feel++ Consortium
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2014-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/checker.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
@@ -30,7 +12,7 @@
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
 #include <feel/feeldiscr/pdhm.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/vf_eval.hpp>
 #include <feel/feelpoly/raviartthomas.hpp>
 #include <feel/feelalg/vectorblock.hpp>
 #include <feel/feeldiscr/product.hpp>
@@ -39,6 +21,7 @@
 #include <feel/feelvf/eig.hpp>
 #include <feel/feelpython/pyexpr.hpp>
 #include "nullspace-rigidbody.hpp"
+#include "../discretization.hpp"
 
 namespace Feel {
 
@@ -68,6 +51,7 @@ makeOptions()
         ( "hdg.tau.constant", po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( "hdg.tau.order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         ( "order", po::value<int>()->default_value( 1 ), "approximation order"  )
+        ( "geometry.order", po::value<int>()->default_value( 1 ), "mesh geometric transformation order" )
         ( "exact", po::value<bool>()->default_value( true ), "displacement is give and provides the exact solution or an approximation"  )
         ( "use-near-null-space", po::value<bool>()->default_value( false ), "use near-null-space for AMG"  )
         ( "use-null-space", po::value<bool>()->default_value( false ), "use null-space for AMG"  )
@@ -92,7 +76,6 @@ makeAbout()
     return about;
 
 }
-
 
 inline void
 fillElasticityPolynomialManufacturedSolution( std::map<std::string,std::string>& locals )
@@ -185,17 +168,23 @@ fillElasticityPolynomialManufacturedSolution( std::map<std::string,std::string>&
                    << displ << ", dim=" << dim;
 }
 
-template<int Dim, int OrderP, int OrderG=1>
+template<int Dim>
 int hdg_elasticity( std::map<std::string,std::string>& locals )
 {
 
-	typedef Simplex<Dim,OrderG> convex_type;
+	typedef Simplex<Dim,Dynamic> convex_type;
 	//! mesh type
     typedef Mesh<convex_type> mesh_type;
     using Feel::cout;
 
     auto tau_constant =  cst(doption("hdg.tau.constant"));
     int tau_order =  ioption("hdg.tau.order");
+    int order = ioption( "order" );
+    CHECK( order >= 1 ) << "HDG approximation order must be >= 1";
+    auto runtimeOrder = RuntimeOrder::checked( order );
+    int geometryOrder = ioption( "geometry.order" );
+    CHECK( geometryOrder >= 1 ) << "Mesh geometry order must be >= 1";
+    auto runtimeGeometryOrder = RuntimeOrder::checked( geometryOrder );
 #if 0
     auto displ_exact = expr<Dim,1>( locals.at("displ") );
     auto grad_displ_exact = expr<Dim,1>( locals.at("grad_displ") );
@@ -215,23 +204,24 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
     auto Pi = M_PI;
 
     tic();
-    auto mesh = loadMesh( _mesh=new Mesh<Simplex<Dim>> );
+    auto mesh = loadMesh( _mesh=new mesh_type( runtimeGeometryOrder ) );
+    quickstart::checkMeshOrder( mesh );
     toc("mesh",true);
 
     // ****** Hybrid-mixed formulation ******
     // We treat Vh, Wh, and Mh separately
     tic();
 
-    auto Vh = Pdhms<OrderP>( mesh );
-    auto Wh = Pdhv<OrderP>( mesh );
+    auto Vh = Pdhms<Dynamic>( mesh, runtimeOrder );
+    auto Wh = Pdhv<Dynamic>( mesh, runtimeOrder );
     auto face_mesh = createSubmesh( _mesh=mesh, _range=faces(mesh), _update=0 );
-    auto Mh = Pdhv<OrderP>( face_mesh );
+    auto Mh = Pdhv<Dynamic>( face_mesh, runtimeOrder );
 
     toc("spaces",true);
 
-    cout << "Vh<" << OrderP   << "> : " << Vh->nDof() << std::endl
-         << "Wh<" << OrderP+1 << "> : " << Wh->nDof() << std::endl
-         << "Mh<" << OrderP   << "> : " << Mh->nDof() << std::endl;
+    cout << "Vh<" << order << "> : " << Vh->nDof() << std::endl
+         << "Wh<" << order << "> : " << Wh->nDof() << std::endl
+         << "Mh<" << order << "> : " << Mh->nDof() << std::endl;
 
     auto sigma = Vh->element( "sigma" );
     auto v     = Vh->element( "v" );
@@ -258,7 +248,7 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
 
 
     // Building the RHS
-    auto M0h = Pdh<0>( face_mesh );
+    auto M0h = Pdh<Dynamic>( face_mesh, RuntimeOrder{0} );
     auto H     = M0h->element( "H" );
     if ( ioption("hface" ) == 0 )
         H.on( _range=elements(face_mesh), _expr=pow(mesh->hMax(),tau_order) );
@@ -403,8 +393,11 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
         auto displ_exact = displ;
         auto sigma_exact = locals.at("stress");
         auto grad_displ_exact = locals.at("grad_displ");
+        auto displ_exact_expr = expr<Dim,1>( displ_exact );
+        auto sigma_exact_expr = expr<Dim,Dim>( sigma_exact );
+        auto grad_displ_exact_expr = expr<Dim,Dim>( grad_displ_exact );
 
-        auto l2err_sigma = normL2( _range=elements(mesh), _expr=expr<Dim,Dim>(sigma_exact) - idv(sigmap) );
+        auto l2err_sigma = normL2( _range=elements(mesh), _expr=sigma_exact_expr - idv(sigmap) );
         Feel::cout << "L2 Error sigma: " << l2err_sigma << std::endl;
         toc("error");
 
@@ -412,7 +405,7 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
         auto norms_stress = [&]( std::string const& solution ) ->std::map<std::string,double>
             {
                 tic();
-                double l2 = normL2( _range=elements(mesh), _expr=expr<Dim,Dim>(sigma_exact) - idv(sigmap) );
+                double l2 = normL2( _range=elements(mesh), _expr=sigma_exact_expr - idv(sigmap) );
                 toc("L2 stress error norm");
 
                 return { { "L2", l2 } };
@@ -421,11 +414,11 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
         auto norms_displ = [&]( std::string const& solution ) ->std::map<std::string,double>
             {
 			tic();
-			double l2 = normL2( _range=elements(mesh), _expr=expr<Dim,1>(displ_exact) - idv(up) );
+			double l2 = normL2( _range=elements(mesh), _expr=displ_exact_expr - idv(up) );
 			toc("L2 displ error norm");
 
 			tic();
-			double h1 = normH1(_range=elements(mesh), _expr=idv(up)- expr<Dim,1>(displ_exact), _grad_expr=gradv(up)-expr<Dim,Dim>(grad_displ_exact) );
+			double h1 = normH1(_range=elements(mesh), _expr=idv(up)- displ_exact_expr, _grad_expr=gradv(up)-grad_displ_exact_expr );
 			toc("H1 displ error norm");
 
 			return { { "L2", l2 } , {  "H1", h1 } };
@@ -433,16 +426,12 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
 
         status_displ = checker(_name="L2/H1 displacement norms",_solution_key=displ_exact).runOnce( norms_displ, rate::hp( mesh->hMax(), Wh->fe()->order() ) );
         status_stress = checker(_name="L2 stress norms",_solution_key=displ_exact).runOnce( norms_stress, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
-        v.on( _range=elements(mesh), _expr=expr<Dim,Dim>(sigma_exact) );
-        w.on( _range=elements(mesh), _expr=expr<Dim,1>(displ_exact) );
     }
 
     tic();
     std::string exportName =  "hdg_elasticity";
     std::string sigmaName = "stress";
-    std::string sigma_exName = "stress-ex";
     std::string uName = "displacement";
-    std::string u_exName = "displacement-ex";
 
     auto e = exporter( _mesh=mesh, _name=exportName );
     e->setMesh( mesh );
@@ -452,12 +441,6 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
     e->add( "vonmises", vonmises(idv(sigmap)), reps );
     e->add( "principal_stress", eig(idv(sigmap)), reps );
     e->add( "magnitude_stress", sqrt(inner(idv(sigmap))), reps );
-
-    if ( boption("exact" ) )
-    {
-        e->add( sigma_exName, v, "nodal" );
-        e->add( u_exName, w, "nodal" );
-    }
 
     e->save();
 
@@ -504,10 +487,7 @@ int main( int argc, char** argv )
 
         for( auto d: locals )
             Feel::cout << d.first << ":" << d.second << std::endl;
-        if ( ioption( "order" ) == 1 )
-            return !hdg_elasticity<FEELPP_DIM,1>( locals );
-        if ( ioption( "order" ) == 2 )
-            return !hdg_elasticity<FEELPP_DIM,2>( locals );
+        return !hdg_elasticity<FEELPP_DIM>( locals );
     }
     catch( ... )
     {

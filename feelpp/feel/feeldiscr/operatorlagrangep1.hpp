@@ -1,26 +1,12 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2008-2010 Université Joseph Fourier (Grenoble I)
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
-  This file is part of the Feel library
-
-  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2008-01-31
-
-  Copyright (C) 2008-2010 Université Joseph Fourier (Grenoble I)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
 /**
    \file lagrangep1.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
@@ -225,7 +211,9 @@ public:
         double dofPtCompareTol = std::max(1e-15,elt.hMin()*1e-5);
         uint16_type localptid_dof = invalid_uint16_type_value;
         bool findPtRelation=false;
-        for ( uint16_type i = 0; i < domain_fe_type::nLocalDof && !findPtRelation ; ++i )
+        for ( uint16_type i = 0;
+              i < this->domainSpace()->fe()->localDof() && !findPtRelation;
+              ++i )
         {
             size_type searchdofid = this->domainSpace()->dof()->localToGlobal( elt.id(),i, 0 ).index();
             auto const& ptDof = boost::get<0>( this->domainSpace()->dof()->dofPoint( searchdofid ) );
@@ -474,22 +462,34 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
     typedef typename image_mesh_type::element_type element_type;
     typedef typename image_mesh_type::face_type face_type;
 
-    static constexpr uint16_type nLocalDofUpToVertices = domain_mesh_type::element_type::numVertices*domain_fe_type::nDofPerVertex;
-    static constexpr uint16_type nDofPerVertexForDivision = domain_fe_type::nDofPerVertex == 0? 1 : domain_fe_type::nDofPerVertex;
+    auto const domainFe = this->domainSpace()->fe();
+    uint16_type const dofPerVertex = domainFe->dofPerVertex();
+    uint16_type const dofPerEdge = domainFe->dofPerEdge();
+    uint16_type const dofPerFace = domainFe->dofPerFace();
+    uint16_type const nLocalDofUpToVertices =
+        domain_mesh_type::element_type::numVertices*dofPerVertex;
+    uint16_type const nDofPerVertexForDivision =
+        dofPerVertex == 0 ? 1 : dofPerVertex;
 
-    static constexpr uint16_type nLocalDofUpToEdges = domain_mesh_type::element_type::numVertices*domain_fe_type::nDofPerVertex + domain_mesh_type::element_type::numEdges*domain_fe_type::nDofPerEdge;
-    static constexpr uint16_type nDofPerEdgeForDivision = domain_fe_type::nDofPerEdge == 0 ? 1 : domain_fe_type::nDofPerEdge;
+    uint16_type const nLocalDofUpToEdges =
+        domain_mesh_type::element_type::numVertices*dofPerVertex +
+        domain_mesh_type::element_type::numEdges*dofPerEdge;
+    uint16_type const nDofPerEdgeForDivision =
+        dofPerEdge == 0 ? 1 : dofPerEdge;
 
-    static constexpr uint16_type nLocalDofUpToFaces =
-        (domain_mesh_type::nDim==1)? domain_mesh_type::element_type::numVertices*domain_fe_type::nDofPerVertex :
-        (domain_mesh_type::nDim==2)? domain_mesh_type::element_type::numVertices*domain_fe_type::nDofPerVertex + domain_mesh_type::element_type::numEdges*domain_fe_type::nDofPerEdge :
-        domain_mesh_type::element_type::numVertices*domain_fe_type::nDofPerVertex + domain_mesh_type::element_type::numEdges*domain_fe_type::nDofPerEdge + domain_mesh_type::element_type::numGeometricFaces*domain_fe_type::nDofPerFace;
-    static const uint16_type nLocalDofBeforeDofsOfTopologicalFaces =
+    uint16_type const nLocalDofUpToFaces =
+        (domain_mesh_type::nDim==1)? domain_mesh_type::element_type::numVertices*dofPerVertex :
+        (domain_mesh_type::nDim==2)? domain_mesh_type::element_type::numVertices*dofPerVertex + domain_mesh_type::element_type::numEdges*dofPerEdge :
+        domain_mesh_type::element_type::numVertices*dofPerVertex + domain_mesh_type::element_type::numEdges*dofPerEdge + domain_mesh_type::element_type::numGeometricFaces*dofPerFace;
+    uint16_type const nLocalDofBeforeDofsOfTopologicalFaces =
         (domain_mesh_type::nDim==1)? 0 :
-        (domain_mesh_type::nDim==2)? domain_mesh_type::element_type::numVertices*domain_fe_type::nDofPerVertex :
-        domain_mesh_type::element_type::numVertices*domain_fe_type::nDofPerVertex + domain_mesh_type::element_type::numEdges*domain_fe_type::nDofPerEdge;
-    static constexpr uint16_type nDofPerTopologicalFace = (domain_mesh_type::nDim==1)?domain_fe_type::nDofPerVertex : (domain_mesh_type::nDim==2)?domain_fe_type::nDofPerEdge : domain_fe_type::nDofPerFace;
-    static constexpr uint16_type nDofPerTopologicalFaceForDivision = nDofPerTopologicalFace == 0? 1 : nDofPerTopologicalFace;
+        (domain_mesh_type::nDim==2)? domain_mesh_type::element_type::numVertices*dofPerVertex :
+        domain_mesh_type::element_type::numVertices*dofPerVertex + domain_mesh_type::element_type::numEdges*dofPerEdge;
+    uint16_type const nDofPerTopologicalFace =
+        (domain_mesh_type::nDim==1)? dofPerVertex :
+        (domain_mesh_type::nDim==2)? dofPerEdge : dofPerFace;
+    uint16_type const nDofPerTopologicalFaceForDivision =
+        nDofPerTopologicalFace == 0 ? 1 : nDofPerTopologicalFace;
 
 
     // inherit the table of markersName
