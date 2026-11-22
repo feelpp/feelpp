@@ -938,7 +938,8 @@ struct Condenser
                                    } );
 
                     extractBlock( F0K, K, FK, e1 );
-                    FK.tail(N1) = F1K.at(K);
+                    if ( F1K.count(K) )
+                        FK.tail(N1) = F1K.at(K);
 
                     auto Aldlt = AK.lu();
 
@@ -1182,7 +1183,8 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
                            } );
 
             extractBlock( F0K, K, FK, e1 );
-            FK.tail(N1) = F1K.at(K);
+            if ( F1K.count(K) )
+                FK.tail(N1) = F1K.at(K);
 
             auto Aldlt = AK.lu();
 
@@ -1398,7 +1400,8 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
                                ++n;
                            } );
             extractBlock( F0K, K, FK, e1 );
-            FK.tail(N1) = F1K.at(K);
+            if ( F1K.count(K) )
+                FK.tail(N1) = F1K.at(K);
             if ( VLOG_IS_ON(2) )
             {
                 cout<< "A22=" << A22 << std::endl;
@@ -1547,7 +1550,8 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
                                ++n2;
                            } );
             extractBlock( F0K, K, FK, e1 );
-            FK.tail(N1) = F1K.at(K);
+            if ( F1K.count(K) )
+                FK.tail(N1) = F1K.at(K);
             if ( VLOG_IS_ON(2) )
             {
                 cout<< "A22=" << A22 << std::endl;
