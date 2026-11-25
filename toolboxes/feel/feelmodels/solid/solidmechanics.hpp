@@ -1,30 +1,10 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
-
-  This file is part of the Feel library
-
-  Author(s): Vincent Chabannes <vincent.chabannes@imag.fr>
-       Date: 2011-07-17
-
-  Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 3.0 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
-/**
- \file solidmechanics.hpp
-   \author Vincent Chabannes <vincent.chabannes@feelpp.org>
-   \date 2011-07-17
+/*
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2014-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
 #ifndef FEELPP_TOOLBOXES_SOLIDMECHANICS_HPP
@@ -96,25 +76,27 @@ public:
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     // mesh
-    typedef ConvexType convex_type;
-    static inline const uint16_type nDim = convex_type::nDim;
-    static inline const uint16_type nOrderGeo = convex_type::nOrder;
-    static inline const uint16_type nRealDim = convex_type::nRealDim;
-    typedef Mesh<convex_type> mesh_type;
-    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
+    using convex_type = ConvexType ;
+    static constexpr uint16_type nDim = convex_type::nDim;
+    static constexpr int nOrderGeo = convex_type::is_order_dynamic ? Dynamic : convex_type::nOrder;
+    static constexpr uint16_type nRealDim = convex_type::nRealDim;
+    using mesh_type = Mesh<convex_type>;
+    using mesh_ptrtype = std::shared_ptr<mesh_type>;
     //___________________________________________________________________________________//
     // basis
-    static inline const uint16_type nOrder = BasisDisplacementType::nOrder;
-    static inline const uint16_type nOrderDisplacement = nOrder;
-    static inline const uint16_type nOrderPressure = (nOrder>1)? nOrder-1:1;
-    typedef BasisDisplacementType basis_u_type;
-    typedef Lagrange<nOrderPressure, Scalar,Continuous,PointSetFekete> basis_l_type;
-    typedef Lagrange<nOrder+1, Vectorial,Discontinuous,PointSetFekete> basis_stress_type;
-    typedef Lagrange<nOrder+1, Tensor2,Discontinuous,PointSetFekete> basis_stress_tensor_type;
-    typedef Lagrange<0, Vectorial,Continuous> basis_constraint_vec_type;
+    using basis_u_type = BasisDisplacementType;
+    using basis_displacement_type = basis_u_type;
+    // static constexpr int nOrder = nOrderDisplacement;
+    static constexpr int nOrderDisplacement = basis_displacement_type::is_order_dynamic ? Dynamic : basis_displacement_type::nOrder;
+    static constexpr int nOrderPressure = basis_displacement_type::is_order_dynamic ? Dynamic : (nOrderDisplacement>1)? nOrderDisplacement-1:1;
+    static constexpr int nOrderStress = basis_displacement_type::is_order_dynamic ? Dynamic : nOrderDisplacement+1;
+    using basis_l_type = Lagrange<nOrderPressure, Scalar,Continuous,PointSetFekete>;
+    using basis_stress_type = Lagrange<nOrderStress, Vectorial,Discontinuous,PointSetFekete>;
+    using basis_stress_tensor_type = Lagrange<nOrderStress, Tensor2,Discontinuous,PointSetFekete>;
+    using basis_constraint_vec_type = Lagrange<0, Vectorial,Continuous>;
     //___________________________________________________________________________________//
     // displacement space
-    typedef FunctionSpace<mesh_type, bases<basis_u_type>/*,double,NoPeriodicity*/> space_displacement_type;
+    using space_displacement_type = FunctionSpace<mesh_type, bases<basis_displacement_type>/*,double,NoPeriodicity*/>;
     typedef std::shared_ptr<space_displacement_type> space_displacement_ptrtype;
     typedef typename space_displacement_type::element_type element_displacement_type;
     typedef std::shared_ptr<element_displacement_type> element_displacement_ptrtype;
@@ -193,7 +175,7 @@ public:
     //typedef std::shared_ptr<gmsh_export_type> gmsh_export_ptrtype;
 #if 1 //defined(FEELPP_HAS_VTK)
     //fais comme ca car bug dans opeartorlagrangeP1 pour les champs vectorielles
-    typedef FunctionSpace<mesh_type,bases<Lagrange<nOrder,Scalar,Continuous,PointSetFekete> > > space_create_ho_type;
+    typedef FunctionSpace<mesh_type,bases<Lagrange<nOrderDisplacement,Scalar,Continuous,PointSetFekete> > > space_create_ho_type;
 
     typedef Mesh<Simplex<nDim,1,nDim> > mesh_visu_ho_type;
 
@@ -274,16 +256,34 @@ public:
                     std::string const& keyword = "solid",
                     worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                     std::string const& subPrefix = "",
-                    ModelBaseRepository const& modelRep = ModelBaseRepository() );
-    SolidMechanics( self_type const& ) = default;
+                    ModelBaseRepository const& modelRep = ModelBaseRepository(),
+                    RuntimeOrder polynomialOrder = RuntimeOrder{ basis_displacement_type::is_order_dynamic ? 1 : nOrderDisplacement },
+                    RuntimeOrder geometryOrder = RuntimeOrder{ convex_type::is_order_dynamic ? 1 : nOrderGeo } );
 
-    static self_ptrtype New( std::string const& prefix,
-                             std::string const& keyword = "solid",
-                             worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
-                             std::string const& subPrefix = "",
-                             ModelBaseRepository const& modelRep = ModelBaseRepository() );
+    SolidMechanics( self_type const& ) = delete;
+    SolidMechanics( self_type && ) = default;
+
+
+    template <typename ... Ts>
+    static self_ptrtype New( Ts && ... v )
+        {
+            auto args = NA::make_arguments( std::forward<Ts>(v)... );
+            std::string const& prefix = args.get(_prefix);
+            std::string const& keyword = args.get_else(_keyword,"solid");
+            worldcomm_ptr_t worldcomm = args.get_else(_worldcomm,Environment::worldCommPtr());
+            auto && repository = args.get_else(_repository,ModelBaseRepository{});
+            //auto && vm = args.get_else(_vm, create_program_options( prefix ) );
+            auto polynomialOrder = args.get_else(_runtime_order, RuntimeOrder{ basis_displacement_type::is_order_dynamic ? 1 : nOrderDisplacement });
+            auto geometryOrder = args.get_else(_order, RuntimeOrder{ convex_type::is_order_dynamic ? 1 : nOrderGeo });
+            return std::make_shared<self_type>( prefix, keyword, worldcomm, "", repository/*, ModelBaseCommandLineOptions{vm}*/, polynomialOrder, geometryOrder );
+        }
 
     std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
+
+    uint16_type orderGeometry() const { return M_runtimeOrderGeo.value; }
+    uint16_type orderDisplacement() const { return M_runtimeOrderDisplacement.value; }
+    uint16_type orderPressure() const { return M_runtimeOrderPressure.value; }
+    uint16_type orderStress() const { return M_runtimeOrderStress.value; }
 
 private :
 
@@ -742,6 +742,9 @@ public :
 
 private :
 
+    RuntimeOrder M_runtimeOrderGeo;
+    RuntimeOrder M_runtimeOrderDisplacement;
+    RuntimeOrder M_runtimeOrderPressure, M_runtimeOrderStress;
 
     //! solver
     std::string M_solverName;
@@ -841,7 +844,7 @@ SolidMechanics<ConvexType,BasisDisplacementType>::exportResults( double time, Mo
     this->log("SolidMechanics","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
-    if constexpr ( nOrderGeo <= 2 )
+    if ( this->orderGeometry() <= 2 )
     {
         this->executePostProcessExports( M_exporter, time, mfields, symbolsExpr, exportsExpr );
     }

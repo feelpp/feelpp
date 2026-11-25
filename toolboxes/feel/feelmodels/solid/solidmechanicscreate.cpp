@@ -1,4 +1,9 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+/*
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2018-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
 #include <feel/feelmodels/solid/solidmechanics.hpp>
@@ -19,11 +24,17 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string const& prefix,
                                                     std::string const& keyword,
                                                     worldcomm_ptr_t const& worldComm,
                                                     std::string const& subPrefix,
-                                                    ModelBaseRepository const& modelRep )
+                                                    ModelBaseRepository const& modelRep,
+                                                    RuntimeOrder polynomialOrder,
+                                                    RuntimeOrder geometryOrder )
     :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
     ModelPhysics<nDim>( "solid" ),
-    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep )
+    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep ),
+    M_runtimeOrderGeo( validatedOrder<convex_type>(geometryOrder) ),
+    M_runtimeOrderDisplacement( validatedOrder<basis_displacement_type>(polynomialOrder) ),
+    M_runtimeOrderPressure( basis_displacement_type::is_order_dynamic ? RuntimeOrder{polynomialOrder-1} : RuntimeOrder{nOrderPressure} ),
+    M_runtimeOrderStress( basis_displacement_type::is_order_dynamic ? RuntimeOrder{polynomialOrder+1} : RuntimeOrder{nOrderStress} )
 {
     this->log("SolidMechanics","constructor", "start" );
 
@@ -41,17 +52,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string const& prefix,
     this->loadParameterFromOptionsVm();
     //-----------------------------------------------------------------------------//
     this->log("SolidMechanics","constructor", "finish" );
-}
-
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-typename SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::self_ptrtype
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string const& prefix,
-                                          std::string const& keyword,
-                                         worldcomm_ptr_t const& worldComm,
-                                         std::string const& subPrefix,
-                                         ModelBaseRepository const& modelRep )
-{
-    return std::make_shared<self_type>( prefix, keyword, worldComm, subPrefix, modelRep );
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -79,7 +79,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_useFSISemiImplicitScheme = false;
     M_couplingFSIcondition = "dirichlet-neumann";
 
-    M_isHOVisu = nOrderGeo > 2;
+    M_isHOVisu = this->orderGeometry() > 2;
     if ( Environment::vm().count(prefixvm(this->prefix(),"hovisu").c_str()) )
         M_isHOVisu = boption(_name="hovisu",_prefix=this->prefix());
 
@@ -150,7 +150,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initMesh()
         super_type::super_model_meshes_type::setup( this->modelProperties().jsonData().at("Meshes"), {this->keyword()} );
     if ( this->doRestart() )
         super_type::super_model_meshes_type::setupRestart( this->keyword() );
-    super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
+    super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword(), M_runtimeOrderGeo );
 
     CHECK( this->mesh() ) << "mesh generation fail";
 
@@ -197,13 +197,14 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     if ( mom->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() ) )
     {
         M_rangeMeshElements = elements(this->mesh());
-        M_XhDisplacement = space_displacement_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
+        M_XhDisplacement = space_displacement_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(), _runtime_order=M_runtimeOrderDisplacement );
     }
     else
     {
         M_rangeMeshElements = markedelements(this->mesh(), mom->markers( this->physicsAvailableFromCurrentType() ));
         M_XhDisplacement = space_displacement_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),
-                                                         _range=M_rangeMeshElements );
+                                                         _range=M_rangeMeshElements,
+                                                         _runtime_order=M_runtimeOrderDisplacement );
     }
     // field displacement
     M_fieldDisplacement.reset( new element_displacement_type( M_XhDisplacement, "structure displacement" ));
@@ -253,7 +254,9 @@ void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesNormalStress()
 {
     if ( !M_XhNormalStress )
-        M_XhNormalStress = space_normal_stress_type::New( _mesh=this->mesh(), _worldscomm=this->localNonCompositeWorldsComm() );
+        M_XhNormalStress = space_normal_stress_type::New( _mesh=this->mesh(),
+                                                          _worldscomm=this->localNonCompositeWorldsComm(),
+                                                          _runtime_order=M_runtimeOrderStress );
     if ( !M_fieldNormalStressFromStruct )
         M_fieldNormalStressFromStruct.reset( new element_normal_stress_type( M_XhNormalStress ) );
 }
@@ -273,7 +276,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createExporters()
     std::string geoExportType="static";//change_coords_only, change, static
     if (!M_isHOVisu)
     {
-        if constexpr ( nOrderGeo <= 2 /*&& doExport*/ )
+        if ( this->orderGeometry() <= 2 /*&& doExport*/ )
         {
             M_exporter = exporter( _mesh=this->mesh(),
                                    //_name=prefixvm(this->prefix(), prefixvm(this->subPrefix(),"Export")),

@@ -6,11 +6,9 @@ feelpp_toolboxes_add_library( solidbase SRCS
 
 # geo order 1
 foreach( _DIM 2 3)
-  math(EXPR _D_ORDER "${FEELPP_INSTANTIATION_ORDER_MAX}-1")
-  feelpp_max( MAX_ORDER 1 ${_D_ORDER})
-  message(STATUS "[feelpp] SOLID ${_DIM}D PNG1 N=1..${MAX_ORDER}")
-  foreach( _DISP_ORDER RANGE 1 ${MAX_ORDER} )
+  foreach(_DISP_ORDER 1 2 Dynamic)
     foreach( _CONVEX_TYPE Simplex Hypercube )
+      message(STATUS "[feelpp] SOLID ${_DIM}D P${_ORDER}G1 ${_CONVEX_TYPE}")
       genLibSolidMechanics(
         DIM ${_DIM}
         DISP_ORDER ${_DISP_ORDER}
@@ -22,17 +20,16 @@ foreach( _DIM 2 3)
   endforeach()
 endforeach()
 
-# iso-parametric
+# geo and disp order Dynamic
 foreach( _DIM 2 3)
-  math(EXPR _D_ORDER "${FEELPP_INSTANTIATION_ORDER_MAX}-1")
-  feelpp_min( MAX_ORDER ${FEELPP_MESH_MAX_ORDER} ${_D_ORDER})
-  message(STATUS "[feelpp] SOLID ${_DIM}D PNGN N=2..${MAX_ORDER}")
-  foreach( _DISP_ORDER RANGE 2 ${MAX_ORDER} )
+  foreach( _CONVEX_TYPE Simplex Hypercube )
+    message(STATUS "[feelpp] SOLID ${_DIM}D PDynamicGDynamic ${_CONVEX_TYPE}")
     genLibSolidMechanics(
       DIM ${_DIM}
-      DISP_ORDER ${_DISP_ORDER}
-      GEO_ORDER ${_DISP_ORDER}
-      )
+      DISP_ORDER Dynamic
+      GEO_ORDER Dynamic
+      CONVEX ${_CONVEX_TYPE}
+    )
     set(FEELPP_MODELS_LIBRARIES_SOLIDMECHANICS  ${FEELPP_MODELS_LIBRARIES_SOLIDMECHANICS} ${SOLIDMECHANICS_LIB_NAME}  )
   endforeach()
 endforeach()

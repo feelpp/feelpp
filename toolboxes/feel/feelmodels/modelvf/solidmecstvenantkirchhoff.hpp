@@ -73,7 +73,7 @@ public:
     static inline const uint16_type nComponents2 = fe_type::nComponents2;
     static const bool is_terminal = true;
 
-    static inline const uint16_type orderdisplacement = functionspace_type::basis_type::nOrder;
+    //static inline const uint16_type orderdisplacement = functionspace_type::basis_type::nOrder;
     //------------------------------------------------------------------------------//
     // lamecoeff functionspace
     typedef typename element_lamecoeff_type::functionspace_type functionspace_lamecoeff_type;
@@ -155,7 +155,11 @@ public:
     //@{
 
     //! polynomial order
-    uint16_type polynomialOrder() const { return (SpecificExprType::value == 0)? (3*(orderdisplacement-1)) : (4*(orderdisplacement-1)); }
+    //uint16_type polynomialOrder() const { return (SpecificExprType::value == 0)? (3*(orderdisplacement-1)) : (4*(orderdisplacement-1)); }
+    uint16_type polynomialOrder() const {
+        uint16_type orderdisplacement = this->e().functionSpace()->order();
+        return (SpecificExprType::value == 0)? (3*(orderdisplacement-1)) : (4*(orderdisplacement-1));
+    }
 
     //! expression is polynomial?
     bool isPolynomial() const { return true; }

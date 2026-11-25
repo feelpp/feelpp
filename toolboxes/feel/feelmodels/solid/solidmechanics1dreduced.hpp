@@ -1,4 +1,10 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 
+/*
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ * SPDX-FileContributor: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2014-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
  */
 
 #ifndef FEELPP_TOOLBOXES_SOLIDMECHANICS_1DREDUCED_HPP
@@ -34,7 +40,7 @@ public :
     // mesh
     typedef ConvexType convex_type;
     static inline const uint16_type nDim = convex_type::nDim;
-    static inline const uint16_type nOrderGeo = convex_type::nOrder;
+    static constexpr int nOrderGeo = convex_type::is_order_dynamic ? Dynamic : convex_type::nOrder;
     static inline const uint16_type nRealDim = convex_type::nRealDim;
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
@@ -45,7 +51,7 @@ public :
 
     // basis
     using basis_displacement_type = BasisDisplacementType;
-    static inline const uint16_type nOrderDisplacement = basis_displacement_type::nOrder;
+    static constexpr int nOrderDisplacement = basis_displacement_type::is_order_dynamic ? Dynamic : basis_displacement_type::nOrder;
     // function space displacement
     typedef FunctionSpace<mesh_type, bases<basis_displacement_type> > space_displacement_type;
     typedef std::shared_ptr<space_displacement_type> space_displacement_ptrtype;
