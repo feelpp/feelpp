@@ -1,18 +1,25 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim: set syntax=cpp fenc=utf-8 ft=tcl et sw=4 ts=4 sts=4
-*/ 
+/*
+ * SPDX-FileContributor: Vincent Chabannes <vincent.chabannes@feelpp.org>
+ *
+ * SPDX-FileCopyrightText: 2014-2026 University of Strasbourg
+ *
+ * SPDX-License-Identifier: LGPL-3.0-or-later
+ */
 
 #include <feel/feelmodels/solid/solidmechanics.hpp>
+#include <feel/feelmodels/modelcore/scalardiscretization.hpp>
 
 namespace Feel
 {
 
-template <typename ConvexType, uint16_type OrderDisp>
+template <typename ConvexType, typename FeDisplacementType>
 int
-runApplicationSolid()
+runApplicationSolid( Feel::FeelModels::ScalarDiscretization const& spec )
 {
-    typedef FeelModels::SolidMechanics< ConvexType,
-                                        Lagrange<OrderDisp, Vectorial,Continuous,PointSetFekete> > model_type;
-    auto SM = model_type::New("solid");
+    typedef FeelModels::SolidMechanics< ConvexType,FeDisplacementType > model_type;
+    auto SM = model_type::New(_prefix="solid",
+                              _runtime_order=RuntimeOrder{spec.polynomialOrder},
+                              _order=RuntimeOrder{spec.geometryOrder} );
 
     if ( SM->isStationary() )
     {
@@ -141,7 +148,7 @@ main( int argc, char** argv )
     solidmecoptions.add( toolboxes_options("solid") );
     solidmecoptions.add_options()
         ("case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension")
-        ("case.discretization", Feel::po::value<std::string>()->default_value( "P1" ), "discretization : P1,P2")
+        ("case.discretization", Feel::po::value<std::string>()->default_value( "P1" ), "discretization : P<k> or P<k>G<g>")
         ("case.convex", Feel::po::value<std::string>()->default_value( "Simplex" ), "convex : Simplex, Hypercube")
         ("save-solution", Feel::po::value<bool>()->default_value(true), "save-solution")
 #ifdef FEELPP_HAS_HDF5
@@ -169,28 +176,88 @@ main( int argc, char** argv )
     int dimension = ioption(_name="case.dimension");
     std::string discretization = soption(_name="case.discretization");
     std::string convex = soption(_name="case.convex");
+    std::string mode = "simulation";
+
+    auto spec = FeelModels::parseScalarDiscretization( discretization );
+    if ( !spec || ( dimension != 2 && dimension != 3 ) ||
+         ( mode != "simulation" /*&& mode != "h-convergence"*/ ) )
+    {
+        if ( Environment::isMasterRank() )
+            std::cerr << "Invalid solid case: expected dimension 2 or 3, P<k> or P<k>G<g> with positive orders\n";
+        return EXIT_FAILURE;
+    }
+
+
+    int status = 0;
+    bool hasFindInstantiation = false;
+    auto _runApplicationSolid = [&hasFindInstantiation,&spec]<int Dim,int GeoOrder,typename FeType>( std::string const& convex )
+    {
+        int status = 0;
+        if ( convex == "Simplex" )
+        {
+            status = runApplicationSolid<Simplex<Dim,GeoOrder>,FeType>( *spec );
+            hasFindInstantiation = true;
+        }
+        else if ( convex == "Hypercube" )
+        {
+            status = runApplicationSolid<Hypercube<Dim,GeoOrder>,FeType>( *spec );
+            hasFindInstantiation = true;
+        }
+        return status;
+    };
 
     auto dimt = hana::make_tuple(hana::int_c<2>,hana::int_c<3>);
-#if FEELPP_INSTANTIATION_ORDER_MAX >= 2
-    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ),
-                                             hana::make_tuple("P2", hana::int_c<2> ) );
-#else
-    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ) );
-#endif
-    int status = 0;
-    hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)), [&discretization,&dimension,&convex,&status]( auto const& d )
-                    {
-                        constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
-                        std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
-                        constexpr int _dorder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ))>::value;
-                        if ( dimension == _dim && discretization == _discretization )
-                        {
-                          if ( convex == "Simplex" )
-                            status = runApplicationSolid<Simplex<_dim,1>,_dorder>();
-                          else if ( convex == "Hypercube" )
-                            status = runApplicationSolid<Hypercube<_dim,1>,_dorder>();
-                        }
-                    } );
+    if ( spec->geometryOrder == 1 )
+    {
+        auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::type_c<Lagrange<1, Vectorial,Continuous,PointSetFekete>> )
+                                                 //hana::make_tuple("P2", hana::type_c<Lagrange<2, Vectorial,Continuous,PointSetFekete>> )
+                                                 );
+        hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)),
+                        [&discretization,&dimension,&convex,&status,&_runApplicationSolid]( auto const& d )
+                            {
+                                constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
+                                std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
+                                //constexpr int _dorder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ))>::value;
 
-    return status;
-}
+                                auto type_wrapper = hana::at_c<1>(hana::at_c<1>(d));
+                                using _spaceType = typename decltype(+type_wrapper)::type;
+
+                                if ( dimension == _dim && discretization == _discretization )
+                                {
+                                    status = _runApplicationSolid.template operator()<_dim,1,_spaceType>(convex);
+                                }
+                            } );
+        if ( !hasFindInstantiation )
+        {
+            hana::for_each( dimt,
+                            [&discretization,&dimension,&convex,&status,&_runApplicationSolid]( auto const& d )
+                            {
+                                constexpr int _dim = std::decay_t<decltype(d)>::value;
+                                using _spaceType = Lagrange<Dynamic, Vectorial,Continuous,PointSetFekete>;
+                                if ( dimension == _dim )
+                                {
+                                    status = _runApplicationSolid.template operator()<_dim,1,_spaceType>(convex);
+                                }
+                            } );
+
+        }
+    }
+    else
+    {
+        // higher order geometry
+        hana::for_each( dimt,
+                        [&discretization,&dimension,&convex,&status,&_runApplicationSolid]( auto const& d )
+                            {
+                                constexpr int _dim = std::decay_t<decltype(d)>::value;
+                                constexpr int _geoOrder = Dynamic;
+                                using _spaceType = Lagrange<Dynamic, Vectorial,Continuous,PointSetFekete>;
+                                if ( dimension == _dim )
+                                {
+                                    status = _runApplicationSolid.template operator()<_dim,_geoOrder,_spaceType>(convex);
+                                }
+                            } );
+
+    }
+
+        return status;
+    }
